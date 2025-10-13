@@ -1,6 +1,7 @@
 """Tests for sample-level data version calculation."""
 
 import polars as pl
+from syrupy.assertion import SnapshotAssertion
 
 from metaxy.data_version import (
     calculate_feature_data_versions,
@@ -8,7 +9,9 @@ from metaxy.data_version import (
 )
 
 
-def test_calculate_sample_data_versions_single_upstream():
+def test_calculate_sample_data_versions_single_upstream(
+    snapshot: SnapshotAssertion,
+) -> None:
     """Test calculating data versions with a single upstream feature."""
     # Create upstream data with two containers
     upstream_df = pl.DataFrame(
@@ -53,8 +56,13 @@ def test_calculate_sample_data_versions_single_upstream():
     # Check that versions are non-empty strings
     assert all(len(v) > 0 for v in versions)
 
+    # Snapshot the actual hash values to ensure stability
+    assert versions.to_list() == snapshot
 
-def test_calculate_sample_data_versions_multiple_upstream():
+
+def test_calculate_sample_data_versions_multiple_upstream(
+    snapshot: SnapshotAssertion,
+) -> None:
     """Test calculating data versions with multiple upstream features."""
     # Create two upstream features
     video_df = pl.DataFrame(
@@ -112,8 +120,13 @@ def test_calculate_sample_data_versions_multiple_upstream():
     versions = result["computed_version"].struct.field("processed")
     assert len(versions.unique()) == 3
 
+    # Snapshot the hash values
+    assert versions.to_list() == snapshot
 
-def test_calculate_sample_data_versions_deterministic():
+
+def test_calculate_sample_data_versions_deterministic(
+    snapshot: SnapshotAssertion,
+) -> None:
     """Test that data version calculation is deterministic."""
     upstream_df = pl.DataFrame(
         {
@@ -145,8 +158,13 @@ def test_calculate_sample_data_versions_deterministic():
     # Both should have the same hash since inputs are identical
     assert versions[0] == versions[1]
 
+    # Snapshot the deterministic hash value
+    assert versions[0] == snapshot
 
-def test_calculate_sample_data_versions_code_version_change():
+
+def test_calculate_sample_data_versions_code_version_change(
+    snapshot: SnapshotAssertion,
+) -> None:
     """Test that changing code version produces different data versions."""
     upstream_df = pl.DataFrame(
         {
@@ -194,8 +212,11 @@ def test_calculate_sample_data_versions_code_version_change():
     # Different code versions should produce different data versions
     assert version_v1 != version_v2
 
+    # Snapshot both versions to ensure they remain stable
+    assert {"v1": version_v1, "v2": version_v2} == snapshot
 
-def test_calculate_feature_data_versions():
+
+def test_calculate_feature_data_versions(snapshot: SnapshotAssertion) -> None:
     """Test calculating data versions for all containers in a feature."""
     upstream_df = pl.DataFrame(
         {
@@ -251,3 +272,10 @@ def test_calculate_feature_data_versions():
     # Check that processed and augmented have different versions
     # (since augmented depends on more containers)
     assert processed_versions[0] != augmented_versions[0]
+
+    # Snapshot all hash values (convert to dict for readability)
+    hash_dict = {
+        "processed": processed_versions.to_list(),
+        "augmented": augmented_versions.to_list(),
+    }
+    assert hash_dict == snapshot

@@ -1,44 +1,99 @@
 from typing import Any, TypeAlias
 
-from pydantic.annotated_handlers import GetCoreSchemaHandler
-
-# from pydantic_core import CoreSchema
-from pydantic_core.core_schema import (
-    CoreSchema,
-    str_schema,
-    tuple_schema,
-)
-
-# class Key(tuple):
-#     def __get_pydantic_core_schema__(cls, handler) -> CoreSchema:
-#         # breakpoint()
-#         return list_schema(str_schema())
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
 
 
 class FeatureKey(list):
-    # model_config = ConfigDict(arbitrary_types_allowed=True)
+    """
+    Feature key as a list of strings.
+
+    Hashable for use as dict keys in registries.
+    """
 
     def to_string(self) -> str:
         return "_".join(self)
 
+    def __hash__(self):
+        return hash(tuple(self))
+
+    def __eq__(self, other):
+        if isinstance(other, FeatureKey):
+            return list.__eq__(self, other)
+        return list.__eq__(self, other)
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return tuple_schema([str_schema()])
+    ) -> core_schema.CoreSchema:
+        """Pydantic schema that preserves FeatureKey type."""
+        # python_schema = core_schema.is_instance_schema(cls)
+
+        list_of_str_schema = core_schema.list_schema(core_schema.str_schema())
+
+        return core_schema.no_info_wrap_validator_function(
+            cls._validate,
+            list_of_str_schema,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda x: list(x)
+            ),
+        )
+
+    @classmethod
+    def _validate(cls, value, handler):
+        """Validate and wrap in FeatureKey."""
+        if isinstance(value, cls):
+            return value
+        # Let the list schema validate first
+        validated = handler(value)
+        # Wrap in FeatureKey
+        return cls(validated)
 
 
 class ContainerKey(list):
-    # model_config = ConfigDict(arbitrary_types_allowed=True)
+    """
+    Container key as a list of strings.
+
+    Hashable for use as dict keys in registries.
+    """
 
     def to_string(self) -> str:
         return "_".join(self)
 
+    def __hash__(self):
+        return hash(tuple(self))
+
+    def __eq__(self, other):
+        if isinstance(other, ContainerKey):
+            return list.__eq__(self, other)
+        return list.__eq__(self, other)
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return tuple_schema([str_schema()])
+    ) -> core_schema.CoreSchema:
+        """Pydantic schema that preserves ContainerKey type."""
+        # python_schema = core_schema.is_instance_schema(cls)
+
+        list_of_str_schema = core_schema.list_schema(core_schema.str_schema())
+
+        return core_schema.no_info_wrap_validator_function(
+            cls._validate,
+            list_of_str_schema,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda x: list(x)
+            ),
+        )
+
+    @classmethod
+    def _validate(cls, value, handler):
+        """Validate and wrap in ContainerKey."""
+        if isinstance(value, cls):
+            return value
+        # Let the list schema validate first
+        validated = handler(value)
+        # Wrap in ContainerKey
+        return cls(validated)
 
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]

@@ -1,0 +1,23 @@
+# serializer version: 1
+# name: test_feature_code_version_change
+  dict({
+    'v1': dict({
+      'default': '34b6e2828a266c8a80d78111e26f5399ec872eabed5150e695f62c5b6a490384',
+    }),
+    'v2': dict({
+      'default': 'b73f43a87c0ba140bc6538cac058c23313c916d954c269f5572ce5cbce5fc635',
+    }),
+  })
+# ---
+# name: test_multi_container_feature_data_version
+  dict({
+    'audio': 'b26cfcd7cca7ba6c6cc5d1b7457b187c22ce8e28ccd18eeaab09dfed4612d83c',
+    'frames': 'd0124b028372d89c90636d4dc69e679b1db44665d5993defe73253436a1a9f49',
+    'metadata': '1f0812e3bf2e985d198c59e801dc0d180c7ccb3443a91e47ac597ece08c73f84',
+  })
+# ---
+# name: test_single_feature_data_version
+  dict({
+    'default': 'f51bd8f2b33323701151b2f5c0dfef344e7e03f0c44c8922be7693247a2d2158',
+  })
+# ---

@@ -90,7 +90,6 @@ class FeaturePlan(FrozenBaseModel):
     ) -> Mapping[FQContainerKey, ContainerSpec]:
         res = {}
 
-
         for k, v in self.parent_containers_by_key.items():
             if k.container in self.feature.containers_by_key:
                 res[FQContainerKey(feature=self.feature, container=k.container)] = v
@@ -119,6 +118,7 @@ class FeaturePlan(FrozenBaseModel):
 
         Returns:
             dict[str, str]: The data version for each container in the feature plan.
+                Keys are container names as strings.
         """
         res = {}
 
@@ -126,6 +126,6 @@ class FeaturePlan(FrozenBaseModel):
             hasher = hashlib.sha256()
             hasher.update(self.feature.key.to_string().encode())
             hasher.update(self.get_container_data_version(k).encode())
-            res[k] = hasher.hexdigest()
+            res[k.to_string()] = hasher.hexdigest()  # Convert key to string
 
         return res

@@ -1,8 +1,9 @@
+import sys
 from typing import Any, ClassVar
 
-try:
+if sys.version_info >= (3, 11):
     from typing import Self
-except ImportError:
+else:
     from typing_extensions import Self
 
 from pydantic._internal._model_construction import ModelMetaclass
@@ -27,7 +28,7 @@ class FeatureRegistry:
 
         return FeaturePlan(
             feature=feature,
-            deps=[self.feature_specs_by_key[dep_key] for dep_key in feature.deps or []]
+            deps=[self.feature_specs_by_key[dep.key] for dep in feature.deps or []]
             or None,
         )
 
@@ -46,14 +47,15 @@ class _FeatureMeta(ModelMetaclass):
         namespace: dict[str, Any],
         *,
         spec: FeatureSpec | None,
+        registry: FeatureRegistry = metaxy_registry,
         **kwargs,
     ) -> type[Self]:
         cls = super().__new__(cls, cls_name, bases, namespace)
-        cls.metaxy_registry = metaxy_registry
+        cls.registry = registry  # type: ignore[attr-defined]
 
         if spec:
-            cls.spec = spec
-            metaxy_registry.add_feature(cls)
+            cls.spec = spec  # type: ignore[attr-defined]
+            cls.registry.add_feature(cls)  # type: ignore[attr-defined]
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
 
@@ -62,9 +64,14 @@ class _FeatureMeta(ModelMetaclass):
 
 class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     spec: ClassVar[FeatureSpec]
-    metaxy_registry: ClassVar[FeatureRegistry]
+    registry: ClassVar[FeatureRegistry]
 
     # @cached_property
     @classmethod
-    def data_version(self) -> str:
-        return self.metaxy_registry.get_feature_data_version(self.spec.key)
+    def data_version(cls) -> dict[str, str]:
+        """Get data version for all containers in this feature.
+
+        Returns:
+            Dictionary mapping container names (as strings) to their hash values.
+        """
+        return cls.registry.get_feature_data_version(cls.spec.key)

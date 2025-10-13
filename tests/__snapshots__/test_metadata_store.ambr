@@ -1,0 +1,24 @@
+# serializer version: 1
+# name: test_branch_deployment_workflow
+  list([
+    '090b49a3fd8a3551ca7110fe225bc38bed44bce3012131cd0fda9448c2efc647',
+    '4744f84bb3dca345cc65a65d36b16494c39f6149b54e7d12860ccfcfa5aa9b44',
+    'b234af59fd88ea5c998f98ac43ce2c7372243ca4eaedaee78b199115af455817',
+  ])
+# ---
+# name: test_calculate_and_write_data_versions
+  list([
+    'ab657b0686e72d308af0426ec5edff823d76645f367cb0f079ad494b3583b2e4',
+    '28d35986093e005ef474f50dc31b71aa319097fff43ee77421d79033858cec56',
+    'b6e3e8d060c63bcb7342ba961492d8f020cb9d86a5128f42246cbeaccc401429',
+  ])
+# ---
+# name: test_calculate_deterministic
+  'ab657b0686e72d308af0426ec5edff823d76645f367cb0f079ad494b3583b2e4'
+# ---
+# name: test_calculate_with_fallback_upstream
+  list([
+    '090b49a3fd8a3551ca7110fe225bc38bed44bce3012131cd0fda9448c2efc647',
+    '4744f84bb3dca345cc65a65d36b16494c39f6149b54e7d12860ccfcfa5aa9b44',
+  ])
+# ---

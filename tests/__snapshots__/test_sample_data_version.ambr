@@ -1,0 +1,36 @@
+# serializer version: 1
+# name: test_calculate_feature_data_versions
+  dict({
+    'augmented': list([
+      '7c720a2d2a26d1ba28f540da1ce67215c58d1bce016b39485ca3d1648dbb3f50',
+      'ea8d2d10cea126876bae102d689aa3ec313c982c7bacea4ad5ab02d56777d78d',
+    ]),
+    'processed': list([
+      '244dbc8db0e556e38bd7bd234219e7e5da68dd318a37ef8e6134c9ea31f09238',
+      'd709c55fa1b4ac42c97e556e1123cc4a85ed7f2eb93a3ae6d9b8602dddd859fb',
+    ]),
+  })
+# ---
+# name: test_calculate_sample_data_versions_code_version_change
+  dict({
+    'v1': 'f35ce48d9cfba8a23415863b518f6f81d0cf24553dc3540f4a62f05783ef4217',
+    'v2': '11966375903503534768c8f67099bd404e89810944a974ea289ff7d2bef35f04',
+  })
+# ---
+# name: test_calculate_sample_data_versions_deterministic
+  'd02a0e24362904e5bee36e20c3cd6a639840b7e339c34dca1eaea7f644fa4cc2'
+# ---
+# name: test_calculate_sample_data_versions_multiple_upstream
+  list([
+    '26852f56de452ba1cd7224e7bfce22805c5eed54f5691ee77fcc4cfeb18d4970',
+    'ea0ac32cf60ce13cfee50c099c3950d906ed55f349f1186ab7aa217dd3aed3dc',
+    'b29bb555048efb739b1b2f535dae297f76a87fe4cb944f607131e3b18e262c50',
+  ])
+# ---
+# name: test_calculate_sample_data_versions_single_upstream
+  list([
+    'fc0ba303d12aecaa868ac0b36cfed5d7635ff185871a0b96d8b338d222e8d3aa',
+    '0a33c360b5332c4b95ecfae8a5ba8899e9d75cf2111bf6e126d0ec90c67ba580',
+    '9addc04b84dcfbe4c040da967d37fd6980c6984bf629d5c1008ec728f21acc17',
+  ])
+# ---
