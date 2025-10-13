@@ -166,6 +166,7 @@ class FeaturePlan(FrozenBaseModel):
 
         Returns:
             dict[str, str]: The data version for each container in the feature plan.
+                Keys are container names as strings.
         """
         res = {}
 
