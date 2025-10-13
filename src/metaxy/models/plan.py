@@ -85,10 +85,11 @@ class FeaturePlan(FrozenBaseModel):
 
         return res
 
-    def get_parent_containers_for_container(self, key: ContainerKey) -> Mapping[FQContainerKey, ContainerSpec]:
-        res  = {}
+    def get_parent_containers_for_container(
+        self, key: ContainerKey
+    ) -> Mapping[FQContainerKey, ContainerSpec]:
+        res = {}
 
-        container = self.feature.containers
 
         for k, v in self.parent_containers_by_key.items():
             if k.container in self.feature.containers_by_key:
@@ -105,12 +106,8 @@ class FeaturePlan(FrozenBaseModel):
         hasher.update(str(container.code_version).encode())
 
         for k, v in sorted(self.get_parent_containers_for_container(key).items()):
-            hasher.update(
-                k.to_string().encode()
-            )
-            hasher.update(
-                self.get_container_data_version(k.container).encode()
-            )
+            hasher.update(k.to_string().encode())
+            hasher.update(self.get_container_data_version(k.container).encode())
 
         return hasher.hexdigest()
 

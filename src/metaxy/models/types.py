@@ -1,9 +1,14 @@
-from pydantic.annotated_handlers import GetCoreSchemaHandler
-from pydantic.config import ConfigDict
 from typing import Any, TypeAlias
-from pydantic_core.core_schema import CoreSchema, TupleSchema, list_schema, str_schema
-from pydantic_core import CoreSchema, core_schema
-from pydantic_core.core_schema import str_schema, tuple_schema
+
+from pydantic.annotated_handlers import GetCoreSchemaHandler
+
+# from pydantic_core import CoreSchema
+from pydantic_core.core_schema import (
+    CoreSchema,
+    str_schema,
+    tuple_schema,
+)
+
 # class Key(tuple):
 #     def __get_pydantic_core_schema__(cls, handler) -> CoreSchema:
 #         # breakpoint()
@@ -23,7 +28,6 @@ class FeatureKey(list):
         return tuple_schema([str_schema()])
 
 
-
 class ContainerKey(list):
     # model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -35,7 +39,6 @@ class ContainerKey(list):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
         return tuple_schema([str_schema()])
-
 
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]

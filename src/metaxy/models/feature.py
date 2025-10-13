@@ -1,5 +1,9 @@
-from functools import cached_property
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from pydantic._internal._model_construction import ModelMetaclass
 

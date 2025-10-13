@@ -6,9 +6,10 @@ readme = "README.md"
 authors = [
     { name = "Daniel Gafni", email = "danielgafni16@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "polars>=1.33.1",
+    "polars-hash>=0.5.1",
     "pydantic>=2.11.9",
 ]
 
