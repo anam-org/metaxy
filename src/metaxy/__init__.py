@@ -9,6 +9,17 @@ from metaxy.metadata_store import (
     InMemoryMetadataStore,
     MetadataStore,
 )
+from metaxy.migrations import (
+    BaseOperation,
+    DataVersionReconciliation,
+    MetadataBackfill,
+    Migration,
+    MigrationResult,
+    MigrationStatus,
+    apply_migration,
+    detect_feature_changes,
+    generate_migration,
+)
 from metaxy.models.container import ContainerDep, ContainerSpec, SpecialContainerDep
 from metaxy.models.feature import Feature, FeatureRegistry, registry
 from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
@@ -33,9 +44,11 @@ __all__ = [
     "load_module_entrypoint",
     "load_package_entrypoints",
     "Migration",
-    "FeatureVersionMigration",
     "MigrationResult",
-    "FeatureChange",
+    "MigrationStatus",
+    "BaseOperation",
+    "DataVersionReconciliation",
+    "MetadataBackfill",
     "detect_feature_changes",
     "generate_migration",
     "apply_migration",
