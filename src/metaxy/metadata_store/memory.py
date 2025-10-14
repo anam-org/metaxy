@@ -51,6 +51,10 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
         """Get default hash algorithm for in-memory store."""
         return HashAlgorithm.XXHASH64
 
+    def _get_storage_key(self, feature_key: FeatureKey) -> tuple[str, ...]:
+        """Convert feature key to storage key (tuple for hashability)."""
+        return tuple(feature_key)
+
     def _supports_native_components(self) -> bool:
         """In-memory store only supports Polars components."""
         return False
@@ -66,10 +70,6 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
         raise NotImplementedError(
             "InMemoryMetadataStore does not support native components"
         )
-
-    def _get_storage_key(self, feature_key: FeatureKey) -> tuple[str, ...]:
-        """Convert feature key to storage key (tuple for hashability)."""
-        return tuple(feature_key)
 
     def _write_metadata_impl(
         self,
