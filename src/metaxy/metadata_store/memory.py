@@ -3,7 +3,6 @@
 import polars as pl
 
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.metadata_store.exceptions import MetadataSchemaError
 from metaxy.models.feature import Feature
 from metaxy.models.types import FeatureKey
 
@@ -34,53 +33,26 @@ class InMemoryMetadataStore(MetadataStore):
             **kwargs: Passed to MetadataStore.__init__ (e.g., fallback_stores)
         """
         super().__init__(**kwargs)
-        self._storage: dict[str, pl.DataFrame] = {}
+        # Use tuple as key (hashable) instead of string to avoid parsing issues
+        self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
 
-    def _get_storage_key(self, feature: FeatureKey | type[Feature]) -> str:
-        """Convert feature to storage key (string)."""
-        feature_key = self._resolve_feature_key(feature)
-        return feature_key.to_string()
+    def _get_storage_key(self, feature_key: FeatureKey) -> tuple[str, ...]:
+        """Convert feature key to storage key (tuple for hashability)."""
+        return tuple(feature_key)
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
-        """
-        Validate that DataFrame has required schema.
-
-        Args:
-            df: DataFrame to validate
-
-        Raises:
-            MetadataSchemaError: If schema is invalid
-        """
-        # Check for data_version column
-        if "data_version" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'data_version' column")
-
-        # Check that data_version is a struct
-        data_version_type = df.schema["data_version"]
-        if not isinstance(data_version_type, pl.Struct):
-            raise MetadataSchemaError(
-                f"'data_version' column must be pl.Struct, got {data_version_type}"
-            )
-
-    def write_metadata(
+    def _write_metadata_impl(
         self,
-        feature: FeatureKey | type[Feature],
+        feature_key: FeatureKey,
         df: pl.DataFrame,
     ) -> None:
         """
-        Write metadata for a feature (immutable, append-only).
+        Internal write implementation for in-memory storage.
 
         Args:
-            feature: Feature to write metadata for
-            df: DataFrame with metadata (must have 'data_version' struct column)
-
-        Raises:
-            MetadataSchemaError: If DataFrame schema is invalid
+            feature_key: Feature key to write to
+            df: DataFrame with metadata (already validated)
         """
-        # Validate schema
-        self._validate_schema(df)
-
-        storage_key = self._get_storage_key(feature)
+        storage_key = self._get_storage_key(feature_key)
 
         # Append or create
         if storage_key in self._storage:
@@ -111,7 +83,8 @@ class InMemoryMetadataStore(MetadataStore):
         Returns:
             DataFrame with metadata, or None if not found
         """
-        storage_key = self._get_storage_key(feature)
+        feature_key = self._resolve_feature_key(feature)
+        storage_key = self._get_storage_key(feature_key)
 
         if storage_key not in self._storage:
             return None
@@ -133,14 +106,16 @@ class InMemoryMetadataStore(MetadataStore):
         List all features in this store.
 
         Returns:
-            List of FeatureKey objects
+            List of FeatureKey objects (excluding system tables)
         """
         features = []
-        for key_str in self._storage.keys():
-            # Convert string back to FeatureKey
-            # Assume keys are stored as underscore-separated strings
-            parts = key_str.split("_")
-            features.append(FeatureKey(parts))
+        for key_tuple in self._storage.keys():
+            # Convert tuple back to FeatureKey
+            feature_key = FeatureKey(list(key_tuple))
+
+            # Skip system tables
+            if not self._is_system_table(feature_key):
+                features.append(feature_key)
 
         return features
 

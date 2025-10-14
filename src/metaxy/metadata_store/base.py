@@ -1,6 +1,7 @@
 """Abstract base class for metadata storage backends."""
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -13,6 +14,10 @@ from metaxy.models.types import ContainerKey, FeatureKey
 
 if TYPE_CHECKING:
     pass
+
+# System table keys
+FEATURE_VERSIONS_KEY = FeatureKey(["__metaxy__", "feature_versions"])
+MIGRATION_HISTORY_KEY = FeatureKey(["__metaxy__", "migrations"])
 
 
 class MetadataStore(ABC):
@@ -48,6 +53,10 @@ class MetadataStore(ABC):
 
     # ========== Helper Methods ==========
 
+    def _is_system_table(self, feature_key: FeatureKey) -> bool:
+        """Check if feature key is a system table."""
+        return len(feature_key) >= 1 and feature_key[0] == "__metaxy__"
+
     def _resolve_feature_key(self, feature: FeatureKey | type[Feature]) -> FeatureKey:
         """Resolve a Feature class or FeatureKey to FeatureKey."""
         if isinstance(feature, FeatureKey):
@@ -69,6 +78,22 @@ class MetadataStore(ABC):
     # ========== Core CRUD Operations ==========
 
     @abstractmethod
+    def _write_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        df: pl.DataFrame,
+    ) -> None:
+        """
+        Internal write implementation (backend-specific).
+
+        Args:
+            feature_key: Feature key to write to
+            df: DataFrame with metadata (already validated)
+
+        Note: Subclasses implement this for their storage backend.
+        """
+        pass
+
     def write_metadata(
         self,
         feature: FeatureKey | type[Feature],
@@ -76,6 +101,9 @@ class MetadataStore(ABC):
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
+
+        Automatically adds 'feature_version' column and tracks materialization
+        in system tables.
 
         Args:
             feature: Feature to write metadata for
@@ -87,7 +115,216 @@ class MetadataStore(ABC):
 
         Note: Always writes to current store, never to fallback stores.
         """
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # For system tables, write directly without feature_version tracking
+        if is_system_table:
+            self._validate_schema_system_table(df)
+            self._write_metadata_impl(feature_key, df)
+            return
+
+        # For regular features: add feature_version, validate, track, and write
+        # Get feature class and version
+        if isinstance(feature, type) and issubclass(feature, Feature):
+            feature_cls = feature
+            feature_version = feature.feature_version()  # type: ignore[attr-defined]
+        else:
+            feature_cls = self.registry.features_by_key[feature_key]
+            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+
+        # Add feature_version column if not present
+        if "feature_version" not in df.columns:
+            df = df.with_columns(pl.lit(feature_version).alias("feature_version"))
+
+        # Validate schema
+        self._validate_schema(df)
+
+        # Write metadata
+        self._write_metadata_impl(feature_key, df)
+
+    def _validate_schema(self, df: pl.DataFrame) -> None:
+        """
+        Validate that DataFrame has required schema.
+
+        Args:
+            df: DataFrame to validate
+
+        Raises:
+            MetadataSchemaError: If schema is invalid
+        """
+        from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+        # Check for data_version column
+        if "data_version" not in df.columns:
+            raise MetadataSchemaError("DataFrame must have 'data_version' column")
+
+        # Check that data_version is a struct
+        data_version_type = df.schema["data_version"]
+        if not isinstance(data_version_type, pl.Struct):
+            raise MetadataSchemaError(
+                f"'data_version' column must be pl.Struct, got {data_version_type}"
+            )
+
+    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
+        """Validate schema for system tables (minimal validation)."""
+        # System tables don't need data_version column
         pass
+
+    def record_feature_version(
+        self,
+        feature: FeatureKey | type[Feature],
+        *,
+        snapshot_id: str | None = None,
+    ) -> None:
+        """Record feature version materialization in system table.
+
+        This should be called explicitly (e.g., in CI) after materializing a feature.
+        It enables migration detection by tracking which feature versions exist.
+
+        This is NOT called automatically by write_metadata() for performance reasons.
+        Users should call this explicitly when ready to "publish" a feature version.
+
+        Args:
+            feature: Feature that was materialized
+            snapshot_id: Optional snapshot ID representing the entire feature graph state
+                (typically generated by record_all_feature_versions)
+
+        Example:
+            >>> # Materialize feature
+            >>> store.write_metadata(MyFeature, metadata_df)
+            >>>
+            >>> # Record the version (call this in CI after successful materialization)
+            >>> store.record_feature_version(MyFeature)
+
+            >>> # Or with snapshot_id
+            >>> store.record_feature_version(MyFeature, snapshot_id="snapshot_20250113_103000")
+        """
+        feature_key = self._resolve_feature_key(feature)
+
+        # Get feature class and version
+        if isinstance(feature, type) and issubclass(feature, Feature):
+            feature_cls = feature
+            feature_version = feature.feature_version()  # type: ignore[attr-defined]
+        else:
+            feature_cls = self.registry.features_by_key[feature_key]
+            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+
+        # Get container names
+        containers = [c.key.to_string() for c in feature_cls.spec.containers]  # type: ignore[attr-defined]
+
+        # Check if already recorded (idempotent)
+        try:
+            existing = self._read_metadata_local(
+                FEATURE_VERSIONS_KEY,
+                filters=(
+                    (pl.col("feature_key") == feature_key.to_string())
+                    & (pl.col("feature_version") == feature_version)
+                ),
+            )
+            if existing is not None and len(existing) > 0:
+                # Already recorded
+                return
+        except Exception:
+            # Table doesn't exist yet or other error - proceed with recording
+            pass
+
+        # Record new version
+        version_record = pl.DataFrame(
+            {
+                "feature_key": [feature_key.to_string()],
+                "feature_version": [feature_version],
+                "recorded_at": [datetime.now()],
+                "containers": [containers],
+                "snapshot_id": [snapshot_id],  # Optional graph snapshot ID
+            }
+        )
+
+        # Write to system table (bypass feature_version tracking to avoid recursion)
+        self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_record)
+
+    def record_all_feature_versions(self) -> str:
+        """Record all features in registry with a graph snapshot ID.
+
+        This should be called in CI after materializing multiple features.
+        It records all features with the same snapshot_id, representing a
+        consistent state of the entire feature graph.
+
+        The snapshot_id is a deterministic hash of all feature_version hashes
+        in the registry, making it idempotent - calling multiple times with the
+        same feature definitions produces the same snapshot_id.
+
+        Returns:
+            The generated snapshot_id (deterministic hash)
+
+        Example:
+            >>> # In CI after materializing all features
+            >>> store.write_metadata(FeatureA, data_a)
+            >>> store.write_metadata(FeatureB, data_b)
+            >>> store.write_metadata(FeatureC, data_c)
+            >>>
+            >>> # Record entire graph state
+            >>> snapshot_id = store.record_all_feature_versions()
+            >>> print(f"Graph snapshot: {snapshot_id}")
+            a3f8b2c1
+        """
+        import hashlib
+
+        # Generate deterministic snapshot_id (no timestamp!)
+        # Hash all feature versions together
+        hasher = hashlib.sha256()
+        for feature_key in sorted(
+            self.registry.features_by_key.keys(), key=lambda k: k.to_string()
+        ):
+            feature_cls = self.registry.features_by_key[feature_key]
+            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+            # Include both key and version in hash
+            hasher.update(f"{feature_key.to_string()}:{feature_version}".encode())
+
+        snapshot_id = hasher.hexdigest()[:8]  # 8 chars like git
+
+        # Read existing feature versions once
+        try:
+            existing_versions = self._read_metadata_local(FEATURE_VERSIONS_KEY)
+        except Exception:
+            # Table doesn't exist yet
+            existing_versions = None
+
+        # Build set of already recorded (feature_key, feature_version) pairs
+        already_recorded = set()
+        if existing_versions is not None:
+            for row in existing_versions.iter_rows(named=True):
+                already_recorded.add((row["feature_key"], row["feature_version"]))
+
+        # Build bulk DataFrame for all features
+        records = []
+        for feature_key in sorted(
+            self.registry.features_by_key.keys(), key=lambda k: k.to_string()
+        ):
+            feature_cls = self.registry.features_by_key[feature_key]
+            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+            containers = [c.key.to_string() for c in feature_cls.spec.containers]  # type: ignore[attr-defined]
+
+            # Skip if already recorded (idempotent)
+            if (feature_key.to_string(), feature_version) in already_recorded:
+                continue
+
+            records.append(
+                {
+                    "feature_key": feature_key.to_string(),
+                    "feature_version": feature_version,
+                    "recorded_at": datetime.now(),
+                    "containers": containers,
+                    "snapshot_id": snapshot_id,
+                }
+            )
+
+        # Bulk write all new records at once
+        if records:
+            version_records = pl.DataFrame(records)
+            self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+
+        return snapshot_id
 
     @abstractmethod
     def _read_metadata_local(
@@ -117,6 +354,7 @@ class MetadataStore(ABC):
         filters: pl.Expr | None = None,
         columns: list[str] | None = None,
         allow_fallback: bool = True,
+        current_only: bool = True,
     ) -> pl.DataFrame:
         """
         Read metadata with optional fallback to upstream stores.
@@ -126,6 +364,8 @@ class MetadataStore(ABC):
             filters: Polars expression for filtering rows
             columns: Subset of columns to return
             allow_fallback: If True, check fallback stores on local miss
+            current_only: If True, only return rows with current feature_version
+                (default: True for safety)
 
         Returns:
             DataFrame with metadata
@@ -133,8 +373,36 @@ class MetadataStore(ABC):
         Raises:
             FeatureNotFoundError: If feature not found in any store
         """
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # Build combined filters
+        combined_filters = filters
+
+        # Add feature_version filter for regular features (not system tables)
+        # Note: We'll apply this filter after reading, to handle cases where
+        # the column doesn't exist in the data yet
+        current_feature_version = None
+        if current_only and not is_system_table:
+            # Get current feature_version
+            if isinstance(feature, type) and issubclass(feature, Feature):
+                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
+            else:
+                feature_cls = self.registry.features_by_key[feature_key]
+                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+
         # Try local first
-        df = self._read_metadata_local(feature, filters=filters, columns=columns)
+        df = self._read_metadata_local(
+            feature, filters=combined_filters, columns=columns
+        )
+
+        if df is not None:
+            # Apply feature_version filter if needed (after reading to handle missing column)
+            if current_feature_version is not None and "feature_version" in df.columns:
+                df = df.filter(pl.col("feature_version") == current_feature_version)
+                # If filtering removed all rows, treat as not found
+                if len(df) == 0:
+                    df = None
 
         if df is not None:
             return df
@@ -146,16 +414,16 @@ class MetadataStore(ABC):
                     # Use full read_metadata to handle nested fallback chains
                     return store.read_metadata(
                         feature,
-                        filters=filters,
+                        filters=filters,  # Pass original filters, not combined
                         columns=columns,
-                        allow_fallback=True,  # Allow fallback stores to check their fallbacks
+                        allow_fallback=True,
+                        current_only=current_only,  # Pass through current_only
                     )
                 except FeatureNotFoundError:
                     # Try next fallback store
                     continue
 
         # Not found anywhere
-        feature_key = self._resolve_feature_key(feature)
         raise FeatureNotFoundError(
             f"Feature {feature_key.to_string()} not found in store"
             + (" or fallback stores" if allow_fallback else "")
@@ -231,6 +499,7 @@ class MetadataStore(ABC):
         container: ContainerKey | None = None,
         *,
         allow_fallback: bool = True,
+        current_only: bool = True,
     ) -> dict[str, pl.DataFrame]:
         """
         Read all upstream dependencies for a feature/container.
@@ -239,6 +508,7 @@ class MetadataStore(ABC):
             feature: Feature whose dependencies to load
             container: Specific container (if None, loads all deps for feature)
             allow_fallback: Whether to check fallback stores
+            current_only: If True, only read current feature_version for upstream
 
         Returns:
             Dict mapping upstream feature keys (as strings) to metadata DataFrames.
@@ -269,7 +539,9 @@ class MetadataStore(ABC):
 
             try:
                 df = self.read_metadata(
-                    upstream_feature_key, allow_fallback=allow_fallback
+                    upstream_feature_key,
+                    allow_fallback=allow_fallback,
+                    current_only=current_only,  # Pass through current_only
                 )
                 # Use string key for dict
                 upstream_metadata[upstream_feature_key.to_string()] = df

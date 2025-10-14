@@ -2,6 +2,15 @@ from metaxy.metadata_store import (
     InMemoryMetadataStore,
     MetadataStore,
 )
+from metaxy.migrations import (
+    FeatureChange,
+    FeatureVersionMigration,
+    Migration,
+    MigrationResult,
+    apply_migration,
+    detect_feature_changes,
+    generate_migration,
+)
 from metaxy.models.container import ContainerDep, ContainerSpec, SpecialContainerDep
 from metaxy.models.feature import Feature
 from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
@@ -19,4 +28,11 @@ __all__ = [
     "ContainerKey",
     "MetadataStore",
     "InMemoryMetadataStore",
+    "Migration",
+    "FeatureVersionMigration",
+    "MigrationResult",
+    "FeatureChange",
+    "detect_feature_changes",
+    "generate_migration",
+    "apply_migration",
 ]

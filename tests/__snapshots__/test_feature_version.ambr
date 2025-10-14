@@ -1,0 +1,25 @@
+# serializer version: 1
+# name: test_feature_version_changes_with_code_version
+  dict({
+    'v1': '027365cf',
+    'v2': 'ad385cfb',
+  })
+# ---
+# name: test_feature_version_changes_with_dependencies
+  dict({
+    'no_deps': 'babb355d',
+    'with_deps': '481cfad5',
+  })
+# ---
+# name: test_feature_version_deterministic
+  '3127d992'
+# ---
+# name: test_feature_version_multi_container
+  '932c4924'
+# ---
+# name: test_feature_version_with_container_deps
+  dict({
+    'no_container_deps': '43596bdb',
+    'with_container_deps': '365c7d8c',
+  })
+# ---

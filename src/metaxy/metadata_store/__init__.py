@@ -1,6 +1,10 @@
 """Metadata store for feature pipeline management."""
 
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import (
+    FEATURE_VERSIONS_KEY,
+    MIGRATION_HISTORY_KEY,
+    MetadataStore,
+)
 from metaxy.metadata_store.exceptions import (
     ContainerNotFoundError,
     DependencyError,
@@ -18,4 +22,6 @@ __all__ = [
     "ContainerNotFoundError",
     "MetadataSchemaError",
     "DependencyError",
+    "FEATURE_VERSIONS_KEY",
+    "MIGRATION_HISTORY_KEY",
 ]

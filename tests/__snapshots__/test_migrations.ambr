@@ -1,0 +1,62 @@
+# serializer version: 1
+# name: test_detect_uses_latest_version_from_multiple_materializations
+  dict({
+    'change_type': 'unknown',
+    'feature_key': 'test_migrations_upstream',
+    'from_version': 'af83a237',
+    'to_version': '18e548a1',
+  })
+# ---
+# name: test_feature_versions_snapshot
+  dict({
+    'downstream_v1': '5a06765e',
+    'downstream_v2': '5a06765e',
+    'upstream_v1': 'af83a237',
+    'upstream_v2': '18e548a1',
+  })
+# ---
+# name: test_generated_migration_yaml_snapshot
+  dict({
+    'operations': list([
+      dict({
+        'change_detected': 'unknown',
+        'feature_key': list([
+          'test_migrations',
+          'upstream',
+        ]),
+        'from_version': 'af83a237',
+        'to_version': '18e548a1',
+      }),
+    ]),
+    'version': 1,
+  })
+# ---
+# name: test_migration_result_snapshots
+  dict({
+    'affected_features': list([
+      'test_migrations_downstream',
+      'test_migrations_upstream',
+    ]),
+    'has_errors': False,
+    'operations_applied': 1,
+    'operations_failed': 0,
+    'status': 'completed',
+  })
+# ---
+# name: test_migration_vs_recompute_comparison
+  dict({
+    'initial_data_versions_count': 3,
+    'migrated_data_versions_count': 6,
+    'migration_skipped_computation': True,
+    'migration_updated_hashes': True,
+  })
+# ---
+# name: test_record_all_feature_versions
+  '9fee05a3'
+# ---
+# name: test_snapshot_workflow_without_migrations
+  dict({
+    'v1': '9fee05a3',
+    'v2': '7c0ee352',
+  })
+# ---
