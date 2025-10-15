@@ -1,3 +1,4 @@
+from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.metadata_store import (
     InMemoryMetadataStore,
     MetadataStore,
@@ -35,4 +36,6 @@ __all__ = [
     "detect_feature_changes",
     "generate_migration",
     "apply_migration",
+    "MetaxyConfig",
+    "StoreConfig",
 ]
