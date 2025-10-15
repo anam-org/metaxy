@@ -1,3 +1,4 @@
+from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
     discover_and_load_entrypoints,
     load_config_entrypoints,
@@ -31,4 +32,13 @@ __all__ = [
     "load_config_entrypoints",
     "load_module_entrypoint",
     "load_package_entrypoints",
+    "Migration",
+    "FeatureVersionMigration",
+    "MigrationResult",
+    "FeatureChange",
+    "detect_feature_changes",
+    "generate_migration",
+    "apply_migration",
+    "MetaxyConfig",
+    "StoreConfig",
 ]
