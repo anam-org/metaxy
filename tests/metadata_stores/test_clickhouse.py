@@ -173,3 +173,115 @@ def test_clickhouse_hash_algorithms(
 
             result = store.read_metadata(test_features["UpstreamFeatureA"])
             assert len(result) == 2
+
+
+def test_clickhouse_config_instantiation(
+    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+) -> None:
+    """Test instantiating ClickHouse store via MetaxyConfig."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "clickhouse_store": StoreConfig(
+                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                config={
+                    "connection_string": clickhouse_db,
+                },
+            )
+        }
+    )
+
+    store = config.get_store("clickhouse_store")
+    assert isinstance(store, ClickHouseMetadataStore)
+
+    # Verify store can be opened
+    with store:
+        assert store._is_open
+
+
+def test_clickhouse_config_with_connection_params(
+    test_registry, test_features: dict[str, type[Feature]]
+) -> None:
+    """Test ClickHouse store config with connection_params."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "clickhouse_store": StoreConfig(
+                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                config={
+                    "connection_params": {
+                        "host": "localhost",
+                        "port": 9000,
+                        "database": "default",
+                        "user": "default",
+                        "password": "",
+                    },
+                },
+            )
+        }
+    )
+
+    store = config.get_store("clickhouse_store")
+    assert isinstance(store, ClickHouseMetadataStore)
+
+
+def test_clickhouse_config_with_hash_algorithm(
+    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+) -> None:
+    """Test ClickHouse store config with specific hash algorithm."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+
+    config = MetaxyConfig(
+        stores={
+            "clickhouse_store": StoreConfig(
+                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                config={
+                    "connection_string": clickhouse_db,
+                    "hash_algorithm": "md5",
+                },
+            )
+        }
+    )
+
+    store = config.get_store("clickhouse_store")
+    assert isinstance(store, ClickHouseMetadataStore)
+    assert store.hash_algorithm == HashAlgorithm.MD5
+
+    with store:
+        assert store._is_open
+
+
+def test_clickhouse_config_with_fallback_stores(
+    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+) -> None:
+    """Test ClickHouse store config with fallback stores."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                config={
+                    "connection_string": clickhouse_db,
+                    "fallback_stores": ["prod"],
+                },
+            ),
+            "prod": StoreConfig(
+                type="metaxy.metadata_store.clickhouse.ClickHouseMetadataStore",
+                config={
+                    "connection_string": clickhouse_db,
+                },
+            ),
+        }
+    )
+
+    dev_store = config.get_store("dev")
+    assert isinstance(dev_store, ClickHouseMetadataStore)
+    assert len(dev_store.fallback_stores) == 1
+    assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
+
+    with dev_store:
+        assert dev_store._is_open

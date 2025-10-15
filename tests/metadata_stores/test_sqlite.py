@@ -161,3 +161,83 @@ def test_sqlite_close_idempotent(
     # Close again manually (should not raise)
     store.close()
     store.close()
+
+
+def test_sqlite_config_instantiation() -> None:
+    """Test instantiating SQLite store via MetaxyConfig."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "sqlite_store": StoreConfig(
+                type="metaxy.metadata_store.sqlite.SQLiteMetadataStore",
+                config={
+                    "database": ":memory:",
+                },
+            )
+        }
+    )
+
+    store = config.get_store("sqlite_store")
+    assert isinstance(store, SQLiteMetadataStore)
+    assert store.database == ":memory:"
+
+    # Verify store can be opened
+    with store:
+        assert store._is_open
+
+
+def test_sqlite_config_with_hash_algorithm() -> None:
+    """Test SQLite store config with specific hash algorithm."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+
+    config = MetaxyConfig(
+        stores={
+            "sqlite_store": StoreConfig(
+                type="metaxy.metadata_store.sqlite.SQLiteMetadataStore",
+                config={
+                    "database": ":memory:",
+                    "hash_algorithm": "md5",
+                },
+            )
+        }
+    )
+
+    store = config.get_store("sqlite_store")
+    assert isinstance(store, SQLiteMetadataStore)
+    assert store.hash_algorithm == HashAlgorithm.MD5
+
+    with store:
+        assert store._is_open
+
+
+def test_sqlite_config_with_fallback_stores() -> None:
+    """Test SQLite store config with fallback stores."""
+    from metaxy.config import MetaxyConfig, StoreConfig
+
+    config = MetaxyConfig(
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.sqlite.SQLiteMetadataStore",
+                config={
+                    "database": ":memory:",
+                    "fallback_stores": ["prod"],
+                },
+            ),
+            "prod": StoreConfig(
+                type="metaxy.metadata_store.sqlite.SQLiteMetadataStore",
+                config={
+                    "database": ":memory:",
+                },
+            ),
+        }
+    )
+
+    dev_store = config.get_store("dev")
+    assert isinstance(dev_store, SQLiteMetadataStore)
+    assert len(dev_store.fallback_stores) == 1
+    assert isinstance(dev_store.fallback_stores[0], SQLiteMetadataStore)
+
+    with dev_store:
+        assert dev_store._is_open
