@@ -5,6 +5,7 @@ from metaxy.metadata_store.exceptions import (
     ContainerNotFoundError,
     DependencyError,
     FeatureNotFoundError,
+    HashAlgorithmNotSupportedError,
     MetadataSchemaError,
     MetadataStoreError,
     StoreNotOpenError,
@@ -20,4 +21,5 @@ __all__ = [
     "MetadataSchemaError",
     "DependencyError",
     "StoreNotOpenError",
+    "HashAlgorithmNotSupportedError",
 ]
