@@ -268,9 +268,9 @@ class MetaxyConfig(BaseSettings):
 
         # Load entrypoints if configured (do this after config is created)
         if config.entrypoints:
-            from metaxy.entrypoints import load_config_entrypoints
+            from metaxy.entrypoints import load_entrypoints
 
-            load_config_entrypoints(config.entrypoints)
+            load_entrypoints(config.entrypoints)
 
         return config
 

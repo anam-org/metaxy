@@ -8,15 +8,10 @@ Supports any SQL database that Ibis supports:
 
 from typing import TYPE_CHECKING, Any
 
+import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.calculators.ibis import (
-    HashSQLGenerator,
-    IbisDataVersionCalculator,
-)
-from metaxy.data_versioning.diff.ibis import IbisDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.ibis import IbisJoiner
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import Feature
 from metaxy.models.types import FeatureKey
@@ -24,6 +19,8 @@ from metaxy.models.types import FeatureKey
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+
+    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
 
 
 class IbisMetadataStore(MetadataStore):
@@ -60,6 +57,18 @@ class IbisMetadataStore(MetadataStore):
         >>> with store:
         ...     store.write_metadata(MyFeature, df)
     """
+
+    @classmethod
+    def supports_structs(cls) -> bool:
+        """Check if backend supports struct types natively.
+
+        Subclasses should override this for backends that don't support structs.
+        Default implementation returns True (most SQL databases support structs).
+
+        Returns:
+            True if backend supports structs, False if needs JSON serialization
+        """
+        return True
 
     def __init__(
         self,
@@ -133,10 +142,10 @@ class IbisMetadataStore(MetadataStore):
         return self._conn is not None
 
     def _create_native_components(self):
-        """Create Ibis-based components."""
-        from metaxy.data_versioning.calculators.base import DataVersionCalculator
-        from metaxy.data_versioning.diff.base import MetadataDiffResolver
-        from metaxy.data_versioning.joiners.base import UpstreamJoiner
+        """Create components for native SQL execution via Ibis."""
+        from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
+        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
         if self._conn is None:
             raise RuntimeError(
@@ -144,60 +153,42 @@ class IbisMetadataStore(MetadataStore):
                 "Ensure store is used as context manager."
             )
 
-        import ibis.expr.types as ir
-
-        joiner: UpstreamJoiner[ir.Table] = IbisJoiner(backend=self._conn)
-        calculator: DataVersionCalculator[ir.Table] = IbisDataVersionCalculator(
-            hash_sql_generators={
-                HashAlgorithm.MD5: self._generate_hash_sql(HashAlgorithm.MD5)
-            }
+        # All components accept/return Narwhals LazyFrames
+        # IbisDataVersionCalculator converts to Ibis internally for SQL hash generation
+        joiner = NarwhalsJoiner()
+        calculator = IbisDataVersionCalculator(
+            backend=self._conn,
+            hash_sql_generators=self._get_hash_sql_generators(),
         )
-        diff_resolver: MetadataDiffResolver[ir.Table] = IbisDiffResolver()
+        diff_resolver = NarwhalsDiffResolver()
 
         return joiner, calculator, diff_resolver
 
-    def _generate_hash_sql(self, algorithm: HashAlgorithm) -> HashSQLGenerator:
-        """Generate SQL for computing hash with given algorithm.
+    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
+        """Get hash SQL generators for this backend.
 
-        Base implementation only supports MD5 (universally available).
+        Base implementation only supports MD5 (universally available in SQL).
         Subclasses override to add backend-specific hash functions.
 
-        Args:
-            algorithm: Hash algorithm to generate SQL for
-
         Returns:
-            HashSQLGenerator function that takes table and concat_columns dict
-
-        Raises:
-            ValueError: If algorithm not supported by this backend
+            Dictionary mapping HashAlgorithm to SQL generator functions
         """
-        if algorithm == HashAlgorithm.MD5:
-            import ibis.expr.types as ir
 
-            def md5_generator(table: ir.Table, concat_columns: dict[str, str]) -> str:
-                """Generate SQL to compute MD5 hashes (universal SQL support)."""
-                # Build SELECT clause with hash columns
-                hash_selects: list[str] = []
-                for field_key, concat_col in concat_columns.items():
-                    hash_col = f"__hash_{field_key}"
-                    # Use MD5 function (universally available in SQL databases)
-                    hash_expr = f"MD5({concat_col})"
-                    hash_selects.append(f"{hash_expr} as {hash_col}")
+        def md5_generator(table, concat_columns: dict[str, str]) -> str:
+            """Generate SQL to compute MD5 hashes (universal SQL support)."""
+            # Build SELECT clause with hash columns
+            hash_selects: list[str] = []
+            for field_key, concat_col in concat_columns.items():
+                hash_col = f"__hash_{field_key}"
+                # Use MD5 function (universally available in SQL databases)
+                hash_expr = f"MD5({concat_col})"
+                hash_selects.append(f"{hash_expr} as {hash_col}")
 
-                hash_clause = ", ".join(hash_selects)
-                table_sql = table.compile()
-                return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+            hash_clause = ", ".join(hash_selects)
+            table_sql = table.compile()
+            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
 
-            return md5_generator
-        else:
-            from metaxy.metadata_store.exceptions import (
-                HashAlgorithmNotSupportedError,
-            )
-
-            raise HashAlgorithmNotSupportedError(
-                f"Hash algorithm {algorithm} not supported by {self.__class__.__name__}. "
-                f"Only MD5 is supported by default. Override _generate_hash_sql() for more algorithms."
-            )
+        return {HashAlgorithm.MD5: md5_generator}
 
     @property
     def ibis_conn(self) -> "ibis.BaseBackend":
@@ -257,7 +248,7 @@ class IbisMetadataStore(MetadataStore):
 
         Examples:
             FeatureKey(["my_namespace", "my_feature"]) -> "my_namespace__my_feature"
-            FeatureKey(["__metaxy__", "feature_versions"]) -> "__metaxy__feature_versions"
+            FeatureKey(["metaxy-system", "feature_versions"]) -> "metaxy-system__feature_versions"
         """
         return "__".join(feature_key)
 
@@ -340,23 +331,25 @@ class IbisMetadataStore(MetadataStore):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
-    def _read_metadata_local(
+    def _read_metadata_native(
         self,
         feature: FeatureKey | type[Feature],
         *,
-        filters: pl.Expr | None = None,
+        feature_version: str | None = None,
+        filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> pl.DataFrame | None:
+    ) -> nw.LazyFrame | None:
         """
         Read metadata from this store only (no fallback).
 
         Args:
             feature: Feature to read
-            filters: Optional Polars filter expression
+            feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
+            filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
             columns: Optional list of columns to select
 
         Returns:
-            DataFrame with metadata, or None if not found
+            Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
         table_name = self._feature_key_to_table_name(feature_key)
@@ -366,24 +359,49 @@ class IbisMetadataStore(MetadataStore):
         if table_name not in existing_tables:
             return None
 
-        # Get table reference
+        # Get Ibis table reference
         table = self.conn.table(table_name)
 
-        # Convert to Polars DataFrame
-        df = table.to_polars()
+        # Wrap Ibis table with Narwhals (stays lazy in SQL)
+        nw_lazy: nw.LazyFrame = nw.from_native(table, eager_only=False)
 
-        # Deserialize from storage (e.g., convert JSON back to structs for SQLite)
-        df = self._deserialize_from_storage(df)
+        # Apply feature_version filter (stays in SQL via Narwhals)
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
 
-        # Apply filters using Polars (after reading)
+        # Apply generic Narwhals filters (stays in SQL)
         if filters is not None:
-            df = df.filter(filters)
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
 
-        # Select columns
+        # Select columns (stays in SQL)
         if columns is not None:
-            df = df.select(columns)
+            nw_lazy = nw_lazy.select(columns)
 
-        return df if len(df) > 0 else None
+        # For backends that don't support structs (e.g., SQLite),
+        # we need to deserialize JSON strings to structs
+        if not self.supports_structs():
+            # Convert to Polars, deserialize, then wrap back as Narwhals lazy
+            table_native = nw_lazy.to_native()
+            if hasattr(table_native, "to_polars"):
+                # Ibis table
+                df_polars = table_native.to_polars()
+            else:
+                # Already Polars
+                df_polars = (
+                    table_native
+                    if isinstance(table_native, pl.DataFrame)
+                    else table_native.collect()
+                )
+
+            # Deserialize JSON → structs
+            df_polars = self._deserialize_from_storage(df_polars)
+
+            # Make lazy and wrap in Narwhals
+            return nw.from_native(df_polars.lazy())
+
+        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
+        return nw_lazy
 
     def _list_features_local(self) -> list[FeatureKey]:
         """
@@ -411,13 +429,14 @@ class IbisMetadataStore(MetadataStore):
 
     def _can_compute_native(self) -> bool:
         """
-        Ibis backends use native SQL computation via IbisDataVersionCalculator.
+        Ibis backends support native components (Narwhals-based).
 
         Returns:
-            True (use native SQL hash computation)
+            True (use Narwhals components with Ibis-backed tables)
 
-        Note: This works with any SQL backend that has MD5 support (most do).
-        For backends without MD5, override calculator with backend-specific implementation.
+        Note: All Ibis stores now use Narwhals-based components (NarwhalsJoiner,
+        PolarsDataVersionCalculator, NarwhalsDiffResolver) which work efficiently
+        with Ibis-backed tables.
         """
         return True
 
@@ -429,65 +448,3 @@ class IbisMetadataStore(MetadataStore):
             return f"IbisMetadataStore(backend={backend_info}, features={num_features})"
         else:
             return f"IbisMetadataStore(backend={backend_info})"
-
-    def _dataframe_to_ref(self, df: pl.DataFrame) -> "ibis.expr.types.Table":
-        """Convert DataFrame to Ibis table reference.
-
-        Creates a temporary table in the database from the DataFrame.
-
-        Args:
-            df: Polars DataFrame
-
-        Returns:
-            Ibis table expression bound to this store's backend
-        """
-        # Create a unique temporary table name
-        import uuid
-
-        temp_table_name = f"_metaxy_temp_{uuid.uuid4().hex[:8]}"
-        # Create temporary table in the database
-        self.conn.create_table(temp_table_name, obj=df, temp=True)
-        return self.conn.table(temp_table_name)
-
-    def _feature_to_ref(
-        self, feature: FeatureKey | type[Feature]
-    ) -> "ibis.expr.types.Table":
-        """Convert feature to Ibis table reference.
-
-        Args:
-            feature: Feature to convert
-
-        Returns:
-            Ibis table expression from the feature's table
-        """
-        from metaxy.metadata_store.exceptions import FeatureNotFoundError
-
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self._feature_key_to_table_name(feature_key)
-
-        if table_name not in self.conn.list_tables():
-            raise FeatureNotFoundError(f"Feature {feature_key} not found in store")
-
-        return self.conn.table(table_name)
-
-    def _sample_to_ref(self, sample_df: pl.DataFrame) -> "ibis.expr.types.Table":
-        """Convert sample DataFrame to Ibis table.
-
-        Args:
-            sample_df: Input sample DataFrame
-
-        Returns:
-            Ibis table expression
-        """
-        return self._dataframe_to_ref(sample_df)
-
-    def _result_to_dataframe(self, result: "ibis.expr.types.Table") -> pl.DataFrame:
-        """Convert Ibis table result to DataFrame.
-
-        Args:
-            result: Ibis table expression with data_version column
-
-        Returns:
-            Polars DataFrame
-        """
-        return result.to_polars()

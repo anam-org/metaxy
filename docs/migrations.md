@@ -13,7 +13,7 @@ Metaxy's migration system enables safe, automated updates to feature metadata wh
 Metaxy maintains two system tables in the metadata store:
 
 #### 1. Feature Version History
-**Key:** `["__metaxy__", "feature_versions"]`
+**Key:** `["metaxy-system", "feature_versions"]`
 
 Tracks when each feature version was recorded:
 
@@ -36,7 +36,7 @@ Tracks when each feature version was recorded:
 This is typically done in CI after successful materialization.
 
 #### 2. Migration History
-**Key:** `["__metaxy__", "migrations"]`
+**Key:** `["metaxy-system", "migrations"]`
 
 Tracks applied migrations:
 
@@ -95,8 +95,8 @@ python -m myproject.compute_features
 metaxy migrations generate
 # If features changed, creates: migrations/migration_20250113_103000.yaml
 
-# 5. Apply migration automatically
-metaxy migrations apply --latest
+# 5. Apply migrations automatically (discovers all pending migrations)
+metaxy migrations apply
 ```
 
 **Why is `metaxy push` required?**
@@ -132,26 +132,108 @@ The `snapshot_id` is a deterministic hash representing the entire feature graph 
 - Audit trail of what was deployed when
 - Identify incomplete deployments (some features missing snapshot)
 
-## Migration Workflow
+## Migration Workflow (Complete Example)
 
-### 1. Developer Changes Feature Code
+### Step 1: Initial State (Production)
+
+Your CD pipeline has already run `metaxy push` to record the current feature graph:
+
+```bash
+# In production CD (previously run)
+$ metaxy push
+# Recorded snapshot: a3f8b2c1... (15 features)
+```
+
+### Step 2: Developer Refactors Feature Code (No Computation Change)
 
 ```python
-# Before: code_version = 1
-class VideoProcessing(Feature, spec=FeatureSpec(
-    fields=[
-        FieldSpec(key=FieldKey(["default"]), code_version=1),
+# Before: STT feature depends on entire video (inefficient graph)
+class SpeechTranscription(Feature, spec=FeatureSpec(
+    key=FeatureKey(["speech", "transcription"]),
+    deps=[
+        FeatureDep(key=FeatureKey(["video", "file"]))  # Entire video!
     ],
+    fields=[
+        FieldSpec(
+            key=FieldKey(["text"]),
+            code_version=1,
+            deps=[FieldDep(
+                feature_key=FeatureKey(["video", "file"]),
+                fields=[FieldKey(["default"])]  # Uses whole video
+            )]
+        )
+    ]
 )):
     pass
 
-# After: code_version = 2
-class VideoProcessing(Feature, spec=FeatureSpec(
-    fields=[
-        FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+# After: STT only depends on audio field (more precise, same computation!)
+class SpeechTranscription(Feature, spec=FeatureSpec(
+    key=FeatureKey(["speech", "transcription"]),
+    deps=[
+        FeatureDep(key=FeatureKey(["video", "file"]), fields=["audio"])  # Only audio!
     ],
+    fields=[
+        FieldSpec(
+            key=FieldKey(["text"]),
+            code_version=1,  # UNCHANGED - computation is same
+            deps=[FieldDep(
+                feature_key=FeatureKey(["video", "file"]),
+                fields=[FieldKey(["audio"])]  # More precise dependency
+            )]
+        )
+    ]
 )):
     pass
+
+# This changes feature_version (because deps changed) but NOT the actual transcription
+# Perfect use case for DataVersionReconciliation!
+```
+
+### Step 3: Generate Migration
+
+```bash
+# Generate migration by comparing latest snapshot (a3f8b2c1...) vs current code
+$ metaxy migrations generate
+
+# Output:
+# From: latest snapshot a3f8b2c1...
+# To: current active graph (snapshot def67890...)
+#
+# Detected 1 root feature change(s):
+#   ✓ speech/transcription
+#
+# Generating explicit operations for 2 downstream feature(s):
+#   ✓ speech/diarization
+#   ✓ speech/analysis
+#
+# Generated 3 total operations (1 root + 2 downstream)
+# Created: migrations/migration_20250113_103000.yaml
+```
+
+The generated migration file contains explicit operations for ALL affected features.
+
+### Step 4: Review Migration YAML
+
+```bash
+$ cat migrations/migration_20250113_103000.yaml
+```
+
+See the [Migration File Format](#migration-file-format-yaml) section below for the complete structure.
+
+### Step 5: Deploy and Apply
+
+```bash
+# In your CD pipeline
+$ metaxy push  # Record new snapshot (def67890...)
+$ metaxy migrations apply  # Auto-discovers migration files
+
+# Output:
+# Discovered 1 migration file(s)
+# Applying migration_20250113_103000...
+#   ✓ reconcile_stt_transcription: 1,234 rows affected
+#   ✓ reconcile_speaker_diarization: 856 rows affected
+#   ✓ reconcile_speech_analysis: 2,100 rows affected
+# Migration completed in 2.3s
 ```
 
 ## Migration Execution Details
@@ -218,40 +300,31 @@ for operation in migration.operations:
 
 Reading with `current_only=True` returns only new rows.
 
-**Step 3: Propagate Downstream (Automatic)**
+**Step 3: Process All Operations (Explicit in YAML)**
 ```python
-# Discover entire downstream DAG
-source_keys = [op.feature_key for op in migration.operations]
-downstream_keys = store.graph.get_downstream_features(source_keys)
+# All operations are explicit in the migration YAML
+# Both root changes AND downstream reconciliations are listed
+# No implicit propagation - everything is explicit and trackable
 
-# Process in topological order (dependencies first)
-for downstream_key in downstream_keys:
-    feature = graph.features_by_key[downstream_key]
+for operation in migration.operations:
+    # Each operation processes one feature
+    # Example: "reconcile_speaker_diarization" depends on "reconcile_stt_transcription"
 
-    # Read CURRENT metadata
-    current_metadata = store.read_metadata(
-        feature,
-        current_only=True,  # Only current feature_version
-    )
-
-    # Read upstream (gets NEW data_versions from step 2)
-    upstream_metadata = store.read_upstream_metadata(
-        feature,
-        current_only=True,
-    )
-
-    # User-defined alignment logic
-    aligned_metadata = feature.align_metadata_with_upstream(
-        current_metadata,
-        upstream_metadata,
-    )
-
-    # Recalculate and write
-    new_metadata = store.calculate_and_write_data_versions(
-        feature=feature,
-        sample_df=aligned_metadata,
-    )
+    if isinstance(operation, DataVersionReconciliation):
+        # For features with upstream dependencies:
+        # 1. Load existing metadata (old feature_version)
+        # 2. Recalculate data_versions based on upstream changes
+        # 3. Write new rows with updated feature_version + snapshot_id
+        operation.execute(
+            store,
+            from_snapshot_id=migration.from_snapshot_id,
+            to_snapshot_id=migration.to_snapshot_id
+        )
 ```
+
+**Key Insight:** All affected features (root + downstream) are explicitly listed in the YAML.
+The generator creates operations for ALL features that need reconciliation, making the
+migration fully transparent and auditable.
 
 **Step 4: Record Completion**
 ```python
@@ -265,7 +338,7 @@ migration_record = pl.DataFrame({
 })
 
 store.write_metadata(
-    FeatureKey(["__metaxy__", "migrations"]),
+    FeatureKey(["metaxy-system", "migrations"]),
     migration_record,
 )
 ```

@@ -1,18 +1,18 @@
 """Abstract base class for data version calculators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING
+
+import narwhals as nw
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-
-TRef = TypeVar("TRef")  # Reference type (LazyFrame, ibis.Table, etc.)
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
 
 
-class DataVersionCalculator(ABC, Generic[TRef]):
+class DataVersionCalculator(ABC):
     """Calculates data_version hash from joined upstream data.
 
     The calculator takes joined upstream data (output from UpstreamJoiner)
@@ -23,12 +23,11 @@ class DataVersionCalculator(ABC, Generic[TRef]):
     2. Calculate data_version from upstream → target versions ← THIS STEP
     3. Diff with current metadata → identify changes
 
-    Type Parameters:
-        TRef: Backend-specific reference type (pl.LazyFrame, ibis.Table, etc.)
+    All calculators work with Narwhals LazyFrames for backend compatibility.
 
     Examples:
-        - PolarsDataVersionCalculator: Uses polars-hash for hashing
-        - IbisDataVersionCalculator: Uses SQL hash functions (xxHash64, MD5, etc.)
+        - PolarsDataVersionCalculator: Uses polars-hash for in-memory hashing
+        - NarwhalsDataVersionCalculator: Uses native SQL hash functions in the database
     """
 
     @property
@@ -62,12 +61,12 @@ class DataVersionCalculator(ABC, Generic[TRef]):
     @abstractmethod
     def calculate_data_versions(
         self,
-        joined_upstream: TRef,
+        joined_upstream: nw.LazyFrame,
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> TRef:
+    ) -> nw.LazyFrame:
         """Calculate data_version column from joined upstream data.
 
         Computes a Merkle tree hash for each sample by:
@@ -78,7 +77,7 @@ class DataVersionCalculator(ABC, Generic[TRef]):
         3. Add as data_version column
 
         Args:
-            joined_upstream: Reference with all upstream data_version columns joined
+            joined_upstream: Narwhals LazyFrame with all upstream data_version columns joined
                 (output from UpstreamJoiner.join_upstream)
             feature_spec: Specification of the feature being computed
             feature_plan: Resolved feature plan with dependencies
@@ -89,7 +88,7 @@ class DataVersionCalculator(ABC, Generic[TRef]):
                 Must be in self.supported_algorithms.
 
         Returns:
-            Reference with data_version column added
+            Narwhals LazyFrame with data_version column added
             Shape: [sample_id, __upstream_*__data_version columns, data_version (new)]
 
         Raises:

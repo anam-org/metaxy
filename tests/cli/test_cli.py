@@ -1,6 +1,5 @@
 """Tests for CLI commands."""
 
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -14,15 +13,12 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy._testing import TempFeatureModule
+from metaxy._utils import collect_to_polars
 from metaxy.cli.app import app
 from metaxy.cli.context import set_config
 from metaxy.cli.migrations import app as migrations_app
 from metaxy.models.feature import FeatureGraph
-
-# Import TempFeatureModule for importable test features
-# Go up two levels from tests/cli/ to tests/
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from test_migrations import TempFeatureModule  # type: ignore[import-not-found]
 
 
 @pytest.fixture
@@ -209,7 +205,9 @@ config.database = "{db_path}"
             # Verify snapshot was recorded
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-            fv = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+            fv = collect_to_polars(
+                store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+            )
             assert len(fv) > 0, "No feature versions recorded"
             assert snapshot_id in fv["snapshot_id"].to_list(), (
                 f"Snapshot {snapshot_id} not in table"

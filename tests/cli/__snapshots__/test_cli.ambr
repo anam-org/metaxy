@@ -15,8 +15,8 @@
 # ---
 # name: test_migrations_generate_no_changes
   '''
-  From: latest snapshot 2a589a358f39d377...
-  To: current active graph (snapshot 2a589a358f39d377...)
+  From: latest snapshot 19ba17b377d925e1...
+  To: current active graph (snapshot 19ba17b377d925e1...)
   No feature changes detected. All features up to date!
   '''
 # ---

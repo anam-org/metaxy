@@ -8,6 +8,8 @@ import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
+from metaxy._utils import collect_to_polars
+
 
 @pytest.fixture
 def e2e_project(tmp_path: Path):
@@ -186,11 +188,6 @@ class VideoProcessing(Feature, spec=FeatureSpec(
             text=True,
         )
 
-        # Debug output if failed
-        if result.returncode != 0 or "No feature changes detected" in result.stdout:
-            print(f"STDOUT: {result.stdout}")
-            print(f"STDERR: {result.stderr}")
-
         assert result.returncode == 0, f"Generate failed: {result.stderr}"
         assert "No feature changes detected" not in result.stdout, (
             f"No changes detected. Output: {result.stdout}"
@@ -283,14 +280,18 @@ class VideoProcessing(Feature, spec=FeatureSpec(
             # Check migration system tables
             from metaxy.migrations.executor import MIGRATIONS_KEY
 
-            migrations = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+            migrations = collect_to_polars(
+                store.read_metadata(MIGRATIONS_KEY, current_only=False)
+            )
             assert len(migrations) == 1
             assert migrations["migration_id"][0] == migration.id
 
             # Verify processing feature was updated
-            all_processing = store.read_metadata(
-                VideoProcessingV2,
-                current_only=False,
+            all_processing = collect_to_polars(
+                store.read_metadata(
+                    VideoProcessingV2,
+                    current_only=False,
+                )
             )
 
             # Should have original + migrated rows

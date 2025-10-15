@@ -1,5 +1,6 @@
 """In-memory metadata store implementation."""
 
+import narwhals as nw
 import polars as pl
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
@@ -11,7 +12,7 @@ from metaxy.models.feature import Feature
 from metaxy.models.types import FeatureKey
 
 
-class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
+class InMemoryMetadataStore(MetadataStore):
     """
     In-memory metadata store using dict-based storage.
 
@@ -29,10 +30,11 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
     - Memory-bound (all data in RAM)
 
     Type Parameters:
-        TRef = pl.LazyFrame (uses Polars LazyFrames)
+        TRef = nw.LazyFrame (uses Narwhals LazyFrames)
 
     Components:
         Components are created on-demand in resolve_update().
+        Uses Polars internally but exposes Narwhals interface.
         Only supports Polars components (no native backend).
     """
 
@@ -62,9 +64,9 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
     def _create_native_components(
         self,
     ) -> tuple[
-        UpstreamJoiner[pl.LazyFrame],
-        DataVersionCalculator[pl.LazyFrame],
-        MetadataDiffResolver[pl.LazyFrame],
+        UpstreamJoiner,
+        DataVersionCalculator,
+        MetadataDiffResolver,
     ]:
         """Not supported - in-memory store only uses Polars components."""
         raise NotImplementedError(
@@ -108,23 +110,25 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
-    def _read_metadata_local(
+    def _read_metadata_native(
         self,
         feature: FeatureKey | type[Feature],
         *,
-        filters: pl.Expr | None = None,
+        feature_version: str | None = None,
+        filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> pl.DataFrame | None:
+    ) -> nw.LazyFrame | None:
         """
         Read metadata from this store only (no fallback).
 
         Args:
             feature: Feature to read
-            filters: Optional Polars filter expression
+            feature_version: Filter by specific feature_version
+            filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
 
         Returns:
-            DataFrame with metadata, or None if not found
+            Narwhals LazyFrame with metadata, or None if not found
 
         Raises:
             StoreNotOpenError: If store is not open
@@ -137,17 +141,26 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
         if storage_key not in self._storage:
             return None
 
-        df = self._storage[storage_key]
+        # Start with lazy Polars DataFrame, wrap with Narwhals
+        df_lazy = self._storage[storage_key].lazy()
+        nw_lazy = nw.from_native(df_lazy)
 
-        # Apply filters
+        # Apply feature_version filter
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
+
+        # Apply generic Narwhals filters
         if filters is not None:
-            df = df.filter(filters)
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
 
         # Select columns
         if columns is not None:
-            df = df.select(columns)
+            nw_lazy = nw_lazy.select(columns)
 
-        return df
+        # Check if result would be empty (we need to check the underlying frame)
+        # For now, return the lazy frame - emptiness check happens when materializing
+        return nw_lazy
 
     def _list_features_local(self) -> list[FeatureKey]:
         """
@@ -210,57 +223,3 @@ class InMemoryMetadataStore(MetadataStore[pl.LazyFrame]):
             return f"InMemoryMetadataStore(features={num_features})"
         else:
             return "InMemoryMetadataStore()"
-
-    # ========== Backend Reference Conversion ==========
-
-    def _dataframe_to_ref(self, df: pl.DataFrame) -> pl.LazyFrame:
-        """Convert DataFrame to LazyFrame reference.
-
-        Args:
-            df: Polars DataFrame
-
-        Returns:
-            LazyFrame (no data movement - lazy evaluation)
-        """
-        return df.lazy()
-
-    def _feature_to_ref(self, feature: FeatureKey | type[Feature]) -> pl.LazyFrame:
-        """Convert feature to LazyFrame reference.
-
-        Args:
-            feature: Feature to convert
-
-        Returns:
-            LazyFrame from stored DataFrame
-        """
-        from metaxy.metadata_store.exceptions import FeatureNotFoundError
-
-        df = self._read_metadata_local(feature)
-        if df is None:
-            feature_key = self._resolve_feature_key(feature)
-            raise FeatureNotFoundError(
-                f"Feature {feature_key.to_string()} not found in store"
-            )
-        return df.lazy()
-
-    def _sample_to_ref(self, sample_df: pl.DataFrame) -> pl.LazyFrame:
-        """Convert sample DataFrame to LazyFrame.
-
-        Args:
-            sample_df: Input sample DataFrame
-
-        Returns:
-            LazyFrame (no data movement - lazy evaluation)
-        """
-        return sample_df.lazy()
-
-    def _result_to_dataframe(self, result: pl.LazyFrame) -> pl.DataFrame:
-        """Convert LazyFrame result to DataFrame.
-
-        Args:
-            result: LazyFrame with data_version column
-
-        Returns:
-            Collected DataFrame ready to write
-        """
-        return result.collect()

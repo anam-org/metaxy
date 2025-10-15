@@ -1,12 +1,13 @@
 """Tests for the three-component data versioning architecture."""
 
+import narwhals as nw
 import polars as pl
 import pytest
 
 from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
-from metaxy.data_versioning.diff.polars import PolarsDiffResolver
+from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.polars import PolarsJoiner
+from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.field import FieldSpec
@@ -79,20 +80,22 @@ def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
 
 
 def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
-    """Test PolarsJoiner joins upstream features correctly."""
-    joiner = PolarsJoiner()
+    """Test NarwhalsJoiner joins upstream features correctly."""
+    joiner = NarwhalsJoiner()
 
     # Create upstream metadata
-    video_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"frames": "hash_v1", "audio": "hash_a1"},
-                {"frames": "hash_v2", "audio": "hash_a2"},
-                {"frames": "hash_v3", "audio": "hash_a3"},
-            ],
-        }
-    ).lazy()
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"frames": "hash_v1", "audio": "hash_a1"},
+                    {"frames": "hash_v2", "audio": "hash_a2"},
+                    {"frames": "hash_v3", "audio": "hash_a3"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_refs = {"video": video_metadata}
 
@@ -128,15 +131,17 @@ def test_polars_hash_calculator(
     assert calculator.default_algorithm == HashAlgorithm.XXHASH64
 
     # Create joined upstream data (output from joiner)
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-            "__upstream_video__data_version": [
-                {"frames": "hash_v1", "audio": "hash_a1"},
-                {"frames": "hash_v2", "audio": "hash_a2"},
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "__upstream_video__data_version": [
+                    {"frames": "hash_v1", "audio": "hash_a1"},
+                    {"frames": "hash_v2", "audio": "hash_a2"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
 
@@ -154,7 +159,10 @@ def test_polars_hash_calculator(
     # Verify result
     result = with_versions.collect()
     assert "data_version" in result.columns
-    assert isinstance(result.schema["data_version"], pl.Struct)
+
+    # Convert to Polars to check schema type
+    result_pl = result.to_native()
+    assert isinstance(result_pl.schema["data_version"], pl.Struct)
 
     # Check data_version has 'default' field field
     data_version_sample = result["data_version"][0]
@@ -165,14 +173,16 @@ def test_polars_hash_calculator_algorithms(
     features: dict[str, type[Feature]], graph: FeatureGraph
 ):
     """Test different hash algorithms produce different results."""
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1],
-            "__upstream_video__data_version": [
-                {"frames": "hash_v1", "audio": "hash_a1"}
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1],
+                "__upstream_video__data_version": [
+                    {"frames": "hash_v1", "audio": "hash_a1"}
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
     feature = features["ProcessedVideo"]
@@ -206,18 +216,20 @@ def test_polars_hash_calculator_algorithms(
 
 def test_polars_diff_resolver_no_current() -> None:
     """Test diff resolver when no current metadata exists."""
-    diff_resolver = PolarsDiffResolver()
+    diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"default": "hash1"},
-                {"default": "hash2"},
-                {"default": "hash3"},
-            ],
-        }
-    ).lazy()
+    target_versions = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        ).lazy()
+    )
 
     # No current metadata - all rows are added
     result = diff_resolver.find_changes(
@@ -225,56 +237,61 @@ def test_polars_diff_resolver_no_current() -> None:
         current_metadata=None,
     )
 
-    assert len(result.added) == 3
-    assert len(result.changed) == 0
-    assert len(result.removed) == 0
+    # Materialize lazy frames to check lengths
+    assert len(result.added.collect()) == 3
+    assert len(result.changed.collect()) == 0
+    assert len(result.removed.collect()) == 0
 
 
 def test_polars_diff_resolver_with_changes() -> None:
     """Test diff resolver identifies added, changed, and removed rows."""
-    diff_resolver = PolarsDiffResolver()
+    diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3, 4],
-            "data_version": [
-                {"default": "hash1"},  # Unchanged
-                {"default": "hash2_new"},  # Changed
-                {"default": "hash3"},  # Unchanged
-                {"default": "hash4"},  # Added
-            ],
-        }
-    ).lazy()
+    target_versions = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3, 4],
+                "data_version": [
+                    {"default": "hash1"},  # Unchanged
+                    {"default": "hash2_new"},  # Changed
+                    {"default": "hash3"},  # Unchanged
+                    {"default": "hash4"},  # Added
+                ],
+            }
+        ).lazy()
+    )
 
-    current_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3, 5],
-            "data_version": [
-                {"default": "hash1"},  # Same
-                {"default": "hash2_old"},  # Different
-                {"default": "hash3"},  # Same
-                {"default": "hash5"},  # Removed (not in target)
-            ],
-        }
-    ).lazy()
+    current_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3, 5],
+                "data_version": [
+                    {"default": "hash1"},  # Same
+                    {"default": "hash2_old"},  # Different
+                    {"default": "hash3"},  # Same
+                    {"default": "hash5"},  # Removed (not in target)
+                ],
+            }
+        ).lazy()
+    )
 
     result = diff_resolver.find_changes(
         target_versions=target_versions,
         current_metadata=current_metadata,
     )
 
-    # Added: sample_id=4
-    added_df = result.added
+    # Added: sample_id=4 - materialize to check
+    added_df = result.added.collect()
     assert len(added_df) == 1
     assert added_df["sample_id"][0] == 4
 
     # Changed: sample_id=2
-    changed_df = result.changed
+    changed_df = result.changed.collect()
     assert len(changed_df) == 1
     assert changed_df["sample_id"][0] == 2
 
     # Removed: sample_id=5
-    removed_df = result.removed
+    removed_df = result.removed.collect()
     assert len(removed_df) == 1
     assert removed_df["sample_id"][0] == 5
 
@@ -284,18 +301,20 @@ def test_full_pipeline_integration(
 ):
     """Test all three components working together."""
     # Step 1: Join upstream
-    joiner = PolarsJoiner()
+    joiner = NarwhalsJoiner()
 
-    video_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"frames": "v1", "audio": "a1"},
-                {"frames": "v2", "audio": "a2"},
-                {"frames": "v3", "audio": "a3"},
-            ],
-        }
-    ).lazy()
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"frames": "v1", "audio": "a1"},
+                    {"frames": "v2", "audio": "a2"},
+                    {"frames": "v3", "audio": "a3"},
+                ],
+            }
+        ).lazy()
+    )
 
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec.key)
@@ -317,36 +336,38 @@ def test_full_pipeline_integration(
     )
 
     # Step 3: Diff with current
-    diff_resolver = PolarsDiffResolver()
+    diff_resolver = NarwhalsDiffResolver()
 
     # Simulate some current metadata
-    current = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-            "data_version": [
-                {"default": "old_hash1"},
-                {"default": "old_hash2"},
-            ],
-        }
-    ).lazy()
+    current = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "data_version": [
+                    {"default": "old_hash1"},
+                    {"default": "old_hash2"},
+                ],
+            }
+        ).lazy()
+    )
 
     diff_result = diff_resolver.find_changes(
         target_versions=with_versions,
         current_metadata=current,
     )
 
-    # Added: sample_id=3 (not in current)
-    added = diff_result.added
+    # Added: sample_id=3 (not in current) - materialize to check
+    added = diff_result.added.collect()
     assert len(added) == 1
     assert added["sample_id"][0] == 3
 
     # Changed: sample_ids 1, 2 (different hashes)
-    changed = diff_result.changed
+    changed = diff_result.changed.collect()
     assert len(changed) == 2
     assert set(changed["sample_id"].to_list()) == {1, 2}
 
     # Removed: none (all current samples are in target)
-    removed = diff_result.removed
+    removed = diff_result.removed.collect()
     assert len(removed) == 0
 
 
@@ -357,29 +378,33 @@ def test_polars_joiner_multiple_upstream(
     features: dict[str, type[Feature]], graph: FeatureGraph
 ):
     """Test joining multiple upstream features."""
-    joiner = PolarsJoiner()
+    joiner = NarwhalsJoiner()
 
-    video_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"frames": "v1", "audio": "a1"},
-                {"frames": "v2", "audio": "a2"},
-                {"frames": "v3", "audio": "a3"},
-            ],
-        }
-    ).lazy()
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"frames": "v1", "audio": "a1"},
+                    {"frames": "v2", "audio": "a2"},
+                    {"frames": "v3", "audio": "a3"},
+                ],
+            }
+        ).lazy()
+    )
 
-    audio_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"waveform": "w1"},
-                {"waveform": "w2"},
-                {"waveform": "w3"},
-            ],
-        }
-    ).lazy()
+    audio_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"waveform": "w1"},
+                    {"waveform": "w2"},
+                    {"waveform": "w3"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_refs = {"video": video_metadata, "audio": audio_metadata}
 
@@ -406,27 +431,31 @@ def test_polars_joiner_multiple_upstream(
 
 def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
     """Test joiner with partial sample_id overlap (inner join behavior)."""
-    joiner = PolarsJoiner()
+    joiner = NarwhalsJoiner()
 
     # Video has samples 1, 2, 3
-    video_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [{"frames": "v1"}, {"frames": "v2"}, {"frames": "v3"}],
-        }
-    ).lazy()
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [{"frames": "v1"}, {"frames": "v2"}, {"frames": "v3"}],
+            }
+        ).lazy()
+    )
 
     # Audio has samples 2, 3, 4
-    audio_metadata = pl.DataFrame(
-        {
-            "sample_id": [2, 3, 4],
-            "data_version": [
-                {"waveform": "w2"},
-                {"waveform": "w3"},
-                {"waveform": "w4"},
-            ],
-        }
-    ).lazy()
+    audio_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [2, 3, 4],
+                "data_version": [
+                    {"waveform": "w2"},
+                    {"waveform": "w3"},
+                    {"waveform": "w4"},
+                ],
+            }
+        ).lazy()
+    )
 
     # Create a simple feature with both deps
 
@@ -480,19 +509,21 @@ def test_polars_calculator_multiple_fields(
     """Test calculator with multiple fields."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-            "__upstream_video__data_version": [
-                {"frames": "v1", "audio": "a1"},
-                {"frames": "v2", "audio": "a2"},
-            ],
-            "__upstream_audio__data_version": [
-                {"waveform": "w1"},
-                {"waveform": "w2"},
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "__upstream_video__data_version": [
+                    {"frames": "v1", "audio": "a1"},
+                    {"frames": "v2", "audio": "a2"},
+                ],
+                "__upstream_audio__data_version": [
+                    {"waveform": "w1"},
+                    {"waveform": "w2"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {
         "video": "__upstream_video__data_version",
@@ -527,9 +558,11 @@ def test_polars_calculator_unsupported_algorithm(
     """Test error when using unsupported hash algorithm."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+        ).lazy()
+    )
 
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec.key)
@@ -553,55 +586,66 @@ def test_polars_calculator_unsupported_algorithm(
 
 def test_diff_resolver_all_unchanged() -> None:
     """Test diff when all rows are unchanged."""
-    diff_resolver = PolarsDiffResolver()
+    diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"default": "hash1"},
-                {"default": "hash2"},
-                {"default": "hash3"},
-            ],
-        }
-    ).lazy()
+    target_versions = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        ).lazy()
+    )
 
     # Current has same data_versions
-    current_metadata = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"default": "hash1"},
-                {"default": "hash2"},
-                {"default": "hash3"},
-            ],
-        }
-    ).lazy()
+    current_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        ).lazy()
+    )
 
     result = diff_resolver.find_changes(
         target_versions=target_versions,
         current_metadata=current_metadata,
     )
 
-    # Nothing changed
-    assert len(result.added) == 0
-    assert len(result.changed) == 0
-    assert len(result.removed) == 0
+    # Nothing changed - materialize lazy frames to check
+    assert len(result.added.collect()) == 0
+    assert len(result.changed.collect()) == 0
+    assert len(result.removed.collect()) == 0
 
 
 def test_joiner_deterministic_order(
     features: dict[str, type[Feature]], graph: FeatureGraph
 ):
     """Test that join order doesn't affect result."""
-    joiner = PolarsJoiner()
+    joiner = NarwhalsJoiner()
 
-    video_metadata = pl.DataFrame(
-        {"sample_id": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
-    ).lazy()
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {"sample_id": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
+        ).lazy()
+    )
 
-    audio_metadata = pl.DataFrame(
-        {"sample_id": [1, 2], "data_version": [{"waveform": "w1"}, {"waveform": "w2"}]}
-    ).lazy()
+    audio_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "data_version": [{"waveform": "w1"}, {"waveform": "w2"}],
+            }
+        ).lazy()
+    )
 
     feature = features["MultiUpstreamFeature"]
     plan = graph.get_feature_plan(feature.spec.key)
@@ -626,7 +670,8 @@ def test_joiner_deterministic_order(
     result1 = joined1.collect().sort("sample_id")
     result2 = joined2.collect().sort("sample_id")
 
-    assert result1.equals(result2)
+    # Convert to Polars for comparison (Narwhals doesn't have equals method)
+    assert result1.to_native().equals(result2.to_native())
 
 
 # ========== Feature Method Override Tests ==========
@@ -666,10 +711,10 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
     ):
         pass
 
-    joiner = PolarsJoiner()
-    video_metadata = pl.DataFrame(
-        {"sample_id": [1], "data_version": [{"frames": "v1"}]}
-    ).lazy()
+    joiner = NarwhalsJoiner()
+    video_metadata = nw.from_native(
+        pl.DataFrame({"sample_id": [1], "data_version": [{"frames": "v1"}]}).lazy()
+    )
 
     # Call the overridden method
     joined, mapping = CustomJoinFeature.join_upstream_metadata(
@@ -694,27 +739,48 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
     ):
         @classmethod
         def resolve_data_version_diff(
-            cls, diff_resolver, target_versions, current_metadata
+            cls,
+            diff_resolver,
+            target_versions,
+            current_metadata,
+            *,
+            lazy=False,
         ):
             # Custom: call standard diff, then could modify results
-            result = diff_resolver.find_changes(target_versions, current_metadata)
+            lazy_result = diff_resolver.find_changes(
+                target_versions,
+                current_metadata,
+            )
             # Could filter/modify result here
-            return result
 
-    diff_resolver = PolarsDiffResolver()
+            # Materialize if lazy=False
+            if not lazy:
+                from metaxy.data_versioning.diff import DiffResult
 
-    target = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-            "data_version": [{"default": "new1"}, {"default": "new2"}],
-        }
-    ).lazy()
+                return DiffResult(
+                    added=lazy_result.added.collect(),
+                    changed=lazy_result.changed.collect(),
+                    removed=lazy_result.removed.collect(),
+                )
+            return lazy_result
 
-    current = pl.DataFrame(
-        {"sample_id": [1], "data_version": [{"default": "old1"}]}
-    ).lazy()
+    diff_resolver = NarwhalsDiffResolver()
 
-    # Call overridden method
+    target = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "data_version": [{"default": "new1"}, {"default": "new2"}],
+            }
+        ).lazy()
+    )
+
+    current = nw.from_native(
+        pl.DataFrame({"sample_id": [1], "data_version": [{"default": "old1"}]}).lazy()
+    )
+
+    # Call overridden method (this calls find_changes which needs current_feature_version=False)
+    # The test feature class needs to pass the parameter through
     result = CustomDiffFeature.resolve_data_version_diff(
         diff_resolver=diff_resolver,
         target_versions=target,
@@ -735,16 +801,18 @@ def test_hash_output_snapshots(
     """Snapshot test to detect hash algorithm changes."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "__upstream_video__data_version": [
-                {"frames": "frame_hash_1", "audio": "audio_hash_1"},
-                {"frames": "frame_hash_2", "audio": "audio_hash_2"},
-                {"frames": "frame_hash_3", "audio": "audio_hash_3"},
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "__upstream_video__data_version": [
+                    {"frames": "frame_hash_1", "audio": "audio_hash_1"},
+                    {"frames": "frame_hash_2", "audio": "audio_hash_2"},
+                    {"frames": "frame_hash_3", "audio": "audio_hash_3"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
     feature = features["ProcessedVideo"]
@@ -771,13 +839,15 @@ def test_multi_field_hash_snapshots(
     """Snapshot test for multi-field hash outputs."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1],
-            "__upstream_video__data_version": [{"frames": "v1", "audio": "a1"}],
-            "__upstream_audio__data_version": [{"waveform": "w1"}],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1],
+                "__upstream_video__data_version": [{"frames": "v1", "audio": "a1"}],
+                "__upstream_audio__data_version": [{"waveform": "w1"}],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {
         "video": "__upstream_video__data_version",
@@ -828,16 +898,18 @@ def test_single_upstream_single_field_snapshots(
     """Snapshot data versions for single upstream, single field."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "__upstream_video__data_version": [
-                {"frames": "v1", "audio": "a1"},
-                {"frames": "v2", "audio": "a2"},
-                {"frames": "v3", "audio": "a3"},
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "__upstream_video__data_version": [
+                    {"frames": "v1", "audio": "a1"},
+                    {"frames": "v2", "audio": "a2"},
+                    {"frames": "v3", "audio": "a3"},
+                ],
+            }
+        ).lazy()
+    )
 
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec.key)
@@ -873,19 +945,21 @@ def test_multi_upstream_multi_field_snapshots(
     """Snapshot data versions for multiple upstreams and fields."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-            "__upstream_video__data_version": [
-                {"frames": "frame1", "audio": "audio1"},
-                {"frames": "frame2", "audio": "audio2"},
-            ],
-            "__upstream_audio__data_version": [
-                {"waveform": "wave1"},
-                {"waveform": "wave2"},
-            ],
-        }
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+                "__upstream_video__data_version": [
+                    {"frames": "frame1", "audio": "audio1"},
+                    {"frames": "frame2", "audio": "audio2"},
+                ],
+                "__upstream_audio__data_version": [
+                    {"waveform": "wave1"},
+                    {"waveform": "wave2"},
+                ],
+            }
+        ).lazy()
+    )
 
     upstream_mapping = {
         "video": "__upstream_video__data_version",
@@ -924,9 +998,11 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
     """Snapshot showing code version changes produce different hashes."""
     calculator = PolarsDataVersionCalculator()
 
-    joined_upstream = pl.DataFrame(
-        {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
-    ).lazy()
+    joined_upstream = nw.from_native(
+        pl.DataFrame(
+            {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+        ).lazy()
+    )
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
 
@@ -1018,9 +1094,14 @@ def test_upstream_data_changes_snapshots(snapshot):
         hashes_by_scenario = {}
 
         for scenario_name, data_version_list in scenarios.items():
-            joined_upstream = pl.DataFrame(
-                {"sample_id": [1], "__upstream_video__data_version": data_version_list}
-            ).lazy()
+            joined_upstream = nw.from_native(
+                pl.DataFrame(
+                    {
+                        "sample_id": [1],
+                        "__upstream_video__data_version": data_version_list,
+                    }
+                ).lazy()
+            )
 
             with_versions = calculator.calculate_data_versions(
                 joined_upstream=joined_upstream,
@@ -1043,43 +1124,47 @@ def test_upstream_data_changes_snapshots(snapshot):
 
 def test_diff_result_snapshots(snapshot):
     """Snapshot the structure of DiffResult for various scenarios."""
-    diff_resolver = PolarsDiffResolver()
+    diff_resolver = NarwhalsDiffResolver()
 
-    target = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3, 4, 5],
-            "data_version": [
-                {"default": "unchanged_hash"},
-                {"default": "changed_new_hash"},
-                {"default": "unchanged_hash2"},
-                {"default": "new_sample_hash"},
-                {"default": "another_new_hash"},
-            ],
-        }
-    ).lazy()
+    target = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3, 4, 5],
+                "data_version": [
+                    {"default": "unchanged_hash"},
+                    {"default": "changed_new_hash"},
+                    {"default": "unchanged_hash2"},
+                    {"default": "new_sample_hash"},
+                    {"default": "another_new_hash"},
+                ],
+            }
+        ).lazy()
+    )
 
-    current = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3, 6],
-            "data_version": [
-                {"default": "unchanged_hash"},
-                {"default": "changed_old_hash"},
-                {"default": "unchanged_hash2"},
-                {"default": "removed_sample_hash"},
-            ],
-        }
-    ).lazy()
+    current = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3, 6],
+                "data_version": [
+                    {"default": "unchanged_hash"},
+                    {"default": "changed_old_hash"},
+                    {"default": "unchanged_hash2"},
+                    {"default": "removed_sample_hash"},
+                ],
+            }
+        ).lazy()
+    )
 
     result = diff_resolver.find_changes(
         target_versions=target,
         current_metadata=current,
     )
 
-    # Snapshot the sample_ids in each category
+    # Snapshot the sample_ids in each category - materialize lazy frames first
     diff_summary = {
-        "added_ids": sorted(result.added["sample_id"].to_list()),
-        "changed_ids": sorted(result.changed["sample_id"].to_list()),
-        "removed_ids": sorted(result.removed["sample_id"].to_list()),
+        "added_ids": sorted(result.added.collect()["sample_id"].to_list()),
+        "changed_ids": sorted(result.changed.collect()["sample_id"].to_list()),
+        "removed_ids": sorted(result.removed.collect()["sample_id"].to_list()),
     }
 
     assert diff_summary == snapshot

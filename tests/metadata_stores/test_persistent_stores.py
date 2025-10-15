@@ -4,9 +4,11 @@ These tests run against all persistent store implementations
 (InMemoryMetadataStore, DuckDBMetadataStore, etc.) using pytest-cases parametrization.
 """
 
+import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     FeatureNotFoundError,
     MetadataSchemaError,
@@ -81,7 +83,9 @@ def test_write_and_read_metadata(
         )
 
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
-        result = store.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store.read_metadata(test_features["UpstreamFeatureA"])
+        )
 
         assert len(result) == 3
         assert "sample_id" in result.columns
@@ -131,7 +135,9 @@ def test_write_append(persistent_store, test_graph, test_features: dict) -> None
         store.write_metadata(test_features["UpstreamFeatureA"], df1)
         store.write_metadata(test_features["UpstreamFeatureA"], df2)
 
-        result = store.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store.read_metadata(test_features["UpstreamFeatureA"])
+        )
         assert len(result) == 4
         assert set(result["sample_id"].to_list()) == {1, 2, 3, 4}
 
@@ -151,8 +157,10 @@ def test_read_with_filters(persistent_store, test_graph, test_features: dict) ->
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-        result = store.read_metadata(
-            test_features["UpstreamFeatureA"], filters=pl.col("sample_id") > 1
+        result = collect_to_polars(
+            store.read_metadata(
+                test_features["UpstreamFeatureA"], filters=[nw.col("sample_id") > 1]
+            )
         )
 
         assert len(result) == 2
@@ -177,8 +185,10 @@ def test_read_with_column_selection(
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-        result = store.read_metadata(
-            test_features["UpstreamFeatureA"], columns=["sample_id", "data_version"]
+        result = collect_to_polars(
+            store.read_metadata(
+                test_features["UpstreamFeatureA"], columns=["sample_id", "data_version"]
+            )
         )
 
         assert set(result.columns) == {"sample_id", "data_version"}
@@ -252,7 +262,7 @@ def test_list_features(persistent_store, test_graph, test_features: dict) -> Non
         features = store.list_features()
         assert len(features) == 2
         feature_strs = {f.to_string() for f in features}
-        assert feature_strs == {"test_stores_upstream_a", "test_stores_upstream_b"}
+        assert feature_strs == {"test_stores__upstream_a", "test_stores__upstream_b"}
 
 
 # Data Version Calculation Tests
@@ -290,7 +300,9 @@ def test_system_tables(persistent_store, test_graph, test_features: dict) -> Non
         store.record_feature_graph_snapshot()
 
         # Read system table
-        version_history = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        version_history = collect_to_polars(
+            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        )
 
         assert len(version_history) > 0
         assert "feature_key" in version_history.columns
@@ -348,7 +360,9 @@ def test_nested_context_managers(
 
         # Should still be open after inner context exits
         assert store1._is_open
-        result = store1.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store1.read_metadata(test_features["UpstreamFeatureA"])
+        )
         assert len(result) == 1
 
     # Now should be closed after outer context exits
@@ -392,8 +406,12 @@ def test_multiple_features(persistent_store, test_graph, test_features: dict) ->
         store.write_metadata(test_features["UpstreamFeatureB"], data_b)
 
         # Read both
-        result_a = store.read_metadata(test_features["UpstreamFeatureA"])
-        result_b = store.read_metadata(test_features["UpstreamFeatureB"])
+        result_a = collect_to_polars(
+            store.read_metadata(test_features["UpstreamFeatureA"])
+        )
+        result_b = collect_to_polars(
+            store.read_metadata(test_features["UpstreamFeatureB"])
+        )
 
         assert len(result_a) == 2
         assert len(result_b) == 3

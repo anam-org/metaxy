@@ -1,6 +1,5 @@
 """Common fixtures for metadata store tests."""
 
-import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -16,22 +15,14 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy._testing import HashAlgorithmCases, TempFeatureModule
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
 
-# Import TempFeatureModule from parent test directory
-# Add parent dir to path for test imports
-_parent_test_dir = Path(__file__).parent.parent
-if str(_parent_test_dir) not in sys.path:
-    sys.path.insert(0, str(_parent_test_dir))
-
-from test_migrations import (  # noqa: E402
-    TempFeatureModule,  # type: ignore[import-not-found]
-)
+assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
 @pytest.fixture(scope="session")
@@ -371,27 +362,3 @@ def persistent_store(store_config: tuple[type[MetadataStore], dict]) -> Metadata
     """
     store_type, config = store_config
     return store_type(**config)  # type: ignore[abstract]
-
-
-class HashAlgorithmCases:
-    """Test cases for different hash algorithms."""
-
-    def case_xxhash64(self) -> HashAlgorithm:
-        """xxHash64 algorithm."""
-        return HashAlgorithm.XXHASH64
-
-    def case_xxhash32(self) -> HashAlgorithm:
-        """xxHash32 algorithm."""
-        return HashAlgorithm.XXHASH32
-
-    def case_wyhash(self) -> HashAlgorithm:
-        """WyHash algorithm."""
-        return HashAlgorithm.WYHASH
-
-    def case_sha256(self) -> HashAlgorithm:
-        """SHA256 algorithm."""
-        return HashAlgorithm.SHA256
-
-    def case_md5(self) -> HashAlgorithm:
-        """MD5 algorithm."""
-        return HashAlgorithm.MD5

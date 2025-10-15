@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-import polars as pl
+import narwhals as nw
 
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.migrations.detector import detect_feature_changes
@@ -97,10 +97,6 @@ def generate_migration(
     """
     from metaxy.models.feature import FeatureGraph
 
-    # Step 1: Determine from_graph and from_snapshot_id
-    # If not provided, get latest snapshot from store
-    from_graph = None
-
     if from_snapshot_id is None:
         # Default mode: get from store's latest snapshot
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
@@ -109,11 +105,11 @@ def generate_migration(
             feature_versions = store.read_metadata(
                 FEATURE_VERSIONS_KEY, current_only=False
             )
-            if len(feature_versions) > 0:
-                # Get most recent snapshot
-                latest_snapshot = feature_versions.sort(
-                    "recorded_at", descending=True
-                ).head(1)
+            # Get most recent snapshot - only collect the top row
+            latest_snapshot = nw.from_native(
+                feature_versions.sort("recorded_at", descending=True).head(1).collect()
+            )
+            if latest_snapshot.shape[0] > 0:
                 from_snapshot_id = latest_snapshot["snapshot_id"][0]
                 print(f"From: latest snapshot {from_snapshot_id[:16]}...")
             else:
@@ -129,11 +125,6 @@ def generate_migration(
     else:
         print(f"From: snapshot {from_snapshot_id[:16]}...")
 
-    # Load from_graph (always from snapshot)
-    from metaxy.migrations.executor import _load_historical_graph
-
-    from_graph = _load_historical_graph(store, from_snapshot_id, class_path_overrides)
-
     # Step 2: Determine to_graph and to_snapshot_id
     if to_snapshot_id is None:
         # Default mode: record current active graph and use its snapshot
@@ -142,15 +133,20 @@ def generate_migration(
         to_graph = FeatureGraph.get_active()
         print(f"To: current active graph (snapshot {to_snapshot_id[:16]}...)")
     else:
-        # Historical mode: load from snapshot
+        # Historical mode: load from snapshot with force_reload
+        # force_reload ensures we get current code from disk, not cached imports
+        from metaxy.migrations.executor import _load_historical_graph
+
         to_graph = _load_historical_graph(store, to_snapshot_id, class_path_overrides)
         print(f"To: snapshot {to_snapshot_id[:16]}...")
 
-    # Step 3: Detect changes by comparing the two graphs
+    # Step 3: Detect changes by comparing snapshot_ids directly
+    # We don't reconstruct from_graph - just compare snapshot_ids from the store
+    # This avoids issues with stale cached imports when files have changed
     root_operations = detect_feature_changes(
         store,
-        from_graph,
-        to_graph,
+        from_snapshot_id,
+        to_snapshot_id,
     )
 
     if not root_operations:
@@ -190,9 +186,11 @@ def generate_migration(
                 feature_cls,
                 current_only=False,
                 allow_fallback=False,
-                filters=pl.col("snapshot_id") == from_snapshot_id,
+                filters=[nw.col("snapshot_id") == from_snapshot_id],
             )
-            if len(from_metadata) == 0:
+            # Only collect head(1) to check existence
+            from_metadata_sample = nw.from_native(from_metadata.head(1).collect())
+            if from_metadata_sample.shape[0] == 0:
                 # Feature doesn't exist in from_snapshot - it's new, skip
                 print(f"  ⊘ {feature_key_str} (new feature, skipping)")
                 continue
@@ -247,9 +245,11 @@ def generate_migration(
     parent_migration_id = None
     try:
         existing_migrations = store.read_metadata(MIGRATIONS_KEY, current_only=False)
-        if len(existing_migrations) > 0:
-            # Get most recent migration by created_at
-            latest = existing_migrations.sort("created_at", descending=True).head(1)
+        # Get most recent migration by created_at - only collect the top row
+        latest = nw.from_native(
+            existing_migrations.sort("created_at", descending=True).head(1).collect()
+        )
+        if latest.shape[0] > 0:
             parent_migration_id = latest["migration_id"][0]
     except FeatureNotFoundError:
         # No migrations yet

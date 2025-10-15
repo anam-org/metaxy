@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+import narwhals as nw
 import polars as pl
 
 from metaxy.metadata_store.base import SYSTEM_NAMESPACE
@@ -77,15 +78,17 @@ class MigrationStatus:
         try:
             steps = self.store.read_metadata(
                 MIGRATION_OP_STEPS_KEY,
-                filters=(
-                    (pl.col("migration_id") == migration_id)
-                    & (pl.col("operation_id") == operation_id)
-                    & (pl.col("feature_key") == feature_key)
-                    & (pl.col("error").is_null())
-                ),
+                filters=[
+                    (nw.col("migration_id") == migration_id)
+                    & (nw.col("operation_id") == operation_id)
+                    & (nw.col("feature_key") == feature_key)
+                    & (nw.col("error").is_null())
+                ],
                 current_only=False,
             )
-            return len(steps) > 0
+            # Check if any rows exist - only collect head(1)
+            steps_sample = nw.from_native(steps.head(1).collect())
+            return steps_sample.shape[0] > 0
         except FeatureNotFoundError:
             return False
 
@@ -105,19 +108,21 @@ class MigrationStatus:
         try:
             op_def = self.store.read_metadata(
                 MIGRATION_OPS_KEY,
-                filters=(
-                    (pl.col("migration_id") == migration_id)
-                    & (pl.col("operation_id") == operation_id)
-                ),
+                filters=[
+                    (nw.col("migration_id") == migration_id)
+                    & (nw.col("operation_id") == operation_id)
+                ],
                 current_only=False,
             )
         except FeatureNotFoundError:
             return False
 
-        if len(op_def) == 0:
+        # Collect only head(1) to check existence and get expected_steps
+        op_def_eager = nw.from_native(op_def.head(1).collect())
+        if op_def_eager.shape[0] == 0:
             return False
 
-        expected_steps_raw = op_def["expected_steps"][0]
+        expected_steps_raw = op_def_eager["expected_steps"][0]
 
         # Convert to Python list (handles JSON string, Polars Series, or native list)
         if isinstance(expected_steps_raw, str):
@@ -153,16 +158,18 @@ class MigrationStatus:
         try:
             migration = self.store.read_metadata(
                 MIGRATIONS_KEY,
-                filters=pl.col("migration_id") == migration_id,
+                filters=[nw.col("migration_id") == migration_id],
                 current_only=False,
             )
         except FeatureNotFoundError:
             return False
 
-        if len(migration) == 0:
+        # Collect only head(1) to check existence and get operation_ids
+        migration_eager = nw.from_native(migration.head(1).collect())
+        if migration_eager.shape[0] == 0:
             return False
 
-        expected_op_ids_raw = migration["operation_ids"][0]
+        expected_op_ids_raw = migration_eager["operation_ids"][0]
 
         # Convert to Python list (handles JSON string, Polars Series, or native list)
         if isinstance(expected_op_ids_raw, str):
@@ -198,7 +205,6 @@ def _load_historical_graph(
         store: Metadata store
         snapshot_id: Snapshot ID to reconstruct
         class_path_overrides: Optional overrides for moved/renamed feature classes
-
     Returns:
         FeatureGraph reconstructed from snapshot
 
@@ -214,7 +220,7 @@ def _load_historical_graph(
     try:
         features_data = store.read_metadata(
             FEATURE_VERSIONS_KEY,
-            filters=pl.col("snapshot_id") == snapshot_id,
+            filters=[nw.col("snapshot_id") == snapshot_id],
             current_only=False,
         )
     except FeatureNotFoundError:
@@ -223,7 +229,9 @@ def _load_historical_graph(
             f"Cannot reconstruct historical feature graph."
         )
 
-    if len(features_data) == 0:
+    # Collect to iterate and build snapshot dict
+    features_data_eager = nw.from_native(features_data.collect())
+    if features_data_eager.shape[0] == 0:
         raise ValueError(
             f"Snapshot '{snapshot_id}' is empty. "
             f"No features recorded with this snapshot ID."
@@ -231,7 +239,7 @@ def _load_historical_graph(
 
     # Build snapshot dict for from_snapshot()
     snapshot_dict = {}
-    for row in features_data.iter_rows(named=True):
+    for row in features_data_eager.iter_rows(named=True):
         feature_key_str = row["feature_key"]
         feature_spec_raw = row["feature_spec"]
         feature_class_path = row.get("feature_class_path")
@@ -250,10 +258,13 @@ def _load_historical_graph(
             "feature_class_path": feature_class_path,
         }
 
-    # Reconstruct graph from snapshot (with optional overrides)
-    return FeatureGraph.from_snapshot(
-        snapshot_dict, class_path_overrides=class_path_overrides
+    graph = FeatureGraph.from_snapshot(
+        snapshot_dict,
+        class_path_overrides=class_path_overrides,
+        force_reload=True,
     )
+
+    return graph
 
 
 def _is_migration_registered(store: "MetadataStore", migration_id: str) -> bool:
@@ -261,10 +272,12 @@ def _is_migration_registered(store: "MetadataStore", migration_id: str) -> bool:
     try:
         migrations = store.read_metadata(
             MIGRATIONS_KEY,
-            filters=pl.col("migration_id") == migration_id,
+            filters=[nw.col("migration_id") == migration_id],
             current_only=False,
         )
-        return len(migrations) > 0
+        # Check if any rows exist - only collect head(1)
+        migrations_sample = nw.from_native(migrations.head(1).collect())
+        return migrations_sample.shape[0] > 0
     except FeatureNotFoundError:
         return False
 
@@ -306,13 +319,15 @@ def _is_operation_registered(
     try:
         ops = store.read_metadata(
             MIGRATION_OPS_KEY,
-            filters=(
-                (pl.col("migration_id") == migration_id)
-                & (pl.col("operation_id") == operation_id)
-            ),
+            filters=[
+                (nw.col("migration_id") == migration_id)
+                & (nw.col("operation_id") == operation_id)
+            ],
             current_only=False,
         )
-        return len(ops) > 0
+        # Check if any rows exist - only collect head(1)
+        ops_sample = nw.from_native(ops.head(1).collect())
+        return ops_sample.shape[0] > 0
     except FeatureNotFoundError:
         return False
 
@@ -373,17 +388,19 @@ def _validate_operation_not_changed(
 
     stored_op = store.read_metadata(
         MIGRATION_OPS_KEY,
-        filters=(
-            (pl.col("migration_id") == migration_id)
-            & (pl.col("operation_id") == operation.id)
-        ),
+        filters=[
+            (nw.col("migration_id") == migration_id)
+            & (nw.col("operation_id") == operation.id)
+        ],
         current_only=False,
     )
 
-    if len(stored_op) == 0:
+    # Collect only head(1) to get the hash
+    stored_op_eager = nw.from_native(stored_op.head(1).collect())
+    if stored_op_eager.shape[0] == 0:
         return
 
-    stored_hash = stored_op["operation_config_hash"][0]
+    stored_hash = stored_op_eager["operation_config_hash"][0]
     current_hash = operation.operation_config_hash()
 
     if stored_hash != current_hash:
@@ -517,17 +534,24 @@ def apply_migration(
     start_time = time.time()
     timestamp = datetime.now()
 
-    # Load historical graph from the "from" snapshot
-    # This ensures migrations use the exact feature graph topology that existed
-    # in the store when the migration was created, protecting against code refactoring
-    historical_graph = _load_historical_graph(
+    # Load historical graph from the "from" snapshot for validation
+    # TODO: better error messages here
+    _load_historical_graph(
         store,
         migration.from_snapshot_id,
         class_path_overrides=migration.feature_class_overrides,
     )
 
-    # Execute migration within historical graph context
-    with historical_graph.use():
+    # Load target graph from the "to" snapshot for execution
+    # Operations need the target feature definitions to properly resolve data versions
+    target_graph = _load_historical_graph(
+        store,
+        migration.to_snapshot_id,
+        class_path_overrides=migration.feature_class_overrides,
+    )
+
+    # Execute migration within target graph context (operations need new definitions)
+    with target_graph.use():
         # Parse operations from dict to objects
         # Operations will use historical graph via FeatureGraph.get_active()
         operations = migration.get_operations()

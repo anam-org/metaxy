@@ -1595,6 +1595,878 @@
     }),
   })
 # ---
+# name: test_resolve_update_feature_version_change_idempotency[multi_field-md5]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[multi_field-sha256]
+  dict({
+    'inmemory_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[multi_field-wyhash]
+  dict({
+    'inmemory_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[multi_field-xxhash32]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[multi_field-xxhash64]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '97026395bb2471ea3fbf4daf93bf5b317d11cac373f6faaeb18f72f81cab3840',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[simple_chain-md5]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[simple_chain-sha256]
+  dict({
+    'inmemory_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[simple_chain-wyhash]
+  dict({
+    'inmemory_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[simple_chain-xxhash32]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
+# name: test_resolve_update_feature_version_change_idempotency[simple_chain-xxhash64]
+  dict({
+    'clickhouse_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'clickhouse_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'inmemory_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=False': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'sqlite_native=True': dict({
+      'feature_version': '83317d2c0e3d0347867141772dab6b92d2e6823f86eed203fdf2a67184f16338',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+  })
+# ---
 # name: test_resolve_update_no_upstream[diamond_graph-md5]
   dict({
     tuple(
@@ -2434,13 +3306,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2453,13 +3325,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2472,13 +3344,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2491,13 +3363,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2510,13 +3382,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2529,13 +3401,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2548,13 +3420,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2567,13 +3439,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8197066bb050ec0ec4971455c1631e22',
+          'default': '0d39544fe1df2584a3cf8217f1955f05',
         }),
         dict({
-          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+          'default': 'dff5ecad81829dfb54f43ea50bd1fd77',
         }),
         dict({
-          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+          'default': '14bcbd4e7544a289ac23b6b1f0bb0a5d',
         }),
       ]),
     }),
@@ -2590,13 +3462,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+          'default': 'eb44bac307e92fb42f678eed19b5bbf8141e4394def6820e6ad1d62ddb977776',
         }),
         dict({
-          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+          'default': '56bd190123e3edd845993eab7478ea5c3c867222624856c295a969b3e13f2d53',
         }),
         dict({
-          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+          'default': '90c6c2b5da6bc887874bb409e56498dd933d2b9fe0d3034e2126d9c1b08551b2',
         }),
       ]),
     }),
@@ -2609,13 +3481,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+          'default': 'eb44bac307e92fb42f678eed19b5bbf8141e4394def6820e6ad1d62ddb977776',
         }),
         dict({
-          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+          'default': '56bd190123e3edd845993eab7478ea5c3c867222624856c295a969b3e13f2d53',
         }),
         dict({
-          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+          'default': '90c6c2b5da6bc887874bb409e56498dd933d2b9fe0d3034e2126d9c1b08551b2',
         }),
       ]),
     }),
@@ -2628,13 +3500,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+          'default': 'eb44bac307e92fb42f678eed19b5bbf8141e4394def6820e6ad1d62ddb977776',
         }),
         dict({
-          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+          'default': '56bd190123e3edd845993eab7478ea5c3c867222624856c295a969b3e13f2d53',
         }),
         dict({
-          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+          'default': '90c6c2b5da6bc887874bb409e56498dd933d2b9fe0d3034e2126d9c1b08551b2',
         }),
       ]),
     }),
@@ -2647,13 +3519,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+          'default': 'eb44bac307e92fb42f678eed19b5bbf8141e4394def6820e6ad1d62ddb977776',
         }),
         dict({
-          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+          'default': '56bd190123e3edd845993eab7478ea5c3c867222624856c295a969b3e13f2d53',
         }),
         dict({
-          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+          'default': '90c6c2b5da6bc887874bb409e56498dd933d2b9fe0d3034e2126d9c1b08551b2',
         }),
       ]),
     }),
@@ -2670,13 +3542,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5488654731054453978',
+          'default': '123390034804307976',
         }),
         dict({
-          'default': '1631355260698918875',
+          'default': '6872978376765017629',
         }),
         dict({
-          'default': '18254261935385162564',
+          'default': '17278754091443902738',
         }),
       ]),
     }),
@@ -2689,13 +3561,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5488654731054453978',
+          'default': '123390034804307976',
         }),
         dict({
-          'default': '1631355260698918875',
+          'default': '6872978376765017629',
         }),
         dict({
-          'default': '18254261935385162564',
+          'default': '17278754091443902738',
         }),
       ]),
     }),
@@ -2708,13 +3580,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5488654731054453978',
+          'default': '123390034804307976',
         }),
         dict({
-          'default': '1631355260698918875',
+          'default': '6872978376765017629',
         }),
         dict({
-          'default': '18254261935385162564',
+          'default': '17278754091443902738',
         }),
       ]),
     }),
@@ -2727,13 +3599,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5488654731054453978',
+          'default': '123390034804307976',
         }),
         dict({
-          'default': '1631355260698918875',
+          'default': '6872978376765017629',
         }),
         dict({
-          'default': '18254261935385162564',
+          'default': '17278754091443902738',
         }),
       ]),
     }),
@@ -2750,13 +3622,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2769,13 +3641,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2788,13 +3660,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2807,13 +3679,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2826,13 +3698,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2845,13 +3717,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2864,13 +3736,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2883,13 +3755,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2897566505',
+          'default': '867505226',
         }),
         dict({
-          'default': '882288564',
+          'default': '2266382774',
         }),
         dict({
-          'default': '1833035413',
+          'default': '1230632888',
         }),
       ]),
     }),
@@ -2906,13 +3778,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -2925,13 +3797,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -2944,13 +3816,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -2963,13 +3835,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -2982,13 +3854,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -3001,13 +3873,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -3020,13 +3892,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -3039,13 +3911,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '13389317762309231736',
+          'default': '4966707627859446777',
         }),
         dict({
-          'default': '6070615251723964776',
+          'default': '235412526042153429',
         }),
         dict({
-          'default': '3953645447121735588',
+          'default': '14713360912878806325',
         }),
       ]),
     }),
@@ -3062,13 +3934,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3081,13 +3953,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3100,13 +3972,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3119,13 +3991,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3138,13 +4010,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3157,13 +4029,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3176,13 +4048,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3195,13 +4067,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': 'f043bcedc057614b56b31185916d5984',
+          'default': '0acdb7f6161458eca7d3ecb575ac8157',
         }),
         dict({
-          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+          'default': '7fe23937bfc03597febc3ed63f88efdd',
         }),
         dict({
-          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+          'default': '4dff82a37a131df51773a31e57842efe',
         }),
       ]),
     }),
@@ -3218,13 +4090,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+          'default': '30b0773a9f75872a3de162a9188f655cc774b0b5d0792aac22b960b5b1c328bb',
         }),
         dict({
-          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+          'default': '74dddc598b420cbe9f76f5603bc14c636693d4b26d91596ea6565707535b296f',
         }),
         dict({
-          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+          'default': 'eb6fd0726d9cec37a6fdb0b979363b55caf7bc95378604b3d2d769eaa939acb5',
         }),
       ]),
     }),
@@ -3237,13 +4109,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+          'default': '30b0773a9f75872a3de162a9188f655cc774b0b5d0792aac22b960b5b1c328bb',
         }),
         dict({
-          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+          'default': '74dddc598b420cbe9f76f5603bc14c636693d4b26d91596ea6565707535b296f',
         }),
         dict({
-          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+          'default': 'eb6fd0726d9cec37a6fdb0b979363b55caf7bc95378604b3d2d769eaa939acb5',
         }),
       ]),
     }),
@@ -3256,13 +4128,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+          'default': '30b0773a9f75872a3de162a9188f655cc774b0b5d0792aac22b960b5b1c328bb',
         }),
         dict({
-          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+          'default': '74dddc598b420cbe9f76f5603bc14c636693d4b26d91596ea6565707535b296f',
         }),
         dict({
-          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+          'default': 'eb6fd0726d9cec37a6fdb0b979363b55caf7bc95378604b3d2d769eaa939acb5',
         }),
       ]),
     }),
@@ -3275,13 +4147,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+          'default': '30b0773a9f75872a3de162a9188f655cc774b0b5d0792aac22b960b5b1c328bb',
         }),
         dict({
-          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+          'default': '74dddc598b420cbe9f76f5603bc14c636693d4b26d91596ea6565707535b296f',
         }),
         dict({
-          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+          'default': 'eb6fd0726d9cec37a6fdb0b979363b55caf7bc95378604b3d2d769eaa939acb5',
         }),
       ]),
     }),
@@ -3298,13 +4170,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8248649353156489705',
+          'default': '927281642926886638',
         }),
         dict({
-          'default': '18163998010845729717',
+          'default': '14178823899371069400',
         }),
         dict({
-          'default': '17537738043292728638',
+          'default': '9252987291507823250',
         }),
       ]),
     }),
@@ -3317,13 +4189,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8248649353156489705',
+          'default': '927281642926886638',
         }),
         dict({
-          'default': '18163998010845729717',
+          'default': '14178823899371069400',
         }),
         dict({
-          'default': '17537738043292728638',
+          'default': '9252987291507823250',
         }),
       ]),
     }),
@@ -3336,13 +4208,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8248649353156489705',
+          'default': '927281642926886638',
         }),
         dict({
-          'default': '18163998010845729717',
+          'default': '14178823899371069400',
         }),
         dict({
-          'default': '17537738043292728638',
+          'default': '9252987291507823250',
         }),
       ]),
     }),
@@ -3355,13 +4227,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '8248649353156489705',
+          'default': '927281642926886638',
         }),
         dict({
-          'default': '18163998010845729717',
+          'default': '14178823899371069400',
         }),
         dict({
-          'default': '17537738043292728638',
+          'default': '9252987291507823250',
         }),
       ]),
     }),
@@ -3378,13 +4250,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3397,13 +4269,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3416,13 +4288,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3435,13 +4307,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3454,13 +4326,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3473,13 +4345,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3492,13 +4364,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3511,13 +4383,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '350527612',
+          'default': '3578648704',
         }),
         dict({
-          'default': '3625646102',
+          'default': '3452536830',
         }),
         dict({
-          'default': '2616766943',
+          'default': '636943142',
         }),
       ]),
     }),
@@ -3534,13 +4406,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3553,13 +4425,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3572,13 +4444,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3591,13 +4463,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3610,13 +4482,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3629,13 +4501,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3648,13 +4520,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3667,13 +4539,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '11609971260671236095',
+          'default': '11411736643231777167',
         }),
         dict({
-          'default': '401566829285048816',
+          'default': '14801318926339089446',
         }),
         dict({
-          'default': '2036637596123922776',
+          'default': '2721567647438705335',
         }),
       ]),
     }),
@@ -3690,13 +4562,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3709,13 +4581,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3728,13 +4600,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3747,13 +4619,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3766,13 +4638,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3785,13 +4657,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3804,13 +4676,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3823,13 +4695,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+          'default': '15c99147081de3e3389d6d093fb3b5f4',
         }),
         dict({
-          'default': '5eea21de0536aa8ab787de725e41162d',
+          'default': 'f043aa59fa873d5c207d600a3a7d2bbd',
         }),
         dict({
-          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+          'default': 'c46a94366b9883b311f8bbc28b8bdb77',
         }),
       ]),
     }),
@@ -3846,13 +4718,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+          'default': '42395f8ed6fdcaa8180557a7cc4a5bd9f166242b54d97d1fcaa6ebe011412f44',
         }),
         dict({
-          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+          'default': 'b05146a5cafeab40547589835c5ebda9b4075e77dce9d949a82617fa936ffce4',
         }),
         dict({
-          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+          'default': '994fc56c9fd5bb996055b40601ef3d096c2a3918cf4916c18b368994abc749be',
         }),
       ]),
     }),
@@ -3865,13 +4737,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+          'default': '42395f8ed6fdcaa8180557a7cc4a5bd9f166242b54d97d1fcaa6ebe011412f44',
         }),
         dict({
-          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+          'default': 'b05146a5cafeab40547589835c5ebda9b4075e77dce9d949a82617fa936ffce4',
         }),
         dict({
-          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+          'default': '994fc56c9fd5bb996055b40601ef3d096c2a3918cf4916c18b368994abc749be',
         }),
       ]),
     }),
@@ -3884,13 +4756,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+          'default': '42395f8ed6fdcaa8180557a7cc4a5bd9f166242b54d97d1fcaa6ebe011412f44',
         }),
         dict({
-          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+          'default': 'b05146a5cafeab40547589835c5ebda9b4075e77dce9d949a82617fa936ffce4',
         }),
         dict({
-          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+          'default': '994fc56c9fd5bb996055b40601ef3d096c2a3918cf4916c18b368994abc749be',
         }),
       ]),
     }),
@@ -3903,13 +4775,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+          'default': '42395f8ed6fdcaa8180557a7cc4a5bd9f166242b54d97d1fcaa6ebe011412f44',
         }),
         dict({
-          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+          'default': 'b05146a5cafeab40547589835c5ebda9b4075e77dce9d949a82617fa936ffce4',
         }),
         dict({
-          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+          'default': '994fc56c9fd5bb996055b40601ef3d096c2a3918cf4916c18b368994abc749be',
         }),
       ]),
     }),
@@ -3926,13 +4798,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '4401551130703593339',
+          'default': '11187915343910005673',
         }),
         dict({
-          'default': '17638848701399790554',
+          'default': '4705812906632822016',
         }),
         dict({
-          'default': '490449505687170975',
+          'default': '11521929533859639442',
         }),
       ]),
     }),
@@ -3945,13 +4817,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '4401551130703593339',
+          'default': '11187915343910005673',
         }),
         dict({
-          'default': '17638848701399790554',
+          'default': '4705812906632822016',
         }),
         dict({
-          'default': '490449505687170975',
+          'default': '11521929533859639442',
         }),
       ]),
     }),
@@ -3964,13 +4836,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '4401551130703593339',
+          'default': '11187915343910005673',
         }),
         dict({
-          'default': '17638848701399790554',
+          'default': '4705812906632822016',
         }),
         dict({
-          'default': '490449505687170975',
+          'default': '11521929533859639442',
         }),
       ]),
     }),
@@ -3983,13 +4855,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '4401551130703593339',
+          'default': '11187915343910005673',
         }),
         dict({
-          'default': '17638848701399790554',
+          'default': '4705812906632822016',
         }),
         dict({
-          'default': '490449505687170975',
+          'default': '11521929533859639442',
         }),
       ]),
     }),
@@ -4006,13 +4878,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4025,13 +4897,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4044,13 +4916,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4063,13 +4935,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4082,13 +4954,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4101,13 +4973,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4120,13 +4992,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4139,13 +5011,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2834089591',
+          'default': '2768709589',
         }),
         dict({
-          'default': '194109522',
+          'default': '1756486341',
         }),
         dict({
-          'default': '3297810028',
+          'default': '1005213295',
         }),
       ]),
     }),
@@ -4162,13 +5034,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4181,13 +5053,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4200,13 +5072,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4219,13 +5091,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4238,13 +5110,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4257,13 +5129,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4276,13 +5148,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),
@@ -4295,13 +5167,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5916632186186535252',
+          'default': '13499756664507170665',
         }),
         dict({
-          'default': '3715687565105490516',
+          'default': '10833401421581388075',
         }),
         dict({
-          'default': '13533499000011057433',
+          'default': '17547698760716450721',
         }),
       ]),
     }),

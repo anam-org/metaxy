@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
+import polars as pl
 import pytest
 
 # Skip all tests in this module if Ibis not available
 pytest.importorskip("ibis")
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 
 
@@ -88,7 +90,6 @@ def test_sqlite_persistence_across_instances(
         test_graph: Registry with test features
         test_features: Dict of test feature classes
     """
-    import polars as pl
 
     db_path = tmp_path / "test.sqlite"
 
@@ -108,7 +109,9 @@ def test_sqlite_persistence_across_instances(
 
     # Read data in second instance
     with SQLiteMetadataStore(db_path) as store2:
-        result = store2.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store2.read_metadata(test_features["UpstreamFeatureA"])
+        )
 
         assert len(result) == 3
         assert set(result["sample_id"].to_list()) == {1, 2, 3}
@@ -121,7 +124,6 @@ def test_sqlite_in_memory(test_graph, test_features: dict) -> None:
         test_graph: Registry with test features
         test_features: Dict of test feature classes
     """
-    import polars as pl
 
     # Use :memory: for in-memory database
     with SQLiteMetadataStore(":memory:") as store:
@@ -136,7 +138,9 @@ def test_sqlite_in_memory(test_graph, test_features: dict) -> None:
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-        result = store.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store.read_metadata(test_features["UpstreamFeatureA"])
+        )
         assert len(result) == 2
         assert set(result["sample_id"].to_list()) == {1, 2}
 

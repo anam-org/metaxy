@@ -69,6 +69,9 @@ def launcher(
 
     Environment variables can override config (METAXY_STORE, METAXY_MIGRATIONS_DIR, etc).
     """
+    import logging
+
+    logging.getLogger().setLevel(logging.INFO)
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
@@ -87,6 +90,7 @@ def launcher(
 # Register subcommands (lazy loading via import strings)
 app.command("metaxy.cli.migrations:app", name="migrations")
 app.command("metaxy.cli.push:push", name="push")
+app.command("metaxy.cli.list:app", name="list")
 
 
 def main():

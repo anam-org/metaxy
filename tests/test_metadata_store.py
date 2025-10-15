@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator
 
+import narwhals as nw
 import polars as pl
 import pytest
 
@@ -15,6 +16,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
     DependencyError,
     FeatureNotFoundError,
@@ -159,7 +161,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
         )
 
         empty_store.write_metadata(UpstreamFeatureA, metadata)
-        result = empty_store.read_metadata(UpstreamFeatureA)
+        result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
 
         assert len(result) == 3
         assert "sample_id" in result.columns
@@ -206,7 +208,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
         empty_store.write_metadata(UpstreamFeatureA, df1)
         empty_store.write_metadata(UpstreamFeatureA, df2)
 
-        result = empty_store.read_metadata(UpstreamFeatureA)
+        result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
         assert len(result) == 4
         assert set(result["sample_id"].to_list()) == {1, 2, 3, 4}
 
@@ -214,8 +216,10 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
 def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
     """Test reading with Polars filter expressions."""
     with populated_store:
-        result = populated_store.read_metadata(
-            UpstreamFeatureA, filters=pl.col("sample_id") > 1
+        result = collect_to_polars(
+            populated_store.read_metadata(
+                UpstreamFeatureA, filters=[nw.col("sample_id") > 1]
+            )
         )
 
         assert len(result) == 2
@@ -225,8 +229,10 @@ def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
 def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> None:
     """Test reading specific columns."""
     with populated_store:
-        result = populated_store.read_metadata(
-            UpstreamFeatureA, columns=["sample_id", "data_version"]
+        result = collect_to_polars(
+            populated_store.read_metadata(
+                UpstreamFeatureA, columns=["sample_id", "data_version"]
+            )
         )
 
         assert set(result.columns) == {"sample_id", "data_version"}
@@ -270,7 +276,7 @@ def test_list_features(populated_store: InMemoryMetadataStore) -> None:
         features = populated_store.list_features()
 
         assert len(features) == 1
-        assert any(f.to_string() == "upstream_a" for f in features)
+        assert any(f.to_string() == "upstream__a" for f in features)
 
 
 def test_list_features_with_fallback(
@@ -289,7 +295,7 @@ def test_list_features_with_fallback(
         # With fallback
         all_features = dev.list_features(include_fallback=True)
         assert len(all_features) == 1
-        assert any(f.to_string() == "upstream_a" for f in all_features)
+        assert any(f.to_string() == "upstream__a" for f in all_features)
 
 
 # Fallback Store Tests
@@ -303,7 +309,9 @@ def test_read_from_fallback(multi_env_stores: dict[str, InMemoryMetadataStore]) 
 
     with dev, staging, prod:
         # Read from prod via fallback chain
-        result = dev.read_metadata(UpstreamFeatureA, allow_fallback=True)
+        result = collect_to_polars(
+            dev.read_metadata(UpstreamFeatureA, allow_fallback=True)
+        )
         assert len(result) == 3
 
 
@@ -348,15 +356,16 @@ def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
     with populated_store:
         upstream = populated_store.read_upstream_metadata(DownstreamFeature)
 
-        assert "upstream_a" in upstream
-        assert len(upstream["upstream_a"]) == 3
-        assert "data_version" in upstream["upstream_a"].columns
+        assert "upstream__a" in upstream
+        upstream_df = collect_to_polars(upstream["upstream__a"])
+        assert len(upstream_df) == 3
+        assert "data_version" in upstream_df.columns
 
 
 def test_read_upstream_metadata_missing_dep(empty_store: InMemoryMetadataStore) -> None:
     """Test that missing dependencies raise error."""
     with empty_store:
-        with pytest.raises(DependencyError, match="upstream_a"):
+        with pytest.raises(DependencyError, match="upstream__a"):
             empty_store.read_upstream_metadata(DownstreamFeature, allow_fallback=False)
 
 
@@ -371,8 +380,9 @@ def test_read_upstream_metadata_from_fallback(
     with dev, staging, prod:
         upstream = dev.read_upstream_metadata(DownstreamFeature, allow_fallback=True)
 
-        assert "upstream_a" in upstream
-        assert len(upstream["upstream_a"]) == 3
+        assert "upstream__a" in upstream
+        upstream_df = collect_to_polars(upstream["upstream__a"])
+        assert len(upstream_df) == 3
 
 
 # Clear/Reset Tests

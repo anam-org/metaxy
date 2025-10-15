@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+import narwhals as nw
 import polars as pl
 import polars_hash as plh
 
@@ -14,12 +15,10 @@ if TYPE_CHECKING:
     from metaxy.models.plan import FeaturePlan
 
 
-class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
+class PolarsDataVersionCalculator(DataVersionCalculator):
     """Calculates data versions using polars-hash.
 
-    Type Parameters:
-        TRef = pl.LazyFrame
-
+    Accepts Narwhals LazyFrames and converts internally to Polars for hashing.
     Supports all hash functions available in polars-hash plugin.
     Default is xxHash64 for cross-database compatibility.
     """
@@ -45,23 +44,23 @@ class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
 
     def calculate_data_versions(
         self,
-        joined_upstream: pl.LazyFrame,
+        joined_upstream: nw.LazyFrame,
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> pl.LazyFrame:
+    ) -> nw.LazyFrame:
         """Calculate data_version using polars-hash.
 
         Args:
-            joined_upstream: LazyFrame with upstream data joined
+            joined_upstream: Narwhals LazyFrame with upstream data joined
             feature_spec: Feature specification
             feature_plan: Feature plan
             upstream_column_mapping: Maps upstream key -> column name
             hash_algorithm: Hash to use (default: xxHash64)
 
         Returns:
-            LazyFrame with data_version column added
+            Narwhals LazyFrame with data_version column added
         """
         algo = hash_algorithm or self.default_algorithm
 
@@ -70,6 +69,10 @@ class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
                 f"Hash algorithm {algo} not supported by PolarsDataVersionCalculator. "
                 f"Supported: {self.supported_algorithms}"
             )
+
+        # Convert Narwhals LazyFrame to Polars LazyFrame
+        # Must collect first (LazyFrame doesn't have to_polars, only DataFrame does)
+        pl_lazy = joined_upstream.collect().to_polars().lazy()
 
         hash_fn = self._HASH_FUNCTION_MAP[algo]
 
@@ -126,4 +129,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
         # Create data_version struct
         data_version_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
 
-        return joined_upstream.with_columns(data_version_expr.alias("data_version"))
+        result_pl = pl_lazy.with_columns(data_version_expr.alias("data_version"))
+
+        # Convert back to Narwhals LazyFrame
+        return nw.from_native(result_pl, eager_only=False)

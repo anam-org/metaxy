@@ -7,18 +7,18 @@ from metaxy.data_versioning.calculators import (
 from metaxy.data_versioning.diff import (
     DiffResult,
     MetadataDiffResolver,
-    PolarsDiffResolver,
+    NarwhalsDiffResolver,
 )
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners import PolarsJoiner, UpstreamJoiner
+from metaxy.data_versioning.joiners import NarwhalsJoiner, UpstreamJoiner
 
 __all__ = [
     "HashAlgorithm",
     "UpstreamJoiner",
-    "PolarsJoiner",
+    "NarwhalsJoiner",
     "DataVersionCalculator",
     "PolarsDataVersionCalculator",
     "DiffResult",
     "MetadataDiffResolver",
-    "PolarsDiffResolver",
+    "NarwhalsDiffResolver",
 ]

@@ -7,7 +7,7 @@
           'video',
           'processing',
         ]),
-        'id': 'reconcile_video_processing',
+        'id': 'reconcile_video__processing',
         'reason': 'TODO: Describe what changed and why',
         'type': 'metaxy.migrations.ops.DataVersionReconciliation',
       }),

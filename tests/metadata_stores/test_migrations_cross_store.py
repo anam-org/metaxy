@@ -7,6 +7,7 @@ import polars as pl
 from pytest_cases import parametrize_with_cases
 from syrupy.assertion import SnapshotAssertion
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.migrations import DataVersionReconciliation, Migration, apply_migration
 from metaxy.models.feature import FeatureGraph
@@ -85,7 +86,9 @@ def test_migration_system_tables_serialize_cross_store(
         )
 
         # Test migrations table
-        migrations = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        migrations = collect_to_polars(
+            store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        )
         assert len(migrations) == 1
         assert migrations["migration_id"][0] == "test_serialization"
 
@@ -104,10 +107,12 @@ def test_migration_system_tables_serialize_cross_store(
         assert operation_ids == ["reconcile_downstream"]
 
         # Test ops table
-        ops = store.read_metadata(MIGRATION_OPS_KEY, current_only=False)
+        ops = collect_to_polars(
+            store.read_metadata(MIGRATION_OPS_KEY, current_only=False)
+        )
         assert len(ops) == 1
         assert ops["operation_id"][0] == "reconcile_downstream"
-        assert ops["feature_key"][0] == "test_stores_downstream"
+        assert ops["feature_key"][0] == "test_stores__downstream"
 
         # Parse expected_steps (handles both JSON string and native list)
         expected_steps_raw = ops["expected_steps"][0]
@@ -121,14 +126,16 @@ def test_migration_system_tables_serialize_cross_store(
                 expected_steps = expected_steps_raw.to_list()
             else:
                 expected_steps = list(expected_steps_raw)
-        assert expected_steps == ["test_stores_downstream"]
+        assert expected_steps == ["test_stores__downstream"]
 
         # Test steps table
-        steps = store.read_metadata(MIGRATION_OP_STEPS_KEY, current_only=False)
+        steps = collect_to_polars(
+            store.read_metadata(MIGRATION_OP_STEPS_KEY, current_only=False)
+        )
         assert len(steps) == 1
         assert steps["migration_id"][0] == "test_serialization"
         assert steps["operation_id"][0] == "reconcile_downstream"
-        assert steps["feature_key"][0] == "test_stores_downstream"
+        assert steps["feature_key"][0] == "test_stores__downstream"
         assert steps["error"][0] is None  # Should complete without errors
 
         # Snapshot system table contents for verification
@@ -155,8 +162,8 @@ def test_migration_system_tables_serialize_cross_store(
         assert system_tables_snapshot == snapshot
 
         # Snapshot the reconciled downstream data (sorted for determinism)
-        final_downstream = store.read_metadata(
-            DownstreamFeature, current_only=False
+        final_downstream = collect_to_polars(
+            store.read_metadata(DownstreamFeature, current_only=False)
         ).sort(
             ["sample_id", "feature_version", "snapshot_id"]
         )  # Sort by multiple columns for determinism

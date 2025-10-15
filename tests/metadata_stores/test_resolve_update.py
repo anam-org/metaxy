@@ -3,21 +3,14 @@
 Tests that resolve_update (which orchestrates joiner/calculator/diff components)
 produces consistent results across store types and hash algorithms.
 
-NOTE: Currently both InMemory and DuckDB stores use Polars components for computation
-(DuckDB's _can_compute_native() returns False). When native SQL computation is implemented
-for DuckDB, these tests will automatically cover both native and Polars paths.
-
-The computation path (native vs polars) is determined by:
-1. Store's _can_compute_native() method
-2. Whether all upstream data is local (all_local) or in fallback stores (has_fallback)
-
-Current paths:
-- InMemory: Always Polars (no native implementation)
-- DuckDB: Always Polars (_can_compute_native() = False, pending native SQL implementation)
+With Narwhals integration, all stores use a unified Narwhals-based path that works
+with any backend (Polars in-memory, Ibis/SQL for databases). Backend-specific
+optimizations (e.g., staying in SQL vs pulling to memory) are handled transparently.
 """
 
 from typing import Any
 
+import narwhals as nw
 import polars as pl
 import pytest
 from pytest_cases import parametrize_with_cases
@@ -31,6 +24,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy._testing import HashAlgorithmCases
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -41,8 +35,6 @@ from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
-
-from .conftest import HashAlgorithmCases  # type: ignore[import-not-found]
 
 # ============= STORE CONFIGURATION =============
 
@@ -566,7 +558,12 @@ def test_resolve_update_with_upstream(
                         )
 
                     # Collect data versions
-                    added_sorted = result.added.sort("sample_id")
+                    # Convert Narwhals to Polars for manipulation
+                    added_sorted = (
+                        result.added.to_polars()
+                        if isinstance(result.added, nw.DataFrame)
+                        else result.added
+                    ).sort("sample_id")
                     versions = added_sorted["data_version"].to_list()
 
                     results[(store_type, prefer_native)] = {
@@ -681,6 +678,12 @@ def test_resolve_update_detects_changes(
                             # Intermediate features - resolve and write their data versions
                             result = store.resolve_update(feature)
                             if len(result.added) > 0:
+                                # Convert Narwhals to Polars for manipulation
+                                added_df = (
+                                    result.added.to_polars()
+                                    if isinstance(result.added, nw.DataFrame)
+                                    else result.added
+                                )
                                 feature_data = pl.DataFrame(
                                     {
                                         "sample_id": [1, 2, 3],
@@ -689,7 +692,7 @@ def test_resolve_update_detects_changes(
                                 ).with_columns(
                                     pl.Series(
                                         "data_version",
-                                        result.added.sort("sample_id")[
+                                        added_df.sort("sample_id")[
                                             "data_version"
                                         ].to_list(),
                                     )
@@ -698,7 +701,13 @@ def test_resolve_update_detects_changes(
 
                     # First resolve - get initial data versions for downstream
                     result1 = store.resolve_update(downstream_feature)
-                    initial_versions = result1.added.sort("sample_id")
+                    # Convert to Polars for easier manipulation in test
+                    initial_versions_nw = (
+                        result1.added.to_polars()
+                        if isinstance(result1.added, nw.DataFrame)
+                        else result1.added
+                    )
+                    initial_versions = initial_versions_nw.sort("sample_id")
 
                     # Write downstream feature with these versions
                     downstream_data = pl.DataFrame(
@@ -720,11 +729,21 @@ def test_resolve_update_detects_changes(
                     for i, feature in enumerate(features[1:-1], start=1):
                         result = store.resolve_update(feature)
                         if len(result.changed) > 0 or len(result.added) > 0:
-                            # Combine changed and added
-                            updated = (
-                                pl.concat([result.changed, result.added])
-                                if len(result.added) > 0
+                            # Convert Narwhals to Polars and combine changed and added
+                            changed_pl = (
+                                result.changed.to_polars()
+                                if isinstance(result.changed, nw.DataFrame)
                                 else result.changed
+                            )
+                            added_pl = (
+                                result.added.to_polars()
+                                if isinstance(result.added, nw.DataFrame)
+                                else result.added
+                            )
+                            updated = (
+                                pl.concat([changed_pl, added_pl])
+                                if len(added_pl) > 0
+                                else changed_pl
                             )
                             feature_data = pl.DataFrame(
                                 {
@@ -757,17 +776,22 @@ def test_resolve_update_detects_changes(
                             f"{[str(w.message) for w in prefer_native_warnings]}"
                         )
 
-                    # Collect results
-                    changed_sample_ids = (
-                        result2.changed["sample_id"].to_list()
-                        if len(result2.changed) > 0
-                        else []
+                    # Collect results - convert Narwhals to Polars for easier manipulation
+                    changed_df_pl = (
+                        result2.changed.to_polars()
+                        if isinstance(result2.changed, nw.DataFrame)
+                        else result2.changed
                     )
+
+                    if len(changed_df_pl) > 0:
+                        changed_sample_ids = changed_df_pl["sample_id"].to_list()
+                    else:
+                        changed_sample_ids = []
 
                     # Check if any versions changed
                     version_changes = []
                     for sample_id in changed_sample_ids:
-                        new_version = result2.changed.filter(
+                        new_version = changed_df_pl.filter(
                             pl.col("sample_id") == sample_id
                         )["data_version"][0]
                         old_version = initial_versions.filter(
@@ -801,3 +825,136 @@ def test_resolve_update_detects_changes(
             "At least one sample should change"
         )
         assert reference["any_version_changed"], "Data version should have changed"
+
+
+@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
+def test_resolve_update_feature_version_change_idempotency(
+    store_params: dict,
+    graph_config: tuple[FeatureGraph, list[type[Feature]]],
+    hash_algorithm: HashAlgorithm,
+    snapshot,
+):
+    """Test that resolve_update is idempotent after writing changed metadata."""
+    graph, features = graph_config
+
+    # Use simple chain for clarity (RootA -> LeafSimple)
+    if len(graph.features_by_key) != 2:
+        pytest.skip("Test requires simple chain graph")
+
+    # Identify root and leaf features
+    root_keys = [k for k, v in graph.features_by_key.items() if not v.spec.deps]
+    leaf_keys = [k for k, v in graph.features_by_key.items() if v.spec.deps]
+
+    if len(root_keys) != 1 or len(leaf_keys) != 1:
+        pytest.skip("Test requires exactly 1 root and 1 leaf")
+
+    root_key = root_keys[0]
+    leaf_key = leaf_keys[0]
+    RootFeature = graph.features_by_key[root_key]
+    LeafFeature = graph.features_by_key[leaf_key]
+
+    # Get initial feature versions
+    initial_leaf_version = LeafFeature.feature_version()
+
+    results = {}
+
+    for store_type in get_available_store_types():
+        for prefer_native in [True, False]:
+            store = create_store(
+                store_type,
+                prefer_native,
+                hash_algorithm,
+                params=store_params,
+            )
+
+            try:
+                with store, graph.use():
+                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
+                    if store_type == "clickhouse":
+                        for feature in features:
+                            store.drop_feature_metadata(feature)
+
+                    # === PHASE 1: Write root metadata (upstream) ===
+                    # Write root metadata - handle multiple fields
+                    root_field_names = {
+                        field.key[0] for field in RootFeature.spec.fields
+                    }
+                    root_data_version_dicts = []
+                    for i in range(1, 4):
+                        dv = {
+                            field_name: f"v1_{i}_{field_name}"
+                            for field_name in root_field_names
+                        }
+                        root_data_version_dicts.append(dv)
+
+                    root_data_v1 = pl.DataFrame(
+                        {
+                            "sample_id": [1, 2, 3],
+                            "data_version": root_data_version_dicts,
+                        },
+                        schema={
+                            "sample_id": pl.UInt32,
+                            "data_version": pl.Struct(
+                                {fn: pl.Utf8 for fn in root_field_names}
+                            ),
+                        },
+                    )
+                    store.write_metadata(RootFeature, root_data_v1)
+
+                    # === PHASE 2: First resolve_update (should detect 3 new samples) ===
+                    result_first = store.resolve_update(LeafFeature)
+
+                    first_run_stats = {
+                        "added": len(result_first.added),
+                        "changed": len(result_first.changed),
+                        "removed": len(result_first.removed),
+                    }
+
+                    # === PHASE 3: Write the computed metadata ===
+                    if len(result_first.added) > 0:
+                        store.write_metadata(LeafFeature, result_first.added)
+                    if len(result_first.changed) > 0:
+                        store.write_metadata(LeafFeature, result_first.changed)
+
+                    # === PHASE 4: Second resolve_update (should be idempotent - no changes) ===
+                    result_second = store.resolve_update(LeafFeature)
+
+                    second_run_stats = {
+                        "added": len(result_second.added),
+                        "changed": len(result_second.changed),
+                        "removed": len(result_second.removed),
+                    }
+
+                    # Store results for comparison and snapshot
+                    variant_key = f"{store_type}_native={prefer_native}"
+                    results[variant_key] = {
+                        "feature_version": initial_leaf_version,
+                        "first_run": first_run_stats,
+                        "second_run": second_run_stats,
+                    }
+
+            except HashAlgorithmNotSupportedError:
+                # Hash algorithm not supported by this store - skip
+                continue
+
+    # All variants should produce identical results
+    assert_all_results_equal(results, snapshot)
+
+    # Verify expected behavior
+    if results:
+        reference = list(results.values())[0]
+
+        # First run should detect new samples (leaf hasn't been computed yet)
+        assert reference["first_run"]["added"] == 3, "Should detect 3 new samples"
+        assert reference["first_run"]["changed"] == 0, "No changes yet"
+        assert reference["first_run"]["removed"] == 0, "No removed samples"
+
+        # Second run should be idempotent (no changes)
+        assert reference["second_run"]["added"] == 0, (
+            "Second run should detect 0 new samples (idempotent)"
+        )
+        assert reference["second_run"]["changed"] == 0, (
+            "Second run should detect 0 changes (idempotent) - this was the bug!"
+        )
+        assert reference["second_run"]["removed"] == 0, "No removed samples"
