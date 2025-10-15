@@ -24,7 +24,7 @@ ibis = [
 ]
 
 [project.scripts]
-metaxy = "metaxy.cli.app:app"
+metaxy = "metaxy.cli.app:main"
 
 [tool.pyrefly]
 project-includes = ["src", "tests"]

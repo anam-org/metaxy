@@ -12,3 +12,6 @@ wheels/
 
 # clickhouse
 preprocessed_configs
+
+# metaxy config - for local manual testing
+metaxy.toml
