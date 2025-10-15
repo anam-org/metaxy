@@ -11,6 +11,7 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     MetadataSchemaError,
     MetadataStoreError,
+    StoreNotOpenError,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 
@@ -22,6 +23,7 @@ __all__ = [
     "ContainerNotFoundError",
     "MetadataSchemaError",
     "DependencyError",
+    "StoreNotOpenError",
     "FEATURE_VERSIONS_KEY",
     "MIGRATION_HISTORY_KEY",
 ]

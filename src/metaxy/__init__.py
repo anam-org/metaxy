@@ -1,3 +1,4 @@
+from metaxy._version import __version__
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.metadata_store import (
     InMemoryMetadataStore,
@@ -38,4 +39,5 @@ __all__ = [
     "apply_migration",
     "MetaxyConfig",
     "StoreConfig",
+    "__version__",
 ]

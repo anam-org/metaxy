@@ -1,12 +1,15 @@
-"""Abstract base class for metadata storage backends."""
-
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import polars as pl
+from typing_extensions import Self
 
-from metaxy.metadata_store.exceptions import DependencyError, FeatureNotFoundError
+from metaxy.metadata_store.exceptions import (
+    DependencyError,
+    FeatureNotFoundError,
+    StoreNotOpenError,
+)
 from metaxy.models.container import ContainerDep, SpecialContainerDep
 from metaxy.models.feature import Feature, FeatureRegistry, metaxy_registry
 from metaxy.models.plan import FeaturePlan, FQContainerKey
@@ -50,6 +53,62 @@ class MetadataStore(ABC):
         """
         self.fallback_stores = fallback_stores or []
         self.registry = registry
+        self._is_open = False
+        self._opened_by_context = False
+
+    # ========== Context Manager ==========
+
+    def _check_is_open(self) -> None:
+        """Check if store is open, raise error if not."""
+        if not self._is_open:
+            raise StoreNotOpenError(
+                f"{self.__class__.__name__} must be used as a context manager. "
+                f"Use: with {self.__class__.__name__}(...) as store:"
+            )
+
+    @abstractmethod
+    def open(self) -> None:
+        """
+        Open/initialize the store for operations.
+
+        Called by __enter__. Subclasses should implement any
+        connection setup or resource initialization here.
+
+        Can also be called manually if not using context manager,
+        but context manager usage is strongly recommended.
+        """
+        pass
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Close/cleanup the store.
+
+        Called by __exit__. Subclasses should implement any
+        connection cleanup or resource release here.
+
+        Can also be called manually if not using context manager,
+        but context manager usage is strongly recommended.
+        """
+        pass
+
+    def __enter__(self) -> Self:
+        """Enter context manager."""
+        # Only open if not already open (support nested contexts)
+        if not self._is_open:
+            self.open()
+            self._is_open = True
+            self._opened_by_context = True
+        else:
+            self._opened_by_context = False
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit context manager."""
+        # Only close if we opened it
+        if self._opened_by_context:
+            self._is_open = False
+            self.close()
 
     # ========== Helper Methods ==========
 
@@ -112,9 +171,12 @@ class MetadataStore(ABC):
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
+            StoreNotOpenError: If store is not open (must use context manager)
 
         Note: Always writes to current store, never to fallback stores.
         """
+        self._check_is_open()
+
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
@@ -372,7 +434,10 @@ class MetadataStore(ABC):
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
+            StoreNotOpenError: If store is not open (must use context manager)
         """
+        self._check_is_open()
+
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
@@ -411,14 +476,16 @@ class MetadataStore(ABC):
         if allow_fallback:
             for store in self.fallback_stores:
                 try:
-                    # Use full read_metadata to handle nested fallback chains
-                    return store.read_metadata(
-                        feature,
-                        filters=filters,  # Pass original filters, not combined
-                        columns=columns,
-                        allow_fallback=True,
-                        current_only=current_only,  # Pass through current_only
-                    )
+                    # Open the fallback store temporarily to read from it
+                    with store:
+                        # Use full read_metadata to handle nested fallback chains
+                        return store.read_metadata(
+                            feature,
+                            filters=filters,  # Pass original filters, not combined
+                            columns=columns,
+                            allow_fallback=True,
+                            current_only=current_only,  # Pass through current_only
+                        )
                 except FeatureNotFoundError:
                     # Try next fallback store
                     continue
@@ -447,15 +514,17 @@ class MetadataStore(ABC):
         Returns:
             True if feature exists, False otherwise
         """
-        # Check local
+        # Check local (requires store to be open)
+        self._check_is_open()
         if self._read_metadata_local(feature) is not None:
             return True
 
         # Check fallback stores
         if check_fallback:
             for store in self.fallback_stores:
-                if store.has_feature(feature, check_fallback=True):
-                    return True
+                with store:
+                    if store.has_feature(feature, check_fallback=True):
+                        return True
 
         return False
 
@@ -469,11 +538,13 @@ class MetadataStore(ABC):
         Returns:
             List of FeatureKey objects
         """
+        self._check_is_open()
         features = self._list_features_local()
 
         if include_fallback:
             for store in self.fallback_stores:
-                features.extend(store.list_features(include_fallback=True))
+                with store:
+                    features.extend(store.list_features(include_fallback=True))
 
         # Deduplicate
         seen = set()
@@ -811,3 +882,39 @@ class MetadataStore(ABC):
         # Keep only original sample_df columns plus data_version
         original_cols = sample_df.columns
         return result_df.select(original_cols + ["data_version"])
+
+    # ========== Display / Repr ==========
+
+    @abstractmethod
+    def display(self) -> str:
+        """
+        Return display string for this store (excluding fallback info).
+
+        Subclasses should return a brief description suitable for __repr__,
+        excluding sensitive information like credentials.
+
+        Example:
+            "DuckDBMetadataStore(path=/path/to/db.duckdb, features=5)"
+
+        Returns:
+            String representation of this store only (no fallback chain)
+        """
+        pass
+
+    def __repr__(self) -> str:
+        """
+        String representation including fallback chain.
+
+        Uses display() for store-specific info and recursively displays fallback stores.
+
+        Returns:
+            String representation including full fallback chain
+        """
+        display = self.display()
+
+        if self.fallback_stores:
+            fallback_reprs = [repr(store) for store in self.fallback_stores]
+            fallback_str = ", ".join(fallback_reprs)
+            return f"{display[:-1]}, fallback_stores=[{fallback_str}])"
+
+        return display

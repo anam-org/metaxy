@@ -36,6 +36,14 @@ class InMemoryMetadataStore(MetadataStore):
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
 
+    def open(self) -> None:
+        """Open the store (no-op for in-memory store)."""
+        pass
+
+    def close(self) -> None:
+        """Close the store (no-op for in-memory store)."""
+        pass
+
     def _get_storage_key(self, feature_key: FeatureKey) -> tuple[str, ...]:
         """Convert feature key to storage key (tuple for hashability)."""
         return tuple(feature_key)
@@ -127,12 +135,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         self._storage.clear()
 
-    def __repr__(self) -> str:
-        """String representation."""
+    def display(self) -> str:
+        """Display string for this store."""
         num_features = len(self._storage)
-        num_fallbacks = len(self.fallback_stores)
-        return (
-            f"InMemoryMetadataStore("
-            f"features={num_features}, "
-            f"fallback_stores={num_fallbacks})"
-        )
+        return f"InMemoryMetadataStore(features={num_features})"

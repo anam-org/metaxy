@@ -29,3 +29,9 @@ class DependencyError(MetadataStoreError):
     """Raised when upstream dependencies are missing or invalid."""
 
     pass
+
+
+class StoreNotOpenError(MetadataStoreError):
+    """Raised when attempting to use a store outside of a context manager."""
+
+    pass

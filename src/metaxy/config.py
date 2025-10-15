@@ -218,7 +218,7 @@ class MetaxyConfig(BaseSettings):
         """Instantiate metadata store by name.
 
         Args:
-            name: Store name (uses default_store if None)
+            name: Store name (uses config.store if None)
             registry: Feature registry to use (uses metaxy_registry if None)
 
         Returns:

@@ -79,52 +79,60 @@ class DownstreamFeature(
 @pytest.fixture
 def empty_store() -> Iterator[InMemoryMetadataStore]:
     """Empty in-memory store."""
-    yield InMemoryMetadataStore()
+    with InMemoryMetadataStore() as store:
+        yield store
 
 
 @pytest.fixture
 def populated_store() -> Iterator[InMemoryMetadataStore]:
     """Store with sample upstream data."""
-    store = InMemoryMetadataStore()
+    with InMemoryMetadataStore() as store:
+        # Add upstream feature A
+        upstream_a_data = pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
+                "data_version": [
+                    {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
+                    {"frames": "hash_a2_frames", "audio": "hash_a2_audio"},
+                    {"frames": "hash_a3_frames", "audio": "hash_a3_audio"},
+                ],
+            }
+        )
+        store.write_metadata(UpstreamFeatureA, upstream_a_data)
 
-    # Add upstream feature A
-    upstream_a_data = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-            "data_version": [
-                {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
-                {"frames": "hash_a2_frames", "audio": "hash_a2_audio"},
-                {"frames": "hash_a3_frames", "audio": "hash_a3_audio"},
-            ],
-        }
-    )
-    store.write_metadata(UpstreamFeatureA, upstream_a_data)
-
-    yield store
+        yield store
 
 
 @pytest.fixture
-def multi_env_stores() -> Iterator[dict[str, InMemoryMetadataStore]]:
-    """Multi-environment store setup (prod, staging, dev)."""
+def multi_env_stores() -> dict[str, InMemoryMetadataStore]:
+    """Multi-environment store setup (prod, staging, dev).
+
+    Note: Stores are not opened. Tests must use them with context managers.
+
+    Example:
+        with multi_env_stores['prod'] as prod:
+            prod.write_metadata(...)
+    """
     prod = InMemoryMetadataStore()
     staging = InMemoryMetadataStore(fallback_stores=[prod])
     dev = InMemoryMetadataStore(fallback_stores=[staging])
 
-    # Populate prod with upstream data
-    upstream_data = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"frames": "prod_hash1", "audio": "prod_hash1"},
-                {"frames": "prod_hash2", "audio": "prod_hash2"},
-                {"frames": "prod_hash3", "audio": "prod_hash3"},
-            ],
-        }
-    )
-    prod.write_metadata(UpstreamFeatureA, upstream_data)
+    # Populate prod with upstream data (requires opening)
+    with prod:
+        upstream_data = pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+                "data_version": [
+                    {"frames": "prod_hash1", "audio": "prod_hash1"},
+                    {"frames": "prod_hash2", "audio": "prod_hash2"},
+                    {"frames": "prod_hash3", "audio": "prod_hash3"},
+                ],
+            }
+        )
+        prod.write_metadata(UpstreamFeatureA, upstream_data)
 
-    yield {"prod": prod, "staging": staging, "dev": dev}
+    return {"prod": prod, "staging": staging, "dev": dev}
 
 
 # Basic CRUD Tests
@@ -233,11 +241,10 @@ def test_has_feature_with_fallback(
     multi_env_stores: dict[str, InMemoryMetadataStore],
 ) -> None:
     """Test has_feature checking fallback stores."""
-    dev = multi_env_stores["dev"]
-
-    # UpstreamFeatureA is in prod, not in dev
-    assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
-    assert dev.has_feature(UpstreamFeatureA, check_fallback=True)
+    with multi_env_stores["dev"] as dev:
+        # UpstreamFeatureA is in prod, not in dev
+        assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
+        assert dev.has_feature(UpstreamFeatureA, check_fallback=True)
 
 
 def test_list_features(populated_store: InMemoryMetadataStore) -> None:
@@ -252,16 +259,15 @@ def test_list_features_with_fallback(
     multi_env_stores: dict[str, InMemoryMetadataStore],
 ) -> None:
     """Test listing features including fallbacks."""
-    dev = multi_env_stores["dev"]
+    with multi_env_stores["dev"] as dev:
+        # Without fallback
+        local_features = dev.list_features(include_fallback=False)
+        assert len(local_features) == 0
 
-    # Without fallback
-    local_features = dev.list_features(include_fallback=False)
-    assert len(local_features) == 0
-
-    # With fallback
-    all_features = dev.list_features(include_fallback=True)
-    assert len(all_features) == 1
-    assert any(f.to_string() == "upstream_a" for f in all_features)
+        # With fallback
+        all_features = dev.list_features(include_fallback=True)
+        assert len(all_features) == 1
+        assert any(f.to_string() == "upstream_a" for f in all_features)
 
 
 # Fallback Store Tests
@@ -269,42 +275,38 @@ def test_list_features_with_fallback(
 
 def test_read_from_fallback(multi_env_stores: dict[str, InMemoryMetadataStore]) -> None:
     """Test reading from fallback store."""
-    dev = multi_env_stores["dev"]
-
-    # Read from prod via fallback chain
-    result = dev.read_metadata(UpstreamFeatureA, allow_fallback=True)
-    assert len(result) == 3
+    with multi_env_stores["dev"] as dev:
+        # Read from prod via fallback chain
+        result = dev.read_metadata(UpstreamFeatureA, allow_fallback=True)
+        assert len(result) == 3
 
 
 def test_read_no_fallback(multi_env_stores: dict[str, InMemoryMetadataStore]) -> None:
     """Test that allow_fallback=False doesn't check fallback stores."""
-    dev = multi_env_stores["dev"]
-
-    with pytest.raises(FeatureNotFoundError):
-        dev.read_metadata(UpstreamFeatureA, allow_fallback=False)
+    with multi_env_stores["dev"] as dev:
+        with pytest.raises(FeatureNotFoundError):
+            dev.read_metadata(UpstreamFeatureA, allow_fallback=False)
 
 
 def test_write_to_dev_not_prod(
     multi_env_stores: dict[str, InMemoryMetadataStore],
 ) -> None:
     """Test that writes go to dev, not prod."""
-    dev = multi_env_stores["dev"]
-    prod = multi_env_stores["prod"]
+    with multi_env_stores["dev"] as dev, multi_env_stores["prod"] as prod:
+        new_data = pl.DataFrame(
+            {
+                "sample_id": [4, 5],
+                "data_version": [{"default": "hash4"}, {"default": "hash5"}],
+            }
+        )
 
-    new_data = pl.DataFrame(
-        {
-            "sample_id": [4, 5],
-            "data_version": [{"default": "hash4"}, {"default": "hash5"}],
-        }
-    )
+        dev.write_metadata(UpstreamFeatureB, new_data)
 
-    dev.write_metadata(UpstreamFeatureB, new_data)
+        # Should be in dev
+        assert dev.has_feature(UpstreamFeatureB, check_fallback=False)
 
-    # Should be in dev
-    assert dev.has_feature(UpstreamFeatureB, check_fallback=False)
-
-    # Should NOT be in prod
-    assert not prod.has_feature(UpstreamFeatureB, check_fallback=False)
+        # Should NOT be in prod
+        assert not prod.has_feature(UpstreamFeatureB, check_fallback=False)
 
 
 # Dependency Resolution Tests
@@ -329,12 +331,11 @@ def test_read_upstream_metadata_from_fallback(
     multi_env_stores: dict[str, InMemoryMetadataStore],
 ) -> None:
     """Test reading upstream from fallback stores."""
-    dev = multi_env_stores["dev"]
+    with multi_env_stores["dev"] as dev:
+        upstream = dev.read_upstream_metadata(DownstreamFeature, allow_fallback=True)
 
-    upstream = dev.read_upstream_metadata(DownstreamFeature, allow_fallback=True)
-
-    assert "upstream_a" in upstream
-    assert len(upstream["upstream_a"]) == 3
+        assert "upstream_a" in upstream
+        assert len(upstream["upstream_a"]) == 3
 
 
 # Data Version Calculation Tests
@@ -426,33 +427,30 @@ def test_calculate_with_fallback_upstream(
     multi_env_stores: dict[str, InMemoryMetadataStore], snapshot: SnapshotAssertion
 ) -> None:
     """Test calculating data versions with upstream in fallback store."""
-    dev = multi_env_stores["dev"]
+    with multi_env_stores["dev"] as dev, multi_env_stores["prod"] as prod:
+        new_samples = pl.DataFrame(
+            {
+                "sample_id": [1, 2],
+            }
+        )
 
-    new_samples = pl.DataFrame(
-        {
-            "sample_id": [1, 2],
-        }
-    )
+        # Should work - loads upstream from prod
+        result = dev.calculate_and_write_data_versions(
+            feature=DownstreamFeature,
+            sample_df=new_samples,
+            allow_upstream_fallback=True,
+        )
 
-    # Should work - loads upstream from prod
-    result = dev.calculate_and_write_data_versions(
-        feature=DownstreamFeature,
-        sample_df=new_samples,
-        allow_upstream_fallback=True,
-    )
+        assert "data_version" in result.columns
+        assert len(result) == 2
 
-    assert "data_version" in result.columns
-    assert len(result) == 2
+        # Should be written to dev only
+        assert dev.has_feature(DownstreamFeature, check_fallback=False)
+        assert not prod.has_feature(DownstreamFeature, check_fallback=False)
 
-    # Should be written to dev only
-    assert dev.has_feature(DownstreamFeature, check_fallback=False)
-    assert not multi_env_stores["prod"].has_feature(
-        DownstreamFeature, check_fallback=False
-    )
-
-    # Snapshot the hash values
-    hash_values = result["data_version"].struct.field("default").to_list()
-    assert hash_values == snapshot
+        # Snapshot the hash values
+        hash_values = result["data_version"].struct.field("default").to_list()
+        assert hash_values == snapshot
 
 
 # Branch Deployment Scenario Test
@@ -470,44 +468,42 @@ def test_branch_deployment_workflow(
     - Dev should read UpstreamFeatureA from prod
     - Dev should write DownstreamFeature locally
     """
-    dev = multi_env_stores["dev"]
-    prod = multi_env_stores["prod"]
+    with multi_env_stores["dev"] as dev, multi_env_stores["prod"] as prod:
+        # 1. Verify upstream is in prod, not dev
+        assert prod.has_feature(UpstreamFeatureA, check_fallback=False)
+        assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
 
-    # 1. Verify upstream is in prod, not dev
-    assert prod.has_feature(UpstreamFeatureA, check_fallback=False)
-    assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
+        # 2. Process downstream in dev (reads upstream from prod)
+        new_samples = pl.DataFrame(
+            {
+                "sample_id": [1, 2, 3],
+            }
+        )
 
-    # 2. Process downstream in dev (reads upstream from prod)
-    new_samples = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-        }
-    )
+        result = dev.calculate_and_write_data_versions(
+            feature=DownstreamFeature,
+            sample_df=new_samples,
+            allow_upstream_fallback=True,
+        )
 
-    result = dev.calculate_and_write_data_versions(
-        feature=DownstreamFeature,
-        sample_df=new_samples,
-        allow_upstream_fallback=True,
-    )
+        # 3. Verify downstream is in dev, not prod
+        assert dev.has_feature(DownstreamFeature, check_fallback=False)
+        assert not prod.has_feature(DownstreamFeature, check_fallback=False)
 
-    # 3. Verify downstream is in dev, not prod
-    assert dev.has_feature(DownstreamFeature, check_fallback=False)
-    assert not prod.has_feature(DownstreamFeature, check_fallback=False)
+        # 4. Verify we can read downstream from dev
+        dev_downstream = dev.read_metadata(DownstreamFeature, allow_fallback=False)
+        assert len(dev_downstream) == 3
 
-    # 4. Verify we can read downstream from dev
-    dev_downstream = dev.read_metadata(DownstreamFeature, allow_fallback=False)
-    assert len(dev_downstream) == 3
+        # 5. Promotion: Copy from dev to prod
+        prod.write_metadata(DownstreamFeature, dev_downstream)
 
-    # 5. Promotion: Copy from dev to prod
-    prod.write_metadata(DownstreamFeature, dev_downstream)
+        # 6. Now both have it
+        assert dev.has_feature(DownstreamFeature, check_fallback=False)
+        assert prod.has_feature(DownstreamFeature, check_fallback=False)
 
-    # 6. Now both have it
-    assert dev.has_feature(DownstreamFeature, check_fallback=False)
-    assert prod.has_feature(DownstreamFeature, check_fallback=False)
-
-    # Snapshot the hash values from the workflow
-    hash_values = result["data_version"].struct.field("default").to_list()
-    assert hash_values == snapshot
+        # Snapshot the hash values from the workflow
+        hash_values = result["data_version"].struct.field("default").to_list()
+        assert hash_values == snapshot
 
 
 # Incremental Processing Test

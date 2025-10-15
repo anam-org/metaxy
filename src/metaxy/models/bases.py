@@ -2,5 +2,4 @@ import pydantic
 
 
 class FrozenBaseModel(pydantic.BaseModel):
-    class Config:
-        frozen = True
+    model_config = pydantic.ConfigDict(frozen=True)
