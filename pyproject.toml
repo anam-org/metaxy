@@ -42,6 +42,7 @@ dev = [
     "pytest-cases>=3.9.1",
     "ruff>=0.13.1",
     "syrupy>=5.0.0",
+    "ibis-framework[duckdb,sqlite]>=11.0.0",
 ]
 
 [tool.ruff]

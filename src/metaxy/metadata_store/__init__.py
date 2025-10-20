@@ -22,4 +22,7 @@ __all__ = [
     "DependencyError",
     "StoreNotOpenError",
     "HashAlgorithmNotSupportedError",
+    "FEATURE_VERSIONS_KEY",
+    "MIGRATION_HISTORY_KEY",
+    "allow_feature_version_override",
 ]

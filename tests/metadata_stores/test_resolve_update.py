@@ -39,6 +39,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureRegistry
 
 from .conftest import HashAlgorithmCases  # type: ignore[import-not-found]
@@ -116,14 +117,14 @@ def create_store(
     Returns:
         Configured metadata store instance
     """
+    tmp_path = params.get("tmp_path")
+
     if store_type == "inmemory":
         return InMemoryMetadataStore(
             hash_algorithm=hash_algorithm, prefer_native=prefer_native
         )
     elif store_type == "duckdb":
-        tmp_path = params.get("tmp_path")
-        if tmp_path is None:
-            raise ValueError("tmp_path parameter required for duckdb store type")
+        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
         db_path = (
             tmp_path
             / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
@@ -137,6 +138,17 @@ def create_store(
             db_path,
             hash_algorithm=hash_algorithm,
             extensions=extensions,  # type: ignore[arg-type]
+            prefer_native=prefer_native,
+        )
+    elif store_type == "sqlite":
+        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
+        db_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.sqlite"
+        )
+        return SQLiteMetadataStore(
+            db_path,
+            hash_algorithm=hash_algorithm,
             prefer_native=prefer_native,
         )
     else:
