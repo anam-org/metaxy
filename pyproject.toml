@@ -13,6 +13,13 @@ dependencies = [
     "pydantic>=2.11.9",
 ]
 
+
+[project.optional-dependencies]
+ibis = [
+    "pyarrow>=18.0.0",
+    "ibis-framework>=11.0.0",
+]
+
 [tool.pyrefly]
 project-includes = ["src"]
 # search-path = ["src"]
@@ -29,8 +36,10 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "ipython>=8.37.0",
+    "duckdb>=1.4.1",
     "pyrefly>=0.34.0",
     "pytest>=8.4.2",
+    "pytest-cases>=3.9.1",
     "ruff>=0.13.1",
     "syrupy>=5.0.0",
 ]
@@ -44,3 +53,8 @@ extend-select = [
     "TID252",
     "UP"
 ]
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Ban certain modules from being imported at module level, instead requiring
+# that they're imported lazily (e.g., within a function definition).
+banned-module-level-imports = ["ibis", "duckdb"]
