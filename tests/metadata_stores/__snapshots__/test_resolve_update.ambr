@@ -81,6 +81,46 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[diamond_graph-sha256]
@@ -125,6 +165,46 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[diamond_graph-wyhash]
@@ -151,6 +231,46 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -253,6 +373,46 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[diamond_graph-xxhash64]
@@ -337,6 +497,46 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[multi_container-md5]
@@ -397,6 +597,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[multi_container-sha256]
@@ -429,6 +657,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[multi_container-wyhash]
@@ -449,6 +705,34 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -521,6 +805,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[multi_container-xxhash64]
@@ -569,6 +881,34 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -641,6 +981,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[simple_chain-sha256]
@@ -673,6 +1041,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[simple_chain-wyhash]
@@ -693,6 +1089,34 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -765,6 +1189,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_detects_changes[simple_chain-xxhash64]
@@ -825,6 +1277,34 @@
       ]),
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[diamond_graph-md5]
@@ -861,6 +1341,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[diamond_graph-sha256]
@@ -881,6 +1377,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[diamond_graph-wyhash]
@@ -895,6 +1407,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -937,6 +1465,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[diamond_graph-xxhash64]
@@ -967,6 +1511,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -1009,6 +1569,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[multi_container-sha256]
@@ -1029,6 +1605,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[multi_container-wyhash]
@@ -1043,6 +1635,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -1085,6 +1693,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[multi_container-xxhash64]
@@ -1115,6 +1739,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -1157,6 +1797,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[simple_chain-sha256]
@@ -1177,6 +1833,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[simple_chain-wyhash]
@@ -1191,6 +1863,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -1233,6 +1921,22 @@
       'changed': 0,
       'removed': 0,
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
   })
 # ---
 # name: test_resolve_update_no_upstream[simple_chain-xxhash64]
@@ -1263,6 +1967,22 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 0,
@@ -1349,6 +2069,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8197066bb050ec0ec4971455c1631e22',
+        }),
+        dict({
+          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+        }),
+        dict({
+          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8197066bb050ec0ec4971455c1631e22',
+        }),
+        dict({
+          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+        }),
+        dict({
+          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[diamond_graph-sha256]
@@ -1391,6 +2149,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+        }),
+        dict({
+          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+        }),
+        dict({
+          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '71020eb08ee53e512fdd2b78675b13e4ff7b7793141c949ff0749e19d86f8958',
+        }),
+        dict({
+          'default': 'e1df3e7d9957651f35705aa1837ee1179c9af875edc76ec05511843d87cd2fb0',
+        }),
+        dict({
+          'default': '9730e23731619f75aa9f64722582493ab61cc1e0c54b5848c1a95f4d710f628a',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[diamond_graph-wyhash]
@@ -1416,6 +2212,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5488654731054453978',
+        }),
+        dict({
+          'default': '1631355260698918875',
+        }),
+        dict({
+          'default': '18254261935385162564',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5488654731054453978',
+        }),
+        dict({
+          'default': '1631355260698918875',
+        }),
+        dict({
+          'default': '18254261935385162564',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,
@@ -1513,6 +2347,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2897566505',
+        }),
+        dict({
+          'default': '882288564',
+        }),
+        dict({
+          'default': '1833035413',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2897566505',
+        }),
+        dict({
+          'default': '882288564',
+        }),
+        dict({
+          'default': '1833035413',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[diamond_graph-xxhash64]
@@ -1576,6 +2448,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '13389317762309231736',
+        }),
+        dict({
+          'default': '6070615251723964776',
+        }),
+        dict({
+          'default': '3953645447121735588',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '13389317762309231736',
+        }),
+        dict({
+          'default': '6070615251723964776',
+        }),
+        dict({
+          'default': '3953645447121735588',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,
@@ -1673,6 +2583,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'f043bcedc057614b56b31185916d5984',
+        }),
+        dict({
+          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+        }),
+        dict({
+          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'f043bcedc057614b56b31185916d5984',
+        }),
+        dict({
+          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+        }),
+        dict({
+          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[multi_container-sha256]
@@ -1715,6 +2663,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+        }),
+        dict({
+          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+        }),
+        dict({
+          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5e4457a7413c60c245e55829f9d84b4472415d69747890d5366611b7fd0e4417',
+        }),
+        dict({
+          'default': '64f0225099282a4ff5afcab84e5db38a92a70652c50f684e23789196f618db33',
+        }),
+        dict({
+          'default': '122f95e57faa816ddc92e3793c0d5214db3dcbc089bfcdd486904fb37c4c6b53',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[multi_container-wyhash]
@@ -1740,6 +2726,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8248649353156489705',
+        }),
+        dict({
+          'default': '18163998010845729717',
+        }),
+        dict({
+          'default': '17537738043292728638',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8248649353156489705',
+        }),
+        dict({
+          'default': '18163998010845729717',
+        }),
+        dict({
+          'default': '17537738043292728638',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,
@@ -1837,6 +2861,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '350527612',
+        }),
+        dict({
+          'default': '3625646102',
+        }),
+        dict({
+          'default': '2616766943',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '350527612',
+        }),
+        dict({
+          'default': '3625646102',
+        }),
+        dict({
+          'default': '2616766943',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[multi_container-xxhash64]
@@ -1900,6 +2962,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '11609971260671236095',
+        }),
+        dict({
+          'default': '401566829285048816',
+        }),
+        dict({
+          'default': '2036637596123922776',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '11609971260671236095',
+        }),
+        dict({
+          'default': '401566829285048816',
+        }),
+        dict({
+          'default': '2036637596123922776',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,
@@ -1997,6 +3097,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+        }),
+        dict({
+          'default': '5eea21de0536aa8ab787de725e41162d',
+        }),
+        dict({
+          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+        }),
+        dict({
+          'default': '5eea21de0536aa8ab787de725e41162d',
+        }),
+        dict({
+          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[simple_chain-sha256]
@@ -2039,6 +3177,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+        }),
+        dict({
+          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+        }),
+        dict({
+          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10e36d9a8406605b95ad6832c931d533ec9d5a0bc436b5f8c1fa30d63bafe558',
+        }),
+        dict({
+          'default': '765028d6a3cffe4e2198f45497c1e638ac1a94c512919dfaee3933c02b47f6e9',
+        }),
+        dict({
+          'default': 'a6658f3be88dae89b74d13e0ce19a06f54bce968cc4ac1817c44c97900426387',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[simple_chain-wyhash]
@@ -2064,6 +3240,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '4401551130703593339',
+        }),
+        dict({
+          'default': '17638848701399790554',
+        }),
+        dict({
+          'default': '490449505687170975',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '4401551130703593339',
+        }),
+        dict({
+          'default': '17638848701399790554',
+        }),
+        dict({
+          'default': '490449505687170975',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,
@@ -2161,6 +3375,44 @@
         }),
       ]),
     }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2834089591',
+        }),
+        dict({
+          'default': '194109522',
+        }),
+        dict({
+          'default': '3297810028',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2834089591',
+        }),
+        dict({
+          'default': '194109522',
+        }),
+        dict({
+          'default': '3297810028',
+        }),
+      ]),
+    }),
   })
 # ---
 # name: test_resolve_update_with_upstream[simple_chain-xxhash64]
@@ -2224,6 +3476,44 @@
     }),
     tuple(
       'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5916632186186535252',
+        }),
+        dict({
+          'default': '3715687565105490516',
+        }),
+        dict({
+          'default': '13533499000011057433',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5916632186186535252',
+        }),
+        dict({
+          'default': '3715687565105490516',
+        }),
+        dict({
+          'default': '13533499000011057433',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
       True,
     ): dict({
       'added': 3,

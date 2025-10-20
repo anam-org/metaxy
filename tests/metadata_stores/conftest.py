@@ -17,6 +17,7 @@ from metaxy import (
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureRegistry
 
 
@@ -120,6 +121,14 @@ class StoreCases:
         db_path = tmp_path / "test.duckdb"
         # Registry is accessed globally via FeatureRegistry.get_active()
         return (DuckDBMetadataStore, {"database": db_path})
+
+    def case_sqlite(
+        self, tmp_path: Path, test_registry: FeatureRegistry
+    ) -> tuple[type[MetadataStore], dict]:
+        """SQLite store case."""
+        db_path = tmp_path / "test.sqlite"
+        # Registry is accessed globally via FeatureRegistry.get_active()
+        return (SQLiteMetadataStore, {"database": db_path})
 
 
 @fixture
