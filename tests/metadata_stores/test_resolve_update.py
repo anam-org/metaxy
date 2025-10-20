@@ -16,7 +16,6 @@ Current paths:
 - DuckDB: Always Polars (_can_compute_native() = False, pending native SQL implementation)
 """
 
-from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -38,6 +37,7 @@ from metaxy.metadata_store import (
     InMemoryMetadataStore,
     MetadataStore,
 )
+from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureRegistry
@@ -54,7 +54,7 @@ def get_available_store_types() -> list[str]:
     the StoreCases class for case methods. This allows different branches
     to have different store types without hardcoding the list.
     """
-    from .conftest import StoreCases
+    from .conftest import StoreCases  # type: ignore[import-not-found]
 
     store_types = []
     for attr_name in dir(StoreCases):
@@ -148,6 +148,22 @@ def create_store(
         )
         return SQLiteMetadataStore(
             db_path,
+            hash_algorithm=hash_algorithm,
+            prefer_native=prefer_native,
+        )
+    elif store_type == "clickhouse":
+        clickhouse_db = params.get("clickhouse_db")
+        if clickhouse_db is None:
+            raise ValueError(
+                "clickhouse_db parameter required for clickhouse store type"
+            )
+        # ClickHouse uses the same database but tables will be unique per feature
+        # However, prefer_native variants need isolation since they write to same tables
+        # We solve this by using the same connection - the fixture provides a clean database per test
+        # Each test gets its own database, so prefer_native variants within the same test share tables
+        # This is the root cause of duplicates - we need to drop tables between variants
+        return ClickHouseMetadataStore(
+            clickhouse_db,
             hash_algorithm=hash_algorithm,
             prefer_native=prefer_native,
         )
@@ -371,7 +387,7 @@ def simple_chain_registry():
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("registry_config", cases=RegistryCases)
 def test_resolve_update_no_upstream(
-    tmp_path: Path,
+    store_params: dict,
     registry_config: tuple[FeatureRegistry, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
@@ -396,15 +412,17 @@ def test_resolve_update_no_upstream(
                 store_type,
                 prefer_native,
                 hash_algorithm,
-                params={"tmp_path": tmp_path},
+                params=store_params,
             )
 
             # Try to open store - will fail validation if hash algorithm not supported
             try:
                 with store, registry.use():
-                    # Drop all feature metadata to ensure clean state between prefer_native variants
-                    for feature in features:
-                        store.drop_feature_metadata(feature)
+                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
+                    # since they share the same database (unlike DuckDB/SQLite which use separate files)
+                    if store_type == "clickhouse":
+                        for feature in features:
+                            store.drop_feature_metadata(feature)
 
                     # Root feature has no dependencies - resolve_update should return empty result
                     # since there's no metadata yet
@@ -446,7 +464,7 @@ def test_resolve_update_no_upstream(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("registry_config", cases=RegistryCases)
 def test_resolve_update_with_upstream(
-    tmp_path: Path,
+    store_params: dict,
     registry_config: tuple[FeatureRegistry, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
@@ -493,15 +511,17 @@ def test_resolve_update_with_upstream(
                 store_type,
                 prefer_native,
                 hash_algorithm,
-                params={"tmp_path": tmp_path},
+                params=store_params,
             )
 
             # Try to open store - will fail validation if hash algorithm not supported
             try:
                 with store, registry.use():
-                    # Drop all feature metadata to ensure clean state between prefer_native variants
-                    for feature in features:
-                        store.drop_feature_metadata(feature)
+                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
+                    # since they share the same database (unlike DuckDB/SQLite which use separate files)
+                    if store_type == "clickhouse":
+                        for feature in features:
+                            store.drop_feature_metadata(feature)
 
                     recwarn.clear()
 
@@ -581,7 +601,7 @@ def test_resolve_update_with_upstream(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("registry_config", cases=RegistryCases)
 def test_resolve_update_detects_changes(
-    tmp_path: Path,
+    store_params: dict,
     registry_config: tuple[FeatureRegistry, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
@@ -641,7 +661,7 @@ def test_resolve_update_detects_changes(
                 store_type,
                 prefer_native,
                 hash_algorithm,
-                params={"tmp_path": tmp_path},
+                params=store_params,
             )
 
             # Try to open store - will fail validation if hash algorithm not supported

@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .direnv
+
+# clickhouse
+processed_configs

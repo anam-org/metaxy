@@ -2,6 +2,46 @@
 # name: test_resolve_update_detects_changes[diamond_graph-md5]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -294,6 +334,46 @@
 # name: test_resolve_update_detects_changes[diamond_graph-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -418,6 +498,46 @@
 # name: test_resolve_update_detects_changes[diamond_graph-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_ids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -541,6 +661,34 @@
 # ---
 # name: test_resolve_update_detects_changes[multi_container-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
     tuple(
       'duckdb',
       False,
@@ -750,6 +898,34 @@
 # name: test_resolve_update_detects_changes[multi_container-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -838,6 +1014,34 @@
 # name: test_resolve_update_detects_changes[multi_container-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -925,6 +1129,34 @@
 # ---
 # name: test_resolve_update_detects_changes[simple_chain-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
     tuple(
       'duckdb',
       False,
@@ -1134,6 +1366,34 @@
 # name: test_resolve_update_detects_changes[simple_chain-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1222,6 +1482,34 @@
 # name: test_resolve_update_detects_changes[simple_chain-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_ids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1309,6 +1597,22 @@
 # ---
 # name: test_resolve_update_no_upstream[diamond_graph-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
     tuple(
       'duckdb',
       False,
@@ -1434,6 +1738,22 @@
 # name: test_resolve_update_no_upstream[diamond_graph-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1486,6 +1806,22 @@
 # name: test_resolve_update_no_upstream[diamond_graph-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1537,6 +1873,22 @@
 # ---
 # name: test_resolve_update_no_upstream[multi_container-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
     tuple(
       'duckdb',
       False,
@@ -1662,6 +2014,22 @@
 # name: test_resolve_update_no_upstream[multi_container-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1714,6 +2082,22 @@
 # name: test_resolve_update_no_upstream[multi_container-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1765,6 +2149,22 @@
 # ---
 # name: test_resolve_update_no_upstream[simple_chain-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
     tuple(
       'duckdb',
       False,
@@ -1890,6 +2290,22 @@
 # name: test_resolve_update_no_upstream[simple_chain-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1942,6 +2358,22 @@
 # name: test_resolve_update_no_upstream[simple_chain-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 0,
+      'changed': 0,
+      'removed': 0,
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -1993,6 +2425,44 @@
 # ---
 # name: test_resolve_update_with_upstream[diamond_graph-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8197066bb050ec0ec4971455c1631e22',
+        }),
+        dict({
+          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+        }),
+        dict({
+          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '8197066bb050ec0ec4971455c1631e22',
+        }),
+        dict({
+          'default': '9ec4a9326bba68f00cb0f4ed3609136e',
+        }),
+        dict({
+          'default': '4a708dfae8574cf8d38957eaa827c4e4',
+        }),
+      ]),
+    }),
     tuple(
       'duckdb',
       False,
@@ -2272,6 +2742,44 @@
 # name: test_resolve_update_with_upstream[diamond_graph-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2897566505',
+        }),
+        dict({
+          'default': '882288564',
+        }),
+        dict({
+          'default': '1833035413',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2897566505',
+        }),
+        dict({
+          'default': '882288564',
+        }),
+        dict({
+          'default': '1833035413',
+        }),
+      ]),
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -2390,6 +2898,44 @@
 # name: test_resolve_update_with_upstream[diamond_graph-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '13389317762309231736',
+        }),
+        dict({
+          'default': '6070615251723964776',
+        }),
+        dict({
+          'default': '3953645447121735588',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '13389317762309231736',
+        }),
+        dict({
+          'default': '6070615251723964776',
+        }),
+        dict({
+          'default': '3953645447121735588',
+        }),
+      ]),
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -2507,6 +3053,44 @@
 # ---
 # name: test_resolve_update_with_upstream[multi_container-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'f043bcedc057614b56b31185916d5984',
+        }),
+        dict({
+          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+        }),
+        dict({
+          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'f043bcedc057614b56b31185916d5984',
+        }),
+        dict({
+          'default': 'cb89584d24aa8592cf14ef84e15a9b37',
+        }),
+        dict({
+          'default': '3b184b6cd4148d490bbcf71be7e5a91a',
+        }),
+      ]),
+    }),
     tuple(
       'duckdb',
       False,
@@ -2786,6 +3370,44 @@
 # name: test_resolve_update_with_upstream[multi_container-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '350527612',
+        }),
+        dict({
+          'default': '3625646102',
+        }),
+        dict({
+          'default': '2616766943',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '350527612',
+        }),
+        dict({
+          'default': '3625646102',
+        }),
+        dict({
+          'default': '2616766943',
+        }),
+      ]),
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -2904,6 +3526,44 @@
 # name: test_resolve_update_with_upstream[multi_container-xxhash64]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '11609971260671236095',
+        }),
+        dict({
+          'default': '401566829285048816',
+        }),
+        dict({
+          'default': '2036637596123922776',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '11609971260671236095',
+        }),
+        dict({
+          'default': '401566829285048816',
+        }),
+        dict({
+          'default': '2036637596123922776',
+        }),
+      ]),
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -3021,6 +3681,44 @@
 # ---
 # name: test_resolve_update_with_upstream[simple_chain-md5]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+        }),
+        dict({
+          'default': '5eea21de0536aa8ab787de725e41162d',
+        }),
+        dict({
+          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '07f54bd4e335cdb6da1f01ca93b941d4',
+        }),
+        dict({
+          'default': '5eea21de0536aa8ab787de725e41162d',
+        }),
+        dict({
+          'default': '6a95bb1d35da8bc29ad43cb0951719ee',
+        }),
+      ]),
+    }),
     tuple(
       'duckdb',
       False,
@@ -3300,6 +3998,44 @@
 # name: test_resolve_update_with_upstream[simple_chain-xxhash32]
   dict({
     tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2834089591',
+        }),
+        dict({
+          'default': '194109522',
+        }),
+        dict({
+          'default': '3297810028',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2834089591',
+        }),
+        dict({
+          'default': '194109522',
+        }),
+        dict({
+          'default': '3297810028',
+        }),
+      ]),
+    }),
+    tuple(
       'duckdb',
       False,
     ): dict({
@@ -3417,6 +4153,44 @@
 # ---
 # name: test_resolve_update_with_upstream[simple_chain-xxhash64]
   dict({
+    tuple(
+      'clickhouse',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5916632186186535252',
+        }),
+        dict({
+          'default': '3715687565105490516',
+        }),
+        dict({
+          'default': '13533499000011057433',
+        }),
+      ]),
+    }),
+    tuple(
+      'clickhouse',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5916632186186535252',
+        }),
+        dict({
+          'default': '3715687565105490516',
+        }),
+        dict({
+          'default': '13533499000011057433',
+        }),
+      ]),
+    }),
     tuple(
       'duckdb',
       False,
