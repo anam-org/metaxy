@@ -1,0 +1,1093 @@
+"""Tests for the three-component data versioning architecture."""
+
+import polars as pl
+import pytest
+
+from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
+from metaxy.data_versioning.diff.polars import PolarsDiffResolver
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.data_versioning.joiners.polars import PolarsJoiner
+from metaxy.models.container import ContainerSpec
+from metaxy.models.feature import Feature, FeatureRegistry
+from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.types import ContainerKey, FeatureKey
+
+
+@pytest.fixture
+def features(registry: FeatureRegistry) -> dict[str, type[Feature]]:
+    """Create test features for component testing."""
+
+    class UpstreamVideo(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["video"]),
+            deps=None,
+            containers=[
+                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
+                ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+            ],
+        ),
+    ):
+        pass
+
+    class UpstreamAudio(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["audio"]),
+            deps=None,
+            containers=[
+                ContainerSpec(key=ContainerKey(["waveform"]), code_version=1),
+            ],
+        ),
+    ):
+        pass
+
+    class ProcessedVideo(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["processed"]),
+            deps=[FeatureDep(key=FeatureKey(["video"]))],
+            containers=[
+                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            ],
+        ),
+    ):
+        pass
+
+    class MultiUpstreamFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["multi"]),
+            deps=[
+                FeatureDep(key=FeatureKey(["video"])),
+                FeatureDep(key=FeatureKey(["audio"])),
+            ],
+            containers=[
+                ContainerSpec(key=ContainerKey(["fusion"]), code_version=1),
+                ContainerSpec(key=ContainerKey(["analysis"]), code_version=2),
+            ],
+        ),
+    ):
+        pass
+
+    return {
+        "UpstreamVideo": UpstreamVideo,
+        "UpstreamAudio": UpstreamAudio,
+        "ProcessedVideo": ProcessedVideo,
+        "MultiUpstreamFeature": MultiUpstreamFeature,
+    }
+
+
+def test_polars_joiner(features: dict[str, type[Feature]], registry: FeatureRegistry):
+    """Test PolarsJoiner joins upstream features correctly."""
+    joiner = PolarsJoiner()
+
+    # Create upstream metadata
+    video_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"frames": "hash_v1", "audio": "hash_a1"},
+                {"frames": "hash_v2", "audio": "hash_a2"},
+                {"frames": "hash_v3", "audio": "hash_a3"},
+            ],
+        }
+    ).lazy()
+
+    upstream_refs = {"video": video_metadata}
+
+    # Join upstream
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    joined, mapping = joiner.join_upstream(
+        upstream_refs=upstream_refs,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+    )
+
+    # Verify result
+    result = joined.collect()
+    assert len(result) == 3
+    assert "sample_id" in result.columns
+    assert "video" in mapping
+    assert mapping["video"] in result.columns
+
+    # Verify data_version column was renamed
+    assert "__upstream_video__data_version" in result.columns
+
+
+def test_polars_hash_calculator(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test PolarsDataVersionCalculator computes hashes correctly."""
+    calculator = PolarsDataVersionCalculator()
+
+    # Verify supported algorithms
+    assert HashAlgorithm.XXHASH64 in calculator.supported_algorithms
+    assert calculator.default_algorithm == HashAlgorithm.XXHASH64
+
+    # Create joined upstream data (output from joiner)
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "__upstream_video__data_version": [
+                {"frames": "hash_v1", "audio": "hash_a1"},
+                {"frames": "hash_v2", "audio": "hash_a2"},
+            ],
+        }
+    ).lazy()
+
+    upstream_mapping = {"video": "__upstream_video__data_version"}
+
+    # Calculate data versions
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+    )
+
+    # Verify result
+    result = with_versions.collect()
+    assert "data_version" in result.columns
+    assert isinstance(result.schema["data_version"], pl.Struct)
+
+    # Check data_version has 'default' container field
+    data_version_sample = result["data_version"][0]
+    assert "default" in data_version_sample
+
+
+def test_polars_hash_calculator_algorithms(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test different hash algorithms produce different results."""
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1],
+            "__upstream_video__data_version": [
+                {"frames": "hash_v1", "audio": "hash_a1"}
+            ],
+        }
+    ).lazy()
+
+    upstream_mapping = {"video": "__upstream_video__data_version"}
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    # Calculate with xxHash64
+    calc_xxhash = PolarsDataVersionCalculator()
+    result_xxhash = calc_xxhash.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    ).collect()
+
+    # Calculate with wyhash
+    calc_wyhash = PolarsDataVersionCalculator()
+    result_wyhash = calc_wyhash.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+        hash_algorithm=HashAlgorithm.WYHASH,
+    ).collect()
+
+    # Different algorithms should produce different hashes
+    hash_xxhash = result_xxhash["data_version"][0]["default"]
+    hash_wyhash = result_wyhash["data_version"][0]["default"]
+    assert hash_xxhash != hash_wyhash
+
+
+def test_polars_diff_resolver_no_current() -> None:
+    """Test diff resolver when no current metadata exists."""
+    diff_resolver = PolarsDiffResolver()
+
+    target_versions = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"default": "hash1"},
+                {"default": "hash2"},
+                {"default": "hash3"},
+            ],
+        }
+    ).lazy()
+
+    # No current metadata - all rows are added
+    result = diff_resolver.find_changes(
+        target_versions=target_versions,
+        current_metadata=None,
+    )
+
+    assert len(result.added) == 3
+    assert len(result.changed) == 0
+    assert len(result.removed) == 0
+
+
+def test_polars_diff_resolver_with_changes() -> None:
+    """Test diff resolver identifies added, changed, and removed rows."""
+    diff_resolver = PolarsDiffResolver()
+
+    target_versions = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3, 4],
+            "data_version": [
+                {"default": "hash1"},  # Unchanged
+                {"default": "hash2_new"},  # Changed
+                {"default": "hash3"},  # Unchanged
+                {"default": "hash4"},  # Added
+            ],
+        }
+    ).lazy()
+
+    current_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3, 5],
+            "data_version": [
+                {"default": "hash1"},  # Same
+                {"default": "hash2_old"},  # Different
+                {"default": "hash3"},  # Same
+                {"default": "hash5"},  # Removed (not in target)
+            ],
+        }
+    ).lazy()
+
+    result = diff_resolver.find_changes(
+        target_versions=target_versions,
+        current_metadata=current_metadata,
+    )
+
+    # Added: sample_id=4
+    added_df = result.added
+    assert len(added_df) == 1
+    assert added_df["sample_id"][0] == 4
+
+    # Changed: sample_id=2
+    changed_df = result.changed
+    assert len(changed_df) == 1
+    assert changed_df["sample_id"][0] == 2
+
+    # Removed: sample_id=5
+    removed_df = result.removed
+    assert len(removed_df) == 1
+    assert removed_df["sample_id"][0] == 5
+
+
+def test_full_pipeline_integration(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test all three components working together."""
+    # Step 1: Join upstream
+    joiner = PolarsJoiner()
+
+    video_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"frames": "v1", "audio": "a1"},
+                {"frames": "v2", "audio": "a2"},
+                {"frames": "v3", "audio": "a3"},
+            ],
+        }
+    ).lazy()
+
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    joined, mapping = joiner.join_upstream(
+        upstream_refs={"video": video_metadata},
+        feature_spec=feature.spec,
+        feature_plan=plan,
+    )
+
+    # Step 2: Calculate data versions
+    calculator = PolarsDataVersionCalculator()
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=mapping,
+    )
+
+    # Step 3: Diff with current
+    diff_resolver = PolarsDiffResolver()
+
+    # Simulate some current metadata
+    current = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "data_version": [
+                {"default": "old_hash1"},
+                {"default": "old_hash2"},
+            ],
+        }
+    ).lazy()
+
+    diff_result = diff_resolver.find_changes(
+        target_versions=with_versions,
+        current_metadata=current,
+    )
+
+    # Added: sample_id=3 (not in current)
+    added = diff_result.added
+    assert len(added) == 1
+    assert added["sample_id"][0] == 3
+
+    # Changed: sample_ids 1, 2 (different hashes)
+    changed = diff_result.changed
+    assert len(changed) == 2
+    assert set(changed["sample_id"].to_list()) == {1, 2}
+
+    # Removed: none (all current samples are in target)
+    removed = diff_result.removed
+    assert len(removed) == 0
+
+
+# ========== Multi-Upstream Tests ==========
+
+
+def test_polars_joiner_multiple_upstream(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test joining multiple upstream features."""
+    joiner = PolarsJoiner()
+
+    video_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"frames": "v1", "audio": "a1"},
+                {"frames": "v2", "audio": "a2"},
+                {"frames": "v3", "audio": "a3"},
+            ],
+        }
+    ).lazy()
+
+    audio_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"waveform": "w1"},
+                {"waveform": "w2"},
+                {"waveform": "w3"},
+            ],
+        }
+    ).lazy()
+
+    upstream_refs = {"video": video_metadata, "audio": audio_metadata}
+
+    feature = features["MultiUpstreamFeature"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    joined, mapping = joiner.join_upstream(
+        upstream_refs=upstream_refs,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+    )
+
+    result = joined.collect()
+
+    # Should have both upstream data_version columns
+    assert "video" in mapping
+    assert "audio" in mapping
+    assert mapping["video"] in result.columns
+    assert mapping["audio"] in result.columns
+
+    # Should have all 3 samples (inner join on matching sample_ids)
+    assert len(result) == 3
+
+
+def test_polars_joiner_partial_overlap(registry: FeatureRegistry) -> None:
+    """Test joiner with partial sample_id overlap (inner join behavior)."""
+    joiner = PolarsJoiner()
+
+    # Video has samples 1, 2, 3
+    video_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [{"frames": "v1"}, {"frames": "v2"}, {"frames": "v3"}],
+        }
+    ).lazy()
+
+    # Audio has samples 2, 3, 4
+    audio_metadata = pl.DataFrame(
+        {
+            "sample_id": [2, 3, 4],
+            "data_version": [
+                {"waveform": "w2"},
+                {"waveform": "w3"},
+                {"waveform": "w4"},
+            ],
+        }
+    ).lazy()
+
+    # Create a simple feature with both deps
+
+    class TestFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["test"]),
+            deps=[
+                FeatureDep(key=FeatureKey(["video"])),
+                FeatureDep(key=FeatureKey(["audio"])),
+            ],
+            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        ),
+    ):
+        pass
+
+    # Need to register upstream features for the plan to work
+    class Video(
+        Feature,
+        spec=FeatureSpec(key=FeatureKey(["video"]), deps=None),
+    ):
+        pass
+
+    class Audio(
+        Feature,
+        spec=FeatureSpec(key=FeatureKey(["audio"]), deps=None),
+    ):
+        pass
+
+    plan = registry.get_feature_plan(TestFeature.spec.key)
+
+    joined, _ = joiner.join_upstream(
+        upstream_refs={"video": video_metadata, "audio": audio_metadata},
+        feature_spec=TestFeature.spec,
+        feature_plan=plan,
+    )
+
+    result = joined.collect()
+
+    # Inner join - only samples 2, 3 (present in BOTH)
+    assert len(result) == 2
+    assert set(result["sample_id"].to_list()) == {2, 3}
+
+
+# ========== Multi-Container Calculator Tests ==========
+
+
+def test_polars_calculator_multiple_containers(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test calculator with multiple containers."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "__upstream_video__data_version": [
+                {"frames": "v1", "audio": "a1"},
+                {"frames": "v2", "audio": "a2"},
+            ],
+            "__upstream_audio__data_version": [
+                {"waveform": "w1"},
+                {"waveform": "w2"},
+            ],
+        }
+    ).lazy()
+
+    upstream_mapping = {
+        "video": "__upstream_video__data_version",
+        "audio": "__upstream_audio__data_version",
+    }
+
+    feature = features["MultiUpstreamFeature"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+    )
+
+    result = with_versions.collect()
+
+    # Should have data_version struct with both containers
+    data_version_schema = result.schema["data_version"]
+    field_names = {f.name for f in data_version_schema.fields}  # type: ignore[attr-defined]
+    assert field_names == {"fusion", "analysis"}
+
+    # Different code versions should produce different hashes
+    sample_dv = result["data_version"][0]
+    assert sample_dv["fusion"] != sample_dv["analysis"]
+
+
+def test_polars_calculator_unsupported_algorithm(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test error when using unsupported hash algorithm."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+    ).lazy()
+
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    # Try to use an algorithm by creating a fake enum value
+    class FakeAlgorithm:
+        pass
+
+    with pytest.raises(ValueError, match="not supported"):
+        calculator.calculate_data_versions(
+            joined_upstream=joined_upstream,
+            feature_spec=feature.spec,
+            feature_plan=plan,
+            upstream_column_mapping={"video": "__upstream_video__data_version"},
+            hash_algorithm=FakeAlgorithm(),  # type: ignore
+        )
+
+
+# ========== Edge Cases ==========
+
+
+def test_diff_resolver_all_unchanged() -> None:
+    """Test diff when all rows are unchanged."""
+    diff_resolver = PolarsDiffResolver()
+
+    target_versions = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"default": "hash1"},
+                {"default": "hash2"},
+                {"default": "hash3"},
+            ],
+        }
+    ).lazy()
+
+    # Current has same data_versions
+    current_metadata = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"default": "hash1"},
+                {"default": "hash2"},
+                {"default": "hash3"},
+            ],
+        }
+    ).lazy()
+
+    result = diff_resolver.find_changes(
+        target_versions=target_versions,
+        current_metadata=current_metadata,
+    )
+
+    # Nothing changed
+    assert len(result.added) == 0
+    assert len(result.changed) == 0
+    assert len(result.removed) == 0
+
+
+def test_joiner_deterministic_order(
+    features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Test that join order doesn't affect result."""
+    joiner = PolarsJoiner()
+
+    video_metadata = pl.DataFrame(
+        {"sample_id": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
+    ).lazy()
+
+    audio_metadata = pl.DataFrame(
+        {"sample_id": [1, 2], "data_version": [{"waveform": "w1"}, {"waveform": "w2"}]}
+    ).lazy()
+
+    feature = features["MultiUpstreamFeature"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    # Join with different key orders
+    joined1, mapping1 = joiner.join_upstream(
+        upstream_refs={"video": video_metadata, "audio": audio_metadata},
+        feature_spec=feature.spec,
+        feature_plan=plan,
+    )
+
+    joined2, mapping2 = joiner.join_upstream(
+        upstream_refs={"audio": audio_metadata, "video": video_metadata},
+        feature_spec=feature.spec,
+        feature_plan=plan,
+    )
+
+    # Mappings should be the same
+    assert mapping1 == mapping2
+
+    # Results should be identical (order-independent)
+    result1 = joined1.collect().sort("sample_id")
+    result2 = joined2.collect().sort("sample_id")
+
+    assert result1.equals(result2)
+
+
+# ========== Feature Method Override Tests ==========
+
+
+def test_feature_join_upstream_override(registry: FeatureRegistry):
+    """Test Feature.join_upstream_metadata can be overridden."""
+
+    class CustomJoinFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["custom"]),
+            deps=[FeatureDep(key=FeatureKey(["video"]))],
+            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        ),
+    ):
+        @classmethod
+        def join_upstream_metadata(cls, joiner, upstream_refs):
+            # Custom: delegate to joiner but it's overridden
+            plan = cls.registry.get_feature_plan(cls.spec.key)
+            joined, mapping = joiner.join_upstream(
+                upstream_refs=upstream_refs,
+                feature_spec=cls.spec,
+                feature_plan=plan,
+            )
+            # Could add custom logic here
+            return joined, mapping
+
+    # Register upstream
+    class Video(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["video"]),
+            deps=None,
+            containers=[ContainerSpec(key=ContainerKey(["frames"]), code_version=1)],
+        ),
+    ):
+        pass
+
+    joiner = PolarsJoiner()
+    video_metadata = pl.DataFrame(
+        {"sample_id": [1], "data_version": [{"frames": "v1"}]}
+    ).lazy()
+
+    # Call the overridden method
+    joined, mapping = CustomJoinFeature.join_upstream_metadata(
+        joiner=joiner,
+        upstream_refs={"video": video_metadata},
+    )
+
+    result = joined.collect()
+    assert len(result) == 1
+
+
+def test_feature_resolve_diff_override(registry: FeatureRegistry):
+    """Test Feature.resolve_data_version_diff can be overridden."""
+
+    class CustomDiffFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["custom_diff"]),
+            deps=None,
+            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        ),
+    ):
+        @classmethod
+        def resolve_data_version_diff(
+            cls, diff_resolver, target_versions, current_metadata
+        ):
+            # Custom: call standard diff, then could modify results
+            result = diff_resolver.find_changes(target_versions, current_metadata)
+            # Could filter/modify result here
+            return result
+
+    diff_resolver = PolarsDiffResolver()
+
+    target = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "data_version": [{"default": "new1"}, {"default": "new2"}],
+        }
+    ).lazy()
+
+    current = pl.DataFrame(
+        {"sample_id": [1], "data_version": [{"default": "old1"}]}
+    ).lazy()
+
+    # Call overridden method
+    result = CustomDiffFeature.resolve_data_version_diff(
+        diff_resolver=diff_resolver,
+        target_versions=target,
+        current_metadata=current,
+    )
+
+    # Should identify: added=2, changed=1
+    assert len(result.added) == 1
+    assert len(result.changed) == 1
+
+
+# ========== Snapshot Tests ==========
+
+
+def test_hash_output_snapshots(
+    snapshot, features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Snapshot test to detect hash algorithm changes."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "__upstream_video__data_version": [
+                {"frames": "frame_hash_1", "audio": "audio_hash_1"},
+                {"frames": "frame_hash_2", "audio": "audio_hash_2"},
+                {"frames": "frame_hash_3", "audio": "audio_hash_3"},
+            ],
+        }
+    ).lazy()
+
+    upstream_mapping = {"video": "__upstream_video__data_version"}
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+        hash_algorithm=HashAlgorithm.XXHASH64,
+    )
+
+    result = with_versions.collect()
+    hashes = result["data_version"].struct.field("default").to_list()
+
+    # Snapshot the hashes to detect algorithm changes
+    assert hashes == snapshot
+
+
+def test_multi_container_hash_snapshots(
+    snapshot, features: dict[str, type[Feature]], registry: FeatureRegistry
+):
+    """Snapshot test for multi-container hash outputs."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1],
+            "__upstream_video__data_version": [{"frames": "v1", "audio": "a1"}],
+            "__upstream_audio__data_version": [{"waveform": "w1"}],
+        }
+    ).lazy()
+
+    upstream_mapping = {
+        "video": "__upstream_video__data_version",
+        "audio": "__upstream_audio__data_version",
+    }
+
+    feature = features["MultiUpstreamFeature"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+    )
+
+    result = with_versions.collect()
+    data_version = result["data_version"][0]
+
+    # Snapshot both container hashes
+    container_hashes = {
+        "fusion": data_version["fusion"],
+        "analysis": data_version["analysis"],
+    }
+
+    assert container_hashes == snapshot
+
+
+# ========== Comprehensive Snapshot Tests ==========
+
+
+@pytest.mark.parametrize(
+    "hash_algorithm",
+    [
+        HashAlgorithm.XXHASH64,
+        HashAlgorithm.XXHASH32,
+        HashAlgorithm.WYHASH,
+        HashAlgorithm.SHA256,
+        HashAlgorithm.MD5,
+    ],
+)
+def test_single_upstream_single_container_snapshots(
+    snapshot,
+    features: dict[str, type[Feature]],
+    registry: FeatureRegistry,
+    hash_algorithm,
+):
+    """Snapshot data versions for single upstream, single container."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "__upstream_video__data_version": [
+                {"frames": "v1", "audio": "a1"},
+                {"frames": "v2", "audio": "a2"},
+                {"frames": "v3", "audio": "a3"},
+            ],
+        }
+    ).lazy()
+
+    feature = features["ProcessedVideo"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping={"video": "__upstream_video__data_version"},
+        hash_algorithm=hash_algorithm,
+    )
+
+    result = with_versions.collect()
+    hashes = result["data_version"].struct.field("default").to_list()
+
+    assert hashes == snapshot
+
+
+@pytest.mark.parametrize(
+    "hash_algorithm",
+    [
+        HashAlgorithm.XXHASH64,
+        HashAlgorithm.WYHASH,
+        HashAlgorithm.SHA256,
+    ],
+)
+def test_multi_upstream_multi_container_snapshots(
+    snapshot,
+    features: dict[str, type[Feature]],
+    registry: FeatureRegistry,
+    hash_algorithm,
+):
+    """Snapshot data versions for multiple upstreams and containers."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "__upstream_video__data_version": [
+                {"frames": "frame1", "audio": "audio1"},
+                {"frames": "frame2", "audio": "audio2"},
+            ],
+            "__upstream_audio__data_version": [
+                {"waveform": "wave1"},
+                {"waveform": "wave2"},
+            ],
+        }
+    ).lazy()
+
+    upstream_mapping = {
+        "video": "__upstream_video__data_version",
+        "audio": "__upstream_audio__data_version",
+    }
+
+    feature = features["MultiUpstreamFeature"]
+    plan = registry.get_feature_plan(feature.spec.key)
+
+    with_versions = calculator.calculate_data_versions(
+        joined_upstream=joined_upstream,
+        feature_spec=feature.spec,
+        feature_plan=plan,
+        upstream_column_mapping=upstream_mapping,
+        hash_algorithm=hash_algorithm,
+    )
+
+    result = with_versions.collect()
+
+    # Snapshot both container hashes for both samples
+    data_versions = []
+    for i in range(len(result)):
+        dv = result["data_version"][i]
+        data_versions.append(
+            {
+                "sample_id": result["sample_id"][i],
+                "fusion": dv["fusion"],
+                "analysis": dv["analysis"],
+            }
+        )
+
+    assert data_versions == snapshot
+
+
+def test_code_version_changes_snapshots(snapshot, registry: FeatureRegistry):
+    """Snapshot showing code version changes produce different hashes."""
+    calculator = PolarsDataVersionCalculator()
+
+    joined_upstream = pl.DataFrame(
+        {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+    ).lazy()
+
+    upstream_mapping = {"video": "__upstream_video__data_version"}
+
+    # Same feature, different code versions
+    versions_by_code_version = {}
+
+    for code_version in [1, 2, 5, 10]:
+
+        class TestFeature(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey([f"test_v{code_version}"]),
+                deps=[FeatureDep(key=FeatureKey(["video"]))],
+                containers=[
+                    ContainerSpec(
+                        key=ContainerKey(["default"]), code_version=code_version
+                    )
+                ],
+            ),
+        ):
+            pass
+
+        # Register video upstream
+        if code_version == 1:
+
+            class Video(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["video"]),
+                    deps=None,
+                    containers=[
+                        ContainerSpec(key=ContainerKey(["frames"]), code_version=1)
+                    ],
+                ),
+            ):
+                pass
+
+        plan = registry.get_feature_plan(TestFeature.spec.key)
+
+        with_versions = calculator.calculate_data_versions(
+            joined_upstream=joined_upstream,
+            feature_spec=TestFeature.spec,
+            feature_plan=plan,
+            upstream_column_mapping=upstream_mapping,
+        )
+
+        result = with_versions.collect()
+        hash_value = result["data_version"][0]["default"]
+        versions_by_code_version[f"code_v{code_version}"] = hash_value
+
+    # Different code versions should produce different hashes
+    unique_hashes = set(versions_by_code_version.values())
+    assert len(unique_hashes) == 4, "All code versions should produce unique hashes"
+
+    assert versions_by_code_version == snapshot
+
+
+def test_upstream_data_changes_snapshots(snapshot):
+    """Snapshot showing upstream data changes produce different hashes."""
+    calculator = PolarsDataVersionCalculator()
+
+    with FeatureRegistry().use() as registry:
+
+        class Video(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video"]),
+                deps=None,
+                containers=[
+                    ContainerSpec(key=ContainerKey(["frames"]), code_version=1)
+                ],
+            ),
+        ):
+            pass
+
+        class Processed(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["processed"]),
+                deps=[FeatureDep(key=FeatureKey(["video"]))],
+                containers=[
+                    ContainerSpec(key=ContainerKey(["default"]), code_version=1)
+                ],
+            ),
+        ):
+            pass
+
+        plan = registry.get_feature_plan(Processed.spec.key)
+
+        # Different upstream data scenarios
+        scenarios = {
+            "original": [{"frames": "hash_original"}],
+            "modified": [{"frames": "hash_modified"}],
+            "different": [{"frames": "hash_completely_different"}],
+        }
+
+        hashes_by_scenario = {}
+
+        for scenario_name, data_version_list in scenarios.items():
+            joined_upstream = pl.DataFrame(
+                {"sample_id": [1], "__upstream_video__data_version": data_version_list}
+            ).lazy()
+
+            with_versions = calculator.calculate_data_versions(
+                joined_upstream=joined_upstream,
+                feature_spec=Processed.spec,
+                feature_plan=plan,
+                upstream_column_mapping={"video": "__upstream_video__data_version"},
+            )
+
+            result = with_versions.collect()
+            hashes_by_scenario[scenario_name] = result["data_version"][0]["default"]
+
+        # All scenarios should produce different hashes
+        unique_hashes = set(hashes_by_scenario.values())
+        assert len(unique_hashes) == 3, (
+            "Different upstream data should produce different hashes"
+        )
+
+        assert hashes_by_scenario == snapshot
+
+
+def test_diff_result_snapshots(snapshot):
+    """Snapshot the structure of DiffResult for various scenarios."""
+    diff_resolver = PolarsDiffResolver()
+
+    target = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3, 4, 5],
+            "data_version": [
+                {"default": "unchanged_hash"},
+                {"default": "changed_new_hash"},
+                {"default": "unchanged_hash2"},
+                {"default": "new_sample_hash"},
+                {"default": "another_new_hash"},
+            ],
+        }
+    ).lazy()
+
+    current = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3, 6],
+            "data_version": [
+                {"default": "unchanged_hash"},
+                {"default": "changed_old_hash"},
+                {"default": "unchanged_hash2"},
+                {"default": "removed_sample_hash"},
+            ],
+        }
+    ).lazy()
+
+    result = diff_resolver.find_changes(
+        target_versions=target,
+        current_metadata=current,
+    )
+
+    # Snapshot the sample_ids in each category
+    diff_summary = {
+        "added_ids": sorted(result.added["sample_id"].to_list()),
+        "changed_ids": sorted(result.changed["sample_id"].to_list()),
+        "removed_ids": sorted(result.removed["sample_id"].to_list()),
+    }
+
+    assert diff_summary == snapshot

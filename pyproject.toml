@@ -6,9 +6,10 @@ readme = "README.md"
 authors = [
     { name = "Daniel Gafni", email = "danielgafni16@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "polars>=1.33.1",
+    "polars-hash>=0.5.1",
     "pydantic>=2.11.9",
 ]
 
@@ -27,9 +28,11 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "ipython>=8.37.0",
     "pyrefly>=0.34.0",
     "pytest>=8.4.2",
     "ruff>=0.13.1",
+    "syrupy>=5.0.0",
 ]
 
 [tool.ruff]
