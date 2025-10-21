@@ -191,6 +191,7 @@ def generate_migration(
 
     # Find the latest migration to set as parent
     from metaxy.migrations.executor import MIGRATIONS_KEY
+    from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
     parent_migration_id = None
     try:
@@ -203,11 +204,30 @@ def generate_migration(
         # No migrations yet
         pass
 
+    # Get current snapshot_id (latest recorded)
+    try:
+        feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        if len(feature_versions) > 0:
+            # Get most recent snapshot
+            latest_snapshot = feature_versions.sort("recorded_at", descending=True).head(1)
+            current_snapshot_id = latest_snapshot["snapshot_id"][0]
+        else:
+            raise ValueError(
+                "No feature graph snapshot found in metadata store. "
+                "Run 'metaxy push' first to record feature versions before generating migrations."
+            )
+    except FeatureNotFoundError:
+        raise ValueError(
+            "No feature versions recorded yet. "
+            "Run 'metaxy push' first to record the feature graph snapshot."
+        )
+
     # Create migration (serialize operations to dicts)
     migration = Migration(
         version=1,
         id=migration_id,
         parent_migration_id=parent_migration_id,
+        snapshot_id=current_snapshot_id,
         description=f"Auto-generated migration for {root_count} changed feature(s) + {len(downstream_operations)} downstream",
         created_at=timestamp,
         operations=[op.model_dump(by_alias=True) for op in all_operations],

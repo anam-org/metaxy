@@ -298,6 +298,7 @@ def test_apply_migration_rejects_root_features(
         id="migration_test_recalc",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="reconcile_upstream",
@@ -341,6 +342,7 @@ def test_apply_migration_idempotent(
         id="migration_test_idempotent",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -383,6 +385,7 @@ def test_apply_migration_dry_run(
         id="migration_test_dryrun",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -464,6 +467,7 @@ def test_apply_migration_propagates_downstream(
             id="migration_test_propagate",
             description="Test",
             created_at=datetime(2025, 1, 1, 0, 0, 0),
+            snapshot_id="test_snapshot",
             operations=[
                 # Only downstream reconciliation (upstream already updated manually)
                 DataVersionReconciliation(
@@ -502,6 +506,7 @@ def test_migration_yaml_roundtrip(tmp_path: Path) -> None:
         id="migration_test_yaml",
         description="Test YAML",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="test_op_id",
@@ -794,6 +799,7 @@ def test_migration_result_snapshots(
         id="migration_snapshot_test",
         description="Test for snapshots",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="test_op_id",
@@ -1176,6 +1182,7 @@ def test_migrations_preserve_immutability(
         id="test_immutability",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
+        snapshot_id="test_snapshot",
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -1372,8 +1379,11 @@ def test_migration_chaining_validates_parent() -> None:
                 version=1,
                 id="migration_001",
                 parent_migration_id=None,
+        snapshot_id="test_snapshot",
+        snapshot_id="test_snapshot",
                 description="First migration",
                 created_at=datetime(2025, 1, 1),
+                snapshot_id="test_snapshot",
                 operations=[],
             )
 
@@ -1382,8 +1392,11 @@ def test_migration_chaining_validates_parent() -> None:
                 version=1,
                 id="migration_002",
                 parent_migration_id="migration_001",
+        snapshot_id="test_snapshot",
+        snapshot_id="test_snapshot",
                 description="Second migration",
                 created_at=datetime(2025, 1, 2),
+                snapshot_id="test_snapshot",
                 operations=[],
             )
 
@@ -1496,6 +1509,7 @@ def test_migration_vs_recompute_comparison(
             id="migration_test_comparison",
             description="Test",
             created_at=datetime(2025, 1, 1, 0, 0, 0),
+            snapshot_id="test_snapshot",
             operations=[
                 DataVersionReconciliation(
                     id="reconcile_downstream",
