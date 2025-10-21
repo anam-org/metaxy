@@ -1,3 +1,9 @@
+from metaxy.entrypoints import (
+    discover_and_load_entrypoints,
+    load_config_entrypoints,
+    load_module_entrypoint,
+    load_package_entrypoints,
+)
 from metaxy.metadata_store import (
     InMemoryMetadataStore,
     MetadataStore,
@@ -21,4 +27,8 @@ __all__ = [
     "ContainerKey",
     "MetadataStore",
     "InMemoryMetadataStore",
+    "discover_and_load_entrypoints",
+    "load_config_entrypoints",
+    "load_module_entrypoint",
+    "load_package_entrypoints",
 ]
