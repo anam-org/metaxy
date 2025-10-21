@@ -75,8 +75,12 @@ class Migration(pydantic.BaseModel):
     parent_migration_id: str | None = (
         None  # Parent migration (None for first migration)
     )
+    snapshot_id: str  # Required: feature graph snapshot this migration was created from
     description: str
     created_at: datetime  # When migration was created
+    
+    # Optional overrides for moved/renamed feature classes
+    feature_class_overrides: dict[str, str] = pydantic.Field(default_factory=dict)
 
     # Operations as list of dicts - will be validated/loaded dynamically
     # Can't use Union with discriminator because we support user-defined subclasses

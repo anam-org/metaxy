@@ -232,7 +232,7 @@ class SQLiteMetadataStore(IbisMetadataStore):
         json_columns = {
             "data_version": None,  # Infer from data
             "migration_yaml": None,  # Infer from data
-            "containers": None,  # Infer from data (will be List(Struct))
+            "feature_spec": None,  # Infer from data (FeatureSpec struct)
             "operation_ids": pl.List(pl.Utf8),  # List of strings
             "expected_steps": pl.List(pl.Utf8),  # List of strings
             "affected_features": pl.List(pl.Utf8),  # List of strings
