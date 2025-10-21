@@ -11,4 +11,4 @@ wheels/
 .direnv
 
 # clickhouse
-processed_configs
+preprocessed_configs
