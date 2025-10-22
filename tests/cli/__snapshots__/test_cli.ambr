@@ -1,0 +1,21 @@
+# serializer version: 1
+# name: test_migrations_apply_dry_run
+  '''
+  === DRY RUN MODE ===
+  
+  Applying 1 migration(s) to reach 'test_migration':
+  
+  ⊘ test_migration (already applied)
+  
+  Summary:
+    Applied: 0
+    Skipped: 1
+    Failed: 0
+  '''
+# ---
+# name: test_migrations_generate_no_changes
+  'No feature changes detected. All features up to date!'
+# ---
+# name: test_migrations_status_empty
+  'No migrations found.'
+# ---

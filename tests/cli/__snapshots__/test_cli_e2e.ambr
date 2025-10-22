@@ -1,0 +1,38 @@
+# serializer version: 1
+# name: test_cli_e2e_duckdb_workflow
+  dict({
+    'operations': list([
+      dict({
+        'feature_key': list([
+          'video',
+          'processing',
+        ]),
+        'id': 'reconcile_video_processing_e561_to_72ea',
+        'reason': 'TODO: Describe what changed and why',
+        'type': 'metaxy.migrations.ops.DataVersionReconciliation',
+      }),
+    ]),
+    'parent_migration_id': None,
+    'version': 1,
+  })
+# ---
+# name: test_cli_e2e_duckdb_workflow.1
+  dict({
+    'feature_versions': list([
+      '72ea98c339e10d1cc50d80225152d6c68541d8783e97fbe9ff7c67f3909f3814',
+      'e5619afa376379367e7a48a02986ce4d497eeaab8ff75799721b333734e69fbe',
+    ]),
+    'row_count': 4,
+    'sample_ids': list([
+      'video1.mp4',
+      'video2.mp4',
+    ]),
+  })
+# ---
+# name: test_cli_e2e_duckdb_workflow.2
+  dict({
+    'has_migration_id': True,
+    'has_migrations': True,
+    'migration_completed': True,
+  })
+# ---

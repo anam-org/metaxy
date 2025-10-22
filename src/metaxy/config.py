@@ -1,7 +1,7 @@
 """Configuration system for Metaxy using pydantic-settings."""
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 try:
     import tomllib  # Python 3.11+
@@ -17,6 +17,48 @@ from pydantic_settings import (
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.feature import FeatureRegistry
+
+T = TypeVar("T")
+
+
+def load_registry(registry_path: str) -> "FeatureRegistry":
+    """Load registry from import path.
+
+    Args:
+        registry_path: Import path like "myapp.features:my_registry"
+
+    Returns:
+        FeatureRegistry instance
+
+    Raises:
+        ValueError: If path is invalid
+        ImportError: If module or registry not found
+        TypeError: If loaded object is not a FeatureRegistry
+    """
+    from metaxy.models.feature import FeatureRegistry
+
+    if ":" not in registry_path:
+        raise ValueError(
+            f"Invalid registry path: {registry_path}. "
+            f"Expected format: 'module.path:registry_name'"
+        )
+
+    module_path, registry_name = registry_path.split(":", 1)
+
+    try:
+        module = __import__(module_path, fromlist=[registry_name])
+        registry = getattr(module, registry_name)
+    except (ImportError, AttributeError) as e:
+        raise ImportError(f"Failed to load registry from {registry_path}: {e}") from e
+
+    if not isinstance(registry, FeatureRegistry):
+        raise TypeError(
+            f"Registry at {registry_path} is not a FeatureRegistry instance. "
+            f"Got: {type(registry)}"
+        )
+
+    return registry
 
 
 class TomlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -118,9 +160,9 @@ class MetaxyConfig(BaseSettings):
         >>> store = config.get_store("prod")
         >>>
         >>> # Override via env var
-        >>> # METAXY_STORE=staging
+        >>> # METAXY_STORE=staging METAXY_REGISTRY=myapp.features:my_registry
         >>> config = MetaxyConfig.load()
-        >>> store = config.get_store()  # Uses staging
+        >>> store = config.get_store()  # Uses staging with custom registry
     """
 
     model_config = SettingsConfigDict(
@@ -133,6 +175,12 @@ class MetaxyConfig(BaseSettings):
 
     # Named store configurations
     stores: dict[str, StoreConfig] = Field(default_factory=dict)
+
+    # Migrations directory
+    migrations_dir: str = "metaxy/migrations"
+
+    # Entrypoints to load (list of module paths)
+    entrypoints: list[str] = Field(default_factory=list)
 
     @classmethod
     def settings_customise_sources(
@@ -154,22 +202,32 @@ class MetaxyConfig(BaseSettings):
         return (init_settings, env_settings, toml_settings)
 
     @classmethod
-    def load(cls, config_file: str | Path | None = None) -> "MetaxyConfig":
-        """Load config with optional file override.
+    def load(
+        cls, config_file: str | Path | None = None, *, search_parents: bool = True
+    ) -> "MetaxyConfig":
+        """Load config with auto-discovery and parent directory search.
 
         Args:
             config_file: Optional config file path (overrides auto-discovery)
+            search_parents: Search parent directories for config file (default: True)
 
         Returns:
             Loaded config (TOML + env vars merged)
 
         Example:
-            >>> # Auto-discover
+            >>> # Auto-discover with parent search
             >>> config = MetaxyConfig.load()
             >>>
             >>> # Explicit file
             >>> config = MetaxyConfig.load("custom.toml")
+
+            >>> # Auto-discover without parent search
+            >>> config = MetaxyConfig.load(search_parents=False)
         """
+        # Search for config file if not explicitly provided
+        if config_file is None and search_parents:
+            config_file = cls._discover_config_with_parents()
+
         # For explicit file, temporarily patch the TomlConfigSettingsSource
         # to use that file, then use normal instantiation
         # This ensures env vars still work
@@ -202,12 +260,51 @@ class MetaxyConfig(BaseSettings):
 
             # Temporarily replace method
             cls.settings_customise_sources = custom_sources  # type: ignore[assignment]
-            result = cls()
+            config = cls()
             cls.settings_customise_sources = original_method  # type: ignore[method-assign]
-            return result
         else:
             # Use default sources (auto-discovery + env vars)
-            return cls()
+            config = cls()
+
+        # Load entrypoints if configured (do this after config is created)
+        if config.entrypoints:
+            from metaxy.entrypoints import load_config_entrypoints
+
+            load_config_entrypoints(config.entrypoints)
+
+        return config
+
+    @staticmethod
+    def _discover_config_with_parents() -> Path | None:
+        """Discover config file by searching current and parent directories.
+
+        Searches for metaxy.toml or pyproject.toml in current directory,
+        then iteratively searches parent directories.
+
+        Returns:
+            Path to config file if found, None otherwise
+        """
+        current = Path.cwd()
+
+        while True:
+            # Check for metaxy.toml (preferred)
+            metaxy_toml = current / "metaxy.toml"
+            if metaxy_toml.exists():
+                return metaxy_toml
+
+            # Check for pyproject.toml
+            pyproject_toml = current / "pyproject.toml"
+            if pyproject_toml.exists():
+                return pyproject_toml
+
+            # Move to parent
+            parent = current.parent
+            if parent == current:
+                # Reached root
+                break
+            current = parent
+
+        return None
 
     def get_store(
         self,
@@ -216,7 +313,7 @@ class MetaxyConfig(BaseSettings):
         """Instantiate metadata store by name.
 
         Args:
-            name: Store name (uses default_store if None)
+            name: Store name (uses config.store if None)
 
         Returns:
             Instantiated metadata store
@@ -234,6 +331,11 @@ class MetaxyConfig(BaseSettings):
             >>> store = config.get_store()
         """
         from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+
+        if len(self.stores) == 0:
+            raise ValueError(
+                "No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables."
+            )
 
         name = name or self.store
 
@@ -304,3 +406,52 @@ class MetaxyConfig(BaseSettings):
         module_path, class_name = class_path.rsplit(".", 1)
         module = __import__(module_path, fromlist=[class_name])
         return getattr(module, class_name)
+
+    @staticmethod
+    @overload
+    def _import_object(import_path: str, expected_type: type[T]) -> T: ...
+
+    @staticmethod
+    @overload
+    def _import_object(import_path: str, expected_type: None = None) -> Any: ...
+
+    @staticmethod
+    def _import_object(
+        import_path: str, expected_type: type[T] | None = None
+    ) -> T | Any:
+        """Import object from module:object path.
+
+        Args:
+            import_path: Import path like "module.path:object_name"
+            expected_type: Optional type to validate against
+
+        Returns:
+            Imported object (typed as expected_type if provided)
+
+        Raises:
+            ValueError: If path format is invalid
+            ImportError: If module or object not found
+            TypeError: If object doesn't match expected_type
+        """
+        if ":" not in import_path:
+            raise ValueError(
+                f"Invalid import path: {import_path}. "
+                f"Expected format: 'module.path:object_name'"
+            )
+
+        module_path, object_name = import_path.split(":", 1)
+
+        try:
+            module = __import__(module_path, fromlist=[object_name])
+            obj = getattr(module, object_name)
+        except (ImportError, AttributeError) as e:
+            raise ImportError(f"Failed to load object from {import_path}: {e}") from e
+
+        if expected_type is not None and not isinstance(obj, expected_type):
+            type_name = getattr(expected_type, "__name__", str(expected_type))
+            raise TypeError(
+                f"Object at {import_path} is not a {type_name} instance. "
+                f"Got: {type(obj)}"
+            )
+
+        return obj

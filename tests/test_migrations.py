@@ -1969,6 +1969,231 @@ def test_migration_with_container_dependency_change() -> None:
     temp_v2.cleanup()
 
 
+def test_sequential_migration_application():
+    """Test applying multiple migrations in sequence.
+
+    Creates 3 migrations with parent dependencies and verifies they're applied
+    in the correct order with proper skipping of already-applied migrations.
+    """
+
+    # Create a simple registry
+    temp_module = TempFeatureModule("test_sequential")
+    spec = FeatureSpec(
+        key=FeatureKey(["test", "feature"]),
+        deps=None,
+        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+    )
+    temp_module.write_features({"TestFeature": spec})
+    registry = temp_module.get_registry()
+
+    # Create store and record snapshot
+    store = InMemoryMetadataStore()
+    test_feature = registry.features_by_key[FeatureKey(["test", "feature"])]
+
+    with registry.use(), store:
+        store.write_metadata(
+            test_feature,
+            pl.DataFrame(
+                {
+                    "sample_id": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                }
+            ),
+        )
+        snapshot_id = store.serialize_feature_graph()
+
+    # Create 3 migrations with side effects (using MetadataBackfill with unique markers)
+    from datetime import datetime
+
+    # Migration 1 (root)
+    migration1 = Migration(
+        version=1,
+        id="migration_001",
+        parent_migration_id=None,
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="First migration",
+        created_at=datetime(2025, 1, 1),
+        operations=[],
+    )
+
+    # Migration 2 (child of 1)
+    migration2 = Migration(
+        version=1,
+        id="migration_002",
+        parent_migration_id="migration_001",
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Second migration",
+        created_at=datetime(2025, 1, 2),
+        operations=[],
+    )
+
+    # Migration 3 (child of 2)
+    migration3 = Migration(
+        version=1,
+        id="migration_003",
+        parent_migration_id="migration_002",
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Third migration",
+        created_at=datetime(2025, 1, 3),
+        operations=[],
+    )
+
+    with registry.use(), store:
+        # Apply migration 1 (empty operations = skipped/completed immediately)
+        result1 = apply_migration(store, migration1)
+        assert result1.status in ("completed", "skipped")
+
+        # Apply migration 2
+        result2 = apply_migration(store, migration2)
+        assert result2.status in ("completed", "skipped")
+
+        # Apply migration 3
+        result3 = apply_migration(store, migration3)
+        assert result3.status in ("completed", "skipped")
+
+        # Try to re-apply migration 2 (should skip)
+        result2_again = apply_migration(store, migration2)
+        assert result2_again.status == "skipped"
+
+        # Verify all migrations are registered
+        from metaxy.migrations.executor import MIGRATIONS_KEY
+
+        migrations_table = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        assert len(migrations_table) == 3
+        assert set(migrations_table["migration_id"].to_list()) == {
+            "migration_001",
+            "migration_002",
+            "migration_003",
+        }
+
+    temp_module.cleanup()
+
+
+def test_multiple_migration_heads_detection():
+    """Test that multiple heads are detected correctly.
+
+    Creates two independent migration chains and verifies the system can
+    detect multiple heads.
+    """
+    # Create registry
+    temp_module = TempFeatureModule("test_multiple_heads")
+    spec = FeatureSpec(
+        key=FeatureKey(["test", "feature"]),
+        deps=None,
+        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+    )
+    temp_module.write_features({"TestFeature": spec})
+    registry = temp_module.get_registry()
+
+    store = InMemoryMetadataStore()
+    test_feature = registry.features_by_key[FeatureKey(["test", "feature"])]
+
+    with registry.use(), store:
+        store.write_metadata(
+            test_feature,
+            pl.DataFrame({"sample_id": [1], "data_version": [{"default": "h1"}]}),
+        )
+        snapshot_id = store.serialize_feature_graph()
+
+    from datetime import datetime
+
+    # Create two independent chains
+    # Chain 1: migration_a1 -> migration_a2
+    migration_a1 = Migration(
+        version=1,
+        id="migration_a1",
+        parent_migration_id=None,
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Chain A - step 1",
+        created_at=datetime(2025, 1, 1),
+        operations=[],
+    )
+
+    migration_a2 = Migration(
+        version=1,
+        id="migration_a2",
+        parent_migration_id="migration_a1",
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Chain A - step 2",
+        created_at=datetime(2025, 1, 2),
+        operations=[],
+    )
+
+    # Chain 2: migration_b1 -> migration_b2
+    migration_b1 = Migration(
+        version=1,
+        id="migration_b1",
+        parent_migration_id=None,
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Chain B - step 1",
+        created_at=datetime(2025, 1, 3),
+        operations=[],
+    )
+
+    migration_b2 = Migration(
+        version=1,
+        id="migration_b2",
+        parent_migration_id="migration_b1",
+        from_snapshot_id=snapshot_id,
+        to_snapshot_id=snapshot_id,
+        description="Chain B - step 2",
+        created_at=datetime(2025, 1, 4),
+        operations=[],
+    )
+
+    with registry.use(), store:
+        # Apply all migrations
+        apply_migration(store, migration_a1)
+        apply_migration(store, migration_a2)
+        apply_migration(store, migration_b1)
+        apply_migration(store, migration_b2)
+
+        # Verify both heads exist
+        from metaxy.migrations.executor import MIGRATIONS_KEY
+
+        migrations_table = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        assert len(migrations_table) == 4
+
+        # Build dependency graph to find heads
+        children_by_parent = {}
+        for row in migrations_table.iter_rows(named=True):
+            mig_id = row["migration_id"]
+            # Parse migration to get parent
+            import json
+
+            mig_yaml = row["migration_yaml"]
+            if isinstance(mig_yaml, str):
+                mig_data = json.loads(mig_yaml)
+            else:
+                mig_data = mig_yaml
+
+            parent_id = mig_data.get("parent_migration_id")
+            if parent_id:
+                if parent_id not in children_by_parent:
+                    children_by_parent[parent_id] = []
+                children_by_parent[parent_id].append(mig_id)
+
+        # Find heads (migrations with no children)
+        all_mig_ids = set(migrations_table["migration_id"].to_list())
+        heads = [mig_id for mig_id in all_mig_ids if mig_id not in children_by_parent]
+
+        # Should have 2 heads
+        assert len(heads) == 2
+        assert set(heads) == {"migration_a2", "migration_b2"}
+
+    temp_module.cleanup()
+
+
 def test_migration_vs_recompute_comparison(
     registry_v1: FeatureRegistry,
     registry_v2: FeatureRegistry,

@@ -61,7 +61,7 @@ This is typically done in CI/CD pipelines after successful feature computation.
 
 ```python
 # Explicitly record the version (call this in CI)
-store.record_feature_graph_snapshot(MyFeature)
+store.record_feature_graph_snapshot()
 
 store.write_metadata(MyFeature, metadata_df)
 ```
