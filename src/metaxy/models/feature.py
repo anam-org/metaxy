@@ -212,7 +212,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     def feature_version(cls) -> str:
         """Get hash of feature specification.
 
-        Returns an 8-character hash representing the feature's complete configuration:
+        Returns a hash representing the feature's complete configuration:
         - Feature key
         - Container definitions and code versions
         - Dependencies (feature-level and container-level)
@@ -226,7 +226,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         Stored in the 'feature_version' column of metadata DataFrames.
 
         Returns:
-            8-character SHA256 hex digest (like git short hashes)
+            SHA256 hex digest (like git short hashes)
 
         Example:
             >>> class MyFeature(Feature, spec=FeatureSpec(
@@ -274,8 +274,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         for component in components:
             hasher.update(component.encode())
 
-        # Return first 8 characters (like git short hashes)
-        return hasher.hexdigest()[:8]
+        return hasher.hexdigest()
 
     @classmethod
     def align_metadata_with_upstream(
