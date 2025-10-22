@@ -1,5 +1,6 @@
 """Common fixtures for metadata store tests."""
 
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,6 @@ from metaxy import (
     ContainerDep,
     ContainerKey,
     ContainerSpec,
-    Feature,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
@@ -22,6 +22,16 @@ from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureRegistry
+
+# Import TempFeatureModule from parent test directory
+# Add parent dir to path for test imports
+_parent_test_dir = Path(__file__).parent.parent
+if str(_parent_test_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_test_dir))
+
+from test_migrations import (  # noqa: E402
+    TempFeatureModule,  # type: ignore[import-not-found]
+)
 
 
 @pytest.fixture(scope="session")
@@ -202,68 +212,79 @@ def test_registry():
 
     Returns a tuple of (registry, features_dict) where features_dict provides
     easy access to feature classes by simple names.
+
+    Uses TempFeatureModule to make features importable for historical registry reconstruction.
     """
-    with FeatureRegistry().use() as registry:
-        # Define features within the registry context
-        class UpstreamFeatureA(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test_stores", "upstream_a"]),
-                deps=None,
-                containers=[
-                    ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                    ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
-                ],
-            ),
-        ):
-            pass
+    temp_module = TempFeatureModule("test_stores_features")
 
-        class UpstreamFeatureB(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test_stores", "upstream_b"]),
-                deps=None,
-                containers=[
-                    ContainerSpec(key=ContainerKey(["default"]), code_version=1),
-                ],
-            ),
-        ):
-            pass
+    # Define specs
+    upstream_a_spec = FeatureSpec(
+        key=FeatureKey(["test_stores", "upstream_a"]),
+        deps=None,
+        containers=[
+            ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
+            ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+        ],
+    )
 
-        class DownstreamFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test_stores", "downstream"]),
+    upstream_b_spec = FeatureSpec(
+        key=FeatureKey(["test_stores", "upstream_b"]),
+        deps=None,
+        containers=[
+            ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+        ],
+    )
+
+    downstream_spec = FeatureSpec(
+        key=FeatureKey(["test_stores", "downstream"]),
+        deps=[
+            FeatureDep(key=FeatureKey(["test_stores", "upstream_a"])),
+        ],
+        containers=[
+            ContainerSpec(
+                key=ContainerKey(["default"]),
+                code_version=1,
                 deps=[
-                    FeatureDep(key=FeatureKey(["test_stores", "upstream_a"])),
-                ],
-                containers=[
-                    ContainerSpec(
-                        key=ContainerKey(["default"]),
-                        code_version=1,
-                        deps=[
-                            ContainerDep(
-                                feature_key=FeatureKey(["test_stores", "upstream_a"]),
-                                containers=[
-                                    ContainerKey(["frames"]),
-                                    ContainerKey(["audio"]),
-                                ],
-                            )
+                    ContainerDep(
+                        feature_key=FeatureKey(["test_stores", "upstream_a"]),
+                        containers=[
+                            ContainerKey(["frames"]),
+                            ContainerKey(["audio"]),
                         ],
-                    ),
+                    )
                 ],
             ),
-        ):
-            pass
+        ],
+    )
 
-        # Create features dict for easy access
-        features = {
-            "UpstreamFeatureA": UpstreamFeatureA,
-            "UpstreamFeatureB": UpstreamFeatureB,
-            "DownstreamFeature": DownstreamFeature,
+    # Write to temp module
+    temp_module.write_features(
+        {
+            "UpstreamFeatureA": upstream_a_spec,
+            "UpstreamFeatureB": upstream_b_spec,
+            "DownstreamFeature": downstream_spec,
         }
+    )
 
-        yield registry, features
+    # Get registry from module
+    registry = temp_module.get_registry()
+
+    # Create features dict for easy access
+    features = {
+        "UpstreamFeatureA": registry.features_by_key[
+            FeatureKey(["test_stores", "upstream_a"])
+        ],
+        "UpstreamFeatureB": registry.features_by_key[
+            FeatureKey(["test_stores", "upstream_b"])
+        ],
+        "DownstreamFeature": registry.features_by_key[
+            FeatureKey(["test_stores", "downstream"])
+        ],
+    }
+
+    yield registry, features
+
+    temp_module.cleanup()
 
 
 @pytest.fixture

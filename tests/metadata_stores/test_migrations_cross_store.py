@@ -35,7 +35,11 @@ def test_migration_system_tables_serialize_cross_store(
     DownstreamFeature = features["DownstreamFeature"]
 
     store = store_type(**config)  # type: ignore[abstract]
-    with store:
+    with registry.use(), store:
+        # Record feature graph snapshot first (mimics CI/CD workflow)
+        # This must be done before any operations that need historical registry
+        snapshot_id = store.serialize_feature_graph()
+
         # Write minimal data for downstream feature (has upstream deps)
         upstream_data = pl.DataFrame(
             {
@@ -59,6 +63,8 @@ def test_migration_system_tables_serialize_cross_store(
             id="test_serialization",
             description="Test system table serialization",
             created_at=datetime(2025, 1, 1),
+            from_snapshot_id=snapshot_id,
+            to_snapshot_id=snapshot_id,
             operations=[
                 DataVersionReconciliation(
                     id="reconcile_downstream",
@@ -153,7 +159,9 @@ def test_migration_system_tables_serialize_cross_store(
         # Snapshot the reconciled downstream data (sorted for determinism)
         final_downstream = store.read_metadata(
             DownstreamFeature, current_only=False
-        ).sort("sample_id")
+        ).sort(
+            ["sample_id", "feature_version"]
+        )  # Sort by multiple columns for determinism
 
         # Convert to snapshot-friendly format
         downstream_snapshot = {
@@ -162,7 +170,8 @@ def test_migration_system_tables_serialize_cross_store(
                 {
                     "sample_id": row["sample_id"],
                     "feature_version": row["feature_version"],
-                    "data_version": str(row["data_version"]),
+                    # Sort dict keys for deterministic string representation
+                    "data_version": str(dict(sorted(row["data_version"].items()))),
                 }
                 for row in final_downstream.iter_rows(named=True)
             ],

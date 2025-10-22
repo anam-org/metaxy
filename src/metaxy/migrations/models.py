@@ -75,10 +75,13 @@ class Migration(pydantic.BaseModel):
     parent_migration_id: str | None = (
         None  # Parent migration (None for first migration)
     )
-    snapshot_id: str  # Required: feature graph snapshot this migration was created from
+    from_snapshot_id: (
+        str  # Feature graph snapshot before migration (current state in store)
+    )
+    to_snapshot_id: str  # Feature graph snapshot after migration (target state)
     description: str
     created_at: datetime  # When migration was created
-    
+
     # Optional overrides for moved/renamed feature classes
     feature_class_overrides: dict[str, str] = pydantic.Field(default_factory=dict)
 

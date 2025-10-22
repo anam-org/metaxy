@@ -1,6 +1,5 @@
-"""Migration file generation."""
+"""Migration generation."""
 
-import os
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -49,45 +48,88 @@ def _is_upstream_of(
 def generate_migration(
     store: "MetadataStore",
     *,
-    output_dir: str = "migrations",
-) -> str | None:
-    """Generate migration file from detected feature changes.
+    from_snapshot_id: str | None = None,
+    to_snapshot_id: str | None = None,
+    class_path_overrides: dict[str, str] | None = None,
+) -> Migration | None:
+    """Generate migration from detected feature changes or between snapshots.
 
-    Automatically detects all features that have changed (comparing code vs metadata)
-    and generates explicit operations for ALL affected features (root + downstream).
+    Two modes of operation:
 
-    Each downstream feature gets its own explicit DataVersionReconciliation operation
-    with from=current_version, to=current_version (just reconciling data_versions).
+    1. **Default mode** (both snapshot_ids None):
+       - Compares latest recorded snapshot (store) vs current active registry (code)
+       - This is the normal workflow: detect code changes
+
+    2. **Historical mode** (both snapshot_ids provided):
+       - Reconstructs from_registry from from_snapshot_id
+       - Reconstructs to_registry from to_snapshot_id
+       - Compares these two historical registries
+       - Useful for: backfilling migrations, testing, recovery
+
+    Generates explicit operations for ALL affected features (root + downstream).
+    Each downstream feature gets its own DataVersionReconciliation operation.
 
     Args:
         store: Metadata store to check
-        output_dir: Directory to write migration file (default: "migrations")
+        from_snapshot_id: Optional snapshot ID to compare from (historical mode)
+        to_snapshot_id: Optional snapshot ID to compare to (historical mode)
+        class_path_overrides: Optional overrides for moved/renamed feature classes
 
     Returns:
-        Path to generated migration file, or None if no changes detected
+        Migration object, or None if no changes detected
 
-    Example:
-        >>> migration_file = generate_migration(store)
+    Raises:
+        ValueError: If only one snapshot_id is provided, or snapshots not found
 
-        Detected 2 root feature changes:
-          ✓ video_processing: abc12345 → def67890
-          ✓ audio_processing: xyz11111 → xyz22222
+    Example (default mode):
+        >>> migration = generate_migration(store)
+        >>> if migration:
+        >>>     migration.to_yaml("migrations/001_update.yaml")
 
-        Generating explicit operations for 5 downstream features:
-          ✓ feature_c (current: aaa111)
-          ✓ feature_d (current: bbb222)
-          ✓ feature_e (current: ccc333)
-
-        Generated 7 total operations (2 root + 5 downstream)
-
-        Generated: migrations/20250113_103000_update_video_processing_and_1_more.yaml
+    Example (historical mode):
+        >>> migration = generate_migration(
+        ...     store,
+        ...     from_snapshot_id="abc123...",
+        ...     to_snapshot_id="def456...",
+        ... )
     """
     from metaxy.models.feature import FeatureRegistry
 
-    registry = FeatureRegistry.get_active()
+    # Determine which registries to use based on provided snapshot_ids
+    # from_snapshot_id: if provided, reconstruct from_registry; else use store's latest
+    # to_snapshot_id: if provided, reconstruct to_registry; else use current active registry
 
-    # Detect root changes
-    root_operations = detect_feature_changes(store)
+    # Reconstruct registries as needed
+    to_registry = None
+
+    if from_snapshot_id is not None or to_snapshot_id is not None:
+        from metaxy.migrations.executor import _load_historical_registry
+
+        print("Historical mode: comparing snapshots")
+        if from_snapshot_id:
+            print(f"  From: {from_snapshot_id[:16]}...")
+            _load_historical_registry(store, from_snapshot_id, class_path_overrides)
+        else:
+            print("  From: latest in store")
+
+        if to_snapshot_id:
+            print(f"  To:   {to_snapshot_id[:16]}...")
+            to_registry = _load_historical_registry(
+                store, to_snapshot_id, class_path_overrides
+            )
+        else:
+            print("  To:   current active registry")
+            to_registry = FeatureRegistry.get_active()
+    else:
+        # Default mode: use active registry
+        to_registry = FeatureRegistry.get_active()
+
+    # Use to_registry as active for detection
+    registry = to_registry
+
+    # Detect root changes (within appropriate registry context)
+    with registry.use():
+        root_operations = detect_feature_changes(store)
 
     if not root_operations:
         print("No feature changes detected. All features up to date!")
@@ -178,20 +220,9 @@ def generate_migration(
         f"({len(root_operations)} root + {len(downstream_operations)} downstream)"
     )
 
-    # Build filename from root feature names
-    root_count = len(root_operations)
-    feature_names = "_".join(
-        FeatureKey(op.feature_key).to_string().replace("/", "_")
-        for op in root_operations[:2]
-    )
-    if root_count > 2:
-        feature_names += f"_and_{root_count - 2}_more"
-
-    filename = f"{output_dir}/{timestamp_str}_update_{feature_names}.yaml"
-
     # Find the latest migration to set as parent
-    from metaxy.migrations.executor import MIGRATIONS_KEY
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+    from metaxy.migrations.executor import MIGRATIONS_KEY
 
     parent_migration_id = None
     try:
@@ -204,46 +235,45 @@ def generate_migration(
         # No migrations yet
         pass
 
-    # Get current snapshot_id (latest recorded)
-    try:
-        feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-        if len(feature_versions) > 0:
-            # Get most recent snapshot
-            latest_snapshot = feature_versions.sort("recorded_at", descending=True).head(1)
-            current_snapshot_id = latest_snapshot["snapshot_id"][0]
-        else:
-            raise ValueError(
-                "No feature graph snapshot found in metadata store. "
-                "Run 'metaxy push' first to record feature versions before generating migrations."
+    # Get snapshot IDs (if not provided in historical mode)
+    if from_snapshot_id is None:
+        # Default mode: get from store's latest snapshot
+        try:
+            feature_versions = store.read_metadata(
+                FEATURE_VERSIONS_KEY, current_only=False
             )
-    except FeatureNotFoundError:
-        raise ValueError(
-            "No feature versions recorded yet. "
-            "Run 'metaxy push' first to record the feature graph snapshot."
-        )
+            if len(feature_versions) > 0:
+                # Get most recent snapshot
+                latest_snapshot = feature_versions.sort(
+                    "recorded_at", descending=True
+                ).head(1)
+                from_snapshot_id = latest_snapshot["snapshot_id"][0]
+            else:
+                raise ValueError(
+                    "No feature graph snapshot found in metadata store. "
+                    "Run 'metaxy push' first to record feature versions before generating migrations."
+                )
+        except FeatureNotFoundError:
+            raise ValueError(
+                "No feature versions recorded yet. "
+                "Run 'metaxy push' first to record the feature graph snapshot."
+            )
+
+    if to_snapshot_id is None:
+        # Default mode: get from current active registry
+        to_snapshot_id = registry.snapshot_id
 
     # Create migration (serialize operations to dicts)
+    root_count = len(root_operations)
     migration = Migration(
         version=1,
         id=migration_id,
         parent_migration_id=parent_migration_id,
-        snapshot_id=current_snapshot_id,
+        from_snapshot_id=from_snapshot_id,
+        to_snapshot_id=to_snapshot_id,
         description=f"Auto-generated migration for {root_count} changed feature(s) + {len(downstream_operations)} downstream",
         created_at=timestamp,
         operations=[op.model_dump(by_alias=True) for op in all_operations],
     )
 
-    # Write YAML file
-    os.makedirs(output_dir, exist_ok=True)
-    migration.to_yaml(filename)
-
-    # Print next steps
-    print(f"\nGenerated: {filename}")
-    print("\nNEXT STEPS:")
-    print("1. Review the migration file")
-    print("2. Edit the 'reason' fields for root changes")
-    print("3. Run 'metaxy migrations apply --dry-run' to preview")
-    print("4. Run 'metaxy migrations apply' to execute")
-    print("5. Commit the migration file to git")
-
-    return filename
+    return migration

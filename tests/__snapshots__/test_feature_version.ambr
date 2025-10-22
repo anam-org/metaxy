@@ -1,25 +1,25 @@
 # serializer version: 1
 # name: test_feature_version_changes_with_code_version
   dict({
-    'v1': '027365cf',
-    'v2': 'ad385cfb',
+    'v1': '2a68135ecef5cffeb310598c567babad3f7ca34053cf5f51f7aeb34de51d7880',
+    'v2': '87daa733b69d31d0cfbbb93a538a33e4742c0eae371618f1284b47cfe285db06',
   })
 # ---
 # name: test_feature_version_changes_with_dependencies
   dict({
-    'no_deps': 'babb355d',
-    'with_deps': '481cfad5',
+    'no_deps': '8b1eebd5c96addd4e4126b13597f54a0502b646b01579d648ebbf3740f5300e0',
+    'with_deps': 'c641fc7efa6288d969142019342fa9b47c266c876a8ea31fd808fdbf8bf18893',
   })
 # ---
 # name: test_feature_version_deterministic
-  '3127d992'
+  '33c004fe4137e09bce3821702bae48ebe3a821183ac3f7e5369efaa177d07857'
 # ---
 # name: test_feature_version_multi_container
-  '932c4924'
+  '76cc968df48602c4cd03d86798001057375f33aae833aea66754838479eb6b07'
 # ---
 # name: test_feature_version_with_container_deps
   dict({
-    'no_container_deps': '43596bdb',
-    'with_container_deps': '365c7d8c',
+    'no_container_deps': '5423e12a179dada3a05344a79e20febf4fb046d8c26ef8988b15414f4be7770e',
+    'with_container_deps': '2ef316eab2e1f9aee7ee9e2ca8c78bf04ec628e47993b8cb54ab0a29b01b6b16',
   })
 # ---

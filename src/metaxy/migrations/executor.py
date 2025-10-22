@@ -13,6 +13,7 @@ from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.feature import FeatureRegistry
 
 # System table keys for migration tracking
 MIGRATIONS_KEY = FeatureKey(["__metaxy__", "migrations"])
@@ -157,20 +158,20 @@ class MigrationStatus:
 
 
 def _load_historical_registry(
-    store: "MetadataStore", 
+    store: "MetadataStore",
     snapshot_id: str,
-    class_path_overrides: dict[str, str] | None = None
+    class_path_overrides: dict[str, str] | None = None,
 ) -> "FeatureRegistry":
     """Load historical registry from snapshot.
-    
+
     Args:
         store: Metadata store
         snapshot_id: Snapshot ID to reconstruct
         class_path_overrides: Optional overrides for moved/renamed feature classes
-        
+
     Returns:
         FeatureRegistry reconstructed from snapshot
-        
+
     Raises:
         ValueError: If snapshot not found
         ImportError: If feature class cannot be imported
@@ -178,7 +179,7 @@ def _load_historical_registry(
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.models.feature import FeatureRegistry
-    
+
     # Load all features from this snapshot
     try:
         features_data = store.read_metadata(
@@ -191,35 +192,38 @@ def _load_historical_registry(
             f"Snapshot '{snapshot_id}' not found in metadata store. "
             f"Cannot reconstruct historical feature graph."
         )
-    
+
     if len(features_data) == 0:
         raise ValueError(
             f"Snapshot '{snapshot_id}' is empty. "
             f"No features recorded with this snapshot ID."
         )
-    
+
     # Build snapshot dict for from_snapshot()
     snapshot_dict = {}
     for row in features_data.iter_rows(named=True):
         feature_key_str = row["feature_key"]
         feature_spec_raw = row["feature_spec"]
         feature_class_path = row.get("feature_class_path")
-        
+
         # Parse feature_spec (handle both JSON string and struct)
         if isinstance(feature_spec_raw, str):
             import json
+
             feature_spec_dict = json.loads(feature_spec_raw)
         else:
             # Already parsed (DuckDB/ClickHouse return structs)
             feature_spec_dict = feature_spec_raw
-        
+
         snapshot_dict[feature_key_str] = {
             "feature_spec": feature_spec_dict,
             "feature_class_path": feature_class_path,
         }
-    
+
     # Reconstruct registry from snapshot (with optional overrides)
-    return FeatureRegistry.from_snapshot(snapshot_dict, class_path_overrides=class_path_overrides)
+    return FeatureRegistry.from_snapshot(
+        snapshot_dict, class_path_overrides=class_path_overrides
+    )
 
 
 def _is_migration_registered(store: "MetadataStore", migration_id: str) -> bool:
@@ -258,7 +262,14 @@ def _register_migration(store: "MetadataStore", migration: Migration) -> None:
             "description": [migration.description],
             "operation_ids": [operation_ids_json],
             "migration_yaml": [migration_yaml_json],
-        }
+        },
+        schema={
+            "migration_id": pl.String,
+            "created_at": pl.Datetime("us"),
+            "description": pl.String,
+            "operation_ids": pl.String,
+            "migration_yaml": pl.String,
+        },
     )
 
     store._write_metadata_impl(MIGRATIONS_KEY, migration_record)
@@ -313,7 +324,16 @@ def _register_operation(
             "expected_steps": [expected_steps_json],
             "operation_config_hash": [operation.operation_config_hash()],
             "created_at": [datetime.now()],
-        }
+        },
+        schema={
+            "migration_id": pl.String,
+            "operation_id": pl.String,
+            "operation_type": pl.String,
+            "feature_key": pl.String,
+            "expected_steps": pl.String,
+            "operation_config_hash": pl.String,
+            "created_at": pl.Datetime("us"),
+        },
     )
 
     store._write_metadata_impl(MIGRATION_OPS_KEY, op_record)
@@ -399,7 +419,16 @@ def _record_step_completion(
             "completed_at": [datetime.now()],
             "rows_affected": [rows_affected],
             "error": [error],
-        }
+        },
+        schema={
+            "migration_id": pl.String,
+            "operation_id": pl.String,
+            "feature_key": pl.String,
+            "step_type": pl.String,
+            "completed_at": pl.Datetime("us"),
+            "rows_affected": pl.Int64,
+            "error": pl.String,  # Always String, even when None
+        },
     )
 
     store._write_metadata_impl(MIGRATION_OP_STEPS_KEY, step_record)
@@ -480,15 +509,15 @@ def apply_migration(
     start_time = time.time()
     timestamp = datetime.now()
 
-    # Load historical registry from snapshot
+    # Load historical registry from the "from" snapshot
     # This ensures migrations use the exact feature graph topology that existed
-    # when the migration was created, protecting against code refactoring
+    # in the store when the migration was created, protecting against code refactoring
     historical_registry = _load_historical_registry(
-        store, 
-        migration.snapshot_id,
-        class_path_overrides=migration.feature_class_overrides
+        store,
+        migration.from_snapshot_id,
+        class_path_overrides=migration.feature_class_overrides,
     )
-    
+
     # Execute migration within historical registry context
     with historical_registry.use():
         # Parse operations from dict to objects
@@ -588,17 +617,17 @@ def apply_migration(
                 # Continue with other operations (fail-graceful)
                 continue
 
-            # 5. Determine final status
-            if dry_run:
-                status = "skipped"
-            elif operations_applied == len(operations):
-                status = "completed"
-            elif operations_applied == 0:
-                status = "failed"
-            else:
-                status = "failed"  # Partial execution treated as failed
+        # 5. Determine final status (after all operations)
+        if dry_run:
+            status = "skipped"
+        elif operations_applied == len(operations):
+            status = "completed"
+        elif operations_applied == 0:
+            status = "failed"
+        else:
+            status = "failed"  # Partial execution treated as failed
 
-            return MigrationResult(
+        return MigrationResult(
             migration_id=migration.id,
             status=status,
             operations_applied=operations_applied,
@@ -607,4 +636,4 @@ def apply_migration(
             errors=errors,
             duration_seconds=time.time() - start_time,
             timestamp=timestamp,
-            )
+        )

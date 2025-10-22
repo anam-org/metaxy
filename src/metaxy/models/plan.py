@@ -1,4 +1,3 @@
-import hashlib
 from collections.abc import Mapping
 from functools import cached_property
 
@@ -18,6 +17,22 @@ class FQContainerKey(FrozenBaseModel):
 
     def to_string(self) -> str:
         return f"{self.feature}/{self.container}"
+
+    def __lt__(self, other: "FQContainerKey") -> bool:
+        """Enable sorting of FQContainerKey objects."""
+        return self.to_string() < other.to_string()
+
+    def __le__(self, other: "FQContainerKey") -> bool:
+        """Enable sorting of FQContainerKey objects."""
+        return self.to_string() <= other.to_string()
+
+    def __gt__(self, other: "FQContainerKey") -> bool:
+        """Enable sorting of FQContainerKey objects."""
+        return self.to_string() > other.to_string()
+
+    def __ge__(self, other: "FQContainerKey") -> bool:
+        """Enable sorting of FQContainerKey objects."""
+        return self.to_string() >= other.to_string()
 
 
 class FeaturePlan(FrozenBaseModel):
@@ -45,43 +60,7 @@ class FeaturePlan(FrozenBaseModel):
         res: dict[FQContainerKey, ContainerSpec] = {}
 
         for container in self.feature.containers:
-            if container.deps == SpecialContainerDep.ALL:
-                # we depend on all upstream features and their containers
-                for feature in self.deps or []:
-                    for container in feature.containers:
-                        res[
-                            FQContainerKey(container=container.key, feature=feature.key)
-                        ] = container
-            elif isinstance(container.deps, list):
-                for container_dep in container.deps:
-                    if container_dep.containers == SpecialContainerDep.ALL:
-                        # we depend on all containers of the corresponding upstream feature
-                        for parent_container in self.parent_features_by_key[
-                            container_dep.feature_key
-                        ].containers:
-                            res[
-                                FQContainerKey(
-                                    container=parent_container.key,
-                                    feature=container_dep.feature_key,
-                                )
-                            ] = parent_container
-
-                    elif isinstance(container_dep, ContainerDep):
-                        #
-                        for container_key in container_dep.containers:
-                            fq_key = FQContainerKey(
-                                container=container_key,
-                                feature=container_dep.feature_key,
-                            )
-                            res[fq_key] = self.all_parent_containers_by_key[fq_key]
-                    else:
-                        raise ValueError(
-                            f"Unsupported dependency type: {type(container_dep)}"
-                        )
-            else:
-                raise TypeError(
-                    f"Unsupported dependencies type: {type(container.deps)}"
-                )
+            res.update(self.get_parent_containers_for_container(container.key))
 
         return res
 
@@ -90,9 +69,43 @@ class FeaturePlan(FrozenBaseModel):
     ) -> Mapping[FQContainerKey, ContainerSpec]:
         res = {}
 
-        for k, v in self.parent_containers_by_key.items():
-            if k.container in self.feature.containers_by_key:
-                res[FQContainerKey(feature=self.feature.key, container=k.container)] = v
+        container = self.feature.containers_by_key[key]
+
+        if container.deps == SpecialContainerDep.ALL:
+            # we depend on all upstream features and their containers
+            for feature in self.deps or []:
+                for container in feature.containers:
+                    res[
+                        FQContainerKey(container=container.key, feature=feature.key)
+                    ] = container
+        elif isinstance(container.deps, list):
+            for container_dep in container.deps:
+                if container_dep.containers == SpecialContainerDep.ALL:
+                    # we depend on all containers of the corresponding upstream feature
+                    for parent_container in self.parent_features_by_key[
+                        container_dep.feature_key
+                    ].containers:
+                        res[
+                            FQContainerKey(
+                                container=parent_container.key,
+                                feature=container_dep.feature_key,
+                            )
+                        ] = parent_container
+
+                elif isinstance(container_dep, ContainerDep):
+                    #
+                    for container_key in container_dep.containers:
+                        fq_key = FQContainerKey(
+                            container=container_key,
+                            feature=container_dep.feature_key,
+                        )
+                        res[fq_key] = self.all_parent_containers_by_key[fq_key]
+                else:
+                    raise ValueError(
+                        f"Unsupported dependency type: {type(container_dep)}"
+                    )
+        else:
+            raise TypeError(f"Unsupported dependencies type: {type(container.deps)}")
 
         return res
 
@@ -141,49 +154,3 @@ class FeaturePlan(FrozenBaseModel):
             result[container.key] = container_deps
 
         return result
-
-    def get_container_data_version(self, key: ContainerKey) -> str:
-        hasher = hashlib.sha256()
-
-        container = self.feature.containers_by_key[key]
-
-        # Handle both ContainerKey objects and plain tuples
-        key_str = key.to_string() if hasattr(key, "to_string") else "_".join(key)
-        hasher.update(key_str.encode())
-        hasher.update(str(container.code_version).encode())
-
-        for k, v in sorted(self.get_parent_containers_for_container(key).items()):
-            hasher.update(k.to_string().encode())
-            hasher.update(self.get_container_data_version(k.container).encode())
-
-        return hasher.hexdigest()
-
-    # @cached_property
-    def data_version(self) -> dict[str, str]:
-        """Computes the data version for the feature plan.
-
-        Hash together container data versions versions with the feature code version.
-
-        Returns:
-            dict[str, str]: The data version for each container in the feature plan.
-                Keys are container names as strings.
-        """
-        res = {}
-
-        for k, v in self.feature.containers_by_key.items():
-            hasher = hashlib.sha256()
-            # Handle both FeatureKey objects and plain tuples
-            feature_key_str = (
-                self.feature.key.to_string()
-                if hasattr(self.feature.key, "to_string")
-                else "_".join(self.feature.key)
-            )
-            hasher.update(feature_key_str.encode())
-            hasher.update(self.get_container_data_version(k).encode())
-            # Handle both ContainerKey objects and plain tuples
-            container_key_str = (
-                k.to_string() if hasattr(k, "to_string") else "_".join(k)
-            )
-            res[container_key_str] = hasher.hexdigest()
-
-        return res

@@ -4,7 +4,7 @@ from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.types import ContainerKey, FeatureKey
 
 
-def test_single_feature_data_version(snapshot):
+def test_single_feature_data_version(snapshot, registry: FeatureRegistry):
     """Test feature with no dependencies."""
 
     class MyFeature(

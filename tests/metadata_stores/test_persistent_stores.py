@@ -277,7 +277,9 @@ def test_system_tables(persistent_store, test_registry, test_features: dict) -> 
     """
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-    with persistent_store as store:
+    registry, _ = test_registry
+
+    with registry.use(), persistent_store as store:
         # Write data and record version
         data = pl.DataFrame(
             {
@@ -289,7 +291,7 @@ def test_system_tables(persistent_store, test_registry, test_features: dict) -> 
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data)
-        store.record_feature_graph_snapshot(test_features["UpstreamFeatureA"])
+        store.record_feature_graph_snapshot()
 
         # Read system table
         version_history = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)

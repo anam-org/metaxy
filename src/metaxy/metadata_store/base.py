@@ -589,15 +589,15 @@ class MetadataStore(ABC, Generic[TRef]):
         self,
         feature: FeatureKey | type[Feature],
         *,
-        snapshot_id: str | None = None,
+        snapshot_id: str,
     ) -> None:
         """Record a single feature version in system table.
 
-        Internal method used by serialize_feature_graph.
+        Internal method (currently unused - serialize_feature_graph does bulk recording).
 
         Args:
             feature: Feature to record
-            snapshot_id: Optional snapshot ID
+            snapshot_id: Snapshot ID (required, never None)
         """
         feature_key = self._resolve_feature_key(feature)
 
@@ -614,8 +614,8 @@ class MetadataStore(ABC, Generic[TRef]):
 
         # Serialize complete FeatureSpec to JSON
         # This includes: key, deps, containers, code_version - everything needed to reconstruct
-        feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode='json'))  # type: ignore[attr-defined]
-        
+        feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode="json"))  # type: ignore[attr-defined]
+
         # Get class import path for strict reconstruction
         class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
@@ -642,9 +642,19 @@ class MetadataStore(ABC, Generic[TRef]):
                 "feature_version": [feature_version],
                 "recorded_at": [datetime.now()],
                 "feature_spec": [feature_spec_json],  # Complete FeatureSpec as JSON
-                "feature_class_path": [class_path],  # Import path for strict reconstruction
+                "feature_class_path": [
+                    class_path
+                ],  # Import path for strict reconstruction
                 "snapshot_id": [snapshot_id],  # Required: groups features in snapshot
-            }
+            },
+            schema={
+                "feature_key": pl.String,
+                "feature_version": pl.String,
+                "recorded_at": pl.Datetime("us"),
+                "feature_spec": pl.String,
+                "feature_class_path": pl.String,
+                "snapshot_id": pl.String,
+            },
         )
 
         # Write to system table (bypass feature_version tracking to avoid recursion)
@@ -677,24 +687,14 @@ class MetadataStore(ABC, Generic[TRef]):
             >>> store.write_metadata(FeatureB, data_b)
             >>> store.write_metadata(FeatureC, data_c)
         """
-        import hashlib
 
         from metaxy.models.feature import FeatureRegistry
 
         registry = FeatureRegistry.get_active()
 
-        # Generate deterministic snapshot_id (no timestamp!)
-        # Hash all feature versions together
-        hasher = hashlib.sha256()
-        for feature_key in sorted(
-            registry.features_by_key.keys(), key=lambda k: k.to_string()
-        ):
-            feature_cls = registry.features_by_key[feature_key]
-            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-            # Include both key and version in hash
-            hasher.update(f"{feature_key.to_string()}:{feature_version}".encode())
-
-        snapshot_id = hasher.hexdigest()[:8]  # 8 chars like git
+        # Generate deterministic snapshot_id from registry
+        # This uses the same logic as FeatureRegistry.snapshot_id property
+        snapshot_id = registry.snapshot_id
 
         # Read existing feature versions once
         try:
@@ -720,10 +720,10 @@ class MetadataStore(ABC, Generic[TRef]):
         ):
             feature_cls = registry.features_by_key[feature_key]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-            
+
             # Serialize complete FeatureSpec
-            feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode='json'))  # type: ignore[attr-defined]
-            
+            feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode="json"))  # type: ignore[attr-defined]
+
             # Get class import path
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
@@ -744,7 +744,17 @@ class MetadataStore(ABC, Generic[TRef]):
 
         # Bulk write all new records at once
         if records:
-            version_records = pl.DataFrame(records)
+            version_records = pl.DataFrame(
+                records,
+                schema={
+                    "feature_key": pl.String,
+                    "feature_version": pl.String,
+                    "recorded_at": pl.Datetime("us"),
+                    "feature_spec": pl.String,
+                    "feature_class_path": pl.String,
+                    "snapshot_id": pl.String,
+                },
+            )
             self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
 
         return snapshot_id

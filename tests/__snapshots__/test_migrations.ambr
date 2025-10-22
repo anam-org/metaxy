@@ -2,16 +2,16 @@
 # name: test_detect_uses_latest_version_from_multiple_materializations
   dict({
     'feature_key': 'test_migrations_upstream',
-    'from_version': 'af83a237',
-    'to_version': '18e548a1',
+    'from_version': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
+    'to_version': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
   })
 # ---
 # name: test_feature_versions_snapshot
   dict({
-    'downstream_v1': '5a06765e',
-    'downstream_v2': '5a06765e',
-    'upstream_v1': 'af83a237',
-    'upstream_v2': '18e548a1',
+    'downstream_v1': '2c55d52f81ec55f55add2cfcd904e20db0cd44b8ef390b6420fb3f685f9f8e58',
+    'downstream_v2': '107842fd1715673e3e924b206d6527e34c69a48cdadff877b67a75680d9dae02',
+    'upstream_v1': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
+    'upstream_v2': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
   })
 # ---
 # name: test_generated_migration_yaml_snapshot
@@ -20,18 +20,18 @@
       dict({
         'feature_key': list([
           'test_migrations',
-          'upstream',
+          'downstream',
         ]),
-        'from_version': 'af83a237',
-        'to_version': '18e548a1',
+        'from_version': '2c55d52f81ec55f55add2cfcd904e20db0cd44b8ef390b6420fb3f685f9f8e58',
+        'to_version': '107842fd1715673e3e924b206d6527e34c69a48cdadff877b67a75680d9dae02',
       }),
       dict({
         'feature_key': list([
           'test_migrations',
-          'downstream',
+          'upstream',
         ]),
-        'from_version': '5a06765e',
-        'to_version': '5a06765e',
+        'from_version': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
+        'to_version': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
       }),
     ]),
     'version': 1,
@@ -56,11 +56,11 @@
   })
 # ---
 # name: test_serialize_feature_graph
-  '9fee05a3'
+  '040d9d2cbf383fca987d59c5208c516c71346a0a24aa63f2a7c0c53db8104db1'
 # ---
 # name: test_snapshot_workflow_without_migrations
   dict({
-    'v1': '9fee05a3',
-    'v2': '7c0ee352',
+    'v1': '040d9d2cbf383fca987d59c5208c516c71346a0a24aa63f2a7c0c53db8104db1',
+    'v2': '8e237c8fa452be6c71ee2f161704c374d243c40748eeb8e1ac20964c257b6be1',
   })
 # ---
