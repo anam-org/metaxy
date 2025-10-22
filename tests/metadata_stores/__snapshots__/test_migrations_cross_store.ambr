@@ -1,0 +1,173 @@
+# serializer version: 1
+# name: test_migration_system_tables_serialize_cross_store[clickhouse]
+  dict({
+    'migration': dict({
+      'description': 'Test system table serialization',
+      'migration_id': 'test_serialization',
+      'operation_ids': list([
+        'reconcile_downstream',
+      ]),
+    }),
+    'operation': dict({
+      'expected_steps': list([
+        'test_stores_downstream',
+      ]),
+      'feature_key': 'test_stores_downstream',
+      'operation_id': 'reconcile_downstream',
+      'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
+    }),
+    'step': dict({
+      'error': None,
+      'feature_key': 'test_stores_downstream',
+      'migration_id': 'test_serialization',
+      'operation_id': 'reconcile_downstream',
+      'rows_affected': 1,
+    }),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[clickhouse].1
+  dict({
+    'row_count': 2,
+    'rows': list([
+      dict({
+        'data_version': "{'default': 'd1'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+      dict({
+        'data_version': "{'default': '810084555198624612'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+    ]),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[duckdb]
+  dict({
+    'migration': dict({
+      'description': 'Test system table serialization',
+      'migration_id': 'test_serialization',
+      'operation_ids': list([
+        'reconcile_downstream',
+      ]),
+    }),
+    'operation': dict({
+      'expected_steps': list([
+        'test_stores_downstream',
+      ]),
+      'feature_key': 'test_stores_downstream',
+      'operation_id': 'reconcile_downstream',
+      'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
+    }),
+    'step': dict({
+      'error': None,
+      'feature_key': 'test_stores_downstream',
+      'migration_id': 'test_serialization',
+      'operation_id': 'reconcile_downstream',
+      'rows_affected': 1,
+    }),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[duckdb].1
+  dict({
+    'row_count': 2,
+    'rows': list([
+      dict({
+        'data_version': "{'default': 'd1'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+      dict({
+        'data_version': "{'default': '810084555198624612'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+    ]),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[inmemory]
+  dict({
+    'migration': dict({
+      'description': 'Test system table serialization',
+      'migration_id': 'test_serialization',
+      'operation_ids': list([
+        'reconcile_downstream',
+      ]),
+    }),
+    'operation': dict({
+      'expected_steps': list([
+        'test_stores_downstream',
+      ]),
+      'feature_key': 'test_stores_downstream',
+      'operation_id': 'reconcile_downstream',
+      'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
+    }),
+    'step': dict({
+      'error': None,
+      'feature_key': 'test_stores_downstream',
+      'migration_id': 'test_serialization',
+      'operation_id': 'reconcile_downstream',
+      'rows_affected': 1,
+    }),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[inmemory].1
+  dict({
+    'row_count': 2,
+    'rows': list([
+      dict({
+        'data_version': "{'default': 'd1'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+      dict({
+        'data_version': "{'default': '810084555198624612'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+    ]),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[sqlite]
+  dict({
+    'migration': dict({
+      'description': 'Test system table serialization',
+      'migration_id': 'test_serialization',
+      'operation_ids': list([
+        'reconcile_downstream',
+      ]),
+    }),
+    'operation': dict({
+      'expected_steps': list([
+        'test_stores_downstream',
+      ]),
+      'feature_key': 'test_stores_downstream',
+      'operation_id': 'reconcile_downstream',
+      'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
+    }),
+    'step': dict({
+      'error': None,
+      'feature_key': 'test_stores_downstream',
+      'migration_id': 'test_serialization',
+      'operation_id': 'reconcile_downstream',
+      'rows_affected': 1,
+    }),
+  })
+# ---
+# name: test_migration_system_tables_serialize_cross_store[sqlite].1
+  dict({
+    'row_count': 2,
+    'rows': list([
+      dict({
+        'data_version': "{'default': 'd1'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+      dict({
+        'data_version': "{'default': '5d750d2611c6712e1ebc85dad1dc94ea'}",
+        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'sample_id': 1,
+      }),
+    ]),
+  })
+# ---

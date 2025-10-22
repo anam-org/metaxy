@@ -1,3 +1,4 @@
+import hashlib
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
@@ -8,7 +9,7 @@ from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
-from metaxy.models.plan import FeaturePlan
+from metaxy.models.plan import FeaturePlan, FQContainerKey
 from metaxy.models.types import FeatureKey
 
 # Type variable for backend-agnostic operations
@@ -59,8 +60,51 @@ class FeatureRegistry:
             or None,
         )
 
-    def get_feature_data_version(self, key: FeatureKey) -> dict[str, str]:
-        return self.get_feature_plan(key).data_version()
+    def get_container_version(self, key: "FQContainerKey") -> str:
+        hasher = hashlib.sha256()
+
+        plan = self.get_feature_plan(key.feature)
+        container = plan.feature.containers_by_key[key.container]
+
+        hasher.update(key.to_string().encode())
+        hasher.update(str(container.code_version).encode())
+
+        for k, v in sorted(
+            plan.get_parent_containers_for_container(key.container).items()
+        ):
+            hasher.update(self.get_container_version(k).encode())
+
+        return hasher.hexdigest()
+
+    def get_feature_version_by_container(self, key: FeatureKey) -> dict[str, str]:
+        """Computes the feature data version.
+
+        Hash together container data versions versions with the feature code version.
+
+        Returns:
+            dict[str, str]: The data version for each container in the feature plan.
+                Keys are container names as strings.
+        """
+        res = {}
+
+        plan = self.get_feature_plan(key)
+
+        for k, v in plan.feature.containers_by_key.items():
+            res[k.to_string()] = self.get_container_version(
+                FQContainerKey(container=k, feature=key)
+            )
+
+        return res
+
+    def get_feature_version(self, key: FeatureKey) -> str:
+        """Computes the feature version as a single string"""
+        hasher = hashlib.sha256()
+        data_version = self.get_feature_version_by_container(key)
+        for container_key in sorted(data_version):
+            hasher.update(container_key.encode())
+            hasher.update(data_version[container_key].encode())
+
+        return hasher.hexdigest()
 
     def get_downstream_features(self, sources: list[FeatureKey]) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
@@ -108,6 +152,149 @@ class FeatureRegistry:
         # Remove sources from result, reverse to get topological order
         result = [k for k in reversed(post_order) if k not in source_set]
         return result
+
+    @property
+    def snapshot_id(self) -> str:
+        """Generate a snapshot ID representing the current topology + versions of the feature graph"""
+        hasher = hashlib.sha256()
+        for feature_key in sorted(self.feature_specs_by_key.keys()):
+            hasher.update(feature_key.to_string().encode("utf-8"))
+            hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
+        return hasher.hexdigest()
+
+    def to_snapshot(self) -> dict[str, dict]:
+        """Serialize registry to snapshot format.
+
+        Returns a dict mapping feature_key (string) to feature data dict,
+        including the import path of the Feature class for reconstruction.
+
+        Returns:
+            Dict of feature_key -> {
+                feature_spec: dict,
+                feature_version: str,
+                feature_class_path: str
+            }
+
+        Example:
+            >>> snapshot = registry.to_snapshot()
+            >>> snapshot["video_processing"]["feature_version"]
+            'abc12345'
+            >>> snapshot["video_processing"]["feature_class_path"]
+            'myapp.features.video.VideoProcessing'
+        """
+        snapshot = {}
+
+        for feature_key, feature_cls in self.features_by_key.items():
+            feature_key_str = feature_key.to_string()
+            feature_spec_dict = feature_cls.spec.model_dump(mode="json")  # type: ignore[attr-defined]
+            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+
+            # Get class import path (module.ClassName)
+            class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+
+            snapshot[feature_key_str] = {
+                "feature_spec": feature_spec_dict,
+                "feature_version": feature_version,
+                "feature_class_path": class_path,
+            }
+
+        return snapshot
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        snapshot_data: dict[str, dict],
+        *,
+        class_path_overrides: dict[str, str] | None = None,
+    ) -> "FeatureRegistry":
+        """Reconstruct registry from snapshot by importing Feature classes.
+
+        Strictly requires Feature classes to exist at their recorded import paths.
+        This ensures custom methods (like align_metadata_with_upstream) are available.
+
+        If a feature has been moved/renamed, use class_path_overrides to specify
+        the new location.
+
+        Args:
+            snapshot_data: Dict of feature_key -> {
+                feature_spec: dict,
+                feature_class_path: str,
+                ...
+            } (as returned by to_snapshot() or loaded from DB)
+            class_path_overrides: Optional dict mapping feature_key to new class path
+                                 for features that have been moved/renamed
+
+        Returns:
+            New FeatureRegistry with historical features
+
+        Raises:
+            ImportError: If feature class cannot be imported at recorded path
+
+        Example:
+            >>> # Load snapshot from metadata store
+            >>> historical_registry = FeatureRegistry.from_snapshot(snapshot_data)
+            >>>
+            >>> # With override for moved feature
+            >>> historical_registry = FeatureRegistry.from_snapshot(
+            ...     snapshot_data,
+            ...     class_path_overrides={
+            ...         "video_processing": "myapp.features_v2.VideoProcessing"
+            ...     }
+            ... )
+        """
+        from metaxy.models.feature_spec import FeatureSpec
+
+        registry = cls()
+        class_path_overrides = class_path_overrides or {}
+
+        for feature_key_str, feature_data in snapshot_data.items():
+            # Parse FeatureSpec for validation
+            feature_spec_dict = feature_data["feature_spec"]
+            feature_spec = FeatureSpec.model_validate(feature_spec_dict)
+
+            # Get class path (check overrides first)
+            if feature_key_str in class_path_overrides:
+                class_path = class_path_overrides[feature_key_str]
+            else:
+                class_path = feature_data.get("feature_class_path")
+                if not class_path:
+                    raise ValueError(
+                        f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
+                        f"Cannot reconstruct historical registry."
+                    )
+
+            # Import the class
+            try:
+                module_path, class_name = class_path.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[class_name])
+                feature_cls = getattr(module, class_name)
+            except (ImportError, AttributeError) as e:
+                raise ImportError(
+                    f"Cannot import Feature class '{class_path}' for historical migration. "
+                    f"Feature '{feature_key_str}' is required for this migration but the class "
+                    f"cannot be found at the recorded import path. "
+                    f"\n\n"
+                    f"Options:\n"
+                    f"1. Restore the feature class at '{class_path}'\n"
+                    f"2. If the feature was moved, add a class_path_override in the migration YAML:\n"
+                    f"   feature_class_overrides:\n"
+                    f'     {feature_key_str}: "new.module.path.ClassName"\n'
+                    f"\n"
+                    f"Original error: {e}"
+                ) from e
+
+            # Validate the imported class matches the stored spec
+            if not hasattr(feature_cls, "spec"):
+                raise TypeError(
+                    f"Imported class '{class_path}' is not a valid Feature class "
+                    f"(missing 'spec' attribute)"
+                )
+
+            # Register it
+            registry.features_by_key[feature_spec.key] = feature_cls
+            registry.feature_specs_by_key[feature_spec.key] = feature_spec
+
+        return registry
 
     @classmethod
     def get_active(cls) -> "FeatureRegistry":
@@ -235,46 +422,9 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             ... )):
             ...     pass
             >>> MyFeature.feature_version()
-            'a3f8b2c1'
+            'a3f8b2c1...'
         """
-        import hashlib
-
-        from metaxy.models.container import SpecialContainerDep
-
-        # Build deterministic representation
-        components = [cls.spec.key.to_string()]
-
-        # Container definitions (sorted for determinism)
-        for container in sorted(cls.spec.containers, key=lambda c: c.key.to_string()):
-            components.append(f"c:{container.key.to_string()}:{container.code_version}")
-
-            # Include container dependencies
-            if container.deps == SpecialContainerDep.ALL:
-                components.append("cdeps:ALL")
-            elif isinstance(container.deps, list):
-                for dep in sorted(
-                    container.deps, key=lambda d: d.feature_key.to_string()
-                ):
-                    components.append(f"cdep:{dep.feature_key.to_string()}")
-                    if dep.containers == SpecialContainerDep.ALL:
-                        components.append("conts:ALL")
-                    elif isinstance(dep.containers, list):
-                        for cont_key in sorted(
-                            dep.containers, key=lambda k: k.to_string()
-                        ):
-                            components.append(f"cont:{cont_key.to_string()}")
-
-        # Feature-level dependencies (sorted for determinism)
-        if cls.spec.deps:
-            for dep in sorted(cls.spec.deps, key=lambda d: d.key.to_string()):
-                components.append(f"fdep:{dep.key.to_string()}")
-
-        # Hash everything together
-        hasher = hashlib.sha256()
-        for component in components:
-            hasher.update(component.encode())
-
-        return hasher.hexdigest()
+        return cls.registry.get_feature_version(cls.spec.key)
 
     @classmethod
     def align_metadata_with_upstream(
@@ -388,7 +538,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         Returns:
             Dictionary mapping container keys to their data version hashes.
         """
-        return cls.registry.get_feature_data_version(cls.spec.key)
+        return cls.registry.get_feature_version_by_container(cls.spec.key)
 
     @classmethod
     def join_upstream_metadata(

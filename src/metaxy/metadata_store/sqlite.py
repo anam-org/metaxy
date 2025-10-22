@@ -197,12 +197,15 @@ class SQLiteMetadataStore(IbisMetadataStore):
                     pl.col(col_name).struct.json_encode().alias(col_name)
                 )
             elif isinstance(dtype, pl.List):
-                # Convert array/list to JSON string using write_json
-                # We use a lambda to convert each list to JSON
+                # Convert array/list to JSON string
+                # Note: Polars doesn't have native list.json_encode(), so we use map_elements
+                import json
+
                 df = df.with_columns(
                     pl.col(col_name)
                     .map_elements(
-                        lambda x: None if x is None else str(x), return_dtype=pl.Utf8
+                        lambda x: None if x is None else json.dumps(x),
+                        return_dtype=pl.Utf8,
                     )
                     .alias(col_name)
                 )
@@ -220,53 +223,42 @@ class SQLiteMetadataStore(IbisMetadataStore):
         Returns:
             DataFrame with JSON strings converted back to structs/arrays
         """
-        # Known struct and array columns in the system
-        # data_version is a struct, containers is a list
-        struct_columns = ["data_version"]
-        array_columns = ["containers"]
+        # Known struct and array columns with their expected dtypes
+        # data_version is a struct, containers is a list of structs
+        # Migration system columns: operation_ids, expected_steps (list of strings),
+        #                          migration_yaml (struct), affected_features (list of strings)
 
-        # Deserialize struct columns
-        for col_name in struct_columns:
+        # Columns that need JSON deserialization with specific dtypes
+        json_columns = {
+            "data_version": None,  # Infer from data
+            "migration_yaml": None,  # Infer from data
+            # "feature_spec": Leave as JSON string - contains enum values that can't be parsed
+            "operation_ids": pl.List(pl.Utf8),  # List of strings
+            "expected_steps": pl.List(pl.Utf8),  # List of strings
+            "affected_features": pl.List(pl.Utf8),  # List of strings
+        }
+
+        # Deserialize JSON columns
+        for col_name, dtype in json_columns.items():
             if col_name in df.columns and df.schema[col_name] == pl.Utf8:
                 if len(df) > 0:
-                    sample_value = df[col_name].drop_nulls().head(1)
-                    if len(sample_value) > 0:
-                        inferred_series = sample_value.str.json_decode()
-                        inferred_dtype = inferred_series.dtype
-                        df = df.with_columns(
-                            pl.col(col_name)
-                            .str.json_decode(dtype=inferred_dtype)
-                            .alias(col_name)
-                        )
-
-        # Deserialize array columns
-        for col_name in array_columns:
-            if col_name in df.columns and df.schema[col_name] == pl.Utf8:
-                if len(df) > 0:
-                    # Parse Python list string representation using ast.literal_eval
-                    import ast
-
-                    def parse_list(s):
-                        if s is None:
-                            return None
-                        try:
-                            return ast.literal_eval(s)
-                        except (ValueError, SyntaxError):
-                            return None
-
-                    # First infer the element type
-                    sample_value = df[col_name].drop_nulls().head(1)
-                    if len(sample_value) > 0:
-                        parsed_sample = parse_list(sample_value[0])
-                        if parsed_sample is not None and len(parsed_sample) > 0:
-                            # Infer element type from first element
-                            elem_type = pl.Utf8  # Default to string
+                    if dtype is None:
+                        # Infer dtype from sample value
+                        sample_value = df[col_name].drop_nulls().head(1)
+                        if len(sample_value) > 0:
+                            inferred_series = sample_value.str.json_decode()
+                            inferred_dtype = inferred_series.dtype
                             df = df.with_columns(
                                 pl.col(col_name)
-                                .map_elements(
-                                    parse_list, return_dtype=pl.List(elem_type)
-                                )
+                                .str.json_decode(dtype=inferred_dtype)
                                 .alias(col_name)
                             )
+                    else:
+                        # Use provided dtype
+                        df = df.with_columns(
+                            pl.col(col_name)
+                            .str.json_decode(dtype=dtype)
+                            .alias(col_name)
+                        )
 
         return df
