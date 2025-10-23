@@ -55,7 +55,7 @@ class MetadataDiffResolver(ABC, Generic[TRef]):
         - Polars: Collects once, splits into three DataFrames
 
     Users can override Feature.resolve_data_version_diff to customize:
-        - Ignore certain container changes
+        - Ignore certain field changes
         - Apply custom change detection rules
         - Filter out specific samples
     """

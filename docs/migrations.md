@@ -20,7 +20,7 @@ Tracks when each feature version was recorded:
     "feature_key": "video_processing",
     "feature_version": "a3f8b2c1",
     "recorded_at": datetime(2025, 1, 10, 14, 30, 0),
-    "containers": ["frames", "audio"],
+    "fields": ["frames", "audio"],
     "snapshot_id": "9fee05a3",  # Graph snapshot hash (if recorded with serialize_feature_graph)
 }
 ```
@@ -100,16 +100,16 @@ This enables:
 ```python
 # Before: code_version = 1
 class VideoProcessing(Feature, spec=FeatureSpec(
-    containers=[
-        ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+    fields=[
+        FieldSpec(key=FieldKey(["default"]), code_version=1),
     ],
 )):
     pass
 
 # After: code_version = 2
 class VideoProcessing(Feature, spec=FeatureSpec(
-    containers=[
-        ContainerSpec(key=ContainerKey(["default"]), code_version=2),  # Changed!
+    fields=[
+        FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
     ],
 )):
     pass

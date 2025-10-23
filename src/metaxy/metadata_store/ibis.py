@@ -178,8 +178,8 @@ class IbisMetadataStore(MetadataStore):
                 """Generate SQL to compute MD5 hashes (universal SQL support)."""
                 # Build SELECT clause with hash columns
                 hash_selects: list[str] = []
-                for container_key, concat_col in concat_columns.items():
-                    hash_col = f"__hash_{container_key}"
+                for field_key, concat_col in concat_columns.items():
+                    hash_col = f"__hash_{field_key}"
                     # Use MD5 function (universally available in SQL databases)
                     hash_expr = f"MD5({concat_col})"
                     hash_selects.append(f"{hash_expr} as {hash_col}")

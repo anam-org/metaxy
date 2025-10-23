@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class HashSQLGenerator(Protocol):
     """Protocol for hash SQL generation functions.
 
-    Takes a table and mapping of container keys to concat column names,
+    Takes a table and mapping of field keys to concat column names,
     returns SQL query that adds hash columns to the table.
     """
 
@@ -29,7 +29,7 @@ class HashSQLGenerator(Protocol):
 
         Args:
             table: Input Ibis table with concatenated columns
-            concat_columns: Maps container_key -> concat_column_name
+            concat_columns: Maps field_key -> concat_column_name
 
         Returns:
             SQL query string that selects all columns plus hash columns
@@ -48,7 +48,7 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
     are provided as SQL template generators that can be customized per backend.
 
     The calculator works by:
-    1. Building concatenated string columns for each container (using Ibis)
+    1. Building concatenated string columns for each field (using Ibis)
     2. Writing the table to a temp table
     3. Applying SQL hash functions via conn.sql()
     4. Returning result as Ibis table
@@ -114,27 +114,27 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
         # Get the hash SQL generator
         hash_sql_gen = self._hash_sql_generators[algo]
 
-        # Build concatenated string columns for each container (using Ibis expressions)
+        # Build concatenated string columns for each field (using Ibis expressions)
         concat_columns = {}
 
-        for container in feature_spec.containers:
-            container_key_str = (
-                container.key.to_string()
-                if hasattr(container.key, "to_string")
-                else "__".join(container.key)
+        for field in feature_spec.fields:
+            field_key_str = (
+                field.key.to_string()
+                if hasattr(field.key, "to_string")
+                else "__".join(field.key)
             )
 
-            container_deps = feature_plan.container_dependencies.get(container.key, {})
+            field_deps = feature_plan.field_dependencies.get(field.key, {})
 
             # Build hash components (same structure as Polars)
             components = [
-                ibis.literal(container_key_str),
-                ibis.literal(str(container.code_version)),
+                ibis.literal(field_key_str),
+                ibis.literal(str(field.code_version)),
             ]
 
             # Add upstream data versions in deterministic order
-            for upstream_feature_key in sorted(container_deps.keys()):
-                upstream_containers = container_deps[upstream_feature_key]
+            for upstream_feature_key in sorted(field_deps.keys()):
+                upstream_fields = field_deps[upstream_feature_key]
                 upstream_key_str = (
                     upstream_feature_key.to_string()
                     if hasattr(upstream_feature_key, "to_string")
@@ -145,19 +145,19 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
                     upstream_key_str, "data_version"
                 )
 
-                for upstream_container in sorted(upstream_containers):
-                    upstream_container_str = (
-                        upstream_container.to_string()
-                        if hasattr(upstream_container, "to_string")
-                        else "__".join(upstream_container)
+                for upstream_field in sorted(upstream_fields):
+                    upstream_field_str = (
+                        upstream_field.to_string()
+                        if hasattr(upstream_field, "to_string")
+                        else "__".join(upstream_field)
                     )
 
                     components.append(
-                        ibis.literal(f"{upstream_key_str}/{upstream_container_str}")
+                        ibis.literal(f"{upstream_key_str}/{upstream_field_str}")
                     )
-                    # Access struct field for upstream container's hash
+                    # Access struct field for upstream field's hash
                     components.append(
-                        joined_upstream[data_version_col_name][upstream_container_str]
+                        joined_upstream[data_version_col_name][upstream_field_str]
                     )
 
             # Concatenate all components with separator
@@ -165,9 +165,9 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
             for component in components[1:]:
                 concat_expr = concat_expr.concat(ibis.literal("|")).concat(component)  # type: ignore[attr-defined]
 
-            # Store concat column for this container
-            concat_col_name = f"__concat_{container_key_str}"
-            concat_columns[container_key_str] = concat_col_name
+            # Store concat column for this field
+            concat_col_name = f"__concat_{field_key_str}"
+            concat_columns[field_key_str] = concat_col_name
             joined_upstream = joined_upstream.mutate(**{concat_col_name: concat_expr})
 
         # Now apply hash functions via SQL
@@ -183,12 +183,11 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
         # Build data_version struct from hash columns in a single select
         # This avoids the IntegrityError from trying to reference columns from result_table
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]
-        container_keys = list(concat_columns.keys())
+        field_keys = list(concat_columns.keys())
 
         # Create struct column from hash columns
         struct_fields = {
-            container_key: result_table[f"__hash_{container_key}"]
-            for container_key in container_keys
+            field_key: result_table[f"__hash_{field_key}"] for field_key in field_keys
         }
 
         # Drop temp columns and add data_version in one select

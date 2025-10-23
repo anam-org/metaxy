@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from metaxy import (
-    ContainerKey,
-    ContainerSpec,
     Feature,
     FeatureKey,
     FeatureRegistry,
     FeatureSpec,
+    FieldKey,
+    FieldSpec,
 )
 from metaxy.entrypoints import (
     EntrypointLoadError,
@@ -54,7 +54,7 @@ def create_test_feature(name: str, key: list[str]) -> type[Feature]:
         spec=FeatureSpec(
             key=FeatureKey(key),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     )
 
@@ -71,12 +71,12 @@ def test_load_module_entrypoint_basic(registry: FeatureRegistry, tmp_path: Path)
 
     feature_module = module_dir / "feature1.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class TestFeature1(Feature, spec=FeatureSpec(
     key=FeatureKey(["test", "feature1"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -132,12 +132,12 @@ def test_load_module_entrypoint_uses_active_registry(tmp_path: Path):
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ActiveRegistryFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["active", "test"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -171,12 +171,12 @@ def test_load_config_entrypoints_multiple_modules(
     for i in range(3):
         feature_module = module_dir / f"feature{i}.py"
         feature_module.write_text(f"""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature{i}(Feature, spec=FeatureSpec(
     key=FeatureKey(["multi", "feature{i}"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -237,9 +237,7 @@ def test_load_package_entrypoints_discovers_and_loads(registry: FeatureRegistry)
                 spec=FeatureSpec(
                     key=FeatureKey(["plugin", "feature"]),
                     deps=None,
-                    containers=[
-                        ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                    ],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
                 pass
@@ -289,9 +287,7 @@ def test_load_package_entrypoints_custom_group(registry: FeatureRegistry):
                 spec=FeatureSpec(
                     key=FeatureKey(["custom", "feature"]),
                     deps=None,
-                    containers=[
-                        ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                    ],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
                 pass
@@ -342,12 +338,12 @@ def test_discover_and_load_entrypoints_both_sources(
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ConfigFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["config", "feature"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -368,9 +364,7 @@ class ConfigFeature(Feature, spec=FeatureSpec(
                     spec=FeatureSpec(
                         key=FeatureKey(["package", "feature"]),
                         deps=None,
-                        containers=[
-                            ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                        ],
+                        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                     ),
                 ):
                     pass
@@ -409,12 +403,12 @@ def test_discover_and_load_entrypoints_config_only(
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ConfigOnlyFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["config_only", "feature"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -451,9 +445,7 @@ def test_discover_and_load_entrypoints_packages_only(registry: FeatureRegistry):
                 spec=FeatureSpec(
                     key=FeatureKey(["package_only", "feature"]),
                     deps=None,
-                    containers=[
-                        ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                    ],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
                 pass
@@ -516,24 +508,24 @@ def test_duplicate_feature_key_raises_error(registry: FeatureRegistry, tmp_path:
 
     module1 = module_dir / "module1.py"
     module1.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature1(Feature, spec=FeatureSpec(
     key=FeatureKey(["duplicate", "key"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
 
     module2 = module_dir / "module2.py"
     module2.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature2(Feature, spec=FeatureSpec(
     key=FeatureKey(["duplicate", "key"]),  # Same key!
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -561,12 +553,12 @@ def test_entrypoints_with_dependencies(registry: FeatureRegistry, tmp_path: Path
     # Upstream feature
     upstream = module_dir / "upstream.py"
     upstream.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class UpstreamFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["deps", "upstream"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
@@ -574,12 +566,12 @@ class UpstreamFeature(Feature, spec=FeatureSpec(
     # Downstream feature
     downstream = module_dir / "downstream.py"
     downstream.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey, FeatureDep
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey, FeatureDep
 
 class DownstreamFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["deps", "downstream"]),
     deps=[FeatureDep(key=FeatureKey(["deps", "upstream"]))],
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)

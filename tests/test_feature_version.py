@@ -3,13 +3,13 @@
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
     Feature,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
 )
 
 
@@ -21,8 +21,8 @@ def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["test", "feature"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
     ):
@@ -57,8 +57,8 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
         spec=FeatureSpec(
             key=FeatureKey(["versioned", "feature", "test_v1"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
         registry=registry_v1,
@@ -70,10 +70,8 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
         spec=FeatureSpec(
             key=FeatureKey(["versioned", "feature", "test_v2"]),
             deps=None,
-            containers=[
-                ContainerSpec(
-                    key=ContainerKey(["default"]), code_version=2
-                ),  # Changed!
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
             ],
         ),
         registry=registry_v2,
@@ -98,8 +96,8 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
         spec=FeatureSpec(
             key=FeatureKey(["test_deps", "upstream"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
     ):
@@ -110,8 +108,8 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
         spec=FeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "no_deps"]),
             deps=None,  # No dependencies
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
     ):
@@ -124,8 +122,8 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
             deps=[
                 FeatureDep(key=FeatureKey(["test_deps", "upstream"]))
             ],  # Added dependency!
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
     ):
@@ -141,24 +139,24 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
     assert {"no_deps": no_deps, "with_deps": with_deps} == snapshot
 
 
-def test_feature_version_multi_container(snapshot: SnapshotAssertion) -> None:
-    """Test feature_version with multiple containers."""
+def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
+    """Test feature_version with multiple fields."""
 
-    class MultiContainer(
+    class MultiField(
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["multi"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["metadata"]), code_version=2),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=1),
+                FieldSpec(key=FieldKey(["metadata"]), code_version=2),
             ],
         ),
     ):
         pass
 
-    version = MultiContainer.feature_version()
+    version = MultiField.feature_version()
 
     # Should be 64 characters
     assert len(version) == 64
@@ -167,17 +165,17 @@ def test_feature_version_multi_container(snapshot: SnapshotAssertion) -> None:
     assert version == snapshot
 
 
-def test_feature_version_with_container_deps(snapshot: SnapshotAssertion) -> None:
-    """Test feature_version includes container-level dependencies."""
+def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
+    """Test feature_version includes field-level dependencies."""
 
     class Upstream(
         Feature,
         spec=FeatureSpec(
-            key=FeatureKey(["test_container_deps", "upstream"]),
+            key=FeatureKey(["test_field_deps", "upstream"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=1),
             ],
         ),
     ):
@@ -186,34 +184,34 @@ def test_feature_version_with_container_deps(snapshot: SnapshotAssertion) -> Non
     class DownstreamNoDeps(
         Feature,
         spec=FeatureSpec(
-            key=FeatureKey(["test_container_deps", "downstream", "no_deps"]),
-            deps=[FeatureDep(key=FeatureKey(["test_container_deps", "upstream"]))],
-            containers=[
-                ContainerSpec(
-                    key=ContainerKey(["default"]),
+            key=FeatureKey(["test_field_deps", "downstream", "no_deps"]),
+            deps=[FeatureDep(key=FeatureKey(["test_field_deps", "upstream"]))],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["default"]),
                     code_version=1,
-                    # No container deps
+                    # No field deps
                 ),
             ],
         ),
     ):
         pass
 
-    class DownstreamWithContainerDeps(
+    class DownstreamWithFieldDeps(
         Feature,
         spec=FeatureSpec(
-            key=FeatureKey(["test_container_deps", "downstream", "with_deps"]),
-            deps=[FeatureDep(key=FeatureKey(["test_container_deps", "upstream"]))],
-            containers=[
-                ContainerSpec(
-                    key=ContainerKey(["default"]),
+            key=FeatureKey(["test_field_deps", "downstream", "with_deps"]),
+            deps=[FeatureDep(key=FeatureKey(["test_field_deps", "upstream"]))],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["default"]),
                     code_version=1,
                     deps=[
-                        ContainerDep(
-                            feature_key=FeatureKey(["test_container_deps", "upstream"]),
-                            containers=[
-                                ContainerKey(["frames"]),
-                                ContainerKey(["audio"]),
+                        FieldDep(
+                            feature_key=FeatureKey(["test_field_deps", "upstream"]),
+                            fields=[
+                                FieldKey(["frames"]),
+                                FieldKey(["audio"]),
                             ],
                         )
                     ],
@@ -223,14 +221,14 @@ def test_feature_version_with_container_deps(snapshot: SnapshotAssertion) -> Non
     ):
         pass
 
-    no_container_deps = DownstreamNoDeps.feature_version()
-    with_container_deps = DownstreamWithContainerDeps.feature_version()
+    no_field_deps = DownstreamNoDeps.feature_version()
+    with_field_deps = DownstreamWithFieldDeps.feature_version()
 
     # Should be different
-    assert no_container_deps != with_container_deps
+    assert no_field_deps != with_field_deps
 
     # Snapshot both
     assert {
-        "no_container_deps": no_container_deps,
-        "with_container_deps": with_container_deps,
+        "no_field_deps": no_field_deps,
+        "with_field_deps": with_field_deps,
     } == snapshot

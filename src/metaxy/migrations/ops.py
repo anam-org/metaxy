@@ -68,7 +68,7 @@ class DataVersionReconciliation(BaseOperation):
     4. Preserves all user metadata columns (immutable)
 
     Used when:
-    - Container code_version changes
+    - Field code_version changes
     - Feature dependencies change
     - Any change that affects feature_version hash
 

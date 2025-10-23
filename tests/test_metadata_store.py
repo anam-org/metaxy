@@ -6,14 +6,14 @@ import polars as pl
 import pytest
 
 from metaxy import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
     Feature,
     FeatureDep,
     FeatureKey,
     FeatureRegistry,
     FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
 )
 from metaxy.metadata_store import (
     DependencyError,
@@ -40,9 +40,9 @@ class UpstreamFeatureA(
     spec=FeatureSpec(
         key=FeatureKey(["upstream", "a"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-            ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["frames"]), code_version=1),
+            FieldSpec(key=FieldKey(["audio"]), code_version=1),
         ],
     ),
 ):
@@ -54,8 +54,8 @@ class UpstreamFeatureB(
     spec=FeatureSpec(
         key=FeatureKey(["upstream", "b"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
     ),
 ):
@@ -69,14 +69,14 @@ class DownstreamFeature(
         deps=[
             FeatureDep(key=FeatureKey(["upstream", "a"])),
         ],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["upstream", "a"]),
-                        containers=[ContainerKey(["frames"]), ContainerKey(["audio"])],
+                        fields=[FieldKey(["frames"]), FieldKey(["audio"])],
                     )
                 ],
             ),

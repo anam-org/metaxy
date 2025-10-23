@@ -14,12 +14,12 @@
 # name: test_feature_version_deterministic
   '33c004fe4137e09bce3821702bae48ebe3a821183ac3f7e5369efaa177d07857'
 # ---
-# name: test_feature_version_multi_container
+# name: test_feature_version_multi_field
   '76cc968df48602c4cd03d86798001057375f33aae833aea66754838479eb6b07'
 # ---
-# name: test_feature_version_with_container_deps
+# name: test_feature_version_with_field_deps
   dict({
-    'no_container_deps': '5423e12a179dada3a05344a79e20febf4fb046d8c26ef8988b15414f4be7770e',
-    'with_container_deps': '2ef316eab2e1f9aee7ee9e2ca8c78bf04ec628e47993b8cb54ab0a29b01b6b16',
+    'no_field_deps': '9783311bcc336745058386ba6d177000c71a51b0edd716fa3ca8ae7e73e912d6',
+    'with_field_deps': '27c14775d3390dbbc397cd841adec9736766098d00f4425238c06e825e8dd8cc',
   })
 # ---

@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
-from metaxy.models.plan import FeaturePlan, FQContainerKey
+from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
 
 # Type variable for backend-agnostic operations
@@ -60,38 +60,36 @@ class FeatureRegistry:
             or None,
         )
 
-    def get_container_version(self, key: "FQContainerKey") -> str:
+    def get_field_version(self, key: "FQFieldKey") -> str:
         hasher = hashlib.sha256()
 
         plan = self.get_feature_plan(key.feature)
-        container = plan.feature.containers_by_key[key.container]
+        field = plan.feature.fields_by_key[key.field]
 
         hasher.update(key.to_string().encode())
-        hasher.update(str(container.code_version).encode())
+        hasher.update(str(field.code_version).encode())
 
-        for k, v in sorted(
-            plan.get_parent_containers_for_container(key.container).items()
-        ):
-            hasher.update(self.get_container_version(k).encode())
+        for k, v in sorted(plan.get_parent_fields_for_field(key.field).items()):
+            hasher.update(self.get_field_version(k).encode())
 
         return hasher.hexdigest()
 
-    def get_feature_version_by_container(self, key: FeatureKey) -> dict[str, str]:
+    def get_feature_version_by_field(self, key: FeatureKey) -> dict[str, str]:
         """Computes the feature data version.
 
-        Hash together container data versions versions with the feature code version.
+        Hash together field data versions versions with the feature code version.
 
         Returns:
-            dict[str, str]: The data version for each container in the feature plan.
-                Keys are container names as strings.
+            dict[str, str]: The data version for each field in the feature plan.
+                Keys are field names as strings.
         """
         res = {}
 
         plan = self.get_feature_plan(key)
 
-        for k, v in plan.feature.containers_by_key.items():
-            res[k.to_string()] = self.get_container_version(
-                FQContainerKey(container=k, feature=key)
+        for k, v in plan.feature.fields_by_key.items():
+            res[k.to_string()] = self.get_field_version(
+                FQFieldKey(field=k, feature=key)
             )
 
         return res
@@ -99,10 +97,10 @@ class FeatureRegistry:
     def get_feature_version(self, key: FeatureKey) -> str:
         """Computes the feature version as a single string"""
         hasher = hashlib.sha256()
-        data_version = self.get_feature_version_by_container(key)
-        for container_key in sorted(data_version):
-            hasher.update(container_key.encode())
-            hasher.update(data_version[container_key].encode())
+        data_version = self.get_feature_version_by_field(key)
+        for field_key in sorted(data_version):
+            hasher.update(field_key.encode())
+            hasher.update(data_version[field_key].encode())
 
         return hasher.hexdigest()
 
@@ -401,13 +399,13 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
 
         Returns a hash representing the feature's complete configuration:
         - Feature key
-        - Container definitions and code versions
-        - Dependencies (feature-level and container-level)
+        - Field definitions and code versions
+        - Dependencies (feature-level and field-level)
 
         This hash changes when you modify:
-        - Container code versions
+        - Field code versions
         - Dependencies
-        - Container definitions
+        - Field definitions
 
         Used to distinguish current vs historical metadata versions.
         Stored in the 'feature_version' column of metadata DataFrames.
@@ -418,7 +416,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         Example:
             >>> class MyFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
-            ...     containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ... )):
             ...     pass
             >>> MyFeature.feature_version()
@@ -536,9 +534,9 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         not sample-level data versions.
 
         Returns:
-            Dictionary mapping container keys to their data version hashes.
+            Dictionary mapping field keys to their data version hashes.
         """
-        return cls.registry.get_feature_version_by_container(cls.spec.key)
+        return cls.registry.get_feature_version_by_field(cls.spec.key)
 
     @classmethod
     def join_upstream_metadata(
@@ -604,14 +602,14 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             >>> class MyFeature(Feature, spec=...):
             ...     pass  # Uses diff resolver's default implementation
 
-        Example (ignore certain container changes):
+        Example (ignore certain field changes):
             >>> class MyFeature(Feature, spec=...):
             ...     @classmethod
             ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata):
             ...         # Get standard diff
             ...         result = diff_resolver.find_changes(target_versions, current_metadata)
             ...
-            ...         # Custom: Only consider 'frames' container changes, ignore 'audio'
+            ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
             ...         # (This example uses Polars - would work similarly with other backends)
             ...         # Users can filter/modify the diff result here
             ...

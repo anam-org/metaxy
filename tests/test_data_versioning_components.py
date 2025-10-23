@@ -7,10 +7,10 @@ from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculato
 from metaxy.data_versioning.diff.polars import PolarsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.polars import PolarsJoiner
-from metaxy.models.container import ContainerSpec
 from metaxy.models.feature import Feature, FeatureRegistry
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
-from metaxy.models.types import ContainerKey, FeatureKey
+from metaxy.models.field import FieldSpec
+from metaxy.models.types import FeatureKey, FieldKey
 
 
 @pytest.fixture
@@ -22,9 +22,9 @@ def features(registry: FeatureRegistry) -> dict[str, type[Feature]]:
         spec=FeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=1),
             ],
         ),
     ):
@@ -35,8 +35,8 @@ def features(registry: FeatureRegistry) -> dict[str, type[Feature]]:
         spec=FeatureSpec(
             key=FeatureKey(["audio"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["waveform"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["waveform"]), code_version=1),
             ],
         ),
     ):
@@ -47,8 +47,8 @@ def features(registry: FeatureRegistry) -> dict[str, type[Feature]]:
         spec=FeatureSpec(
             key=FeatureKey(["processed"]),
             deps=[FeatureDep(key=FeatureKey(["video"]))],
-            containers=[
-                ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
     ):
@@ -62,9 +62,9 @@ def features(registry: FeatureRegistry) -> dict[str, type[Feature]]:
                 FeatureDep(key=FeatureKey(["video"])),
                 FeatureDep(key=FeatureKey(["audio"])),
             ],
-            containers=[
-                ContainerSpec(key=ContainerKey(["fusion"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["analysis"]), code_version=2),
+            fields=[
+                FieldSpec(key=FieldKey(["fusion"]), code_version=1),
+                FieldSpec(key=FieldKey(["analysis"]), code_version=2),
             ],
         ),
     ):
@@ -156,7 +156,7 @@ def test_polars_hash_calculator(
     assert "data_version" in result.columns
     assert isinstance(result.schema["data_version"], pl.Struct)
 
-    # Check data_version has 'default' container field
+    # Check data_version has 'default' field field
     data_version_sample = result["data_version"][0]
     assert "default" in data_version_sample
 
@@ -438,7 +438,7 @@ def test_polars_joiner_partial_overlap(registry: FeatureRegistry) -> None:
                 FeatureDep(key=FeatureKey(["video"])),
                 FeatureDep(key=FeatureKey(["audio"])),
             ],
-            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     ):
         pass
@@ -471,13 +471,13 @@ def test_polars_joiner_partial_overlap(registry: FeatureRegistry) -> None:
     assert set(result["sample_id"].to_list()) == {2, 3}
 
 
-# ========== Multi-Container Calculator Tests ==========
+# ========== Multi-Field Calculator Tests ==========
 
 
-def test_polars_calculator_multiple_containers(
+def test_polars_calculator_multiple_fields(
     features: dict[str, type[Feature]], registry: FeatureRegistry
 ):
-    """Test calculator with multiple containers."""
+    """Test calculator with multiple fields."""
     calculator = PolarsDataVersionCalculator()
 
     joined_upstream = pl.DataFrame(
@@ -511,7 +511,7 @@ def test_polars_calculator_multiple_containers(
 
     result = with_versions.collect()
 
-    # Should have data_version struct with both containers
+    # Should have data_version struct with both fields
     data_version_schema = result.schema["data_version"]
     field_names = {f.name for f in data_version_schema.fields}  # type: ignore[attr-defined]
     assert field_names == {"fusion", "analysis"}
@@ -640,7 +640,7 @@ def test_feature_join_upstream_override(registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["custom"]),
             deps=[FeatureDep(key=FeatureKey(["video"]))],
-            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     ):
         @classmethod
@@ -661,7 +661,7 @@ def test_feature_join_upstream_override(registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["frames"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
         ),
     ):
         pass
@@ -689,7 +689,7 @@ def test_feature_resolve_diff_override(registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["custom_diff"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     ):
         @classmethod
@@ -765,10 +765,10 @@ def test_hash_output_snapshots(
     assert hashes == snapshot
 
 
-def test_multi_container_hash_snapshots(
+def test_multi_field_hash_snapshots(
     snapshot, features: dict[str, type[Feature]], registry: FeatureRegistry
 ):
-    """Snapshot test for multi-container hash outputs."""
+    """Snapshot test for multi-field hash outputs."""
     calculator = PolarsDataVersionCalculator()
 
     joined_upstream = pl.DataFrame(
@@ -797,13 +797,13 @@ def test_multi_container_hash_snapshots(
     result = with_versions.collect()
     data_version = result["data_version"][0]
 
-    # Snapshot both container hashes
-    container_hashes = {
+    # Snapshot both field hashes
+    field_hashes = {
         "fusion": data_version["fusion"],
         "analysis": data_version["analysis"],
     }
 
-    assert container_hashes == snapshot
+    assert field_hashes == snapshot
 
 
 # ========== Comprehensive Snapshot Tests ==========
@@ -819,13 +819,13 @@ def test_multi_container_hash_snapshots(
         HashAlgorithm.MD5,
     ],
 )
-def test_single_upstream_single_container_snapshots(
+def test_single_upstream_single_field_snapshots(
     snapshot,
     features: dict[str, type[Feature]],
     registry: FeatureRegistry,
     hash_algorithm,
 ):
-    """Snapshot data versions for single upstream, single container."""
+    """Snapshot data versions for single upstream, single field."""
     calculator = PolarsDataVersionCalculator()
 
     joined_upstream = pl.DataFrame(
@@ -864,13 +864,13 @@ def test_single_upstream_single_container_snapshots(
         HashAlgorithm.SHA256,
     ],
 )
-def test_multi_upstream_multi_container_snapshots(
+def test_multi_upstream_multi_field_snapshots(
     snapshot,
     features: dict[str, type[Feature]],
     registry: FeatureRegistry,
     hash_algorithm,
 ):
-    """Snapshot data versions for multiple upstreams and containers."""
+    """Snapshot data versions for multiple upstreams and fields."""
     calculator = PolarsDataVersionCalculator()
 
     joined_upstream = pl.DataFrame(
@@ -905,7 +905,7 @@ def test_multi_upstream_multi_container_snapshots(
 
     result = with_versions.collect()
 
-    # Snapshot both container hashes for both samples
+    # Snapshot both field hashes for both samples
     data_versions = []
     for i in range(len(result)):
         dv = result["data_version"][i]
@@ -940,10 +940,8 @@ def test_code_version_changes_snapshots(snapshot, registry: FeatureRegistry):
             spec=FeatureSpec(
                 key=FeatureKey([f"test_v{code_version}"]),
                 deps=[FeatureDep(key=FeatureKey(["video"]))],
-                containers=[
-                    ContainerSpec(
-                        key=ContainerKey(["default"]), code_version=code_version
-                    )
+                fields=[
+                    FieldSpec(key=FieldKey(["default"]), code_version=code_version)
                 ],
             ),
         ):
@@ -957,9 +955,7 @@ def test_code_version_changes_snapshots(snapshot, registry: FeatureRegistry):
                 spec=FeatureSpec(
                     key=FeatureKey(["video"]),
                     deps=None,
-                    containers=[
-                        ContainerSpec(key=ContainerKey(["frames"]), code_version=1)
-                    ],
+                    fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
                 ),
             ):
                 pass
@@ -995,9 +991,7 @@ def test_upstream_data_changes_snapshots(snapshot):
             spec=FeatureSpec(
                 key=FeatureKey(["video"]),
                 deps=None,
-                containers=[
-                    ContainerSpec(key=ContainerKey(["frames"]), code_version=1)
-                ],
+                fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
             ),
         ):
             pass
@@ -1007,9 +1001,7 @@ def test_upstream_data_changes_snapshots(snapshot):
             spec=FeatureSpec(
                 key=FeatureKey(["processed"]),
                 deps=[FeatureDep(key=FeatureKey(["video"]))],
-                containers=[
-                    ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                ],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
             pass

@@ -44,7 +44,7 @@
     }),
   })
 # ---
-# name: test_feature_with_multiple_containers
+# name: test_feature_with_multiple_fields
   dict({
     'audio': 'ab11f4a65d39f51402bc4eb224822d38ddcb24831ac53a5b124c333a42a5f4a3',
     'frames': 'd6e150f0fd72262c17770d4886290fa8ca25b5d4516389a64a654db718b0a8dd',
@@ -64,7 +64,7 @@
     }),
   })
 # ---
-# name: test_multiple_containers_different_deps
+# name: test_multiple_fields_different_deps
   dict({
     'x': dict({
       'x1': 'f040ee10ef63d16928f823dcaddccbb837488070747b37152a279430e9ff2300',
@@ -86,7 +86,7 @@
     'default': '1428690189d4145891f390b4af374c266863c5d3a0a6b24e81d73edf399cc33f',
   })
 # ---
-# name: test_specific_container_dependencies
+# name: test_specific_field_dependencies
   dict({
     'multi': dict({
       'audio': 'e8586a193e228d0876163543a10104afa31026e7b38955ca7ef3c2045fc019f1',

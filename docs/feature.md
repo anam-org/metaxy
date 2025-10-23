@@ -2,19 +2,19 @@
 
 Every feature has a **feature version** - hash of its complete specification:
 - Feature key
-- Container definitions and code versions
-- Dependencies (feature-level and container-level)
+- Field definitions and code versions
+- Dependencies (feature-level and field-level)
 
-Being more pedantic, the feature version is calculated by hashing together its container versions and the feature key. The container version is calculated by hashing together the container code version, key, and versions of its dependencies.
+Being more pedantic, the feature version is calculated by hashing together its field versions and the feature key. The field version is calculated by hashing together the field code version, key, and versions of its dependencies.
 
-Feature and container versions are static and deterministic. They are available as class methods:
+Feature and field versions are static and deterministic. They are available as class methods:
 
 ```python
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
-    containers=[
-        ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-        ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+    fields=[
+        FieldSpec(key=FieldKey(["frames"]), code_version=1),
+        FieldSpec(key=FieldKey(["audio"]), code_version=1),
     ],
 )):
     pass
@@ -25,9 +25,9 @@ print(VideoProcessing.feature_version())  # "a3f8b2c1"
 # Change code_version
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
-    containers=[
-        ContainerSpec(key=ContainerKey(["frames"]), code_version=2),  # Changed!
-        ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+    fields=[
+        FieldSpec(key=FieldKey(["frames"]), code_version=2),  # Changed!
+        FieldSpec(key=FieldKey(["audio"]), code_version=1),
     ],
 )):
     pass

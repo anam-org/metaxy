@@ -23,13 +23,13 @@ import pytest
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
     Feature,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
 )
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
@@ -181,28 +181,28 @@ class RootA(
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "root_a"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
     ),
 ):
-    """Root feature with single default container."""
+    """Root feature with single default field."""
 
     pass
 
 
-class MultiContainerRoot(
+class MultiFieldRoot(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "multi_root"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["train"]), code_version=1),
-            ContainerSpec(key=ContainerKey(["test"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["train"]), code_version=1),
+            FieldSpec(key=FieldKey(["test"]), code_version=1),
         ],
     ),
 ):
-    """Root feature with multiple containers."""
+    """Root feature with multiple fields."""
 
     pass
 
@@ -213,14 +213,14 @@ class BranchB(
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "branch_b"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "root_a"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             ),
@@ -237,14 +237,14 @@ class BranchC(
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "branch_c"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "root_a"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             ),
@@ -262,14 +262,14 @@ class LeafSimple(
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "leaf_simple"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "root_a"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             ),
@@ -289,18 +289,18 @@ class LeafDiamond(
             FeatureDep(key=FeatureKey(["resolve", "branch_b"])),
             FeatureDep(key=FeatureKey(["resolve", "branch_c"])),
         ],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "branch_b"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     ),
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "branch_c"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     ),
                 ],
             ),
@@ -312,21 +312,21 @@ class LeafDiamond(
     pass
 
 
-class LeafMultiContainer(
+class LeafMultiField(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "leaf_multi"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "multi_root"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["resolve", "multi_root"]),
-                        containers=[
-                            ContainerKey(["train"]),
-                            ContainerKey(["test"]),
+                        fields=[
+                            FieldKey(["train"]),
+                            FieldKey(["test"]),
                         ],
                     )
                 ],
@@ -334,7 +334,7 @@ class LeafMultiContainer(
         ],
     ),
 ):
-    """Leaf depending on multi-container root."""
+    """Leaf depending on multi-field root."""
 
     pass
 
@@ -361,12 +361,12 @@ class RegistryCases:
         registry.add_feature(LeafDiamond)
         return (registry, [RootA, BranchB, BranchC, LeafDiamond])
 
-    def case_multi_container(self) -> tuple[FeatureRegistry, list[type[Feature]]]:
-        """Feature with multiple containers: A (train + test) → B."""
+    def case_multi_field(self) -> tuple[FeatureRegistry, list[type[Feature]]]:
+        """Feature with multiple fields: A (train + test) → B."""
         registry = FeatureRegistry()
-        registry.add_feature(MultiContainerRoot)
-        registry.add_feature(LeafMultiContainer)
-        return (registry, [MultiContainerRoot, LeafMultiContainer])
+        registry.add_feature(MultiFieldRoot)
+        registry.add_feature(LeafMultiField)
+        return (registry, [MultiFieldRoot, LeafMultiField])
 
 
 @pytest.fixture
@@ -481,16 +481,15 @@ def test_resolve_update_with_upstream(
     root_feature = features[0]
     downstream_feature = features[-1]
 
-    # Helper to create data_version dicts for a feature's containers
+    # Helper to create data_version dicts for a feature's fields
     def make_data_versions(feature: type[Feature], prefix: str) -> list[dict]:
-        containers = [c.key for c in feature.spec.containers]
-        if len(containers) == 1:
-            container_name = "_".join(containers[0])
-            return [{container_name: f"{prefix}_{i}"} for i in [1, 2, 3]]
+        fields = [c.key for c in feature.spec.fields]
+        if len(fields) == 1:
+            field_name = "_".join(fields[0])
+            return [{field_name: f"{prefix}_{i}"} for i in [1, 2, 3]]
         else:
             return [
-                {"_".join(ck): f"{prefix}_{i}_{ck}" for ck in containers}
-                for i in [1, 2, 3]
+                {"_".join(ck): f"{prefix}_{i}_{ck}" for ck in fields} for i in [1, 2, 3]
             ]
 
     # Create upstream data for root feature
@@ -590,12 +589,12 @@ def test_resolve_update_with_upstream(
         assert reference["changed"] == 0
         assert reference["removed"] == 0
         assert all(isinstance(v, dict) for v in reference["versions"])
-        # Verify versions contain expected container keys
-        downstream_containers = [c.key for c in downstream_feature.spec.containers]
+        # Verify versions contain expected field keys
+        downstream_fields = [c.key for c in downstream_feature.spec.fields]
         for version_dict in reference["versions"]:
-            for container_key in downstream_containers:
-                container_name = "_".join(container_key)
-                assert container_name in version_dict
+            for field_key in downstream_fields:
+                field_name = "_".join(field_key)
+                assert field_name in version_dict
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -618,17 +617,17 @@ def test_resolve_update_detects_changes(
     root_feature = features[0]
     downstream_feature = features[-1]
 
-    # Determine which containers to use
-    root_containers = [c.key for c in root_feature.spec.containers]
+    # Determine which fields to use
+    root_fields = [c.key for c in root_feature.spec.fields]
 
-    # Create data version dicts for containers
+    # Create data version dicts for fields
     def make_data_versions(version_prefix: str, sample_ids: list[int]) -> list[dict]:
-        if len(root_containers) == 1:
-            container_name = "_".join(root_containers[0])
-            return [{container_name: f"{version_prefix}{i}"} for i in sample_ids]
+        if len(root_fields) == 1:
+            field_name = "_".join(root_fields[0])
+            return [{field_name: f"{version_prefix}{i}"} for i in sample_ids]
         else:
             return [
-                {"_".join(ck): f"{version_prefix}{i}_{ck}" for ck in root_containers}
+                {"_".join(ck): f"{version_prefix}{i}_{ck}" for ck in root_fields}
                 for i in sample_ids
             ]
 

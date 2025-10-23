@@ -50,9 +50,9 @@ class FeatureKey(list):
         return cls(validated)
 
 
-class ContainerKey(list):
+class FieldKey(list):
     """
-    Container key as a list of strings.
+    Field key as a list of strings.
 
     Hashable for use as dict keys in registries.
     """
@@ -64,7 +64,7 @@ class ContainerKey(list):
         return hash(tuple(self))
 
     def __eq__(self, other):
-        if isinstance(other, ContainerKey):
+        if isinstance(other, FieldKey):
             return list.__eq__(self, other)
         return list.__eq__(self, other)
 
@@ -72,7 +72,7 @@ class ContainerKey(list):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
-        """Pydantic schema that preserves ContainerKey type."""
+        """Pydantic schema that preserves FieldKey type."""
         # python_schema = core_schema.is_instance_schema(cls)
 
         list_of_str_schema = core_schema.list_schema(core_schema.str_schema())
@@ -87,12 +87,12 @@ class ContainerKey(list):
 
     @classmethod
     def _validate(cls, value, handler):
-        """Validate and wrap in ContainerKey."""
+        """Validate and wrap in FieldKey."""
         if isinstance(value, cls):
             return value
         # Let the list schema validate first
         validated = handler(value)
-        # Wrap in ContainerKey
+        # Wrap in FieldKey
         return cls(validated)
 
 

@@ -9,10 +9,10 @@ import pytest
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
-    ContainerKey,
-    ContainerSpec,
     FeatureKey,
     FeatureSpec,
+    FieldKey,
+    FieldSpec,
 )
 from metaxy.cli.app import app
 from metaxy.cli.context import set_config
@@ -33,7 +33,7 @@ def cli_registry():
     test_feature_spec = FeatureSpec(
         key=FeatureKey(["test_cli", "feature"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
     temp_module.write_features({"TestFeature": test_feature_spec})
