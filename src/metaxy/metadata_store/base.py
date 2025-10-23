@@ -35,9 +35,28 @@ if TYPE_CHECKING:
 # Type variable for MetadataStore backend
 TRef = TypeVar("TRef")  # Reference type (LazyFrame, ibis.Table, etc.)
 
+# System namespace constant
+SYSTEM_NAMESPACE = "__metaxy__"
+
+# Metaxy-managed column names (to distinguish from user-defined columns)
+METAXY_FEATURE_VERSION_COL = "metaxy_feature_version"
+METAXY_SNAPSHOT_ID_COL = "metaxy_snapshot_id"
+METAXY_DATA_VERSION_COL = "metaxy_data_version"
+
 # System table keys
-FEATURE_VERSIONS_KEY = FeatureKey(["__metaxy__", "feature_versions"])
-MIGRATION_HISTORY_KEY = FeatureKey(["__metaxy__", "migrations"])
+FEATURE_VERSIONS_KEY = FeatureKey([SYSTEM_NAMESPACE, "feature_versions"])
+MIGRATION_HISTORY_KEY = FeatureKey([SYSTEM_NAMESPACE, "migrations"])
+
+# Common Polars schemas for system tables
+# TODO: Migrate to use METAXY_*_COL constants instead of plain names
+FEATURE_VERSIONS_SCHEMA = {
+    "feature_key": pl.String,
+    "feature_version": pl.String,  # TODO: Use METAXY_FEATURE_VERSION_COL
+    "recorded_at": pl.Datetime("us"),
+    "feature_spec": pl.String,
+    "feature_class_path": pl.String,
+    "snapshot_id": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
+}
 
 # Context variable for suppressing feature_version warning in migrations
 _suppress_feature_version_warning: ContextVar[bool] = ContextVar(
@@ -306,7 +325,7 @@ class MetadataStore(ABC, Generic[TRef]):
 
     def _is_system_table(self, feature_key: FeatureKey) -> bool:
         """Check if feature key is a system table."""
-        return len(feature_key) >= 1 and feature_key[0] == "__metaxy__"
+        return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
 
     def _resolve_feature_key(self, feature: FeatureKey | type[Feature]) -> FeatureKey:
         """Resolve a Feature class or FeatureKey to FeatureKey."""
@@ -439,10 +458,10 @@ class MetadataStore(ABC, Generic[TRef]):
             self._write_metadata_impl(feature_key, df)
             return
 
-        # For regular features: add feature_version, validate, and write
-        # Check if feature_version already exists in DataFrame
-        if "feature_version" in df.columns:
-            # DataFrame already has feature_version - use it as-is
+        # For regular features: add feature_version and snapshot_id, validate, and write
+        # Check if feature_version and snapshot_id already exist in DataFrame
+        if "feature_version" in df.columns and "snapshot_id" in df.columns:
+            # DataFrame already has feature_version and snapshot_id - use as-is
             # This is intended for migrations writing historical versions
             # Issue a warning unless we're in a suppression context
             if not _suppress_feature_version_warning.get():
@@ -450,13 +469,13 @@ class MetadataStore(ABC, Generic[TRef]):
 
                 warnings.warn(
                     f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"feature_version column. This is intended for migrations only. "
-                    f"Normal code should let write_metadata() add the current version automatically.",
+                    f"feature_version and snapshot_id columns. This is intended for migrations only. "
+                    f"Normal code should let write_metadata() add the current versions automatically.",
                     UserWarning,
                     stacklevel=2,
                 )
         else:
-            # Get current feature version from code and add it
+            # Get current feature version and snapshot_id from code and add them
             if isinstance(feature, type) and issubclass(feature, Feature):
                 current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
             else:
@@ -466,8 +485,17 @@ class MetadataStore(ABC, Generic[TRef]):
                 feature_cls = graph.features_by_key[feature_key]
                 current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
+            # Get snapshot_id from active graph
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            current_snapshot_id = graph.snapshot_id
+
             df = df.with_columns(
-                pl.lit(current_feature_version).alias("feature_version")
+                [
+                    pl.lit(current_feature_version).alias("feature_version"),
+                    pl.lit(current_snapshot_id).alias("snapshot_id"),
+                ]
             )
 
         # Validate schema
@@ -498,6 +526,14 @@ class MetadataStore(ABC, Generic[TRef]):
             raise MetadataSchemaError(
                 f"'data_version' column must be pl.Struct, got {data_version_type}"
             )
+
+        # Check for feature_version column
+        if "feature_version" not in df.columns:
+            raise MetadataSchemaError("DataFrame must have 'feature_version' column")
+
+        # Check for snapshot_id column
+        if "snapshot_id" not in df.columns:
+            raise MetadataSchemaError("DataFrame must have 'snapshot_id' column")
 
     def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
@@ -532,34 +568,6 @@ class MetadataStore(ABC, Generic[TRef]):
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
-        """
-        Validate that DataFrame has required schema.
-
-        Args:
-            df: DataFrame to validate
-
-        Raises:
-            MetadataSchemaError: If schema is invalid
-        """
-        from metaxy.metadata_store.exceptions import MetadataSchemaError
-
-        # Check for data_version column
-        if "data_version" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'data_version' column")
-
-        # Check that data_version is a struct
-        data_version_type = df.schema["data_version"]
-        if not isinstance(data_version_type, pl.Struct):
-            raise MetadataSchemaError(
-                f"'data_version' column must be pl.Struct, got {data_version_type}"
-            )
-
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
-        """Validate schema for system tables (minimal validation)."""
-        # System tables don't need data_version column
-        pass
-
     def record_feature_graph_snapshot(self) -> str:
         """Record all features in graph with a graph snapshot ID.
 
@@ -584,81 +592,6 @@ class MetadataStore(ABC, Generic[TRef]):
         """
         # This is the same as serialize_feature_graph - just an alias
         return self.serialize_feature_graph()
-
-    def _record_single_feature_version(
-        self,
-        feature: FeatureKey | type[Feature],
-        *,
-        snapshot_id: str,
-    ) -> None:
-        """Record a single feature version in system table.
-
-        Internal method (currently unused - serialize_feature_graph does bulk recording).
-
-        Args:
-            feature: Feature to record
-            snapshot_id: Snapshot ID (required, never None)
-        """
-        feature_key = self._resolve_feature_key(feature)
-
-        # Get feature class and version
-        if isinstance(feature, type) and issubclass(feature, Feature):
-            feature_cls = feature
-            feature_version = feature.feature_version()  # type: ignore[attr-defined]
-        else:
-            from metaxy.models.feature import FeatureGraph
-
-            graph = FeatureGraph.get_active()
-            feature_cls = graph.features_by_key[feature_key]
-            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-
-        # Serialize complete FeatureSpec to JSON
-        # This includes: key, deps, fields, code_version - everything needed to reconstruct
-        feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode="json"))  # type: ignore[attr-defined]
-
-        # Get class import path for strict reconstruction
-        class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
-
-        # Check if already recorded (idempotent)
-        try:
-            existing = self._read_metadata_local(
-                FEATURE_VERSIONS_KEY,
-                filters=(
-                    (pl.col("feature_key") == feature_key.to_string())
-                    & (pl.col("feature_version") == feature_version)
-                ),
-            )
-            if existing is not None and len(existing) > 0:
-                # Already recorded
-                return
-        except Exception:
-            # Table doesn't exist yet or other error - proceed with recording
-            pass
-
-        # Record new version
-        version_record = pl.DataFrame(
-            {
-                "feature_key": [feature_key.to_string()],
-                "feature_version": [feature_version],
-                "recorded_at": [datetime.now()],
-                "feature_spec": [feature_spec_json],  # Complete FeatureSpec as JSON
-                "feature_class_path": [
-                    class_path
-                ],  # Import path for strict reconstruction
-                "snapshot_id": [snapshot_id],  # Required: groups features in snapshot
-            },
-            schema={
-                "feature_key": pl.String,
-                "feature_version": pl.String,
-                "recorded_at": pl.Datetime("us"),
-                "feature_spec": pl.String,
-                "feature_class_path": pl.String,
-                "snapshot_id": pl.String,
-            },
-        )
-
-        # Write to system table (bypass feature_version tracking to avoid recursion)
-        self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_record)
 
     def serialize_feature_graph(self) -> str:
         """Record all features in graph with a graph snapshot ID.
@@ -746,14 +679,7 @@ class MetadataStore(ABC, Generic[TRef]):
         if records:
             version_records = pl.DataFrame(
                 records,
-                schema={
-                    "feature_key": pl.String,
-                    "feature_version": pl.String,
-                    "recorded_at": pl.Datetime("us"),
-                    "feature_spec": pl.String,
-                    "feature_class_path": pl.String,
-                    "snapshot_id": pl.String,
-                },
+                schema=FEATURE_VERSIONS_SCHEMA,
             )
             self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
 
@@ -824,8 +750,14 @@ class MetadataStore(ABC, Generic[TRef]):
                 from metaxy.models.feature import FeatureGraph
 
                 graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+                # Only try to get from graph if feature_key exists in graph
+                # This allows reading system tables or external features not in current graph
+                if feature_key in graph.features_by_key:
+                    feature_cls = graph.features_by_key[feature_key]
+                    current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+                else:
+                    # Feature not in graph - skip feature_version filtering
+                    current_feature_version = None
 
         # Try local first
         df = self._read_metadata_local(

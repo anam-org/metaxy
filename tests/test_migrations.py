@@ -393,10 +393,16 @@ def store_with_v1_data(graph_v1: FeatureGraph) -> InMemoryMetadataStore:
 
 def test_detect_no_changes(
     store_with_v1_data: InMemoryMetadataStore,
+    graph_v1: FeatureGraph,
 ) -> None:
     """Test detection when no features changed (graph matches data)."""
     with store_with_v1_data:
-        changes = detect_feature_changes(store_with_v1_data)
+        # Compare v1 graph with itself (no changes)
+        changes = detect_feature_changes(
+            store_with_v1_data,
+            graph_v1,
+            graph_v1,
+        )
 
     # Should detect no changes (v1 graph, v1 data)
     assert len(changes) == 0
@@ -415,12 +421,20 @@ def test_detect_single_change(
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features for version comparison
-    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
-    # Detect changes within v2 graph context
+    # Record v2 snapshot so detector can query it
     with graph_v2.use(), store_v2:
-        operations = detect_feature_changes(store_v2)
+        store_v2.record_feature_graph_snapshot()
+
+    # Detect changes by comparing v1 graph (in store) with v2 graph (new code)
+    with store_v2:
+        operations = detect_feature_changes(
+            store_v2,
+            graph_v1,
+            graph_v2,
+        )
 
         # Both features changed (downstream version depends on upstream)
         assert len(operations) == 2
@@ -429,8 +443,7 @@ def test_detect_single_change(
         upstream_op = next(
             op for op in operations if op.feature_key == ["test_migrations", "upstream"]
         )
-        assert upstream_op.from_ == UpstreamV1.feature_version()
-        assert upstream_op.to == UpstreamV2.feature_version()
+        # Feature versions are now derived from snapshots, not stored in operations
         assert upstream_op.id.startswith("reconcile_")
 
 
@@ -457,8 +470,8 @@ def test_generate_migration_with_changes(
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features
-    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Generate migration
     with graph_v2.use(), store_v2:
@@ -474,11 +487,8 @@ def test_generate_migration_with_changes(
         ops = migration.get_operations()
 
         # Find upstream operation (order may vary)
-        upstream_op = next(
-            op for op in ops if op.feature_key == ["test_migrations", "upstream"]
-        )
-        assert upstream_op.from_ == UpstreamV1.feature_version()  # type: ignore[attr-defined]
-        assert upstream_op.to == UpstreamV2.feature_version()  # type: ignore[attr-defined]
+        next(op for op in ops if op.feature_key == ["test_migrations", "upstream"])
+        # Feature versions are now derived from snapshots, not stored in operations
 
         # Find downstream operation (version changed due to upstream dep)
         downstream_op = next(
@@ -737,8 +747,6 @@ def test_migration_yaml_roundtrip(tmp_path: Path) -> None:
             DataVersionReconciliation(
                 id="test_op_id",
                 feature_key=["my", "feature"],
-                from_="abc12345",
-                to="def67890",
                 reason="Updated algorithm",
             ).model_dump(by_alias=True)
         ],
@@ -762,8 +770,8 @@ def test_migration_yaml_roundtrip(tmp_path: Path) -> None:
     parsed_ops = loaded.get_operations()
     assert len(parsed_ops) == 1
     assert parsed_ops[0].feature_key == ["my", "feature"]
-    assert parsed_ops[0].from_ == "abc12345"  # type: ignore[attr-defined]
-    assert parsed_ops[0].to == "def67890"  # type: ignore[attr-defined]
+    # Feature versions are now derived from snapshots
+    assert parsed_ops[0].reason == "Updated algorithm"
 
 
 def test_feature_version_in_metadata(graph_v1: FeatureGraph) -> None:
@@ -916,77 +924,52 @@ def test_detect_uses_latest_version_from_multiple_materializations(
     graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
-    """Test that detection uses the latest materialization when 10 versions exist."""
-    from datetime import datetime, timedelta
-
-    from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
-
-    # Create store and manually insert 10 version history entries
+    """Test that detector compares feature versions between two snapshots."""
     store = InMemoryMetadataStore()
 
     UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
-    with store:
-        # Simulate 10 historical materializations
-        base_time = datetime(2025, 1, 1, 12, 0, 0)
-        versions = [f"version{i:02d}" for i in range(10)]  # version00 through version09
-        # The last one is v1 (latest)
-        versions[-1] = UpstreamV1.feature_version()
+    # Record v1 snapshot and write data
+    with graph_v1.use(), store:
+        store.record_feature_graph_snapshot()
 
-        # Insert version history in random order to test sorting
-        # Mix up the order to ensure we're sorting correctly
-        indices = [0, 5, 2, 8, 1, 9, 3, 7, 4, 6]  # Random permutation
-
-        version_history = pl.DataFrame(
-            {
-                "feature_key": ["test_migrations_upstream"] * 10,
-                "feature_version": [versions[i] for i in indices],
-                "recorded_at": [base_time + timedelta(hours=i) for i in indices],
-                "fields": [["default"]] * 10,
-                "snapshot_id": [None] * 10,  # No snapshot_id for historical data
-            }
-        )
-
-        store._write_metadata_impl(FEATURE_VERSIONS_KEY, version_history)
-
-        # Write some actual data with v1 feature_version
         upstream_data = pl.DataFrame(
             {
                 "sample_id": [1, 2],
                 "data_version": [{"default": "h1"}, {"default": "h2"}],
-                "feature_version": [
-                    UpstreamV1.feature_version(),
-                    UpstreamV1.feature_version(),
-                ],
             }
         )
-        store._write_metadata_impl(
-            FeatureKey(["test_migrations", "upstream"]), upstream_data
+        store.write_metadata(UpstreamV1, upstream_data)
+
+    # Record v2 snapshot
+    with graph_v2.use(), store:
+        store.record_feature_graph_snapshot()
+
+    # Detect changes by comparing v1 and v2 snapshots
+    with store:
+        changes = detect_feature_changes(
+            store,
+            graph_v1,
+            graph_v2,
         )
 
-    # Now detect changes (code is at v2, latest materialized is v1)
-    with graph_v2.use(), store:
-        changes = detect_feature_changes(store)
+        # Both upstream and downstream changed (downstream version depends on upstream)
+        assert len(changes) == 2
 
-        assert len(changes) == 1
-        assert changes[0].feature_key == ["test_migrations", "upstream"]
-
-        # Should use v1 (latest by timestamp, index 9), not any earlier version
-        assert changes[0].from_ == UpstreamV1.feature_version()
-        assert changes[0].to == UpstreamV2.feature_version()
-
-        # Verify it's not using any of the older versions
-        for i in range(9):  # versions 0-8
-            assert changes[0].from_ != f"version{i:02d}"
-
-        # Snapshot the detected change
-        change_dict = {
-            "feature_key": FeatureKey(changes[0].feature_key).to_string(),
-            "from_version": changes[0].from_,
-            "to_version": changes[0].to,
+        # Verify both features detected
+        feature_keys = {FeatureKey(op.feature_key).to_string() for op in changes}
+        assert feature_keys == {
+            "test_migrations_upstream",
+            "test_migrations_downstream",
         }
-        assert change_dict == snapshot
+
+        # Snapshot the detected changes
+        changes_dict = {
+            "feature_keys": sorted(feature_keys),
+            "operation_count": len(changes),
+        }
+        assert changes_dict == snapshot
 
 
 def test_migration_result_snapshots(
@@ -1086,13 +1069,14 @@ def test_generated_migration_yaml_snapshot(
         ops = migration.get_operations()
 
         # Snapshot the migration structure (excluding timestamp-based fields)
+        # Feature versions are now derived from snapshots, not stored in operations
         migration_dict = {
             "version": migration.version,
             "operations": [
                 {
                     "feature_key": op.feature_key,
-                    "from_version": op.from_,  # type: ignore[attr-defined]
-                    "to_version": op.to,  # type: ignore[attr-defined]
+                    "operation_id": op.id,
+                    "reason": op.reason,
                 }
                 for op in ops
             ],
@@ -1428,7 +1412,7 @@ def test_metadata_backfill_operation() -> None:
         type: str = "tests.test_migrations.TestBackfill"
         test_data: list[dict]
 
-        def execute(self, store, *, dry_run=False):
+        def execute(self, store, *, dry_run=False):  # pyrefly: ignore[bad-override]
             import polars as pl
 
             from metaxy.models.feature import FeatureGraph
@@ -1654,9 +1638,17 @@ def test_migration_ignores_new_features(
     # Migrate store to graph with new feature
     store_new = migrate_store_to_graph(store, graph_with_new)
 
+    # Record new graph snapshot
     with graph_with_new.use(), store_new:
+        store_new.record_feature_graph_snapshot()
+
+    with store_new:
         # Detect changes - should ignore new_feature (no existing data)
-        operations = detect_feature_changes(store_new)
+        operations = detect_feature_changes(
+            store_new,
+            graph_v1,
+            graph_with_new,
+        )
 
         # Should only detect 0 operations (upstream unchanged, new_feature has no data)
         assert len(operations) == 0
@@ -1782,15 +1774,22 @@ def test_migration_with_dependency_change() -> None:
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store, graph_v2)
 
+    # Record v2 snapshot
     with graph_v2.use(), store_v2:
+        store_v2.record_feature_graph_snapshot()
+
+    with store_v2:
         # Should detect downstream as changed (dependencies changed)
-        operations = detect_feature_changes(store_v2)
+        operations = detect_feature_changes(
+            store_v2,
+            graph_v1,
+            graph_v2,
+        )
 
         # Downstream should be detected as changed
         assert len(operations) == 1
         assert operations[0].feature_key == ["test", "downstream"]
-        assert operations[0].from_ == down_v1.feature_version()
-        assert operations[0].to == down_v2.feature_version()
+        # Feature versions are now derived from snapshots, not stored in operations
 
     temp_v1.cleanup()
     temp_v2.cleanup()
@@ -1903,15 +1902,22 @@ def test_migration_with_field_dependency_change() -> None:
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store, graph_v2)
 
+    # Record v2 snapshot
     with graph_v2.use(), store_v2:
+        store_v2.record_feature_graph_snapshot()
+
+    with store_v2:
         # Should detect downstream as changed (field deps changed)
-        operations = detect_feature_changes(store_v2)
+        operations = detect_feature_changes(
+            store_v2,
+            graph_v1,
+            graph_v2,
+        )
 
         # Downstream should be detected as changed
         assert len(operations) == 1
         assert operations[0].feature_key == ["test", "downstream"]
-        assert operations[0].from_ == down_v1.feature_version()
-        assert operations[0].to == down_v2.feature_version()
+        # Feature versions are now derived from snapshots, not stored in operations
 
     temp_v1.cleanup()
     temp_v2.cleanup()

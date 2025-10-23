@@ -1,9 +1,11 @@
 # serializer version: 1
 # name: test_detect_uses_latest_version_from_multiple_materializations
   dict({
-    'feature_key': 'test_migrations_upstream',
-    'from_version': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
-    'to_version': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
+    'feature_keys': list([
+      'test_migrations_downstream',
+      'test_migrations_upstream',
+    ]),
+    'operation_count': 2,
   })
 # ---
 # name: test_feature_versions_snapshot
@@ -22,16 +24,16 @@
           'test_migrations',
           'downstream',
         ]),
-        'from_version': '2c55d52f81ec55f55add2cfcd904e20db0cd44b8ef390b6420fb3f685f9f8e58',
-        'to_version': '107842fd1715673e3e924b206d6527e34c69a48cdadff877b67a75680d9dae02',
+        'operation_id': 'reconcile_test_migrations_downstream',
+        'reason': 'TODO: Describe what changed and why',
       }),
       dict({
         'feature_key': list([
           'test_migrations',
           'upstream',
         ]),
-        'from_version': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
-        'to_version': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
+        'operation_id': 'reconcile_test_migrations_upstream',
+        'reason': 'TODO: Describe what changed and why',
       }),
     ]),
     'version': 1,

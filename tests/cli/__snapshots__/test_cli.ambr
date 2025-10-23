@@ -14,7 +14,11 @@
   '''
 # ---
 # name: test_migrations_generate_no_changes
-  'No feature changes detected. All features up to date!'
+  '''
+  From: latest snapshot 2a589a358f39d377...
+  To: current active graph (snapshot 2a589a358f39d377...)
+  No feature changes detected. All features up to date!
+  '''
 # ---
 # name: test_migrations_status_empty
   'No migrations found.'

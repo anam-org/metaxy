@@ -124,17 +124,32 @@ def test_push_command(
 
 
 def test_migrations_generate_no_changes(
-    cli_config_file: Path,
+    tmp_path: Path,
     cli_graph: FeatureGraph,
     capsys,
     snapshot: SnapshotAssertion,
 ):
     """Test generate command when no changes detected."""
+    pytest.importorskip("duckdb")
+
     from metaxy.cli.migrations import generate
     from metaxy.config import MetaxyConfig
 
+    # Create config with DuckDB store (not InMemory)
+    config_file = tmp_path / "metaxy.toml"
+    db_path = tmp_path / "test.duckdb"
+    config_file.write_text(f"""
+store = "test"
+
+[stores.test]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.test.config]
+database = "{db_path}"
+""")
+
     # Load config and create store with data
-    config = MetaxyConfig.load(cli_config_file)
+    config = MetaxyConfig.load(config_file)
 
     # Use test graph context
     with cli_graph.use():

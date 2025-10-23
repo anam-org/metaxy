@@ -7,7 +7,7 @@
           'video',
           'processing',
         ]),
-        'id': 'reconcile_video_processing_e561_to_72ea',
+        'id': 'reconcile_video_processing',
         'reason': 'TODO: Describe what changed and why',
         'type': 'metaxy.migrations.ops.DataVersionReconciliation',
       }),

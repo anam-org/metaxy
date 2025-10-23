@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 
+from metaxy.metadata_store.base import SYSTEM_NAMESPACE
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.migrations.models import Migration, MigrationResult
 from metaxy.migrations.ops import BaseOperation
@@ -16,9 +17,38 @@ if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
 # System table keys for migration tracking
-MIGRATIONS_KEY = FeatureKey(["__metaxy__", "migrations"])
-MIGRATION_OPS_KEY = FeatureKey(["__metaxy__", "migration_ops"])
-MIGRATION_OP_STEPS_KEY = FeatureKey(["__metaxy__", "migration_op_steps"])
+MIGRATIONS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migrations"])
+MIGRATION_OPS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migration_ops"])
+MIGRATION_OP_STEPS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migration_op_steps"])
+
+# Schema constants for migration tables
+MIGRATIONS_SCHEMA = {
+    "migration_id": pl.String,
+    "created_at": pl.Datetime("us"),
+    "description": pl.String,
+    "operation_ids": pl.String,
+    "migration_yaml": pl.String,
+}
+
+MIGRATION_OPS_SCHEMA = {
+    "migration_id": pl.String,
+    "operation_id": pl.String,
+    "operation_type": pl.String,
+    "feature_key": pl.String,
+    "expected_steps": pl.String,
+    "operation_config_hash": pl.String,
+    "created_at": pl.Datetime("us"),
+}
+
+MIGRATION_OP_STEPS_SCHEMA = {
+    "migration_id": pl.String,
+    "operation_id": pl.String,
+    "feature_key": pl.String,
+    "step_type": pl.String,
+    "completed_at": pl.Datetime("us"),
+    "rows_affected": pl.Int64,
+    "error": pl.String,
+}
 
 
 class MigrationStatus:
@@ -263,13 +293,7 @@ def _register_migration(store: "MetadataStore", migration: Migration) -> None:
             "operation_ids": [operation_ids_json],
             "migration_yaml": [migration_yaml_json],
         },
-        schema={
-            "migration_id": pl.String,
-            "created_at": pl.Datetime("us"),
-            "description": pl.String,
-            "operation_ids": pl.String,
-            "migration_yaml": pl.String,
-        },
+        schema=MIGRATIONS_SCHEMA,
     )
 
     store._write_metadata_impl(MIGRATIONS_KEY, migration_record)
@@ -325,15 +349,7 @@ def _register_operation(
             "operation_config_hash": [operation.operation_config_hash()],
             "created_at": [datetime.now()],
         },
-        schema={
-            "migration_id": pl.String,
-            "operation_id": pl.String,
-            "operation_type": pl.String,
-            "feature_key": pl.String,
-            "expected_steps": pl.String,
-            "operation_config_hash": pl.String,
-            "created_at": pl.Datetime("us"),
-        },
+        schema=MIGRATION_OPS_SCHEMA,
     )
 
     store._write_metadata_impl(MIGRATION_OPS_KEY, op_record)
@@ -420,15 +436,7 @@ def _record_step_completion(
             "rows_affected": [rows_affected],
             "error": [error],
         },
-        schema={
-            "migration_id": pl.String,
-            "operation_id": pl.String,
-            "feature_key": pl.String,
-            "step_type": pl.String,
-            "completed_at": pl.Datetime("us"),
-            "rows_affected": pl.Int64,
-            "error": pl.String,  # Always String, even when None
-        },
+        schema=MIGRATION_OP_STEPS_SCHEMA,
     )
 
     store._write_metadata_impl(MIGRATION_OP_STEPS_KEY, step_record)
@@ -581,7 +589,12 @@ def apply_migration(
 
             # Execute operation
             try:
-                rows_affected = operation.execute(store, dry_run=dry_run)
+                rows_affected = operation.execute(
+                    store,
+                    from_snapshot_id=migration.from_snapshot_id,
+                    to_snapshot_id=migration.to_snapshot_id,
+                    dry_run=dry_run,
+                )
 
                 # Record step completion (unless dry-run)
                 if not dry_run:

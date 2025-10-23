@@ -105,17 +105,17 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
         # Use config to load entrypoints (this is what the CLI will do)
         from metaxy import FeatureKey
         from metaxy.config import MetaxyConfig
+        from metaxy.models.feature import FeatureGraph
 
         # Load config which will auto-load entrypoints
+        # Note: autouse fixture already reset the graph
         config = MetaxyConfig.load()
 
         # Debug: check config
         print(f"Config entrypoints: {config.entrypoints}")
         print(f"Config store: {config.store}")
 
-        # Get features from the now-populated global graph
-        from metaxy.models.feature import FeatureGraph
-
+        # Get features from the now-clean global graph
         graph = FeatureGraph.get_active()
 
         # Debug: check what's loaded
