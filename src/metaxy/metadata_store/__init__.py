@@ -15,10 +15,12 @@ from metaxy.metadata_store.system_tables import (
     FEATURE_VERSIONS_KEY,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
 
 __all__ = [
     "MetadataStore",
     "InMemoryMetadataStore",
+    "DuckLakeMetadataStore",
     "MetadataStoreError",
     "FeatureNotFoundError",
     "FieldNotFoundError",
