@@ -46,11 +46,11 @@ def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
 
 def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
     """Test that feature_version changes when code_version changes."""
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     # Use separate registries
-    registry_v1 = FeatureRegistry()
-    registry_v2 = FeatureRegistry()
+    graph_v1 = FeatureGraph()
+    graph_v2 = FeatureGraph()
 
     class FeatureV1(
         Feature,
@@ -61,7 +61,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
                 FieldSpec(key=FieldKey(["default"]), code_version=1),
             ],
         ),
-        registry=registry_v1,
+        graph=graph_v1,
     ):
         pass
 
@@ -74,7 +74,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
                 FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
             ],
         ),
-        registry=registry_v2,
+        graph=graph_v2,
     ):
         pass
 

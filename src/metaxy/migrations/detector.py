@@ -15,7 +15,7 @@ def detect_feature_changes(
 ) -> list[DataVersionReconciliation]:
     """Auto-detect all features that need migration.
 
-    Compares current feature definitions (in code registry) with feature_versions
+    Compares current feature definitions (in code graph) with feature_versions
     in the metadata store. Automatically selects the latest (most recent) old
     version for each changed feature.
 
@@ -36,12 +36,12 @@ def detect_feature_changes(
     """
     import polars as pl
 
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     operations = []
 
-    # Get the active registry
-    registry = FeatureRegistry.get_active()
+    # Get the active graph
+    graph = FeatureGraph.get_active()
 
     # Query ALL feature version history once (efficient)
     try:
@@ -65,8 +65,8 @@ def detect_feature_changes(
         for row in latest_versions.iter_rows(named=True)
     }
 
-    # Check each feature in registry
-    for feature_key, feature_cls in registry.features_by_key.items():
+    # Check each feature in graph
+    for feature_key, feature_cls in graph.features_by_key.items():
         feature_key_str = feature_key.to_string()
 
         # Get current version from code

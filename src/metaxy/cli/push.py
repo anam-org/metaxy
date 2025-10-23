@@ -8,7 +8,7 @@ console = Console()
 def push(store: str | None = None):
     """Record all feature versions (push graph snapshot).
 
-    Records all features in the active registry to the metadata store
+    Records all features in the active graph to the metadata store
     with a deterministic snapshot ID. This should be run after deploying
     new feature definitions.
 

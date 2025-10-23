@@ -21,7 +21,7 @@ from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
-from metaxy.models.feature import FeatureRegistry
+from metaxy.models.feature import FeatureGraph
 
 # Import TempFeatureModule from parent test directory
 # Add parent dir to path for test imports
@@ -207,13 +207,13 @@ def clickhouse_db(clickhouse_server):
 
 
 @pytest.fixture
-def test_registry():
-    """Create a clean FeatureRegistry for testing with test features registered.
+def test_graph():
+    """Create a clean FeatureGraph for testing with test features registered.
 
-    Returns a tuple of (registry, features_dict) where features_dict provides
+    Returns a tuple of (graph, features_dict) where features_dict provides
     easy access to feature classes by simple names.
 
-    Uses TempFeatureModule to make features importable for historical registry reconstruction.
+    Uses TempFeatureModule to make features importable for historical graph reconstruction.
     """
     temp_module = TempFeatureModule("test_stores_features")
 
@@ -266,34 +266,34 @@ def test_registry():
         }
     )
 
-    # Get registry from module
-    registry = temp_module.get_registry()
+    # Get graph from module
+    graph = temp_module.get_graph()
 
     # Create features dict for easy access
     features = {
-        "UpstreamFeatureA": registry.features_by_key[
+        "UpstreamFeatureA": graph.features_by_key[
             FeatureKey(["test_stores", "upstream_a"])
         ],
-        "UpstreamFeatureB": registry.features_by_key[
+        "UpstreamFeatureB": graph.features_by_key[
             FeatureKey(["test_stores", "upstream_b"])
         ],
-        "DownstreamFeature": registry.features_by_key[
+        "DownstreamFeature": graph.features_by_key[
             FeatureKey(["test_stores", "downstream"])
         ],
     }
 
-    yield registry, features
+    yield graph, features
 
     temp_module.cleanup()
 
 
 @pytest.fixture
-def test_features(test_registry):
+def test_features(test_graph):
     """Provide dict of test feature classes for easy access in tests.
 
-    This fixture extracts just the features dict from test_registry for convenience.
+    This fixture extracts just the features dict from test_graph for convenience.
     """
-    _, features = test_registry
+    _, features = test_graph
     return features
 
 
@@ -324,33 +324,33 @@ class StoreCases:
     """Store configuration cases for parametrization."""
 
     def case_inmemory(
-        self, test_registry: FeatureRegistry
+        self, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict]:
         """InMemory store case."""
-        # Registry is accessed globally via FeatureRegistry.get_active()
+        # Registry is accessed globally via FeatureGraph.get_active()
         return (InMemoryMetadataStore, {})
 
     def case_duckdb(
-        self, tmp_path: Path, test_registry: FeatureRegistry
+        self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict]:
         """DuckDB store case."""
         db_path = tmp_path / "test.duckdb"
-        # Registry is accessed globally via FeatureRegistry.get_active()
+        # Registry is accessed globally via FeatureGraph.get_active()
         return (DuckDBMetadataStore, {"database": db_path})
 
     def case_sqlite(
-        self, tmp_path: Path, test_registry: FeatureRegistry
+        self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict]:
         """SQLite store case."""
         db_path = tmp_path / "test.sqlite"
-        # Registry is accessed globally via FeatureRegistry.get_active()
+        # Registry is accessed globally via FeatureGraph.get_active()
         return (SQLiteMetadataStore, {"database": db_path})
 
     def case_clickhouse(
-        self, clickhouse_db: str, test_registry: FeatureRegistry
+        self, clickhouse_db: str, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict]:
         """ClickHouse store case."""
-        # Registry is accessed globally via FeatureRegistry.get_active()
+        # Registry is accessed globally via FeatureGraph.get_active()
         # clickhouse_db provides a clean database connection string
         return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
 
@@ -364,10 +364,10 @@ def persistent_store(store_config: tuple[type[MetadataStore], dict]) -> Metadata
     Returns an unopened store - tests should use it with a context manager.
 
     Usage:
-        def test_something(persistent_store, test_registry):
+        def test_something(persistent_store, test_graph):
             with persistent_store as store:
                 # Test code runs for all store types
-                # Access feature classes via test_registry.UpstreamFeatureA, etc.
+                # Access feature classes via test_graph.UpstreamFeatureA, etc.
     """
     store_type, config = store_config
     return store_type(**config)  # type: ignore[abstract]

@@ -20,19 +20,19 @@ if TYPE_CHECKING:
     from metaxy.data_versioning.joiners import UpstreamJoiner
 
 
-# Context variable for active registry (module-level)
-_active_registry: ContextVar["FeatureRegistry | None"] = ContextVar(
-    "_active_registry", default=None
+# Context variable for active graph (module-level)
+_active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
+    "_active_graph", default=None
 )
 
 
-class FeatureRegistry:
+class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[Feature]] = {}
         self.feature_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
 
     def add_feature(self, feature: type["Feature"]) -> None:
-        """Add a feature to the registry.
+        """Add a feature to the graph.
 
         Args:
             feature: Feature class to register
@@ -45,7 +45,7 @@ class FeatureRegistry:
             raise ValueError(
                 f"Feature with key {feature.spec.key.to_string()} already registered. "
                 f"Existing: {existing.__name__}, New: {feature.__name__}. "
-                f"Each feature key must be unique within a registry."
+                f"Each feature key must be unique within a graph."
             )
 
         self.features_by_key[feature.spec.key] = feature
@@ -120,7 +120,7 @@ class FeatureRegistry:
         Example:
             >>> # DAG: A -> B -> D
             >>> #      A -> C -> D
-            >>> registry.get_downstream_features([FeatureKey(["A"])])
+            >>> graph.get_downstream_features([FeatureKey(["A"])])
             [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
         """
         source_set = set(sources)
@@ -161,7 +161,7 @@ class FeatureRegistry:
         return hasher.hexdigest()
 
     def to_snapshot(self) -> dict[str, dict]:
-        """Serialize registry to snapshot format.
+        """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
         including the import path of the Feature class for reconstruction.
@@ -174,7 +174,7 @@ class FeatureRegistry:
             }
 
         Example:
-            >>> snapshot = registry.to_snapshot()
+            >>> snapshot = graph.to_snapshot()
             >>> snapshot["video_processing"]["feature_version"]
             'abc12345'
             >>> snapshot["video_processing"]["feature_class_path"]
@@ -204,8 +204,8 @@ class FeatureRegistry:
         snapshot_data: dict[str, dict],
         *,
         class_path_overrides: dict[str, str] | None = None,
-    ) -> "FeatureRegistry":
-        """Reconstruct registry from snapshot by importing Feature classes.
+    ) -> "FeatureGraph":
+        """Reconstruct graph from snapshot by importing Feature classes.
 
         Strictly requires Feature classes to exist at their recorded import paths.
         This ensures custom methods (like align_metadata_with_upstream) are available.
@@ -223,17 +223,17 @@ class FeatureRegistry:
                                  for features that have been moved/renamed
 
         Returns:
-            New FeatureRegistry with historical features
+            New FeatureGraph with historical features
 
         Raises:
             ImportError: If feature class cannot be imported at recorded path
 
         Example:
             >>> # Load snapshot from metadata store
-            >>> historical_registry = FeatureRegistry.from_snapshot(snapshot_data)
+            >>> historical_graph = FeatureGraph.from_snapshot(snapshot_data)
             >>>
             >>> # With override for moved feature
-            >>> historical_registry = FeatureRegistry.from_snapshot(
+            >>> historical_graph = FeatureGraph.from_snapshot(
             ...     snapshot_data,
             ...     class_path_overrides={
             ...         "video_processing": "myapp.features_v2.VideoProcessing"
@@ -242,7 +242,7 @@ class FeatureRegistry:
         """
         from metaxy.models.feature_spec import FeatureSpec
 
-        registry = cls()
+        graph = cls()
         class_path_overrides = class_path_overrides or {}
 
         for feature_key_str, feature_data in snapshot_data.items():
@@ -258,7 +258,7 @@ class FeatureRegistry:
                 if not class_path:
                     raise ValueError(
                         f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
-                        f"Cannot reconstruct historical registry."
+                        f"Cannot reconstruct historical graph."
                     )
 
             # Import the class
@@ -289,80 +289,80 @@ class FeatureRegistry:
                 )
 
             # Register it
-            registry.features_by_key[feature_spec.key] = feature_cls
-            registry.feature_specs_by_key[feature_spec.key] = feature_spec
+            graph.features_by_key[feature_spec.key] = feature_cls
+            graph.feature_specs_by_key[feature_spec.key] = feature_spec
 
-        return registry
+        return graph
 
     @classmethod
-    def get_active(cls) -> "FeatureRegistry":
-        """Get the currently active registry.
+    def get_active(cls) -> "FeatureGraph":
+        """Get the currently active graph.
 
-        Returns the registry from the context variable if set, otherwise returns
-        the default global registry.
+        Returns the graph from the context variable if set, otherwise returns
+        the default global graph.
 
         Returns:
-            Active FeatureRegistry instance
+            Active FeatureGraph instance
 
         Example:
-            >>> # Normal usage - returns default registry
-            >>> reg = FeatureRegistry.get_active()
+            >>> # Normal usage - returns default graph
+            >>> reg = FeatureGraph.get_active()
             >>>
-            >>> # With custom registry in context
-            >>> with my_registry.use():
-            ...     reg = FeatureRegistry.get_active()  # Returns my_registry
+            >>> # With custom graph in context
+            >>> with my_graph.use():
+            ...     reg = FeatureGraph.get_active()  # Returns my_graph
         """
-        return _active_registry.get() or registry
+        return _active_graph.get() or graph
 
     @classmethod
-    def set_active(cls, reg: "FeatureRegistry") -> None:
-        """Set the active registry for the current context.
+    def set_active(cls, reg: "FeatureGraph") -> None:
+        """Set the active graph for the current context.
 
         This sets the context variable that will be returned by get_active().
         Typically used in application setup code or test fixtures.
 
         Args:
-            reg: FeatureRegistry to activate
+            reg: FeatureGraph to activate
 
         Example:
             >>> # In application setup
-            >>> my_registry = FeatureRegistry()
-            >>> FeatureRegistry.set_active(my_registry)
+            >>> my_graph = FeatureGraph()
+            >>> FeatureGraph.set_active(my_graph)
             >>>
-            >>> # Now all operations use my_registry
-            >>> FeatureRegistry.get_active()  # Returns my_registry
+            >>> # Now all operations use my_graph
+            >>> FeatureGraph.get_active()  # Returns my_graph
         """
-        _active_registry.set(reg)
+        _active_graph.set(reg)
 
     @contextmanager
     def use(self):
-        """Context manager to temporarily use this registry as active.
+        """Context manager to temporarily use this graph as active.
 
         This is the recommended way to use custom registries, especially in tests.
-        The registry is automatically restored when the context exits.
+        The graph is automatically restored when the context exits.
 
         Yields:
-            This registry instance
+            This graph instance
 
         Example:
-            >>> test_registry = FeatureRegistry()
+            >>> test_graph = FeatureGraph()
             >>>
-            >>> with test_registry.use():
-            ...     # All operations use test_registry
+            >>> with test_graph.use():
+            ...     # All operations use test_graph
             ...     class TestFeature(Feature, spec=...):
             ...         pass
             ...
-            >>> # Outside context, back to previous registry
+            >>> # Outside context, back to previous graph
         """
-        token = _active_registry.set(self)
+        token = _active_graph.set(self)
         try:
             yield self
         finally:
-            _active_registry.reset(token)
+            _active_graph.reset(token)
 
 
-# Default global registry
-registry = FeatureRegistry()
+# Default global graph
+graph = FeatureGraph()
 
 
 class _FeatureMeta(ModelMetaclass):
@@ -378,11 +378,11 @@ class _FeatureMeta(ModelMetaclass):
         new_cls = super().__new__(cls, cls_name, bases, namespace)
 
         if spec:
-            # Get registry from context at class definition time
-            active_registry = FeatureRegistry.get_active()
-            new_cls.registry = active_registry  # type: ignore[attr-defined]
+            # Get graph from context at class definition time
+            active_graph = FeatureGraph.get_active()
+            new_cls.graph = active_graph  # type: ignore[attr-defined]
             new_cls.spec = spec  # type: ignore[attr-defined]
-            active_registry.add_feature(new_cls)
+            active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
 
@@ -391,7 +391,7 @@ class _FeatureMeta(ModelMetaclass):
 
 class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     spec: ClassVar[FeatureSpec]
-    registry: ClassVar[FeatureRegistry]
+    graph: ClassVar[FeatureGraph]
 
     @classmethod
     def feature_version(cls) -> str:
@@ -422,7 +422,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             >>> MyFeature.feature_version()
             'a3f8b2c1...'
         """
-        return cls.registry.get_feature_version(cls.spec.key)
+        return cls.graph.get_feature_version(cls.spec.key)
 
     @classmethod
     def align_metadata_with_upstream(
@@ -536,7 +536,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         Returns:
             Dictionary mapping field keys to their data version hashes.
         """
-        return cls.registry.get_feature_version_by_field(cls.spec.key)
+        return cls.graph.get_feature_version_by_field(cls.spec.key)
 
     @classmethod
     def join_upstream_metadata(
@@ -570,13 +570,13 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             ...         return joiner.join_upstream(
             ...             upstream_refs=upstream_refs,
             ...             feature_spec=cls.spec,
-            ...             feature_plan=cls.registry.get_feature_plan(cls.spec.key),
+            ...             feature_plan=cls.graph.get_feature_plan(cls.spec.key),
             ...         )
         """
         return joiner.join_upstream(
             upstream_refs=upstream_refs,
             feature_spec=cls.spec,
-            feature_plan=cls.registry.get_feature_plan(cls.spec.key),
+            feature_plan=cls.graph.get_feature_plan(cls.spec.key),
         )
 
     @classmethod

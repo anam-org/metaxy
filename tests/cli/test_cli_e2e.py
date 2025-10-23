@@ -113,16 +113,16 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
         print(f"Config entrypoints: {config.entrypoints}")
         print(f"Config store: {config.store}")
 
-        # Get features from the now-populated global registry
-        from metaxy.models.feature import FeatureRegistry
+        # Get features from the now-populated global graph
+        from metaxy.models.feature import FeatureGraph
 
-        registry = FeatureRegistry.get_active()
+        graph = FeatureGraph.get_active()
 
         # Debug: check what's loaded
-        print(f"Loaded features: {list(registry.features_by_key.keys())}")
+        print(f"Loaded features: {list(graph.features_by_key.keys())}")
 
-        VideoFiles = registry.features_by_key[FeatureKey(["video", "files"])]
-        VideoProcessing = registry.features_by_key[FeatureKey(["video", "processing"])]
+        VideoFiles = graph.features_by_key[FeatureKey(["video", "files"])]
+        VideoProcessing = graph.features_by_key[FeatureKey(["video", "processing"])]
 
         # Get store and write initial data
         store = config.get_store()
@@ -273,12 +273,10 @@ class VideoProcessing(Feature, spec=FeatureSpec(
         assert result.returncode == 0, f"Apply failed: {result.stderr}"
 
         # Step 7: Verify migration was applied
-        # Reload config and registry to get v2 features
+        # Reload config and graph to get v2 features
         config = MetaxyConfig.load()
-        registry = FeatureRegistry.get_active()
-        VideoProcessingV2 = registry.features_by_key[
-            FeatureKey(["video", "processing"])
-        ]
+        graph = FeatureGraph.get_active()
+        VideoProcessingV2 = graph.features_by_key[FeatureKey(["video", "processing"])]
 
         store = config.get_store()
         with store:
@@ -348,17 +346,17 @@ def test_cli_migration_status_command(e2e_project: Path):
         # First generate a migration (sets up the workflow)
         from metaxy import FeatureKey
         from metaxy.config import MetaxyConfig
-        from metaxy.models.feature import FeatureRegistry
+        from metaxy.models.feature import FeatureGraph
 
         # Load config (auto-loads entrypoints)
         config = MetaxyConfig.load()
-        registry = FeatureRegistry.get_active()
+        graph = FeatureGraph.get_active()
 
         store = config.get_store()
 
         with store:
             # Write some data and record versions
-            VideoFiles = registry.features_by_key[FeatureKey(["video", "files"])]
+            VideoFiles = graph.features_by_key[FeatureKey(["video", "files"])]
 
             store.write_metadata(
                 VideoFiles,

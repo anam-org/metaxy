@@ -24,7 +24,7 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
-from metaxy.models.feature import Feature, FeatureRegistry
+from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
@@ -318,20 +318,20 @@ class MetadataStore(ABC, Generic[TRef]):
     def _resolve_feature_spec(self, feature: FeatureKey | type[Feature]):
         """Resolve to FeatureSpec for accessing fields and deps."""
         if isinstance(feature, FeatureKey):
-            # When given a FeatureKey, get the registry from the active context
-            return FeatureRegistry.get_active().feature_specs_by_key[feature]
+            # When given a FeatureKey, get the graph from the active context
+            return FeatureGraph.get_active().feature_specs_by_key[feature]
         else:
-            # When given a Feature class, it already has the registry bound to it
+            # When given a Feature class, it already has the graph bound to it
             return feature.spec
 
     def _resolve_feature_plan(self, feature: FeatureKey | type[Feature]) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
         if isinstance(feature, FeatureKey):
-            # When given a FeatureKey, get the registry from the active context
-            return FeatureRegistry.get_active().get_feature_plan(feature)
+            # When given a FeatureKey, get the graph from the active context
+            return FeatureGraph.get_active().get_feature_plan(feature)
         else:
-            # When given a Feature class, use its bound registry
-            return feature.registry.get_feature_plan(feature.spec.key)
+            # When given a Feature class, use its bound graph
+            return feature.graph.get_feature_plan(feature.spec.key)
 
     # ========== Backend Reference Conversion ==========
 
@@ -460,10 +460,10 @@ class MetadataStore(ABC, Generic[TRef]):
             if isinstance(feature, type) and issubclass(feature, Feature):
                 current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
             else:
-                from metaxy.models.feature import FeatureRegistry
+                from metaxy.models.feature import FeatureGraph
 
-                registry = FeatureRegistry.get_active()
-                feature_cls = registry.features_by_key[feature_key]
+                graph = FeatureGraph.get_active()
+                feature_cls = graph.features_by_key[feature_key]
                 current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
             df = df.with_columns(
@@ -561,16 +561,16 @@ class MetadataStore(ABC, Generic[TRef]):
         pass
 
     def record_feature_graph_snapshot(self) -> str:
-        """Record all features in registry with a graph snapshot ID.
+        """Record all features in graph with a graph snapshot ID.
 
         This should be called during CD (Continuous Deployment) to record what
         feature versions are being deployed. Typically invoked via `metaxy push`.
 
-        Records all features in the registry with the same snapshot_id, representing
+        Records all features in the graph with the same snapshot_id, representing
         a consistent state of the entire feature graph based on code definitions.
 
         The snapshot_id is a deterministic hash of all feature_version hashes
-        in the registry, making it idempotent - calling multiple times with the
+        in the graph, making it idempotent - calling multiple times with the
         same feature definitions produces the same snapshot_id.
 
         Returns:
@@ -606,10 +606,10 @@ class MetadataStore(ABC, Generic[TRef]):
             feature_cls = feature
             feature_version = feature.feature_version()  # type: ignore[attr-defined]
         else:
-            from metaxy.models.feature import FeatureRegistry
+            from metaxy.models.feature import FeatureGraph
 
-            registry = FeatureRegistry.get_active()
-            feature_cls = registry.features_by_key[feature_key]
+            graph = FeatureGraph.get_active()
+            feature_cls = graph.features_by_key[feature_key]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
         # Serialize complete FeatureSpec to JSON
@@ -661,7 +661,7 @@ class MetadataStore(ABC, Generic[TRef]):
         self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_record)
 
     def serialize_feature_graph(self) -> str:
-        """Record all features in registry with a graph snapshot ID.
+        """Record all features in graph with a graph snapshot ID.
 
         This should be called during CD (Continuous Deployment) to record what
         feature versions are being deployed. Typically invoked via `metaxy push`.
@@ -670,7 +670,7 @@ class MetadataStore(ABC, Generic[TRef]):
         state of the entire feature graph based on code definitions.
 
         The snapshot_id is a deterministic hash of all feature_version hashes
-        in the registry, making it idempotent - calling multiple times with the
+        in the graph, making it idempotent - calling multiple times with the
         same feature definitions produces the same snapshot_id.
 
         Returns:
@@ -688,13 +688,13 @@ class MetadataStore(ABC, Generic[TRef]):
             >>> store.write_metadata(FeatureC, data_c)
         """
 
-        from metaxy.models.feature import FeatureRegistry
+        from metaxy.models.feature import FeatureGraph
 
-        registry = FeatureRegistry.get_active()
+        graph = FeatureGraph.get_active()
 
-        # Generate deterministic snapshot_id from registry
-        # This uses the same logic as FeatureRegistry.snapshot_id property
-        snapshot_id = registry.snapshot_id
+        # Generate deterministic snapshot_id from graph
+        # This uses the same logic as FeatureGraph.snapshot_id property
+        snapshot_id = graph.snapshot_id
 
         # Read existing feature versions once
         try:
@@ -710,15 +710,15 @@ class MetadataStore(ABC, Generic[TRef]):
                 already_recorded.add((row["feature_key"], row["feature_version"]))
 
         # Build bulk DataFrame for all features
-        from metaxy.models.feature import FeatureRegistry
+        from metaxy.models.feature import FeatureGraph
 
-        registry = FeatureRegistry.get_active()
+        graph = FeatureGraph.get_active()
 
         records = []
         for feature_key in sorted(
-            registry.features_by_key.keys(), key=lambda k: k.to_string()
+            graph.features_by_key.keys(), key=lambda k: k.to_string()
         ):
-            feature_cls = registry.features_by_key[feature_key]
+            feature_cls = graph.features_by_key[feature_key]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
             # Serialize complete FeatureSpec
@@ -821,10 +821,10 @@ class MetadataStore(ABC, Generic[TRef]):
             if isinstance(feature, type) and issubclass(feature, Feature):
                 current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
             else:
-                from metaxy.models.feature import FeatureRegistry
+                from metaxy.models.feature import FeatureGraph
 
-                registry = FeatureRegistry.get_active()
-                feature_cls = registry.features_by_key[feature_key]
+                graph = FeatureGraph.get_active()
+                feature_cls = graph.features_by_key[feature_key]
                 current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
         # Try local first
@@ -972,22 +972,22 @@ class MetadataStore(ABC, Generic[TRef]):
             upstream_features.update(self._get_field_dependencies(plan, field))
 
         # Load metadata for each upstream feature
-        # Use the feature's registry to look up upstream feature classes
+        # Use the feature's graph to look up upstream feature classes
         if isinstance(feature, FeatureKey):
-            from metaxy.models.feature import FeatureRegistry
+            from metaxy.models.feature import FeatureGraph
 
-            registry = FeatureRegistry.get_active()
+            graph = FeatureGraph.get_active()
         else:
-            registry = feature.registry
+            graph = feature.graph
 
         upstream_metadata = {}
         for upstream_fq_key in upstream_features:
             upstream_feature_key = upstream_fq_key.feature
 
             try:
-                # Look up the Feature class from the registry and pass it to read_metadata
-                # This way we use the bound registry instead of relying on active context
-                upstream_feature_cls = registry.features_by_key[upstream_feature_key]
+                # Look up the Feature class from the graph and pass it to read_metadata
+                # This way we use the bound graph instead of relying on active context
+                upstream_feature_cls = graph.features_by_key[upstream_feature_key]
                 df = self.read_metadata(
                     upstream_feature_cls,
                     allow_fallback=allow_fallback,
@@ -1083,7 +1083,7 @@ class MetadataStore(ABC, Generic[TRef]):
             "all_local" if all upstream features are in this store
             "has_fallback" if any upstream is in fallback stores
         """
-        plan = feature.registry.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec.key)
 
         if not plan.deps:
             return "all_local"  # No dependencies
@@ -1111,7 +1111,7 @@ class MetadataStore(ABC, Generic[TRef]):
         """
         import warnings
 
-        plan = feature.registry.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec.key)
 
         # Create components based on preference and capabilities
         if self._prefer_native and self._supports_native_components():
@@ -1249,7 +1249,7 @@ class MetadataStore(ABC, Generic[TRef]):
         polars_diff = PolarsDiffResolver()
 
         # Step 1: Join upstream
-        plan = feature.registry.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec.key)
         joined, mapping = feature.join_upstream_metadata(
             joiner=polars_joiner,
             upstream_refs=upstream_refs,

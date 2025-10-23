@@ -40,7 +40,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
-from metaxy.models.feature import FeatureRegistry
+from metaxy.models.feature import FeatureGraph
 
 from .conftest import HashAlgorithmCases  # type: ignore[import-not-found]
 
@@ -342,40 +342,40 @@ class LeafMultiField(
 # ============= REGISTRY FIXTURES =============
 
 
-class RegistryCases:
-    """Different feature registry configurations with various dependency graphs."""
+class FeatureGraphCases:
+    """Different feature graph configurations with various dependency graphs."""
 
-    def case_simple_chain(self) -> tuple[FeatureRegistry, list[type[Feature]]]:
+    def case_simple_chain(self) -> tuple[FeatureGraph, list[type[Feature]]]:
         """Simple dependency chain: A → B."""
-        registry = FeatureRegistry()
-        registry.add_feature(RootA)
-        registry.add_feature(LeafSimple)
-        return (registry, [RootA, LeafSimple])
+        graph = FeatureGraph()
+        graph.add_feature(RootA)
+        graph.add_feature(LeafSimple)
+        return (graph, [RootA, LeafSimple])
 
-    def case_diamond_graph(self) -> tuple[FeatureRegistry, list[type[Feature]]]:
+    def case_diamond_graph(self) -> tuple[FeatureGraph, list[type[Feature]]]:
         """Diamond dependency graph: A → B, A → C, B → D, C → D."""
-        registry = FeatureRegistry()
-        registry.add_feature(RootA)
-        registry.add_feature(BranchB)
-        registry.add_feature(BranchC)
-        registry.add_feature(LeafDiamond)
-        return (registry, [RootA, BranchB, BranchC, LeafDiamond])
+        graph = FeatureGraph()
+        graph.add_feature(RootA)
+        graph.add_feature(BranchB)
+        graph.add_feature(BranchC)
+        graph.add_feature(LeafDiamond)
+        return (graph, [RootA, BranchB, BranchC, LeafDiamond])
 
-    def case_multi_field(self) -> tuple[FeatureRegistry, list[type[Feature]]]:
+    def case_multi_field(self) -> tuple[FeatureGraph, list[type[Feature]]]:
         """Feature with multiple fields: A (train + test) → B."""
-        registry = FeatureRegistry()
-        registry.add_feature(MultiFieldRoot)
-        registry.add_feature(LeafMultiField)
-        return (registry, [MultiFieldRoot, LeafMultiField])
+        graph = FeatureGraph()
+        graph.add_feature(MultiFieldRoot)
+        graph.add_feature(LeafMultiField)
+        return (graph, [MultiFieldRoot, LeafMultiField])
 
 
 @pytest.fixture
-def simple_chain_registry():
-    """Simple chain registry fixture for tests that don't need parametrization."""
-    cases = RegistryCases()
-    registry, features = cases.case_simple_chain()
+def simple_chain_graph():
+    """Simple chain graph fixture for tests that don't need parametrization."""
+    cases = FeatureGraphCases()
+    graph, features = cases.case_simple_chain()
 
-    with registry.use():
+    with graph.use():
         # Return dict with named features for backwards compatibility
         # features = [RootA, LeafSimple]
         yield {"UpstreamA": features[0], "DownstreamB": features[1]}
@@ -385,10 +385,10 @@ def simple_chain_registry():
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("registry_config", cases=RegistryCases)
+@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_no_upstream(
     store_params: dict,
-    registry_config: tuple[FeatureRegistry, list[type[Feature]]],
+    graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
     recwarn,
@@ -398,7 +398,7 @@ def test_resolve_update_no_upstream(
     Verifies that prefer_native=True and prefer_native=False produce identical results
     across all store types and different feature graphs.
     """
-    registry, features = registry_config
+    graph, features = graph_config
 
     # Test the first feature (root/upstream with no dependencies)
     root_feature = features[0]
@@ -417,7 +417,7 @@ def test_resolve_update_no_upstream(
 
             # Try to open store - will fail validation if hash algorithm not supported
             try:
-                with store, registry.use():
+                with store, graph.use():
                     # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
                     # since they share the same database (unlike DuckDB/SQLite which use separate files)
                     if store_type == "clickhouse":
@@ -462,10 +462,10 @@ def test_resolve_update_no_upstream(
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("registry_config", cases=RegistryCases)
+@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_with_upstream(
     store_params: dict,
-    registry_config: tuple[FeatureRegistry, list[type[Feature]]],
+    graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
     recwarn,
@@ -475,7 +475,7 @@ def test_resolve_update_with_upstream(
     Verifies that prefer_native=True and prefer_native=False produce identical results
     across all store types and different feature graphs.
     """
-    registry, features = registry_config
+    graph, features = graph_config
 
     # Get root feature (first) and a downstream feature (last)
     root_feature = features[0]
@@ -515,7 +515,7 @@ def test_resolve_update_with_upstream(
 
             # Try to open store - will fail validation if hash algorithm not supported
             try:
-                with store, registry.use():
+                with store, graph.use():
                     # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
                     # since they share the same database (unlike DuckDB/SQLite which use separate files)
                     if store_type == "clickhouse":
@@ -598,10 +598,10 @@ def test_resolve_update_with_upstream(
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("registry_config", cases=RegistryCases)
+@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_detects_changes(
     store_params: dict,
-    registry_config: tuple[FeatureRegistry, list[type[Feature]]],
+    graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
     recwarn,
@@ -611,7 +611,7 @@ def test_resolve_update_detects_changes(
     Verifies that prefer_native=True and prefer_native=False produce identical results
     across all store types and different feature graphs.
     """
-    registry, features = registry_config
+    graph, features = graph_config
 
     # Get root feature (first) and a downstream feature (last)
     root_feature = features[0]
@@ -665,7 +665,7 @@ def test_resolve_update_detects_changes(
 
             # Try to open store - will fail validation if hash algorithm not supported
             try:
-                with store, registry.use():
+                with store, graph.use():
                     # Drop all feature metadata to ensure clean state between prefer_native variants
                     for feature in features:
                         store.drop_feature_metadata(feature)

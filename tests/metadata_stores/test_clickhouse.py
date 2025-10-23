@@ -15,13 +15,13 @@ from metaxy.models.feature import Feature
 
 
 def test_clickhouse_table_naming(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     with ClickHouseMetadataStore(clickhouse_db) as store:
@@ -41,13 +41,13 @@ def test_clickhouse_table_naming(
 
 
 def test_clickhouse_uses_ibis_backend(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that ClickHouse store uses Ibis backend.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     with ClickHouseMetadataStore(clickhouse_db) as store:
@@ -58,13 +58,13 @@ def test_clickhouse_uses_ibis_backend(
 
 
 def test_clickhouse_conn_property_enforcement(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that conn property enforces store is open.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     from metaxy.metadata_store import StoreNotOpenError
@@ -82,13 +82,13 @@ def test_clickhouse_conn_property_enforcement(
 
 
 def test_clickhouse_persistence(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that data persists across different store instances.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     import polars as pl
@@ -116,13 +116,13 @@ def test_clickhouse_persistence(
 
 
 def test_clickhouse_close_idempotent(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that close() can be called multiple times safely.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     store = ClickHouseMetadataStore(clickhouse_db)
@@ -136,13 +136,13 @@ def test_clickhouse_close_idempotent(
 
 
 def test_clickhouse_hash_algorithms(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test that ClickHouse supports MD5, XXHASH32, and XXHASH64 hash algorithms.
 
     Args:
         clickhouse_db: Connection string fixture
-        test_registry: Feature registry fixture (for context)
+        test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
     import polars as pl
@@ -176,7 +176,7 @@ def test_clickhouse_hash_algorithms(
 
 
 def test_clickhouse_config_instantiation(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test instantiating ClickHouse store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -201,7 +201,7 @@ def test_clickhouse_config_instantiation(
 
 
 def test_clickhouse_config_with_connection_params(
-    test_registry, test_features: dict[str, type[Feature]]
+    test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test ClickHouse store config with connection_params."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -228,7 +228,7 @@ def test_clickhouse_config_with_connection_params(
 
 
 def test_clickhouse_config_with_hash_algorithm(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test ClickHouse store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -255,7 +255,7 @@ def test_clickhouse_config_with_hash_algorithm(
 
 
 def test_clickhouse_config_with_fallback_stores(
-    clickhouse_db: str, test_registry, test_features: dict[str, type[Feature]]
+    clickhouse_db: str, test_graph, test_features: dict[str, type[Feature]]
 ) -> None:
     """Test ClickHouse store config with fallback stores."""
     from metaxy.config import MetaxyConfig, StoreConfig

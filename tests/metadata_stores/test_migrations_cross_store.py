@@ -9,7 +9,7 @@ from syrupy.assertion import SnapshotAssertion
 
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.migrations import DataVersionReconciliation, Migration, apply_migration
-from metaxy.models.feature import FeatureRegistry
+from metaxy.models.feature import FeatureGraph
 
 from .conftest import StoreCases  # type: ignore[import-not-found]
 
@@ -17,7 +17,7 @@ from .conftest import StoreCases  # type: ignore[import-not-found]
 @parametrize_with_cases("store_config", cases=StoreCases)
 def test_migration_system_tables_serialize_cross_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
-    test_registry: tuple[FeatureRegistry, dict[str, type]],
+    test_graph: tuple[FeatureGraph, dict[str, type]],
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test that migration system tables serialize correctly across all backends.
@@ -28,16 +28,16 @@ def test_migration_system_tables_serialize_cross_store(
     - Native structs/lists work for DuckDB/ClickHouse
     - Migration metadata (operation_ids, expected_steps) survives round-trip
     """
-    registry, features = test_registry
+    graph, features = test_graph
     store_type, config = store_config
 
     UpstreamFeatureA = features["UpstreamFeatureA"]
     DownstreamFeature = features["DownstreamFeature"]
 
     store = store_type(**config)  # type: ignore[abstract]
-    with registry.use(), store:
+    with graph.use(), store:
         # Record feature graph snapshot first (mimics CI/CD workflow)
-        # This must be done before any operations that need historical registry
+        # This must be done before any operations that need historical graph
         snapshot_id = store.serialize_feature_graph()
 
         # Write minimal data for downstream feature (has upstream deps)

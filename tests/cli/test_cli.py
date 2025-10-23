@@ -17,7 +17,7 @@ from metaxy import (
 from metaxy.cli.app import app
 from metaxy.cli.context import set_config
 from metaxy.cli.migrations import app as migrations_app
-from metaxy.models.feature import FeatureRegistry
+from metaxy.models.feature import FeatureGraph
 
 # Import TempFeatureModule for importable test features
 # Go up two levels from tests/cli/ to tests/
@@ -26,8 +26,8 @@ from test_migrations import TempFeatureModule  # type: ignore[import-not-found]
 
 
 @pytest.fixture
-def cli_registry():
-    """Test registry with features using temp module for importability."""
+def cli_graph():
+    """Test graph with features using temp module for importability."""
     temp_module = TempFeatureModule("test_cli_features")
 
     test_feature_spec = FeatureSpec(
@@ -37,15 +37,15 @@ def cli_registry():
     )
 
     temp_module.write_features({"TestFeature": test_feature_spec})
-    registry = temp_module.get_registry()
+    graph = temp_module.get_graph()
 
-    yield registry
+    yield graph
 
     temp_module.cleanup()
 
 
 @pytest.fixture
-def cli_config_file(tmp_path: Path, cli_registry: FeatureRegistry) -> Path:
+def cli_config_file(tmp_path: Path, cli_graph: FeatureGraph) -> Path:
     """Create test config file."""
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text("""
@@ -82,7 +82,7 @@ def test_migrations_generate_help():
 
 def test_push_command(
     cli_config_file: Path,
-    cli_registry: FeatureRegistry,
+    cli_graph: FeatureGraph,
     capsys,
     snapshot: SnapshotAssertion,
 ):
@@ -93,8 +93,8 @@ def test_push_command(
     # Load config and create store
     config = MetaxyConfig.load(cli_config_file)
 
-    # Use test registry context
-    with cli_registry.use():
+    # Use test graph context
+    with cli_graph.use():
         store = config.get_store("test")
 
         # Simulate CD workflow: push records feature versions before deployment
@@ -103,9 +103,7 @@ def test_push_command(
             push()
 
             # Later, in application code, users write metadata
-            TestFeature = cli_registry.features_by_key[
-                FeatureKey(["test_cli", "feature"])
-            ]
+            TestFeature = cli_graph.features_by_key[FeatureKey(["test_cli", "feature"])]
             data = pl.DataFrame(
                 {
                     "sample_id": [1, 2],
@@ -127,7 +125,7 @@ def test_push_command(
 
 def test_migrations_generate_no_changes(
     cli_config_file: Path,
-    cli_registry: FeatureRegistry,
+    cli_graph: FeatureGraph,
     capsys,
     snapshot: SnapshotAssertion,
 ):
@@ -138,15 +136,13 @@ def test_migrations_generate_no_changes(
     # Load config and create store with data
     config = MetaxyConfig.load(cli_config_file)
 
-    # Use test registry context
-    with cli_registry.use():
+    # Use test graph context
+    with cli_graph.use():
         store = config.get_store("test")
 
         # Write data and call command in context manager
         with store:
-            TestFeature = cli_registry.features_by_key[
-                FeatureKey(["test_cli", "feature"])
-            ]
+            TestFeature = cli_graph.features_by_key[FeatureKey(["test_cli", "feature"])]
             data = pl.DataFrame(
                 {
                     "sample_id": [1, 2],
@@ -154,7 +150,7 @@ def test_migrations_generate_no_changes(
                 }
             )
             store.write_metadata(TestFeature, data)
-            store.record_feature_graph_snapshot()  # No arguments - records all features in registry
+            store.record_feature_graph_snapshot()  # No arguments - records all features in graph
 
             set_config(config)
             generate(migrations_dir=Path("migrations"))
@@ -165,7 +161,7 @@ def test_migrations_generate_no_changes(
 
 
 def test_migrations_apply_dry_run(
-    tmp_path: Path, cli_registry: FeatureRegistry, capsys, snapshot: SnapshotAssertion
+    tmp_path: Path, cli_graph: FeatureGraph, capsys, snapshot: SnapshotAssertion
 ):
     """Test apply command in dry-run mode."""
     pytest.importorskip("duckdb")
@@ -187,11 +183,11 @@ config.database = "{db_path}"
 
     config = MetaxyConfig.load(config_file)
 
-    # Use test registry context
-    with cli_registry.use():
+    # Use test graph context
+    with cli_graph.use():
         store = config.get_store("test")
 
-        # Record a snapshot first so migration can load historical registry
+        # Record a snapshot first so migration can load historical graph
         with store:
             snapshot_id = store.serialize_feature_graph()
 
@@ -245,7 +241,7 @@ config.database = "{db_path}"
 
 def test_migrations_status_empty(
     cli_config_file: Path,
-    cli_registry: FeatureRegistry,
+    cli_graph: FeatureGraph,
     capsys,
     snapshot: SnapshotAssertion,
 ):
@@ -255,8 +251,8 @@ def test_migrations_status_empty(
 
     config = MetaxyConfig.load(cli_config_file)
 
-    # Use test registry context
-    with cli_registry.use():
+    # Use test graph context
+    with cli_graph.use():
         store = config.get_store("test")
 
         # Call command in context manager

@@ -20,15 +20,15 @@ from metaxy.migrations import (
     detect_feature_changes,
     generate_migration,
 )
-from metaxy.models.feature import Feature, FeatureRegistry, registry
+from metaxy.models.feature import Feature, FeatureGraph, graph
 from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
 __all__ = [
     "Feature",
-    "FeatureRegistry",
-    "registry",
+    "FeatureGraph",
+    "graph",
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",

@@ -11,14 +11,12 @@ pytest.importorskip("pyarrow")
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
-def test_duckdb_table_naming(
-    tmp_path: Path, test_registry, test_features: dict
-) -> None:
+def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.duckdb"
 
@@ -39,13 +37,13 @@ def test_duckdb_table_naming(
 
 
 def test_duckdb_with_custom_config(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test creating DuckDB store with custom configuration.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.duckdb"
 
@@ -61,13 +59,13 @@ def test_duckdb_with_custom_config(
 
 
 def test_duckdb_uses_ibis_backend(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that DuckDB store uses Ibis backend.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.duckdb"
 
@@ -79,13 +77,13 @@ def test_duckdb_uses_ibis_backend(
 
 
 def test_duckdb_conn_property_enforcement(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that conn property enforces store is open.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     from metaxy.metadata_store import StoreNotOpenError
 
@@ -103,13 +101,13 @@ def test_duckdb_conn_property_enforcement(
 
 
 def test_duckdb_persistence_across_instances(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that data persists across different store instances.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     import polars as pl
 
@@ -138,13 +136,13 @@ def test_duckdb_persistence_across_instances(
 
 
 def test_duckdb_close_idempotent(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that close() can be called multiple times safely.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.duckdb"
     store = DuckDBMetadataStore(db_path)
