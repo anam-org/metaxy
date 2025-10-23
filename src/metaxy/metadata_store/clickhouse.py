@@ -78,7 +78,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
                 - password: Password (default: "")
                 - secure: Use secure connection (default: False)
             fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, registry)
+            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
 
         Raises:
             ImportError: If ibis-clickhouse not installed

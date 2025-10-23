@@ -1,10 +1,10 @@
-from metaxy.models.feature import Feature, FeatureRegistry
+from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
 
-def test_single_feature_data_version(snapshot, registry: FeatureRegistry):
+def test_single_feature_data_version(snapshot, graph: FeatureGraph):
     """Test feature with no dependencies."""
 
     class MyFeature(
@@ -15,7 +15,7 @@ def test_single_feature_data_version(snapshot, registry: FeatureRegistry):
     assert MyFeature.data_version() == snapshot
 
 
-def test_feature_with_multiple_fields(snapshot, registry: FeatureRegistry):
+def test_feature_with_multiple_fields(snapshot, graph: FeatureGraph):
     """Test feature with multiple fields, each with different code versions."""
 
     class VideoFeature(
@@ -35,7 +35,7 @@ def test_feature_with_multiple_fields(snapshot, registry: FeatureRegistry):
     assert VideoFeature.data_version() == snapshot
 
 
-def test_linear_dependency_chain(snapshot, registry: FeatureRegistry):
+def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
     """Test A -> B -> C linear dependency chain."""
 
     class FeatureA(
@@ -77,7 +77,7 @@ def test_linear_dependency_chain(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
+def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
     """Test diamond dependency: A -> B, A -> C, B -> D, C -> D."""
 
     class Root(
@@ -133,7 +133,7 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_specific_field_dependencies(snapshot, registry: FeatureRegistry):
+def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
     """Test feature with specific field-level dependencies."""
 
     class MultiField(
@@ -205,7 +205,7 @@ def test_specific_field_dependencies(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
+def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
     """Test complex graph with multiple levels and mixed dependency types."""
 
     # Level 0: Two root features
@@ -310,7 +310,7 @@ def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_code_version_changes_propagate(snapshot, registry: FeatureRegistry):
+def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
     """Test that changing code version in upstream affects downstream."""
 
     class Base(
@@ -341,7 +341,7 @@ def test_code_version_changes_propagate(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_multiple_fields_different_deps(snapshot, registry: FeatureRegistry):
+def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
     """Test feature where different fields have completely different dependency sets."""
 
     class FeatureX(

@@ -17,48 +17,48 @@ from pydantic_settings import (
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
 T = TypeVar("T")
 
 
-def load_registry(registry_path: str) -> "FeatureRegistry":
-    """Load registry from import path.
+def load_graph(graph_path: str) -> "FeatureGraph":
+    """Load graph from import path.
 
     Args:
-        registry_path: Import path like "myapp.features:my_registry"
+        graph_path: Import path like "myapp.features:my_graph"
 
     Returns:
-        FeatureRegistry instance
+        FeatureGraph instance
 
     Raises:
         ValueError: If path is invalid
-        ImportError: If module or registry not found
-        TypeError: If loaded object is not a FeatureRegistry
+        ImportError: If module or graph not found
+        TypeError: If loaded object is not a FeatureGraph
     """
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
-    if ":" not in registry_path:
+    if ":" not in graph_path:
         raise ValueError(
-            f"Invalid registry path: {registry_path}. "
-            f"Expected format: 'module.path:registry_name'"
+            f"Invalid graph path: {graph_path}. "
+            f"Expected format: 'module.path:graph_name'"
         )
 
-    module_path, registry_name = registry_path.split(":", 1)
+    module_path, graph_name = graph_path.split(":", 1)
 
     try:
-        module = __import__(module_path, fromlist=[registry_name])
-        registry = getattr(module, registry_name)
+        module = __import__(module_path, fromlist=[graph_name])
+        graph = getattr(module, graph_name)
     except (ImportError, AttributeError) as e:
-        raise ImportError(f"Failed to load registry from {registry_path}: {e}") from e
+        raise ImportError(f"Failed to load graph from {graph_path}: {e}") from e
 
-    if not isinstance(registry, FeatureRegistry):
+    if not isinstance(graph, FeatureGraph):
         raise TypeError(
-            f"Registry at {registry_path} is not a FeatureRegistry instance. "
-            f"Got: {type(registry)}"
+            f"Registry at {graph_path} is not a FeatureGraph instance. "
+            f"Got: {type(graph)}"
         )
 
-    return registry
+    return graph
 
 
 class TomlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -160,9 +160,9 @@ class MetaxyConfig(BaseSettings):
         >>> store = config.get_store("prod")
         >>>
         >>> # Override via env var
-        >>> # METAXY_STORE=staging METAXY_REGISTRY=myapp.features:my_registry
+        >>> # METAXY_STORE=staging METAXY_REGISTRY=myapp.features:my_graph
         >>> config = MetaxyConfig.load()
-        >>> store = config.get_store()  # Uses staging with custom registry
+        >>> store = config.get_store()  # Uses staging with custom graph
     """
 
     model_config = SettingsConfigDict(

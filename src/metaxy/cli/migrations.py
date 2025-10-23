@@ -130,7 +130,7 @@ def scaffold(
     to_snapshot: Annotated[
         str | None,
         cyclopts.Parameter(
-            help="Use this as to_snapshot_id (defaults to current registry)"
+            help="Use this as to_snapshot_id (defaults to current graph)"
         ),
     ] = None,
 ):
@@ -159,7 +159,7 @@ def scaffold(
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
     from metaxy.migrations import Migration
     from metaxy.migrations.executor import MIGRATIONS_KEY
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     # Get migrations_dir from config if not specified
     if migrations_dir is None:
@@ -198,10 +198,10 @@ def scaffold(
         else:
             from_snapshot_id = from_snapshot
 
-        # Get to_snapshot_id (use provided or default to current registry)
+        # Get to_snapshot_id (use provided or default to current graph)
         if to_snapshot is None:
-            registry = FeatureRegistry.get_active()
-            to_snapshot_id = registry.snapshot_id
+            graph = FeatureGraph.get_active()
+            to_snapshot_id = graph.snapshot_id
         else:
             to_snapshot_id = to_snapshot
 

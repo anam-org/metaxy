@@ -27,13 +27,13 @@ from metaxy.migrations import (
     detect_feature_changes,
     generate_migration,
 )
-from metaxy.models.feature import FeatureRegistry
+from metaxy.models.feature import FeatureGraph
 
 
 class TempFeatureModule:
     """Helper to create temporary Python modules with feature definitions.
 
-    This allows features to be importable by historical registry reconstruction.
+    This allows features to be importable by historical graph reconstruction.
     The same import path (e.g., 'temp_features.Upstream') can be used across
     different feature versions by overwriting the module file.
     """
@@ -55,10 +55,10 @@ class TempFeatureModule:
         code_lines = [
             "# Auto-generated test feature module",
             "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
-            "from metaxy.models.feature import FeatureRegistry",
+            "from metaxy.models.feature import FeatureGraph",
             "",
-            "# Use a dedicated registry for this temp module",
-            "_registry = FeatureRegistry()",
+            "# Use a dedicated graph for this temp module",
+            "_graph = FeatureGraph()",
             "",
         ]
 
@@ -69,8 +69,8 @@ class TempFeatureModule:
 
             code_lines.extend(
                 [
-                    f"# Define {class_name} in the temp registry context",
-                    "with _registry.use():",
+                    f"# Define {class_name} in the temp graph context",
+                    "with _graph.use():",
                     f"    class {class_name}(",
                     "        Feature,",
                     f"        spec={spec_repr}",
@@ -141,10 +141,10 @@ class TempFeatureModule:
 
         return f"FeatureSpec({', '.join(parts)})"
 
-    def get_registry(self) -> FeatureRegistry:
-        """Get the registry from the temp module.
+    def get_graph(self) -> FeatureGraph:
+        """Get the graph from the temp module.
 
-        Creates a new registry and re-registers the features from the module.
+        Creates a new graph and re-registers the features from the module.
         This ensures we get fresh features after module reloading.
         """
         # Force reload to get latest class definitions
@@ -153,8 +153,8 @@ class TempFeatureModule:
         else:
             module = importlib.import_module(self.module_name)
 
-        # Create fresh registry and register features from module
-        fresh_registry = FeatureRegistry()
+        # Create fresh graph and register features from module
+        fresh_graph = FeatureGraph()
 
         # Find and register all Feature subclasses in the module
         for name in dir(module):
@@ -165,15 +165,15 @@ class TempFeatureModule:
                 and obj is not Feature
                 and hasattr(obj, "spec")
             ):
-                fresh_registry.add_feature(obj)
+                fresh_graph.add_feature(obj)
 
-        return fresh_registry
+        return fresh_graph
 
     def cleanup(self):
         """Remove temp directory and module from sys.path.
 
         NOTE: Don't call this until the test session is completely done,
-        as historical registry loading may need to import from these modules.
+        as historical graph loading may need to import from these modules.
         """
         if self.temp_dir in sys.path:
             sys.path.remove(self.temp_dir)
@@ -201,9 +201,9 @@ def get_latest_snapshot_id(store: InMemoryMetadataStore) -> str:
 
 
 # Additional test feature classes for specific tests (must be importable)
-_temp_registry_chaining = FeatureRegistry()
+_temp_graph_chaining = FeatureGraph()
 
-with _temp_registry_chaining.use():
+with _temp_graph_chaining.use():
 
     class UpFeature(
         Feature,
@@ -237,22 +237,22 @@ with _temp_registry_chaining.use():
         pass
 
 
-def migrate_store_to_registry(
+def migrate_store_to_graph(
     source_store: InMemoryMetadataStore,
-    target_registry: FeatureRegistry,
+    target_graph: FeatureGraph,
 ) -> InMemoryMetadataStore:
-    """Create new store with target registry context but source store's data.
+    """Create new store with target graph context but source store's data.
 
     Helper for testing migrations - simulates code changing while data stays the same.
     """
-    # Create new store and copy data - will be used within target_registry context
+    # Create new store and copy data - will be used within target_graph context
     new_store = InMemoryMetadataStore()
     new_store._storage = source_store._storage.copy()
     return new_store
 
 
 @pytest.fixture
-def registry_v1():
+def graph_v1():
     """Registry with v1 features using temporary module."""
     temp_module = TempFeatureModule("test_migrations_features_v1")
 
@@ -290,17 +290,17 @@ def registry_v1():
         }
     )
 
-    # Get registry from module
-    registry = temp_module.get_registry()
+    # Get graph from module
+    graph = temp_module.get_graph()
 
-    yield registry
+    yield graph
 
     # Cleanup after test completes
     temp_module.cleanup()
 
 
 @pytest.fixture
-def registry_v2():
+def graph_v2():
     """Registry with v2 features (upstream code_version changed) using temporary module."""
     temp_module = TempFeatureModule("test_migrations_features_v2")
 
@@ -338,26 +338,26 @@ def registry_v2():
         }
     )
 
-    # Get registry from module
-    registry = temp_module.get_registry()
+    # Get graph from module
+    graph = temp_module.get_graph()
 
-    yield registry
+    yield graph
 
     # Cleanup after test completes
     temp_module.cleanup()
 
 
 @pytest.fixture
-def store_with_v1_data(registry_v1: FeatureRegistry) -> InMemoryMetadataStore:
+def store_with_v1_data(graph_v1: FeatureGraph) -> InMemoryMetadataStore:
     """Store with v1 upstream and downstream data."""
     store = InMemoryMetadataStore()
 
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         # Get feature classes
-        UpstreamV1 = registry_v1.features_by_key[
+        UpstreamV1 = graph_v1.features_by_key[
             FeatureKey(["test_migrations", "upstream"])
         ]
-        DownstreamV1 = registry_v1.features_by_key[
+        DownstreamV1 = graph_v1.features_by_key[
             FeatureKey(["test_migrations", "downstream"])
         ]
 
@@ -373,7 +373,7 @@ def store_with_v1_data(registry_v1: FeatureRegistry) -> InMemoryMetadataStore:
             }
         )
         store.write_metadata(UpstreamV1, upstream_data)
-        # Explicitly record feature version (must be within registry context!)
+        # Explicitly record feature version (must be within graph context!)
         store.record_feature_graph_snapshot()
 
         # Write downstream using new API
@@ -394,36 +394,32 @@ def store_with_v1_data(registry_v1: FeatureRegistry) -> InMemoryMetadataStore:
 def test_detect_no_changes(
     store_with_v1_data: InMemoryMetadataStore,
 ) -> None:
-    """Test detection when no features changed (registry matches data)."""
+    """Test detection when no features changed (graph matches data)."""
     with store_with_v1_data:
         changes = detect_feature_changes(store_with_v1_data)
 
-    # Should detect no changes (v1 registry, v1 data)
+    # Should detect no changes (v1 graph, v1 data)
     assert len(changes) == 0
 
 
 def test_detect_single_change(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test detection of upstream code version change.
 
     Since downstream's feature_version depends on upstream, both are detected as changed.
     """
-    # Migrate store to v2 registry (simulates code change)
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    # Migrate store to v2 graph (simulates code change)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features for version comparison
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
-    # Detect changes within v2 registry context
-    with registry_v2.use(), store_v2:
+    # Detect changes within v2 graph context
+    with graph_v2.use(), store_v2:
         operations = detect_feature_changes(store_v2)
 
         # Both features changed (downstream version depends on upstream)
@@ -446,30 +442,26 @@ def test_generate_migration_no_changes(
     with store_with_v1_data:
         result = generate_migration(store_with_v1_data)
 
-        # No changes (v1 registry, v1 data)
+        # No changes (v1 graph, v1 data)
         assert result is None
 
 
 def test_generate_migration_with_changes(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     tmp_path: Path,
 ) -> None:
     """Test migration file generation."""
-    # Migrate to v2 registry
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    # Migrate to v2 graph
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Generate migration
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         migration = generate_migration(store_v2)
 
         assert migration is not None
@@ -498,24 +490,20 @@ def test_generate_migration_with_changes(
 
 def test_apply_migration_rejects_root_features(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test that DataVersionReconciliation rejects root features (no upstream).
 
     Root features have user-defined data_versions that cannot be automatically
     reconciled. User must re-run their computation pipeline.
     """
-    # Migrate to v2 registry
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    # Migrate to v2 graph
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Get actual snapshot_id from store
     v1_snapshot_id = get_latest_snapshot_id(store_with_v1_data)
@@ -540,7 +528,7 @@ def test_apply_migration_rejects_root_features(
     )
 
     # Apply migration - should fail with clear error
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         result = apply_migration(store_v2, migration)
 
         # Should fail because upstream is a root feature
@@ -554,16 +542,16 @@ def test_apply_migration_rejects_root_features(
 
 def test_apply_migration_idempotent(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test that migrations are idempotent."""
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    DownstreamV1 = registry_v1.features_by_key[
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
-    registry_v2.features_by_key[FeatureKey(["test_migrations", "downstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "downstream"])]
 
     # Create migration for downstream feature (has upstream)
     migration = Migration(
@@ -585,7 +573,7 @@ def test_apply_migration_idempotent(
     )
 
     # First application
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         result1 = apply_migration(store_v2, migration)
         assert result1.status == "completed"
 
@@ -596,16 +584,16 @@ def test_apply_migration_idempotent(
 
 def test_apply_migration_dry_run(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test dry-run mode doesn't modify data."""
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    DownstreamV1 = registry_v1.features_by_key[
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
-    DownstreamV2 = registry_v2.features_by_key[
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -629,7 +617,7 @@ def test_apply_migration_dry_run(
     )
 
     # Dry-run
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         result = apply_migration(store_v2, migration, dry_run=True)
 
         assert result.status == "skipped"
@@ -637,7 +625,7 @@ def test_apply_migration_dry_run(
 
         # Verify data unchanged - should still only have v1 feature_version
         all_data = store_v2.read_metadata(
-            DownstreamV2,  # Reading through v2 registry
+            DownstreamV2,  # Reading through v2 graph
             current_only=False,  # Get all versions
         )
         # All rows should have v1 feature_version (not v2 - because it's dry-run)
@@ -649,8 +637,8 @@ def test_apply_migration_dry_run(
 
 def test_apply_migration_propagates_downstream(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test that downstream reconciliation works when upstream changes.
 
@@ -658,19 +646,17 @@ def test_apply_migration_propagates_downstream(
     1. User manually updates upstream (root feature) with new data
     2. Migration reconciles downstream data_versions based on new upstream
     """
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
-    DownstreamV2 = registry_v2.features_by_key[
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         # Get initial downstream data_versions
         # Read directly from storage to bypass read_metadata issues
         downstream_storage_key = ("test_migrations", "downstream")
@@ -780,12 +766,10 @@ def test_migration_yaml_roundtrip(tmp_path: Path) -> None:
     assert parsed_ops[0].to == "def67890"  # type: ignore[attr-defined]
 
 
-def test_feature_version_in_metadata(registry_v1: FeatureRegistry) -> None:
+def test_feature_version_in_metadata(graph_v1: FeatureGraph) -> None:
     """Test that feature_version column is automatically added."""
     store = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Write data without feature_version
     data = pl.DataFrame(
@@ -798,7 +782,7 @@ def test_feature_version_in_metadata(registry_v1: FeatureRegistry) -> None:
     # Should not have feature_version before write
     assert "feature_version" not in data.columns
 
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         store.write_metadata(UpstreamV1, data)
 
         # Read back
@@ -813,15 +797,13 @@ def test_feature_version_in_metadata(registry_v1: FeatureRegistry) -> None:
 
 
 def test_current_only_filtering(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test current_only parameter filters by feature_version."""
-    # Write v1 data with v1 registry
+    # Write v1 data with v1 graph
     store_v1 = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     data_v1 = pl.DataFrame(
         {
@@ -829,14 +811,12 @@ def test_current_only_filtering(
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
-    with registry_v1.use(), store_v1:
+    with graph_v1.use(), store_v1:
         store_v1.write_metadata(UpstreamV1, data_v1)
 
-    # Migrate to v2 registry and write v2 data
-    store_v2 = migrate_store_to_registry(store_v1, registry_v2)
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    # Migrate to v2 graph and write v2 data
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     data_v2 = pl.DataFrame(
         {
@@ -844,7 +824,7 @@ def test_current_only_filtering(
             "data_version": [{"default": "h3"}, {"default": "h4"}],
         }
     )
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         store_v2.write_metadata(UpstreamV2, data_v2)
 
         # Read current only (should get v2)
@@ -869,12 +849,10 @@ def test_current_only_filtering(
         assert len(v2_rows) == 2
 
 
-def test_system_tables_created(registry_v1: FeatureRegistry) -> None:
+def test_system_tables_created(graph_v1: FeatureGraph) -> None:
     """Test that system tables are created when explicitly recording."""
     store = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Write some data
     data = pl.DataFrame(
@@ -883,7 +861,7 @@ def test_system_tables_created(registry_v1: FeatureRegistry) -> None:
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         store.record_feature_graph_snapshot()
         store.write_metadata(UpstreamV1, data)
 
@@ -902,9 +880,9 @@ def test_system_tables_created(registry_v1: FeatureRegistry) -> None:
         assert "test_migrations_upstream" in version_history["feature_key"].to_list()
 
 
-def test_registry_rejects_duplicate_keys() -> None:
-    """Test that FeatureRegistry raises error on duplicate feature keys."""
-    registry = FeatureRegistry()
+def test_graph_rejects_duplicate_keys() -> None:
+    """Test that FeatureGraph raises error on duplicate feature keys."""
+    graph = FeatureGraph()
 
     # Define first feature
     class Feature1(
@@ -914,7 +892,7 @@ def test_registry_rejects_duplicate_keys() -> None:
             deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
-        registry=registry,
+        graph=graph,
     ):
         pass
 
@@ -928,14 +906,14 @@ def test_registry_rejects_duplicate_keys() -> None:
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
             ),
-            registry=registry,
+            graph=graph,
         ):
             pass
 
 
 def test_detect_uses_latest_version_from_multiple_materializations(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test that detection uses the latest materialization when 10 versions exist."""
@@ -946,12 +924,8 @@ def test_detect_uses_latest_version_from_multiple_materializations(
     # Create store and manually insert 10 version history entries
     store = InMemoryMetadataStore()
 
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     with store:
         # Simulate 10 historical materializations
@@ -992,7 +966,7 @@ def test_detect_uses_latest_version_from_multiple_materializations(
         )
 
     # Now detect changes (code is at v2, latest materialized is v1)
-    with registry_v2.use(), store:
+    with graph_v2.use(), store:
         changes = detect_feature_changes(store)
 
         assert len(changes) == 1
@@ -1017,19 +991,15 @@ def test_detect_uses_latest_version_from_multiple_materializations(
 
 def test_migration_result_snapshots(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test migration execution with snapshot of affected features."""
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     migration = Migration(
         version=1,
@@ -1050,7 +1020,7 @@ def test_migration_result_snapshots(
     )
 
     # Apply migration
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         result = apply_migration(store_v2, migration)
 
         # Snapshot the result
@@ -1065,21 +1035,17 @@ def test_migration_result_snapshots(
 
 
 def test_feature_versions_snapshot(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test that feature_version hashes are stable for v1 and v2."""
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
-    DownstreamV2 = registry_v2.features_by_key[
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1102,16 +1068,16 @@ def test_feature_versions_snapshot(
 
 def test_generated_migration_yaml_snapshot(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     tmp_path: Path,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test generated YAML migration file structure with snapshot."""
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Generate migration
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         migration = generate_migration(store_v2)
 
         assert migration is not None
@@ -1136,7 +1102,7 @@ def test_generated_migration_yaml_snapshot(
 
 
 def test_serialize_feature_graph(
-    registry_v1: FeatureRegistry,
+    graph_v1: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test recording all features with deterministic snapshot_id."""
@@ -1144,10 +1110,8 @@ def test_serialize_feature_graph(
 
     store = InMemoryMetadataStore()
 
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1158,7 +1122,7 @@ def test_serialize_feature_graph(
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         store.write_metadata(UpstreamV1, upstream_data)
 
         downstream_data = pl.DataFrame({"sample_id": [1, 2, 3]})
@@ -1206,15 +1170,13 @@ def test_serialize_feature_graph(
 
 
 def test_serialize_feature_graph_is_idempotent(
-    registry_v1: FeatureRegistry,
+    graph_v1: FeatureGraph,
 ) -> None:
     """Test that snapshot_id is deterministic and recording is idempotent."""
     store = InMemoryMetadataStore()
 
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1225,7 +1187,7 @@ def test_serialize_feature_graph_is_idempotent(
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         store.write_metadata(UpstreamV1, upstream_data)
 
         downstream_data = pl.DataFrame({"sample_id": [1, 2]})
@@ -1258,17 +1220,15 @@ def test_serialize_feature_graph_is_idempotent(
 
 
 def test_snapshot_workflow_without_migrations(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test standard workflow: compute v2 data, record snapshot (no migration needed)."""
     # Step 1: Materialize v1 features and record
     store_v1 = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1278,7 +1238,7 @@ def test_snapshot_workflow_without_migrations(
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
-    with registry_v1.use(), store_v1:
+    with graph_v1.use(), store_v1:
         store_v1.write_metadata(UpstreamV1, upstream_data_v1)
 
         downstream_data_v1 = pl.DataFrame({"sample_id": [1, 2, 3]})
@@ -1291,12 +1251,10 @@ def test_snapshot_workflow_without_migrations(
         # Record v1 graph snapshot
         snapshot_id_v1 = store_v1.serialize_feature_graph()
 
-    # Step 2: Code changes (v1 -> v2), migrate store to v2 registry
-    store_v2 = migrate_store_to_registry(store_v1, registry_v2)
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV2 = registry_v2.features_by_key[
+    # Step 2: Code changes (v1 -> v2), migrate store to v2 graph
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1308,7 +1266,7 @@ def test_snapshot_workflow_without_migrations(
             "data_version": [{"default": "h4"}, {"default": "h5"}, {"default": "h6"}],
         }
     )
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         store_v2.write_metadata(UpstreamV2, upstream_data_v2)
 
         downstream_data_v2 = pl.DataFrame({"sample_id": [1, 2, 3]})
@@ -1368,16 +1326,14 @@ def test_snapshot_workflow_without_migrations(
 
 
 def test_migrations_preserve_immutability(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
 ) -> None:
     """Test that migrations preserve old data (immutable)."""
     # Setup v1 data
     store_v1 = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1395,7 +1351,7 @@ def test_migrations_preserve_immutability(
         }
     )
 
-    with registry_v1.use(), store_v1:
+    with graph_v1.use(), store_v1:
         store_v1.record_feature_graph_snapshot()
         store_v1.write_metadata(UpstreamV1, upstream_data)
         store_v1.write_metadata(DownstreamV1, downstream_data)
@@ -1405,8 +1361,8 @@ def test_migrations_preserve_immutability(
         original_data_versions = original_data["data_version"].to_list()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_registry(store_v1, registry_v2)
-    DownstreamV2 = registry_v2.features_by_key[
+    store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -1431,7 +1387,7 @@ def test_migrations_preserve_immutability(
         ],
     )
 
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         apply_migration(store_v2, migration)
 
         # Verify old data still exists unchanged (immutability)
@@ -1475,7 +1431,7 @@ def test_metadata_backfill_operation() -> None:
         def execute(self, store, *, dry_run=False):
             import polars as pl
 
-            from metaxy.models.feature import FeatureRegistry
+            from metaxy.models.feature import FeatureGraph
             from metaxy.models.types import FeatureKey
 
             # Load external data (from test_data)
@@ -1486,12 +1442,12 @@ def test_metadata_backfill_operation() -> None:
 
             # Get feature
             feature_key = FeatureKey(self.feature_key)
-            registry = FeatureRegistry.get_active()
-            feature_cls = registry.features_by_key[feature_key]
+            graph = FeatureGraph.get_active()
+            feature_cls = graph.features_by_key[feature_key]
 
             # For features with upstream: use resolve_update
             # For root features: user provides data_version directly or computes it
-            plan = registry.get_feature_plan(feature_key)
+            plan = graph.get_feature_plan(feature_key)
             has_upstream = plan.deps is not None and len(plan.deps) > 0
 
             if has_upstream:
@@ -1514,9 +1470,9 @@ def test_metadata_backfill_operation() -> None:
 
             return 0
 
-    # Create registry with root feature
-    registry = FeatureRegistry()
-    with registry.use():
+    # Create graph with root feature
+    graph = FeatureGraph()
+    with graph.use():
 
         class RootFeature(
             Feature,
@@ -1563,11 +1519,11 @@ def test_migration_chaining_validates_parent() -> None:
     """Test that migrations validate parent completion before applying."""
     from metaxy.migrations import Migration, apply_migration
 
-    registry = FeatureRegistry()
-    with registry.use():
+    graph = FeatureGraph()
+    with graph.use():
         # Use module-level classes for this test
-        registry.add_feature(UpFeature)
-        registry.add_feature(DownFeature)
+        graph.add_feature(UpFeature)
+        graph.add_feature(DownFeature)
 
         store = InMemoryMetadataStore()
         with store:
@@ -1624,13 +1580,13 @@ def test_migration_chaining_validates_parent() -> None:
 
 def test_generator_sets_parent_migration_id(
     store_with_v1_data: InMemoryMetadataStore,
-    registry_v2: FeatureRegistry,
+    graph_v2: FeatureGraph,
     tmp_path: Path,
 ) -> None:
     """Test that generator automatically sets parent_migration_id."""
-    store_v2 = migrate_store_to_registry(store_with_v1_data, registry_v2)
+    store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         # Generate first migration
         migration1 = generate_migration(store_v2)
         assert migration1 is not None
@@ -1649,13 +1605,13 @@ def test_generator_sets_parent_migration_id(
 
 
 def test_migration_ignores_new_features(
-    registry_v1: FeatureRegistry,
+    graph_v1: FeatureGraph,
 ) -> None:
-    """Test that adding a new feature to the registry doesn't trigger migrations.
+    """Test that adding a new feature to the graph doesn't trigger migrations.
 
     New features have no existing data, so they should be ignored by detect_feature_changes.
     """
-    # Create registry with v1 + new feature
+    # Create graph with v1 + new feature
     temp_module = TempFeatureModule("test_new_feature")
 
     # V1 upstream spec
@@ -1679,15 +1635,13 @@ def test_migration_ignores_new_features(
         }
     )
 
-    registry_with_new = temp_module.get_registry()
+    graph_with_new = temp_module.get_graph()
 
     # Create store with only v1 upstream data (no new_feature data)
     store = InMemoryMetadataStore()
-    upstream_v1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
+    upstream_v1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         upstream_data = pl.DataFrame(
             {
                 "sample_id": [1, 2],
@@ -1697,20 +1651,20 @@ def test_migration_ignores_new_features(
         store.write_metadata(upstream_v1, upstream_data)
         store.serialize_feature_graph()
 
-    # Migrate store to registry with new feature
-    store_new = migrate_store_to_registry(store, registry_with_new)
+    # Migrate store to graph with new feature
+    store_new = migrate_store_to_graph(store, graph_with_new)
 
-    with registry_with_new.use(), store_new:
+    with graph_with_new.use(), store_new:
         # Detect changes - should ignore new_feature (no existing data)
         operations = detect_feature_changes(store_new)
 
         # Should only detect 0 operations (upstream unchanged, new_feature has no data)
         assert len(operations) == 0
 
-        # Verify new_feature is in registry but not detected as needing migration
+        # Verify new_feature is in graph but not detected as needing migration
         assert (
             FeatureKey(["test_migrations", "new_feature"])
-            in registry_with_new.features_by_key
+            in graph_with_new.features_by_key
         )
 
     temp_module.cleanup()
@@ -1762,7 +1716,7 @@ def test_migration_with_dependency_change() -> None:
         }
     )
 
-    registry_v1 = temp_v1.get_registry()
+    graph_v1 = temp_v1.get_graph()
 
     # Create v2: Downstream now depends on UpstreamB instead
     temp_v2 = TempFeatureModule("test_dep_change_v2")
@@ -1792,21 +1746,21 @@ def test_migration_with_dependency_change() -> None:
         }
     )
 
-    registry_v2 = temp_v2.get_registry()
+    graph_v2 = temp_v2.get_graph()
 
     # Get feature classes
-    down_v1 = registry_v1.features_by_key[FeatureKey(["test", "downstream"])]
-    down_v2 = registry_v2.features_by_key[FeatureKey(["test", "downstream"])]
+    down_v1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
+    down_v2 = graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
     # Verify feature_versions are different (dependency changed)
     assert down_v1.feature_version() != down_v2.feature_version()
 
     # Create store with v1 data
     store = InMemoryMetadataStore()
-    upstream_a = registry_v1.features_by_key[FeatureKey(["test", "upstream_a"])]
-    upstream_b = registry_v1.features_by_key[FeatureKey(["test", "upstream_b"])]
+    upstream_a = graph_v1.features_by_key[FeatureKey(["test", "upstream_a"])]
+    upstream_b = graph_v1.features_by_key[FeatureKey(["test", "upstream_b"])]
 
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         # Write root features with user-defined data_versions
         store.write_metadata(
             upstream_a,
@@ -1826,9 +1780,9 @@ def test_migration_with_dependency_change() -> None:
         store.serialize_feature_graph()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_registry(store, registry_v2)
+    store_v2 = migrate_store_to_graph(store, graph_v2)
 
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         # Should detect downstream as changed (dependencies changed)
         operations = detect_feature_changes(store_v2)
 
@@ -1887,7 +1841,7 @@ def test_migration_with_field_dependency_change() -> None:
         }
     )
 
-    registry_v1 = temp_v1.get_registry()
+    graph_v1 = temp_v1.get_graph()
 
     # Create v2: Downstream now only depends on frames field
     temp_v2 = TempFeatureModule("test_field_dep_v2")
@@ -1916,20 +1870,20 @@ def test_migration_with_field_dependency_change() -> None:
         }
     )
 
-    registry_v2 = temp_v2.get_registry()
+    graph_v2 = temp_v2.get_graph()
 
     # Get feature classes
-    down_v1 = registry_v1.features_by_key[FeatureKey(["test", "downstream"])]
-    down_v2 = registry_v2.features_by_key[FeatureKey(["test", "downstream"])]
+    down_v1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
+    down_v2 = graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
     # Verify feature_versions are different (field deps changed)
     assert down_v1.feature_version() != down_v2.feature_version()
 
     # Create store with v1 data
     store = InMemoryMetadataStore()
-    upstream_v1 = registry_v1.features_by_key[FeatureKey(["test", "upstream"])]
+    upstream_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream"])]
 
-    with registry_v1.use(), store:
+    with graph_v1.use(), store:
         # Write root feature with user-defined data_version
         store.write_metadata(
             upstream_v1,
@@ -1947,9 +1901,9 @@ def test_migration_with_field_dependency_change() -> None:
         store.serialize_feature_graph()
 
     # Migrate to v2
-    store_v2 = migrate_store_to_registry(store, registry_v2)
+    store_v2 = migrate_store_to_graph(store, graph_v2)
 
-    with registry_v2.use(), store_v2:
+    with graph_v2.use(), store_v2:
         # Should detect downstream as changed (field deps changed)
         operations = detect_feature_changes(store_v2)
 
@@ -1970,7 +1924,7 @@ def test_sequential_migration_application():
     in the correct order with proper skipping of already-applied migrations.
     """
 
-    # Create a simple registry
+    # Create a simple graph
     temp_module = TempFeatureModule("test_sequential")
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
@@ -1978,13 +1932,13 @@ def test_sequential_migration_application():
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
-    registry = temp_module.get_registry()
+    graph = temp_module.get_graph()
 
     # Create store and record snapshot
     store = InMemoryMetadataStore()
-    test_feature = registry.features_by_key[FeatureKey(["test", "feature"])]
+    test_feature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
-    with registry.use(), store:
+    with graph.use(), store:
         store.write_metadata(
             test_feature,
             pl.DataFrame(
@@ -2039,7 +1993,7 @@ def test_sequential_migration_application():
         operations=[],
     )
 
-    with registry.use(), store:
+    with graph.use(), store:
         # Apply migration 1 (empty operations = skipped/completed immediately)
         result1 = apply_migration(store, migration1)
         assert result1.status in ("completed", "skipped")
@@ -2076,7 +2030,7 @@ def test_multiple_migration_heads_detection():
     Creates two independent migration chains and verifies the system can
     detect multiple heads.
     """
-    # Create registry
+    # Create graph
     temp_module = TempFeatureModule("test_multiple_heads")
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
@@ -2084,12 +2038,12 @@ def test_multiple_migration_heads_detection():
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
-    registry = temp_module.get_registry()
+    graph = temp_module.get_graph()
 
     store = InMemoryMetadataStore()
-    test_feature = registry.features_by_key[FeatureKey(["test", "feature"])]
+    test_feature = graph.features_by_key[FeatureKey(["test", "feature"])]
 
-    with registry.use(), store:
+    with graph.use(), store:
         store.write_metadata(
             test_feature,
             pl.DataFrame({"sample_id": [1], "data_version": [{"default": "h1"}]}),
@@ -2145,7 +2099,7 @@ def test_multiple_migration_heads_detection():
         operations=[],
     )
 
-    with registry.use(), store:
+    with graph.use(), store:
         # Apply all migrations
         apply_migration(store, migration_a1)
         apply_migration(store, migration_a2)
@@ -2189,8 +2143,8 @@ def test_multiple_migration_heads_detection():
 
 
 def test_migration_vs_recompute_comparison(
-    registry_v1: FeatureRegistry,
-    registry_v2: FeatureRegistry,
+    graph_v1: FeatureGraph,
+    graph_v2: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Compare migration (no recompute) vs standard workflow (with recompute).
@@ -2199,10 +2153,8 @@ def test_migration_vs_recompute_comparison(
     """
     # Setup: v1 data exists
     store_v1 = InMemoryMetadataStore()
-    UpstreamV1 = registry_v1.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV1 = registry_v1.features_by_key[
+    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV1 = graph_v1.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
@@ -2212,7 +2164,7 @@ def test_migration_vs_recompute_comparison(
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
-    with registry_v1.use(), store_v1:
+    with graph_v1.use(), store_v1:
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         downstream_data = pl.DataFrame({"sample_id": [1, 2, 3]})
@@ -2227,15 +2179,13 @@ def test_migration_vs_recompute_comparison(
         ].to_list()
 
     # Scenario A: Migration (user manually updates upstream, then reconciles downstream)
-    store_migration = migrate_store_to_registry(store_v1, registry_v2)
-    UpstreamV2 = registry_v2.features_by_key[
-        FeatureKey(["test_migrations", "upstream"])
-    ]
-    DownstreamV2 = registry_v2.features_by_key[
+    store_migration = migrate_store_to_graph(store_v1, graph_v2)
+    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
 
-    with registry_v2.use(), store_migration:
+    with graph_v2.use(), store_migration:
         # User manually writes new upstream data (root feature changed)
         new_upstream_data = pl.DataFrame(
             {

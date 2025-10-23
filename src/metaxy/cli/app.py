@@ -32,18 +32,18 @@ def push():
     Records a snapshot of the entire feature graph state based on code definitions.
     """
     from metaxy.cli.context import get_store
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     # Get store from context
     metadata_store = get_store()
 
     with metadata_store:
-        # Get the active registry
-        registry = FeatureRegistry.get_active()
+        # Get the active graph
+        graph = FeatureGraph.get_active()
 
         # Record all feature versions
         snapshot_id = metadata_store.serialize_feature_graph()
-        feature_count = len(registry.features_by_key)
+        feature_count = len(graph.features_by_key)
 
         app.console.print(
             f"[green]✓[/green] Recorded graph snapshot: [bold]{snapshot_id}[/bold]"

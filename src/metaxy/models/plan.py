@@ -36,6 +36,8 @@ class FQFieldKey(FrozenBaseModel):
 
 
 class FeaturePlan(FrozenBaseModel):
+    """Slice of the feature graph that includes a given feature and its parents"""
+
     feature: FeatureSpec
     deps: list[FeatureSpec] | None
 

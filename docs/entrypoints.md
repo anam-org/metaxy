@@ -9,7 +9,7 @@ The entrypoint system supports two approaches:
 1. **Config-based entrypoints**: Direct module imports from a list
 2. **Package-based entrypoints**: Standard Python entry points via `importlib.metadata`
 
-Both approaches automatically register Features to the active `FeatureRegistry` when modules are imported.
+Both approaches automatically register Features to the active `FeatureGraph` when modules are imported.
 
 ## Config-Based Entrypoints
 
@@ -91,7 +91,7 @@ Load from both config and packages:
 from metaxy import discover_and_load_entrypoints
 
 # Load from both sources
-registry = discover_and_load_entrypoints(
+graph = discover_and_load_entrypoints(
     config_entrypoints=[
         "myapp.features.core",
         "myapp.features.custom"
@@ -99,27 +99,27 @@ registry = discover_and_load_entrypoints(
     load_packages=True
 )
 
-print(f"Loaded {len(registry.features_by_key)} features")
+print(f"Loaded {len(graph.features_by_key)} features")
 ```
 
 ## Advanced Usage
 
 ### Custom Registry
 
-Load features into a custom registry instead of the global one (for example, for testing):
+Load features into a custom graph instead of the global one (for example, for testing):
 
 ```python
-from metaxy import FeatureRegistry, load_config_entrypoints
+from metaxy import FeatureGraph, load_config_entrypoints
 
-# Create isolated registry
-test_registry = FeatureRegistry()
+# Create isolated graph
+test_graph = FeatureGraph()
 
-with test_registry.use():
+with test_graph.use():
     load_config_entrypoints([
         "myapp.test_features"
     ])
 
-# Features are in test_registry, not the global registry
+# Features are in test_graph, not the global graph
 ```
 
 ### Single Module Loading

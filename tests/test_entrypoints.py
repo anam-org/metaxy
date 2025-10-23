@@ -9,8 +9,8 @@ import pytest
 
 from metaxy import (
     Feature,
+    FeatureGraph,
     FeatureKey,
-    FeatureRegistry,
     FeatureSpec,
     FieldKey,
     FieldSpec,
@@ -25,9 +25,9 @@ from metaxy.entrypoints import (
 
 
 @pytest.fixture
-def registry() -> Iterator[FeatureRegistry]:
-    """Create a clean FeatureRegistry for testing."""
-    reg = FeatureRegistry()
+def graph() -> Iterator[FeatureGraph]:
+    """Create a clean FeatureGraph for testing."""
+    reg = FeatureGraph()
     with reg.use():
         yield reg
 
@@ -62,7 +62,7 @@ def create_test_feature(name: str, key: list[str]) -> type[Feature]:
 # ========== Tests for load_module_entrypoint ==========
 
 
-def test_load_module_entrypoint_basic(registry: FeatureRegistry, tmp_path: Path):
+def test_load_module_entrypoint_basic(graph: FeatureGraph, tmp_path: Path):
     """Test loading a single module entrypoint."""
     # Create a temporary module with a Feature
     module_dir = tmp_path / "test_entrypoint_modules"
@@ -85,23 +85,23 @@ class TestFeature1(Feature, spec=FeatureSpec(
     sys.path.insert(0, str(tmp_path))
     try:
         # Load the entrypoint
-        load_module_entrypoint("test_entrypoint_modules.feature1", registry=registry)
+        load_module_entrypoint("test_entrypoint_modules.feature1", graph=graph)
 
         # Verify feature was registered
-        assert FeatureKey(["test", "feature1"]) in registry.features_by_key
-        feature_cls = registry.features_by_key[FeatureKey(["test", "feature1"])]
+        assert FeatureKey(["test", "feature1"]) in graph.features_by_key
+        feature_cls = graph.features_by_key[FeatureKey(["test", "feature1"])]
         assert feature_cls.__name__ == "TestFeature1"
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_load_module_entrypoint_nonexistent_module(registry: FeatureRegistry):
+def test_load_module_entrypoint_nonexistent_module(graph: FeatureGraph):
     """Test that loading a nonexistent module raises EntrypointLoadError."""
     with pytest.raises(EntrypointLoadError, match="Failed to import entrypoint module"):
-        load_module_entrypoint("nonexistent.module.path", registry=registry)
+        load_module_entrypoint("nonexistent.module.path", graph=graph)
 
 
-def test_load_module_entrypoint_import_error(registry: FeatureRegistry, tmp_path: Path):
+def test_load_module_entrypoint_import_error(graph: FeatureGraph, tmp_path: Path):
     """Test that module with import errors raises EntrypointLoadError."""
     # Create a module that raises ImportError
     module_dir = tmp_path / "test_bad_module"
@@ -118,15 +118,15 @@ import this_module_does_not_exist
         with pytest.raises(
             EntrypointLoadError, match="Failed to import entrypoint module"
         ):
-            load_module_entrypoint("test_bad_module.bad", registry=registry)
+            load_module_entrypoint("test_bad_module.bad", graph=graph)
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_load_module_entrypoint_uses_active_registry(tmp_path: Path):
-    """Test that entrypoint loads into the active registry by default."""
+def test_load_module_entrypoint_uses_active_graph(tmp_path: Path):
+    """Test that entrypoint loads into the active graph by default."""
     # Create a temporary module with a Feature
-    module_dir = tmp_path / "test_active_registry"
+    module_dir = tmp_path / "test_active_graph"
     module_dir.mkdir()
     (module_dir / "__init__.py").write_text("")
 
@@ -144,14 +144,14 @@ class ActiveRegistryFeature(Feature, spec=FeatureSpec(
 
     sys.path.insert(0, str(tmp_path))
     try:
-        # Create custom registry and set as active
-        custom_registry = FeatureRegistry()
-        with custom_registry.use():
-            # Load without passing registry parameter
-            load_module_entrypoint("test_active_registry.feature")
+        # Create custom graph and set as active
+        custom_graph = FeatureGraph()
+        with custom_graph.use():
+            # Load without passing graph parameter
+            load_module_entrypoint("test_active_graph.feature")
 
-            # Should be in custom_registry since it was active
-            assert FeatureKey(["active", "test"]) in custom_registry.features_by_key
+            # Should be in custom_graph since it was active
+            assert FeatureKey(["active", "test"]) in custom_graph.features_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
@@ -159,9 +159,7 @@ class ActiveRegistryFeature(Feature, spec=FeatureSpec(
 # ========== Tests for load_config_entrypoints ==========
 
 
-def test_load_config_entrypoints_multiple_modules(
-    registry: FeatureRegistry, tmp_path: Path
-):
+def test_load_config_entrypoints_multiple_modules(graph: FeatureGraph, tmp_path: Path):
     """Test loading multiple modules from config list."""
     # Create multiple test modules
     module_dir = tmp_path / "test_multi_modules"
@@ -190,37 +188,35 @@ class Feature{i}(Feature, spec=FeatureSpec(
                 "test_multi_modules.feature1",
                 "test_multi_modules.feature2",
             ],
-            registry=registry,
+            graph=graph,
         )
 
         # Verify all features were registered
-        assert len(registry.features_by_key) == 3
-        assert FeatureKey(["multi", "feature0"]) in registry.features_by_key
-        assert FeatureKey(["multi", "feature1"]) in registry.features_by_key
-        assert FeatureKey(["multi", "feature2"]) in registry.features_by_key
+        assert len(graph.features_by_key) == 3
+        assert FeatureKey(["multi", "feature0"]) in graph.features_by_key
+        assert FeatureKey(["multi", "feature1"]) in graph.features_by_key
+        assert FeatureKey(["multi", "feature2"]) in graph.features_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_load_config_entrypoints_empty_list(registry: FeatureRegistry):
+def test_load_config_entrypoints_empty_list(graph: FeatureGraph):
     """Test loading empty entrypoint list does nothing."""
-    initial_count = len(registry.features_by_key)
-    load_config_entrypoints([], registry=registry)
-    assert len(registry.features_by_key) == initial_count
+    initial_count = len(graph.features_by_key)
+    load_config_entrypoints([], graph=graph)
+    assert len(graph.features_by_key) == initial_count
 
 
-def test_load_config_entrypoints_failure_raises(registry: FeatureRegistry):
+def test_load_config_entrypoints_failure_raises(graph: FeatureGraph):
     """Test that failure to load one entrypoint raises error."""
     with pytest.raises(EntrypointLoadError, match="Failed to import entrypoint module"):
-        load_config_entrypoints(
-            ["valid.module", "nonexistent.module"], registry=registry
-        )
+        load_config_entrypoints(["valid.module", "nonexistent.module"], graph=graph)
 
 
 # ========== Tests for load_package_entrypoints ==========
 
 
-def test_load_package_entrypoints_discovers_and_loads(registry: FeatureRegistry):
+def test_load_package_entrypoints_discovers_and_loads(graph: FeatureGraph):
     """Test package entrypoint discovery and loading."""
     # Create mock entry point
     mock_ep = MagicMock()
@@ -230,7 +226,7 @@ def test_load_package_entrypoints_discovers_and_loads(registry: FeatureRegistry)
     # Mock the load() method to define a feature
     def mock_load():
         # Define a feature when load() is called
-        with registry.use():
+        with graph.use():
 
             class PluginFeature(
                 Feature,
@@ -252,13 +248,13 @@ def test_load_package_entrypoints_discovers_and_loads(registry: FeatureRegistry)
         mock_entry_points.return_value = mock_eps
 
         # Load package entrypoints
-        load_package_entrypoints(registry=registry)
+        load_package_entrypoints(graph=graph)
 
         # Verify feature was registered
-        assert FeatureKey(["plugin", "feature"]) in registry.features_by_key
+        assert FeatureKey(["plugin", "feature"]) in graph.features_by_key
 
 
-def test_load_package_entrypoints_no_entrypoints_found(registry: FeatureRegistry):
+def test_load_package_entrypoints_no_entrypoints_found(graph: FeatureGraph):
     """Test graceful handling when no package entrypoints found."""
     with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
         # Mock no entry points found
@@ -266,21 +262,21 @@ def test_load_package_entrypoints_no_entrypoints_found(registry: FeatureRegistry
         mock_eps.select.return_value = []
         mock_entry_points.return_value = mock_eps
 
-        initial_count = len(registry.features_by_key)
-        load_package_entrypoints(registry=registry)
+        initial_count = len(graph.features_by_key)
+        load_package_entrypoints(graph=graph)
 
-        # Should not raise, registry unchanged
-        assert len(registry.features_by_key) == initial_count
+        # Should not raise, graph unchanged
+        assert len(graph.features_by_key) == initial_count
 
 
-def test_load_package_entrypoints_custom_group(registry: FeatureRegistry):
+def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
     """Test loading from custom entry point group."""
     mock_ep = MagicMock()
     mock_ep.name = "custom_plugin"
     mock_ep.value = "custom.features"
 
     def mock_load():
-        with registry.use():
+        with graph.use():
 
             class CustomFeature(
                 Feature,
@@ -299,14 +295,14 @@ def test_load_package_entrypoints_custom_group(registry: FeatureRegistry):
         mock_eps.select.return_value = [mock_ep]
         mock_entry_points.return_value = mock_eps
 
-        load_package_entrypoints(group="custom.group", registry=registry)
+        load_package_entrypoints(group="custom.group", graph=graph)
 
         mock_eps.select.assert_called_once_with(group="custom.group")
 
-        assert FeatureKey(["custom", "feature"]) in registry.features_by_key
+        assert FeatureKey(["custom", "feature"]) in graph.features_by_key
 
 
-def test_load_package_entrypoints_load_failure_raises(registry: FeatureRegistry):
+def test_load_package_entrypoints_load_failure_raises(graph: FeatureGraph):
     """Test that entry point load failure raises EntrypointLoadError."""
     mock_ep = MagicMock()
     mock_ep.name = "broken_plugin"
@@ -321,14 +317,14 @@ def test_load_package_entrypoints_load_failure_raises(registry: FeatureRegistry)
         with pytest.raises(
             EntrypointLoadError, match="Failed to load package entrypoint"
         ):
-            load_package_entrypoints(registry=registry)
+            load_package_entrypoints(graph=graph)
 
 
 # ========== Tests for discover_and_load_entrypoints ==========
 
 
 def test_discover_and_load_entrypoints_both_sources(
-    registry: FeatureRegistry, tmp_path: Path
+    graph: FeatureGraph, tmp_path: Path
 ):
     """Test loading from both config and package sources."""
     # Create config-based module
@@ -357,7 +353,7 @@ class ConfigFeature(Feature, spec=FeatureSpec(
         mock_ep.value = "package.features"
 
         def mock_load():
-            with registry.use():
+            with graph.use():
 
                 class PackageFeature(
                     Feature,
@@ -377,25 +373,23 @@ class ConfigFeature(Feature, spec=FeatureSpec(
             mock_entry_points.return_value = mock_eps
 
             # Load from both sources
-            result_registry = discover_and_load_entrypoints(
+            result_graph = discover_and_load_entrypoints(
                 config_entrypoints=["config_module.feature"],
                 load_config=True,
                 load_packages=True,
-                registry=registry,
+                graph=graph,
             )
 
             # Verify both features were registered
-            assert len(result_registry.features_by_key) == 2
-            assert FeatureKey(["config", "feature"]) in result_registry.features_by_key
-            assert FeatureKey(["package", "feature"]) in result_registry.features_by_key
-            assert result_registry is registry
+            assert len(result_graph.features_by_key) == 2
+            assert FeatureKey(["config", "feature"]) in result_graph.features_by_key
+            assert FeatureKey(["package", "feature"]) in result_graph.features_by_key
+            assert result_graph is graph
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_discover_and_load_entrypoints_config_only(
-    registry: FeatureRegistry, tmp_path: Path
-):
+def test_discover_and_load_entrypoints_config_only(graph: FeatureGraph, tmp_path: Path):
     """Test loading only config entrypoints."""
     module_dir = tmp_path / "config_only"
     module_dir.mkdir()
@@ -422,23 +416,23 @@ class ConfigOnlyFeature(Feature, spec=FeatureSpec(
                 config_entrypoints=["config_only.feature"],
                 load_config=True,
                 load_packages=False,
-                registry=registry,
+                graph=graph,
             )
 
             mock_entry_points.assert_not_called()
-            assert FeatureKey(["config_only", "feature"]) in registry.features_by_key
+            assert FeatureKey(["config_only", "feature"]) in graph.features_by_key
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_discover_and_load_entrypoints_packages_only(registry: FeatureRegistry):
+def test_discover_and_load_entrypoints_packages_only(graph: FeatureGraph):
     """Test loading only package entrypoints."""
     mock_ep = MagicMock()
     mock_ep.name = "package_only"
     mock_ep.value = "package.only"
 
     def mock_load():
-        with registry.use():
+        with graph.use():
 
             class PackageOnlyFeature(
                 Feature,
@@ -461,29 +455,29 @@ def test_discover_and_load_entrypoints_packages_only(registry: FeatureRegistry):
             config_entrypoints=None,
             load_config=False,
             load_packages=True,
-            registry=registry,
+            graph=graph,
         )
 
-        assert FeatureKey(["package_only", "feature"]) in registry.features_by_key
+        assert FeatureKey(["package_only", "feature"]) in graph.features_by_key
 
 
-def test_discover_and_load_entrypoints_returns_registry(registry: FeatureRegistry):
-    """Test that discover_and_load_entrypoints returns the populated registry."""
+def test_discover_and_load_entrypoints_returns_graph(graph: FeatureGraph):
+    """Test that discover_and_load_entrypoints returns the populated graph."""
     result = discover_and_load_entrypoints(
         config_entrypoints=None,
         load_config=False,
         load_packages=False,
-        registry=registry,
+        graph=graph,
     )
 
-    assert result is registry
+    assert result is graph
 
 
-def test_discover_and_load_entrypoints_uses_active_registry():
-    """Test that discover_and_load_entrypoints uses active registry by default."""
-    custom_registry = FeatureRegistry()
+def test_discover_and_load_entrypoints_uses_active_graph():
+    """Test that discover_and_load_entrypoints uses active graph by default."""
+    custom_graph = FeatureGraph()
 
-    with custom_registry.use():
+    with custom_graph.use():
         with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
             mock_eps = MagicMock()
             mock_eps.select.return_value = []
@@ -493,13 +487,13 @@ def test_discover_and_load_entrypoints_uses_active_registry():
                 config_entrypoints=None, load_packages=False
             )
 
-            assert result is custom_registry
+            assert result is custom_graph
 
 
 # ========== Integration Tests ==========
 
 
-def test_duplicate_feature_key_raises_error(registry: FeatureRegistry, tmp_path: Path):
+def test_duplicate_feature_key_raises_error(graph: FeatureGraph, tmp_path: Path):
     """Test that duplicate feature keys raise EntrypointLoadError."""
     # Create two modules with the same feature key
     module_dir = tmp_path / "duplicate_test"
@@ -534,17 +528,17 @@ class Feature2(Feature, spec=FeatureSpec(
 
     try:
         # Load first module - should succeed
-        load_module_entrypoint("duplicate_test.module1", registry=registry)
+        load_module_entrypoint("duplicate_test.module1", graph=graph)
 
         # Load second module with duplicate key - should raise EntrypointLoadError
         # wrapping the underlying ValueError
         with pytest.raises(EntrypointLoadError, match="already registered"):
-            load_module_entrypoint("duplicate_test.module2", registry=registry)
+            load_module_entrypoint("duplicate_test.module2", graph=graph)
     finally:
         sys.path.remove(str(tmp_path))
 
 
-def test_entrypoints_with_dependencies(registry: FeatureRegistry, tmp_path: Path):
+def test_entrypoints_with_dependencies(graph: FeatureGraph, tmp_path: Path):
     """Test loading features that have dependencies on each other."""
     module_dir = tmp_path / "deps_test"
     module_dir.mkdir()
@@ -581,17 +575,15 @@ class DownstreamFeature(Feature, spec=FeatureSpec(
     try:
         # Load both modules
         load_config_entrypoints(
-            ["deps_test.upstream", "deps_test.downstream"], registry=registry
+            ["deps_test.upstream", "deps_test.downstream"], graph=graph
         )
 
         # Verify both registered
-        assert FeatureKey(["deps", "upstream"]) in registry.features_by_key
-        assert FeatureKey(["deps", "downstream"]) in registry.features_by_key
+        assert FeatureKey(["deps", "upstream"]) in graph.features_by_key
+        assert FeatureKey(["deps", "downstream"]) in graph.features_by_key
 
         # Verify dependency relationship
-        downstream_spec = registry.feature_specs_by_key[
-            FeatureKey(["deps", "downstream"])
-        ]
+        downstream_spec = graph.feature_specs_by_key[FeatureKey(["deps", "downstream"])]
         assert downstream_spec.deps is not None
         assert len(downstream_spec.deps) == 1
         assert downstream_spec.deps[0].key == FeatureKey(["deps", "upstream"])

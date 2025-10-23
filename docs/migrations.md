@@ -174,11 +174,11 @@ Reading with `current_only=True` returns only new rows.
 ```python
 # Discover entire downstream DAG
 source_keys = [op.feature_key for op in migration.operations]
-downstream_keys = store.registry.get_downstream_features(source_keys)
+downstream_keys = store.graph.get_downstream_features(source_keys)
 
 # Process in topological order (dependencies first)
 for downstream_key in downstream_keys:
-    feature = registry.features_by_key[downstream_key]
+    feature = graph.features_by_key[downstream_key]
 
     # Read CURRENT metadata
     current_metadata = store.read_metadata(

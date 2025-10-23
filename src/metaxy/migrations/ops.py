@@ -118,15 +118,15 @@ class DataVersionReconciliation(BaseOperation):
 
         from metaxy.metadata_store.base import allow_feature_version_override
         from metaxy.metadata_store.exceptions import FeatureNotFoundError
-        from metaxy.models.feature import FeatureRegistry
+        from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
 
         feature_key = FeatureKey(self.feature_key)
-        registry = FeatureRegistry.get_active()
-        feature_cls = registry.features_by_key[feature_key]
+        graph = FeatureGraph.get_active()
+        feature_cls = graph.features_by_key[feature_key]
 
         # 1. Verify feature has upstream dependencies
-        plan = registry.get_feature_plan(feature_key)
+        plan = graph.get_feature_plan(feature_key)
         has_upstream = plan.deps is not None and len(plan.deps) > 0
 
         if not has_upstream:
@@ -237,7 +237,7 @@ class MetadataBackfill(BaseOperation, ABC):
                     return len(external_df)
 
                 # Get data versions from Metaxy
-                feature_cls = registry.features_by_key[FeatureKey(self.feature_key)]
+                feature_cls = graph.features_by_key[FeatureKey(self.feature_key)]
                 diff = store.resolve_update(
                     feature_cls,
                     sample_df=external_df.select(["sample_id"])

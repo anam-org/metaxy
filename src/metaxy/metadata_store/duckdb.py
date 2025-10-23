@@ -91,7 +91,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
                     extensions=[{'name': 'spatial', 'repository': 'core_nightly'}]
                     extensions=[{'name': 'my_ext', 'repository': 'https://my-repo.com'}]
             fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, registry)
+            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
         """
         database_str = str(database)
 

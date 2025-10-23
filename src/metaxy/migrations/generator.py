@@ -11,23 +11,23 @@ from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
 
 def _is_upstream_of(
-    upstream_key: FeatureKey, downstream_key: FeatureKey, registry: "FeatureRegistry"
+    upstream_key: FeatureKey, downstream_key: FeatureKey, graph: "FeatureGraph"
 ) -> bool:
     """Check if upstream_key is in the dependency chain of downstream_key.
 
     Args:
         upstream_key: Potential upstream feature
         downstream_key: Feature to check dependencies for
-        registry: Feature registry
+        graph: Feature graph
 
     Returns:
         True if upstream_key is a direct or transitive dependency of downstream_key
     """
-    plan = registry.get_feature_plan(downstream_key)
+    plan = graph.get_feature_plan(downstream_key)
 
     if plan.deps is None:
         return False
@@ -39,7 +39,7 @@ def _is_upstream_of(
 
     # Check transitive dependencies (recursive)
     for dep in plan.deps:
-        if _is_upstream_of(upstream_key, dep.key, registry):
+        if _is_upstream_of(upstream_key, dep.key, graph):
             return True
 
     return False
@@ -57,12 +57,12 @@ def generate_migration(
     Two modes of operation:
 
     1. **Default mode** (both snapshot_ids None):
-       - Compares latest recorded snapshot (store) vs current active registry (code)
+       - Compares latest recorded snapshot (store) vs current active graph (code)
        - This is the normal workflow: detect code changes
 
     2. **Historical mode** (both snapshot_ids provided):
-       - Reconstructs from_registry from from_snapshot_id
-       - Reconstructs to_registry from to_snapshot_id
+       - Reconstructs from_graph from from_snapshot_id
+       - Reconstructs to_graph from to_snapshot_id
        - Compares these two historical registries
        - Useful for: backfilling migrations, testing, recovery
 
@@ -93,42 +93,42 @@ def generate_migration(
         ...     to_snapshot_id="def456...",
         ... )
     """
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     # Determine which registries to use based on provided snapshot_ids
-    # from_snapshot_id: if provided, reconstruct from_registry; else use store's latest
-    # to_snapshot_id: if provided, reconstruct to_registry; else use current active registry
+    # from_snapshot_id: if provided, reconstruct from_graph; else use store's latest
+    # to_snapshot_id: if provided, reconstruct to_graph; else use current active graph
 
     # Reconstruct registries as needed
-    to_registry = None
+    to_graph = None
 
     if from_snapshot_id is not None or to_snapshot_id is not None:
-        from metaxy.migrations.executor import _load_historical_registry
+        from metaxy.migrations.executor import _load_historical_graph
 
         print("Historical mode: comparing snapshots")
         if from_snapshot_id:
             print(f"  From: {from_snapshot_id[:16]}...")
-            _load_historical_registry(store, from_snapshot_id, class_path_overrides)
+            _load_historical_graph(store, from_snapshot_id, class_path_overrides)
         else:
             print("  From: latest in store")
 
         if to_snapshot_id:
             print(f"  To:   {to_snapshot_id[:16]}...")
-            to_registry = _load_historical_registry(
+            to_graph = _load_historical_graph(
                 store, to_snapshot_id, class_path_overrides
             )
         else:
-            print("  To:   current active registry")
-            to_registry = FeatureRegistry.get_active()
+            print("  To:   current active graph")
+            to_graph = FeatureGraph.get_active()
     else:
-        # Default mode: use active registry
-        to_registry = FeatureRegistry.get_active()
+        # Default mode: use active graph
+        to_graph = FeatureGraph.get_active()
 
-    # Use to_registry as active for detection
-    registry = to_registry
+    # Use to_graph as active for detection
+    graph = to_graph
 
-    # Detect root changes (within appropriate registry context)
-    with registry.use():
+    # Detect root changes (within appropriate graph context)
+    with graph.use():
         root_operations = detect_feature_changes(store)
 
     if not root_operations:
@@ -148,7 +148,7 @@ def generate_migration(
 
     # Discover downstream features that need reconciliation
     root_keys = [FeatureKey(op.feature_key) for op in root_operations]
-    downstream_keys = registry.get_downstream_features(root_keys)
+    downstream_keys = graph.get_downstream_features(root_keys)
 
     # Create explicit operations for downstream features
     downstream_operations = []
@@ -160,7 +160,7 @@ def generate_migration(
 
     for downstream_key in downstream_keys:
         feature_key_str = downstream_key.to_string()
-        feature_cls = registry.features_by_key[downstream_key]
+        feature_cls = graph.features_by_key[downstream_key]
 
         # Query current feature_version from metadata
         try:
@@ -179,13 +179,13 @@ def generate_migration(
             continue
 
         # Determine which root changes affect this downstream feature
-        registry.get_feature_plan(downstream_key)
+        graph.get_feature_plan(downstream_key)
         affected_by = []
 
         for root_op in root_operations:
             root_key = FeatureKey(root_op.feature_key)
             # Check if this root is in the upstream dependency chain
-            if _is_upstream_of(root_key, downstream_key, registry):
+            if _is_upstream_of(root_key, downstream_key, graph):
                 affected_by.append(root_key.to_string())
 
         # Build informative reason
@@ -260,8 +260,8 @@ def generate_migration(
             )
 
     if to_snapshot_id is None:
-        # Default mode: get from current active registry
-        to_snapshot_id = registry.snapshot_id
+        # Default mode: get from current active graph
+        to_snapshot_id = graph.snapshot_id
 
     # Create migration (serialize operations to dicts)
     root_count = len(root_operations)

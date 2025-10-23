@@ -10,14 +10,12 @@ pytest.importorskip("ibis")
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 
 
-def test_sqlite_table_naming(
-    tmp_path: Path, test_registry, test_features: dict
-) -> None:
+def test_sqlite_table_naming(tmp_path: Path, test_graph, test_features: dict) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
         test_features: Dict of test feature classes
     """
     db_path = tmp_path / "test.sqlite"
@@ -39,13 +37,13 @@ def test_sqlite_table_naming(
 
 
 def test_sqlite_uses_ibis_backend(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that SQLite store uses Ibis backend.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.sqlite"
 
@@ -57,13 +55,13 @@ def test_sqlite_uses_ibis_backend(
 
 
 def test_sqlite_conn_property_enforcement(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that conn property enforces store is open.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     from metaxy.metadata_store import StoreNotOpenError
 
@@ -81,13 +79,13 @@ def test_sqlite_conn_property_enforcement(
 
 
 def test_sqlite_persistence_across_instances(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that data persists across different store instances.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
         test_features: Dict of test feature classes
     """
     import polars as pl
@@ -116,11 +114,11 @@ def test_sqlite_persistence_across_instances(
         assert set(result["sample_id"].to_list()) == {1, 2, 3}
 
 
-def test_sqlite_in_memory(test_registry, test_features: dict) -> None:
+def test_sqlite_in_memory(test_graph, test_features: dict) -> None:
     """Test SQLite in-memory database.
 
     Args:
-        test_registry: Registry with test features
+        test_graph: Registry with test features
         test_features: Dict of test feature classes
     """
     import polars as pl
@@ -144,13 +142,13 @@ def test_sqlite_in_memory(test_registry, test_features: dict) -> None:
 
 
 def test_sqlite_close_idempotent(
-    tmp_path: Path, test_registry, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Test that close() can be called multiple times safely.
 
     Args:
         tmp_path: Pytest tmp_path fixture
-        test_registry: Registry with test features
+        test_graph: Registry with test features
     """
     db_path = tmp_path / "test.sqlite"
     store = SQLiteMetadataStore(db_path)

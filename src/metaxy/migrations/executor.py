@@ -13,7 +13,7 @@ from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
 # System table keys for migration tracking
 MIGRATIONS_KEY = FeatureKey(["__metaxy__", "migrations"])
@@ -157,12 +157,12 @@ class MigrationStatus:
 # ========== Helper Functions for 3-Table System ==========
 
 
-def _load_historical_registry(
+def _load_historical_graph(
     store: "MetadataStore",
     snapshot_id: str,
     class_path_overrides: dict[str, str] | None = None,
-) -> "FeatureRegistry":
-    """Load historical registry from snapshot.
+) -> "FeatureGraph":
+    """Load historical graph from snapshot.
 
     Args:
         store: Metadata store
@@ -170,7 +170,7 @@ def _load_historical_registry(
         class_path_overrides: Optional overrides for moved/renamed feature classes
 
     Returns:
-        FeatureRegistry reconstructed from snapshot
+        FeatureGraph reconstructed from snapshot
 
     Raises:
         ValueError: If snapshot not found
@@ -178,7 +178,7 @@ def _load_historical_registry(
     """
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
     from metaxy.metadata_store.exceptions import FeatureNotFoundError
-    from metaxy.models.feature import FeatureRegistry
+    from metaxy.models.feature import FeatureGraph
 
     # Load all features from this snapshot
     try:
@@ -220,8 +220,8 @@ def _load_historical_registry(
             "feature_class_path": feature_class_path,
         }
 
-    # Reconstruct registry from snapshot (with optional overrides)
-    return FeatureRegistry.from_snapshot(
+    # Reconstruct graph from snapshot (with optional overrides)
+    return FeatureGraph.from_snapshot(
         snapshot_dict, class_path_overrides=class_path_overrides
     )
 
@@ -509,19 +509,19 @@ def apply_migration(
     start_time = time.time()
     timestamp = datetime.now()
 
-    # Load historical registry from the "from" snapshot
+    # Load historical graph from the "from" snapshot
     # This ensures migrations use the exact feature graph topology that existed
     # in the store when the migration was created, protecting against code refactoring
-    historical_registry = _load_historical_registry(
+    historical_graph = _load_historical_graph(
         store,
         migration.from_snapshot_id,
         class_path_overrides=migration.feature_class_overrides,
     )
 
-    # Execute migration within historical registry context
-    with historical_registry.use():
+    # Execute migration within historical graph context
+    with historical_graph.use():
         # Parse operations from dict to objects
-        # Operations will use historical registry via FeatureRegistry.get_active()
+        # Operations will use historical graph via FeatureGraph.get_active()
         operations = migration.get_operations()
 
         # 1. Validate parent migration is completed (if specified)
@@ -550,7 +550,7 @@ def apply_migration(
                 timestamp=timestamp,
             )
 
-        # 4. Execute each operation (using historical registry)
+        # 4. Execute each operation (using historical graph)
         affected_features = []
         errors = {}
         operations_applied = 0

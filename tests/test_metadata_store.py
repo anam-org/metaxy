@@ -8,8 +8,8 @@ import pytest
 from metaxy import (
     Feature,
     FeatureDep,
+    FeatureGraph,
     FeatureKey,
-    FeatureRegistry,
     FeatureSpec,
     FieldDep,
     FieldKey,
@@ -25,14 +25,14 @@ from metaxy.metadata_store import (
 
 
 @pytest.fixture
-def registry() -> Iterator[FeatureRegistry]:
-    """Create a clean FeatureRegistry for testing."""
-    reg = FeatureRegistry()
+def graph() -> Iterator[FeatureGraph]:
+    """Create a clean FeatureGraph for testing."""
+    reg = FeatureGraph()
     with reg.use():
         yield reg
 
 
-# Test fixtures - Define features for testing - they will use the registry from context
+# Test fixtures - Define features for testing - they will use the graph from context
 
 
 class UpstreamFeatureA(
@@ -87,13 +87,13 @@ class DownstreamFeature(
 
 
 @pytest.fixture
-def empty_store(registry: FeatureRegistry) -> Iterator[InMemoryMetadataStore]:
+def empty_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
     """Empty in-memory store."""
     yield InMemoryMetadataStore()
 
 
 @pytest.fixture
-def populated_store(registry: FeatureRegistry) -> Iterator[InMemoryMetadataStore]:
+def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
     """Store with sample upstream data."""
     store = InMemoryMetadataStore()
 
@@ -117,7 +117,7 @@ def populated_store(registry: FeatureRegistry) -> Iterator[InMemoryMetadataStore
 
 @pytest.fixture
 def multi_env_stores(
-    registry: FeatureRegistry,
+    graph: FeatureGraph,
 ) -> Iterator[dict[str, InMemoryMetadataStore]]:
     """Multi-environment store setup (prod, staging, dev)."""
     prod = InMemoryMetadataStore()
