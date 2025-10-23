@@ -31,11 +31,20 @@ class BaseOperation(pydantic.BaseModel, ABC):
     reason: str
 
     @abstractmethod
-    def execute(self, store: "MetadataStore", *, dry_run: bool = False) -> int:
+    def execute(
+        self,
+        store: "MetadataStore",
+        *,
+        from_snapshot_id: str,
+        to_snapshot_id: str,
+        dry_run: bool = False,
+    ) -> int:
         """Execute the operation.
 
         Args:
             store: Metadata store to operate on
+            from_snapshot_id: Source snapshot ID (old state)
+            to_snapshot_id: Target snapshot ID (new state)
             dry_run: If True, only validate and return count without executing
 
         Returns:
@@ -59,26 +68,33 @@ class BaseOperation(pydantic.BaseModel, ABC):
 
 
 class DataVersionReconciliation(BaseOperation):
-    """Reconcile data versions when feature definition changes.
+    """Reconcile data versions when feature definition changes BUT computation is unchanged.
 
     This operation:
-    1. Finds rows with old feature_version
-    2. Recalculates data_versions based on new feature definition
-    3. Writes new rows with updated feature_version and data_version
-    4. Preserves all user metadata columns (immutable)
+    1. Derives old/new feature_versions from migration's from_snapshot_id/to_snapshot_id
+    2. Finds rows with old feature_version
+    3. Recalculates data_versions based on new feature definition
+    4. Writes new rows with updated feature_version and data_version
+    5. Preserves all user metadata columns (immutable)
 
-    Used when:
-    - Field code_version changes
-    - Feature dependencies change
-    - Any change that affects feature_version hash
+    Use ONLY when code changed but computation results would be identical:
+    - Dependency graph refactoring (more precise field dependencies)
+    - Field structure changes (renaming, splitting, better schema)
+    - Code organization improvements (imports, typing, refactoring)
+
+    Do NOT use when computation actually changed:
+    - Different algorithm/model → re-run pipeline instead
+    - Bug fixes that affect output → re-run pipeline instead
+    - New model version → re-run pipeline instead
+
+    Feature versions are automatically derived from the migration's snapshot IDs,
+    eliminating redundancy since each snapshot uniquely identifies all feature versions.
 
     Example YAML:
-        - id: "reconcile_video_abc_to_def"
+        - id: "reconcile_stt_transcription"
           type: "metaxy.migrations.ops.DataVersionReconciliation"
-          feature_key: ["video", "processing"]
-          from: "abc12345"
-          to: "def67890"
-          reason: "Updated frame extraction algorithm"
+          feature_key: ["speech", "transcription"]
+          reason: "Fixed dependency: now depends only on audio field instead of entire video. Transcription logic unchanged."
     """
 
     model_config = pydantic.ConfigDict(populate_by_name=True)
@@ -86,11 +102,16 @@ class DataVersionReconciliation(BaseOperation):
     type: Literal["metaxy.migrations.ops.DataVersionReconciliation"] = (
         "metaxy.migrations.ops.DataVersionReconciliation"
     )
-    from_: str = pydantic.Field(alias="from")  # Old feature_version
-    to: str  # New feature_version
     reason: str
 
-    def execute(self, store: "MetadataStore", *, dry_run: bool = False) -> int:
+    def execute(
+        self,
+        store: "MetadataStore",
+        *,
+        from_snapshot_id: str,
+        to_snapshot_id: str,
+        dry_run: bool = False,
+    ) -> int:
         """Execute data version reconciliation.
 
         Only works for features with upstream dependencies. For root features
@@ -99,13 +120,16 @@ class DataVersionReconciliation(BaseOperation):
 
         Process:
         1. Verify feature has upstream dependencies
-        2. Load existing metadata with old feature_version (from_)
-        3. Use resolve_update() to calculate expected data_versions based on current upstream
-        4. Join existing user metadata with new data_versions
-        5. Write with new feature_version (to)
+        2. Query old and new feature_versions from snapshot metadata
+        3. Load existing metadata with old feature_version
+        4. Use resolve_update() to calculate expected data_versions based on current upstream
+        5. Join existing user metadata with new data_versions
+        6. Write with new feature_version and snapshot_id
 
         Args:
             store: Metadata store
+            from_snapshot_id: Source snapshot ID (old state)
+            to_snapshot_id: Target snapshot ID (new state)
             dry_run: If True, return row count without executing
 
         Returns:
@@ -116,12 +140,16 @@ class DataVersionReconciliation(BaseOperation):
         """
         import polars as pl
 
-        from metaxy.metadata_store.base import allow_feature_version_override
+        from metaxy.metadata_store.base import (
+            FEATURE_VERSIONS_KEY,
+            allow_feature_version_override,
+        )
         from metaxy.metadata_store.exceptions import FeatureNotFoundError
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
 
         feature_key = FeatureKey(self.feature_key)
+        feature_key_str = feature_key.to_string()
         graph = FeatureGraph.get_active()
         feature_cls = graph.features_by_key[feature_key]
 
@@ -131,17 +159,58 @@ class DataVersionReconciliation(BaseOperation):
 
         if not has_upstream:
             raise ValueError(
-                f"DataVersionReconciliation cannot be used for root feature {feature_key.to_string()}. "
+                f"DataVersionReconciliation cannot be used for root feature {feature_key_str}. "
                 f"Root features have user-defined data_versions that cannot be automatically reconciled. "
                 f"User must re-run their computation pipeline to generate new data."
             )
 
-        # 2. Load existing metadata with old feature_version
+        # 2. Query feature versions from snapshot metadata
+        # FEATURE_VERSIONS_KEY is a system table not in the feature graph
+        # read_metadata will handle it correctly since we fixed it to support external keys
+        try:
+            from_version_data = store.read_metadata(
+                FEATURE_VERSIONS_KEY,
+                current_only=False,
+                allow_fallback=False,
+                filters=(
+                    (pl.col("snapshot_id") == from_snapshot_id)
+                    & (pl.col("feature_key") == feature_key_str)
+                ),
+            )
+        except FeatureNotFoundError:
+            from_version_data = None
+
+        try:
+            to_version_data = store.read_metadata(
+                FEATURE_VERSIONS_KEY,
+                current_only=False,
+                allow_fallback=False,
+                filters=(
+                    (pl.col("snapshot_id") == to_snapshot_id)
+                    & (pl.col("feature_key") == feature_key_str)
+                ),
+            )
+        except FeatureNotFoundError:
+            to_version_data = None
+
+        if from_version_data is None or len(from_version_data) == 0:
+            raise ValueError(
+                f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_id}"
+            )
+        if to_version_data is None or len(to_version_data) == 0:
+            raise ValueError(
+                f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_id}"
+            )
+
+        from_feature_version = from_version_data["feature_version"][0]
+        to_feature_version = to_version_data["feature_version"][0]
+
+        # 3. Load existing metadata with old feature_version
         try:
             existing_metadata = store.read_metadata(
                 feature_cls,
                 current_only=False,
-                filters=pl.col("feature_version") == self.from_,
+                filters=pl.col("feature_version") == from_feature_version,
                 allow_fallback=False,
             )
         except FeatureNotFoundError:
@@ -155,15 +224,15 @@ class DataVersionReconciliation(BaseOperation):
         if dry_run:
             return len(existing_metadata)
 
-        # 3. Get sample metadata (exclude data_version and feature_version)
+        # 4. Get sample metadata (exclude data_version, feature_version, snapshot_id)
         user_columns = [
             c
             for c in existing_metadata.columns
-            if c not in ["data_version", "feature_version"]
+            if c not in ["data_version", "feature_version", "snapshot_id"]
         ]
         sample_metadata = existing_metadata.select(user_columns)
 
-        # 4. Use resolve_update to calculate data_versions based on current upstream
+        # 5. Use resolve_update to calculate data_versions based on current upstream
         diff_result = store.resolve_update(feature_cls, sample_df=sample_metadata)
 
         # Use 'changed' for reconciliation (data_versions changed due to upstream)
@@ -180,8 +249,13 @@ class DataVersionReconciliation(BaseOperation):
         else:
             return 0
 
-        # 5. Write with new feature_version (to)
-        df_to_write = df_to_write.with_columns(pl.lit(self.to).alias("feature_version"))
+        # 6. Write with new feature_version and snapshot_id
+        df_to_write = df_to_write.with_columns(
+            [
+                pl.lit(to_feature_version).alias("feature_version"),
+                pl.lit(to_snapshot_id).alias("snapshot_id"),
+            ]
+        )
 
         with allow_feature_version_override():
             store.write_metadata(feature_cls, df_to_write)
@@ -263,7 +337,15 @@ class MetadataBackfill(BaseOperation, ABC):
     # No additional required fields - user subclasses add their own
 
     @abstractmethod
-    def execute(self, store: "MetadataStore", *, dry_run: bool = False) -> int:
+    def execute(
+        self,
+        store: "MetadataStore",
+        *,
+        from_snapshot_id: str,
+        to_snapshot_id: str,
+        dry_run: bool = False,
+        **kwargs,
+    ) -> int:
         """User implements full backfill logic.
 
         User has complete control over:
@@ -274,6 +356,8 @@ class MetadataBackfill(BaseOperation, ABC):
 
         Args:
             store: Metadata store to write to
+            from_snapshot_id: Source snapshot ID (old state)
+            to_snapshot_id: Target snapshot ID (new state)
             dry_run: If True, validate and return count without writing
 
         Returns:

@@ -8,91 +8,110 @@ from metaxy.migrations.ops import DataVersionReconciliation
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.feature import FeatureGraph
 
 
 def detect_feature_changes(
     store: "MetadataStore",
+    from_graph: "FeatureGraph",
+    to_graph: "FeatureGraph",
 ) -> list[DataVersionReconciliation]:
-    """Auto-detect all features that need migration.
+    """Detect feature changes by comparing two feature graphs.
 
-    Compares current feature definitions (in code graph) with feature_versions
-    in the metadata store. Automatically selects the latest (most recent) old
-    version for each changed feature.
-
-    Returns DataVersionReconciliation operations ready to use in migrations.
+    Pure comparison function that compares feature versions between two graphs
+    by querying their snapshot metadata from the store.
+    
+    Returns operations ONLY for features where feature_version changed but
+    computation is unchanged (refactoring, dependency improvements, schema changes).
+    
+    For actual computation changes (new models, different algorithms), users must
+    re-run their pipeline - migrations cannot recreate lost computation.
 
     Args:
-        store: Metadata store to check
+        store: Metadata store containing snapshot metadata
+        from_graph: Source feature graph (old state)
+        to_graph: Target feature graph (new state)
 
     Returns:
-        List of DataVersionReconciliation operations, empty if all features are up to date
+        List of DataVersionReconciliation operations for changed features
 
     Example:
-        >>> operations = detect_feature_changes(store)
+        >>> # Compare latest snapshot in store vs current code
+        >>> from_graph = load_latest_snapshot(store)
+        >>> to_graph = FeatureGraph.get_active()
+        >>> operations = detect_feature_changes(store, from_graph, to_graph)
         >>> for op in operations:
-        ...     print(f"{op.id}: {FeatureKey(op.feature_key).to_string()} {op.from_} → {op.to}")
-        reconcile_video_processing_abc1_to_def6: video_processing abc12345 → def67890
-        reconcile_audio_processing_xyz1_to_xyz2: audio_processing xyz11111 → xyz22222
+        ...     print(f"Changed: {op.feature_key} - {op.reason}")
     """
     import polars as pl
 
-    from metaxy.models.feature import FeatureGraph
+    from_snapshot_id = from_graph.snapshot_id
+    to_snapshot_id = to_graph.snapshot_id
 
     operations = []
 
-    # Get the active graph
-    graph = FeatureGraph.get_active()
-
-    # Query ALL feature version history once (efficient)
+    # Query feature versions for both snapshots
     try:
-        all_version_history = store.read_metadata(
+        from_versions = store.read_metadata(
             FEATURE_VERSIONS_KEY,
             current_only=False,
-        ).sort("recorded_at", descending=True)
+            allow_fallback=False,
+            filters=pl.col("snapshot_id") == from_snapshot_id,
+        )
     except FeatureNotFoundError:
-        # No feature versions recorded yet - no migrations needed
+        # No from_snapshot - nothing to migrate from
         return []
 
-    # Build lookup: feature_key -> latest_version
-    # Group by feature_key and take first (most recent due to sort)
-    latest_versions = all_version_history.group_by(
-        "feature_key", maintain_order=True
-    ).agg(pl.col("feature_version").first().alias("latest_version"))
+    try:
+        to_versions = store.read_metadata(
+            FEATURE_VERSIONS_KEY,
+            current_only=False,
+            allow_fallback=False,
+            filters=pl.col("snapshot_id") == to_snapshot_id,
+        )
+    except FeatureNotFoundError:
+        # No to_snapshot - nothing to migrate to
+        return []
 
-    # Create dict for fast lookup
-    latest_by_feature = {
-        row["feature_key"]: row["latest_version"]
-        for row in latest_versions.iter_rows(named=True)
+    # Build lookup dictionaries: feature_key -> feature_version
+    from_versions_dict = {
+        row["feature_key"]: row["feature_version"]
+        for row in from_versions.iter_rows(named=True)
+    }
+    to_versions_dict = {
+        row["feature_key"]: row["feature_version"]
+        for row in to_versions.iter_rows(named=True)
     }
 
-    # Check each feature in graph
-    for feature_key, feature_cls in graph.features_by_key.items():
+    # Check each feature in to_graph (target state)
+    for feature_key, feature_cls in to_graph.features_by_key.items():
         feature_key_str = feature_key.to_string()
 
-        # Get current version from code
-        current_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+        # Get versions from both snapshots
+        from_version = from_versions_dict.get(feature_key_str)
+        to_version = to_versions_dict.get(feature_key_str)
 
-        # Look up latest version from metadata (fast dict lookup)
-        latest_version = latest_by_feature.get(feature_key_str)
-
-        if latest_version is None:
-            # Feature never materialized - no migration needed
+        if from_version is None:
+            # Feature doesn't exist in from_snapshot - it's new, no migration needed
             continue
 
-        if current_version == latest_version:
-            # Current version matches latest - no migration needed
+        if to_version is None:
+            # Feature exists in from_snapshot but not in to_snapshot - it was removed
+            # No migration needed (we don't migrate deleted features)
+            continue
+
+        if from_version == to_version:
+            # Versions match - no migration needed
             continue
 
         # Feature changed! Create operation with auto-generated ID
         feature_key_slug = feature_key_str.replace("/", "_")
-        op_id = f"reconcile_{feature_key_slug}_{latest_version[:4]}_to_{current_version[:4]}"
+        op_id = f"reconcile_{feature_key_slug}"
 
         operations.append(
             DataVersionReconciliation(
                 id=op_id,
                 feature_key=list(feature_key),
-                from_=latest_version,
-                to=current_version,
                 reason="TODO: Describe what changed and why",
             )
         )

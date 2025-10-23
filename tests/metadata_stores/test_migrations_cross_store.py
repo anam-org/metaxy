@@ -69,8 +69,6 @@ def test_migration_system_tables_serialize_cross_store(
                 DataVersionReconciliation(
                     id="reconcile_downstream",
                     feature_key=["test_stores", "downstream"],
-                    from_=DownstreamFeature.feature_version(),  # type: ignore[attr-defined]
-                    to=DownstreamFeature.feature_version(),  # type: ignore[attr-defined]
                     reason="Test",
                 ).model_dump(by_alias=True)
             ],
@@ -160,20 +158,25 @@ def test_migration_system_tables_serialize_cross_store(
         final_downstream = store.read_metadata(
             DownstreamFeature, current_only=False
         ).sort(
-            ["sample_id", "feature_version"]
+            ["sample_id", "feature_version", "snapshot_id"]
         )  # Sort by multiple columns for determinism
 
-        # Convert to snapshot-friendly format
+        # Convert to snapshot-friendly format (sorted by keys for consistency)
+        rows_list = [
+            {
+                "sample_id": row["sample_id"],
+                "feature_version": row["feature_version"],
+                # Sort dict keys for deterministic string representation
+                "data_version": str(dict(sorted(row["data_version"].items()))),
+            }
+            for row in final_downstream.iter_rows(named=True)
+        ]
+
         downstream_snapshot = {
             "row_count": len(final_downstream),
-            "rows": [
-                {
-                    "sample_id": row["sample_id"],
-                    "feature_version": row["feature_version"],
-                    # Sort dict keys for deterministic string representation
-                    "data_version": str(dict(sorted(row["data_version"].items()))),
-                }
-                for row in final_downstream.iter_rows(named=True)
-            ],
+            "rows": sorted(
+                rows_list,
+                key=lambda x: (x["sample_id"], x["feature_version"], x["data_version"]),
+            ),
         }
         assert downstream_snapshot == snapshot

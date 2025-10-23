@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+import polars as pl
+
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.migrations.detector import detect_feature_changes
 from metaxy.migrations.models import Migration
@@ -95,41 +97,61 @@ def generate_migration(
     """
     from metaxy.models.feature import FeatureGraph
 
-    # Determine which registries to use based on provided snapshot_ids
-    # from_snapshot_id: if provided, reconstruct from_graph; else use store's latest
-    # to_snapshot_id: if provided, reconstruct to_graph; else use current active graph
+    # Step 1: Determine from_graph and from_snapshot_id
+    # If not provided, get latest snapshot from store
+    from_graph = None
 
-    # Reconstruct registries as needed
-    to_graph = None
+    if from_snapshot_id is None:
+        # Default mode: get from store's latest snapshot
+        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-    if from_snapshot_id is not None or to_snapshot_id is not None:
-        from metaxy.migrations.executor import _load_historical_graph
-
-        print("Historical mode: comparing snapshots")
-        if from_snapshot_id:
-            print(f"  From: {from_snapshot_id[:16]}...")
-            _load_historical_graph(store, from_snapshot_id, class_path_overrides)
-        else:
-            print("  From: latest in store")
-
-        if to_snapshot_id:
-            print(f"  To:   {to_snapshot_id[:16]}...")
-            to_graph = _load_historical_graph(
-                store, to_snapshot_id, class_path_overrides
+        try:
+            feature_versions = store.read_metadata(
+                FEATURE_VERSIONS_KEY, current_only=False
             )
-        else:
-            print("  To:   current active graph")
-            to_graph = FeatureGraph.get_active()
+            if len(feature_versions) > 0:
+                # Get most recent snapshot
+                latest_snapshot = feature_versions.sort(
+                    "recorded_at", descending=True
+                ).head(1)
+                from_snapshot_id = latest_snapshot["snapshot_id"][0]
+                print(f"From: latest snapshot {from_snapshot_id[:16]}...")
+            else:
+                raise ValueError(
+                    "No feature graph snapshot found in metadata store. "
+                    "Run 'metaxy push' first to record feature versions before generating migrations."
+                )
+        except FeatureNotFoundError:
+            raise ValueError(
+                "No feature versions recorded yet. "
+                "Run 'metaxy push' first to record the feature graph snapshot."
+            )
     else:
-        # Default mode: use active graph
+        print(f"From: snapshot {from_snapshot_id[:16]}...")
+
+    # Load from_graph (always from snapshot)
+    from metaxy.migrations.executor import _load_historical_graph
+
+    from_graph = _load_historical_graph(store, from_snapshot_id, class_path_overrides)
+
+    # Step 2: Determine to_graph and to_snapshot_id
+    if to_snapshot_id is None:
+        # Default mode: record current active graph and use its snapshot
+        # This ensures the to_snapshot is available when executing the migration
+        to_snapshot_id = store.serialize_feature_graph()
         to_graph = FeatureGraph.get_active()
+        print(f"To: current active graph (snapshot {to_snapshot_id[:16]}...)")
+    else:
+        # Historical mode: load from snapshot
+        to_graph = _load_historical_graph(store, to_snapshot_id, class_path_overrides)
+        print(f"To: snapshot {to_snapshot_id[:16]}...")
 
-    # Use to_graph as active for detection
-    graph = to_graph
-
-    # Detect root changes (within appropriate graph context)
-    with graph.use():
-        root_operations = detect_feature_changes(store)
+    # Step 3: Detect changes by comparing the two graphs
+    root_operations = detect_feature_changes(
+        store,
+        from_graph,
+        to_graph,
+    )
 
     if not root_operations:
         print("No feature changes detected. All features up to date!")
@@ -144,11 +166,11 @@ def generate_migration(
     print(f"\nDetected {len(root_operations)} root feature change(s):")
     for op in root_operations:
         feature_key_str = FeatureKey(op.feature_key).to_string()
-        print(f"  ✓ {feature_key_str}: {op.from_} → {op.to}")
+        print(f"  ✓ {feature_key_str}")
 
-    # Discover downstream features that need reconciliation
+    # Discover downstream features that need reconciliation (use to_graph)
     root_keys = [FeatureKey(op.feature_key) for op in root_operations]
-    downstream_keys = graph.get_downstream_features(root_keys)
+    downstream_keys = to_graph.get_downstream_features(root_keys)
 
     # Create explicit operations for downstream features
     downstream_operations = []
@@ -160,18 +182,19 @@ def generate_migration(
 
     for downstream_key in downstream_keys:
         feature_key_str = downstream_key.to_string()
-        feature_cls = graph.features_by_key[downstream_key]
+        feature_cls = to_graph.features_by_key[downstream_key]
 
-        # Query current feature_version from metadata
+        # Check if feature exists in from_snapshot (if not, it's new - skip)
         try:
-            current_metadata = store.read_metadata(
-                feature_cls, current_only=True, allow_fallback=False
+            from_metadata = store.read_metadata(
+                feature_cls,
+                current_only=False,
+                allow_fallback=False,
+                filters=pl.col("snapshot_id") == from_snapshot_id,
             )
-            if len(current_metadata) > 0:
-                current_version = current_metadata["feature_version"][0]
-            else:
-                # No current metadata, skip
-                print(f"  ⊘ {feature_key_str} (not materialized yet, skipping)")
+            if len(from_metadata) == 0:
+                # Feature doesn't exist in from_snapshot - it's new, skip
+                print(f"  ⊘ {feature_key_str} (new feature, skipping)")
                 continue
         except FeatureNotFoundError:
             # Feature not materialized yet
@@ -179,13 +202,13 @@ def generate_migration(
             continue
 
         # Determine which root changes affect this downstream feature
-        graph.get_feature_plan(downstream_key)
+        to_graph.get_feature_plan(downstream_key)
         affected_by = []
 
         for root_op in root_operations:
             root_key = FeatureKey(root_op.feature_key)
             # Check if this root is in the upstream dependency chain
-            if _is_upstream_of(root_key, downstream_key, graph):
+            if _is_upstream_of(root_key, downstream_key, to_graph):
                 affected_by.append(root_key.to_string())
 
         # Build informative reason
@@ -196,21 +219,19 @@ def generate_migration(
                 f"Reconcile data_versions due to changes in: {', '.join(affected_by)}"
             )
 
-        # Create operation with from=current, to=current (just reconciling data_versions)
+        # Create operation (feature versions derived from snapshots)
         feature_key_slug = feature_key_str.replace("/", "_")
-        op_id = f"reconcile_{feature_key_slug}_{current_version[:4]}"
+        op_id = f"reconcile_{feature_key_slug}"
 
         downstream_operations.append(
             DataVersionReconciliation(
                 id=op_id,
                 feature_key=list(downstream_key),
-                from_=current_version,
-                to=current_version,  # Same! Just reconciling data_versions
                 reason=reason,
             )
         )
 
-        print(f"  ✓ {feature_key_str} (current: {current_version})")
+        print(f"  ✓ {feature_key_str}")
 
     # Combine all operations
     all_operations = root_operations + downstream_operations
@@ -221,7 +242,6 @@ def generate_migration(
     )
 
     # Find the latest migration to set as parent
-    from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
     from metaxy.migrations.executor import MIGRATIONS_KEY
 
     parent_migration_id = None
@@ -235,33 +255,7 @@ def generate_migration(
         # No migrations yet
         pass
 
-    # Get snapshot IDs (if not provided in historical mode)
-    if from_snapshot_id is None:
-        # Default mode: get from store's latest snapshot
-        try:
-            feature_versions = store.read_metadata(
-                FEATURE_VERSIONS_KEY, current_only=False
-            )
-            if len(feature_versions) > 0:
-                # Get most recent snapshot
-                latest_snapshot = feature_versions.sort(
-                    "recorded_at", descending=True
-                ).head(1)
-                from_snapshot_id = latest_snapshot["snapshot_id"][0]
-            else:
-                raise ValueError(
-                    "No feature graph snapshot found in metadata store. "
-                    "Run 'metaxy push' first to record feature versions before generating migrations."
-                )
-        except FeatureNotFoundError:
-            raise ValueError(
-                "No feature versions recorded yet. "
-                "Run 'metaxy push' first to record the feature graph snapshot."
-            )
-
-    if to_snapshot_id is None:
-        # Default mode: get from current active graph
-        to_snapshot_id = graph.snapshot_id
+    # Note: from_snapshot_id and to_snapshot_id were already resolved earlier
 
     # Create migration (serialize operations to dicts)
     root_count = len(root_operations)

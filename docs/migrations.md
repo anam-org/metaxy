@@ -4,6 +4,8 @@
 
 Metaxy's migration system enables safe, automated updates to feature metadata when feature definitions change. Migrations are explicit, idempotent, and automatically propagate through the entire dependency graph by default. They can be customized and user-defined. Migrations respect custom `align_metadata_with_upstream` method which may be implemented for specific features.
 
+**Prerequisites:** The migration system requires that you record feature graph snapshots in your CD (Continuous Deployment) workflow using `metaxy push`. This command snapshots the complete feature graph state and is essential for migration detection to work.
+
 ## Core Concepts
 
 ### System Tables
@@ -54,44 +56,81 @@ Tracks applied migrations:
 - Recovery tracking - know which migrations are partial
 - Audit trail
 
-## Recording Feature Versions
+## Recording Feature Graph Snapshots (User Responsibility)
 
-Before migrations can be detected, you must explicitly record feature versions before materialization.
-This is typically done in CI/CD pipelines after successful feature computation.
+**YOU MUST** record feature graph snapshots in your CD workflow for migrations to work.
 
-```python
-# Explicitly record the version (call this in CI)
-store.record_feature_graph_snapshot()
+### Using `metaxy push` in CD
 
-store.write_metadata(MyFeature, metadata_df)
+Add this to your deployment pipeline (BEFORE materializing features):
+
+```bash
+# In your CI/CD pipeline (GitHub Actions, Jenkins, etc.)
+$ metaxy push
 ```
 
-**Why explicit?**
-- **Performance**: Avoids overhead on every write
-- **Control**: Only record "published" versions in production
-- **CI integration**: Natural fit with deployment pipelines
+This command:
+1. Serializes the complete feature graph (all features, dependencies, field definitions)
+2. Generates a deterministic `snapshot_id` (hash of all feature_versions)
+3. Records the snapshot in the `__metaxy__/feature_versions` system table
+4. Returns the snapshot_id for your records
 
-**When to call:**
-- ✅ Before materializing features in production
-- ✅ In CI/CD after tests pass
-- ✅ When promoting features from dev to staging/prod
-- ❌ Not on every write during development
-- ❌ Not for temporary/experimental data
+**Example CD Workflow:**
+```bash
+#!/bin/bash
+# deploy.sh - Your deployment script
 
+# 1. Deploy new code to production
+git pull origin main
+pip install -e .
 
-**Snapshot ID:**
+# 2. Record feature graph snapshot (CRITICAL!)
+metaxy push
+# Output: "Recorded snapshot: a3f8b2c1... (12 features)"
 
-The `snapshot_id` returned by `serialize_feature_graph()` is a deterministic hash
-representing the entire feature graph state. It's:
-- ✅ Idempotent - same graph = same snapshot_id
-- ✅ Unique - different graph = different snapshot_id
-- ✅ No timestamp - purely based on feature versions
-- ✅ Ties all features together in a consistent snapshot
+# 3. Run your feature materialization pipeline
+python -m myproject.compute_features
 
-This enables:
-- Tracking which features were materialized together
-- Identifying complete graph states
-- Detecting incomplete materializations (some features missing snapshot_id)
+# 4. Generate migration if code changed
+metaxy migrations generate
+# If features changed, creates: migrations/migration_20250113_103000.yaml
+
+# 5. Apply migration automatically
+metaxy migrations apply --latest
+```
+
+**Why is `metaxy push` required?**
+- Migration detection compares "latest snapshot in store" vs "current code"
+- Without snapshots, the system cannot detect what changed
+- Provides audit trail: what feature versions were deployed when
+- Enables historical graph reconstruction for safe migrations
+
+**What gets recorded:**
+```python
+# For each feature in the graph:
+{
+    "feature_key": "video_processing",
+    "feature_version": "a3f8b2c1",  # Hash of feature definition
+    "snapshot_id": "9fee05a3",      # Hash of entire graph
+    "recorded_at": "2025-01-13T10:30:00Z",
+    "feature_spec": {...},          # Complete feature definition (serialized)
+    "feature_class_path": "myproject.features.VideoProcessing"
+}
+```
+
+**Snapshot ID Properties:**
+
+The `snapshot_id` is a deterministic hash representing the entire feature graph state:
+- ✅ Idempotent - same graph = same snapshot_id every time
+- ✅ Unique - any change = different snapshot_id
+- ✅ No timestamp - purely content-based hash
+- ✅ Groups all features deployed together
+
+**Benefits:**
+- Detect exactly which features changed between deployments
+- Reconstruct historical feature graphs for safe migrations
+- Audit trail of what was deployed when
+- Identify incomplete deployments (some features missing snapshot)
 
 ## Migration Workflow
 
@@ -135,11 +174,20 @@ if _is_migration_completed(store, migration.id):
 **Step 2: Migrate Source Features (Immutable Copy-on-Write)**
 ```python
 for operation in migration.operations:
+    # Operations derive old/new feature_versions from migration's snapshot IDs
+    # Query feature versions from snapshot metadata
+    from_feature_version = get_version_from_snapshot(
+        store, operation.feature_key, migration.from_snapshot_id
+    )
+    to_feature_version = get_version_from_snapshot(
+        store, operation.feature_key, migration.to_snapshot_id
+    )
+
     # Query rows with OLD feature_version
     old_rows = store.read_metadata(
         feature,
         current_only=False,
-        filters=pl.col("feature_version") == operation.from,
+        filters=pl.col("feature_version") == from_feature_version,
     )
 
     if len(old_rows) == 0:
@@ -147,9 +195,9 @@ for operation in migration.operations:
         continue
 
     # Copy ALL metadata columns (preserves paths, labels, etc.)
-    # Exclude only data_version and feature_version (will be recalculated)
+    # Exclude only data_version, feature_version, and snapshot_id (will be recalculated)
     columns_to_keep = [c for c in old_rows.columns
-                      if c not in ["data_version", "feature_version"]]
+                      if c not in ["data_version", "feature_version", "snapshot_id"]]
     sample_metadata = old_rows.select(columns_to_keep)
 
     # Recalculate data versions and APPEND new rows
@@ -157,7 +205,7 @@ for operation in migration.operations:
     # New rows get:
     # - Same sample_id and user metadata columns
     # - Recalculated data_version (based on new feature definition)
-    # - New feature_version
+    # - New feature_version and snapshot_id
     store.calculate_and_write_data_versions(
         feature=feature,
         sample_df=sample_metadata,
@@ -165,8 +213,8 @@ for operation in migration.operations:
 ```
 
 **Result:** Metadata store now contains BOTH old and new versions:
-- Old rows: `feature_version=abc123`, original `data_version`, original metadata
-- New rows: `feature_version=def456`, recalculated `data_version`, **same metadata**
+- Old rows: `feature_version=abc123`, `snapshot_id=snap1`, original `data_version`, original metadata
+- New rows: `feature_version=def456`, `snapshot_id=snap2`, recalculated `data_version`, **same metadata**
 
 Reading with `current_only=True` returns only new rows.
 
@@ -240,26 +288,42 @@ Migrations can be safely re-run multiple times.
 ```yaml
 version: 1  # Migration schema version
 id: "migration_20250113_103000"  # Unique ID (timestamp-based)
-description: "Auto-generated migration for 2 changed features"
+parent_migration_id: "migration_20250110_120000"  # Previous migration (if any)
+description: "Auto-generated migration for 2 changed features + 3 downstream"
 created_at: "2025-01-13T10:30:00Z"
 
+# Snapshot IDs identify the complete feature graph state (before and after)
+from_snapshot_id: "a3f8b2c1..."  # Source snapshot (old state in store)
+to_snapshot_id: "def67890..."    # Target snapshot (new state in code)
+
 operations:
-  - type: feature_version_migration
-    feature_key: ["video", "processing"]
-    from: "abc12345"  # Old version (from metadata)
-    to: "def67890"    # New version (from code)
-    change_type: "unknown"
-    reason: "Updated frame extraction algorithm"
+  # Root features that changed (code refactoring, not computation changes)
+  - id: "reconcile_stt_transcription"
+    type: "metaxy.migrations.ops.DataVersionReconciliation"
+    feature_key: ["speech", "transcription"]
+    reason: "Fixed dependency: now depends only on audio field instead of entire video. Computation logic unchanged, just cleaner graph structure."
 
-  - type: feature_version_migration
-    feature_key: ["audio", "processing"]
-    from: "xyz11111"
-    to: "xyz22222"
-    change_type: "unknown"
-    reason: "Added AAC codec support"
+  - id: "reconcile_face_detection"
+    type: "metaxy.migrations.ops.DataVersionReconciliation"
+    feature_key: ["video", "face_detection"]
+    reason: "Refactored field structure from single 'default' to 'faces' and 'confidence' fields. Same underlying model, just better schema."
 
-# Note: Downstream propagation is automatic
-# Not listed explicitly in YAML
+  # Downstream features (auto-generated)
+  - id: "reconcile_speaker_diarization"
+    type: "metaxy.migrations.ops.DataVersionReconciliation"
+    feature_key: ["speech", "diarization"]
+    reason: "Reconcile data_versions due to changes in: speech/transcription"
+
+# Feature versions are derived from snapshot IDs at runtime
+# Each snapshot uniquely identifies all feature versions in the graph
+
+# IMPORTANT: DataVersionReconciliation is for when CODE changed but COMPUTATION didn't
+# Use cases:
+# - Dependency graph refactoring (more precise dependencies, merging features)
+# - Field structure changes (renaming, splitting fields)
+#
+# If computation ACTUALLY changed, users must re-run their pipeline
+# Migrations cannot recreate lost computation results
 ```
 
 ### Migration File Location
@@ -293,15 +357,55 @@ $ git add migrations/
 $ git commit -m "Add migration for video processing v2"
 ```
 
-### 3. Document Reasons
+### 3. Understand When to Use DataVersionReconciliation
 
-Always fill in meaningful `reason` fields:
+**DataVersionReconciliation is ONLY for when:**
+- ✅ Code structure changed (refactoring, better dependencies)
+- ✅ Graph topology changed (more precise field dependencies)
+- ✅ Schema improved (field renaming, splitting)
+- ✅ **Computation logic is unchanged** - results would be identical
+
+**Do NOT use DataVersionReconciliation when:**
+- ❌ Algorithm actually changed (different output)
+- ❌ Model updated (new ML model version)
+- ❌ Bug fixed that affects results
+- ❌ **Computation would produce different results**
+
+**Example - Use DataVersionReconciliation:**
 ```yaml
-reason: "Updated frame extraction algorithm for better quality"  # ✓ Good
-reason: "TODO: Describe what changed"  # ✗ Bad (leftover template)
+# Before: STT depends on entire video
+deps: [FeatureDep(key=["video", "file"])]
+
+# After: STT depends only on audio (more precise)
+deps: [FeatureDep(key=["video", "file"], fields=["audio"])]
+
+# Computation is identical, just cleaner graph
+reason: "Refined dependency to audio field only. Transcription logic unchanged."
 ```
 
-### 4. Test Alignment Logic
+**Example - Re-run Pipeline Instead:**
+```python
+# Before: Whisper v2
+model = whisper.load_model("base")
+
+# After: Whisper v3 (DIFFERENT RESULTS!)
+model = whisper.load_model("large-v3")
+
+# DO NOT USE MIGRATION - re-run your pipeline!
+# Results would be different, existing data is now stale
+```
+
+### 4. Document Reasons
+
+Always fill in meaningful `reason` fields explaining what changed:
+```yaml
+reason: "Corrected dependency from entire video to audio field only. Computation unchanged."  # ✓ Good
+reason: "Refactored field structure - split 'default' into 'faces' and 'confidence'. Same detection model."  # ✓ Good
+reason: "TODO: Describe what changed"  # ✗ Bad (leftover template)
+reason: "Updated algorithm"  # ✗ Bad (vague - did results change?)
+```
+
+### 5. Test Alignment Logic
 
 If you override `align_metadata_with_upstream()`, test it thoroughly:
 ```python
@@ -316,7 +420,7 @@ def test_custom_alignment():
     assert "custom_field" in result.columns  # Preserved
 ```
 
-### 5. Monitor Migration Progress
+### 6. Monitor Migration Progress
 
 For large migrations, monitor progress:
 ```python
@@ -327,7 +431,7 @@ if result.errors:
     print(f"Errors: {result.errors}")
 ```
 
-### 6. Keep Old Versions
+### 7. Keep Old Versions
 
 Don't manually delete old feature_version rows unless you have a specific cleanup policy. They serve as:
 - Historical record
