@@ -34,13 +34,13 @@ load_config_entrypoints([
 
 ```python
 # myapp/features/video.py
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class VideoFrames(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "frames"]),
     deps=None,
-    containers=[
-        ContainerSpec(key=ContainerKey(["default"]), code_version=1)
+    fields=[
+        FieldSpec(key=FieldKey(["default"]), code_version=1)
     ]
 )):
     """Video frame features - auto-registered on import."""
@@ -49,8 +49,8 @@ class VideoFrames(Feature, spec=FeatureSpec(
 class VideoMetadata(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "metadata"]),
     deps=None,
-    containers=[
-        ContainerSpec(key=ContainerKey(["default"]), code_version=1)
+    fields=[
+        FieldSpec(key=FieldKey(["default"]), code_version=1)
     ]
 )):
     """Video metadata features - auto-registered on import."""

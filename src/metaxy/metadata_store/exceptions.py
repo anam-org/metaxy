@@ -13,8 +13,8 @@ class FeatureNotFoundError(MetadataStoreError):
     pass
 
 
-class ContainerNotFoundError(MetadataStoreError):
-    """Raised when a container is not found for a feature."""
+class FieldNotFoundError(MetadataStoreError):
+    """Raised when a field is not found for a feature."""
 
     pass
 

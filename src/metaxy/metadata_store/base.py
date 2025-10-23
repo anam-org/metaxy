@@ -24,10 +24,10 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
-from metaxy.models.container import ContainerDep, SpecialContainerDep
 from metaxy.models.feature import Feature, FeatureRegistry
-from metaxy.models.plan import FeaturePlan, FQContainerKey
-from metaxy.models.types import ContainerKey, FeatureKey
+from metaxy.models.field import FieldDep, SpecialFieldDep
+from metaxy.models.plan import FeaturePlan, FQFieldKey
+from metaxy.models.types import FeatureKey, FieldKey
 
 if TYPE_CHECKING:
     pass
@@ -316,7 +316,7 @@ class MetadataStore(ABC, Generic[TRef]):
             return feature.spec.key
 
     def _resolve_feature_spec(self, feature: FeatureKey | type[Feature]):
-        """Resolve to FeatureSpec for accessing containers and deps."""
+        """Resolve to FeatureSpec for accessing fields and deps."""
         if isinstance(feature, FeatureKey):
             # When given a FeatureKey, get the registry from the active context
             return FeatureRegistry.get_active().feature_specs_by_key[feature]
@@ -416,7 +416,7 @@ class MetadataStore(ABC, Generic[TRef]):
         Args:
             feature: Feature to write metadata for
             df: DataFrame containing metadata. Must have 'data_version' column
-                of type pl.Struct with fields matching feature's containers.
+                of type pl.Struct with fields matching feature's fields.
                 May optionally contain 'feature_version' column (for migrations).
 
         Raises:
@@ -613,7 +613,7 @@ class MetadataStore(ABC, Generic[TRef]):
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
         # Serialize complete FeatureSpec to JSON
-        # This includes: key, deps, containers, code_version - everything needed to reconstruct
+        # This includes: key, deps, fields, code_version - everything needed to reconstruct
         feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode="json"))  # type: ignore[attr-defined]
 
         # Get class import path for strict reconstruction
@@ -937,17 +937,17 @@ class MetadataStore(ABC, Generic[TRef]):
     def read_upstream_metadata(
         self,
         feature: FeatureKey | type[Feature],
-        container: ContainerKey | None = None,
+        field: FieldKey | None = None,
         *,
         allow_fallback: bool = True,
         current_only: bool = True,
     ) -> dict[str, pl.DataFrame]:
         """
-        Read all upstream dependencies for a feature/container.
+        Read all upstream dependencies for a feature/field.
 
         Args:
             feature: Feature whose dependencies to load
-            container: Specific container (if None, loads all deps for feature)
+            field: Specific field (if None, loads all deps for feature)
             allow_fallback: Whether to check fallback stores
             current_only: If True, only read current feature_version for upstream
 
@@ -963,15 +963,13 @@ class MetadataStore(ABC, Generic[TRef]):
         # Get all upstream features we need
         upstream_features = set()
 
-        if container is None:
-            # All containers' dependencies
-            for cont in plan.feature.containers:
-                upstream_features.update(
-                    self._get_container_dependencies(plan, cont.key)
-                )
+        if field is None:
+            # All fields' dependencies
+            for cont in plan.feature.fields:
+                upstream_features.update(self._get_field_dependencies(plan, cont.key))
         else:
-            # Specific container's dependencies
-            upstream_features.update(self._get_container_dependencies(plan, container))
+            # Specific field's dependencies
+            upstream_features.update(self._get_field_dependencies(plan, field))
 
         # Load metadata for each upstream feature
         # Use the feature's registry to look up upstream feature classes
@@ -1005,36 +1003,34 @@ class MetadataStore(ABC, Generic[TRef]):
 
         return upstream_metadata
 
-    def _get_container_dependencies(
-        self, plan: FeaturePlan, container_key: ContainerKey
-    ) -> set[FQContainerKey]:
-        """Get all upstream container dependencies for a given container."""
-        container = plan.feature.containers_by_key[container_key]
+    def _get_field_dependencies(
+        self, plan: FeaturePlan, field_key: FieldKey
+    ) -> set[FQFieldKey]:
+        """Get all upstream field dependencies for a given field."""
+        field = plan.feature.fields_by_key[field_key]
         upstream = set()
 
-        if container.deps == SpecialContainerDep.ALL:
-            # All upstream features and containers
-            upstream.update(plan.all_parent_containers_by_key.keys())
-        elif isinstance(container.deps, list):
-            for dep in container.deps:
-                if isinstance(dep, ContainerDep):
-                    if dep.containers == SpecialContainerDep.ALL:
-                        # All containers of this feature
+        if field.deps == SpecialFieldDep.ALL:
+            # All upstream features and fields
+            upstream.update(plan.all_parent_fields_by_key.keys())
+        elif isinstance(field.deps, list):
+            for dep in field.deps:
+                if isinstance(dep, FieldDep):
+                    if dep.fields == SpecialFieldDep.ALL:
+                        # All fields of this feature
                         upstream_feature = plan.parent_features_by_key[dep.feature_key]
-                        for upstream_container in upstream_feature.containers:
+                        for upstream_field in upstream_feature.fields:
                             upstream.add(
-                                FQContainerKey(
+                                FQFieldKey(
                                     feature=dep.feature_key,
-                                    container=upstream_container.key,
+                                    field=upstream_field.key,
                                 )
                             )
-                    elif isinstance(dep.containers, list):
-                        # Specific containers
-                        for container_key in dep.containers:
+                    elif isinstance(dep.fields, list):
+                        # Specific fields
+                        for field_key in dep.fields:
                             upstream.add(
-                                FQContainerKey(
-                                    feature=dep.feature_key, container=container_key
-                                )
+                                FQFieldKey(feature=dep.feature_key, field=field_key)
                             )
 
         return upstream

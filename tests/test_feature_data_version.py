@@ -1,7 +1,7 @@
-from metaxy.models.container import ContainerDep, ContainerSpec, SpecialContainerDep
 from metaxy.models.feature import Feature, FeatureRegistry
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
-from metaxy.models.types import ContainerKey, FeatureKey
+from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
+from metaxy.models.types import FeatureKey, FieldKey
 
 
 def test_single_feature_data_version(snapshot, registry: FeatureRegistry):
@@ -15,18 +15,18 @@ def test_single_feature_data_version(snapshot, registry: FeatureRegistry):
     assert MyFeature.data_version() == snapshot
 
 
-def test_feature_with_multiple_containers(snapshot, registry: FeatureRegistry):
-    """Test feature with multiple containers, each with different code versions."""
+def test_feature_with_multiple_fields(snapshot, registry: FeatureRegistry):
+    """Test feature with multiple fields, each with different code versions."""
 
     class VideoFeature(
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=2),
-                ContainerSpec(key=ContainerKey(["metadata"]), code_version=5),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=2),
+                FieldSpec(key=FieldKey(["metadata"]), code_version=5),
             ],
         ),
     ):
@@ -43,7 +43,7 @@ def test_linear_dependency_chain(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["a"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["raw"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["raw"]), code_version=1)],
         ),
     ):
         pass
@@ -53,7 +53,7 @@ def test_linear_dependency_chain(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["b"]),
             deps=[FeatureDep(key=FeatureKey(["a"]))],
-            containers=[ContainerSpec(key=ContainerKey(["processed"]), code_version=2)],
+            fields=[FieldSpec(key=FieldKey(["processed"]), code_version=2)],
         ),
     ):
         pass
@@ -63,7 +63,7 @@ def test_linear_dependency_chain(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["c"]),
             deps=[FeatureDep(key=FeatureKey(["b"]))],
-            containers=[ContainerSpec(key=ContainerKey(["final"]), code_version=3)],
+            fields=[FieldSpec(key=FieldKey(["final"]), code_version=3)],
         ),
     ):
         pass
@@ -85,7 +85,7 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["root"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),
     ):
         pass
@@ -95,9 +95,7 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["branch_left"]),
             deps=[FeatureDep(key=FeatureKey(["root"]))],
-            containers=[
-                ContainerSpec(key=ContainerKey(["left_processed"]), code_version=2)
-            ],
+            fields=[FieldSpec(key=FieldKey(["left_processed"]), code_version=2)],
         ),
     ):
         pass
@@ -107,9 +105,7 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["branch_right"]),
             deps=[FeatureDep(key=FeatureKey(["root"]))],
-            containers=[
-                ContainerSpec(key=ContainerKey(["right_processed"]), code_version=3)
-            ],
+            fields=[FieldSpec(key=FieldKey(["right_processed"]), code_version=3)],
         ),
     ):
         pass
@@ -122,7 +118,7 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
                 FeatureDep(key=FeatureKey(["branch_left"])),
                 FeatureDep(key=FeatureKey(["branch_right"])),
             ],
-            containers=[ContainerSpec(key=ContainerKey(["fusion"]), code_version=4)],
+            fields=[FieldSpec(key=FieldKey(["fusion"]), code_version=4)],
         ),
     ):
         pass
@@ -137,18 +133,18 @@ def test_diamond_dependency_graph(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_specific_container_dependencies(snapshot, registry: FeatureRegistry):
-    """Test feature with specific container-level dependencies."""
+def test_specific_field_dependencies(snapshot, registry: FeatureRegistry):
+    """Test feature with specific field-level dependencies."""
 
-    class MultiContainer(
+    class MultiField(
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["multi"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=2),
-                ContainerSpec(key=ContainerKey(["text"]), code_version=3),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=2),
+                FieldSpec(key=FieldKey(["text"]), code_version=3),
             ],
         ),
     ):
@@ -159,39 +155,39 @@ def test_specific_container_dependencies(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["selective"]),
             deps=[FeatureDep(key=FeatureKey(["multi"]))],
-            containers=[
+            fields=[
                 # Only depends on frames
-                ContainerSpec(
-                    key=ContainerKey(["visual"]),
+                FieldSpec(
+                    key=FieldKey(["visual"]),
                     code_version=10,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["multi"]),
-                            containers=[ContainerKey(["frames"])],
+                            fields=[FieldKey(["frames"])],
                         )
                     ],
                 ),
                 # Only depends on audio
-                ContainerSpec(
-                    key=ContainerKey(["audio_only"]),
+                FieldSpec(
+                    key=FieldKey(["audio_only"]),
                     code_version=11,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["multi"]),
-                            containers=[ContainerKey(["audio"])],
+                            fields=[FieldKey(["audio"])],
                         )
                     ],
                 ),
                 # Depends on frames and text
-                ContainerSpec(
-                    key=ContainerKey(["mixed"]),
+                FieldSpec(
+                    key=FieldKey(["mixed"]),
                     code_version=12,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["multi"]),
-                            containers=[
-                                ContainerKey(["frames"]),
-                                ContainerKey(["text"]),
+                            fields=[
+                                FieldKey(["frames"]),
+                                FieldKey(["text"]),
                             ],
                         )
                     ],
@@ -202,7 +198,7 @@ def test_specific_container_dependencies(snapshot, registry: FeatureRegistry):
         pass
 
     versions = {
-        "multi": MultiContainer.data_version(),
+        "multi": MultiField.data_version(),
         "selective": Selective.data_version(),
     }
 
@@ -218,9 +214,9 @@ def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["raw_video"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+            fields=[
+                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["audio"]), code_version=1),
             ],
         ),
     ):
@@ -231,7 +227,7 @@ def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["raw_metadata"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["info"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["info"]), code_version=1)],
         ),
     ):
         pass
@@ -242,24 +238,24 @@ def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["processed_video"]),
             deps=[FeatureDep(key=FeatureKey(["raw_video"]))],
-            containers=[
-                ContainerSpec(
-                    key=ContainerKey(["enhanced_frames"]),
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["enhanced_frames"]),
                     code_version=5,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["raw_video"]),
-                            containers=[ContainerKey(["frames"])],
+                            fields=[FieldKey(["frames"])],
                         )
                     ],
                 ),
-                ContainerSpec(
-                    key=ContainerKey(["normalized_audio"]),
+                FieldSpec(
+                    key=FieldKey(["normalized_audio"]),
                     code_version=3,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["raw_video"]),
-                            containers=[ContainerKey(["audio"])],
+                            fields=[FieldKey(["audio"])],
                         )
                     ],
                 ),
@@ -277,25 +273,25 @@ def test_complex_multi_level_graph(snapshot, registry: FeatureRegistry):
                 FeatureDep(key=FeatureKey(["processed_video"])),
                 FeatureDep(key=FeatureKey(["raw_metadata"])),
             ],
-            containers=[
+            fields=[
                 # Depends on all upstream
-                ContainerSpec(
-                    key=ContainerKey(["full_analysis"]),
+                FieldSpec(
+                    key=FieldKey(["full_analysis"]),
                     code_version=10,
-                    deps=SpecialContainerDep.ALL,
+                    deps=SpecialFieldDep.ALL,
                 ),
                 # Depends only on enhanced frames and metadata
-                ContainerSpec(
-                    key=ContainerKey(["visual_metadata"]),
+                FieldSpec(
+                    key=FieldKey(["visual_metadata"]),
                     code_version=7,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["processed_video"]),
-                            containers=[ContainerKey(["enhanced_frames"])],
+                            fields=[FieldKey(["enhanced_frames"])],
                         ),
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["raw_metadata"]),
-                            containers=SpecialContainerDep.ALL,
+                            fields=SpecialFieldDep.ALL,
                         ),
                     ],
                 ),
@@ -322,7 +318,7 @@ def test_code_version_changes_propagate(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["base"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["data"]), code_version=100)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version=100)],
         ),
     ):
         pass
@@ -332,7 +328,7 @@ def test_code_version_changes_propagate(snapshot, registry: FeatureRegistry):
         spec=FeatureSpec(
             key=FeatureKey(["derived"]),
             deps=[FeatureDep(key=FeatureKey(["base"]))],
-            containers=[ContainerSpec(key=ContainerKey(["processed"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["processed"]), code_version=1)],
         ),
     ):
         pass
@@ -345,17 +341,17 @@ def test_code_version_changes_propagate(snapshot, registry: FeatureRegistry):
     assert versions == snapshot
 
 
-def test_multiple_containers_different_deps(snapshot, registry: FeatureRegistry):
-    """Test feature where different containers have completely different dependency sets."""
+def test_multiple_fields_different_deps(snapshot, registry: FeatureRegistry):
+    """Test feature where different fields have completely different dependency sets."""
 
     class FeatureX(
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["x"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["x1"]), code_version=1),
-                ContainerSpec(key=ContainerKey(["x2"]), code_version=2),
+            fields=[
+                FieldSpec(key=FieldKey(["x1"]), code_version=1),
+                FieldSpec(key=FieldKey(["x2"]), code_version=2),
             ],
         ),
     ):
@@ -366,9 +362,9 @@ def test_multiple_containers_different_deps(snapshot, registry: FeatureRegistry)
         spec=FeatureSpec(
             key=FeatureKey(["y"]),
             deps=None,
-            containers=[
-                ContainerSpec(key=ContainerKey(["y1"]), code_version=3),
-                ContainerSpec(key=ContainerKey(["y2"]), code_version=4),
+            fields=[
+                FieldSpec(key=FieldKey(["y1"]), code_version=3),
+                FieldSpec(key=FieldKey(["y2"]), code_version=4),
             ],
         ),
     ):
@@ -382,34 +378,34 @@ def test_multiple_containers_different_deps(snapshot, registry: FeatureRegistry)
                 FeatureDep(key=FeatureKey(["x"])),
                 FeatureDep(key=FeatureKey(["y"])),
             ],
-            containers=[
-                # First container only depends on FeatureX
-                ContainerSpec(
-                    key=ContainerKey(["z1"]),
+            fields=[
+                # First field only depends on FeatureX
+                FieldSpec(
+                    key=FieldKey(["z1"]),
                     code_version=20,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["x"]),
-                            containers=SpecialContainerDep.ALL,
+                            fields=SpecialFieldDep.ALL,
                         )
                     ],
                 ),
-                # Second container only depends on FeatureY
-                ContainerSpec(
-                    key=ContainerKey(["z2"]),
+                # Second field only depends on FeatureY
+                FieldSpec(
+                    key=FieldKey(["z2"]),
                     code_version=21,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["y"]),
-                            containers=SpecialContainerDep.ALL,
+                            fields=SpecialFieldDep.ALL,
                         )
                     ],
                 ),
-                # Third container depends on both
-                ContainerSpec(
-                    key=ContainerKey(["z3"]),
+                # Third field depends on both
+                FieldSpec(
+                    key=FieldKey(["z3"]),
                     code_version=22,
-                    deps=SpecialContainerDep.ALL,
+                    deps=SpecialFieldDep.ALL,
                 ),
             ],
         ),
@@ -422,10 +418,10 @@ def test_multiple_containers_different_deps(snapshot, registry: FeatureRegistry)
         "z": FeatureZ.data_version(),
     }
 
-    # Verify that different containers have different versions
+    # Verify that different fields have different versions
     z_versions = versions["z"]
     assert len(set(z_versions.values())) == 3, (
-        "All containers should have different versions"
+        "All fields should have different versions"
     )
 
     assert versions == snapshot

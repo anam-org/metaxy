@@ -7,9 +7,9 @@ from metaxy.metadata_store.base import (
     allow_feature_version_override,
 )
 from metaxy.metadata_store.exceptions import (
-    ContainerNotFoundError,
     DependencyError,
     FeatureNotFoundError,
+    FieldNotFoundError,
     HashAlgorithmNotSupportedError,
     MetadataSchemaError,
     MetadataStoreError,
@@ -22,7 +22,7 @@ __all__ = [
     "InMemoryMetadataStore",
     "MetadataStoreError",
     "FeatureNotFoundError",
-    "ContainerNotFoundError",
+    "FieldNotFoundError",
     "MetadataSchemaError",
     "DependencyError",
     "StoreNotOpenError",

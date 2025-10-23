@@ -2,36 +2,36 @@ from collections.abc import Mapping
 from functools import cached_property
 
 from metaxy.models.bases import FrozenBaseModel
-from metaxy.models.container import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
-    SpecialContainerDep,
-)
 from metaxy.models.feature_spec import FeatureKey, FeatureSpec
+from metaxy.models.field import (
+    FieldDep,
+    FieldKey,
+    FieldSpec,
+    SpecialFieldDep,
+)
 
 
-class FQContainerKey(FrozenBaseModel):
-    container: ContainerKey
+class FQFieldKey(FrozenBaseModel):
+    field: FieldKey
     feature: FeatureKey
 
     def to_string(self) -> str:
-        return f"{self.feature}/{self.container}"
+        return f"{self.feature}/{self.field}"
 
-    def __lt__(self, other: "FQContainerKey") -> bool:
-        """Enable sorting of FQContainerKey objects."""
+    def __lt__(self, other: "FQFieldKey") -> bool:
+        """Enable sorting of FQFieldKey objects."""
         return self.to_string() < other.to_string()
 
-    def __le__(self, other: "FQContainerKey") -> bool:
-        """Enable sorting of FQContainerKey objects."""
+    def __le__(self, other: "FQFieldKey") -> bool:
+        """Enable sorting of FQFieldKey objects."""
         return self.to_string() <= other.to_string()
 
-    def __gt__(self, other: "FQContainerKey") -> bool:
-        """Enable sorting of FQContainerKey objects."""
+    def __gt__(self, other: "FQFieldKey") -> bool:
+        """Enable sorting of FQFieldKey objects."""
         return self.to_string() > other.to_string()
 
-    def __ge__(self, other: "FQContainerKey") -> bool:
-        """Enable sorting of FQContainerKey objects."""
+    def __ge__(self, other: "FQFieldKey") -> bool:
+        """Enable sorting of FQFieldKey objects."""
         return self.to_string() >= other.to_string()
 
 
@@ -44,113 +44,107 @@ class FeaturePlan(FrozenBaseModel):
         return {feature.key: feature for feature in self.deps or []}
 
     @cached_property
-    def all_parent_containers_by_key(self) -> Mapping[FQContainerKey, ContainerSpec]:
-        res: dict[FQContainerKey, ContainerSpec] = {}
+    def all_parent_fields_by_key(self) -> Mapping[FQFieldKey, FieldSpec]:
+        res: dict[FQFieldKey, FieldSpec] = {}
 
         for feature in self.deps or []:
-            for container in feature.containers:
-                res[FQContainerKey(container=container.key, feature=feature.key)] = (
-                    container
-                )
+            for field in feature.fields:
+                res[FQFieldKey(field=field.key, feature=feature.key)] = field
 
         return res
 
     @cached_property
-    def parent_containers_by_key(self) -> Mapping[FQContainerKey, ContainerSpec]:
-        res: dict[FQContainerKey, ContainerSpec] = {}
+    def parent_fields_by_key(self) -> Mapping[FQFieldKey, FieldSpec]:
+        res: dict[FQFieldKey, FieldSpec] = {}
 
-        for container in self.feature.containers:
-            res.update(self.get_parent_containers_for_container(container.key))
+        for field in self.feature.fields:
+            res.update(self.get_parent_fields_for_field(field.key))
 
         return res
 
-    def get_parent_containers_for_container(
-        self, key: ContainerKey
-    ) -> Mapping[FQContainerKey, ContainerSpec]:
+    def get_parent_fields_for_field(
+        self, key: FieldKey
+    ) -> Mapping[FQFieldKey, FieldSpec]:
         res = {}
 
-        container = self.feature.containers_by_key[key]
+        field = self.feature.fields_by_key[key]
 
-        if container.deps == SpecialContainerDep.ALL:
-            # we depend on all upstream features and their containers
+        if field.deps == SpecialFieldDep.ALL:
+            # we depend on all upstream features and their fields
             for feature in self.deps or []:
-                for container in feature.containers:
-                    res[
-                        FQContainerKey(container=container.key, feature=feature.key)
-                    ] = container
-        elif isinstance(container.deps, list):
-            for container_dep in container.deps:
-                if container_dep.containers == SpecialContainerDep.ALL:
-                    # we depend on all containers of the corresponding upstream feature
-                    for parent_container in self.parent_features_by_key[
-                        container_dep.feature_key
-                    ].containers:
+                for field in feature.fields:
+                    res[FQFieldKey(field=field.key, feature=feature.key)] = field
+        elif isinstance(field.deps, list):
+            for field_dep in field.deps:
+                if field_dep.fields == SpecialFieldDep.ALL:
+                    # we depend on all fields of the corresponding upstream feature
+                    for parent_field in self.parent_features_by_key[
+                        field_dep.feature_key
+                    ].fields:
                         res[
-                            FQContainerKey(
-                                container=parent_container.key,
-                                feature=container_dep.feature_key,
+                            FQFieldKey(
+                                field=parent_field.key,
+                                feature=field_dep.feature_key,
                             )
-                        ] = parent_container
+                        ] = parent_field
 
-                elif isinstance(container_dep, ContainerDep):
+                elif isinstance(field_dep, FieldDep):
                     #
-                    for container_key in container_dep.containers:
-                        fq_key = FQContainerKey(
-                            container=container_key,
-                            feature=container_dep.feature_key,
+                    for field_key in field_dep.fields:
+                        fq_key = FQFieldKey(
+                            field=field_key,
+                            feature=field_dep.feature_key,
                         )
-                        res[fq_key] = self.all_parent_containers_by_key[fq_key]
+                        res[fq_key] = self.all_parent_fields_by_key[fq_key]
                 else:
-                    raise ValueError(
-                        f"Unsupported dependency type: {type(container_dep)}"
-                    )
+                    raise ValueError(f"Unsupported dependency type: {type(field_dep)}")
         else:
-            raise TypeError(f"Unsupported dependencies type: {type(container.deps)}")
+            raise TypeError(f"Unsupported dependencies type: {type(field.deps)}")
 
         return res
 
     @cached_property
-    def container_dependencies(
+    def field_dependencies(
         self,
-    ) -> Mapping[ContainerKey, Mapping[FeatureKey, list[ContainerKey]]]:
-        """Get dependencies for each container in this feature.
+    ) -> Mapping[FieldKey, Mapping[FeatureKey, list[FieldKey]]]:
+        """Get dependencies for each field in this feature.
 
-        Returns a mapping from container key to its upstream dependencies.
-        Each dependency maps an upstream feature key to a list of container keys
-        that this container depends on.
+        Returns a mapping from field key to its upstream dependencies.
+        Each dependency maps an upstream feature key to a list of field keys
+        that this field depends on.
 
         This is the format needed by DataVersionResolver.
 
         Returns:
-            Mapping of container keys to their dependency specifications.
-            Format: {container_key: {upstream_feature_key: [upstream_container_keys]}}
+            Mapping of field keys to their dependency specifications.
+            Format: {field_key: {upstream_feature_key: [upstream_field_keys]}}
         """
-        result: dict[ContainerKey, dict[FeatureKey, list[ContainerKey]]] = {}
+        result: dict[FieldKey, dict[FeatureKey, list[FieldKey]]] = {}
 
-        for container in self.feature.containers:
-            container_deps: dict[FeatureKey, list[ContainerKey]] = {}
+        for field in self.feature.fields:
+            field_deps: dict[FeatureKey, list[FieldKey]] = {}
 
-            if container.deps == SpecialContainerDep.ALL:
-                # Depend on all upstream features and all their containers
+            if field.deps == SpecialFieldDep.ALL:
+                # Depend on all upstream features and all their fields
                 for upstream_feature in self.deps or []:
-                    container_deps[upstream_feature.key] = [
-                        c.key for c in upstream_feature.containers
+                    field_deps[upstream_feature.key] = [
+                        c.key for c in upstream_feature.fields
                     ]
-            elif isinstance(container.deps, list):
+            elif isinstance(field.deps, list):
                 # Specific dependencies defined
-                for container_dep in container.deps:
-                    feature_key = container_dep.feature_key
+                for field_dep in field.deps:
+                    feature_key = field_dep.feature_key
 
-                    if container_dep.containers == SpecialContainerDep.ALL:
-                        # All containers from this upstream feature
+                    if field_dep.fields == SpecialFieldDep.ALL:
+                        # All fields from this upstream feature
                         upstream_feature_spec = self.parent_features_by_key[feature_key]
-                        container_deps[feature_key] = [
-                            c.key for c in upstream_feature_spec.containers
+                        field_deps[feature_key] = [
+                            c.key for c in upstream_feature_spec.fields
                         ]
-                    elif isinstance(container_dep.containers, list):
-                        # Specific containers
-                        container_deps[feature_key] = container_dep.containers
+                    elif isinstance(field_dep.fields, list):
+                        # Specific fields
+                        field_deps[feature_key] = field_dep.fields
 
-            result[container.key] = container_deps
+            result[field.key] = field_deps
 
         return result

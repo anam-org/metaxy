@@ -20,10 +20,10 @@ from metaxy.migrations import (
     detect_feature_changes,
     generate_migration,
 )
-from metaxy.models.container import ContainerDep, ContainerSpec, SpecialContainerDep
 from metaxy.models.feature import Feature, FeatureRegistry, registry
 from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
-from metaxy.models.types import ContainerKey, FeatureKey
+from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
+from metaxy.models.types import FeatureKey, FieldKey
 
 __all__ = [
     "Feature",
@@ -32,11 +32,11 @@ __all__ = [
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",
-    "ContainerDep",
-    "ContainerSpec",
-    "SpecialContainerDep",
+    "FieldDep",
+    "FieldSpec",
+    "SpecialFieldDep",
     "FeatureKey",
-    "ContainerKey",
+    "FieldKey",
     "MetadataStore",
     "InMemoryMetadataStore",
     "discover_and_load_entrypoints",

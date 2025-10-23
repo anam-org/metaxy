@@ -9,12 +9,12 @@ import pytest
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
 )
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
@@ -221,17 +221,17 @@ def test_registry():
     upstream_a_spec = FeatureSpec(
         key=FeatureKey(["test_stores", "upstream_a"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-            ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["frames"]), code_version=1),
+            FieldSpec(key=FieldKey(["audio"]), code_version=1),
         ],
     )
 
     upstream_b_spec = FeatureSpec(
         key=FeatureKey(["test_stores", "upstream_b"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
     )
 
@@ -240,16 +240,16 @@ def test_registry():
         deps=[
             FeatureDep(key=FeatureKey(["test_stores", "upstream_a"])),
         ],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test_stores", "upstream_a"]),
-                        containers=[
-                            ContainerKey(["frames"]),
-                            ContainerKey(["audio"]),
+                        fields=[
+                            FieldKey(["frames"]),
+                            FieldKey(["audio"]),
                         ],
                     )
                 ],

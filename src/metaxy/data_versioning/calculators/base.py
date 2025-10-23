@@ -71,10 +71,10 @@ class DataVersionCalculator(ABC, Generic[TRef]):
         """Calculate data_version column from joined upstream data.
 
         Computes a Merkle tree hash for each sample by:
-        1. For each container in the feature:
-           a. Concatenate: container_key | code_version | upstream hashes
+        1. For each field in the feature:
+           a. Concatenate: field_key | code_version | upstream hashes
            b. Hash the concatenated string
-        2. Create struct with all container hashes
+        2. Create struct with all field hashes
         3. Add as data_version column
 
         Args:

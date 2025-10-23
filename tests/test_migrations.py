@@ -11,13 +11,13 @@ import pytest
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
-    ContainerDep,
-    ContainerKey,
-    ContainerSpec,
     Feature,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
     InMemoryMetadataStore,
 )
 from metaxy.migrations import (
@@ -54,7 +54,7 @@ class TempFeatureModule:
         """
         code_lines = [
             "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, ContainerSpec, ContainerKey, FeatureDep, FeatureKey, ContainerDep, SpecialContainerDep",
+            "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
             "from metaxy.models.feature import FeatureRegistry",
             "",
             "# Use a dedicated registry for this temp module",
@@ -104,42 +104,40 @@ class TempFeatureModule:
             deps_repr = [f"FeatureDep(key=FeatureKey({d['key']!r}))" for d in deps]
             parts.append(f"deps=[{', '.join(deps_repr)}]")
 
-        # containers
-        containers = spec_dict.get("containers", [])
-        if containers:
-            container_reprs = []
-            for c in containers:
+        # fields
+        fields = spec_dict.get("fields", [])
+        if fields:
+            field_reprs = []
+            for c in fields:
                 c_parts = [
-                    f"key=ContainerKey({c['key']!r})",
+                    f"key=FieldKey({c['key']!r})",
                     f"code_version={c['code_version']}",
                 ]
 
                 # Handle deps
                 deps_val = c.get("deps")
                 if deps_val == "__METAXY_ALL_DEP__":
-                    c_parts.append("deps=SpecialContainerDep.ALL")
+                    c_parts.append("deps=SpecialFieldDep.ALL")
                 elif isinstance(deps_val, list) and deps_val:
-                    # Container deps (list of ContainerDep)
+                    # Field deps (list of FieldDep)
                     cdeps: list[str] = []  # type: ignore[misc]
                     for cd in deps_val:
-                        containers_val = cd.get("containers")
-                        if containers_val == "__METAXY_ALL_DEP__":
+                        fields_val = cd.get("fields")
+                        if fields_val == "__METAXY_ALL_DEP__":
                             cdeps.append(  # type: ignore[arg-type]
-                                f"ContainerDep(feature_key=FeatureKey({cd['feature_key']!r}), containers=SpecialContainerDep.ALL)"
+                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=SpecialFieldDep.ALL)"
                             )
                         else:
-                            # Build list of ContainerKey objects
-                            container_keys = [
-                                f"ContainerKey({k!r})" for k in containers_val
-                            ]
+                            # Build list of FieldKey objects
+                            field_keys = [f"FieldKey({k!r})" for k in fields_val]
                             cdeps.append(
-                                f"ContainerDep(feature_key=FeatureKey({cd['feature_key']!r}), containers=[{', '.join(container_keys)}])"
+                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=[{', '.join(field_keys)}])"
                             )
                     c_parts.append(f"deps=[{', '.join(cdeps)}]")
 
-                container_reprs.append(f"ContainerSpec({', '.join(c_parts)})")  # type: ignore[arg-type]
+                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")  # type: ignore[arg-type]
 
-            parts.append(f"containers=[{', '.join(container_reprs)}]")
+            parts.append(f"fields=[{', '.join(field_reprs)}]")
 
         return f"FeatureSpec({', '.join(parts)})"
 
@@ -212,7 +210,7 @@ with _temp_registry_chaining.use():
         spec=FeatureSpec(
             key=FeatureKey(["up"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["d"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["d"]), code_version=1)],
         ),
     ):
         pass
@@ -222,14 +220,14 @@ with _temp_registry_chaining.use():
         spec=FeatureSpec(
             key=FeatureKey(["down"]),
             deps=[FeatureDep(key=FeatureKey(["up"]))],
-            containers=[
-                ContainerSpec(
-                    key=ContainerKey(["d"]),
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["d"]),
                     code_version=1,
                     deps=[
-                        ContainerDep(
+                        FieldDep(
                             feature_key=FeatureKey(["up"]),
-                            containers=[ContainerKey(["d"])],
+                            fields=[FieldKey(["d"])],
                         )
                     ],
                 )
@@ -262,22 +260,22 @@ def registry_v1():
     upstream_spec_v1 = FeatureSpec(
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["default"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
     )
 
     downstream_spec_v1 = FeatureSpec(
         key=FeatureKey(["test_migrations", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test_migrations", "upstream"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test_migrations", "upstream"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             ),
@@ -310,22 +308,22 @@ def registry_v2():
     upstream_spec_v2 = FeatureSpec(
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["default"]), code_version=2),  # Changed!
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
         ],
     )
 
     downstream_spec_v2 = FeatureSpec(
         key=FeatureKey(["test_migrations", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test_migrations", "upstream"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test_migrations", "upstream"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             ),
@@ -914,7 +912,7 @@ def test_registry_rejects_duplicate_keys() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["duplicate", "key"]),
             deps=None,
-            containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
         registry=registry,
     ):
@@ -928,9 +926,7 @@ def test_registry_rejects_duplicate_keys() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["duplicate", "key"]),  # Same key!
                 deps=None,
-                containers=[
-                    ContainerSpec(key=ContainerKey(["default"]), code_version=2)
-                ],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
             ),
             registry=registry,
         ):
@@ -973,7 +969,7 @@ def test_detect_uses_latest_version_from_multiple_materializations(
                 "feature_key": ["test_migrations_upstream"] * 10,
                 "feature_version": [versions[i] for i in indices],
                 "recorded_at": [base_time + timedelta(hours=i) for i in indices],
-                "containers": [["default"]] * 10,
+                "fields": [["default"]] * 10,
                 "snapshot_id": [None] * 10,  # No snapshot_id for historical data
             }
         )
@@ -1527,9 +1523,7 @@ def test_metadata_backfill_operation() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["backfill", "test"]),
                 deps=None,
-                containers=[
-                    ContainerSpec(key=ContainerKey(["default"]), code_version=1)
-                ],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
             pass
@@ -1668,14 +1662,14 @@ def test_migration_ignores_new_features(
     upstream_spec = FeatureSpec(
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
     # NEW feature that didn't exist in v1
     new_feature_spec = FeatureSpec(
         key=FeatureKey(["test_migrations", "new_feature"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
     temp_module.write_features(
@@ -1734,26 +1728,26 @@ def test_migration_with_dependency_change() -> None:
     upstream_a_spec = FeatureSpec(
         key=FeatureKey(["test", "upstream_a"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
     upstream_b_spec = FeatureSpec(
         key=FeatureKey(["test", "upstream_b"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
     downstream_v1_spec = FeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream_a"]))],  # Depends on A
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test", "upstream_a"]),
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             )
@@ -1776,14 +1770,14 @@ def test_migration_with_dependency_change() -> None:
     downstream_v2_spec = FeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream_b"]))],  # Changed to B!
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,  # Same code_version
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test", "upstream_b"]),  # Changed!
-                        containers=[ContainerKey(["default"])],
+                        fields=[FieldKey(["default"])],
                     )
                 ],
             )
@@ -1848,37 +1842,37 @@ def test_migration_with_dependency_change() -> None:
     temp_v2.cleanup()
 
 
-def test_migration_with_container_dependency_change() -> None:
-    """Test migration when container-level dependencies change.
+def test_migration_with_field_dependency_change() -> None:
+    """Test migration when field-level dependencies change.
 
-    Changing which containers a feature depends on changes its container version,
+    Changing which fields a feature depends on changes its field version,
     which changes the feature_version.
     """
-    # Create v1: Downstream depends on both upstream containers
-    temp_v1 = TempFeatureModule("test_container_dep_v1")
+    # Create v1: Downstream depends on both upstream fields
+    temp_v1 = TempFeatureModule("test_field_dep_v1")
 
     upstream_spec = FeatureSpec(
         key=FeatureKey(["test", "upstream"]),
         deps=None,
-        containers=[
-            ContainerSpec(key=ContainerKey(["frames"]), code_version=1),
-            ContainerSpec(key=ContainerKey(["audio"]), code_version=1),
+        fields=[
+            FieldSpec(key=FieldKey(["frames"]), code_version=1),
+            FieldSpec(key=FieldKey(["audio"]), code_version=1),
         ],
     )
 
     downstream_v1_spec = FeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test", "upstream"]),
-                        containers=[
-                            ContainerKey(["frames"]),
-                            ContainerKey(["audio"]),
+                        fields=[
+                            FieldKey(["frames"]),
+                            FieldKey(["audio"]),
                         ],  # Both
                     )
                 ],
@@ -1895,20 +1889,20 @@ def test_migration_with_container_dependency_change() -> None:
 
     registry_v1 = temp_v1.get_registry()
 
-    # Create v2: Downstream now only depends on frames container
-    temp_v2 = TempFeatureModule("test_container_dep_v2")
+    # Create v2: Downstream now only depends on frames field
+    temp_v2 = TempFeatureModule("test_field_dep_v2")
 
     downstream_v2_spec = FeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
-        containers=[
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,  # Same code_version
                 deps=[
-                    ContainerDep(
+                    FieldDep(
                         feature_key=FeatureKey(["test", "upstream"]),
-                        containers=[ContainerKey(["frames"])],  # Only frames now!
+                        fields=[FieldKey(["frames"])],  # Only frames now!
                     )
                 ],
             )
@@ -1928,7 +1922,7 @@ def test_migration_with_container_dependency_change() -> None:
     down_v1 = registry_v1.features_by_key[FeatureKey(["test", "downstream"])]
     down_v2 = registry_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
-    # Verify feature_versions are different (container deps changed)
+    # Verify feature_versions are different (field deps changed)
     assert down_v1.feature_version() != down_v2.feature_version()
 
     # Create store with v1 data
@@ -1956,7 +1950,7 @@ def test_migration_with_container_dependency_change() -> None:
     store_v2 = migrate_store_to_registry(store, registry_v2)
 
     with registry_v2.use(), store_v2:
-        # Should detect downstream as changed (container deps changed)
+        # Should detect downstream as changed (field deps changed)
         operations = detect_feature_changes(store_v2)
 
         # Downstream should be detected as changed
@@ -1981,7 +1975,7 @@ def test_sequential_migration_application():
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
     registry = temp_module.get_registry()
@@ -2087,7 +2081,7 @@ def test_multiple_migration_heads_detection():
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
         deps=None,
-        containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
     registry = temp_module.get_registry()

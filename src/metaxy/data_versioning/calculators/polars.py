@@ -73,27 +73,27 @@ class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
 
         hash_fn = self._HASH_FUNCTION_MAP[algo]
 
-        # Build hash expressions for each container
-        container_exprs = {}
+        # Build hash expressions for each field
+        field_exprs = {}
 
-        for container in feature_spec.containers:
-            container_key_str = (
-                container.key.to_string()
-                if hasattr(container.key, "to_string")
-                else "_".join(container.key)
+        for field in feature_spec.fields:
+            field_key_str = (
+                field.key.to_string()
+                if hasattr(field.key, "to_string")
+                else "_".join(field.key)
             )
 
-            container_deps = feature_plan.container_dependencies.get(container.key, {})
+            field_deps = feature_plan.field_dependencies.get(field.key, {})
 
             # Build hash components
             components = [
-                pl.lit(container_key_str),
-                pl.lit(str(container.code_version)),
+                pl.lit(field_key_str),
+                pl.lit(str(field.code_version)),
             ]
 
             # Add upstream data versions in deterministic order
-            for upstream_feature_key in sorted(container_deps.keys()):
-                upstream_containers = container_deps[upstream_feature_key]
+            for upstream_feature_key in sorted(field_deps.keys()):
+                upstream_fields = field_deps[upstream_feature_key]
                 upstream_key_str = (
                     upstream_feature_key.to_string()
                     if hasattr(upstream_feature_key, "to_string")
@@ -104,28 +104,26 @@ class PolarsDataVersionCalculator(DataVersionCalculator[pl.LazyFrame]):
                     upstream_key_str, "data_version"
                 )
 
-                for upstream_container in sorted(upstream_containers):
-                    upstream_container_str = (
-                        upstream_container.to_string()
-                        if hasattr(upstream_container, "to_string")
-                        else "_".join(upstream_container)
+                for upstream_field in sorted(upstream_fields):
+                    upstream_field_str = (
+                        upstream_field.to_string()
+                        if hasattr(upstream_field, "to_string")
+                        else "_".join(upstream_field)
                     )
 
                     components.append(
-                        pl.lit(f"{upstream_key_str}/{upstream_container_str}")
+                        pl.lit(f"{upstream_key_str}/{upstream_field_str}")
                     )
                     components.append(
-                        pl.col(data_version_col_name).struct.field(
-                            upstream_container_str
-                        )
+                        pl.col(data_version_col_name).struct.field(upstream_field_str)
                     )
 
             # Concatenate and hash
             concat_expr = plh.concat_str(*components, separator="|")
             hashed = hash_fn(concat_expr).cast(pl.Utf8)
-            container_exprs[container_key_str] = hashed
+            field_exprs[field_key_str] = hashed
 
         # Create data_version struct
-        data_version_expr = pl.struct(**container_exprs)  # type: ignore[call-overload]
+        data_version_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
 
         return joined_upstream.with_columns(data_version_expr.alias("data_version"))

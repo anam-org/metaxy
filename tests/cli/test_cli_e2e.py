@@ -22,31 +22,31 @@ def e2e_project(tmp_path: Path):
     (features_dir / "__init__.py").write_text("")
 
     (features_dir / "video.py").write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class VideoFiles(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "files"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
 """)
 
     (features_dir / "processing.py").write_text("""
 from metaxy import (
-    Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey,
-    FeatureDep, ContainerDep
+    Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey,
+    FeatureDep, FieldDep
 )
 
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
     deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
-    containers=[ContainerSpec(
-        key=ContainerKey(["frames"]),
+    fields=[FieldSpec(
+        key=FieldKey(["frames"]),
         code_version=1,
-        deps=[ContainerDep(
+        deps=[FieldDep(
             feature_key=FeatureKey(["video", "files"]),
-            containers=[ContainerKey(["default"])]
+            fields=[FieldKey(["default"])]
         )]
     )]
 )):
@@ -158,19 +158,19 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
         # Step 3: Update feature code (simulate code change)
         (e2e_project / "features" / "processing.py").write_text("""
 from metaxy import (
-    Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey,
-    FeatureDep, ContainerDep
+    Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey,
+    FeatureDep, FieldDep
 )
 
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
     deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
-    containers=[ContainerSpec(
-        key=ContainerKey(["frames"]),
+    fields=[FieldSpec(
+        key=FieldKey(["frames"]),
         code_version=2,  # Changed from 1 to 2
-        deps=[ContainerDep(
+        deps=[FieldDep(
             feature_key=FeatureKey(["video", "files"]),
-            containers=[ContainerKey(["default"])]
+            fields=[FieldKey(["default"])]
         )]
     )]
 )):
@@ -373,12 +373,12 @@ def test_cli_migration_status_command(e2e_project: Path):
 
         # Update code to trigger a change
         (e2e_project / "features" / "video.py").write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, ContainerSpec, ContainerKey
+from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class VideoFiles(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "files"]),
     deps=None,
-    containers=[ContainerSpec(key=ContainerKey(["default"]), code_version=2)]  # Changed!
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)]  # Changed!
 )):
     pass
 """)

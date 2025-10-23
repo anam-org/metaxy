@@ -8,7 +8,7 @@ try:
 except ImportError:
     import tomli as tomllib  # Fallback for Python 3.10
 
-from pydantic import Field
+from pydantic import Field as PydanticField
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -139,7 +139,7 @@ class StoreConfig(BaseSettings):
 
     # Store configuration (all kwargs for __init__)
     # This includes fallback_stores, table_uri, db_path, storage_options, etc.
-    config: dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = PydanticField(default_factory=dict)
 
 
 class MetaxyConfig(BaseSettings):
@@ -174,13 +174,13 @@ class MetaxyConfig(BaseSettings):
     store: str = "dev"
 
     # Named store configurations
-    stores: dict[str, StoreConfig] = Field(default_factory=dict)
+    stores: dict[str, StoreConfig] = PydanticField(default_factory=dict)
 
     # Migrations directory
     migrations_dir: str = "metaxy/migrations"
 
     # Entrypoints to load (list of module paths)
-    entrypoints: list[str] = Field(default_factory=list)
+    entrypoints: list[str] = PydanticField(default_factory=list)
 
     @classmethod
     def settings_customise_sources(

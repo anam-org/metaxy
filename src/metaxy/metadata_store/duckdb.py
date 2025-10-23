@@ -222,8 +222,8 @@ class DuckDBMetadataStore(IbisMetadataStore):
         def generator(table: ir.Table, concat_columns: dict[str, str]) -> str:
             # Build SELECT clause with hash columns
             hash_selects: list[str] = []
-            for container_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{container_key}"
+            for field_key, concat_col in concat_columns.items():
+                hash_col = f"__hash_{field_key}"
                 # Always cast to VARCHAR for consistency
                 hash_expr = f"CAST({hash_function}({concat_col}) AS VARCHAR)"
                 hash_selects.append(f"{hash_expr} as {hash_col}")

@@ -659,7 +659,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_detects_changes[multi_container-md5]
+# name: test_resolve_update_detects_changes[multi_field-md5]
   dict({
     tuple(
       'clickhouse',
@@ -775,7 +775,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_detects_changes[multi_container-sha256]
+# name: test_resolve_update_detects_changes[multi_field-sha256]
   dict({
     tuple(
       'inmemory',
@@ -835,7 +835,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_detects_changes[multi_container-wyhash]
+# name: test_resolve_update_detects_changes[multi_field-wyhash]
   dict({
     tuple(
       'inmemory',
@@ -895,7 +895,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_detects_changes[multi_container-xxhash32]
+# name: test_resolve_update_detects_changes[multi_field-xxhash32]
   dict({
     tuple(
       'clickhouse',
@@ -1011,7 +1011,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_detects_changes[multi_container-xxhash64]
+# name: test_resolve_update_detects_changes[multi_field-xxhash64]
   dict({
     tuple(
       'clickhouse',
@@ -1871,7 +1871,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_container-md5]
+# name: test_resolve_update_no_upstream[multi_field-md5]
   dict({
     tuple(
       'clickhouse',
@@ -1939,7 +1939,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_container-sha256]
+# name: test_resolve_update_no_upstream[multi_field-sha256]
   dict({
     tuple(
       'inmemory',
@@ -1975,7 +1975,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_container-wyhash]
+# name: test_resolve_update_no_upstream[multi_field-wyhash]
   dict({
     tuple(
       'inmemory',
@@ -2011,7 +2011,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_container-xxhash32]
+# name: test_resolve_update_no_upstream[multi_field-xxhash32]
   dict({
     tuple(
       'clickhouse',
@@ -2079,7 +2079,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_container-xxhash64]
+# name: test_resolve_update_no_upstream[multi_field-xxhash64]
   dict({
     tuple(
       'clickhouse',
@@ -3051,7 +3051,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[multi_container-md5]
+# name: test_resolve_update_with_upstream[multi_field-md5]
   dict({
     tuple(
       'clickhouse',
@@ -3207,7 +3207,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[multi_container-sha256]
+# name: test_resolve_update_with_upstream[multi_field-sha256]
   dict({
     tuple(
       'inmemory',
@@ -3287,7 +3287,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[multi_container-wyhash]
+# name: test_resolve_update_with_upstream[multi_field-wyhash]
   dict({
     tuple(
       'inmemory',
@@ -3367,7 +3367,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[multi_container-xxhash32]
+# name: test_resolve_update_with_upstream[multi_field-xxhash32]
   dict({
     tuple(
       'clickhouse',
@@ -3523,7 +3523,7 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[multi_container-xxhash64]
+# name: test_resolve_update_with_upstream[multi_field-xxhash64]
   dict({
     tuple(
       'clickhouse',

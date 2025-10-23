@@ -188,8 +188,8 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         def generator(table, concat_columns: dict[str, str]) -> str:
             # Build SELECT clause with hash columns
             hash_selects: list[str] = []
-            for container_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{container_key}"
+            for field_key, concat_col in concat_columns.items():
+                hash_col = f"__hash_{field_key}"
                 # ClickHouse hash functions return numeric types
                 # Cast to String for consistency with other stores
                 hash_expr = f"CAST({hash_function}({concat_col}) AS String)"

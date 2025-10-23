@@ -3,8 +3,8 @@ from functools import cached_property
 
 import pydantic
 
-from metaxy.models.container import ContainerSpec, SpecialContainerDep
-from metaxy.models.types import ContainerKey, FeatureDepMetadata, FeatureKey
+from metaxy.models.field import FieldSpec, SpecialFieldDep
+from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 
 
 class FeatureDep(pydantic.BaseModel):
@@ -15,17 +15,17 @@ class FeatureDep(pydantic.BaseModel):
 class FeatureSpec(pydantic.BaseModel):
     key: FeatureKey
     deps: list[FeatureDep] | None
-    containers: list[ContainerSpec] = pydantic.Field(
+    fields: list[FieldSpec] = pydantic.Field(
         default_factory=lambda: [
-            ContainerSpec(
-                key=ContainerKey(["default"]),
+            FieldSpec(
+                key=FieldKey(["default"]),
                 code_version=1,
-                deps=SpecialContainerDep.ALL,
+                deps=SpecialFieldDep.ALL,
             )
         ]
     )
     code_version: int = 1
 
     @cached_property
-    def containers_by_key(self) -> Mapping[ContainerKey, ContainerSpec]:
-        return {c.key: c for c in self.containers}
+    def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
+        return {c.key: c for c in self.fields}
