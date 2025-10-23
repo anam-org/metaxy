@@ -16,10 +16,12 @@ from metaxy.metadata_store.exceptions import (
     StoreNotOpenError,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
 
 __all__ = [
     "MetadataStore",
     "InMemoryMetadataStore",
+    "DuckLakeMetadataStore",
     "MetadataStoreError",
     "FeatureNotFoundError",
     "FieldNotFoundError",
