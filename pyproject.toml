@@ -42,6 +42,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "examples",
     "ipython>=8.37.0",
     "duckdb>=1.4.1",
     "pyrefly>=0.34.0",
@@ -68,6 +69,14 @@ extend-select = [
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
 banned-module-level-imports = ["ibis", "duckdb"]
+
+[tool.uv.workspace]
+members = [
+    "examples",
+]
+
+[tool.uv.sources]
+examples = { workspace = true }
 
 [tool.vulture]
 exclude = [

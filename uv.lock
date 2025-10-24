@@ -7,6 +7,12 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[manifest]
+members = [
+    "examples",
+    "metaxy",
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.7.0"
@@ -232,6 +238,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/15/7b/c4f272a40c36d82df20937d93a1780eb39ab0107fe42b62cba889151eab9/duckdb-1.4.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e2f16b8def782d484a9f035fc422bb6f06941ed0054b4511ddcdc514a7fb6a75", size = 18504687, upload-time = "2025-10-07T10:37:06.991Z" },
     { url = "https://files.pythonhosted.org/packages/17/fc/9b958751f0116d7b0406406b07fa6f5a10c22d699be27826d0b896f9bf51/duckdb-1.4.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a5a7d0aed068a5c33622a8848857947cab5cfb3f2a315b1251849bac2c74c492", size = 20513823, upload-time = "2025-10-07T10:37:09.349Z" },
     { url = "https://files.pythonhosted.org/packages/30/79/4f544d73fcc0513b71296cb3ebb28a227d22e80dec27204977039b9fa875/duckdb-1.4.1-cp313-cp313-win_amd64.whl", hash = "sha256:280fd663dacdd12bb3c3bf41f3e5b2e5b95e00b88120afabb8b8befa5f335c6f", size = 12336460, upload-time = "2025-10-07T10:37:12.154Z" },
+]
+
+[[package]]
+name = "examples"
+version = "0.1.0"
+source = { editable = "examples" }
+dependencies = [
+    { name = "duckdb" },
+    { name = "metaxy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "duckdb", specifier = ">=1.4.1" },
+    { name = "metaxy", editable = "." },
 ]
 
 [[package]]
@@ -495,6 +516,7 @@ ibis = [
 dev = [
     { name = "basedpyright" },
     { name = "duckdb" },
+    { name = "examples" },
     { name = "ibis-framework", extra = ["clickhouse", "duckdb", "sqlite"] },
     { name = "ipython", version = "8.37.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "ipython", version = "9.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -525,6 +547,7 @@ provides-extras = ["ibis"]
 dev = [
     { name = "basedpyright", specifier = ">=1.32.1" },
     { name = "duckdb", specifier = ">=1.4.1" },
+    { name = "examples", editable = "examples" },
     { name = "ibis-framework", extras = ["duckdb", "sqlite", "clickhouse"], specifier = ">=11.0.0" },
     { name = "ipython", specifier = ">=8.37.0" },
     { name = "pyrefly", specifier = ">=0.34.0" },

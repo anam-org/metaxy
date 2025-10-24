@@ -27,7 +27,7 @@ ParentFeature = get_feature_by_key(parent_key)
 # Get metadata store from metaxy.toml config
 with MetaxyConfig.load().get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
-    snapshot_id = store.record_feature_graph_snapshot()
+    snapshot_id, _ = store.record_feature_graph_snapshot()
 
     print(f"Graph snapshot_id: {snapshot_id}")
 
@@ -36,7 +36,7 @@ with MetaxyConfig.load().get_store() as store:
         existing = store.read_metadata(ParentFeature, current_only=True)
         if existing.collect().height > 0:
             print(
-                f"Metadata already exists for feature {parent_key} (feature_version: {ParentFeature.feature_version()}...)"
+                f"Metadata already exists for feature {parent_key} (feature_version: {ParentFeature.feature_version()[:16]}...)"
             )
             print("Skipping write to avoid duplicates")
             exit(0)
