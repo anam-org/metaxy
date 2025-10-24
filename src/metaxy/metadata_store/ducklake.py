@@ -5,8 +5,6 @@ and related plugins, and attaches a DuckLake instance using secrets that
 reference configurable metadata and storage backends.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any, Iterable
 
@@ -331,8 +329,8 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
             hash_sql_generators=self.hash_sql_generators,
             alias=self._ducklake_alias,
             extensions=self.extensions,
+            connection=self._conn,
         )
-        calculator.set_connection(self._conn)  # type: ignore[attr-defined]
 
         diff_resolver: MetadataDiffResolver[ir.Table] = DuckLakeDiffResolver(
             backend=self._conn, alias=self._ducklake_alias

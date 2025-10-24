@@ -1,7 +1,5 @@
 """Tests for the DuckLake integration components."""
 
-from __future__ import annotations
-
 from metaxy.data_versioning.calculators.ducklake import DuckLakeDataVersionCalculator
 from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
