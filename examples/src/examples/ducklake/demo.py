@@ -7,34 +7,22 @@ we preview the SQL statements that would be executed when attaching DuckLake.
 
 from __future__ import annotations
 
-from metaxy.metadata_store.ducklake import (
-    DuckLakeMetadataStore,
-    DuckLakePostgresMetadataBackend,
-    DuckLakeS3StorageBackend,
-)
+from pathlib import Path
+
+from metaxy import MetaxyConfig
+from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
 
 
 def build_store() -> DuckLakeMetadataStore:
-    """Create a DuckLakeMetadataStore using typed configuration models."""
-    metadata_backend = DuckLakePostgresMetadataBackend(
-        database="ducklake_meta",
-        user="ducklake",
-        password="secret",
-    )
-    storage_backend = DuckLakeS3StorageBackend(
-        endpoint_url="https://object-store",
-        bucket="ducklake",
-        aws_access_key_id="key",
-        aws_secret_access_key="secret",
-        prefix="metadata",
-    )
-
-    return DuckLakeMetadataStore(
-        metadata_backend=metadata_backend,
-        storage_backend=storage_backend,
-        attach_options={"api_version": "0.2", "override_data_path": True},
-        database=":memory:",
-    )
+    """Create a DuckLakeMetadataStore using metaxy.toml configuration."""
+    config_path = Path(__file__).with_name("metaxy.toml")
+    config = MetaxyConfig.load(config_path, search_parents=False)
+    store = config.get_store()
+    if not isinstance(store, DuckLakeMetadataStore):
+        raise RuntimeError(
+            "DuckLake example misconfigured: expected DuckLakeMetadataStore."
+        )
+    return store
 
 
 def preview_attachment_sql(store: DuckLakeMetadataStore) -> list[str]:

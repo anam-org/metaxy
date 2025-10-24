@@ -6,8 +6,6 @@ from metaxy.metadata_store.ducklake import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
     DuckLakeMetadataStore,
-    DuckLakePostgresMetadataBackend,
-    DuckLakeS3StorageBackend,
     _format_attach_options,
 )
 
@@ -36,17 +34,19 @@ class _StubConnection:
 def test_ducklake_attachment_sequence() -> None:
     """DuckLakeAttachmentManager should issue expected setup statements."""
     attachment = DuckLakeAttachmentConfig(
-        metadata_backend=DuckLakePostgresMetadataBackend(
-            database="ducklake_meta",
-            user="ducklake",
-            password="secret",
-        ),
-        storage_backend=DuckLakeS3StorageBackend(
-            endpoint_url="https://object-store",
-            bucket="ducklake",
-            aws_access_key_id="key",
-            aws_secret_access_key="secret",
-        ),
+        metadata_backend={
+            "type": "postgres",
+            "database": "ducklake_meta",
+            "user": "ducklake",
+            "password": "secret",
+        },
+        storage_backend={
+            "type": "s3",
+            "endpoint_url": "https://object-store",
+            "bucket": "ducklake",
+            "aws_access_key_id": "key",
+            "aws_secret_access_key": "secret",
+        },
         alias="lake",
         plugins=["ducklake"],
         attach_options={"api_version": "0.2", "override_data_path": True},
@@ -69,17 +69,19 @@ def test_ducklake_attachment_sequence() -> None:
 
 def test_ducklake_store_extends_extensions_list() -> None:
     """DuckLake store should ensure DuckLake plugin is loaded as an extension."""
-    metadata_backend = DuckLakePostgresMetadataBackend(
-        database="ducklake_meta",
-        user="ducklake",
-        password="secret",
-    )
-    storage_backend = DuckLakeS3StorageBackend(
-        endpoint_url="https://object-store",
-        bucket="ducklake",
-        aws_access_key_id="key",
-        aws_secret_access_key="secret",
-    )
+    metadata_backend = {
+        "type": "postgres",
+        "database": "ducklake_meta",
+        "user": "ducklake",
+        "password": "secret",
+    }
+    storage_backend = {
+        "type": "s3",
+        "endpoint_url": "https://object-store",
+        "bucket": "ducklake",
+        "aws_access_key_id": "key",
+        "aws_secret_access_key": "secret",
+    }
 
     store = DuckLakeMetadataStore(
         metadata_backend=metadata_backend,
