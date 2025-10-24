@@ -28,12 +28,12 @@ def pytest_runtest_setup(item):
         del sys.modules[name]
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def graph():
     """Create a clean FeatureGraph for testing.
 
     This will set up a fresh FeatureGraph for each test.
-    Features defined in such tests will be bound to the graph.
+    Features defined in tests will be bound to this graph unless they specify their own graph.
     """
     with FeatureGraph().use() as graph:
         yield graph
