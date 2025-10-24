@@ -1,8 +1,7 @@
 """DuckLake-specific data version calculator."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from metaxy.data_versioning.calculators.duckdb import (
     DuckDBDataVersionCalculator,
@@ -13,6 +12,15 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 if TYPE_CHECKING:
     import ibis
+    import narwhals as nw
+
+    from metaxy.metadata_store.duckdb import ExtensionSpec
+    from metaxy.models.feature_spec import FeatureSpec
+    from metaxy.models.plan import FeaturePlan
+else:
+    from typing import Any
+
+    ExtensionSpec = dict[str, Any]
 
 
 class DuckLakeDataVersionCalculator(DuckDBDataVersionCalculator):
@@ -42,6 +50,36 @@ class DuckLakeDataVersionCalculator(DuckDBDataVersionCalculator):
             connection=connection,
         )
         self.alias = alias
+        self.extensions = ext_list
+        self._hash_sql_generators = hash_sql_generators
+        self._backend: ibis.BaseBackend | None = None
+        self._calculator: IbisDataVersionCalculator | None = None
+
+        if connection is not None:
+            self.set_connection(connection)
+
+    @property
+    def supported_algorithms(self) -> list[HashAlgorithm]:
+        """Algorithms supported by configured hash SQL generators."""
+        return list(self._hash_sql_generators.keys())
+
+    @property
+    def default_algorithm(self) -> HashAlgorithm:
+        """Default algorithm prefers xxHash64 when available."""
+        if HashAlgorithm.XXHASH64 in self.supported_algorithms:
+            return HashAlgorithm.XXHASH64
+        return self.supported_algorithms[0]
+
+    def _ensure_ducklake_catalog(self) -> None:
+        """Ensure subsequent queries run within the DuckLake catalog."""
+        if self._backend is None:
+            return
+
+        try:
+            self._backend.raw_sql(f"USE {self.alias}")  # type: ignore[attr-defined]
+        except Exception:
+            # Catalog already set or USE unsupported - proceed with existing context
+            pass
 
     def set_connection(self, connection: "ibis.BaseBackend") -> None:
         super().set_connection(connection)
