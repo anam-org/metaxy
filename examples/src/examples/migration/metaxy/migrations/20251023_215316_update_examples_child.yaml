@@ -1,0 +1,15 @@
+version: 1
+id: migration_20251023_215316
+parent_migration_id: null
+from_snapshot_id: 4bd4903139e33cd4923b59eaf577e1233aa28123968c48f063dc942f2188768a
+to_snapshot_id: 2dc63e7b0fa38ca5d98dcc343f24f954c5f6638c03989f5bb666acf7aec1b4d5
+description: Auto-generated migration for 1 changed feature(s) + 0 downstream
+created_at: 2025-10-23 21:53:16.473975
+feature_class_overrides: {}
+operations:
+- id: reconcile_examples__child
+  feature_key:
+  - examples
+  - child
+  reason: 'TODO: Describe what changed and why'
+  type: metaxy.migrations.ops.DataVersionReconciliation

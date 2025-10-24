@@ -1,0 +1,39 @@
+# serializer version: 1
+# name: test_list_features[1]
+  '''
+  ---
+  ['examples', 'parent'] (version 
+  befcdcdd8b042507e024af77748205d67d969523812eee86f9e39dff49104105)
+    Fields:
+      embeddings (code_version 1, version 
+  eb57f1d27e48e13722a09d206beeed8a68a016c432de3470b2f876642416f639)
+  ---
+  ['examples', 'child'] (version 
+  6148c18fd7a6e872854bb9d5dbb00e76720fc52e0431e35043a578ec4aa05b5f)
+    Feature Dependencies:
+      key=['examples', 'parent'] metadata={}
+    Fields:
+      predictions (code_version 1, version 
+  bebfc10d044ef9e4c427a355cc2ed775aad58cdb6be14b2b4bd77b622b7b8825)
+  
+  '''
+# ---
+# name: test_list_features[2]
+  '''
+  ---
+  ['examples', 'parent'] (version 
+  fd09967e73694ddb19c23b0480fd0732c17f63b3e0f050f45678d83de8c07721)
+    Fields:
+      embeddings (code_version 2, version 
+  f28328f1c6f4a794b53d43255ae020a78e05b9ac511b2fd6ef8d8b9a6296aff5)
+  ---
+  ['examples', 'child'] (version 
+  7e1d015bbc72ec7f7dd444ac51d60e8caeba9b947f795908ab5e08f138497245)
+    Feature Dependencies:
+      key=['examples', 'parent'] metadata={}
+    Fields:
+      predictions (code_version 1, version 
+  285b5e30ec3618647830118644af34cd192819877903d5e7d98b0f1d8bbe6a64)
+  
+  '''
+# ---

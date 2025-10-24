@@ -1,0 +1,21 @@
+# serializer version: 1
+# name: test_pipeline
+  dict({
+    'description': 'Auto-generated migration for 1 changed feature(s) + 0 downstream',
+    'feature_class_overrides': dict({
+    }),
+    'operations': list([
+      dict({
+        'feature_key': list([
+          'examples',
+          'child',
+        ]),
+        'id': 'reconcile_examples__child',
+        'reason': 'TODO: Describe what changed and why',
+        'type': 'metaxy.migrations.ops.DataVersionReconciliation',
+      }),
+    ]),
+    'parent_migration_id': None,
+    'version': 1,
+  })
+# ---
