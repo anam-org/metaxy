@@ -1,13 +1,15 @@
 import importlib
 import sys
 import tempfile
+from functools import cached_property
 from pathlib import Path
 
 from metaxy import (
-    Feature,
     FeatureSpec,
 )
+from metaxy.config import MetaxyConfig
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 
 
@@ -122,33 +124,16 @@ class TempFeatureModule:
 
         return f"FeatureSpec({', '.join(parts)})"
 
-    def get_graph(self) -> FeatureGraph:
-        """Get the graph from the temp module.
+    @property
+    def graph(self) -> FeatureGraph:
+        """Get the FeatureGraph from the temp module.
 
-        Creates a new graph and re-registers the features from the module.
-        This ensures we get fresh features after module reloading.
+        Returns:
+            The _graph instance from the imported module
         """
-        # Force reload to get latest class definitions
-        if self.module_name in sys.modules:
-            module = importlib.reload(sys.modules[self.module_name])
-        else:
-            module = importlib.import_module(self.module_name)
-
-        # Create fresh graph and register features from module
-        fresh_graph = FeatureGraph()
-
-        # Find and register all Feature subclasses in the module
-        for name in dir(module):
-            obj = getattr(module, name)
-            if (
-                isinstance(obj, type)
-                and issubclass(obj, Feature)
-                and obj is not Feature
-                and hasattr(obj, "spec")
-            ):
-                fresh_graph.add_feature(obj)
-
-        return fresh_graph
+        # Import the module to get its _graph
+        module = importlib.import_module(self.module_name)
+        return module._graph
 
     def cleanup(self):
         """Remove temp directory and module from sys.path.
@@ -399,3 +384,49 @@ database = "{db_path}"
         )
 
         return result
+
+    @property
+    def entrypoints(self):
+        return [f"METAXY_ENTRYPOINT_{idx}" for idx in range(len(self._feature_modules))]
+
+    @property
+    def graph(self) -> FeatureGraph:
+        """Load features from the project's feature modules into a graph.
+
+        Returns:
+            FeatureGraph with all features from tracked modules loaded
+        """
+        import importlib
+        import sys
+
+        graph = FeatureGraph()
+
+        # Ensure project dir is in sys.path
+        project_dir_str = str(self.project_dir)
+        was_in_path = project_dir_str in sys.path
+        if not was_in_path:
+            sys.path.insert(0, project_dir_str)
+
+        try:
+            with graph.use():
+                # Import feature modules directly
+                for module_name in self._feature_modules:
+                    # Import or reload the module
+                    if module_name in sys.modules:
+                        importlib.reload(sys.modules[module_name])
+                    else:
+                        importlib.import_module(module_name)
+        finally:
+            # Clean up sys.path if we added it
+            if not was_in_path and project_dir_str in sys.path:
+                sys.path.remove(project_dir_str)
+
+        return graph
+
+    @cached_property
+    def config(self) -> MetaxyConfig:
+        return MetaxyConfig.load(self.project_dir / "metaxy.toml")
+
+    @cached_property
+    def stores(self) -> dict[str, MetadataStore]:
+        return {k: self.config.get_store(k) for k in self.config.stores}

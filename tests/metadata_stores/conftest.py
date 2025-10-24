@@ -258,7 +258,7 @@ def test_graph():
     )
 
     # Get graph from module
-    graph = temp_module.get_graph()
+    graph = temp_module.graph
 
     # Create features dict for easy access
     features = {

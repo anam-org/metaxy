@@ -135,9 +135,7 @@ def graph_v1():
     )
 
     # Get graph from module
-    graph = temp_module.get_graph()
-
-    yield graph
+    yield temp_module.graph
 
     # Cleanup after test completes
     temp_module.cleanup()
@@ -183,9 +181,7 @@ def graph_v2():
     )
 
     # Get graph from module
-    graph = temp_module.get_graph()
-
-    yield graph
+    yield temp_module.graph
 
     # Cleanup after test completes
     temp_module.cleanup()
@@ -1492,7 +1488,7 @@ def test_migration_ignores_new_features(
         }
     )
 
-    graph_with_new = temp_module.get_graph()
+    graph_with_new = temp_module.graph
 
     # Create store with only v1 upstream data (no new_feature data)
     store = InMemoryMetadataStore()
@@ -1581,7 +1577,7 @@ def test_migration_with_dependency_change() -> None:
         }
     )
 
-    graph_v1 = temp_v1.get_graph()
+    graph_v1 = temp_v1.graph
 
     # Create v2: Downstream now depends on UpstreamB instead
     temp_v2 = TempFeatureModule("test_dep_change_v2")
@@ -1611,7 +1607,7 @@ def test_migration_with_dependency_change() -> None:
         }
     )
 
-    graph_v2 = temp_v2.get_graph()
+    graph_v2 = temp_v2.graph
 
     # Get feature classes
     down_v1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
@@ -1713,7 +1709,7 @@ def test_migration_with_field_dependency_change() -> None:
         }
     )
 
-    graph_v1 = temp_v1.get_graph()
+    graph_v1 = temp_v1.graph
 
     # Create v2: Downstream now only depends on frames field
     temp_v2 = TempFeatureModule("test_field_dep_v2")
@@ -1742,7 +1738,7 @@ def test_migration_with_field_dependency_change() -> None:
         }
     )
 
-    graph_v2 = temp_v2.get_graph()
+    graph_v2 = temp_v2.graph
 
     # Get feature classes
     down_v1 = graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
@@ -1811,7 +1807,7 @@ def test_sequential_migration_application():
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
-    graph = temp_module.get_graph()
+    graph = temp_module.graph
 
     # Create store and record snapshot
     store = InMemoryMetadataStore()
@@ -1919,7 +1915,7 @@ def test_multiple_migration_heads_detection():
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
     temp_module.write_features({"TestFeature": spec})
-    graph = temp_module.get_graph()
+    graph = temp_module.graph
 
     store = InMemoryMetadataStore()
     test_feature = graph.features_by_key[FeatureKey(["test", "feature"])]

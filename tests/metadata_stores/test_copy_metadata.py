@@ -1,7 +1,5 @@
 """Tests for metadata store copy functionality."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 
 import narwhals as nw

@@ -42,7 +42,7 @@ def test_snapshot_id_stability_with_module():
 
     try:
         # Get the graph with features
-        graph1 = temp_module.get_graph()
+        graph1 = temp_module.graph
 
         # Get original snapshot_id
         original_snapshot_id = graph1.snapshot_id
