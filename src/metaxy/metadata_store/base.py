@@ -1,10 +1,13 @@
 """Abstract base class for metadata storage backends."""
 
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeGuard, overload
 
@@ -34,6 +37,44 @@ if TYPE_CHECKING:
     pass
 
 # Removed TRef - all stores now use Narwhals LazyFrames universally
+
+
+@dataclass
+class FilteredFeature:
+    """Specifies a feature to copy with optional filters.
+
+    Used by copy_metadata() to provide fine-grained control over what data is copied.
+
+    Attributes:
+        feature: The feature to copy (FeatureKey or Feature class)
+        filters: Optional list of Narwhals filter expressions to apply to this feature only.
+                 These are combined with any global filters passed to copy_metadata.
+
+    Example:
+        >>> # Copy only specific samples for a feature
+        >>> filtered = FilteredFeature(
+        ...     feature=FeatureKey(["my_feature"]),
+        ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])]
+        ... )
+        >>> dest_store.copy_metadata(
+        ...     from_store=source,
+        ...     features=[filtered],
+        ...     from_snapshot="abc123"
+        ... )
+    """
+
+    feature: FeatureKey | type[Feature]
+    filters: list[nw.Expr] | None = None
+
+    @property
+    def feature_key(self) -> FeatureKey:
+        """Get the FeatureKey from either a FeatureKey or Feature class."""
+
+        if isinstance(self.feature, type):
+            # It's a Feature class
+            return self.feature.spec.key  # pyrefly: ignore[missing-attribute]
+        return self.feature
+
 
 # System namespace constant (use prefix without __ to avoid conflicts with separator)
 SYSTEM_NAMESPACE = "metaxy-system"
@@ -134,7 +175,7 @@ class MetadataStore(ABC):
         *,
         hash_algorithm: HashAlgorithm | None = None,
         prefer_native: bool = True,
-        fallback_stores: list["MetadataStore"] | None = None,
+        fallback_stores: list[MetadataStore] | None = None,
     ):
         """
         Initialize metadata store.
@@ -789,6 +830,353 @@ class MetadataStore(ABC):
         """List features in THIS store only."""
         pass
 
+    def read_graph_snapshots(self) -> pl.DataFrame:
+        """Read all recorded graph snapshots from the feature_versions system table.
+
+        Returns a DataFrame with columns:
+        - snapshot_id: Unique identifier for each graph snapshot
+        - recorded_at: Timestamp when the snapshot was recorded
+        - feature_count: Number of features in this snapshot
+
+        Returns:
+            Polars DataFrame with snapshot information, sorted by recorded_at descending
+
+        Raises:
+            StoreNotOpenError: If store is not open
+
+        Example:
+            >>> with store:
+            ...     snapshots = store.read_graph_snapshots()
+            ...     latest_snapshot = snapshots["snapshot_id"][0]
+            ...     print(f"Latest snapshot: {latest_snapshot}")
+        """
+        self._check_open()
+
+        versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
+        if versions_lazy is None:
+            # No snapshots recorded yet
+            return pl.DataFrame(
+                schema={
+                    "snapshot_id": pl.String,
+                    "recorded_at": pl.Datetime("us"),
+                    "feature_count": pl.UInt32,
+                }
+            )
+
+        versions_df = versions_lazy.collect().to_polars()
+
+        # Group by snapshot_id and get earliest recorded_at and count
+        snapshots = (
+            versions_df.group_by("snapshot_id")
+            .agg(
+                [
+                    pl.col("recorded_at").min().alias("recorded_at"),
+                    pl.col("feature_key").count().alias("feature_count"),
+                ]
+            )
+            .sort("recorded_at", descending=True)
+        )
+
+        return snapshots
+
+    def read_features(
+        self,
+        *,
+        current: bool = True,
+        snapshot_id: str | None = None,
+    ) -> pl.DataFrame:
+        """Read feature version information from the feature_versions system table.
+
+        Args:
+            current: If True, only return features from the current code snapshot.
+                     If False, must provide snapshot_id.
+            snapshot_id: Specific snapshot ID to filter by. Required if current=False.
+
+        Returns:
+            Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
+            - feature_key: Feature identifier
+            - feature_version: Version hash of the feature
+            - recorded_at: When this version was recorded
+            - feature_spec: JSON serialized feature specification
+            - feature_class_path: Python import path to the feature class
+            - snapshot_id: Graph snapshot this feature belongs to
+
+        Raises:
+            StoreNotOpenError: If store is not open
+            ValueError: If current=False but no snapshot_id provided
+
+        Examples:
+            >>> # Get features from current code
+            >>> with store:
+            ...     features = store.read_features(current=True)
+            ...     print(f"Current graph has {len(features)} features")
+
+            >>> # Get features from a specific snapshot
+            >>> with store:
+            ...     features = store.read_features(current=False, snapshot_id="abc123")
+            ...     for row in features.iter_rows(named=True):
+            ...         print(f"{row['feature_key']}: {row['feature_version']}")
+        """
+        self._check_open()
+
+        if not current and snapshot_id is None:
+            raise ValueError("Must provide snapshot_id when current=False")
+
+        versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
+        if versions_lazy is None:
+            # No features recorded yet
+            return pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+
+        if current:
+            # Get current snapshot from active graph
+            graph = FeatureGraph.get_active()
+            snapshot_id = graph.snapshot_id
+
+        # Filter by snapshot_id
+        versions_df = (
+            versions_lazy.filter(nw.col("snapshot_id") == snapshot_id)
+            .collect()
+            .to_polars()
+        )
+
+        return versions_df
+
+    def copy_metadata(
+        self,
+        from_store: MetadataStore,
+        features: list[FeatureKey | type[Feature] | FilteredFeature] | None = None,
+        *,
+        from_snapshot: str | None = None,
+        filters: list[nw.Expr] | None = None,
+    ) -> dict[str, int]:
+        """Copy metadata from another store with fine-grained filtering.
+
+        This is a reusable method that can be called programmatically or from CLI/migrations.
+        Copies metadata for specified features, preserving the original snapshot_id.
+
+        Args:
+            from_store: Source metadata store to copy from (must be opened)
+            features: List of features to copy. Can be:
+                - None: copies all features from source store
+                - List of FeatureKey or Feature classes: copies specified features
+                - List of FilteredFeature: copies features with per-feature filters
+                Can mix all types in the same list.
+            from_snapshot: Snapshot ID to filter source data by. If None, uses latest snapshot
+                from source store. Only rows with this snapshot_id will be copied.
+                The snapshot_id is preserved in the destination store.
+            filters: Global filters to apply to all features (Narwhals expressions).
+                Combined with per-feature filters from FilteredFeature objects.
+
+        Returns:
+            Dict with statistics: {"features_copied": int, "rows_copied": int}
+
+        Raises:
+            ValueError: If from_store or self (destination) is not open
+            FeatureNotFoundError: If a specified feature doesn't exist in source store
+
+        Examples:
+            >>> # Simple: copy all features from latest snapshot
+            >>> stats = dest_store.copy_metadata(from_store=source_store)
+
+            >>> # Copy specific features from a specific snapshot
+            >>> stats = dest_store.copy_metadata(
+            ...     from_store=source_store,
+            ...     features=[FeatureKey(["my_feature"])],
+            ...     from_snapshot="abc123",
+            ... )
+
+            >>> # Copy with global filters
+            >>> stats = dest_store.copy_metadata(
+            ...     from_store=source_store,
+            ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])],
+            ... )
+
+            >>> # Copy with per-feature filters
+            >>> stats = dest_store.copy_metadata(
+            ...     from_store=source_store,
+            ...     features=[
+            ...         FilteredFeature(
+            ...             feature=FeatureKey(["feature_a"]),
+            ...             filters=[nw.col("field_a") > 10]
+            ...         ),
+            ...         FeatureKey(["feature_b"]),  # No specific filters
+            ...     ],
+            ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])],  # Applied to all
+            ... )
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Validate destination store is open
+        if not self._is_open:
+            raise ValueError("Destination store must be opened (use context manager)")
+
+        # Automatically handle source store context manager
+        should_close_source = not from_store._is_open
+        if should_close_source:
+            from_store.__enter__()
+
+        try:
+            return self._copy_metadata_impl(
+                from_store=from_store,
+                features=features,
+                from_snapshot=from_snapshot,
+                filters=filters,
+                logger=logger,
+            )
+        finally:
+            if should_close_source:
+                from_store.__exit__(None, None, None)
+
+    def _copy_metadata_impl(
+        self,
+        from_store: MetadataStore,
+        features: list[FeatureKey | type[Feature] | FilteredFeature] | None,
+        from_snapshot: str | None,
+        filters: list[nw.Expr] | None,
+        logger,
+    ) -> dict[str, int]:
+        """Internal implementation of copy_metadata."""
+        # Normalize features to list of FilteredFeature objects
+        feature_selections: list[FilteredFeature]
+        if features is None:
+            # Copy all features from source (no per-feature filters)
+            all_keys = from_store.list_features(include_fallback=False)
+            feature_selections = [FilteredFeature(feature=key) for key in all_keys]
+            logger.info(
+                f"Copying all features from source: {len(feature_selections)} features"
+            )
+        else:
+            # Convert mixed list to FilteredFeature objects
+            feature_selections = []
+            for item in features:
+                if isinstance(item, FilteredFeature):
+                    feature_selections.append(item)
+                else:
+                    # FeatureKey or Feature class - wrap in FilteredFeature with no filters
+                    feature_selections.append(FilteredFeature(feature=item))
+            logger.info(f"Copying {len(feature_selections)} specified features")
+
+        # Determine from_snapshot
+        if from_snapshot is None:
+            # Get latest snapshot from source store
+            try:
+                versions_lazy = from_store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                if versions_lazy is None:
+                    # No feature_versions table yet - if no features to copy, that's okay
+                    if len(feature_selections) == 0:
+                        logger.info(
+                            "No features to copy and no snapshots in source store"
+                        )
+                        from_snapshot = None  # Will be set later if needed
+                    else:
+                        raise ValueError(
+                            "Source store has no feature_versions table. Cannot determine snapshot."
+                        )
+                elif versions_lazy is not None:
+                    versions_df = versions_lazy.collect().to_polars()
+                    if versions_df.height == 0:
+                        # Empty versions table - if no features to copy, that's okay
+                        if len(feature_selections) == 0:
+                            logger.info(
+                                "No features to copy and no snapshots in source store"
+                            )
+                            from_snapshot = None
+                        else:
+                            raise ValueError(
+                                "Source store feature_versions table is empty. No snapshots found."
+                            )
+                    else:
+                        # Get most recent snapshot_id by recorded_at
+                        from_snapshot = (
+                            versions_df.sort("recorded_at", descending=True)
+                            .select("snapshot_id")
+                            .head(1)["snapshot_id"][0]
+                        )
+                        logger.info(
+                            f"Using latest snapshot from source: {from_snapshot}"
+                        )
+            except Exception as e:
+                # If we have no features to copy, continue gracefully
+                if len(feature_selections) == 0:
+                    logger.info(f"No features to copy: {e}")
+                    from_snapshot = None
+                else:
+                    raise ValueError(
+                        f"Could not determine latest snapshot from source store: {e}"
+                    )
+        else:
+            logger.info(f"Using specified from_snapshot: {from_snapshot}")
+
+        # Copy metadata for each feature
+        total_rows = 0
+        features_copied = 0
+
+        with allow_feature_version_override():
+            for selection in feature_selections:
+                feature_key = selection.feature_key
+                try:
+                    # Read metadata from source, filtering by from_snapshot
+                    # Use current_only=False to avoid filtering by feature_version
+                    source_lazy = from_store.read_metadata(
+                        feature_key,
+                        allow_fallback=False,
+                        current_only=False,
+                    )
+
+                    # Filter by from_snapshot
+                    import narwhals as nw
+
+                    source_filtered = source_lazy.filter(
+                        nw.col("snapshot_id") == from_snapshot
+                    )
+
+                    # Apply global filters (if any)
+                    if filters:
+                        for filter_expr in filters:
+                            source_filtered = source_filtered.filter(filter_expr)
+
+                    # Apply per-feature filters (if any)
+                    if selection.filters:
+                        for filter_expr in selection.filters:
+                            source_filtered = source_filtered.filter(filter_expr)
+
+                    # Collect to Polars DataFrame
+                    source_df = source_filtered.collect().to_polars()
+
+                    if source_df.height == 0:
+                        logger.warning(
+                            f"No rows found for {feature_key.to_string()} with snapshot {from_snapshot}, skipping"
+                        )
+                        continue
+
+                    # Write to destination (preserving snapshot_id and feature_version)
+                    self.write_metadata(feature_key, source_df)
+
+                    features_copied += 1
+                    total_rows += source_df.height
+                    logger.info(
+                        f"Copied {source_df.height} rows for {feature_key.to_string()}"
+                    )
+
+                except FeatureNotFoundError:
+                    logger.warning(
+                        f"Feature {feature_key.to_string()} not found in source store, skipping"
+                    )
+                    continue
+                except Exception as e:
+                    logger.error(
+                        f"Error copying {feature_key.to_string()}: {e}", exc_info=True
+                    )
+                    raise
+
+        logger.info(
+            f"Copy complete: {features_copied} features, {total_rows} total rows"
+        )
+
+        return {"features_copied": features_copied, "rows_copied": total_rows}
+
     # ========== Dependency Resolution ==========
 
     def read_upstream_metadata(
@@ -901,7 +1289,7 @@ class MetadataStore(ABC):
         self,
         feature: type[Feature],
         *,
-        samples: "nw.DataFrame[Any] | nw.LazyFrame[Any] | None" = None,
+        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         lazy: bool = False,
         **kwargs,
     ) -> DiffResult: ...
@@ -911,7 +1299,7 @@ class MetadataStore(ABC):
         self,
         feature: type[Feature],
         *,
-        samples: "nw.DataFrame[Any] | nw.LazyFrame[Any] | None" = None,
+        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         lazy: bool = True,
         **kwargs,
     ) -> LazyDiffResult: ...
@@ -920,7 +1308,7 @@ class MetadataStore(ABC):
         self,
         feature: type[Feature],
         *,
-        samples: "nw.DataFrame[Any] | nw.LazyFrame[Any] | None" = None,
+        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         lazy: bool = False,
         **kwargs,
     ) -> DiffResult | LazyDiffResult:
