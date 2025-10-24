@@ -1,341 +1,273 @@
-"""DuckLake metadata store built on top of the DuckDB backend.
+"""DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
-This module configures an in-memory DuckDB connection, installs DuckLake
-and related plugins, and attaches a DuckLake instance using secrets that
-reference configurable metadata and storage backends.
-"""
+from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from __future__ import annotations
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from dataclasses import dataclass
-from typing import Any, Iterable
+if TYPE_CHECKING:
+    from metaxy.metadata_store.base import MetadataStore
 
-from pydantic import BaseModel, Field, TypeAdapter
-from typing_extensions import Literal
-
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
-
-
-class DuckLakeMetadataBackend(BaseModel):
-    """Base class for DuckLake metadata backend configuration."""
-
-    type: str
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        """Return SQL fragments for secrets/parameters used during ATTACH."""
-        raise NotImplementedError
-
-
-class DuckLakePostgresMetadataBackend(DuckLakeMetadataBackend):
-    """Postgres catalog backend for DuckLake."""
-
-    type: Literal["postgres"] = "postgres"
-    host: str = Field(default="localhost")
-    port: int = Field(default=5432)
-    database: str
-    user: str
-    password: str
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        secret_name = f"secret_catalog_{alias}"
-        secret_sql = (
-            f"CREATE OR REPLACE SECRET {secret_name} ("
-            f" TYPE postgres, HOST '{self.host}', PORT {self.port},"
-            f" DATABASE '{self.database}', USER '{self.user}',"
-            f" PASSWORD '{self.password}'"
-            " );"
-        )
-        metadata_params = (
-            "METADATA_PATH '', "
-            f"METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{secret_name}'}}"
-        )
-        return secret_sql, metadata_params
-
-
-class DuckLakeSqliteMetadataBackend(DuckLakeMetadataBackend):
-    """SQLite catalog backend for DuckLake."""
-
-    type: Literal["sqlite"] = "sqlite"
-    path: str = Field(description="Path to the SQLite database file.")
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        return "", f"METADATA_PATH '{self.path}'"
-
-
-class DuckLakeDuckDBMetadataBackend(DuckLakeMetadataBackend):
-    """DuckDB catalog backend for DuckLake."""
-
-    type: Literal["duckdb"] = "duckdb"
-    path: str = Field(description="Path to the DuckDB database file.")
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        return "", f"METADATA_PATH '{self.path}'"
-
-
-class DuckLakeStorageBackend(BaseModel):
-    """Base class for DuckLake storage backend configuration."""
-
-    type: str
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        """Return SQL fragments for secrets/parameters used during ATTACH."""
-        raise NotImplementedError
-
-
-class DuckLakeS3StorageBackend(DuckLakeStorageBackend):
-    """S3-compatible object storage for DuckLake."""
-
-    type: Literal["s3"] = "s3"
-    endpoint_url: str
-    bucket: str
-    prefix: str | None = None
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    region: str = "us-east-1"
-    use_ssl: bool = True
-    url_style: Literal["path", "virtual"] = "path"
-
-    @property
-    def full_data_path(self) -> str:
-        base = f"s3://{self.bucket}"
-        if self.prefix:
-            clean_prefix = self.prefix.strip("/")
-            return f"{base}/{clean_prefix}/"
-        return f"{base}/"
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        secret_name = f"secret_storage_{alias}"
-        secret_sql = (
-            f"CREATE OR REPLACE SECRET {secret_name} ("
-            " TYPE S3,"
-            f" KEY_ID '{self.aws_access_key_id}',"
-            f" SECRET '{self.aws_secret_access_key}',"
-            f" ENDPOINT '{self.endpoint_url}',"
-            f" URL_STYLE '{self.url_style}',"
-            f" REGION '{self.region}',"
-            f" USE_SSL {'true' if self.use_ssl else 'false'},"
-            f" SCOPE 's3://{self.bucket}'"
-            " );"
-        )
-        data_path_sql = f"DATA_PATH '{self.full_data_path}'"
-        return secret_sql, data_path_sql
-
-
-class DuckLakeLocalStorageBackend(DuckLakeStorageBackend):
-    """Local filesystem storage backend for DuckLake."""
-
-    type: Literal["local"] = "local"
-    path: str
-
-    def build_sql_parts(self, alias: str) -> tuple[str, str]:
-        return "", f"DATA_PATH '{self.path}'"
-
-
-DuckLakeMetadataBackendConfig = (
-    DuckLakePostgresMetadataBackend
-    | DuckLakeSqliteMetadataBackend
-    | DuckLakeDuckDBMetadataBackend
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.metadata_store._ducklake_support import (
+    DuckDBPyConnection,
+    DuckLakeAttachmentConfig,
+    DuckLakeAttachmentManager,
+    DuckLakeConfigInput,
+    build_ducklake_attachment,
+    ensure_extensions_with_plugins,
 )
-DuckLakeStorageBackendConfig = DuckLakeS3StorageBackend | DuckLakeLocalStorageBackend
-
-_METADATA_ADAPTER = TypeAdapter(DuckLakeMetadataBackendConfig)
-_STORAGE_ADAPTER = TypeAdapter(DuckLakeStorageBackendConfig)
+from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
-@dataclass
-class DuckLakeAttachmentConfig:
-    """Configuration payload used to attach DuckLake to DuckDB."""
+class ExtensionSpec(BaseModel):
+    """
+    DuckDB extension specification accepted by DuckDBMetadataStore.
 
-    metadata_backend: DuckLakeMetadataBackendConfig
-    storage_backend: DuckLakeStorageBackendConfig
-    alias: str = "ducklake"
-    plugins: Iterable[str] = ("ducklake",)
-    attach_options: dict[str, Any] | None = None
+    Supports additional keys for forward compatibility.
+    """
+
+    name: str
+    repository: str | None = None
+
+    model_config = ConfigDict(extra="allow")
 
 
-class DuckLakeAttachmentManager:
-    """Responsible for configuring a DuckDB connection for DuckLake usage."""
+ExtensionInput = str | ExtensionSpec | Mapping[str, Any]
+NormalisedExtension = str | ExtensionSpec
 
-    def __init__(self, config: DuckLakeAttachmentConfig):
-        self._config = config
 
-    def _build_attach_options_clause(self) -> str:
-        options = self._config.attach_options or {}
-        if not options:
-            return ""
-
-        def _format_value(value: Any) -> str | None:
-            if value is None:
-                return None
-            if isinstance(value, bool):
-                return "true" if value else "false"
-            if isinstance(value, (int, float)):
-                return str(value)
-            escaped = str(value).replace("'", "''")
-            return f"'{escaped}'"
-
-        parts: list[str] = []
-        for key, value in sorted(options.items()):
-            formatted = _format_value(value)
-            if formatted is None:
-                continue
-            parts.append(f"{str(key).upper()} {formatted}")
-
-        if not parts:
-            return ""
-
-        joined = ", ".join(parts)
-        return f" ({joined})"
-
-    def configure(self, conn) -> None:
-        """Install plugins, create secrets, and attach DuckLake."""
-        cursor = conn.cursor()
-        try:
-            for plugin in self._config.plugins:
-                cursor.execute(f"INSTALL {plugin};")
-                cursor.execute(f"LOAD {plugin};")
-
-            # Attempt to detach existing attachment to allow reconfiguration
+def _normalise_extensions(
+    extensions: Iterable[ExtensionInput],
+) -> list[NormalisedExtension]:
+    """Coerce extension inputs into strings or fully-validated specs."""
+    normalised: list[NormalisedExtension] = []
+    for ext in extensions:
+        if isinstance(ext, str):
+            normalised.append(ext)
+        elif isinstance(ext, ExtensionSpec):
+            normalised.append(ext)
+        elif isinstance(ext, Mapping):
             try:
-                cursor.execute(f"DETACH {self._config.alias};")
-            except Exception:
-                pass
-
-            metadata_secret_sql, metadata_params_sql = (
-                self._config.metadata_backend.build_sql_parts(self._config.alias)
+                normalised.append(ExtensionSpec.model_validate(ext))
+            except ValidationError as exc:
+                raise ValueError(f"Invalid DuckDB extension spec: {ext!r}") from exc
+        else:
+            raise TypeError(
+                "DuckDB extensions must be strings or mapping-like objects with a 'name'."
             )
-            storage_secret_sql, storage_params_sql = (
-                self._config.storage_backend.build_sql_parts(self._config.alias)
-            )
-
-            if metadata_secret_sql:
-                cursor.execute(metadata_secret_sql)
-            if storage_secret_sql:
-                cursor.execute(storage_secret_sql)
-
-            ducklake_secret = f"secret_{self._config.alias}"
-            cursor.execute(
-                "CREATE OR REPLACE SECRET {name} ("
-                " TYPE DUCKLAKE,"
-                " {metadata_params},"
-                " {storage_params}"
-                " );".format(
-                    name=ducklake_secret,
-                    metadata_params=metadata_params_sql,
-                    storage_params=storage_params_sql,
-                )
-            )
-
-            options_clause = self._build_attach_options_clause()
-            cursor.execute(
-                f"ATTACH 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};"
-            )
-            cursor.execute(f"USE {self._config.alias};")
-        finally:
-            cursor.close()
+    return normalised
 
 
-class DuckLakeMetadataStore(DuckDBMetadataStore):
-    """Metadata store that connects to DuckLake via DuckDB attachments."""
+class DuckDBMetadataStore(IbisMetadataStore):
+    """
+    DuckDB metadata store using Ibis backend.
+
+    Convenience wrapper that configures IbisMetadataStore for DuckDB.
+
+    Hash algorithm support is detected dynamically based on installed extensions:
+    - MD5: Always available (built-in)
+    - XXHASH32, XXHASH64: Available when 'hashfuncs' extension is loaded
+
+    Components:
+        - joiner: NarwhalsJoiner (works with any backend)
+        - calculator: IbisDataVersionCalculator (native SQL hash computation with xxh64/xxh32/md5)
+        - diff_resolver: NarwhalsDiffResolver
+
+    Examples:
+        >>> # Local file database
+        >>> with DuckDBMetadataStore("metadata.db") as store:
+        ...     store.write_metadata(MyFeature, df)
+
+        >>> # In-memory database
+        >>> with DuckDBMetadataStore(":memory:") as store:
+        ...     store.write_metadata(MyFeature, df)
+
+        >>> # MotherDuck
+        >>> with DuckDBMetadataStore("md:my_database") as store:
+        ...     store.write_metadata(MyFeature, df)
+
+        >>> # With extensions
+        >>> store = DuckDBMetadataStore(
+        ...     "metadata.db",
+        ...     hash_algorithm=HashAlgorithm.XXHASH64,
+        ...     extensions=["hashfuncs"]
+        ... )
+        >>> with store:
+        ...     store.write_metadata(MyFeature, df)
+    """
 
     def __init__(
         self,
+        database: str | Path,
         *,
-        metadata_backend: DuckLakeMetadataBackendConfig | dict[str, Any],
-        storage_backend: DuckLakeStorageBackendConfig | dict[str, Any],
-        alias: str = "ducklake",
-        plugins: Iterable[str] | None = None,
-        attach_options: dict[str, Any] | None = None,
-        extensions: list[ExtensionSpec | str] | None = None,
-        database: str = ":memory:",
         config: dict[str, str] | None = None,
-        **kwargs: Any,
+        extensions: Sequence[ExtensionInput] | None = None,
+        fallback_stores: list["MetadataStore"] | None = None,
+        ducklake: DuckLakeConfigInput | None = None,
+        **kwargs,
     ):
-        metadata_cfg = (
-            metadata_backend
-            if isinstance(metadata_backend, DuckLakeMetadataBackend)
-            else _METADATA_ADAPTER.validate_python(metadata_backend)
+        """
+        Initialize DuckDB metadata store.
+
+        Args:
+            database: Database connection string or path.
+                - File path: "metadata.db" or Path("metadata.db")
+                - In-memory: ":memory:"
+                - MotherDuck: "md:my_database" or "md:my_database?motherduck_token=..."
+                - S3: "s3://bucket/path/database.duckdb" (read-only via ATTACH)
+                - HTTPS: "https://example.com/database.duckdb" (read-only via ATTACH)
+                - Any valid DuckDB connection string
+
+                Note: Parent directories are NOT created automatically. Ensure paths exist
+                before initializing the store.
+            config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
+            extensions: List of DuckDB extensions to install and load on open.
+                Supports strings (community repo), mapping-like objects with
+                ``name``/``repository`` keys, or ExtensionSpec instances.
+
+                Examples:
+                    extensions=['hashfuncs']  # Install hashfuncs from community
+                    extensions=[{'name': 'hashfuncs'}]  # Same as above
+                    extensions=[{'name': 'spatial', 'repository': 'core_nightly'}]
+                    extensions=[{'name': 'my_ext', 'repository': 'https://my-repo.com'}]
+            fallback_stores: Ordered list of read-only fallback stores.
+            ducklake: Optional DuckLake attachment configuration. Provide either a
+                mapping with 'metadata_backend' and 'storage_backend' entries or a
+                DuckLakeAttachmentConfig instance. When supplied, the DuckDB
+                connection is configured to ATTACH the DuckLake catalog after open().
+            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
+        """
+        database_str = str(database)
+
+        # Build connection params for Ibis DuckDB backend
+        # Ibis DuckDB backend accepts config params directly (not nested under 'config')
+        connection_params = {"database": database_str}
+        if config:
+            connection_params.update(config)
+
+        self.database = database_str
+        base_extensions: list[NormalisedExtension] = _normalise_extensions(
+            extensions or []
         )
-        storage_cfg = (
-            storage_backend
-            if isinstance(storage_backend, DuckLakeStorageBackend)
-            else _STORAGE_ADAPTER.validate_python(storage_backend)
-        )
 
-        base_extensions: list[ExtensionSpec | str] = list(extensions or [])
-        plugin_list = list(plugins or ["ducklake"])
+        self._ducklake_config: DuckLakeAttachmentConfig | None = None
+        self._ducklake_attachment: DuckLakeAttachmentManager | None = None
+        if ducklake is not None:
+            attachment_config, manager = build_ducklake_attachment(ducklake)
+            ensure_extensions_with_plugins(base_extensions, attachment_config.plugins)
+            self._ducklake_config = attachment_config
+            self._ducklake_attachment = manager
 
-        extension_names = {
-            ext if isinstance(ext, str) else ext.get("name", "")
-            for ext in base_extensions
-        }
+        self.extensions = base_extensions
 
-        for plugin in plugin_list:
-            if plugin not in extension_names:
-                base_extensions.append(plugin)
-                extension_names.add(plugin)
+        # Auto-add hashfuncs extension if not present (needed for default XXHASH64)
+        extension_names: list[str] = []
+        for ext in self.extensions:
+            if isinstance(ext, str):
+                extension_names.append(ext)
+            elif isinstance(ext, ExtensionSpec):
+                extension_names.append(ext.name)
+            else:
+                # After _normalise_extensions, this should not happen
+                # But keep defensive check for type safety
+                raise TypeError(
+                    f"Extension must be str or ExtensionSpec after normalization; got {type(ext)}"
+                )
+        if "hashfuncs" not in extension_names:
+            self.extensions.append("hashfuncs")
 
+        # Initialize Ibis store with DuckDB backend
         super().__init__(
-            database=database,
-            config=config,
-            extensions=base_extensions,
+            backend="duckdb",
+            connection_params=connection_params,
+            fallback_stores=fallback_stores,
             **kwargs,
         )
 
-        self.metadata_backend_config = metadata_cfg
-        self.storage_backend_config = storage_cfg
-        self._ducklake_alias = alias
-        self._ducklake_plugins = plugin_list
-        self._ducklake_attach_options = attach_options or {}
+    def _get_default_hash_algorithm(self) -> HashAlgorithm:
+        """Get default hash algorithm for DuckDB stores.
 
-        self._ducklake_attachment = DuckLakeAttachmentManager(
-            DuckLakeAttachmentConfig(
-                metadata_backend=metadata_cfg,
-                storage_backend=storage_cfg,
-                alias=alias,
-                plugins=plugin_list,
-                attach_options=self._ducklake_attach_options,
-            )
-        )
+        Uses XXHASH64 which requires the hashfuncs extension (lazily loaded).
+        """
+        return HashAlgorithm.XXHASH64
 
-    def open(self) -> None:
-        """Open DuckDB connection and attach DuckLake."""
-        super().open()
-        if self._conn is None:
-            raise RuntimeError("DuckLakeMetadataStore failed to open DuckDB connection")
-        self._ducklake_attachment.configure(self._conn)
+    def _supports_native_components(self) -> bool:
+        """DuckDB stores support native data version calculations when connection is open."""
+        return self._conn is not None
 
     def _create_native_components(self):
-        """Create DuckLake-specific native components."""
-        from metaxy.data_versioning.calculators.base import DataVersionCalculator
-        from metaxy.data_versioning.diff.base import MetadataDiffResolver
-        from metaxy.data_versioning.joiners.base import UpstreamJoiner
-        from metaxy.data_versioning.calculators.ducklake import (
-            DuckLakeDataVersionCalculator,
+        """Create components for native SQL execution with DuckDB.
+
+        Uses DuckDBDataVersionCalculator which handles extension loading lazily.
+        Extensions are loaded when the calculator is created (on-demand), not on store open.
+        """
+        from metaxy.data_versioning.calculators.duckdb import (
+            DuckDBDataVersionCalculator,
         )
-        from metaxy.data_versioning.diff.ducklake import DuckLakeDiffResolver
-        from metaxy.data_versioning.joiners.ducklake import DuckLakeJoiner
+        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create native components: store is not open. "
+                "Cannot create native data version calculations: store is not open. "
                 "Ensure store is used as context manager."
             )
 
-        import ibis.expr.types as ir
-
-        joiner: UpstreamJoiner[ir.Table] = DuckLakeJoiner(
-            backend=self._conn, alias=self._ducklake_alias
-        )
-        calculator: DataVersionCalculator[ir.Table] = DuckLakeDataVersionCalculator(
-            hash_sql_generators=self.hash_sql_generators,
-            alias=self._ducklake_alias,
+        # All components accept/return Narwhals LazyFrames
+        # DuckDBDataVersionCalculator loads extensions and generates SQL for hashing
+        joiner = NarwhalsJoiner()
+        calculator = DuckDBDataVersionCalculator(
+            backend=self._conn,
             extensions=self.extensions,
         )
-        calculator.set_connection(self._conn)  # type: ignore[attr-defined]
-
-        diff_resolver: MetadataDiffResolver[ir.Table] = DuckLakeDiffResolver(
-            backend=self._conn, alias=self._ducklake_alias
-        )
+        diff_resolver = NarwhalsDiffResolver()
 
         return joiner, calculator, diff_resolver
+
+    # ------------------------------------------------------------------ DuckLake
+    def open(self) -> None:
+        """Open DuckDB connection and configure optional DuckLake attachment."""
+        super().open()
+        if self._ducklake_attachment is not None:
+            try:
+                duckdb_conn = self._duckdb_raw_connection()
+                self._ducklake_attachment.configure(duckdb_conn)
+            except Exception:
+                # Ensure connection is closed if DuckLake configuration fails
+                super().close()
+                raise
+
+    def preview_ducklake_sql(self) -> list[str]:
+        """Return DuckLake attachment SQL if configured."""
+        return self.ducklake_attachment.preview_sql()
+
+    @property
+    def ducklake_attachment(self) -> DuckLakeAttachmentManager:
+        """DuckLake attachment manager (raises if not configured)."""
+        if self._ducklake_attachment is None:
+            raise RuntimeError("DuckLake attachment is not configured.")
+        return self._ducklake_attachment
+
+    @property
+    def ducklake_attachment_config(self) -> DuckLakeAttachmentConfig:
+        """DuckLake attachment configuration (raises if not configured)."""
+        if self._ducklake_config is None:
+            raise RuntimeError("DuckLake attachment is not configured.")
+        return self._ducklake_config
+
+    def _duckdb_raw_connection(self) -> DuckDBPyConnection | RuntimeError:
+        """Return the underlying DuckDBPyConnection from the Ibis backend."""
+        if self._conn is None:
+            raise RuntimeError("DuckDB connection is not open.")
+
+        candidate = self._conn.con  # pyright: ignore[reportAttributeAccessIssue]
+
+        if not isinstance(candidate, DuckDBPyConnection):
+            raise TypeError(
+                f"Expected DuckDB backend 'con' to be DuckDBPyConnection, "
+                f"got {type(candidate).__name__}"
+            )
+
+        return candidate
