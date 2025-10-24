@@ -8,8 +8,6 @@ we preview the SQL statements that would be executed when attaching DuckLake.
 from __future__ import annotations
 
 from metaxy.metadata_store.ducklake import (
-    DuckLakeAttachmentConfig,
-    DuckLakeAttachmentManager,
     DuckLakeMetadataStore,
     DuckLakePostgresMetadataBackend,
     DuckLakeS3StorageBackend,
@@ -39,35 +37,9 @@ def build_store() -> DuckLakeMetadataStore:
     )
 
 
-class PreviewCursor:
-    """Captures SQL commands for display."""
-
-    def __init__(self) -> None:
-        self.commands: list[str] = []
-
-    def execute(self, command: str) -> None:
-        self.commands.append(command.strip())
-
-    def close(self) -> None:  # pragma: no cover - harmless in example
-        pass
-
-
-class PreviewConnection:
-    """Minimal DuckDB-like connection for previewing attachment SQL."""
-
-    def __init__(self) -> None:
-        self._cursor = PreviewCursor()
-
-    def cursor(self) -> PreviewCursor:
-        return self._cursor
-
-
 def preview_attachment_sql(store: DuckLakeMetadataStore) -> list[str]:
     """Return the SQL statements DuckLake would execute on open()."""
-    attachment: DuckLakeAttachmentManager = store._ducklake_attachment  # type: ignore[attr-defined]
-    preview_conn = PreviewConnection()
-    attachment.configure(preview_conn)
-    return preview_conn.cursor().commands
+    return store.preview_attachment_sql()
 
 
 if __name__ == "__main__":

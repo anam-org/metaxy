@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from metaxy.metadata_store.ducklake import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
@@ -94,6 +92,31 @@ def test_ducklake_store_extends_extensions_list() -> None:
     assert "hashfuncs" in store.extensions
     assert "ducklake" in store.extensions
     assert "json" in store.extensions
+
+
+def test_ducklake_preview_sql_uses_public_api() -> None:
+    """preview_attachment_sql should expose generated SQL without private access."""
+    store = DuckLakeMetadataStore(
+        metadata_backend={
+            "type": "postgres",
+            "database": "ducklake_meta",
+            "user": "ducklake",
+            "password": "secret",
+        },
+        storage_backend={
+            "type": "s3",
+            "endpoint_url": "https://object-store",
+            "bucket": "ducklake",
+            "aws_access_key_id": "key",
+            "aws_secret_access_key": "secret",
+        },
+        attach_options={"override_data_path": True},
+    )
+
+    sql_commands = store.preview_attachment_sql()
+    assert sql_commands[0] == "INSTALL ducklake;"
+    assert sql_commands[1] == "LOAD ducklake;"
+    assert sql_commands[-1] == "USE ducklake;"
 
 
 def test_format_attach_options_handles_types() -> None:

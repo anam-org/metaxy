@@ -8,12 +8,30 @@ created, and the DuckLake catalog is attached/selected.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
+
+try:  # pragma: no cover - optional dependency in some environments
+    import duckdb  # type: ignore
+except ImportError:  # pragma: no cover
+    duckdb = None  # type: ignore[assignment]
+    _CATALOG_EXCEPTIONS: tuple[type[Exception], ...] = ()
+else:  # pragma: no cover - runtime dependent
+    candidates: list[type[Exception]] = []
+    for name in ("CatalogException", "CatalogError"):
+        exc = getattr(duckdb, name, None)
+        if isinstance(exc, type) and issubclass(exc, Exception):
+            candidates.append(exc)
+    if not candidates and hasattr(duckdb, "Error"):
+        base_exc = getattr(duckdb, "Error")
+        if isinstance(base_exc, type) and issubclass(base_exc, Exception):
+            candidates.append(base_exc)
+    _CATALOG_EXCEPTIONS = tuple(candidates)
 
 
 # ------------------------------------------------------------------------------
@@ -198,6 +216,29 @@ class DuckLakeAttachmentConfig:
     attach_options: Mapping[str, Any] | None = None
 
 
+class _PreviewCursor:
+    """Collects commands for previewing DuckLake attachment SQL."""
+
+    def __init__(self) -> None:
+        self.commands: list[str] = []
+
+    def execute(self, command: str) -> None:
+        self.commands.append(command.strip())
+
+    def close(self) -> None:  # pragma: no cover - no-op in preview mode
+        pass
+
+
+class _PreviewConnection:
+    """Mock DuckDB connection used for previewing generated SQL."""
+
+    def __init__(self) -> None:
+        self._cursor = _PreviewCursor()
+
+    def cursor(self) -> _PreviewCursor:
+        return self._cursor
+
+
 class DuckLakeAttachmentManager:
     """Responsible for configuring a DuckDB connection for DuckLake usage."""
 
@@ -211,20 +252,19 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            try:
+            if _CATALOG_EXCEPTIONS:
+                try:
+                    cursor.execute(f"DETACH {self._config.alias};")
+                except _CATALOG_EXCEPTIONS:  # type: ignore[arg-type]
+                    pass
+            else:
                 cursor.execute(f"DETACH {self._config.alias};")
-            except Exception:
-                pass
 
             metadata_secret_sql, metadata_params_sql = (
-                self._config.metadata_backend.get_ducklake_sql_parts(
-                    self._config.alias
-                )
+                self._config.metadata_backend.get_ducklake_sql_parts(self._config.alias)
             )
             storage_secret_sql, storage_params_sql = (
-                self._config.storage_backend.get_ducklake_sql_parts(
-                    self._config.alias
-                )
+                self._config.storage_backend.get_ducklake_sql_parts(self._config.alias)
             )
 
             if metadata_secret_sql:
@@ -248,6 +288,12 @@ class DuckLakeAttachmentManager:
             cursor.execute(f"USE {self._config.alias};")
         finally:
             cursor.close()
+
+    def preview_sql(self) -> list[str]:
+        """Return the SQL statements that would be executed during configure()."""
+        preview_conn = _PreviewConnection()
+        self.configure(preview_conn)
+        return preview_conn.cursor().commands
 
 
 # ------------------------------------------------------------------------------
@@ -302,6 +348,7 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
 
         self.metadata_backend_config = metadata_cfg
         self.storage_backend_config = storage_cfg
+        self._ducklake_alias = alias
         self._ducklake_attachment = DuckLakeAttachmentManager(
             DuckLakeAttachmentConfig(
                 metadata_backend=metadata_cfg,
@@ -318,3 +365,11 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
         if self._conn is None:
             raise RuntimeError("DuckLakeMetadataStore failed to open DuckDB connection")
         self._ducklake_attachment.configure(self._conn)
+
+    def get_attachment_manager(self) -> DuckLakeAttachmentManager:
+        """Expose the configured attachment manager for advanced scenarios."""
+        return self._ducklake_attachment
+
+    def preview_attachment_sql(self) -> list[str]:
+        """Return SQL statements executed when attaching DuckLake."""
+        return self._ducklake_attachment.preview_sql()
