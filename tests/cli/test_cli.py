@@ -76,49 +76,6 @@ def test_migrations_generate_help():
     # Should not raise
 
 
-def test_push_command(
-    cli_config_file: Path,
-    cli_graph: FeatureGraph,
-    capsys,
-    snapshot: SnapshotAssertion,
-):
-    """Test push command records feature versions during CD."""
-    from metaxy.cli.app import push
-    from metaxy.config import MetaxyConfig
-
-    # Load config and create store
-    config = MetaxyConfig.load(cli_config_file)
-
-    # Use test graph context
-    with cli_graph.use():
-        store = config.get_store("test")
-
-        # Simulate CD workflow: push records feature versions before deployment
-        with store:
-            set_config(config)
-            push()
-
-            # Later, in application code, users write metadata
-            TestFeature = cli_graph.features_by_key[FeatureKey(["test_cli", "feature"])]
-            data = pl.DataFrame(
-                {
-                    "sample_id": [1, 2],
-                    "data_version": [{"default": "h1"}, {"default": "h2"}],
-                }
-            )
-            store.write_metadata(TestFeature, data)
-
-    # Check output
-    captured = capsys.readouterr()
-    output_lines = [
-        line.strip() for line in captured.out.strip().split("\n") if line.strip()
-    ]
-
-    # Snapshot the output
-    assert len(output_lines) >= 1
-    assert "Recorded" in captured.out or "features" in captured.out
-
-
 def test_migrations_generate_no_changes(
     tmp_path: Path,
     cli_graph: FeatureGraph,
@@ -126,7 +83,6 @@ def test_migrations_generate_no_changes(
     snapshot: SnapshotAssertion,
 ):
     """Test generate command when no changes detected."""
-    pytest.importorskip("duckdb")
 
     from metaxy.cli.migrations import generate
     from metaxy.config import MetaxyConfig
@@ -175,7 +131,6 @@ def test_migrations_apply_dry_run(
     tmp_path: Path, cli_graph: FeatureGraph, capsys, snapshot: SnapshotAssertion
 ):
     """Test apply command in dry-run mode."""
-    pytest.importorskip("duckdb")
 
     from metaxy.cli.migrations import apply
     from metaxy.config import MetaxyConfig

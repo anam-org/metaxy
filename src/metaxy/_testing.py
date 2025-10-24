@@ -223,3 +223,179 @@ class HashAlgorithmCases:
     def case_md5(self) -> HashAlgorithm:
         """MD5 algorithm."""
         return HashAlgorithm.MD5
+
+
+class TempMetaxyProject:
+    """Helper for creating temporary Metaxy projects.
+
+    Provides a context manager API for dynamically creating feature modules
+    and running CLI commands with proper entrypoint configuration.
+
+    Example:
+        >>> project = TempMetaxyProject(tmp_path)
+        >>>
+        >>> def features():
+        ...     from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+        ...
+        ...     class MyFeature(Feature, spec=FeatureSpec(
+        ...         key=FeatureKey(["my_feature"]),
+        ...         deps=None,
+        ...         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
+        ...     )):
+        ...         pass
+        >>>
+        >>> with project.with_features(features):
+        ...     result = project.run_cli("graph", "push")
+        ...     assert result.returncode == 0
+    """
+
+    def __init__(self, tmp_path: Path):
+        """Initialize a temporary Metaxy project.
+
+        Args:
+            tmp_path: Temporary directory path (usually from pytest tmp_path fixture)
+        """
+        self.project_dir = tmp_path
+        self.project_dir.mkdir(exist_ok=True)
+        self._feature_modules: list[str] = []
+        self._write_config()
+
+    def _write_config(self):
+        """Write basic metaxy.toml with DuckDB store configuration."""
+        db_path = self.project_dir / "metadata.duckdb"
+        config_content = f'''store = "dev"
+
+[stores.dev]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "{db_path}"
+'''
+        (self.project_dir / "metaxy.toml").write_text(config_content)
+
+    def with_features(self, features_func, module_name: str | None = None):
+        """Context manager that sets up features for the duration of the block.
+
+        Extracts source code from features_func (skipping the function definition line),
+        writes it to a Python module file, and tracks it for METAXY_ENTRYPOINTS__N
+        environment variable configuration.
+
+        Args:
+            features_func: Function containing feature class definitions.
+                All imports must be inside the function body.
+            module_name: Optional module name. If not provided, generates
+                "features_N" based on number of existing modules.
+
+        Yields:
+            str: The module name that was created
+
+        Example:
+            >>> def my_features():
+            ...     from metaxy import Feature, FeatureSpec, FeatureKey
+            ...
+            ...     class MyFeature(Feature, spec=...):
+            ...         pass
+            >>>
+            >>> with project.with_features(my_features) as module:
+            ...     print(module)  # "features_0"
+            ...     result = project.run_cli("graph", "push")
+        """
+        import inspect
+        import textwrap
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _context():
+            # Generate module name if not provided
+            nonlocal module_name
+            if module_name is None:
+                module_name = f"features_{len(self._feature_modules)}"
+
+            # Extract source code from function
+            source = inspect.getsource(features_func)
+
+            # Remove function definition line and dedent
+            lines = source.split("\n")
+            # Find the first line that's not a decorator or function def
+            body_start = 0
+            for i, line in enumerate(lines):
+                if line.strip().startswith("def ") and ":" in line:
+                    body_start = i + 1
+                    break
+
+            body_lines = lines[body_start:]
+            dedented = textwrap.dedent("\n".join(body_lines))
+
+            # Write to file in project directory
+            feature_file = self.project_dir / f"{module_name}.py"
+            feature_file.write_text(dedented)
+
+            # Track this module
+            self._feature_modules.append(module_name)
+
+            try:
+                yield module_name
+            finally:
+                # Cleanup: remove from tracking (file stays for debugging)
+                if module_name in self._feature_modules:
+                    self._feature_modules.remove(module_name)
+
+        return _context()
+
+    def run_cli(
+        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
+    ):
+        """Run CLI command with current feature modules loaded.
+
+        Automatically sets METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc.
+        based on active with_features() context managers.
+
+        Args:
+            *args: CLI command arguments (e.g., "graph", "push")
+            check: If True (default), raises CalledProcessError on non-zero exit
+            env: Optional dict of additional environment variables
+            **kwargs: Additional arguments to pass to subprocess.run()
+
+        Returns:
+            subprocess.CompletedProcess: Result of the CLI command
+
+        Raises:
+            subprocess.CalledProcessError: If check=True and command fails
+
+        Example:
+            >>> result = project.run_cli("graph", "history", "--limit", "5")
+            >>> print(result.stdout)
+        """
+        import os
+        import subprocess
+
+        # Start with current environment
+        cmd_env = os.environ.copy()
+
+        # Add project directory to PYTHONPATH so modules can be imported
+        pythonpath = str(self.project_dir)
+        if "PYTHONPATH" in cmd_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
+        cmd_env["PYTHONPATH"] = pythonpath
+
+        # Set entrypoints for all tracked modules
+        # Use METAXY_ENTRYPOINT_0, METAXY_ENTRYPOINT_1, etc. (single underscore for list indexing)
+        for idx, module_name in enumerate(self._feature_modules):
+            cmd_env[f"METAXY_ENTRYPOINT_{idx}"] = module_name
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run CLI command
+        result = subprocess.run(
+            [sys.executable, "-m", "metaxy.cli.app", *args],
+            cwd=str(self.project_dir),
+            capture_output=True,
+            text=True,
+            env=cmd_env,
+            check=check,
+            **kwargs,
+        )
+
+        return result
