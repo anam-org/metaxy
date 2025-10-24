@@ -98,6 +98,7 @@ def launcher(
 app.command("metaxy.cli.migrations:app", name="migrations")
 app.command("metaxy.cli.push:push", name="push")
 app.command("metaxy.cli.list:app", name="list")
+app.command("metaxy.cli.metadata:app", name="metadata")
 
 
 def main():
