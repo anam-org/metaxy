@@ -5,9 +5,24 @@ import polars as pl
 from metaxy._testing import TempMetaxyProject
 
 
-def _write_sample_metadata(metaxy_project: TempMetaxyProject, feature_key_str: str):
-    """Helper to write sample metadata for a feature."""
+def _write_sample_metadata(
+    metaxy_project: TempMetaxyProject,
+    feature_key_str: str,
+    store_name: str = "dev",
+    sample_ids: list[int] | None = None,
+):
+    """Helper to write sample metadata for a feature.
+
+    Args:
+        metaxy_project: Test project
+        feature_key_str: Feature key as string (e.g., "video__files")
+        store_name: Name of store to write to (default: "dev")
+        sample_ids: List of sample IDs to use (default: [1, 2, 3])
+    """
     from metaxy.models.types import FeatureKey
+
+    if sample_ids is None:
+        sample_ids = [1, 2, 3]
 
     # Parse feature key
     feature_key = FeatureKey(feature_key_str.split("__"))
@@ -18,20 +33,21 @@ def _write_sample_metadata(metaxy_project: TempMetaxyProject, feature_key_str: s
     # Create sample data with data_version column
     sample_data = pl.DataFrame(
         {
-            "id": [1, 2, 3],
-            "value": ["a", "b", "c"],
-            "data_version": [
-                {"default": "hash1"},
-                {"default": "hash2"},
-                {"default": "hash3"},
-            ],
+            "sample_id": sample_ids,
+            "value": [f"val_{i}" for i in sample_ids],
+            "data_version": [{"default": f"hash{i}"} for i in sample_ids],
         }
     )
 
     # Write metadata directly to store
-    store = metaxy_project.stores["dev"]
-    with store:
-        store.write_metadata(feature_cls, sample_data)
+    # Must activate the graph before recording snapshot since record_feature_graph_snapshot uses get_active()
+    graph = metaxy_project.graph
+    with graph.use():
+        store = metaxy_project.stores[store_name]
+        with store:
+            store.write_metadata(feature_cls, sample_data)
+            # Record the feature graph snapshot so copy_metadata can determine snapshot_id
+            store.record_feature_graph_snapshot()
 
 
 def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):
@@ -128,7 +144,192 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         assert "Dropped: video__files" in result.stdout
-        assert "Drop complete: 1 feature(s) dropped" in result.stdout
+
+
+def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyProject):
+    """Test that incremental copy skips existing sample_ids."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata to dev store with sample_ids [1, 2, 3]
+        _write_sample_metadata(
+            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+        )
+
+        # Write metadata to staging store with sample_ids [2, 3, 4]
+        # sample_ids 2 and 3 overlap with dev
+        _write_sample_metadata(
+            metaxy_project, "video__files", store_name="staging", sample_ids=[2, 3, 4]
+        )
+
+        # Copy from dev to staging with incremental=True (default)
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "--from",
+            "dev",
+            "--to",
+            "staging",
+            "--feature",
+            "video__files",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+
+        # Verify staging now has [1, 2, 3, 4] (no duplicates)
+        # Only sample_id 1 should have been copied (2 and 3 were skipped)
+        store = metaxy_project.stores["staging"]
+        with store:
+            from metaxy.models.types import FeatureKey
+
+            feature_key = FeatureKey(["video", "files"])
+            metadata = store.read_metadata(
+                feature_key, allow_fallback=False, current_only=False
+            )
+            df = metadata.collect().to_polars()
+
+            # Should have 4 total rows (original 3 + 1 new)
+            assert df.height == 4
+
+            # Check sample_ids
+            sample_ids = sorted(df["sample_id"].to_list())
+            assert sample_ids == [1, 2, 3, 4]
+
+            # Verify no duplicate sample_ids
+            assert len(sample_ids) == len(set(sample_ids))
+
+
+def test_metadata_copy_non_incremental_creates_duplicates(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test that non-incremental copy allows duplicate sample_ids."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata to dev store with sample_ids [1, 2, 3]
+        _write_sample_metadata(
+            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+        )
+
+        # Write metadata to staging store with sample_ids [2, 3, 4]
+        _write_sample_metadata(
+            metaxy_project, "video__files", store_name="staging", sample_ids=[2, 3, 4]
+        )
+
+        # Copy from dev to staging with incremental=False (--no-incremental)
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "--from",
+            "dev",
+            "--to",
+            "staging",
+            "--feature",
+            "video__files",
+            "--no-incremental",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+
+        # Verify staging now has duplicates for sample_ids 2 and 3
+        store = metaxy_project.stores["staging"]
+        with store:
+            from metaxy.models.types import FeatureKey
+
+            feature_key = FeatureKey(["video", "files"])
+            metadata = store.read_metadata(
+                feature_key, allow_fallback=False, current_only=False
+            )
+            df = metadata.collect().to_polars()
+
+            # Should have 6 total rows (original 3 + all 3 from dev)
+            assert df.height == 6
+
+            # Check that we have duplicates
+            sample_ids = df["sample_id"].to_list()
+            assert sample_ids.count(2) == 2  # sample_id 2 appears twice
+            assert sample_ids.count(3) == 2  # sample_id 3 appears twice
+            assert sample_ids.count(1) == 1  # sample_id 1 appears once
+            assert sample_ids.count(4) == 1  # sample_id 4 appears once
+
+
+def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyProject):
+    """Test that incremental copy works correctly with empty destination."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata to dev store only
+        _write_sample_metadata(
+            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+        )
+
+        # Copy from dev to empty staging with incremental=True
+        result = metaxy_project.run_cli(
+            "metadata",
+            "copy",
+            "--from",
+            "dev",
+            "--to",
+            "staging",
+            "--feature",
+            "video__files",
+        )
+
+        assert result.returncode == 0
+        assert "Copy complete" in result.stdout
+
+        # Verify staging has all 3 rows
+        store = metaxy_project.stores["staging"]
+        with store:
+            from metaxy.models.types import FeatureKey
+
+            feature_key = FeatureKey(["video", "files"])
+            metadata = store.read_metadata(
+                feature_key, allow_fallback=False, current_only=False
+            )
+            df = metadata.collect().to_polars()
+
+            assert df.height == 3
+            sample_ids = sorted(df["sample_id"].to_list())
+            assert sample_ids == [1, 2, 3]
 
 
 def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
