@@ -1,7 +1,5 @@
 """Abstract base class for metadata storage backends."""
 
-from __future__ import annotations
-
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
@@ -175,7 +173,7 @@ class MetadataStore(ABC):
         *,
         hash_algorithm: HashAlgorithm | None = None,
         prefer_native: bool = True,
-        fallback_stores: list[MetadataStore] | None = None,
+        fallback_stores: list["MetadataStore"] | None = None,
     ):
         """
         Initialize metadata store.
@@ -943,7 +941,7 @@ class MetadataStore(ABC):
 
     def copy_metadata(
         self,
-        from_store: MetadataStore,
+        from_store: "MetadataStore",
         features: list[FeatureKey | type[Feature] | FilteredFeature] | None = None,
         *,
         from_snapshot: str | None = None,
@@ -1031,7 +1029,7 @@ class MetadataStore(ABC):
 
     def _copy_metadata_impl(
         self,
-        from_store: MetadataStore,
+        from_store: "MetadataStore",
         features: list[FeatureKey | type[Feature] | FilteredFeature] | None,
         from_snapshot: str | None,
         filters: list[nw.Expr] | None,

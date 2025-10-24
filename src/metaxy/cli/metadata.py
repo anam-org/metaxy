@@ -1,7 +1,5 @@
 """Metadata management commands for Metaxy CLI."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Annotated
 
 import cyclopts
@@ -140,3 +138,116 @@ def copy(
         except Exception as e:
             console.print(f"\n[red]✗[/red] Copy failed:\n{e}")
             raise SystemExit(1)
+
+
+@app.command()
+def drop(
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            name=["--store"],
+            help="Store name to drop metadata from (defaults to configured default store)",
+        ),
+    ] = None,
+    features: Annotated[
+        list[str] | None,
+        cyclopts.Parameter(
+            name=["--feature"],
+            help="Feature key to drop (e.g., 'my_feature' or 'namespace__my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
+        ),
+    ] = None,
+    all_features: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--all-features"],
+            help="Drop metadata for all features in the store",
+        ),
+    ] = False,
+    confirm: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--confirm"],
+            help="Confirm the drop operation (required to prevent accidental deletion)",
+        ),
+    ] = False,
+):
+    """Drop metadata from a store.
+
+    Removes metadata for specified features from the store.
+    This is a destructive operation and requires --confirm flag.
+
+    Useful for:
+    - Cleaning up test data
+    - Re-computing feature metadata from scratch
+    - Removing obsolete features
+
+    Examples:
+        # Drop specific feature (requires confirmation)
+        $ metaxy metadata drop --feature user_features --confirm
+
+        # Drop multiple features
+        $ metaxy metadata drop --feature user_features --feature customer_features --confirm
+
+        # Drop all features from specific store
+        $ metaxy metadata drop --store dev --all-features --confirm
+    """
+    from metaxy.cli.context import get_store
+
+    # Validate arguments
+    if not all_features and not features:
+        console.print(
+            "[red]Error:[/red] Must specify either --all-features or --feature"
+        )
+        raise SystemExit(1)
+
+    if all_features and features:
+        console.print(
+            "[red]Error:[/red] Cannot specify both --all-features and --feature"
+        )
+        raise SystemExit(1)
+
+    if not confirm:
+        console.print(
+            "[red]Error:[/red] This is a destructive operation. Must specify --confirm flag."
+        )
+        raise SystemExit(1)
+
+    # Parse feature keys
+    feature_keys: list[FeatureKey] = []
+    if features:
+        for feature_str in features:
+            # Parse feature key (supports both "feature" and "namespace__feature" formats)
+            if "__" in feature_str:
+                namespace_parts = feature_str.split("__")
+                feature_keys.append(FeatureKey(namespace_parts))
+            else:
+                # Single-part key
+                feature_keys.append(FeatureKey([feature_str]))
+
+    # Get store
+    metadata_store = get_store(store)
+
+    with metadata_store:
+        # If all_features, get all feature keys from store
+        if all_features:
+            # Get all features that have metadata in the store
+            feature_keys = metadata_store.list_features(include_fallback=False)
+
+        console.print(
+            f"\n[bold]Dropping metadata for {len(feature_keys)} feature(s)...[/bold]\n"
+        )
+
+        dropped_count = 0
+        for feature_key in feature_keys:
+            try:
+                metadata_store.drop_feature_metadata(feature_key)
+                console.print(f"[green]✓[/green] Dropped: {feature_key.to_string()}")
+                dropped_count += 1
+            except Exception as e:
+                console.print(
+                    f"[red]✗[/red] Failed to drop {feature_key.to_string()}: {e}"
+                )
+
+        console.print(
+            f"\n[green]✓[/green] Drop complete: {dropped_count} feature(s) dropped"
+        )

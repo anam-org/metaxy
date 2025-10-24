@@ -33,9 +33,8 @@ def cli_graph():
     )
 
     temp_module.write_features({"TestFeature": test_feature_spec})
-    graph = temp_module.get_graph()
 
-    yield graph
+    yield temp_module.graph
 
     temp_module.cleanup()
 

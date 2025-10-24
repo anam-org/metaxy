@@ -2,8 +2,10 @@
 
 import re
 
+from metaxy._testing import TempMetaxyProject
 
-def test_graph_push_first_time(metaxy_project):
+
+def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
     """Test graph push records snapshot on first run."""
 
     def features():
@@ -27,7 +29,7 @@ def test_graph_push_first_time(metaxy_project):
         assert "Snapshot ID:" in result.stdout
 
 
-def test_graph_push_already_recorded(metaxy_project):
+def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
     """Test graph push shows 'already recorded' on second run."""
 
     def features():
@@ -54,7 +56,7 @@ def test_graph_push_already_recorded(metaxy_project):
         assert "Snapshot ID:" in result2.stdout
 
 
-def test_graph_history_empty(metaxy_project):
+def test_graph_history_empty(metaxy_project: TempMetaxyProject):
     """Test graph history with no snapshots recorded."""
 
     def features():
@@ -77,7 +79,7 @@ def test_graph_history_empty(metaxy_project):
         assert "No graph snapshots recorded yet" in result.stdout
 
 
-def test_graph_history_with_snapshots(metaxy_project):
+def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
     """Test graph history displays recorded snapshots."""
 
     def features():
@@ -108,7 +110,7 @@ def test_graph_history_with_snapshots(metaxy_project):
         assert "1" in result.stdout  # 1 feature
 
 
-def test_graph_history_with_limit(metaxy_project):
+def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
     """Test graph history with --limit flag."""
 
     def features():
@@ -135,7 +137,7 @@ def test_graph_history_with_limit(metaxy_project):
         assert "Total snapshots: 1" in result.stdout
 
 
-def test_graph_describe_current(metaxy_project):
+def test_graph_describe_current(metaxy_project: TempMetaxyProject):
     """Test graph describe shows current graph metrics."""
 
     def features():
@@ -164,7 +166,7 @@ def test_graph_describe_current(metaxy_project):
         assert "video__files" in result.stdout
 
 
-def test_graph_describe_with_dependencies(metaxy_project):
+def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
     """Test graph describe with dependent features shows correct depth."""
 
     def root_features():
@@ -227,7 +229,7 @@ def test_graph_describe_with_dependencies(metaxy_project):
             assert "video__files" in result.stdout
 
 
-def test_graph_describe_historical_snapshot(metaxy_project):
+def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
     """Test graph describe with specific snapshot ID."""
 
     def features():
@@ -263,7 +265,7 @@ def test_graph_describe_historical_snapshot(metaxy_project):
         assert "Feature Count" in result.stdout
 
 
-def test_graph_commands_with_store_flag(metaxy_project):
+def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
     """Test graph commands work with --store flag."""
 
     def features():
@@ -287,7 +289,7 @@ def test_graph_commands_with_store_flag(metaxy_project):
         assert "Snapshot" in result.stdout
 
 
-def test_graph_workflow_integration(metaxy_project):
+def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
     """Test complete workflow: push -> history -> describe."""
 
     def features():
