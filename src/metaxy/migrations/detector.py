@@ -2,52 +2,48 @@
 
 from typing import TYPE_CHECKING
 
+import narwhals as nw
+
 from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.migrations.ops import DataVersionReconciliation
+from metaxy.models.types import FEATURE_KEY_SEPARATOR
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureGraph
 
 
 def detect_feature_changes(
     store: "MetadataStore",
-    from_graph: "FeatureGraph",
-    to_graph: "FeatureGraph",
+    from_snapshot_id: str,
+    to_snapshot_id: str,
 ) -> list[DataVersionReconciliation]:
-    """Detect feature changes by comparing two feature graphs.
+    """Detect feature changes by comparing snapshot_ids directly.
 
-    Pure comparison function that compares feature versions between two graphs
+    Pure comparison function that compares feature versions between two snapshots
     by querying their snapshot metadata from the store.
-    
-    Returns operations ONLY for features where feature_version changed but
-    computation is unchanged (refactoring, dependency improvements, schema changes).
-    
+
+    This does NOT reconstruct graphs, avoiding issues with:
+    - Importing stale cached code when files have changed
+    - Need for custom methods during detection (only needed for execution)
+
     For actual computation changes (new models, different algorithms), users must
     re-run their pipeline - migrations cannot recreate lost computation.
 
     Args:
         store: Metadata store containing snapshot metadata
-        from_graph: Source feature graph (old state)
-        to_graph: Target feature graph (new state)
+        from_snapshot_id: Source snapshot ID (old state)
+        to_snapshot_id: Target snapshot ID (new state)
 
     Returns:
         List of DataVersionReconciliation operations for changed features
 
     Example:
-        >>> # Compare latest snapshot in store vs current code
-        >>> from_graph = load_latest_snapshot(store)
-        >>> to_graph = FeatureGraph.get_active()
-        >>> operations = detect_feature_changes(store, from_graph, to_graph)
+        >>> # Compare latest snapshot in store vs current snapshot
+        >>> operations = detect_feature_changes(store, old_snapshot_id, new_snapshot_id)
         >>> for op in operations:
         ...     print(f"Changed: {op.feature_key} - {op.reason}")
     """
-    import polars as pl
-
-    from_snapshot_id = from_graph.snapshot_id
-    to_snapshot_id = to_graph.snapshot_id
-
     operations = []
 
     # Query feature versions for both snapshots
@@ -56,7 +52,7 @@ def detect_feature_changes(
             FEATURE_VERSIONS_KEY,
             current_only=False,
             allow_fallback=False,
-            filters=pl.col("snapshot_id") == from_snapshot_id,
+            filters=[nw.col("snapshot_id") == from_snapshot_id],
         )
     except FeatureNotFoundError:
         # No from_snapshot - nothing to migrate from
@@ -67,26 +63,28 @@ def detect_feature_changes(
             FEATURE_VERSIONS_KEY,
             current_only=False,
             allow_fallback=False,
-            filters=pl.col("snapshot_id") == to_snapshot_id,
+            filters=[nw.col("snapshot_id") == to_snapshot_id],
         )
     except FeatureNotFoundError:
         # No to_snapshot - nothing to migrate to
         return []
 
+    # Collect to iterate (we need to build dictionaries)
+    from_versions_eager = nw.from_native(from_versions.collect())
+    to_versions_eager = nw.from_native(to_versions.collect())
+
     # Build lookup dictionaries: feature_key -> feature_version
     from_versions_dict = {
         row["feature_key"]: row["feature_version"]
-        for row in from_versions.iter_rows(named=True)
+        for row in from_versions_eager.iter_rows(named=True)
     }
     to_versions_dict = {
         row["feature_key"]: row["feature_version"]
-        for row in to_versions.iter_rows(named=True)
+        for row in to_versions_eager.iter_rows(named=True)
     }
 
-    # Check each feature in to_graph (target state)
-    for feature_key, feature_cls in to_graph.features_by_key.items():
-        feature_key_str = feature_key.to_string()
-
+    # Check each feature in to_versions (target state)
+    for feature_key_str in to_versions_dict.keys():
         # Get versions from both snapshots
         from_version = from_versions_dict.get(feature_key_str)
         to_version = to_versions_dict.get(feature_key_str)
@@ -105,8 +103,11 @@ def detect_feature_changes(
             continue
 
         # Feature changed! Create operation with auto-generated ID
-        feature_key_slug = feature_key_str.replace("/", "_")
-        op_id = f"reconcile_{feature_key_slug}"
+        # Parse feature_key from string (e.g., "video__files" -> ["video", "files"])
+        from metaxy.models.types import FeatureKey
+
+        feature_key = FeatureKey(feature_key_str.split(FEATURE_KEY_SEPARATOR))
+        op_id = f"reconcile_{feature_key_str}"
 
         operations.append(
             DataVersionReconciliation(

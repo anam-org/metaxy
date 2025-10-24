@@ -3,19 +3,12 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import ibis.expr.types as ir
 import polars as pl
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.data_versioning.calculators.ibis import (
-    HashSQLGenerator,
-    IbisDataVersionCalculator,
-)
-from metaxy.data_versioning.diff.ibis import IbisDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.ibis import IbisJoiner
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
@@ -29,9 +22,9 @@ class SQLiteMetadataStore(IbisMetadataStore):
     - MD5: Available (built-in SQLite function via extension)
 
     Components:
-        - joiner: IbisJoiner | PolarsJoiner (based on prefer_native)
-        - calculator: IbisDataVersionCalculator | PolarsDataVersionCalculator
-        - diff_resolver: IbisDiffResolver | PolarsDiffResolver
+        - joiner: NarwhalsJoiner (works with any backend)
+        - calculator: PolarsDataVersionCalculator (SQLite always uses Polars, no native compute)
+        - diff_resolver: NarwhalsDiffResolver
 
     Examples:
         >>> # Local file database
@@ -90,6 +83,15 @@ class SQLiteMetadataStore(IbisMetadataStore):
         """
         return HashAlgorithm.MD5
 
+    @classmethod
+    def supports_structs(cls) -> bool:
+        """SQLite does not support struct types natively.
+
+        Returns:
+            False - SQLite stores structs as JSON strings
+        """
+        return False
+
     def _supports_native_components(self) -> bool:
         """SQLite stores do not support native components.
 
@@ -97,85 +99,6 @@ class SQLiteMetadataStore(IbisMetadataStore):
         so we always use Polars components for data versioning.
         """
         return False
-
-    def _create_native_components(self):
-        """Create SQLite-specific native components."""
-        from metaxy.data_versioning.calculators.base import DataVersionCalculator
-        from metaxy.data_versioning.diff.base import MetadataDiffResolver
-        from metaxy.data_versioning.joiners.base import UpstreamJoiner
-
-        if self._conn is None:
-            raise RuntimeError(
-                "Cannot create native components: store is not open. "
-                "Ensure store is used as context manager."
-            )
-
-        import ibis.expr.types as ir
-
-        joiner: UpstreamJoiner[ir.Table] = IbisJoiner(backend=self._conn)
-        calculator: DataVersionCalculator[ir.Table] = IbisDataVersionCalculator(
-            hash_sql_generators=self.hash_sql_generators,
-        )
-
-        diff_resolver: MetadataDiffResolver[ir.Table] = IbisDiffResolver()
-
-        return joiner, calculator, diff_resolver
-
-    @property
-    def hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
-        """
-        Build hash SQL generators for SQLite.
-
-        Returns:
-            Dictionary mapping HashAlgorithm to SQL generator functions
-        """
-        generators = {HashAlgorithm.MD5: self._generate_hash_sql(HashAlgorithm.MD5)}
-
-        return generators
-
-    def _generate_hash_sql(self, algorithm: HashAlgorithm) -> HashSQLGenerator:
-        """
-        Generate SQL hash function for SQLite.
-
-        Creates a hash SQL generator that produces SQLite-specific SQL for
-        computing hash values on concatenated columns.
-
-        Args:
-            algorithm: Hash algorithm to generate SQL for
-
-        Returns:
-            Hash SQL generator function
-
-        Raises:
-            ValueError: If algorithm is not supported by SQLite
-        """
-        # Map algorithm to SQLite function name
-        if algorithm == HashAlgorithm.MD5:
-            hash_function = "md5"
-        else:
-            from metaxy.metadata_store.exceptions import (
-                HashAlgorithmNotSupportedError,
-            )
-
-            raise HashAlgorithmNotSupportedError(
-                f"Hash algorithm {algorithm} is not supported by SQLite. "
-                f"Supported algorithms: MD5 (built-in)"
-            )
-
-        def generator(table: ir.Table, concat_columns: dict[str, str]) -> str:
-            # Build SELECT clause with hash columns
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # Use lower() for MD5 to ensure consistent hex output
-                hash_expr = f"LOWER(HEX({hash_function}({concat_col})))"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
-
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-        return generator
 
     def _serialize_for_storage(self, df: pl.DataFrame) -> pl.DataFrame:
         """Serialize structs and arrays to JSON strings for SQLite storage.

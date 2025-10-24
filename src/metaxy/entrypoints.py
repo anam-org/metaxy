@@ -3,6 +3,7 @@
 This module provides functionality to automatically discover and load Feature
 classes from modules, supporting both:
 - Config-based entrypoints (list of module paths)
+- Environment-based entrypoints (environment variables starting with METAXY_ENTRYPOINT)
 - Package-based entrypoints (via importlib.metadata)
 
 Features are automatically registered to the active FeatureGraph when their
@@ -11,6 +12,7 @@ containing modules are imported (via the Feature metaclass).
 
 import importlib
 import logging
+import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -74,15 +76,12 @@ def load_module_entrypoint(
         ) from e
 
 
-def load_config_entrypoints(
+def load_entrypoints(
     entrypoints: list[str],
     *,
     graph: "FeatureGraph | None" = None,
 ) -> None:
     """Load multiple module entrypoints from a list.
-
-    This is the config-based entrypoint loading mechanism. Each string in the
-    list should be a fully qualified module path.
 
     Args:
         entrypoints: List of module paths to import
@@ -103,7 +102,7 @@ def load_config_entrypoints(
 
     target_graph = graph or FeatureGraph.get_active()
 
-    logger.info(f"Loading {len(entrypoints)} config-based entrypoints")
+    logger.info(f"Loading {len(entrypoints)} entrypoints")
 
     for module_path in entrypoints:
         load_module_entrypoint(module_path, graph=target_graph)
@@ -175,25 +174,85 @@ def load_package_entrypoints(
             ) from e
 
 
-def discover_and_load_entrypoints(
-    config_entrypoints: list[str] | None = None,
+def load_env_entrypoints() -> None:
+    """Load entrypoints from environment variables.
+
+    Discovers and loads all entry points from environment variables matching
+    the pattern METAXY_ENTRYPOINT*. Each variable should contain a
+    comma-separated list of module paths.
+
+    Environment variables:
+        METAXY_ENTRYPOINT="myapp.features.core,myapp.features.extra"
+        METAXY_ENTRYPOINT_PLUGINS="plugin1.features,plugin2.features"
+
+    Args:
+        graph: Target graph. If None, uses FeatureGraph.get_active()
+
+    Raises:
+        EntrypointLoadError: If any entrypoint fails to load
+
+    Example:
+        >>> import os
+        >>> os.environ["METAXY_ENTRYPOINT"] = "myapp.features.core"
+        >>> from metaxy.entrypoints import load_env_entrypoints
+        >>> load_env_entrypoints()
+    """
+
+    logger.info("Discovering environment-based entrypoints (METAXY_ENTRYPOINT*)")
+
+    # Find all environment variables matching METAXY_ENTRYPOINT*
+    env_vars = {
+        key: value
+        for key, value in os.environ.items()
+        if key.startswith("METAXY_ENTRYPOINT")
+    }
+
+    if not env_vars:
+        logger.debug("No environment entrypoints found (METAXY_ENTRYPOINT* not set)")
+        return
+
+    logger.info(f"Found {len(env_vars)} METAXY_ENTRYPOINT* environment variable(s)")
+
+    # Collect all module paths from all matching env vars
+    all_module_paths = []
+    for env_var, value in sorted(env_vars.items()):
+        logger.debug(f"Processing {env_var}={value}")
+        # Split by comma and strip whitespace
+        module_paths = [path.strip() for path in value.split(",") if path.strip()]
+        all_module_paths.extend(module_paths)
+
+    if not all_module_paths:
+        logger.debug("No module paths found in METAXY_ENTRYPOINT* variables")
+        return
+
+    logger.info(
+        f"Loading {len(all_module_paths)} module(s) from environment entrypoints"
+    )
+
+    # Load each module path
+    for module_path in all_module_paths:
+        load_module_entrypoint(module_path)
+
+
+def load_features(
+    entrypoints: list[str] | None = None,
     package_entrypoint_group: str = DEFAULT_ENTRY_POINT_GROUP,
     *,
     load_config: bool = True,
     load_packages: bool = True,
-    graph: "FeatureGraph | None" = None,
+    load_env: bool = True,
 ) -> "FeatureGraph":
-    """Discover and load all entrypoints from both config and packages.
+    """Discover and load all entrypoints from config, packages, and environment.
 
-    This is the main entry point for loading features. It combines both
-    config-based and package-based entrypoint discovery.
+    This is the main entry point for loading features. It combines config-based,
+    package-based, and environment-based entrypoint discovery.
 
     Args:
-        config_entrypoints: List of module paths from config (optional)
+        entrypoints: List of module paths (optional)
         package_entrypoint_group: Entry point group for package discovery
         load_config: Whether to load config-based entrypoints (default: True)
         load_packages: Whether to load package-based entrypoints (default: True)
-        graph: Target graph. If None, uses FeatureGraph.get_active()
+        load_env: Whether to load environment-based entrypoints (default: True)
 
     Returns:
         The graph that was populated (useful for testing/inspection)
@@ -202,33 +261,45 @@ def discover_and_load_entrypoints(
         EntrypointLoadError: If any entrypoint fails to load
 
     Example:
-        >>> from metaxy.entrypoints import discover_and_load_entrypoints
+        >>> from metaxy.entrypoints import load_features
         >>>
-        >>> # Load from both sources
-        >>> graph = discover_and_load_entrypoints(
-        ...     config_entrypoints=["myapp.features.core"],
-        ...     load_packages=True
+        >>> # Load from all sources
+        >>> graph = load_features(
+        ...     entrypoints=["myapp.features.core"],
+        ...     load_packages=True,
+        ...     load_env=True
         ... )
         >>>
         >>> # Load only from config
-        >>> graph = discover_and_load_entrypoints(
-        ...     config_entrypoints=["myapp.features.core"],
-        ...     load_packages=False
+        >>> graph = load_features(
+        ...     entrypoints=["myapp.features.core"],
+        ...     load_packages=False,
+        ...     load_env=False
         ... )
     """
+    from metaxy.config import MetaxyConfig
     from metaxy.models.feature import FeatureGraph
 
-    target_graph = graph or FeatureGraph.get_active()
+    target_graph = FeatureGraph.get_active()
 
     logger.info("Starting entrypoint discovery and loading")
 
+    # Load explicit entrypoints
+    if entrypoints:
+        load_entrypoints(entrypoints)
+
     # Load config-based entrypoints
-    if load_config and config_entrypoints:
-        load_config_entrypoints(config_entrypoints, graph=target_graph)
+    if load_config:
+        config = MetaxyConfig.load(search_parents=True)
+        load_entrypoints(config.entrypoints)
 
     # Load package-based entrypoints
     if load_packages:
-        load_package_entrypoints(package_entrypoint_group, graph=target_graph)
+        load_package_entrypoints(package_entrypoint_group)
+
+    # Load environment-based entrypoints
+    if load_env:
+        load_env_entrypoints()
 
     num_features = len(target_graph.features_by_key)
     logger.info(

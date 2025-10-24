@@ -1,7 +1,6 @@
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
-    discover_and_load_entrypoints,
-    load_config_entrypoints,
+    load_features,
     load_module_entrypoint,
     load_package_entrypoints,
 )
@@ -20,7 +19,7 @@ from metaxy.migrations import (
     detect_feature_changes,
     generate_migration,
 )
-from metaxy.models.feature import Feature, FeatureGraph, graph
+from metaxy.models.feature import Feature, FeatureGraph, get_feature_by_key, graph
 from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
@@ -29,6 +28,7 @@ __all__ = [
     "Feature",
     "FeatureGraph",
     "graph",
+    "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
     "FeatureSpec",
@@ -39,7 +39,7 @@ __all__ = [
     "FieldKey",
     "MetadataStore",
     "InMemoryMetadataStore",
-    "discover_and_load_entrypoints",
+    "load_features",
     "load_config_entrypoints",
     "load_module_entrypoint",
     "load_package_entrypoints",

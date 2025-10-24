@@ -1,30 +1,33 @@
-"""Ibis implementation of data version calculator.
+"""Ibis-based data version calculator using native SQL hash functions.
 
-Provides native SQL-based hash calculation using backend-specific SQL functions.
-Hash functions are provided via SQL templates that can be customized per backend.
+This calculator uses Ibis to generate backend-specific SQL for hash computation,
+executing entirely in the database without pulling data into memory.
 """
 
 from typing import TYPE_CHECKING, Protocol
 
-import ibis
-import ibis.expr.types as ir
+import narwhals as nw
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 if TYPE_CHECKING:
+    import ibis
+    import ibis.expr.types
+
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
 
 
 class HashSQLGenerator(Protocol):
-    """Protocol for hash SQL generation functions.
+    """Protocol for backend-specific hash SQL generation.
 
-    Takes a table and mapping of field keys to concat column names,
-    returns SQL query that adds hash columns to the table.
+    Takes an Ibis table with concatenated columns and returns SQL that adds hash columns.
     """
 
-    def __call__(self, table: ir.Table, concat_columns: dict[str, str]) -> str:
+    def __call__(
+        self, table: "ibis.expr.types.Table", concat_columns: dict[str, str]
+    ) -> str:
         """Generate SQL query to compute hash columns.
 
         Args:
@@ -37,36 +40,37 @@ class HashSQLGenerator(Protocol):
         ...
 
 
-class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
-    """Calculates data versions for Ibis tables using SQL hash functions.
+class IbisDataVersionCalculator(DataVersionCalculator):
+    """Calculates data versions using native SQL hash functions via Ibis.
 
-    Type Parameters:
-        TRef = ir.Table
+    This calculator:
+    1. Accepts Narwhals LazyFrame as input
+    2. Converts to Ibis table internally
+    3. Builds concatenated columns using Ibis expressions
+    4. Applies backend-specific SQL hash functions
+    5. Returns Narwhals LazyFrame
 
-    This calculator uses raw SQL to apply hash functions, since different SQL
-    backends have different hash function names and signatures. Hash functions
-    are provided as SQL template generators that can be customized per backend.
+    Different SQL backends have different hash function names and signatures,
+    so hash functions are provided as SQL template generators per backend.
 
-    The calculator works by:
-    1. Building concatenated string columns for each field (using Ibis)
-    2. Writing the table to a temp table
-    3. Applying SQL hash functions via conn.sql()
-    4. Returning result as Ibis table
-
-    Example SQL generators:
-        DuckDB: lambda tbl, col: f"SELECT *, md5({col}) as hash FROM {{table}}"
-        PostgreSQL: lambda tbl, col: f"SELECT *, md5({col}) as hash FROM {{table}}"
+    Example hash SQL generators:
+        DuckDB: SELECT *, CAST(xxh64(concat_col) AS VARCHAR) as hash FROM table
+        ClickHouse: SELECT *, CAST(xxHash64(concat_col) AS String) as hash FROM table
+        PostgreSQL: SELECT *, MD5(concat_col) as hash FROM table
     """
 
     def __init__(
         self,
+        backend: "ibis.BaseBackend",
         hash_sql_generators: dict[HashAlgorithm, HashSQLGenerator],
     ):
-        """Initialize Ibis calculator with backend-specific hash functions.
+        """Initialize calculator with Ibis backend and hash SQL generators.
 
         Args:
+            backend: Ibis backend connection for SQL execution
             hash_sql_generators: Map from HashAlgorithm to SQL generator function
         """
+        self._backend = backend
         self._hash_sql_generators = hash_sql_generators
 
     @property
@@ -78,31 +82,34 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
     def default_algorithm(self) -> HashAlgorithm:
         """Default hash algorithm.
 
-        Subclasses can override this with backend-specific defaults.
-        Base implementation returns XXHASH64 for performance.
+        Base implementation returns XXHASH64 if available, otherwise first available.
         """
-        return HashAlgorithm.XXHASH64
+        if HashAlgorithm.XXHASH64 in self.supported_algorithms:
+            return HashAlgorithm.XXHASH64
+        return self.supported_algorithms[0]
 
     def calculate_data_versions(
         self,
-        joined_upstream: ir.Table,
+        joined_upstream: nw.LazyFrame,
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> ir.Table:
+    ) -> nw.LazyFrame:
         """Calculate data_version using SQL hash functions.
 
         Args:
-            joined_upstream: Ibis table with upstream data joined
+            joined_upstream: Narwhals LazyFrame with upstream data joined
             feature_spec: Feature specification
             feature_plan: Feature plan
             upstream_column_mapping: Maps upstream key -> column name
             hash_algorithm: Hash to use
 
         Returns:
-            Ibis table with data_version column added
+            Narwhals LazyFrame with data_version column added
         """
+        import ibis
+
         algo = hash_algorithm or self.default_algorithm
 
         if algo not in self.supported_algorithms:
@@ -110,6 +117,9 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
                 f"Hash algorithm {algo} not supported by {self.__class__.__name__}. "
                 f"Supported: {self.supported_algorithms}"
             )
+
+        # Convert Narwhals LazyFrame to Ibis table
+        ibis_table: ibis.expr.types.Table = joined_upstream.to_native()  # type: ignore[assignment]
 
         # Get the hash SQL generator
         hash_sql_gen = self._hash_sql_generators[algo]
@@ -157,7 +167,7 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
                     )
                     # Access struct field for upstream field's hash
                     components.append(
-                        joined_upstream[data_version_col_name][upstream_field_str]
+                        ibis_table[data_version_col_name][upstream_field_str]
                     )
 
             # Concatenate all components with separator
@@ -168,20 +178,15 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
             # Store concat column for this field
             concat_col_name = f"__concat_{field_key_str}"
             concat_columns[field_key_str] = concat_col_name
-            joined_upstream = joined_upstream.mutate(**{concat_col_name: concat_expr})
-
-        # Now apply hash functions via SQL
-        # Get the backend connection
-        backend = joined_upstream._find_backend()  # type: ignore[attr-defined]
+            ibis_table = ibis_table.mutate(**{concat_col_name: concat_expr})
 
         # Generate SQL for hashing all concat columns
-        hash_sql = hash_sql_gen(joined_upstream, concat_columns)
+        hash_sql = hash_sql_gen(ibis_table, concat_columns)
 
         # Execute SQL to get table with hash columns
-        result_table = backend.sql(hash_sql)  # type: ignore[attr-defined]
+        result_table = self._backend.sql(hash_sql)  # type: ignore[attr-defined]
 
-        # Build data_version struct from hash columns in a single select
-        # This avoids the IntegrityError from trying to reference columns from result_table
+        # Build data_version struct from hash columns
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]
         field_keys = list(concat_columns.keys())
 
@@ -190,7 +195,7 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
             field_key: result_table[f"__hash_{field_key}"] for field_key in field_keys
         }
 
-        # Drop temp columns and add data_version in one select
+        # Drop temp columns and add data_version
         cols_to_keep = [
             c
             for c in result_table.columns
@@ -201,4 +206,5 @@ class IbisDataVersionCalculator(DataVersionCalculator[ir.Table]):
             *cols_to_keep, data_version=ibis.struct(struct_fields)
         )
 
-        return result_table
+        # Convert back to Narwhals LazyFrame
+        return nw.from_native(result_table, eager_only=False)

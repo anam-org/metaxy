@@ -88,10 +88,10 @@ load_package_entrypoints(group="myapp.plugins")
 Load from both config and packages:
 
 ```python
-from metaxy import discover_and_load_entrypoints
+from metaxy import load_features
 
 # Load from both sources
-graph = discover_and_load_entrypoints(
+graph = load_features(
     config_entrypoints=[
         "myapp.features.core",
         "myapp.features.custom"

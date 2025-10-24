@@ -138,7 +138,7 @@ class DataVersionReconciliation(BaseOperation):
         Raises:
             ValueError: If feature has no upstream dependencies (root feature)
         """
-        import polars as pl
+        import narwhals as nw
 
         from metaxy.metadata_store.base import (
             FEATURE_VERSIONS_KEY,
@@ -165,17 +165,15 @@ class DataVersionReconciliation(BaseOperation):
             )
 
         # 2. Query feature versions from snapshot metadata
-        # FEATURE_VERSIONS_KEY is a system table not in the feature graph
-        # read_metadata will handle it correctly since we fixed it to support external keys
         try:
             from_version_data = store.read_metadata(
                 FEATURE_VERSIONS_KEY,
                 current_only=False,
                 allow_fallback=False,
-                filters=(
-                    (pl.col("snapshot_id") == from_snapshot_id)
-                    & (pl.col("feature_key") == feature_key_str)
-                ),
+                filters=[
+                    (nw.col("snapshot_id") == from_snapshot_id)
+                    & (nw.col("feature_key") == feature_key_str)
+                ],
             )
         except FeatureNotFoundError:
             from_version_data = None
@@ -185,80 +183,103 @@ class DataVersionReconciliation(BaseOperation):
                 FEATURE_VERSIONS_KEY,
                 current_only=False,
                 allow_fallback=False,
-                filters=(
-                    (pl.col("snapshot_id") == to_snapshot_id)
-                    & (pl.col("feature_key") == feature_key_str)
-                ),
+                filters=[
+                    (nw.col("snapshot_id") == to_snapshot_id)
+                    & (nw.col("feature_key") == feature_key_str)
+                ],
             )
         except FeatureNotFoundError:
             to_version_data = None
 
-        if from_version_data is None or len(from_version_data) == 0:
+        # Extract feature versions from lazy frames
+        from_feature_version: str | None = None
+        to_feature_version: str | None = None
+
+        if from_version_data is not None:
+            from_version_df = from_version_data.head(1).collect()
+            if from_version_df.shape[0] > 0:
+                from_feature_version = str(from_version_df["feature_version"][0])
+            else:
+                from_version_data = None
+
+        if to_version_data is not None:
+            to_version_df = to_version_data.head(1).collect()
+            if to_version_df.shape[0] > 0:
+                to_feature_version = str(to_version_df["feature_version"][0])
+            else:
+                to_version_data = None
+
+        if from_version_data is None:
             raise ValueError(
                 f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_id}"
             )
-        if to_version_data is None or len(to_version_data) == 0:
+        if to_version_data is None:
             raise ValueError(
                 f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_id}"
             )
 
-        from_feature_version = from_version_data["feature_version"][0]
-        to_feature_version = to_version_data["feature_version"][0]
+        assert from_feature_version is not None
+        assert to_feature_version is not None
 
         # 3. Load existing metadata with old feature_version
         try:
             existing_metadata = store.read_metadata(
                 feature_cls,
                 current_only=False,
-                filters=pl.col("feature_version") == from_feature_version,
+                filters=[nw.col("feature_version") == from_feature_version],
                 allow_fallback=False,
             )
         except FeatureNotFoundError:
             # Feature doesn't exist yet - nothing to migrate
             return 0
 
-        if len(existing_metadata) == 0:
+        # Collect to check existence and get row count
+        existing_metadata_df = existing_metadata.collect()
+        if existing_metadata_df.shape[0] == 0:
             # Already migrated (idempotent)
             return 0
 
         if dry_run:
-            return len(existing_metadata)
+            return existing_metadata_df.shape[0]
 
-        # 4. Get sample metadata (exclude data_version, feature_version, snapshot_id)
+        # 4. Get sample metadata (exclude system columns)
         user_columns = [
             c
-            for c in existing_metadata.columns
+            for c in existing_metadata_df.columns
             if c not in ["data_version", "feature_version", "snapshot_id"]
         ]
-        sample_metadata = existing_metadata.select(user_columns)
+        sample_metadata = existing_metadata_df.select(user_columns)
 
         # 5. Use resolve_update to calculate data_versions based on current upstream
-        diff_result = store.resolve_update(feature_cls, sample_df=sample_metadata)
+        # Convert to Polars for the join to avoid cross-backend issues
+        sample_metadata_pl = nw.from_native(sample_metadata.to_native()).to_polars()
+
+        diff_result = store.resolve_update(feature_cls, sample_df=sample_metadata_pl)
 
         # Use 'changed' for reconciliation (data_versions changed due to upstream)
         # Use 'added' for new feature materialization
+        # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
-            new_data_versions = diff_result.changed.select(
-                ["sample_id", "data_version"]
-            )
-            df_to_write = sample_metadata.join(
+            changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
+            new_data_versions = changed_pl.select(["sample_id", "data_version"])
+            df_to_write = sample_metadata_pl.join(
                 new_data_versions, on="sample_id", how="inner"
             )
         elif len(diff_result.added) > 0:
-            df_to_write = diff_result.added
+            df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
         else:
             return 0
 
         # 6. Write with new feature_version and snapshot_id
-        df_to_write = df_to_write.with_columns(
-            [
-                pl.lit(to_feature_version).alias("feature_version"),
-                pl.lit(to_snapshot_id).alias("snapshot_id"),
-            ]
+        # Wrap in Narwhals for write_metadata
+        df_to_write_nw = nw.from_native(df_to_write)
+        df_to_write_nw = df_to_write_nw.with_columns(
+            nw.lit(to_feature_version).alias("feature_version"),
+            nw.lit(to_snapshot_id).alias("snapshot_id"),
         )
 
         with allow_feature_version_override():
-            store.write_metadata(feature_cls, df_to_write)
+            store.write_metadata(feature_cls, df_to_write_nw)
 
         return len(df_to_write)
 

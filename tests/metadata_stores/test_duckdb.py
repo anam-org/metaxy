@@ -2,12 +2,14 @@
 
 from pathlib import Path
 
+import polars as pl
 import pytest
 
 # Skip all tests in this module if DuckDB not available
 pytest.importorskip("duckdb")
 pytest.importorskip("pyarrow")
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
@@ -109,7 +111,6 @@ def test_duckdb_persistence_across_instances(
         tmp_path: Pytest tmp_path fixture
         test_graph: Registry with test features
     """
-    import polars as pl
 
     db_path = tmp_path / "test.duckdb"
 
@@ -129,7 +130,9 @@ def test_duckdb_persistence_across_instances(
 
     # Read data in second instance
     with DuckDBMetadataStore(db_path) as store2:
-        result = store2.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store2.read_metadata(test_features["UpstreamFeatureA"])
+        )
 
         assert len(result) == 3
         assert set(result["sample_id"].to_list()) == {1, 2, 3}

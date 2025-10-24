@@ -1,5 +1,6 @@
 """ClickHouse-specific tests that don't apply to other stores."""
 
+import polars as pl
 import pytest
 
 # Skip all tests in this module if ClickHouse not available
@@ -10,6 +11,7 @@ try:
 except ImportError:
     pytest.skip("ibis-clickhouse not installed", allow_module_level=True)
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.models.feature import Feature
 
@@ -91,7 +93,6 @@ def test_clickhouse_persistence(
         test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
-    import polars as pl
 
     # Write data in first instance
     with ClickHouseMetadataStore(clickhouse_db) as store1:
@@ -109,7 +110,9 @@ def test_clickhouse_persistence(
 
     # Read data in second instance
     with ClickHouseMetadataStore(clickhouse_db) as store2:
-        result = store2.read_metadata(test_features["UpstreamFeatureA"])
+        result = collect_to_polars(
+            store2.read_metadata(test_features["UpstreamFeatureA"])
+        )
 
         assert len(result) == 3
         assert set(result["sample_id"].to_list()) == {1, 2, 3}
@@ -145,7 +148,6 @@ def test_clickhouse_hash_algorithms(
         test_graph: Feature graph fixture (for context)
         test_features: Dict with test feature classes
     """
-    import polars as pl
 
     from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
@@ -171,7 +173,9 @@ def test_clickhouse_hash_algorithms(
             )
             store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
-            result = store.read_metadata(test_features["UpstreamFeatureA"])
+            result = collect_to_polars(
+                store.read_metadata(test_features["UpstreamFeatureA"])
+            )
             assert len(result) == 2
 
 

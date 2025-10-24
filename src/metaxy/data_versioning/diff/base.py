@@ -1,36 +1,74 @@
 """Abstract base class for metadata diff resolvers."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    import polars as pl
-
-TRef = TypeVar("TRef")  # Reference type for inputs (LazyFrame, ibis.Table, etc.)
+    import narwhals as nw
 
 
-@dataclass(frozen=True)
-class DiffResult:
-    """Result of diffing target versions with current metadata.
+class LazyDiffResult(NamedTuple):
+    """Result of diffing with lazy Narwhals LazyFrames (opt-in via lazy=True).
 
-    Always contains materialized DataFrames (never None - empty DataFrames instead).
-    This design ensures diff resolvers execute as few queries as possible:
-    - SQL backends: One query with CTEs/UNION ALL computes all three, then splits
-    - Polars: Collect once, split into three DataFrames
+    Contains lazy Narwhals LazyFrames - users decide when/how to materialize.
+
+    Users can:
+    - Keep lazy for further operations: result.added.filter(...)
+    - Materialize to Polars: result.added.collect().to_native()
+    - Materialize to Pandas: result.added.collect().to_pandas()
+    - Materialize to PyArrow: result.added.collect().to_arrow()
+
+    Backend execution:
+    - SQL stores: All operations stay in SQL until .collect()
+    - Polars stores: Operations stay lazy until .collect()
 
     Attributes:
-        added: New samples [sample_id, data_version] (empty if none)
-        changed: Changed samples [sample_id, data_version] (empty if none)
-        removed: Removed samples [sample_id, data_version] (empty if none)
+        added: New samples (lazy, never None - empty LazyFrame instead)
+            Columns: [sample_id, data_version, ...user columns...]
+        changed: Changed samples (lazy, never None)
+            Columns: [sample_id, data_version, ...user columns...]
+        removed: Removed samples (lazy, never None)
+            Columns: [sample_id, data_version, ...user columns...]
+
+    Note:
+        May contain additional user columns beyond sample_id and data_version,
+        depending on what was passed to resolve_update() via align_upstream_metadata.
     """
 
-    added: "pl.DataFrame"
-    changed: "pl.DataFrame"
-    removed: "pl.DataFrame"
+    added: "nw.LazyFrame"
+    changed: "nw.LazyFrame"
+    removed: "nw.LazyFrame"
 
 
-class MetadataDiffResolver(ABC, Generic[TRef]):
+class DiffResult(NamedTuple):
+    """Result of diffing with eager Narwhals DataFrames (default).
+
+    Contains materialized Narwhals DataFrames - ready to use immediately.
+
+    Users can convert to their preferred format:
+    - Polars: result.added.to_native()
+    - Pandas: result.added.to_pandas()
+    - PyArrow: result.added.to_arrow()
+
+    Attributes:
+        added: New samples (eager, never None - empty DataFrame instead)
+            Columns: [sample_id, data_version, ...user columns...]
+        changed: Changed samples (eager, never None)
+            Columns: [sample_id, data_version, ...user columns...]
+        removed: Removed samples (eager, never None)
+            Columns: [sample_id, data_version, ...user columns...]
+
+    Note:
+        May contain additional user columns beyond sample_id and data_version,
+        depending on what was passed to resolve_update() via align_upstream_metadata.
+    """
+
+    added: "nw.DataFrame"
+    changed: "nw.DataFrame"
+    removed: "nw.DataFrame"
+
+
+class MetadataDiffResolver(ABC):
     """Identifies rows with changed data_versions by comparing target with current.
 
     The diff resolver compares newly calculated data_versions (target) with
@@ -41,18 +79,17 @@ class MetadataDiffResolver(ABC, Generic[TRef]):
     2. Calculate data_version from upstream → target versions
     3. Diff with current metadata → identify changes ← THIS STEP
 
-    Type Parameters:
-        TRef: Input reference type (pl.LazyFrame for Polars, ibis.Table for SQL)
+    All component boundaries use Narwhals LazyFrames for backend-agnostic processing.
 
     Examples:
-        - PolarsDiffResolver: Takes LazyFrames, uses anti-join, collects once
-        - IbisDiffResolver: Takes ibis.Tables, uses SQL CTEs, executes once
+        - NarwhalsDiffResolver: Backend-agnostic using Narwhals expressions
+        - IbisDiffResolver: Converts to Ibis internally for SQL processing
 
     Important Design:
-        Takes lazy/native refs as input, returns materialized DataFrames as output.
+        Takes lazy Narwhals refs as input, returns LazyDiffResult as output.
         This minimizes query execution:
         - SQL backends: One query with CTEs computes all three categories
-        - Polars: Collects once, splits into three DataFrames
+        - Polars: Uses lazy operations, splits into three LazyFrames
 
     Users can override Feature.resolve_data_version_diff to customize:
         - Ignore certain field changes
@@ -63,35 +100,36 @@ class MetadataDiffResolver(ABC, Generic[TRef]):
     @abstractmethod
     def find_changes(
         self,
-        target_versions: TRef,
-        current_metadata: TRef | None,
-    ) -> DiffResult:
+        target_versions: "nw.LazyFrame",
+        current_metadata: "nw.LazyFrame | None",
+    ) -> LazyDiffResult:
         """Find all changes between target and current metadata.
 
         Compares target data_versions (newly calculated) with current metadata
         and categorizes all differences.
 
         Args:
-            target_versions: Backend-specific ref with newly calculated data_versions
-                (pl.LazyFrame for Polars, ibis.Table for SQL)
+            target_versions: Narwhals LazyFrame with newly calculated data_versions
                 Shape: [sample_id, data_version (calculated), upstream columns...]
-            current_metadata: Backend-specific ref with current metadata, or None
+            current_metadata: Narwhals LazyFrame with current metadata, or None
                 Shape: [sample_id, data_version (existing), feature_version, custom columns...]
+                Should be pre-filtered by feature_version at the caller level if needed.
 
         Returns:
-            DiffResult with three materialized DataFrames (always pl.DataFrame):
-            - added: New samples [sample_id, data_version] (empty if none)
-            - changed: Changed samples [sample_id, data_version] (empty if none)
-            - removed: Removed samples [sample_id, data_version] (empty if none)
+            LazyDiffResult with three lazy Narwhals LazyFrames.
+            Caller materializes to DiffResult if needed (for lazy=False).
 
         Implementation Note:
-            Takes lazy/native refs as input, returns materialized DataFrames.
-            Should execute as few queries as possible:
-            - SQL backends: One query with CTEs for all three, then execute and split
-            - Polars: Collect once, split into three DataFrames
+            Should build lazy operations without materializing:
+            - SQL backends: Build one lazy query with CTEs for all three categories
+            - Polars: Use lazy operations, no collect() calls
 
         Note:
             For immutable append-only storage, typically only 'added' and 'changed'
             are written. 'removed' is useful for validation/reporting.
+
+            Feature version filtering should happen at the read_metadata() level,
+            not in the diff resolver. The diff resolver just compares whatever
+            metadata is passed to it.
         """
         pass

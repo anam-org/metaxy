@@ -17,8 +17,8 @@ from metaxy import (
 )
 from metaxy.entrypoints import (
     EntrypointLoadError,
-    discover_and_load_entrypoints,
-    load_config_entrypoints,
+    load_entrypoints,
+    load_features,
     load_module_entrypoint,
     load_package_entrypoints,
 )
@@ -182,7 +182,7 @@ class Feature{i}(Feature, spec=FeatureSpec(
     sys.path.insert(0, str(tmp_path))
     try:
         # Load all modules
-        load_config_entrypoints(
+        load_entrypoints(
             [
                 "test_multi_modules.feature0",
                 "test_multi_modules.feature1",
@@ -203,14 +203,14 @@ class Feature{i}(Feature, spec=FeatureSpec(
 def test_load_config_entrypoints_empty_list(graph: FeatureGraph):
     """Test loading empty entrypoint list does nothing."""
     initial_count = len(graph.features_by_key)
-    load_config_entrypoints([], graph=graph)
+    load_entrypoints([], graph=graph)
     assert len(graph.features_by_key) == initial_count
 
 
 def test_load_config_entrypoints_failure_raises(graph: FeatureGraph):
     """Test that failure to load one entrypoint raises error."""
     with pytest.raises(EntrypointLoadError, match="Failed to import entrypoint module"):
-        load_config_entrypoints(["valid.module", "nonexistent.module"], graph=graph)
+        load_entrypoints(["valid.module", "nonexistent.module"], graph=graph)
 
 
 # ========== Tests for load_package_entrypoints ==========
@@ -320,12 +320,10 @@ def test_load_package_entrypoints_load_failure_raises(graph: FeatureGraph):
             load_package_entrypoints(graph=graph)
 
 
-# ========== Tests for discover_and_load_entrypoints ==========
+# ========== Tests for load_features ==========
 
 
-def test_discover_and_load_entrypoints_both_sources(
-    graph: FeatureGraph, tmp_path: Path
-):
+def test_load_features_both_sources(graph: FeatureGraph, tmp_path: Path):
     """Test loading from both config and package sources."""
     # Create config-based module
     module_dir = tmp_path / "config_module"
@@ -373,12 +371,12 @@ class ConfigFeature(Feature, spec=FeatureSpec(
             mock_entry_points.return_value = mock_eps
 
             # Load from both sources
-            result_graph = discover_and_load_entrypoints(
-                config_entrypoints=["config_module.feature"],
-                load_config=True,
-                load_packages=True,
-                graph=graph,
-            )
+            with graph.use():
+                result_graph = load_features(
+                    entrypoints=["config_module.feature"],
+                    load_config=True,
+                    load_packages=True,
+                )
 
             # Verify both features were registered
             assert len(result_graph.features_by_key) == 2
@@ -389,7 +387,7 @@ class ConfigFeature(Feature, spec=FeatureSpec(
         sys.path.remove(str(tmp_path))
 
 
-def test_discover_and_load_entrypoints_config_only(graph: FeatureGraph, tmp_path: Path):
+def test_load_features_config_only(graph: FeatureGraph, tmp_path: Path):
     """Test loading only config entrypoints."""
     module_dir = tmp_path / "config_only"
     module_dir.mkdir()
@@ -412,12 +410,12 @@ class ConfigOnlyFeature(Feature, spec=FeatureSpec(
     try:
         with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
             # Should not be called when load_packages=False
-            discover_and_load_entrypoints(
-                config_entrypoints=["config_only.feature"],
-                load_config=True,
-                load_packages=False,
-                graph=graph,
-            )
+            with graph.use():
+                load_features(
+                    entrypoints=["config_only.feature"],
+                    load_config=True,
+                    load_packages=False,
+                )
 
             mock_entry_points.assert_not_called()
             assert FeatureKey(["config_only", "feature"]) in graph.features_by_key
@@ -425,7 +423,7 @@ class ConfigOnlyFeature(Feature, spec=FeatureSpec(
         sys.path.remove(str(tmp_path))
 
 
-def test_discover_and_load_entrypoints_packages_only(graph: FeatureGraph):
+def test_load_features_packages_only(graph: FeatureGraph):
     """Test loading only package entrypoints."""
     mock_ep = MagicMock()
     mock_ep.name = "package_only"
@@ -451,30 +449,30 @@ def test_discover_and_load_entrypoints_packages_only(graph: FeatureGraph):
         mock_eps.select.return_value = [mock_ep]
         mock_entry_points.return_value = mock_eps
 
-        discover_and_load_entrypoints(
-            config_entrypoints=None,
-            load_config=False,
-            load_packages=True,
-            graph=graph,
-        )
+        with graph.use():
+            load_features(
+                entrypoints=None,
+                load_config=False,
+                load_packages=True,
+            )
 
         assert FeatureKey(["package_only", "feature"]) in graph.features_by_key
 
 
-def test_discover_and_load_entrypoints_returns_graph(graph: FeatureGraph):
-    """Test that discover_and_load_entrypoints returns the populated graph."""
-    result = discover_and_load_entrypoints(
-        config_entrypoints=None,
-        load_config=False,
-        load_packages=False,
-        graph=graph,
-    )
+def test_load_features_returns_graph(graph: FeatureGraph):
+    """Test that load_features returns the populated graph."""
+    with graph.use():
+        result = load_features(
+            entrypoints=None,
+            load_config=False,
+            load_packages=False,
+        )
 
     assert result is graph
 
 
-def test_discover_and_load_entrypoints_uses_active_graph():
-    """Test that discover_and_load_entrypoints uses active graph by default."""
+def test_load_features_uses_active_graph():
+    """Test that load_features uses active graph by default."""
     custom_graph = FeatureGraph()
 
     with custom_graph.use():
@@ -483,9 +481,7 @@ def test_discover_and_load_entrypoints_uses_active_graph():
             mock_eps.select.return_value = []
             mock_entry_points.return_value = mock_eps
 
-            result = discover_and_load_entrypoints(
-                config_entrypoints=None, load_packages=False
-            )
+            result = load_features(entrypoints=None, load_packages=False)
 
             assert result is custom_graph
 
@@ -574,9 +570,7 @@ class DownstreamFeature(Feature, spec=FeatureSpec(
 
     try:
         # Load both modules
-        load_config_entrypoints(
-            ["deps_test.upstream", "deps_test.downstream"], graph=graph
-        )
+        load_entrypoints(["deps_test.upstream", "deps_test.downstream"], graph=graph)
 
         # Verify both registered
         assert FeatureKey(["deps", "upstream"]) in graph.features_by_key

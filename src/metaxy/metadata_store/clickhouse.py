@@ -3,12 +3,10 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
-from metaxy.data_versioning.diff.ibis import IbisDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.ibis import IbisJoiner
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
@@ -23,9 +21,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     - XXHASH32, XXHASH64: Available via ClickHouse's xxHash32/xxHash64 functions
 
     Components:
-        - joiner: IbisJoiner
-        - calculator: IbisDataVersionCalculator with ClickHouse hash functions
-        - diff_resolver: IbisDiffResolver
+        - joiner: NarwhalsJoiner (works with any backend)
+        - calculator: IbisDataVersionCalculator (native SQL hash computation with xxHash64/xxHash32/MD5)
+        - diff_resolver: NarwhalsDiffResolver
 
     Examples:
         >>> # Local ClickHouse instance
@@ -110,93 +108,53 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """ClickHouse stores support native components when connection is open."""
         return self._conn is not None
 
-    def _create_native_components(self):
-        """Create ClickHouse-specific native components."""
-        from metaxy.data_versioning.calculators.base import DataVersionCalculator
-        from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
-        from metaxy.data_versioning.diff.base import MetadataDiffResolver
-        from metaxy.data_versioning.joiners.base import UpstreamJoiner
-
-        if self._conn is None:
-            raise RuntimeError(
-                "Cannot create native components: store is not open. "
-                "Ensure store is used as context manager."
-            )
-
-        import ibis.expr.types as ir
-
-        joiner: UpstreamJoiner[ir.Table] = IbisJoiner(backend=self._conn)
-        calculator: DataVersionCalculator[ir.Table] = IbisDataVersionCalculator(
-            hash_sql_generators=self.hash_sql_generators
-        )
-        diff_resolver: MetadataDiffResolver[ir.Table] = IbisDiffResolver()
-
-        return joiner, calculator, diff_resolver
-
-    @property
-    def hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
-        """
-        Build hash SQL generators for ClickHouse.
+    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
+        """Get hash SQL generators for ClickHouse.
 
         ClickHouse supports:
-        - MD5 (built-in)
-        - xxHash32, xxHash64 (built-in)
+        - MD5: Always available (built-in)
+        - XXHASH32, XXHASH64: Always available (built-in xxHash32/xxHash64 functions)
 
         Returns:
             Dictionary mapping HashAlgorithm to SQL generator functions
         """
-        generators = {
-            HashAlgorithm.MD5: self._generate_hash_sql(HashAlgorithm.MD5),
-            HashAlgorithm.XXHASH32: self._generate_hash_sql(HashAlgorithm.XXHASH32),
-            HashAlgorithm.XXHASH64: self._generate_hash_sql(HashAlgorithm.XXHASH64),
-        }
-        return generators
 
-    def _generate_hash_sql(self, algorithm: HashAlgorithm) -> HashSQLGenerator:
-        """
-        Generate SQL hash function for ClickHouse.
-
-        Creates a hash SQL generator that produces ClickHouse-specific SQL for
-        computing hash values on concatenated columns.
-
-        Args:
-            algorithm: Hash algorithm to generate SQL for
-
-        Returns:
-            Hash SQL generator function
-
-        Raises:
-            ValueError: If algorithm is not supported by ClickHouse
-        """
-        # Map algorithm to ClickHouse function name
-        if algorithm == HashAlgorithm.MD5:
-            hash_function = "MD5"
-        elif algorithm == HashAlgorithm.XXHASH32:
-            hash_function = "xxHash32"
-        elif algorithm == HashAlgorithm.XXHASH64:
-            hash_function = "xxHash64"
-        else:
-            from metaxy.metadata_store.exceptions import (
-                HashAlgorithmNotSupportedError,
-            )
-
-            raise HashAlgorithmNotSupportedError(
-                f"Hash algorithm {algorithm} is not supported by ClickHouse. "
-                f"Supported algorithms: MD5, XXHASH32, XXHASH64"
-            )
-
-        def generator(table, concat_columns: dict[str, str]) -> str:
-            # Build SELECT clause with hash columns
+        def md5_generator(table, concat_columns: dict[str, str]) -> str:
             hash_selects: list[str] = []
             for field_key, concat_col in concat_columns.items():
                 hash_col = f"__hash_{field_key}"
-                # ClickHouse hash functions return numeric types
-                # Cast to String for consistency with other stores
-                hash_expr = f"CAST({hash_function}({concat_col}) AS String)"
+                # Cast to String for consistency
+                hash_expr = f"CAST(MD5({concat_col}) AS String)"
                 hash_selects.append(f"{hash_expr} as {hash_col}")
 
             hash_clause = ", ".join(hash_selects)
             table_sql = table.compile()
             return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
 
-        return generator
+        def xxhash32_generator(table, concat_columns: dict[str, str]) -> str:
+            hash_selects: list[str] = []
+            for field_key, concat_col in concat_columns.items():
+                hash_col = f"__hash_{field_key}"
+                hash_expr = f"CAST(xxHash32({concat_col}) AS String)"
+                hash_selects.append(f"{hash_expr} as {hash_col}")
+
+            hash_clause = ", ".join(hash_selects)
+            table_sql = table.compile()
+            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+
+        def xxhash64_generator(table, concat_columns: dict[str, str]) -> str:
+            hash_selects: list[str] = []
+            for field_key, concat_col in concat_columns.items():
+                hash_col = f"__hash_{field_key}"
+                hash_expr = f"CAST(xxHash64({concat_col}) AS String)"
+                hash_selects.append(f"{hash_expr} as {hash_col}")
+
+            hash_clause = ", ".join(hash_selects)
+            table_sql = table.compile()
+            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+
+        return {
+            HashAlgorithm.MD5: md5_generator,
+            HashAlgorithm.XXHASH32: xxhash32_generator,
+            HashAlgorithm.XXHASH64: xxhash64_generator,
+        }

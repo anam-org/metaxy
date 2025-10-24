@@ -1,7 +1,7 @@
 import hashlib
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import polars as pl
 from pydantic._internal._model_construction import ModelMetaclass
@@ -12,11 +12,14 @@ from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
 
-# Type variable for backend-agnostic operations
-TRef = TypeVar("TRef")
-
 if TYPE_CHECKING:
-    from metaxy.data_versioning.diff import DiffResult, MetadataDiffResolver
+    import narwhals as nw
+
+    from metaxy.data_versioning.diff import (
+        DiffResult,
+        LazyDiffResult,
+        MetadataDiffResolver,
+    )
     from metaxy.data_versioning.joiners import UpstreamJoiner
 
 
@@ -24,6 +27,29 @@ if TYPE_CHECKING:
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
     "_active_graph", default=None
 )
+
+
+def get_feature_by_key(key: "FeatureKey") -> type["Feature"]:
+    """Get a feature class by its key from the active graph.
+
+    Convenience function that retrieves from the currently active graph.
+
+    Args:
+        key: Feature key to look up
+
+    Returns:
+        Feature class
+
+    Raises:
+        KeyError: If no feature with the given key is registered
+
+    Example:
+        >>> from metaxy import get_feature_by_key, FeatureKey
+        >>> parent_key = FeatureKey(["examples", "parent"])
+        >>> ParentFeature = get_feature_by_key(parent_key)
+    """
+    graph = FeatureGraph.get_active()
+    return graph.get_feature_by_key(key)
 
 
 class FeatureGraph:
@@ -50,6 +76,48 @@ class FeatureGraph:
 
         self.features_by_key[feature.spec.key] = feature
         self.feature_specs_by_key[feature.spec.key] = feature.spec
+
+    def remove_feature(self, key: FeatureKey) -> None:
+        """Remove a feature from the graph.
+
+        Args:
+            key: Feature key to remove
+
+        Raises:
+            KeyError: If no feature with the given key is registered
+        """
+        if key not in self.features_by_key:
+            raise KeyError(
+                f"No feature with key {key.to_string()} found in graph. "
+                f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
+            )
+
+        del self.features_by_key[key]
+        del self.feature_specs_by_key[key]
+
+    def get_feature_by_key(self, key: FeatureKey) -> type["Feature"]:
+        """Get a feature class by its key.
+
+        Args:
+            key: Feature key to look up
+
+        Returns:
+            Feature class
+
+        Raises:
+            KeyError: If no feature with the given key is registered
+
+        Example:
+            >>> graph = FeatureGraph.get_active()
+            >>> parent_key = FeatureKey(["examples", "parent"])
+            >>> ParentFeature = graph.get_feature_by_key(parent_key)
+        """
+        if key not in self.features_by_key:
+            raise KeyError(
+                f"No feature with key {key.to_string()} found in graph. "
+                f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
+            )
+        return self.features_by_key[key]
 
     def get_feature_plan(self, key: FeatureKey) -> FeaturePlan:
         feature = self.feature_specs_by_key[key]
@@ -154,6 +222,9 @@ class FeatureGraph:
     @property
     def snapshot_id(self) -> str:
         """Generate a snapshot ID representing the current topology + versions of the feature graph"""
+        if len(self.feature_specs_by_key) == 0:
+            return "empty"
+
         hasher = hashlib.sha256()
         for feature_key in sorted(self.feature_specs_by_key.keys()):
             hasher.update(feature_key.to_string().encode("utf-8"))
@@ -199,11 +270,64 @@ class FeatureGraph:
         return snapshot
 
     @classmethod
+    def from_snapshot_specs(
+        cls,
+        snapshot_data: dict[str, dict],
+    ) -> "FeatureGraph":
+        """Reconstruct graph from snapshot using only stored specs (no class imports).
+
+        This creates synthetic Feature classes from the stored FeatureSpec data,
+        without importing live code. This ensures historical snapshots are reconstructed
+        with the exact feature definitions that were stored, even if the live code has changed.
+
+        Use this for migration operations where you need exact historical fidelity.
+
+        Args:
+            snapshot_data: Dict of feature_key -> {
+                feature_spec: dict,
+                ...
+            }
+
+        Returns:
+            New FeatureGraph with synthetic features matching the snapshot
+
+        Example:
+            >>> # Reconstruct historical graph without importing classes
+            >>> historical_graph = FeatureGraph.from_snapshot_specs(snapshot_data)
+        """
+        from metaxy.models.feature_spec import FeatureSpec
+
+        graph = cls()
+
+        # Create synthetic Feature classes from specs
+        for feature_key_str, feature_data in snapshot_data.items():
+            # Parse FeatureSpec
+            feature_spec_dict = feature_data["feature_spec"]
+            spec = FeatureSpec.model_validate(feature_spec_dict)
+
+            # Create a synthetic Feature class with the stored spec
+            # We don't need to import the actual class - just need the spec for snapshot_id computation
+            # Pass spec=None to metaclass to prevent auto-registration, then set manually
+            class SyntheticFeature(Feature, spec=None):  # type: ignore[misc]
+                pass
+
+            # Set the spec and graph directly after class creation
+            SyntheticFeature.spec = spec  # type: ignore[misc]
+            SyntheticFeature.graph = graph  # type: ignore[misc]
+
+            # Manually add to graph (bypassing metaclass auto-registration)
+            graph.features_by_key[spec.key] = SyntheticFeature
+            graph.feature_specs_by_key[spec.key] = spec
+
+        return graph
+
+    @classmethod
     def from_snapshot(
         cls,
         snapshot_data: dict[str, dict],
         *,
         class_path_overrides: dict[str, str] | None = None,
+        force_reload: bool = False,
     ) -> "FeatureGraph":
         """Reconstruct graph from snapshot by importing Feature classes.
 
@@ -221,6 +345,7 @@ class FeatureGraph:
             } (as returned by to_snapshot() or loaded from DB)
             class_path_overrides: Optional dict mapping feature_key to new class path
                                  for features that have been moved/renamed
+            force_reload: If True, reload modules from disk to get current code state.
 
         Returns:
             New FeatureGraph with historical features
@@ -240,57 +365,103 @@ class FeatureGraph:
             ...     }
             ... )
         """
+        import importlib
+        import sys
+
         from metaxy.models.feature_spec import FeatureSpec
 
         graph = cls()
         class_path_overrides = class_path_overrides or {}
 
-        for feature_key_str, feature_data in snapshot_data.items():
-            # Parse FeatureSpec for validation
-            feature_spec_dict = feature_data["feature_spec"]
-            feature_spec = FeatureSpec.model_validate(feature_spec_dict)
+        # If force_reload, collect all module paths first to remove ALL features
+        # from those modules before reloading (modules can have multiple features)
+        modules_to_reload = set()
+        if force_reload:
+            for feature_key_str, feature_data in snapshot_data.items():
+                class_path = class_path_overrides.get(
+                    feature_key_str
+                ) or feature_data.get("feature_class_path")
+                if class_path:
+                    module_path, _ = class_path.rsplit(".", 1)
+                    if module_path in sys.modules:
+                        modules_to_reload.add(module_path)
 
-            # Get class path (check overrides first)
-            if feature_key_str in class_path_overrides:
-                class_path = class_path_overrides[feature_key_str]
-            else:
-                class_path = feature_data.get("feature_class_path")
-                if not class_path:
-                    raise ValueError(
-                        f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
-                        f"Cannot reconstruct historical graph."
+        # Use context manager to temporarily set the new graph as active
+        # This ensures imported Feature classes register to the new graph, not the current one
+        with graph.use():
+            for feature_key_str, feature_data in snapshot_data.items():
+                # Parse FeatureSpec for validation
+                feature_spec_dict = feature_data["feature_spec"]
+                FeatureSpec.model_validate(feature_spec_dict)
+
+                # Get class path (check overrides first)
+                if feature_key_str in class_path_overrides:
+                    class_path = class_path_overrides[feature_key_str]
+                else:
+                    class_path = feature_data.get("feature_class_path")
+                    if not class_path:
+                        raise ValueError(
+                            f"Feature '{feature_key_str}' has no feature_class_path in snapshot. "
+                            f"Cannot reconstruct historical graph."
+                        )
+
+                # Import the class
+                try:
+                    module_path, class_name = class_path.rsplit(".", 1)
+
+                    # Force reload module from disk if requested
+                    # This is critical for migration detection - when code changes,
+                    # we need fresh imports to detect the changes
+                    if force_reload and module_path in modules_to_reload:
+                        # Before first reload of this module, remove ALL features from this module
+                        # (a module can define multiple features)
+                        if module_path in modules_to_reload:
+                            # Find all features from this module in snapshot and remove them
+                            for fk_str, fd in snapshot_data.items():
+                                fcp = class_path_overrides.get(fk_str) or fd.get(
+                                    "feature_class_path"
+                                )
+                                if fcp and fcp.rsplit(".", 1)[0] == module_path:
+                                    fspec_dict = fd["feature_spec"]
+                                    fspec = FeatureSpec.model_validate(fspec_dict)
+                                    if fspec.key in graph.features_by_key:
+                                        graph.remove_feature(fspec.key)
+
+                            # Mark module as processed so we don't remove features again
+                            modules_to_reload.discard(module_path)
+
+                        module = importlib.reload(sys.modules[module_path])
+                    else:
+                        module = __import__(module_path, fromlist=[class_name])
+
+                    feature_cls = getattr(module, class_name)
+                except (ImportError, AttributeError) as e:
+                    raise ImportError(
+                        f"Cannot import Feature class '{class_path}' for historical migration. "
+                        f"Feature '{feature_key_str}' is required for this migration but the class "
+                        f"cannot be found at the recorded import path. "
+                        f"\n\n"
+                        f"Options:\n"
+                        f"1. Restore the feature class at '{class_path}'\n"
+                        f"2. If the feature was moved, add a class_path_override in the migration YAML:\n"
+                        f"   feature_class_overrides:\n"
+                        f'     {feature_key_str}: "new.module.path.ClassName"\n'
+                        f"\n"
+                        f"Original error: {e}"
+                    ) from e
+
+                # Validate the imported class matches the stored spec
+                if not hasattr(feature_cls, "spec"):
+                    raise TypeError(
+                        f"Imported class '{class_path}' is not a valid Feature class "
+                        f"(missing 'spec' attribute)"
                     )
 
-            # Import the class
-            try:
-                module_path, class_name = class_path.rsplit(".", 1)
-                module = __import__(module_path, fromlist=[class_name])
-                feature_cls = getattr(module, class_name)
-            except (ImportError, AttributeError) as e:
-                raise ImportError(
-                    f"Cannot import Feature class '{class_path}' for historical migration. "
-                    f"Feature '{feature_key_str}' is required for this migration but the class "
-                    f"cannot be found at the recorded import path. "
-                    f"\n\n"
-                    f"Options:\n"
-                    f"1. Restore the feature class at '{class_path}'\n"
-                    f"2. If the feature was moved, add a class_path_override in the migration YAML:\n"
-                    f"   feature_class_overrides:\n"
-                    f'     {feature_key_str}: "new.module.path.ClassName"\n'
-                    f"\n"
-                    f"Original error: {e}"
-                ) from e
-
-            # Validate the imported class matches the stored spec
-            if not hasattr(feature_cls, "spec"):
-                raise TypeError(
-                    f"Imported class '{class_path}' is not a valid Feature class "
-                    f"(missing 'spec' attribute)"
-                )
-
-            # Register it
-            graph.features_by_key[feature_spec.key] = feature_cls
-            graph.feature_specs_by_key[feature_spec.key] = feature_spec
+                # Register the imported feature to this graph if not already present
+                # If the module was imported for the first time, the metaclass already registered it
+                # If the module was previously imported, we need to manually register it
+                if feature_cls.spec.key not in graph.features_by_key:
+                    graph.add_feature(feature_cls)
 
         return graph
 
@@ -541,9 +712,9 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     @classmethod
     def join_upstream_metadata(
         cls,
-        joiner: "UpstreamJoiner[TRef]",
-        upstream_refs: dict[str, TRef],
-    ) -> tuple[TRef, dict[str, str]]:
+        joiner: "UpstreamJoiner",
+        upstream_refs: dict[str, "nw.LazyFrame"],
+    ) -> tuple["nw.LazyFrame", dict[str, str]]:
         """Join upstream feature metadata.
 
         Override for custom join logic (1:many, different keys, filtering, etc.).
@@ -582,21 +753,25 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     @classmethod
     def resolve_data_version_diff(
         cls,
-        diff_resolver: "MetadataDiffResolver[TRef]",
-        target_versions: TRef,
-        current_metadata: TRef | None,
-    ) -> "DiffResult":
+        diff_resolver: "MetadataDiffResolver",
+        target_versions: "nw.LazyFrame",
+        current_metadata: "nw.LazyFrame | None",
+        *,
+        lazy: bool = False,
+    ) -> "DiffResult | LazyDiffResult":
         """Resolve differences between target and current data versions.
 
         Override for custom diff logic (ignore certain fields, custom rules, etc.).
 
         Args:
             diff_resolver: MetadataDiffResolver from MetadataStore
-            target_versions: Calculated target data_versions (lazy ref)
-            current_metadata: Current metadata for this feature (lazy ref, or None)
+            target_versions: Calculated target data_versions (Narwhals LazyFrame)
+            current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
+                Should be pre-filtered by feature_version at the store level.
+            lazy: If True, return LazyDiffResult. If False, return DiffResult.
 
         Returns:
-            DiffResult with added, changed, removed references
+            DiffResult (eager) or LazyDiffResult (lazy) with added, changed, removed
 
         Example (default):
             >>> class MyFeature(Feature, spec=...):
@@ -605,17 +780,29 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         Example (ignore certain field changes):
             >>> class MyFeature(Feature, spec=...):
             ...     @classmethod
-            ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata):
+            ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
             ...         # Get standard diff
             ...         result = diff_resolver.find_changes(target_versions, current_metadata)
             ...
             ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
-            ...         # (This example uses Polars - would work similarly with other backends)
             ...         # Users can filter/modify the diff result here
             ...
             ...         return result  # Return modified DiffResult
         """
-        return diff_resolver.find_changes(
+        # Diff resolver always returns LazyDiffResult - materialize if needed
+        lazy_result = diff_resolver.find_changes(
             target_versions=target_versions,
             current_metadata=current_metadata,
         )
+
+        # Materialize to DiffResult if lazy=False
+        if not lazy:
+            from metaxy.data_versioning.diff import DiffResult
+
+            return DiffResult(
+                added=lazy_result.added.collect(),
+                changed=lazy_result.changed.collect(),
+                removed=lazy_result.removed.collect(),
+            )
+
+        return lazy_result

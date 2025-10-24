@@ -6,19 +6,20 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
-from typing import TYPE_CHECKING, Generic, TypeGuard, TypeVar
+from typing import TYPE_CHECKING, TypeGuard, overload
 
+import narwhals as nw
 import polars as pl
 from typing_extensions import Self
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
 from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
-from metaxy.data_versioning.diff import DiffResult
+from metaxy.data_versioning.diff import DiffResult, LazyDiffResult
 from metaxy.data_versioning.diff.base import MetadataDiffResolver
-from metaxy.data_versioning.diff.polars import PolarsDiffResolver
+from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
-from metaxy.data_versioning.joiners.polars import PolarsJoiner
+from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -32,11 +33,10 @@ from metaxy.models.types import FeatureKey, FieldKey
 if TYPE_CHECKING:
     pass
 
-# Type variable for MetadataStore backend
-TRef = TypeVar("TRef")  # Reference type (LazyFrame, ibis.Table, etc.)
+# Removed TRef - all stores now use Narwhals LazyFrames universally
 
-# System namespace constant
-SYSTEM_NAMESPACE = "__metaxy__"
+# System namespace constant (use prefix without __ to avoid conflicts with separator)
+SYSTEM_NAMESPACE = "metaxy-system"
 
 # Metaxy-managed column names (to distinguish from user-defined columns)
 METAXY_FEATURE_VERSION_COL = "metaxy_feature_version"
@@ -86,20 +86,22 @@ def allow_feature_version_override() -> Iterator[None]:
 
 def _is_using_polars_components(
     components: tuple[UpstreamJoiner, DataVersionCalculator, MetadataDiffResolver],
-) -> TypeGuard[tuple[PolarsJoiner, PolarsDataVersionCalculator, PolarsDiffResolver]]:
-    """Type guard to check if using Polars components.
+) -> TypeGuard[
+    tuple[NarwhalsJoiner, PolarsDataVersionCalculator, NarwhalsDiffResolver]
+]:
+    """Type guard to check if using Narwhals components.
 
-    Returns True if all components are Polars-based, allowing type narrowing.
+    Returns True if all components are Narwhals-based, allowing type narrowing.
     """
     joiner, calculator, diff_resolver = components
     return (
-        isinstance(joiner, PolarsJoiner)
+        isinstance(joiner, NarwhalsJoiner)
         and isinstance(calculator, PolarsDataVersionCalculator)
-        and isinstance(diff_resolver, PolarsDiffResolver)
+        and isinstance(diff_resolver, NarwhalsDiffResolver)
     )
 
 
-class MetadataStore(ABC, Generic[TRef]):
+class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
 
@@ -109,8 +111,8 @@ class MetadataStore(ABC, Generic[TRef]):
     - Automatic data version calculation using three-component architecture
     - Backend-specific computation optimizations
 
-    Type Parameters:
-        TRef: Backend-specific reference type (pl.LazyFrame for Polars, ibis.Table for SQL)
+    All stores use Narwhals LazyFrames as their universal interface,
+    regardless of the underlying backend (Polars, Ibis/SQL, etc.).
 
     Components:
         Components are created on-demand in resolve_update() based on:
@@ -184,15 +186,14 @@ class MetadataStore(ABC, Generic[TRef]):
     @abstractmethod
     def _create_native_components(
         self,
-    ) -> tuple[
-        UpstreamJoiner[TRef], DataVersionCalculator[TRef], MetadataDiffResolver[TRef]
-    ]:
+    ) -> tuple[UpstreamJoiner, DataVersionCalculator, MetadataDiffResolver]:
         """Create native components for this store.
 
         Only called if _supports_native_components() returns True.
 
         Returns:
-            Tuple of (joiner, calculator, diff_resolver)
+            Tuple of (joiner, calculator, diff_resolver) with appropriate types
+            for this store's backend (Narwhals-compatible)
 
         Raises:
             NotImplementedError: If store doesn't support native components
@@ -352,56 +353,6 @@ class MetadataStore(ABC, Generic[TRef]):
             # When given a Feature class, use its bound graph
             return feature.graph.get_feature_plan(feature.spec.key)
 
-    # ========== Backend Reference Conversion ==========
-
-    @abstractmethod
-    def _feature_to_ref(self, feature: FeatureKey | type[Feature]) -> TRef:
-        """Convert feature to backend-specific reference.
-
-        Args:
-            feature: Feature to convert
-
-        Returns:
-            Backend-specific reference (LazyFrame for Polars, table name for SQL, etc.)
-
-        Example:
-            - InMemoryMetadataStore: Returns pl.LazyFrame from stored DataFrame
-            - SQL-based stores: Return table name string
-        """
-        pass
-
-    @abstractmethod
-    def _sample_to_ref(self, sample_df: pl.DataFrame) -> TRef:
-        """Convert sample DataFrame to backend-specific reference.
-
-        Args:
-            sample_df: Input sample DataFrame
-
-        Returns:
-            Backend-specific reference
-
-        Example:
-            - InMemoryMetadataStore: Returns sample_df.lazy()
-            - SQL-based stores: Write to temp table, return table name
-        """
-        pass
-
-    @abstractmethod
-    def _result_to_dataframe(self, result: TRef) -> pl.DataFrame:
-        """Convert backend-specific result to DataFrame.
-
-        Args:
-            result: Backend-specific result from resolver
-
-        Returns:
-            DataFrame ready to be written to metadata store
-
-        Example:
-            - InMemoryMetadataStore: Calls result.collect() on LazyFrame
-            - SQL-based stores: Execute SQL query, return result as DataFrame
-        """
-        pass
-
     # ========== Core CRUD Operations ==========
 
     @abstractmethod
@@ -424,7 +375,7 @@ class MetadataStore(ABC, Generic[TRef]):
     def write_metadata(
         self,
         feature: FeatureKey | type[Feature],
-        df: pl.DataFrame,
+        df: nw.DataFrame | pl.DataFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -434,8 +385,8 @@ class MetadataStore(ABC, Generic[TRef]):
 
         Args:
             feature: Feature to write metadata for
-            df: DataFrame containing metadata. Must have 'data_version' column
-                of type pl.Struct with fields matching feature's fields.
+            df: Narwhals DataFrame or Polars DataFrame containing metadata.
+                Must have 'data_version' column of type Struct with fields matching feature's fields.
                 May optionally contain 'feature_version' column (for migrations).
 
         Raises:
@@ -451,6 +402,19 @@ class MetadataStore(ABC, Generic[TRef]):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
+
+        # Convert Narwhals to Polars if needed
+        if isinstance(df, nw.DataFrame):
+            df = df.to_polars()
+        # nw.DataFrame also matches as DataFrame in some contexts, ensure it's Polars
+        if not isinstance(df, pl.DataFrame):
+            # Must be some other type - shouldn't happen but handle defensively
+            if hasattr(df, "to_polars"):
+                df = df.to_polars()
+            elif hasattr(df, "to_pandas"):
+                df = pl.from_pandas(df.to_pandas())
+            else:
+                raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:
@@ -631,7 +595,13 @@ class MetadataStore(ABC, Generic[TRef]):
 
         # Read existing feature versions once
         try:
-            existing_versions = self._read_metadata_local(FEATURE_VERSIONS_KEY)
+            existing_versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
+            # Materialize to Polars for iteration
+            existing_versions = (
+                existing_versions_lazy.collect().to_polars()
+                if existing_versions_lazy is not None
+                else None
+            )
         except Exception:
             # Table doesn't exist yet
             existing_versions = None
@@ -647,6 +617,18 @@ class MetadataStore(ABC, Generic[TRef]):
 
         graph = FeatureGraph.get_active()
 
+        # Check if this exact snapshot already exists
+        snapshot_already_exists = False
+        if existing_versions is not None:
+            snapshot_already_exists = (
+                existing_versions.filter(pl.col("snapshot_id") == snapshot_id).height
+                > 0
+            )
+
+        # If snapshot already exists, we're done (idempotent)
+        if snapshot_already_exists:
+            return snapshot_id
+
         records = []
         for feature_key in sorted(
             graph.features_by_key.keys(), key=lambda k: k.to_string()
@@ -660,10 +642,8 @@ class MetadataStore(ABC, Generic[TRef]):
             # Get class import path
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            # Skip if already recorded (idempotent)
-            if (feature_key.to_string(), feature_version) in already_recorded:
-                continue
-
+            # Always record all features for this snapshot (don't skip based on feature_version alone)
+            # Each snapshot must be complete to support migration detection
             records.append(
                 {
                     "feature_key": feature_key.to_string(),
@@ -686,23 +666,26 @@ class MetadataStore(ABC, Generic[TRef]):
         return snapshot_id
 
     @abstractmethod
-    def _read_metadata_local(
+    def _read_metadata_native(
         self,
         feature: FeatureKey | type[Feature],
         *,
-        filters: pl.Expr | None = None,
+        feature_version: str | None = None,
+        filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> pl.DataFrame | None:
+    ) -> nw.LazyFrame | None:
         """
         Read metadata from THIS store only (no fallback).
 
         Args:
             feature: Feature to read metadata for
-            filters: Polars expression for filtering rows
+            feature_version: Filter by specific feature_version (applied natively in store)
+            filters: List of Narwhals filter expressions (backend-agnostic)
+                Works with any backend (Polars, Ibis/SQL, Pandas, PyArrow)
             columns: Subset of columns to return
 
         Returns:
-            DataFrame with metadata, or None if feature not found locally
+            Narwhals LazyFrame with metadata, or None if feature not found locally
         """
         pass
 
@@ -710,42 +693,47 @@ class MetadataStore(ABC, Generic[TRef]):
         self,
         feature: FeatureKey | type[Feature],
         *,
-        filters: pl.Expr | None = None,
+        feature_version: str | None = None,
+        filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
-    ) -> pl.DataFrame:
+    ) -> nw.LazyFrame:
         """
         Read metadata with optional fallback to upstream stores.
 
         Args:
             feature: Feature to read metadata for
-            filters: Polars expression for filtering rows
+            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
+            filters: List of Narwhals filter expressions (backend-agnostic, works with any store)
             columns: Subset of columns to return
             allow_fallback: If True, check fallback stores on local miss
             current_only: If True, only return rows with current feature_version
                 (default: True for safety)
 
         Returns:
-            DataFrame with metadata
+            Narwhals LazyFrame with metadata
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
+            ValueError: If both feature_version and current_only=True are provided
         """
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
-        # Build combined filters
-        combined_filters = filters
+        # Validate mutually exclusive parameters
+        if feature_version is not None and current_only:
+            raise ValueError(
+                "Cannot specify both feature_version and current_only=True. "
+                "Use current_only=False with feature_version parameter."
+            )
 
-        # Add feature_version filter for regular features (not system tables)
-        # Note: We'll apply this filter after reading, to handle cases where
-        # the column doesn't exist in the data yet
-        current_feature_version = None
+        # Determine which feature_version to use
+        feature_version_filter = feature_version
         if current_only and not is_system_table:
             # Get current feature_version
             if isinstance(feature, type) and issubclass(feature, Feature):
-                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
+                feature_version_filter = feature.feature_version()  # type: ignore[attr-defined]
             else:
                 from metaxy.models.feature import FeatureGraph
 
@@ -754,26 +742,21 @@ class MetadataStore(ABC, Generic[TRef]):
                 # This allows reading system tables or external features not in current graph
                 if feature_key in graph.features_by_key:
                     feature_cls = graph.features_by_key[feature_key]
-                    current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+                    feature_version_filter = feature_cls.feature_version()  # type: ignore[attr-defined]
                 else:
                     # Feature not in graph - skip feature_version filtering
-                    current_feature_version = None
+                    feature_version_filter = None
 
         # Try local first
-        df = self._read_metadata_local(
-            feature, filters=combined_filters, columns=columns
+        lazy_frame = self._read_metadata_native(
+            feature,
+            feature_version=feature_version_filter,
+            filters=filters,
+            columns=columns,
         )
 
-        if df is not None:
-            # Apply feature_version filter if needed (after reading to handle missing column)
-            if current_feature_version is not None and "feature_version" in df.columns:
-                df = df.filter(pl.col("feature_version") == current_feature_version)
-                # If filtering removed all rows, treat as not found
-                if len(df) == 0:
-                    df = None
-
-        if df is not None:
-            return df
+        if lazy_frame is not None:
+            return lazy_frame
 
         # Try fallback stores
         if allow_fallback:
@@ -782,7 +765,8 @@ class MetadataStore(ABC, Generic[TRef]):
                     # Use full read_metadata to handle nested fallback chains
                     return store.read_metadata(
                         feature,
-                        filters=filters,  # Pass original filters, not combined
+                        feature_version=feature_version,
+                        filters=filters,
                         columns=columns,
                         allow_fallback=True,
                         current_only=current_only,  # Pass through current_only
@@ -816,7 +800,7 @@ class MetadataStore(ABC, Generic[TRef]):
             True if feature exists, False otherwise
         """
         # Check local
-        if self._read_metadata_local(feature) is not None:
+        if self._read_metadata_native(feature) is not None:
             return True
 
         # Check fallback stores
@@ -873,7 +857,7 @@ class MetadataStore(ABC, Generic[TRef]):
         *,
         allow_fallback: bool = True,
         current_only: bool = True,
-    ) -> dict[str, pl.DataFrame]:
+    ) -> dict[str, nw.LazyFrame]:
         """
         Read all upstream dependencies for a feature/field.
 
@@ -884,8 +868,8 @@ class MetadataStore(ABC, Generic[TRef]):
             current_only: If True, only read current feature_version for upstream
 
         Returns:
-            Dict mapping upstream feature keys (as strings) to metadata DataFrames.
-            Each DataFrame has a 'data_version' column (pl.Struct).
+            Dict mapping upstream feature keys (as strings) to Narwhals LazyFrames.
+            Each LazyFrame has a 'data_version' column (Struct).
 
         Raises:
             DependencyError: If required upstream feature is missing
@@ -920,13 +904,13 @@ class MetadataStore(ABC, Generic[TRef]):
                 # Look up the Feature class from the graph and pass it to read_metadata
                 # This way we use the bound graph instead of relying on active context
                 upstream_feature_cls = graph.features_by_key[upstream_feature_key]
-                df = self.read_metadata(
+                lazy_frame = self.read_metadata(
                     upstream_feature_cls,
                     allow_fallback=allow_fallback,
                     current_only=current_only,  # Pass through current_only
                 )
                 # Use string key for dict
-                upstream_metadata[upstream_feature_key.to_string()] = df
+                upstream_metadata[upstream_feature_key.to_string()] = lazy_frame
             except FeatureNotFoundError as e:
                 raise DependencyError(
                     f"Missing upstream feature {upstream_feature_key.to_string()} "
@@ -971,31 +955,53 @@ class MetadataStore(ABC, Generic[TRef]):
 
     # ========== Data Versioning API ==========
 
+    @overload
     def resolve_update(
         self,
         feature: type[Feature],
+        *,
+        lazy: bool = False,
         **kwargs,
-    ) -> DiffResult:
+    ) -> DiffResult: ...
+
+    @overload
+    def resolve_update(
+        self,
+        feature: type[Feature],
+        *,
+        lazy: bool = True,
+        **kwargs,
+    ) -> LazyDiffResult: ...
+
+    def resolve_update(
+        self,
+        feature: type[Feature],
+        *,
+        lazy: bool = False,
+        **kwargs,
+    ) -> DiffResult | LazyDiffResult:
         """Resolve what needs updating for a feature.
 
         Primary user-facing method. Automatically chooses optimal strategy:
         1. All upstream local → Use native components (stay in DB)
-        2. Some upstream in fallback stores → Use Polars components (pull to memory)
-
-        Returns DiffResult with three DataFrames:
-        - added: New samples not in current metadata
-        - changed: Existing samples with different data_versions
-        - removed: Samples in current but not in upstream
-
-        Users can then process only added/changed and call write_metadata().
+        2. Some upstream in fallback stores → Pull to memory (Polars)
 
         Args:
             feature: Feature class to resolve updates for
+            lazy: If True, return LazyDiffResult with lazy Narwhals LazyFrames.
+                If False, return DiffResult with eager Narwhals DataFrames (default).
             **kwargs: Backend-specific parameters (reserved for future use)
 
         Returns:
-            DiffResult[pl.DataFrame] with added, changed, removed
-            Each DataFrame has columns: [sample_id, data_version]
+            DiffResult (eager, default) or LazyDiffResult (lazy) with:
+            - added: New samples not in current metadata
+            - changed: Existing samples with different data_versions
+            - removed: Samples in current but not in upstream
+
+            Each frame has columns: [sample_id, data_version, ...user columns...]
+
+        Note:
+            Users can then process only added/changed and call write_metadata().
         """
 
         # Check where upstream data lives
@@ -1003,10 +1009,10 @@ class MetadataStore(ABC, Generic[TRef]):
 
         if upstream_location == "all_local":
             # All upstream in this store - use native components
-            return self._resolve_update_native(feature)
+            return self._resolve_update_native(feature, lazy=lazy)
         else:
             # Some upstream in fallback stores - use Polars components
-            return self._resolve_update_polars(feature)
+            return self._resolve_update_polars(feature, lazy=lazy)
 
     def _check_upstream_location(self, feature: type[Feature]) -> str:
         """Check if all upstream is in this store or in fallback stores.
@@ -1029,7 +1035,9 @@ class MetadataStore(ABC, Generic[TRef]):
     def _resolve_update_native(
         self,
         feature: type[Feature],
-    ) -> DiffResult:
+        *,
+        lazy: bool = False,
+    ) -> DiffResult | LazyDiffResult:
         """Resolve using components (all data in this store).
 
         Creates components on-demand based on:
@@ -1041,120 +1049,78 @@ class MetadataStore(ABC, Generic[TRef]):
         - If prefer_native=True AND store supports native AND algorithm supported → use native
         - Otherwise → use Polars
         """
-        import warnings
-
         plan = feature.graph.get_feature_plan(feature.spec.key)
 
-        # Create components based on preference and capabilities
-        if self._prefer_native and self._supports_native_components():
-            # Use native components (Ibis, DuckDB, etc.)
-            components = self._create_native_components()
-        else:
-            # Fallback to Polars components
-            if self._prefer_native:
-                # User requested native but we're using Polars - log warning
-                warnings.warn(
-                    f"{self.__class__.__name__}: prefer_native=True but using Polars components. "
-                    f"Store does not support native components.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            components = (
-                PolarsJoiner(),
-                PolarsDataVersionCalculator(),
-                PolarsDiffResolver(),
+        # With Narwhals, we have a unified path - use Narwhals components everywhere
+        from metaxy.data_versioning.calculators.polars import (
+            PolarsDataVersionCalculator,
+        )
+        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+
+        narwhals_joiner = NarwhalsJoiner()
+        polars_calculator = (
+            PolarsDataVersionCalculator()
+        )  # Hash application needs Polars
+        narwhals_diff = NarwhalsDiffResolver()
+
+        # Load upstream as Narwhals LazyFrames
+        upstream_refs: dict[str, nw.LazyFrame] = {}
+        for upstream_spec in plan.deps or []:
+            upstream_key_str = (
+                upstream_spec.key.to_string()
+                if hasattr(upstream_spec.key, "to_string")
+                else "_".join(upstream_spec.key)
             )
+            upstream_lazy = self._read_metadata_native(upstream_spec.key)
+            if upstream_lazy is not None:
+                upstream_refs[upstream_key_str] = upstream_lazy
 
-        # Use type guard to narrow component types
-        if _is_using_polars_components(components):
-            # Type system knows these are Polars components
-            joiner, calculator, diff_resolver = components
+        # Join upstream using Narwhals
+        joined, mapping = feature.join_upstream_metadata(
+            joiner=narwhals_joiner,
+            upstream_refs=upstream_refs,
+        )
 
-            # Load upstream as LazyFrames
-            upstream_refs: dict[str, pl.LazyFrame] = {}
-            for upstream_spec in plan.deps or []:
-                upstream_key_str = (
-                    upstream_spec.key.to_string()
-                    if hasattr(upstream_spec.key, "to_string")
-                    else "_".join(upstream_spec.key)
-                )
-                upstream_df = self._read_metadata_local(upstream_spec.key)
-                if upstream_df is not None:
-                    upstream_refs[upstream_key_str] = upstream_df.lazy()
+        # Calculate data_versions using Polars calculator (accepts Narwhals LazyFrame)
+        target_versions_nw = polars_calculator.calculate_data_versions(
+            joined_upstream=joined,
+            feature_spec=feature.spec,
+            feature_plan=plan,
+            upstream_column_mapping=mapping,
+            hash_algorithm=self.hash_algorithm,
+        )
 
-            # Join upstream
-            joined, mapping = feature.join_upstream_metadata(
-                joiner=joiner,
-                upstream_refs=upstream_refs,
-            )
+        # Diff with current (filtered by feature_version at database level)
+        current_lazy_nw = self._read_metadata_native(
+            feature, feature_version=feature.feature_version()
+        )
 
-            # Calculate data_versions
-            target_versions = calculator.calculate_data_versions(
-                joined_upstream=joined,
-                feature_spec=feature.spec,
-                feature_plan=plan,
-                upstream_column_mapping=mapping,
-                hash_algorithm=self.hash_algorithm,
-            )
+        # Convert current to Polars to match target (both need same backend for comparison)
+        if current_lazy_nw is not None:
+            # to_native() returns underlying type without materializing
+            current_pl = current_lazy_nw.to_native()
+            if isinstance(current_pl, pl.DataFrame):
+                current_pl = current_pl.lazy()
+            elif not isinstance(current_pl, pl.LazyFrame):
+                # Ibis table - convert to Polars
+                current_pl = current_pl.to_polars().lazy()
+            # Wrap back in Narwhals
+            current_lazy_nw = nw.from_native(current_pl)
 
-            # Diff with current
-            current_df = self._read_metadata_local(feature)
-            current_ref = current_df.lazy() if current_df is not None else None
-
-            return feature.resolve_data_version_diff(
-                diff_resolver=diff_resolver,
-                target_versions=target_versions,
-                current_metadata=current_ref,
-            )
-        else:
-            # Native components - keep data in native format
-            joiner, calculator, diff_resolver = components
-
-            # Load upstream as native refs
-            upstream_refs_native: dict[str, TRef] = {}
-            for upstream_spec in plan.deps or []:
-                upstream_key_str = (
-                    upstream_spec.key.to_string()
-                    if hasattr(upstream_spec.key, "to_string")
-                    else "_".join(upstream_spec.key)
-                )
-                upstream_df = self._read_metadata_local(upstream_spec.key)
-                if upstream_df is not None:
-                    upstream_refs_native[upstream_key_str] = self._dataframe_to_ref(
-                        upstream_df
-                    )
-
-            # Join upstream
-            joined, mapping = feature.join_upstream_metadata(
-                joiner=joiner,  # type: ignore[arg-type]
-                upstream_refs=upstream_refs_native,  # type: ignore[arg-type]
-            )
-
-            # Calculate data_versions
-            target_versions = calculator.calculate_data_versions(
-                joined_upstream=joined,  # type: ignore[arg-type]
-                feature_spec=feature.spec,
-                feature_plan=plan,
-                upstream_column_mapping=mapping,
-                hash_algorithm=self.hash_algorithm,
-            )
-
-            # Diff with current
-            current_df = self._read_metadata_local(feature)
-            current_ref = (
-                self._dataframe_to_ref(current_df) if current_df is not None else None
-            )
-
-            return feature.resolve_data_version_diff(
-                diff_resolver=diff_resolver,
-                target_versions=target_versions,  # type: ignore[arg-type]
-                current_metadata=current_ref,  # type: ignore[arg-type]
-            )
+        return feature.resolve_data_version_diff(
+            diff_resolver=narwhals_diff,
+            target_versions=target_versions_nw,
+            current_metadata=current_lazy_nw,
+            lazy=lazy,
+        )
 
     def _resolve_update_polars(
         self,
         feature: type[Feature],
-    ) -> DiffResult:
+        *,
+        lazy: bool = False,
+    ) -> DiffResult | LazyDiffResult:
         """Resolve using Polars components (cross-store scenario).
 
         Pulls data from all stores to Polars, performs all operations in memory.
@@ -1163,33 +1129,44 @@ class MetadataStore(ABC, Generic[TRef]):
         from metaxy.data_versioning.calculators.polars import (
             PolarsDataVersionCalculator,
         )
-        from metaxy.data_versioning.diff import PolarsDiffResolver
-        from metaxy.data_versioning.joiners.polars import PolarsJoiner
+        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
-        # Load upstream from all sources (this store + fallbacks) as DataFrames
-        upstream_metadata = self.read_upstream_metadata(feature, allow_fallback=True)
+        # Load upstream from all sources (this store + fallbacks) as Narwhals LazyFrames
+        upstream_refs = self.read_upstream_metadata(feature, allow_fallback=True)
 
-        # Convert to LazyFrames
-        upstream_refs: dict[str, pl.LazyFrame] = {
-            upstream_key: upstream_df.lazy()
-            for upstream_key, upstream_df in upstream_metadata.items()
-        }
+        # Create Narwhals components (work with any backend)
+        narwhals_joiner = NarwhalsJoiner()
+        polars_calculator = (
+            PolarsDataVersionCalculator()
+        )  # Still need this for hash calculation
+        narwhals_diff = NarwhalsDiffResolver()
 
-        # Create Polars components
-        polars_joiner = PolarsJoiner()
-        polars_calculator = PolarsDataVersionCalculator()
-        polars_diff = PolarsDiffResolver()
-
-        # Step 1: Join upstream
+        # Step 1: Join upstream using Narwhals
         plan = feature.graph.get_feature_plan(feature.spec.key)
         joined, mapping = feature.join_upstream_metadata(
-            joiner=polars_joiner,
+            joiner=narwhals_joiner,
             upstream_refs=upstream_refs,
         )
 
         # Step 2: Calculate data_versions
-        target_versions = polars_calculator.calculate_data_versions(
-            joined_upstream=joined,
+        # to_native() returns underlying type without materializing
+        joined_native = joined.to_native()
+        if isinstance(joined_native, pl.LazyFrame):
+            joined_pl = joined_native
+        elif isinstance(joined_native, pl.DataFrame):
+            joined_pl = joined_native.lazy()
+        else:
+            # Ibis table - convert to Polars
+            joined_pl = joined_native.to_polars()
+            if isinstance(joined_pl, pl.DataFrame):
+                joined_pl = joined_pl.lazy()
+
+        # Wrap in Narwhals before passing to calculator
+        joined_nw = nw.from_native(joined_pl, eager_only=False)
+
+        target_versions_nw = polars_calculator.calculate_data_versions(
+            joined_upstream=joined_nw,
             feature_spec=feature.spec,
             feature_plan=plan,
             upstream_column_mapping=mapping,
@@ -1199,30 +1176,17 @@ class MetadataStore(ABC, Generic[TRef]):
         # Select only sample_id and data_version for diff
         # The calculator returns the full joined DataFrame with upstream columns,
         # but diff resolver only needs these two columns
-        target_versions = target_versions.select(["sample_id", "data_version"])
+        target_versions_nw = target_versions_nw.select(["sample_id", "data_version"])
 
-        # Step 3: Diff with current
-        current_df = self._read_metadata_local(feature)
-        current_lazy = current_df.lazy() if current_df is not None else None
-
-        # Diff resolver returns DataFrames directly (already materialized with pl.collect_all)
-        return feature.resolve_data_version_diff(
-            diff_resolver=polars_diff,
-            target_versions=target_versions,
-            current_metadata=current_lazy,
+        # Step 3: Diff with current (filtered by feature_version at database level)
+        current_lazy = self._read_metadata_native(
+            feature, feature_version=feature.feature_version()
         )
 
-    @abstractmethod
-    def _dataframe_to_ref(self, df: pl.DataFrame) -> TRef:
-        """Convert DataFrame to backend-specific reference.
-
-        For InMemoryMetadataStore: Returns df.lazy()
-        For SQL stores: Might upload to temp table and return table reference
-
-        Args:
-            df: Polars DataFrame
-
-        Returns:
-            Backend-specific reference
-        """
-        pass
+        # Diff resolver returns Narwhals frames (lazy or eager based on flag)
+        return feature.resolve_data_version_diff(
+            diff_resolver=narwhals_diff,
+            target_versions=target_versions_nw,
+            current_metadata=current_lazy,
+            lazy=lazy,
+        )

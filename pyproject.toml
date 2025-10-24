@@ -1,6 +1,6 @@
 [project]
 name = "metaxy"
-version = "0.1.0"
+version = "0.0.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "cyclopts==4.0.0b1",
+    "narwhals>=2.9.0",
     "polars>=1.33.1",
     "polars-hash>=0.5.1",
     "pydantic>=2.11.9",
@@ -49,6 +50,7 @@ dev = [
     "ruff>=0.13.1",
     "syrupy>=5.0.0",
     "ibis-framework[duckdb,sqlite,clickhouse]>=11.0.0",
+    "basedpyright>=1.32.1",
 ]
 
 [tool.ruff]

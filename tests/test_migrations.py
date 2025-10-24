@@ -1,11 +1,9 @@
 """Tests for migration system."""
 
-import importlib
-import sys
-import tempfile
 from datetime import datetime
 from pathlib import Path
 
+import narwhals as nw
 import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -20,6 +18,8 @@ from metaxy import (
     FieldSpec,
     InMemoryMetadataStore,
 )
+from metaxy._testing import TempFeatureModule
+from metaxy._utils import collect_to_polars
 from metaxy.migrations import (
     DataVersionReconciliation,
     Migration,
@@ -30,170 +30,14 @@ from metaxy.migrations import (
 from metaxy.models.feature import FeatureGraph
 
 
-class TempFeatureModule:
-    """Helper to create temporary Python modules with feature definitions.
-
-    This allows features to be importable by historical graph reconstruction.
-    The same import path (e.g., 'temp_features.Upstream') can be used across
-    different feature versions by overwriting the module file.
-    """
-
-    def __init__(self, module_name: str = "temp_test_features"):
-        self.temp_dir = tempfile.mkdtemp(prefix="metaxy_test_")
-        self.module_name = module_name
-        self.module_path = Path(self.temp_dir) / f"{module_name}.py"
-
-        # Add to sys.path so module can be imported
-        sys.path.insert(0, self.temp_dir)
-
-    def write_features(self, feature_specs: dict[str, FeatureSpec]):
-        """Write feature classes to the module file.
-
-        Args:
-            feature_specs: Dict mapping class names to FeatureSpec objects
-        """
-        code_lines = [
-            "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
-            "from metaxy.models.feature import FeatureGraph",
-            "",
-            "# Use a dedicated graph for this temp module",
-            "_graph = FeatureGraph()",
-            "",
-        ]
-
-        for class_name, spec in feature_specs.items():
-            # Generate the spec definition
-            spec_dict = spec.model_dump(mode="python")
-            spec_repr = self._generate_spec_repr(spec_dict)
-
-            code_lines.extend(
-                [
-                    f"# Define {class_name} in the temp graph context",
-                    "with _graph.use():",
-                    f"    class {class_name}(",
-                    "        Feature,",
-                    f"        spec={spec_repr}",
-                    "    ):",
-                    "        pass",
-                    "",
-                ]
-            )
-
-        # Write the file
-        self.module_path.write_text("\n".join(code_lines))
-
-        # Reload module if it was already imported
-        if self.module_name in sys.modules:
-            importlib.reload(sys.modules[self.module_name])
-
-    def _generate_spec_repr(self, spec_dict: dict) -> str:
-        """Generate FeatureSpec constructor call from dict."""
-        # This is a simple representation - could be made more robust
-        parts = []
-
-        # key
-        key = spec_dict["key"]
-        parts.append(f"key=FeatureKey({key!r})")
-
-        # deps
-        deps = spec_dict.get("deps")
-        if deps is None:
-            parts.append("deps=None")
-        else:
-            deps_repr = [f"FeatureDep(key=FeatureKey({d['key']!r}))" for d in deps]
-            parts.append(f"deps=[{', '.join(deps_repr)}]")
-
-        # fields
-        fields = spec_dict.get("fields", [])
-        if fields:
-            field_reprs = []
-            for c in fields:
-                c_parts = [
-                    f"key=FieldKey({c['key']!r})",
-                    f"code_version={c['code_version']}",
-                ]
-
-                # Handle deps
-                deps_val = c.get("deps")
-                if deps_val == "__METAXY_ALL_DEP__":
-                    c_parts.append("deps=SpecialFieldDep.ALL")
-                elif isinstance(deps_val, list) and deps_val:
-                    # Field deps (list of FieldDep)
-                    cdeps: list[str] = []  # type: ignore[misc]
-                    for cd in deps_val:
-                        fields_val = cd.get("fields")
-                        if fields_val == "__METAXY_ALL_DEP__":
-                            cdeps.append(  # type: ignore[arg-type]
-                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=SpecialFieldDep.ALL)"
-                            )
-                        else:
-                            # Build list of FieldKey objects
-                            field_keys = [f"FieldKey({k!r})" for k in fields_val]
-                            cdeps.append(
-                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=[{', '.join(field_keys)}])"
-                            )
-                    c_parts.append(f"deps=[{', '.join(cdeps)}]")
-
-                field_reprs.append(f"FieldSpec({', '.join(c_parts)})")  # type: ignore[arg-type]
-
-            parts.append(f"fields=[{', '.join(field_reprs)}]")
-
-        return f"FeatureSpec({', '.join(parts)})"
-
-    def get_graph(self) -> FeatureGraph:
-        """Get the graph from the temp module.
-
-        Creates a new graph and re-registers the features from the module.
-        This ensures we get fresh features after module reloading.
-        """
-        # Force reload to get latest class definitions
-        if self.module_name in sys.modules:
-            module = importlib.reload(sys.modules[self.module_name])
-        else:
-            module = importlib.import_module(self.module_name)
-
-        # Create fresh graph and register features from module
-        fresh_graph = FeatureGraph()
-
-        # Find and register all Feature subclasses in the module
-        for name in dir(module):
-            obj = getattr(module, name)
-            if (
-                isinstance(obj, type)
-                and issubclass(obj, Feature)
-                and obj is not Feature
-                and hasattr(obj, "spec")
-            ):
-                fresh_graph.add_feature(obj)
-
-        return fresh_graph
-
-    def cleanup(self):
-        """Remove temp directory and module from sys.path.
-
-        NOTE: Don't call this until the test session is completely done,
-        as historical graph loading may need to import from these modules.
-        """
-        if self.temp_dir in sys.path:
-            sys.path.remove(self.temp_dir)
-
-        # Remove from sys.modules
-        if self.module_name in sys.modules:
-            del sys.modules[self.module_name]
-
-        # Delete temp directory
-        import shutil
-
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-
 def get_latest_snapshot_id(store: InMemoryMetadataStore) -> str:
     """Get the latest snapshot_id from store's feature_versions table."""
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
     with store:
-        versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        versions = collect_to_polars(
+            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        )
         if len(versions) == 0:
             raise ValueError("No snapshots recorded in store")
         latest = versions.sort("recorded_at", descending=True).head(1)
@@ -400,8 +244,8 @@ def test_detect_no_changes(
         # Compare v1 graph with itself (no changes)
         changes = detect_feature_changes(
             store_with_v1_data,
-            graph_v1,
-            graph_v1,
+            graph_v1.snapshot_id,
+            graph_v1.snapshot_id,
         )
 
     # Should detect no changes (v1 graph, v1 data)
@@ -432,8 +276,8 @@ def test_detect_single_change(
     with store_v2:
         operations = detect_feature_changes(
             store_v2,
-            graph_v1,
-            graph_v2,
+            graph_v1.snapshot_id,
+            graph_v2.snapshot_id,
         )
 
         # Both features changed (downstream version depends on upstream)
@@ -634,9 +478,11 @@ def test_apply_migration_dry_run(
         assert len(result.affected_features) > 0
 
         # Verify data unchanged - should still only have v1 feature_version
-        all_data = store_v2.read_metadata(
-            DownstreamV2,  # Reading through v2 graph
-            current_only=False,  # Get all versions
+        all_data = collect_to_polars(
+            store_v2.read_metadata(
+                DownstreamV2,  # Reading through v2 graph
+                current_only=False,  # Get all versions
+            )
         )
         # All rows should have v1 feature_version (not v2 - because it's dry-run)
         assert all(
@@ -723,11 +569,13 @@ def test_apply_migration_propagates_downstream(
             print(f"Summary:\n{result.summary()}")
 
         assert result.status == "completed"
-        assert "test_migrations_downstream" in result.affected_features
+        assert "test_migrations__downstream" in result.affected_features
 
         # Verify downstream was recalculated
         # Note: migration writes with V1 feature_version (from_=to=V1), so read with current_only=False
-        new_downstream = store_v2.read_metadata(DownstreamV2, current_only=False)
+        new_downstream = collect_to_polars(
+            store_v2.read_metadata(DownstreamV2, current_only=False)
+        )
         new_data_versions = new_downstream["data_version"].to_list()
 
         # Data versions should have changed (based on new upstream)
@@ -794,7 +642,7 @@ def test_feature_version_in_metadata(graph_v1: FeatureGraph) -> None:
         store.write_metadata(UpstreamV1, data)
 
         # Read back
-        result = store.read_metadata(UpstreamV1, current_only=False)
+        result = collect_to_polars(store.read_metadata(UpstreamV1, current_only=False))
 
         # Should have feature_version after write
         assert "feature_version" in result.columns
@@ -836,12 +684,16 @@ def test_current_only_filtering(
         store_v2.write_metadata(UpstreamV2, data_v2)
 
         # Read current only (should get v2)
-        current = store_v2.read_metadata(UpstreamV2, current_only=True)
+        current = collect_to_polars(
+            store_v2.read_metadata(UpstreamV2, current_only=True)
+        )
         assert len(current) == 2
         assert set(current["sample_id"].to_list()) == {3, 4}
 
         # Read all versions
-        all_data = store_v2.read_metadata(UpstreamV2, current_only=False)
+        all_data = collect_to_polars(
+            store_v2.read_metadata(UpstreamV2, current_only=False)
+        )
         assert len(all_data) == 4
         assert set(all_data["sample_id"].to_list()) == {1, 2, 3, 4}
 
@@ -876,7 +728,9 @@ def test_system_tables_created(graph_v1: FeatureGraph) -> None:
         # Feature version history should be recorded
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-        version_history = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        version_history = collect_to_polars(
+            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        )
 
         assert len(version_history) > 0
         assert "feature_key" in version_history.columns
@@ -885,7 +739,7 @@ def test_system_tables_created(graph_v1: FeatureGraph) -> None:
         assert "snapshot_id" in version_history.columns
 
         # Should have recorded upstream
-        assert "test_migrations_upstream" in version_history["feature_key"].to_list()
+        assert "test_migrations__upstream" in version_history["feature_key"].to_list()
 
 
 def test_graph_rejects_duplicate_keys() -> None:
@@ -950,8 +804,8 @@ def test_detect_uses_latest_version_from_multiple_materializations(
     with store:
         changes = detect_feature_changes(
             store,
-            graph_v1,
-            graph_v2,
+            graph_v1.snapshot_id,
+            graph_v2.snapshot_id,
         )
 
         # Both upstream and downstream changed (downstream version depends on upstream)
@@ -960,8 +814,8 @@ def test_detect_uses_latest_version_from_multiple_materializations(
         # Verify both features detected
         feature_keys = {FeatureKey(op.feature_key).to_string() for op in changes}
         assert feature_keys == {
-            "test_migrations_upstream",
-            "test_migrations_downstream",
+            "test_migrations__upstream",
+            "test_migrations__downstream",
         }
 
         # Snapshot the detected changes
@@ -1122,7 +976,9 @@ def test_serialize_feature_graph(
         assert all(c in "0123456789abcdef" for c in snapshot_id)
 
         # Verify both features were recorded
-        version_history = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        version_history = collect_to_polars(
+            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        )
 
         assert len(version_history) == 2  # Both features
 
@@ -1134,16 +990,16 @@ def test_serialize_feature_graph(
         # Verify correct features recorded
         feature_keys = set(version_history["feature_key"].to_list())
         assert feature_keys == {
-            "test_migrations_upstream",
-            "test_migrations_downstream",
+            "test_migrations__upstream",
+            "test_migrations__downstream",
         }
 
         # Verify feature_versions match
         upstream_row = version_history.filter(
-            pl.col("feature_key") == "test_migrations_upstream"
+            pl.col("feature_key") == "test_migrations__upstream"
         )
         downstream_row = version_history.filter(
-            pl.col("feature_key") == "test_migrations_downstream"
+            pl.col("feature_key") == "test_migrations__downstream"
         )
 
         assert upstream_row["feature_version"][0] == UpstreamV1.feature_version()
@@ -1191,7 +1047,9 @@ def test_serialize_feature_graph_is_idempotent(
 
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-        version_history = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        version_history = collect_to_polars(
+            store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+        )
 
         # Should only have 2 records (idempotent - doesn't re-record same version+snapshot)
         # The idempotency check prevents duplicate records
@@ -1266,8 +1124,8 @@ def test_snapshot_workflow_without_migrations(
         # Verify both snapshots recorded
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-        version_history = store_v2.read_metadata(
-            FEATURE_VERSIONS_KEY, current_only=False
+        version_history = collect_to_polars(
+            store_v2.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
         )
 
         # Should have 4 records:
@@ -1286,22 +1144,26 @@ def test_snapshot_workflow_without_migrations(
 
         # Verify downstream recorded twice (feature_version changed due to upstream dependency)
         downstream_records = version_history.filter(
-            pl.col("feature_key") == "test_migrations_downstream"
+            pl.col("feature_key") == "test_migrations__downstream"
         )
         assert (
             len(downstream_records) == 2
         )  # Two records because downstream feature_version depends on upstream
 
         # Verify we can read v2 data (current)
-        current_upstream = store_v2.read_metadata(UpstreamV2, current_only=True)
+        current_upstream = collect_to_polars(
+            store_v2.read_metadata(UpstreamV2, current_only=True)
+        )
         assert len(current_upstream) == 3
         assert set(current_upstream["sample_id"].to_list()) == {1, 2, 3}
 
         # Verify v1 data still exists (immutable)
-        v1_upstream = store_v2.read_metadata(
-            UpstreamV2,
-            current_only=False,
-            filters=pl.col("feature_version") == UpstreamV1.feature_version(),
+        v1_upstream = collect_to_polars(
+            store_v2.read_metadata(
+                UpstreamV2,
+                current_only=False,
+                filters=[nw.col("feature_version") == UpstreamV1.feature_version()],
+            )
         )
         assert len(v1_upstream) == 3
 
@@ -1341,7 +1203,9 @@ def test_migrations_preserve_immutability(
         store_v1.write_metadata(DownstreamV1, downstream_data)
 
         # Get original downstream data for comparison
-        original_data = store_v1.read_metadata(DownstreamV1, current_only=False)
+        original_data = collect_to_polars(
+            store_v1.read_metadata(DownstreamV1, current_only=False)
+        )
         original_data_versions = original_data["data_version"].to_list()
 
     # Migrate to v2
@@ -1375,13 +1239,18 @@ def test_migrations_preserve_immutability(
         apply_migration(store_v2, migration)
 
         # Verify old data still exists unchanged (immutability)
-        all_data = store_v2.read_metadata(DownstreamV2, current_only=False)
+        all_data = collect_to_polars(
+            store_v2.read_metadata(DownstreamV2, current_only=False)
+        )
 
         # Should have both original and migrated rows (6 total)
         assert len(all_data) == 6  # 3 original + 3 migrated
 
         # All rows have same feature_version (from_ == to in reconciliation)
-        assert all(all_data["feature_version"] == DownstreamV1.feature_version())
+        assert all(
+            fv == DownstreamV1.feature_version()
+            for fv in all_data["feature_version"].to_list()
+        )
 
         # But two different sets of data_versions (old and recalculated)
         all_data_versions = all_data["data_version"].to_list()
@@ -1491,7 +1360,7 @@ def test_metadata_backfill_operation() -> None:
             assert rows == 2
 
             # Verify data was written
-            result = store.read_metadata(RootFeature)
+            result = collect_to_polars(store.read_metadata(RootFeature))
             assert len(result) == 2
             assert set(result["sample_id"].to_list()) == {"s1", "s2"}
             assert set(result["path"].to_list()) == {"/data/1.txt", "/data/2.txt"}
@@ -1646,8 +1515,8 @@ def test_migration_ignores_new_features(
         # Detect changes - should ignore new_feature (no existing data)
         operations = detect_feature_changes(
             store_new,
-            graph_v1,
-            graph_with_new,
+            graph_v1.snapshot_id,
+            graph_with_new.snapshot_id,
         )
 
         # Should only detect 0 operations (upstream unchanged, new_feature has no data)
@@ -1782,8 +1651,8 @@ def test_migration_with_dependency_change() -> None:
         # Should detect downstream as changed (dependencies changed)
         operations = detect_feature_changes(
             store_v2,
-            graph_v1,
-            graph_v2,
+            graph_v1.snapshot_id,
+            graph_v2.snapshot_id,
         )
 
         # Downstream should be detected as changed
@@ -1910,8 +1779,8 @@ def test_migration_with_field_dependency_change() -> None:
         # Should detect downstream as changed (field deps changed)
         operations = detect_feature_changes(
             store_v2,
-            graph_v1,
-            graph_v2,
+            graph_v1.snapshot_id,
+            graph_v2.snapshot_id,
         )
 
         # Downstream should be detected as changed
@@ -2019,7 +1888,9 @@ def test_sequential_migration_application():
         # Verify all migrations are registered
         from metaxy.migrations.executor import MIGRATIONS_KEY
 
-        migrations_table = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        migrations_table = collect_to_polars(
+            store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        )
         assert len(migrations_table) == 3
         assert set(migrations_table["migration_id"].to_list()) == {
             "migration_001",
@@ -2115,7 +1986,9 @@ def test_multiple_migration_heads_detection():
         # Verify both heads exist
         from metaxy.migrations.executor import MIGRATIONS_KEY
 
-        migrations_table = store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        migrations_table = collect_to_polars(
+            store.read_metadata(MIGRATIONS_KEY, current_only=False)
+        )
         assert len(migrations_table) == 4
 
         # Build dependency graph to find heads
@@ -2180,9 +2053,9 @@ def test_migration_vs_recompute_comparison(
         store_v1.serialize_feature_graph()
 
         # Get initial downstream data_versions
-        initial_downstream_data_versions = store_v1.read_metadata(DownstreamV1)[
-            "data_version"
-        ].to_list()
+        initial_downstream_data_versions = collect_to_polars(
+            store_v1.read_metadata(DownstreamV1)
+        )["data_version"].to_list()
 
     # Scenario A: Migration (user manually updates upstream, then reconciles downstream)
     store_migration = migrate_store_to_graph(store_v1, graph_v2)
@@ -2231,8 +2104,8 @@ def test_migration_vs_recompute_comparison(
 
         # Migration: downstream data_versions CHANGED (recalculated based on new upstream)
         # Note: migration writes with V1 feature_version, so use current_only=False
-        migrated_downstream = store_migration.read_metadata(
-            DownstreamV2, current_only=False
+        migrated_downstream = collect_to_polars(
+            store_migration.read_metadata(DownstreamV2, current_only=False)
         )
         migrated_data_versions = migrated_downstream["data_version"].to_list()
 

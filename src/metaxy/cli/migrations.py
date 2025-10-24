@@ -166,6 +166,8 @@ def scaffold(
         config = get_config()
         migrations_dir = Path(config.migrations_dir)
 
+    import narwhals as nw
+
     metadata_store = get_store()
     with metadata_store:
         # Get from_snapshot_id (use provided or default to latest in store)
@@ -174,11 +176,18 @@ def scaffold(
                 feature_versions = metadata_store.read_metadata(
                     FEATURE_VERSIONS_KEY, current_only=False
                 )
-                if len(feature_versions) > 0:
-                    latest_snapshot = feature_versions.sort(
-                        "recorded_at", descending=True
-                    ).head(1)
-                    from_snapshot_id = latest_snapshot["snapshot_id"][0]
+                # Check if any snapshots exist
+                fv_sample = nw.from_native(feature_versions.head(1).collect())
+                if fv_sample.shape[0] > 0:
+                    latest_snapshot = (
+                        feature_versions.sort("recorded_at", descending=True)
+                        .head(1)
+                        .collect()
+                    )
+                    # Convert to Polars for indexing
+
+                    latest_native = nw.from_native(latest_snapshot).to_polars()
+                    from_snapshot_id = latest_native["snapshot_id"].item()
                 else:
                     app.error_console.print(
                         "[red]✗[/red] No feature snapshots found in store."
@@ -211,9 +220,18 @@ def scaffold(
             existing_migrations = metadata_store.read_metadata(
                 MIGRATIONS_KEY, current_only=False
             )
-            if len(existing_migrations) > 0:
-                latest = existing_migrations.sort("created_at", descending=True).head(1)
-                parent_migration_id = latest["migration_id"][0]
+            # Check if any migrations exist
+            mig_sample = nw.from_native(existing_migrations.head(1).collect())
+            if mig_sample.shape[0] > 0:
+                latest = (
+                    existing_migrations.sort("created_at", descending=True)
+                    .head(1)
+                    .collect()
+                )
+                # Convert to Polars for indexing
+
+                latest_native = nw.from_native(latest).to_polars()
+                parent_migration_id = latest_native["migration_id"].item()
         except FeatureNotFoundError:
             pass  # No migrations yet
 
@@ -465,7 +483,12 @@ def status():
         app.console.print("\n[bold]Migration Status:[/bold]")
         app.console.print("─" * 60)
 
-        for row in migrations.iter_rows(named=True):
+        # Collect LazyFrame to iterate
+        import narwhals as nw
+
+        migrations_eager = nw.from_native(migrations.collect())
+
+        for row in migrations_eager.iter_rows(named=True):
             migration_id = row["migration_id"]
             created_at = row["created_at"]
             description = row["description"]
