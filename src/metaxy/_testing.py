@@ -247,14 +247,21 @@ class TempMetaxyProject:
 
     def _write_config(self):
         """Write basic metaxy.toml with DuckDB store configuration."""
-        db_path = self.project_dir / "metadata.duckdb"
+        dev_db_path = self.project_dir / "metadata.duckdb"
+        staging_db_path = self.project_dir / "metadata_staging.duckdb"
         config_content = f'''store = "dev"
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "{db_path}"
+database = "{dev_db_path}"
+
+[stores.staging]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.staging.config]
+database = "{staging_db_path}"
 '''
         (self.project_dir / "metaxy.toml").write_text(config_content)
 

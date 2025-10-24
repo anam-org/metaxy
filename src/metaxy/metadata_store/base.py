@@ -946,6 +946,7 @@ class MetadataStore(ABC):
         *,
         from_snapshot: str | None = None,
         filters: list[nw.Expr] | None = None,
+        incremental: bool = True,
     ) -> dict[str, int]:
         """Copy metadata from another store with fine-grained filtering.
 
@@ -964,6 +965,18 @@ class MetadataStore(ABC):
                 The snapshot_id is preserved in the destination store.
             filters: Global filters to apply to all features (Narwhals expressions).
                 Combined with per-feature filters from FilteredFeature objects.
+            incremental: If True (default), filter out rows that already exist in the destination
+                store by performing an anti-join on sample_id for the same snapshot_id.
+
+                The implementation uses an anti-join: source LEFT ANTI JOIN destination ON sample_id
+                filtered by snapshot_id.
+
+                Disabling incremental (incremental=False) may improve performance when:
+                - You know the destination is empty or has no overlap with source
+                - The destination store uses deduplication
+
+                When incremental=False, it's the user's responsibility to avoid duplicates or
+                configure deduplication at the storage layer.
 
         Returns:
             Dict with statistics: {"features_copied": int, "rows_copied": int}
@@ -1021,6 +1034,7 @@ class MetadataStore(ABC):
                 features=features,
                 from_snapshot=from_snapshot,
                 filters=filters,
+                incremental=incremental,
                 logger=logger,
             )
         finally:
@@ -1033,6 +1047,7 @@ class MetadataStore(ABC):
         features: list[FeatureKey | type[Feature] | FilteredFeature] | None,
         from_snapshot: str | None,
         filters: list[nw.Expr] | None,
+        incremental: bool,
         logger,
     ) -> dict[str, int]:
         """Internal implementation of copy_metadata."""
@@ -1140,8 +1155,69 @@ class MetadataStore(ABC):
                         for filter_expr in selection.filters:
                             source_filtered = source_filtered.filter(filter_expr)
 
-                    # Collect to Polars DataFrame
-                    source_df = source_filtered.collect().to_polars()
+                    # Apply incremental filtering if enabled
+                    if incremental:
+                        try:
+                            # Read existing sample_ids from destination for the same snapshot
+                            # This is much cheaper than comparing data_version structs
+                            dest_lazy = self.read_metadata(
+                                feature_key,
+                                allow_fallback=False,
+                                current_only=False,
+                            )
+                            # Filter destination to same snapshot_id
+                            dest_for_snapshot = dest_lazy.filter(
+                                nw.col("snapshot_id") == from_snapshot
+                            )
+
+                            # Materialize destination sample_ids to avoid cross-backend join issues
+                            # When copying between different stores (e.g., different DuckDB files),
+                            # Ibis can't join tables from different backends
+                            dest_sample_ids = (
+                                dest_for_snapshot.select("sample_id")
+                                .collect()
+                                .to_polars()
+                            )
+
+                            # Convert to Polars LazyFrame and wrap in Narwhals
+                            dest_sample_ids_lazy = nw.from_native(
+                                dest_sample_ids.lazy(), eager_only=False
+                            )
+
+                            # Collect source to Polars for anti-join
+                            source_df = source_filtered.collect().to_polars()
+                            source_lazy = nw.from_native(
+                                source_df.lazy(), eager_only=False
+                            )
+
+                            # Anti-join: keep only source rows with sample_id not in destination
+                            source_filtered = source_lazy.join(
+                                dest_sample_ids_lazy,
+                                on="sample_id",
+                                how="anti",
+                            )
+
+                            # Collect after filtering
+                            source_df = source_filtered.collect().to_polars()
+
+                            logger.info(
+                                f"Incremental: copying only new sample_ids for {feature_key.to_string()}"
+                            )
+                        except FeatureNotFoundError:
+                            # Feature doesn't exist in destination yet - copy all rows
+                            logger.debug(
+                                f"Feature {feature_key.to_string()} not in destination, copying all rows"
+                            )
+                            source_df = source_filtered.collect().to_polars()
+                        except Exception as e:
+                            # If incremental check fails, log warning but continue with full copy
+                            logger.warning(
+                                f"Incremental check failed for {feature_key.to_string()}: {e}. Copying all rows."
+                            )
+                            source_df = source_filtered.collect().to_polars()
+                    else:
+                        # Non-incremental: collect all filtered rows
+                        source_df = source_filtered.collect().to_polars()
 
                     if source_df.height == 0:
                         logger.warning(

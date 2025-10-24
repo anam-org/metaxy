@@ -59,6 +59,13 @@ def copy(
             help="Snapshot ID to copy (defaults to latest in source store). The snapshot_id is preserved in the destination.",
         ),
     ] = None,
+    incremental: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--incremental"],
+            help="Use incremental copy (compare data_version to skip existing rows). Disable for better performance if destination is empty or uses deduplication.",
+        ),
+    ] = True,
 ):
     """Copy metadata between stores.
 
@@ -67,6 +74,14 @@ def copy(
     - Migrating data between environments
     - Backfilling metadata
     - Copying specific feature versions
+
+    Incremental Mode (default):
+        By default, performs an anti-join on sample_id to skip rows that already exist
+        in the destination for the same snapshot_id. This prevents duplicate writes.
+
+        Disabling incremental (--no-incremental) may improve performance when:
+        - The destination store is empty or has no overlap with source
+        - The destination store has eventual deduplication
 
     Examples:
         # Copy all features from latest snapshot in dev to staging
@@ -77,6 +92,9 @@ def copy(
 
         # Copy specific snapshot
         $ metaxy metadata copy --from prod --to staging --all-features --snapshot abc123
+
+        # Non-incremental copy (faster, but may create duplicates)
+        $ metaxy metadata copy --from dev --to staging --all-features --no-incremental
     """
     import logging
 
@@ -129,6 +147,7 @@ def copy(
                 from_store=source_store,
                 features=feature_keys,
                 from_snapshot=from_snapshot,
+                incremental=incremental,
             )
 
             console.print(
