@@ -61,7 +61,11 @@ def generate(
         $ metaxy migrations generate --from-snapshot abc123... --to-snapshot def456...
     """
     from metaxy.cli.context import get_config, get_store
+    from metaxy.entrypoints import load_features
     from metaxy.migrations import generate_migration
+
+    # Load features from entrypoints
+    load_features()
 
     # Get migrations_dir from config if not specified
     if migrations_dir is None:
@@ -315,7 +319,11 @@ def apply(
     from pathlib import Path as PathlibPath
 
     from metaxy.cli.context import get_config, get_store
+    from metaxy.entrypoints import load_features
     from metaxy.migrations import Migration, apply_migration
+
+    # Load features from entrypoints
+    load_features()
 
     # Get migrations_dir from config if not specified
     if migrations_dir is None:

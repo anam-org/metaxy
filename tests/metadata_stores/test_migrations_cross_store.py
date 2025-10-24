@@ -39,7 +39,7 @@ def test_migration_system_tables_serialize_cross_store(
     with graph.use(), store:
         # Record feature graph snapshot first (mimics CI/CD workflow)
         # This must be done before any operations that need historical graph
-        snapshot_id = store.serialize_feature_graph()
+        snapshot_id, _ = store.record_feature_graph_snapshot()
 
         # Write minimal data for downstream feature (has upstream deps)
         upstream_data = pl.DataFrame(

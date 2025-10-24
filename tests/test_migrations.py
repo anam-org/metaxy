@@ -939,7 +939,7 @@ def test_generated_migration_yaml_snapshot(
         assert migration_dict == snapshot
 
 
-def test_serialize_feature_graph(
+def test_record_feature_graph_snapshot(
     graph_v1: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
@@ -969,7 +969,7 @@ def test_serialize_feature_graph(
             store.write_metadata(DownstreamV1, diff_result.added)
 
         # Record all features at once
-        snapshot_id = store.serialize_feature_graph()
+        snapshot_id, _ = store.record_feature_graph_snapshot()
 
         # Verify snapshot_id is deterministic
         assert len(snapshot_id) == 64
@@ -1009,7 +1009,7 @@ def test_serialize_feature_graph(
         assert snapshot_id == snapshot
 
 
-def test_serialize_feature_graph_is_idempotent(
+def test_record_feature_graph_snapshot_is_idempotent(
     graph_v1: FeatureGraph,
 ) -> None:
     """Test that snapshot_id is deterministic and recording is idempotent."""
@@ -1038,12 +1038,16 @@ def test_serialize_feature_graph_is_idempotent(
         # Record twice
         import time
 
-        snapshot_id1 = store.serialize_feature_graph()
+        snapshot_id1, was_recorded1 = store.record_feature_graph_snapshot()
         time.sleep(0.01)  # Small delay
-        snapshot_id2 = store.serialize_feature_graph()
+        snapshot_id2, was_recorded2 = store.record_feature_graph_snapshot()
 
         # snapshot_id should be identical (deterministic, no timestamp)
         assert snapshot_id1 == snapshot_id2
+        # First call should not be marked as already recorded
+        assert not was_recorded1
+        # Second call should be marked as already recorded
+        assert was_recorded2
 
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
@@ -1091,7 +1095,7 @@ def test_snapshot_workflow_without_migrations(
             store_v1.write_metadata(DownstreamV1, diff_result.added)
 
         # Record v1 graph snapshot
-        snapshot_id_v1 = store_v1.serialize_feature_graph()
+        snapshot_id_v1, _ = store_v1.record_feature_graph_snapshot()
 
     # Step 2: Code changes (v1 -> v2), migrate store to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
@@ -1119,7 +1123,7 @@ def test_snapshot_workflow_without_migrations(
             store_v2.write_metadata(DownstreamV2, diff_result.added)
 
         # Record v2 graph snapshot
-        snapshot_id_v2 = store_v2.serialize_feature_graph()
+        snapshot_id_v2, _ = store_v2.record_feature_graph_snapshot()
 
         # Verify both snapshots recorded
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
@@ -1391,7 +1395,7 @@ def test_migration_chaining_validates_parent() -> None:
             )
 
             # Record snapshot
-            snapshot_id = store.serialize_feature_graph()
+            snapshot_id, _ = store.record_feature_graph_snapshot()
 
             # Create migration 1 (no parent) - empty operations but registers in system
             migration1 = Migration(
@@ -1502,7 +1506,7 @@ def test_migration_ignores_new_features(
             }
         )
         store.write_metadata(upstream_v1, upstream_data)
-        store.serialize_feature_graph()
+        store.record_feature_graph_snapshot()
 
     # Migrate store to graph with new feature
     store_new = migrate_store_to_graph(store, graph_with_new)
@@ -1638,7 +1642,7 @@ def test_migration_with_dependency_change() -> None:
         if len(diff.added) > 0:
             store.write_metadata(down_v1, diff.added)
 
-        store.serialize_feature_graph()
+        store.record_feature_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store, graph_v2)
@@ -1766,7 +1770,7 @@ def test_migration_with_field_dependency_change() -> None:
         if len(diff.added) > 0:
             store.write_metadata(down_v1, diff.added)
 
-        store.serialize_feature_graph()
+        store.record_feature_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store, graph_v2)
@@ -1827,7 +1831,7 @@ def test_sequential_migration_application():
                 }
             ),
         )
-        snapshot_id = store.serialize_feature_graph()
+        snapshot_id, _ = store.record_feature_graph_snapshot()
 
     # Create 3 migrations with side effects (using MetadataBackfill with unique markers)
     from datetime import datetime
@@ -1925,7 +1929,7 @@ def test_multiple_migration_heads_detection():
             test_feature,
             pl.DataFrame({"sample_id": [1], "data_version": [{"default": "h1"}]}),
         )
-        snapshot_id = store.serialize_feature_graph()
+        snapshot_id, _ = store.record_feature_graph_snapshot()
 
     from datetime import datetime
 
@@ -2050,7 +2054,7 @@ def test_migration_vs_recompute_comparison(
         diff_result = store_v1.resolve_update(DownstreamV1, sample_df=downstream_data)
         if len(diff_result.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff_result.added)
-        store_v1.serialize_feature_graph()
+        store_v1.record_feature_graph_snapshot()
 
         # Get initial downstream data_versions
         initial_downstream_data_versions = collect_to_polars(

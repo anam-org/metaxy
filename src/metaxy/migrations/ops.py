@@ -64,7 +64,7 @@ class BaseOperation(pydantic.BaseModel, ABC):
             16-character hex hash
         """
         content = self.model_dump_json(exclude={"id"}, by_alias=True)
-        return hashlib.sha256(content.encode()).hexdigest()[:16]
+        return hashlib.sha256(content.encode()).hexdigest()
 
 
 class DataVersionReconciliation(BaseOperation):

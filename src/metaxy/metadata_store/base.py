@@ -523,7 +523,7 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
 
-    def record_feature_graph_snapshot(self) -> str:
+    def record_feature_graph_snapshot(self) -> tuple[str, bool]:
         """Record all features in graph with a graph snapshot ID.
 
         This should be called during CD (Continuous Deployment) to record what
@@ -537,51 +537,17 @@ class MetadataStore(ABC):
         same feature definitions produces the same snapshot_id.
 
         Returns:
-            The generated snapshot_id (deterministic hash)
-
-        Example:
-            >>> # During CD, record what feature versions are being deployed
-            >>> snapshot_id = store.record_feature_graph_snapshot()
-            >>> print(f"Graph snapshot: {snapshot_id}")
-            a3f8b2c1
-        """
-        # This is the same as serialize_feature_graph - just an alias
-        return self.serialize_feature_graph()
-
-    def serialize_feature_graph(self) -> str:
-        """Record all features in graph with a graph snapshot ID.
-
-        This should be called during CD (Continuous Deployment) to record what
-        feature versions are being deployed. Typically invoked via `metaxy push`.
-
-        Records all features with the same snapshot_id, representing a consistent
-        state of the entire feature graph based on code definitions.
-
-        The snapshot_id is a deterministic hash of all feature_version hashes
-        in the graph, making it idempotent - calling multiple times with the
-        same feature definitions produces the same snapshot_id.
-
-        Returns:
-            The generated snapshot_id (deterministic hash)
-
-        Example:
-            >>> # During CD, record what feature versions are being deployed
-            >>> snapshot_id = store.serialize_feature_graph()
-            >>> print(f"Graph snapshot: {snapshot_id}")
-            a3f8b2c1
-            >>>
-            >>> # Later, in application code, users write metadata
-            >>> store.write_metadata(FeatureA, data_a)
-            >>> store.write_metadata(FeatureB, data_b)
-            >>> store.write_metadata(FeatureC, data_c)
+            A tuple containing the generated snapshot_id (deterministic hash) and a boolean indicating if the snapshot was recorded or already exists.
         """
 
         from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
 
+        # Use to_snapshot() to get the snapshot dict
+        snapshot_dict = graph.to_snapshot()
+
         # Generate deterministic snapshot_id from graph
-        # This uses the same logic as FeatureGraph.snapshot_id property
         snapshot_id = graph.snapshot_id
 
         # Read existing feature versions once
@@ -597,17 +563,6 @@ class MetadataStore(ABC):
             # Table doesn't exist yet
             existing_versions = None
 
-        # Build set of already recorded (feature_key, feature_version) pairs
-        already_recorded = set()
-        if existing_versions is not None:
-            for row in existing_versions.iter_rows(named=True):
-                already_recorded.add((row["feature_key"], row["feature_version"]))
-
-        # Build bulk DataFrame for all features
-        from metaxy.models.feature import FeatureGraph
-
-        graph = FeatureGraph.get_active()
-
         # Check if this exact snapshot already exists
         snapshot_already_exists = False
         if existing_versions is not None:
@@ -618,30 +573,25 @@ class MetadataStore(ABC):
 
         # If snapshot already exists, we're done (idempotent)
         if snapshot_already_exists:
-            return snapshot_id
+            return snapshot_id, True
 
+        # Build records from snapshot_dict
         records = []
-        for feature_key in sorted(
-            graph.features_by_key.keys(), key=lambda k: k.to_string()
-        ):
-            feature_cls = graph.features_by_key[feature_key]
-            feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+        for feature_key_str in sorted(snapshot_dict.keys()):
+            feature_data = snapshot_dict[feature_key_str]
 
             # Serialize complete FeatureSpec
-            feature_spec_json = json.dumps(feature_cls.spec.model_dump(mode="json"))  # type: ignore[attr-defined]
-
-            # Get class import path
-            class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
+            feature_spec_json = json.dumps(feature_data["feature_spec"])
 
             # Always record all features for this snapshot (don't skip based on feature_version alone)
             # Each snapshot must be complete to support migration detection
             records.append(
                 {
-                    "feature_key": feature_key.to_string(),
-                    "feature_version": feature_version,
+                    "feature_key": feature_key_str,
+                    "feature_version": feature_data["feature_version"],
                     "recorded_at": datetime.now(),
-                    "feature_spec": feature_spec_json,  # Complete FeatureSpec as JSON
-                    "feature_class_path": class_path,  # Import path for strict reconstruction
+                    "feature_spec": feature_spec_json,
+                    "feature_class_path": feature_data["feature_class_path"],
                     "snapshot_id": snapshot_id,
                 }
             )
@@ -654,7 +604,7 @@ class MetadataStore(ABC):
             )
             self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
 
-        return snapshot_id
+        return snapshot_id, False
 
     @abstractmethod
     def _read_metadata_native(
