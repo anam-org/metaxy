@@ -37,3 +37,31 @@ def graph():
     """
     with FeatureGraph().use() as graph:
         yield graph
+
+
+@pytest.fixture
+def metaxy_project(tmp_path):
+    """Create a temporary Metaxy project for testing.
+
+    Provides TempMetaxyProject instance with context manager API for
+    dynamically creating feature modules and running CLI commands.
+
+    Example:
+        def test_example(metaxy_project):
+            def features():
+                from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+
+                class MyFeature(Feature, spec=FeatureSpec(
+                    key=FeatureKey(["my_feature"]),
+                    deps=None,
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
+                )):
+                    pass
+
+            with metaxy_project.with_features(features):
+                result = metaxy_project.run_cli("graph", "push")
+                assert result.returncode == 0
+    """
+    from metaxy._testing import TempMetaxyProject
+
+    return TempMetaxyProject(tmp_path)

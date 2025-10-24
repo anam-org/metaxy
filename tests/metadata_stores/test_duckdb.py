@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 # Skip all tests in this module if DuckDB not available
-pytest.importorskip("duckdb")
+
 pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars

@@ -91,7 +91,6 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
     6. Apply migration
     7. Verify results
     """
-    pytest.importorskip("duckdb")
 
     # Change to project directory
     import os
@@ -335,7 +334,6 @@ class VideoProcessing(Feature, spec=FeatureSpec(
 
 def test_cli_migration_status_command(e2e_project: Path):
     """Test migrations status command shows correct info."""
-    pytest.importorskip("duckdb")
 
     import os
 
