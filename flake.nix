@@ -17,12 +17,14 @@
           pkgs.stdenv.cc.cc.lib
           pkgs.gcc-unwrapped.lib
           pkgs.glibc
+          pkgs.graphviz
         ];
         packages = with pkgs; [
           stdenv.cc
           uv
           python
           clickhouse
+          graphviz
         ];
         LD_LIBRARY_PATH = lib.makeLibraryPath [
           pkgs.stdenv.cc.cc.lib
@@ -31,6 +33,7 @@
           pkgs.glib
           pkgs.python310
           pkgs.clickhouse
+          pkgs.graphviz
         ];
         # UV_PYTHON = "${python}/bin/python";
         shellHook = ''
