@@ -1,1 +1,0 @@
-"""DuckLake example package."""
