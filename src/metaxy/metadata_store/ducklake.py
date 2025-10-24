@@ -7,8 +7,9 @@ DuckLake catalog is attached and selected.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
 
@@ -84,7 +85,9 @@ def _build_storage_backend_parts(
             clean_prefix = prefix.strip("/ ")
             clean_prefix = f"{clean_prefix}/"
 
-        data_path = f"s3://{bucket}/{clean_prefix}" if clean_prefix else f"s3://{bucket}/"
+        data_path = (
+            f"s3://{bucket}/{clean_prefix}" if clean_prefix else f"s3://{bucket}/"
+        )
         return secret_sql, f"DATA_PATH '{data_path}'"
 
     if storage_type == "local":
@@ -200,7 +203,8 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
 
         base_extensions = list(extensions or [])
         extension_names = {
-            ext if isinstance(ext, str) else ext.get("name", "") for ext in base_extensions
+            ext if isinstance(ext, str) else ext.get("name", "")
+            for ext in base_extensions
         }
 
         for plugin in plugin_list:
