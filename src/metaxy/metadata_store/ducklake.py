@@ -1,37 +1,54 @@
-"""DuckLake metadata store backed by DuckDB.
+"""DuckLake metadata store backed by DuckDB with typed configuration models.
 
-This store reuses the DuckDB native components (Narwhals joiner/calculator/diff)
-and only customises how the DuckDB connection is initialised so that the
-DuckLake catalog is attached and selected.
+The store reuses the DuckDB native Narwhals components. All that differs is how
+the DuckDB connection is prepared: DuckLake plugins are installed, secrets are
+created, and the DuckLake catalog is attached/selected.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Iterable, Literal, Mapping, Sequence
+
+from pydantic import BaseModel, Field, TypeAdapter
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
 
 
-def _build_metadata_backend_parts(
-    config: Mapping[str, Any], alias: str
-) -> tuple[str, str]:
-    backend_type = str(config.get("type", "")).lower()
+# ------------------------------------------------------------------------------
+# Metadata backend configuration
 
-    if backend_type == "postgres":
-        host = config.get("host", "localhost")
-        port = int(config.get("port", 5432))
-        database = config["database"]
-        user = config["user"]
-        password = config["password"]
 
+class DuckLakeMetadataBackend(BaseModel):
+    """Base class for typed DuckLake metadata backend configuration."""
+
+    type: str
+
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
+        """Return SQL fragments required for ATTACH metadata configuration."""
+        raise NotImplementedError
+
+
+class DuckLakePostgresMetadataBackend(DuckLakeMetadataBackend):
+    """Postgres catalog backend for DuckLake."""
+
+    type: Literal["postgres"] = "postgres"
+    host: str = Field(
+        default_factory=lambda: os.getenv("DUCKLAKE_PG_HOST", "localhost")
+    )
+    port: int = Field(default=5432)
+    database: str
+    user: str
+    password: str
+
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
         secret_name = f"secret_catalog_{alias}"
         secret_sql = (
             f"CREATE OR REPLACE SECRET {secret_name} ("
-            f" TYPE postgres, HOST '{host}', PORT {port},"
-            f" DATABASE '{database}', USER '{user}',"
-            f" PASSWORD '{password}'"
+            f" TYPE postgres, HOST '{self.host}', PORT {self.port},"
+            f" DATABASE '{self.database}', USER '{self.user}',"
+            f" PASSWORD '{self.password}'"
             " );"
         )
         metadata_params = (
@@ -40,61 +57,110 @@ def _build_metadata_backend_parts(
         )
         return secret_sql, metadata_params
 
-    if backend_type == "sqlite":
-        path = config["path"]
-        return "", f"METADATA_PATH '{path}'"
 
-    if backend_type == "duckdb":
-        path = config["path"]
-        return "", f"METADATA_PATH '{path}'"
+class DuckLakeSqliteMetadataBackend(DuckLakeMetadataBackend):
+    """SQLite catalog backend for DuckLake."""
 
-    raise ValueError(f"Unsupported DuckLake metadata backend: {backend_type}")
+    type: Literal["sqlite"] = "sqlite"
+    path: str = Field(description="Path to the SQLite database file.")
+
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
+        return "", f"METADATA_PATH '{self.path}'"
 
 
-def _build_storage_backend_parts(
-    config: Mapping[str, Any], alias: str
-) -> tuple[str, str]:
-    storage_type = str(config.get("type", "")).lower()
+class DuckLakeDuckDBMetadataBackend(DuckLakeMetadataBackend):
+    """DuckDB catalog backend for DuckLake."""
 
-    if storage_type == "s3":
-        endpoint = config["endpoint_url"]
-        bucket = config["bucket"]
-        prefix = config.get("prefix")
-        access_key = config["aws_access_key_id"]
-        secret_key = config["aws_secret_access_key"]
-        region = config.get("region", "us-east-1")
-        use_ssl = bool(config.get("use_ssl", True))
-        url_style = config.get("url_style", "path")
+    type: Literal["duckdb"] = "duckdb"
+    path: str = Field(description="Path to the DuckDB database file.")
 
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
+        return "", f"METADATA_PATH '{self.path}'"
+
+
+DuckLakeMetadataBackendConfig = (
+    DuckLakePostgresMetadataBackend
+    | DuckLakeSqliteMetadataBackend
+    | DuckLakeDuckDBMetadataBackend
+)
+
+
+# ------------------------------------------------------------------------------
+# Storage backend configuration
+
+
+class DuckLakeStorageBackend(BaseModel):
+    """Base class for typed DuckLake storage backend configuration."""
+
+    type: str
+
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
+        """Return SQL fragments required for ATTACH storage configuration."""
+        raise NotImplementedError
+
+
+class DuckLakeS3StorageBackend(DuckLakeStorageBackend):
+    """S3-compatible object storage configuration."""
+
+    type: Literal["s3"] = "s3"
+    endpoint_url: str
+    bucket: str
+    prefix: str | None = None
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    region: str = "us-east-1"
+    use_ssl: bool = True
+    url_style: str = Field(
+        default="path",
+        description="URL style for S3 ('path' or 'virtual').",
+    )
+
+    @property
+    def full_data_path(self) -> str:
+        base = f"s3://{self.bucket}"
+        if self.prefix:
+            clean_prefix = self.prefix.strip("/")
+            if clean_prefix:
+                return f"{base}/{clean_prefix}/"
+        return f"{base}/"
+
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
         secret_name = f"secret_storage_{alias}"
         secret_sql = (
             f"CREATE OR REPLACE SECRET {secret_name} ("
             " TYPE S3,"
-            f" KEY_ID '{access_key}',"
-            f" SECRET '{secret_key}',"
-            f" ENDPOINT '{endpoint}',"
-            f" URL_STYLE '{url_style}',"
-            f" REGION '{region}',"
-            f" USE_SSL {'true' if use_ssl else 'false'},"
-            f" SCOPE 's3://{bucket}'"
+            f" KEY_ID '{self.aws_access_key_id}',"
+            f" SECRET '{self.aws_secret_access_key}',"
+            f" ENDPOINT '{self.endpoint_url}',"
+            f" URL_STYLE '{self.url_style}',"
+            f" REGION '{self.region}',"
+            f" USE_SSL {'true' if self.use_ssl else 'false'},"
+            f" SCOPE 's3://{self.bucket}'"
             " );"
         )
+        data_path_sql = f"DATA_PATH '{self.full_data_path}'"
+        return secret_sql, data_path_sql
 
-        clean_prefix = ""
-        if isinstance(prefix, str) and prefix.strip():
-            clean_prefix = prefix.strip("/ ")
-            clean_prefix = f"{clean_prefix}/"
 
-        data_path = (
-            f"s3://{bucket}/{clean_prefix}" if clean_prefix else f"s3://{bucket}/"
-        )
-        return secret_sql, f"DATA_PATH '{data_path}'"
+class DuckLakeLocalStorageBackend(DuckLakeStorageBackend):
+    """Local filesystem storage configuration."""
 
-    if storage_type == "local":
-        path = config["path"]
-        return "", f"DATA_PATH '{path}'"
+    type: Literal["local"] = "local"
+    path: str
 
-    raise ValueError(f"Unsupported DuckLake storage backend: {storage_type}")
+    def get_ducklake_sql_parts(self, alias: str) -> tuple[str, str]:
+        return "", f"DATA_PATH '{self.path}'"
+
+
+DuckLakeStorageBackendConfig = DuckLakeS3StorageBackend | DuckLakeLocalStorageBackend
+
+
+# ------------------------------------------------------------------------------
+# Helpers / attachment manager
+
+
+_METADATA_ADAPTER = TypeAdapter(DuckLakeMetadataBackendConfig)
+_STORAGE_ADAPTER = TypeAdapter(DuckLakeStorageBackendConfig)
 
 
 def _format_attach_options(options: Mapping[str, Any] | None) -> str:
@@ -118,25 +184,22 @@ def _format_attach_options(options: Mapping[str, Any] | None) -> str:
             continue
         parts.append(f"{str(key).upper()} {formatted}")
 
-    if not parts:
-        return ""
-
-    return f" ({', '.join(parts)})"
+    return f" ({', '.join(parts)})" if parts else ""
 
 
 @dataclass
 class DuckLakeAttachmentConfig:
-    """Configuration used to attach DuckLake to a DuckDB connection."""
+    """Configuration payload used to attach DuckLake to a DuckDB connection."""
 
-    metadata_backend: Mapping[str, Any]
-    storage_backend: Mapping[str, Any]
+    metadata_backend: DuckLakeMetadataBackendConfig
+    storage_backend: DuckLakeStorageBackendConfig
     alias: str = "ducklake"
     plugins: Sequence[str] = ("ducklake",)
     attach_options: Mapping[str, Any] | None = None
 
 
 class DuckLakeAttachmentManager:
-    """Helper that installs plugins and issues ATTACH for DuckLake."""
+    """Responsible for configuring a DuckDB connection for DuckLake usage."""
 
     def __init__(self, config: DuckLakeAttachmentConfig):
         self._config = config
@@ -153,11 +216,15 @@ class DuckLakeAttachmentManager:
             except Exception:
                 pass
 
-            metadata_secret_sql, metadata_params_sql = _build_metadata_backend_parts(
-                self._config.metadata_backend, self._config.alias
+            metadata_secret_sql, metadata_params_sql = (
+                self._config.metadata_backend.get_ducklake_sql_parts(
+                    self._config.alias
+                )
             )
-            storage_secret_sql, storage_params_sql = _build_storage_backend_parts(
-                self._config.storage_backend, self._config.alias
+            storage_secret_sql, storage_params_sql = (
+                self._config.storage_backend.get_ducklake_sql_parts(
+                    self._config.alias
+                )
             )
 
             if metadata_secret_sql:
@@ -183,14 +250,18 @@ class DuckLakeAttachmentManager:
             cursor.close()
 
 
+# ------------------------------------------------------------------------------
+# Public store
+
+
 class DuckLakeMetadataStore(DuckDBMetadataStore):
     """DuckLake metadata store that reuses DuckDB native components."""
 
     def __init__(
         self,
         *,
-        metadata_backend: Mapping[str, Any],
-        storage_backend: Mapping[str, Any],
+        metadata_backend: DuckLakeMetadataBackendConfig | dict[str, Any],
+        storage_backend: DuckLakeStorageBackendConfig | dict[str, Any],
         alias: str = "ducklake",
         plugins: Iterable[str] | None = None,
         attach_options: Mapping[str, Any] | None = None,
@@ -199,6 +270,17 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
         config: Mapping[str, str] | None = None,
         **kwargs: Any,
     ):
+        metadata_cfg = (
+            metadata_backend
+            if isinstance(metadata_backend, DuckLakeMetadataBackend)
+            else _METADATA_ADAPTER.validate_python(metadata_backend)
+        )
+        storage_cfg = (
+            storage_backend
+            if isinstance(storage_backend, DuckLakeStorageBackend)
+            else _STORAGE_ADAPTER.validate_python(storage_backend)
+        )
+
         plugin_list = list(plugins or ("ducklake",))
 
         base_extensions = list(extensions or [])
@@ -206,7 +288,6 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
             ext if isinstance(ext, str) else ext.get("name", "")
             for ext in base_extensions
         }
-
         for plugin in plugin_list:
             if plugin not in extension_names:
                 base_extensions.append(plugin)
@@ -219,12 +300,12 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
             **kwargs,
         )
 
-        self.metadata_backend_config = dict(metadata_backend)
-        self.storage_backend_config = dict(storage_backend)
+        self.metadata_backend_config = metadata_cfg
+        self.storage_backend_config = storage_cfg
         self._ducklake_attachment = DuckLakeAttachmentManager(
             DuckLakeAttachmentConfig(
-                metadata_backend=self.metadata_backend_config,
-                storage_backend=self.storage_backend_config,
+                metadata_backend=metadata_cfg,
+                storage_backend=storage_cfg,
                 alias=alias,
                 plugins=plugin_list,
                 attach_options=dict(attach_options or {}),
