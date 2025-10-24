@@ -42,13 +42,20 @@ def push():
         graph = FeatureGraph.get_active()
 
         # Record all feature versions
-        snapshot_id = metadata_store.serialize_feature_graph()
+        snapshot_id, was_already_recorded = (
+            metadata_store.record_feature_graph_snapshot()
+        )
         feature_count = len(graph.features_by_key)
 
-        app.console.print(
-            f"[green]✓[/green] Recorded graph snapshot: [bold]{snapshot_id}[/bold]"
-        )
-        app.console.print(f"  {feature_count} features recorded")
+        if was_already_recorded:
+            app.console.print(
+                f"[blue]ℹ[/blue] Snapshot already recorded (skipped): [bold]{snapshot_id}[/bold]"
+            )
+        else:
+            app.console.print(
+                f"[green]✓[/green] Recorded graph snapshot: [bold]{snapshot_id}[/bold]"
+            )
+        app.console.print(f"  {feature_count} features")
 
 
 @app.command

@@ -200,7 +200,7 @@ config.database = "{db_path}"
 
         # Record a snapshot first so migration can load historical graph
         with store:
-            snapshot_id = store.serialize_feature_graph()
+            snapshot_id, _ = store.record_feature_graph_snapshot()
 
             # Verify snapshot was recorded
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY

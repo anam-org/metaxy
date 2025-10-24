@@ -15,7 +15,12 @@ def push(store: str | None = None):
     Example:
         $ metaxy push
 
-        Recorded 5 features with snapshot ID: abc123def456...
+        ✓ Recorded feature graph
+          Snapshot ID: abc123def456...
+
+        # Or if already recorded:
+        ℹ Snapshot already recorded (skipped)
+          Snapshot ID: abc123def456...
 
     Args:
         store: The metadata store to use. Defaults to the default store.
@@ -25,10 +30,16 @@ def push(store: str | None = None):
     metadata_store = get_store(store)
 
     with metadata_store:
-        snapshot_id = metadata_store.serialize_feature_graph()
+        snapshot_id, was_already_recorded = (
+            metadata_store.record_feature_graph_snapshot()
+        )
 
-        console.print("[green]✓[/green] Recorded feature graph")
-        console.print(f"  Snapshot ID: {snapshot_id}")
+        if was_already_recorded:
+            console.print("[blue]ℹ[/blue] Snapshot already recorded (skipped)")
+            console.print(f"  Snapshot ID: {snapshot_id}")
+        else:
+            console.print("[green]✓[/green] Recorded feature graph")
+            console.print(f"  Snapshot ID: {snapshot_id}")
 
 
 if __name__ == "__main__":

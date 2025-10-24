@@ -23,7 +23,7 @@ Tracks when each feature version was recorded:
     "feature_version": "a3f8b2c1",
     "recorded_at": datetime(2025, 1, 10, 14, 30, 0),
     "fields": ["frames", "audio"],
-    "snapshot_id": "9fee05a3",  # Graph snapshot hash (if recorded with serialize_feature_graph)
+    "snapshot_id": "9fee05a3",  # Graph snapshot hash (if recorded with record_feature_graph_snapshot)
 }
 ```
 

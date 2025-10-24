@@ -57,7 +57,7 @@
     'migration_updated_hashes': True,
   })
 # ---
-# name: test_serialize_feature_graph
+# name: test_record_feature_graph_snapshot
   '0438666c8d5dcbf8dfe252cfbd5dc03ac6532098730db7624802a082c2c178d0'
 # ---
 # name: test_snapshot_workflow_without_migrations

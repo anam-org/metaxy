@@ -111,7 +111,7 @@ def generate_migration(
             )
             if latest_snapshot.shape[0] > 0:
                 from_snapshot_id = latest_snapshot["snapshot_id"][0]
-                print(f"From: latest snapshot {from_snapshot_id[:16]}...")
+                print(f"From: latest snapshot {from_snapshot_id}...")
             else:
                 raise ValueError(
                     "No feature graph snapshot found in metadata store. "
@@ -123,22 +123,28 @@ def generate_migration(
                 "Run 'metaxy push' first to record the feature graph snapshot."
             )
     else:
-        print(f"From: snapshot {from_snapshot_id[:16]}...")
+        print(f"From: snapshot {from_snapshot_id}...")
 
     # Step 2: Determine to_graph and to_snapshot_id
     if to_snapshot_id is None:
         # Default mode: record current active graph and use its snapshot
-        # This ensures the to_snapshot is available when executing the migration
-        to_snapshot_id = store.serialize_feature_graph()
+        # This ensures the to_snapshot is available in the store for comparison
+        to_snapshot_id, was_already_recorded = store.record_feature_graph_snapshot()
         to_graph = FeatureGraph.get_active()
-        print(f"To: current active graph (snapshot {to_snapshot_id[:16]}...)")
+        if was_already_recorded:
+            print(
+                f"To: current active graph (snapshot {to_snapshot_id}... already recorded)"
+            )
+        else:
+            print(f"To: current active graph (snapshot {to_snapshot_id}... recorded)")
+
     else:
         # Historical mode: load from snapshot with force_reload
         # force_reload ensures we get current code from disk, not cached imports
         from metaxy.migrations.executor import _load_historical_graph
 
         to_graph = _load_historical_graph(store, to_snapshot_id, class_path_overrides)
-        print(f"To: snapshot {to_snapshot_id[:16]}...")
+        print(f"To: snapshot {to_snapshot_id}...")
 
     # Step 3: Detect changes by comparing snapshot_ids directly
     # We don't reconstruct from_graph - just compare snapshot_ids from the store

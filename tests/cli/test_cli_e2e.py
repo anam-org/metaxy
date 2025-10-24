@@ -150,7 +150,7 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
             store.write_metadata(VideoProcessing, processing_data)
 
             # Step 2: Push (record feature versions)
-            snapshot_id_v1 = store.serialize_feature_graph()
+            snapshot_id_v1, _ = store.record_feature_graph_snapshot()
 
             assert snapshot_id_v1 is not None
             assert len(snapshot_id_v1) == 64  # Full SHA256 hash
@@ -368,7 +368,7 @@ def test_cli_migration_status_command(e2e_project: Path):
                     }
                 ),
             )
-            store.serialize_feature_graph()
+            store.record_feature_graph_snapshot()
 
         # Update code to trigger a change
         (e2e_project / "features" / "video.py").write_text("""
