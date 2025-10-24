@@ -1,18 +1,9 @@
-"""DuckLake metadata store backed by DuckDB.
-
-The store reuses the DuckDB native Narwhals components. All that differs is how
-the DuckDB connection is prepared: DuckLake plugins are installed, secrets are
-created, and the DuckLake catalog is attached/selected.
-"""
-
-from __future__ import annotations
+"""Shared DuckLake configuration helpers."""
 
 import os
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
-
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
 
 try:  # pragma: no cover - optional dependency in some environments
     import duckdb  # type: ignore
@@ -52,9 +43,8 @@ DuckLakeBackendInput = Mapping[str, Any] | SupportsDuckLakeParts | SupportsModel
 DuckLakeBackend = SupportsDuckLakeParts | dict[str, Any]
 
 
-def _coerce_backend_config(
-    backend: DuckLakeBackendInput, *, role: str
-) -> DuckLakeBackend:
+def coerce_backend_config(backend: DuckLakeBackendInput, *, role: str) -> DuckLakeBackend:
+    """Normalize metadata/storage backend configuration."""
     if isinstance(backend, SupportsDuckLakeParts):
         return backend
     if isinstance(backend, SupportsModelDump):
@@ -67,13 +57,15 @@ def _coerce_backend_config(
     )
 
 
-def _resolve_metadata_backend(backend: DuckLakeBackend, alias: str) -> tuple[str, str]:
+def resolve_metadata_backend(backend: DuckLakeBackend, alias: str) -> tuple[str, str]:
+    """Generate DuckLake metadata backend SQL fragments."""
     if isinstance(backend, SupportsDuckLakeParts):
         return backend.get_ducklake_sql_parts(alias)
     return _metadata_sql_from_mapping(backend, alias)
 
 
-def _resolve_storage_backend(backend: DuckLakeBackend, alias: str) -> tuple[str, str]:
+def resolve_storage_backend(backend: DuckLakeBackend, alias: str) -> tuple[str, str]:
+    """Generate DuckLake storage backend SQL fragments."""
     if isinstance(backend, SupportsDuckLakeParts):
         return backend.get_ducklake_sql_parts(alias)
     return _storage_sql_from_mapping(backend, alias)
@@ -127,7 +119,7 @@ def _metadata_postgres_sql(config: Mapping[str, Any], alias: str) -> tuple[str, 
             secret_params[str(key).upper()] = value
 
     secret_name = f"secret_catalog_{alias}"
-    secret_sql = _build_secret_sql(secret_name, "postgres", secret_params)
+    secret_sql = build_secret_sql(secret_name, "postgres", secret_params)
     metadata_params = (
         "METADATA_PATH '', "
         f"METADATA_PARAMETERS MAP {{'TYPE': 'postgres', 'SECRET': '{secret_name}'}}"
@@ -178,7 +170,7 @@ def _storage_s3_sql(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
             "USE_SSL": config.get("use_ssl", True),
             "SCOPE": config.get("scope") or f"s3://{config['bucket']}",
         }
-    secret_sql = _build_secret_sql(secret_name, "S3", secret_params)
+    secret_sql = build_secret_sql(secret_name, "S3", secret_params)
 
     data_path = config.get("data_path")
     if not data_path:
@@ -204,9 +196,10 @@ def _storage_s3_sql(config: Mapping[str, Any], alias: str) -> tuple[str, str]:
     return secret_sql, data_path_sql
 
 
-def _build_secret_sql(
+def build_secret_sql(
     secret_name: str, secret_type: str, parameters: Mapping[str, Any]
 ) -> str:
+    """Construct DuckDB secret creation SQL."""
     formatted_params = _format_secret_parameters(parameters)
     extra_clause = f", {', '.join(formatted_params)}" if formatted_params else ""
     return (
@@ -235,7 +228,8 @@ def _stringify_scalar(value: Any) -> str | None:
     return f"'{escaped}'"
 
 
-def _format_attach_options(options: Mapping[str, Any] | None) -> str:
+def format_attach_options(options: Mapping[str, Any] | None) -> str:
+    """Format ATTACH options clause."""
     if not options:
         return ""
 
@@ -261,7 +255,7 @@ class DuckLakeAttachmentConfig:
 
 
 class _PreviewCursor:
-    """Collects commands for previewing DuckLake attachment SQL."""
+    """Collect commands for previewing DuckLake attachment SQL."""
 
     def __init__(self) -> None:
         self.commands: list[str] = []
@@ -304,10 +298,10 @@ class DuckLakeAttachmentManager:
             else:
                 cursor.execute(f"DETACH {self._config.alias};")
 
-            metadata_secret_sql, metadata_params_sql = _resolve_metadata_backend(
+            metadata_secret_sql, metadata_params_sql = resolve_metadata_backend(
                 self._config.metadata_backend, self._config.alias
             )
-            storage_secret_sql, storage_params_sql = _resolve_storage_backend(
+            storage_secret_sql, storage_params_sql = resolve_storage_backend(
                 self._config.storage_backend, self._config.alias
             )
 
@@ -325,7 +319,7 @@ class DuckLakeAttachmentManager:
                 " );"
             )
 
-            options_clause = _format_attach_options(self._config.attach_options)
+            options_clause = format_attach_options(self._config.attach_options)
             cursor.execute(
                 f"ATTACH 'ducklake:{ducklake_secret}' AS {self._config.alias}{options_clause};"
             )
@@ -340,71 +334,60 @@ class DuckLakeAttachmentManager:
         return preview_conn.cursor().commands
 
 
-# ------------------------------------------------------------------------------
-# Public store
+DuckLakeConfigInput = DuckLakeAttachmentConfig | Mapping[str, Any]
 
 
-class DuckLakeMetadataStore(DuckDBMetadataStore):
-    """DuckLake metadata store that reuses DuckDB native components."""
-
-    def __init__(
-        self,
-        *,
-        metadata_backend: DuckLakeBackendInput,
-        storage_backend: DuckLakeBackendInput,
-        alias: str = "ducklake",
-        plugins: Iterable[str] | None = None,
-        attach_options: Mapping[str, Any] | None = None,
-        extensions: Sequence[ExtensionSpec | str] | None = None,
-        database: str = ":memory:",
-        config: Mapping[str, str] | None = None,
-        **kwargs: Any,
-    ):
-        metadata_cfg = _coerce_backend_config(metadata_backend, role="metadata backend")
-        storage_cfg = _coerce_backend_config(storage_backend, role="storage backend")
-
-        plugin_list = list(plugins or ("ducklake",))
-
-        base_extensions = list(extensions or [])
-        extension_names = {
-            ext if isinstance(ext, str) else ext.get("name", "")
-            for ext in base_extensions
-        }
-        for plugin in plugin_list:
-            if plugin not in extension_names:
-                base_extensions.append(plugin)
-                extension_names.add(plugin)
-
-        super().__init__(
-            database=database,
-            config=dict(config or {}),
-            extensions=base_extensions,
-            **kwargs,
+def build_ducklake_attachment(
+    config: DuckLakeConfigInput,
+) -> tuple[DuckLakeAttachmentConfig, DuckLakeAttachmentManager]:
+    """Normalise ducklake configuration and create attachment manager."""
+    if isinstance(config, DuckLakeAttachmentConfig):
+        metadata_input = config.metadata_backend
+        storage_input = config.storage_backend
+        alias = config.alias
+        plugins: Iterable[str] = tuple(config.plugins)
+        attach_options = dict(config.attach_options or {})
+    elif isinstance(config, Mapping):
+        if "metadata_backend" not in config or "storage_backend" not in config:
+            raise ValueError(
+                "DuckLake configuration requires both 'metadata_backend' and 'storage_backend'."
+            )
+        metadata_input = config["metadata_backend"]
+        storage_input = config["storage_backend"]
+        alias = str(config.get("alias", "ducklake"))
+        plugins = config.get("plugins") or ("ducklake",)
+        attach_options = dict(config.get("attach_options") or {})
+    else:  # pragma: no cover - defensive programming
+        raise TypeError(
+            "DuckLake configuration must be a DuckLakeAttachmentConfig or mapping."
         )
 
-        self.metadata_backend_config = metadata_cfg
-        self.storage_backend_config = storage_cfg
-        self._ducklake_alias = alias
-        attachment = DuckLakeAttachmentConfig(
-            metadata_backend=metadata_cfg,
-            storage_backend=storage_cfg,
-            alias=alias,
-            plugins=plugin_list,
-            attach_options=dict(attach_options or {}),
-        )
-        self._ducklake_attachment = DuckLakeAttachmentManager(attachment)
+    metadata_backend = coerce_backend_config(metadata_input, role="metadata backend")
+    storage_backend = coerce_backend_config(storage_input, role="storage backend")
 
-    def open(self) -> None:
-        """Open DuckDB connection and attach DuckLake catalog."""
-        super().open()
-        if self._conn is None:
-            raise RuntimeError("DuckLakeMetadataStore failed to open DuckDB connection")
-        self._ducklake_attachment.configure(self._conn)
+    plugin_list = [str(plugin) for plugin in plugins]
+    attachment_config = DuckLakeAttachmentConfig(
+        metadata_backend=metadata_backend,
+        storage_backend=storage_backend,
+        alias=alias,
+        plugins=tuple(plugin_list),
+        attach_options=attach_options,
+    )
+    manager = DuckLakeAttachmentManager(attachment_config)
+    return attachment_config, manager
 
-    def get_attachment_manager(self) -> DuckLakeAttachmentManager:
-        """Expose the configured attachment manager for advanced scenarios."""
-        return self._ducklake_attachment
 
-    def preview_attachment_sql(self) -> list[str]:
-        """Return SQL statements executed when attaching DuckLake."""
-        return self._ducklake_attachment.preview_sql()
+def ensure_extensions_with_plugins(
+    extensions: list[Any],
+    plugins: Sequence[str],
+) -> None:
+    """Ensure DuckLake plugins are present in the extensions list."""
+    existing_names = {
+        ext if isinstance(ext, str) else ext.get("name", "")
+        for ext in extensions
+        if isinstance(ext, (str, Mapping))
+    }
+    for plugin in plugins:
+        if plugin not in existing_names:
+            extensions.append(plugin)
+            existing_names.add(plugin)

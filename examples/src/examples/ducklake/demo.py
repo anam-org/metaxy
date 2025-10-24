@@ -5,17 +5,15 @@ Narwhals-compatible. No DuckLake installation is required to run this script;
 we preview the SQL statements that would be executed when attaching DuckLake.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from metaxy import MetaxyConfig
-from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
-def preview_attachment_sql(store: DuckLakeMetadataStore) -> list[str]:
+def preview_attachment_sql(store: DuckDBMetadataStore) -> list[str]:
     """Return the SQL statements DuckLake would execute on open()."""
-    return store.preview_attachment_sql()
+    return store.preview_ducklake_sql()
 
 
 if __name__ == "__main__":
@@ -24,8 +22,9 @@ if __name__ == "__main__":
         config_path, search_parents=False
     ).get_store()
     assert isinstance(
-        ducklake_store, DuckLakeMetadataStore
-    ), "DuckLake example misconfigured: expected DuckLakeMetadataStore."
+        ducklake_store, DuckDBMetadataStore
+    ), "DuckLake example misconfigured: expected DuckDBMetadataStore."
+    ducklake_store.get_ducklake_attachment_manager()
     print("DuckLake store initialised. Extensions:", ducklake_store.extensions)
     print("\nPreview of DuckLake ATTACH SQL:")
     for line in preview_attachment_sql(ducklake_store):
