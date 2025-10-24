@@ -1,7 +1,7 @@
 """Configuration system for Metaxy using pydantic-settings."""
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar
 
 try:
     import tomllib  # Python 3.11+
@@ -17,48 +17,8 @@ from pydantic_settings import (
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureGraph
 
 T = TypeVar("T")
-
-
-def load_graph(graph_path: str) -> "FeatureGraph":
-    """Load graph from import path.
-
-    Args:
-        graph_path: Import path like "myapp.features:my_graph"
-
-    Returns:
-        FeatureGraph instance
-
-    Raises:
-        ValueError: If path is invalid
-        ImportError: If module or graph not found
-        TypeError: If loaded object is not a FeatureGraph
-    """
-    from metaxy.models.feature import FeatureGraph
-
-    if ":" not in graph_path:
-        raise ValueError(
-            f"Invalid graph path: {graph_path}. "
-            f"Expected format: 'module.path:graph_name'"
-        )
-
-    module_path, graph_name = graph_path.split(":", 1)
-
-    try:
-        module = __import__(module_path, fromlist=[graph_name])
-        graph = getattr(module, graph_name)
-    except (ImportError, AttributeError) as e:
-        raise ImportError(f"Failed to load graph from {graph_path}: {e}") from e
-
-    if not isinstance(graph, FeatureGraph):
-        raise TypeError(
-            f"Registry at {graph_path} is not a FeatureGraph instance. "
-            f"Got: {type(graph)}"
-        )
-
-    return graph
 
 
 class TomlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -406,52 +366,3 @@ class MetaxyConfig(BaseSettings):
         module_path, class_name = class_path.rsplit(".", 1)
         module = __import__(module_path, fromlist=[class_name])
         return getattr(module, class_name)
-
-    @staticmethod
-    @overload
-    def _import_object(import_path: str, expected_type: type[T]) -> T: ...
-
-    @staticmethod
-    @overload
-    def _import_object(import_path: str, expected_type: None = None) -> Any: ...
-
-    @staticmethod
-    def _import_object(
-        import_path: str, expected_type: type[T] | None = None
-    ) -> T | Any:
-        """Import object from module:object path.
-
-        Args:
-            import_path: Import path like "module.path:object_name"
-            expected_type: Optional type to validate against
-
-        Returns:
-            Imported object (typed as expected_type if provided)
-
-        Raises:
-            ValueError: If path format is invalid
-            ImportError: If module or object not found
-            TypeError: If object doesn't match expected_type
-        """
-        if ":" not in import_path:
-            raise ValueError(
-                f"Invalid import path: {import_path}. "
-                f"Expected format: 'module.path:object_name'"
-            )
-
-        module_path, object_name = import_path.split(":", 1)
-
-        try:
-            module = __import__(module_path, fromlist=[object_name])
-            obj = getattr(module, object_name)
-        except (ImportError, AttributeError) as e:
-            raise ImportError(f"Failed to load object from {import_path}: {e}") from e
-
-        if expected_type is not None and not isinstance(obj, expected_type):
-            type_name = getattr(expected_type, "__name__", str(expected_type))
-            raise TypeError(
-                f"Object at {import_path} is not a {type_name} instance. "
-                f"Got: {type(obj)}"
-            )
-
-        return obj

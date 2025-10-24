@@ -9,3 +9,6 @@ def collect_to_polars(lazy_frame: nw.LazyFrame) -> pl.DataFrame:
     Used throughout tests for materializing query results.
     """
     return lazy_frame.collect().to_polars()
+
+
+__all__ = ["collect_to_polars"]
