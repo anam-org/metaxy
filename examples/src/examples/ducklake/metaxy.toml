@@ -1,22 +1,22 @@
 entrypoints = []
 
 [stores.dev]
-type = "metaxy.metadata_store.ducklake.DuckLakeMetadataStore"
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
 database = ":memory:"
 
-[stores.dev.config.attach_options]
+[stores.dev.config.ducklake.attach_options]
 api_version = "0.2"
 override_data_path = true
 
-[stores.dev.config.metadata_backend]
+[stores.dev.config.ducklake.metadata_backend]
 type = "postgres"
 database = "ducklake_meta"
 user = "ducklake"
 password = "secret"
 
-[stores.dev.config.storage_backend]
+[stores.dev.config.ducklake.storage_backend]
 type = "s3"
 endpoint_url = "https://object-store"
 bucket = "ducklake"

@@ -1,13 +1,11 @@
-"""Tests for DuckLake metadata store configuration."""
+"""Tests for DuckLake integration via DuckDB metadata store."""
 
-from __future__ import annotations
-
-from metaxy.metadata_store.ducklake import (
+from metaxy.metadata_store._ducklake_support import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
-    DuckLakeMetadataStore,
-    _format_attach_options,
+    format_attach_options,
 )
+from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
 class _StubCursor:
@@ -63,62 +61,8 @@ def test_ducklake_attachment_sequence() -> None:
     assert commands[-2].startswith("ATTACH 'ducklake:secret_lake'")
     assert commands[-1] == "USE lake;"
 
-    options_clause = _format_attach_options(attachment.attach_options)
+    options_clause = format_attach_options(attachment.attach_options)
     assert options_clause == " (API_VERSION '0.2', OVERRIDE_DATA_PATH true)"
-
-
-def test_ducklake_store_extends_extensions_list() -> None:
-    """DuckLake store should ensure DuckLake plugin is loaded as an extension."""
-    metadata_backend = {
-        "type": "postgres",
-        "database": "ducklake_meta",
-        "user": "ducklake",
-        "password": "secret",
-    }
-    storage_backend = {
-        "type": "s3",
-        "endpoint_url": "https://object-store",
-        "bucket": "ducklake",
-        "aws_access_key_id": "key",
-        "aws_secret_access_key": "secret",
-    }
-
-    store = DuckLakeMetadataStore(
-        metadata_backend=metadata_backend,
-        storage_backend=storage_backend,
-        extensions=["json"],
-        attach_options={"api_version": "0.2"},
-    )
-
-    # DuckDBMetadataStore auto-adds hashfuncs, DuckLake store must add ducklake.
-    assert "hashfuncs" in store.extensions
-    assert "ducklake" in store.extensions
-    assert "json" in store.extensions
-
-
-def test_ducklake_preview_sql_uses_public_api() -> None:
-    """preview_attachment_sql should expose generated SQL without private access."""
-    store = DuckLakeMetadataStore(
-        metadata_backend={
-            "type": "postgres",
-            "database": "ducklake_meta",
-            "user": "ducklake",
-            "password": "secret",
-        },
-        storage_backend={
-            "type": "s3",
-            "endpoint_url": "https://object-store",
-            "bucket": "ducklake",
-            "aws_access_key_id": "key",
-            "aws_secret_access_key": "secret",
-        },
-        attach_options={"override_data_path": True},
-    )
-
-    sql_commands = store.preview_attachment_sql()
-    assert sql_commands[0] == "INSTALL ducklake;"
-    assert sql_commands[1] == "LOAD ducklake;"
-    assert sql_commands[-1] == "USE ducklake;"
 
 
 def test_format_attach_options_handles_types() -> None:
@@ -130,5 +74,52 @@ def test_format_attach_options_handles_types() -> None:
         "skip": None,
     }
 
-    clause = _format_attach_options(options)
+    clause = format_attach_options(options)
     assert clause == " (API_VERSION '0.2', MAX_RETRIES 3, OVERRIDE_DATA_PATH true)"
+
+
+def _ducklake_config_payload() -> dict[str, object]:
+    return {
+        "metadata_backend": {
+            "type": "postgres",
+            "database": "ducklake_meta",
+            "user": "ducklake",
+            "password": "secret",
+        },
+        "storage_backend": {
+            "type": "s3",
+            "endpoint_url": "https://object-store",
+            "bucket": "ducklake",
+            "aws_access_key_id": "key",
+            "aws_secret_access_key": "secret",
+        },
+        "attach_options": {"override_data_path": True},
+    }
+
+
+def test_duckdb_store_accepts_ducklake_config() -> None:
+    """DuckDBMetadataStore should accept ducklake configuration inline."""
+    store = DuckDBMetadataStore(
+        database=":memory:",
+        extensions=["json"],
+        ducklake=_ducklake_config_payload(),
+    )
+
+    assert "ducklake" in store.extensions
+    commands = store.preview_ducklake_sql()
+    assert commands[0] == "INSTALL ducklake;"
+    assert commands[1] == "LOAD ducklake;"
+    assert commands[-1] == "USE ducklake;"
+
+
+def test_duckdb_store_preview_via_config_manager() -> None:
+    """DuckDBMetadataStore exposes attachment manager helpers when configured."""
+    store = DuckDBMetadataStore(
+        database=":memory:",
+        ducklake=_ducklake_config_payload(),
+    )
+
+    manager = store.get_ducklake_attachment_manager()
+    preview = manager.preview_sql()
+    assert preview[0] == "INSTALL ducklake;"
+    assert preview[-1] == "USE ducklake;"
