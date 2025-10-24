@@ -4,4 +4,4 @@ entrypoints = ["examples.migration.__entrypoint__"]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "metaxy/example_migration.db"
+database = "/tmp/example_recompute.db"
