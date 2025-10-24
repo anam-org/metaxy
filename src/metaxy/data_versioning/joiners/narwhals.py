@@ -50,10 +50,14 @@ class NarwhalsJoiner(UpstreamJoiner):
         """
         if not upstream_refs:
             # No upstream dependencies - source feature
-            # Return empty LazyFrame with just sample_id column
+            # Return empty LazyFrame with just sample_id column (with proper type)
             import polars as pl
 
-            empty_df = pl.LazyFrame({"sample_id": []})
+            # Create empty frame with explicit Int64 type for sample_id
+            # This ensures it's not NULL-typed which would fail with Ibis backends
+            empty_df = pl.LazyFrame(
+                {"sample_id": pl.Series("sample_id", [], dtype=pl.Int64)}
+            )
             return nw.from_native(empty_df), {}
 
         # Start with the first upstream feature

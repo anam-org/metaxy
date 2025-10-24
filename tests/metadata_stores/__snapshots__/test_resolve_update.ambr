@@ -2467,831 +2467,4083 @@
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[diamond_graph-md5]
+# name: test_resolve_update_no_upstream[False-False-diamond_graph-md5]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[diamond_graph-sha256]
+# name: test_resolve_update_no_upstream[False-False-diamond_graph-sha256]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[diamond_graph-wyhash]
+# name: test_resolve_update_no_upstream[False-False-diamond_graph-wyhash]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[diamond_graph-xxhash32]
+# name: test_resolve_update_no_upstream[False-False-diamond_graph-xxhash32]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[diamond_graph-xxhash64]
+# name: test_resolve_update_no_upstream[False-False-diamond_graph-xxhash64]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_field-md5]
+# name: test_resolve_update_no_upstream[False-False-multi_field-md5]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_field-sha256]
+# name: test_resolve_update_no_upstream[False-False-multi_field-sha256]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_field-wyhash]
+# name: test_resolve_update_no_upstream[False-False-multi_field-wyhash]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_field-xxhash32]
+# name: test_resolve_update_no_upstream[False-False-multi_field-xxhash32]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[multi_field-xxhash64]
+# name: test_resolve_update_no_upstream[False-False-multi_field-xxhash64]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[simple_chain-md5]
+# name: test_resolve_update_no_upstream[False-False-simple_chain-md5]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[simple_chain-sha256]
+# name: test_resolve_update_no_upstream[False-False-simple_chain-sha256]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[simple_chain-wyhash]
+# name: test_resolve_update_no_upstream[False-False-simple_chain-wyhash]
   dict({
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[simple_chain-xxhash32]
+# name: test_resolve_update_no_upstream[False-False-simple_chain-xxhash32]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      True,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---
-# name: test_resolve_update_no_upstream[simple_chain-xxhash64]
+# name: test_resolve_update_no_upstream[False-False-simple_chain-xxhash64]
   dict({
     tuple(
       'clickhouse',
       False,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
+    tuple(
+      'duckdb',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-diamond_graph-md5]
+  dict({
     tuple(
       'clickhouse',
       True,
+      False,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-diamond_graph-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-diamond_graph-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-diamond_graph-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-diamond_graph-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-multi_field-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-multi_field-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-multi_field-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-multi_field-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-multi_field-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-simple_chain-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-simple_chain-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-simple_chain-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-simple_chain-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[False-True-simple_chain-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-diamond_graph-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       False,
+      True,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-diamond_graph-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-diamond_graph-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-diamond_graph-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-diamond_graph-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-multi_field-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-multi_field-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-multi_field-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-multi_field-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-multi_field-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-simple_chain-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-simple_chain-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-simple_chain-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-simple_chain-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-False-simple_chain-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-diamond_graph-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'duckdb',
       True,
+      True,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'inmemory',
       True,
+      True,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
-    }),
-    tuple(
-      'sqlite',
-      False,
-    ): dict({
-      'added': 0,
-      'changed': 0,
-      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
     tuple(
       'sqlite',
       True,
+      True,
     ): dict({
-      'added': 0,
+      'added': 3,
       'changed': 0,
       'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-diamond_graph-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-diamond_graph-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-diamond_graph-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-diamond_graph-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-multi_field-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-multi_field-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-multi_field-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-multi_field-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-multi_field-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-simple_chain-md5]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-simple_chain-sha256]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-simple_chain-wyhash]
+  dict({
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-simple_chain-xxhash32]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_resolve_update_no_upstream[True-True-simple_chain-xxhash64]
+  dict({
+    tuple(
+      'clickhouse',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'inmemory',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'sqlite',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
     }),
   })
 # ---

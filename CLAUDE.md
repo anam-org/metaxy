@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project is in active development with no users yet. Breaking changes are expected and encouraged:
 - **No backward compatibility required** - refactor freely
-- **API changes allowed** - improve interfaces without deprecation warnings  
+- **API changes allowed** - improve interfaces without deprecation warnings
 - **Breaking changes welcome** - prioritize better design over stability
 - **Move fast** - optimize for the best long-term architecture, not short-term compatibility
 
@@ -121,7 +121,7 @@ Abstract base class for metadata storage backends:
 - **Backend-agnostic**: Generic type `TRef` allows different backend table references
 - **Narwhals interface**: Public API uses Narwhals DataFrames/LazyFrames for cross-backend compatibility
 - **Native vs Polars components**: Stores choose components based on capabilities:
-  - **Native components** (e.g., Ibis-based for DuckDB/ClickHouse): Execute all operations (joins, hashing, diffs) directly in the database, only pulling out final results. This minimizes data transfer and leverages database query optimization.
+  - **native data version calculations** (e.g., Ibis-based for DuckDB/ClickHouse): Execute all operations (joins, hashing, diffs) directly in the database, only pulling out final results. This minimizes data transfer and leverages database query optimization.
   - **Polars components**: Pull data into memory when fallback stores are used or store lacks compute support (InMemory, SQLite, DeltaLake)
 
 Implementations:
@@ -246,7 +246,7 @@ This is critical for migrations when upstream dependencies change.
 **Native vs Polars Components**:
 The store automatically selects the optimal component strategy:
 
-**Native components** (preferred when available):
+**native data version calculations** (preferred when available):
 - Execute all operations (joins, hashing, diffs) directly in the database
 - Only pull final results into memory (e.g., list of samples that need updating)
 - Leverage database query optimization and avoid data transfer overhead

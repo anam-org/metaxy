@@ -93,7 +93,7 @@ class SQLiteMetadataStore(IbisMetadataStore):
         return False
 
     def _supports_native_components(self) -> bool:
-        """SQLite stores do not support native components.
+        """SQLite stores do not support native data version calculations.
 
         SQLite doesn't have built-in hash functions (MD5, SHA256, etc.),
         so we always use Polars components for data versioning.

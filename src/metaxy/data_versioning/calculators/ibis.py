@@ -14,6 +14,7 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+    import ibis.expr.types.relations
 
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
@@ -119,7 +120,21 @@ class IbisDataVersionCalculator(DataVersionCalculator):
             )
 
         # Convert Narwhals LazyFrame to Ibis table
-        ibis_table: ibis.expr.types.Table = joined_upstream.to_native()  # type: ignore[assignment]
+        import ibis.expr.types
+
+        native = joined_upstream.to_native()
+
+        # Validate that we have an Ibis table
+        if not isinstance(native, ibis.expr.types.Table):
+            # Not an Ibis table - this calculator only works with Ibis-backed data
+            raise TypeError(
+                f"IbisDataVersionCalculator requires Ibis-backed data. "
+                f"Got {type(native)} instead. "
+                f"This usually means the metadata store is not using Ibis tables. "
+                f"Use PolarsDataVersionCalculator for non-Ibis stores."
+            )
+
+        ibis_table: ibis.expr.types.Table = native  # type: ignore[assignment]
 
         # Get the hash SQL generator
         hash_sql_gen = self._hash_sql_generators[algo]
