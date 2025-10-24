@@ -149,7 +149,7 @@ class IbisMetadataStore(MetadataStore):
 
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create native components: store is not open. "
+                "Cannot create native data version calculations: store is not open. "
                 "Ensure store is used as context manager."
             )
 
@@ -175,12 +175,19 @@ class IbisMetadataStore(MetadataStore):
         """
 
         def md5_generator(table, concat_columns: dict[str, str]) -> str:
-            """Generate SQL to compute MD5 hashes (universal SQL support)."""
+            """Generate SQL to compute MD5 hashes (universal SQL support).
+
+            Note: This generic implementation assumes MD5() returns a hex string.
+            Subclasses should override if their backend returns binary or different format.
+            For example, ClickHouse returns binary and needs lower(hex(MD5(...))).
+            """
             # Build SELECT clause with hash columns
             hash_selects: list[str] = []
             for field_key, concat_col in concat_columns.items():
                 hash_col = f"__hash_{field_key}"
                 # Use MD5 function (universally available in SQL databases)
+                # WARNING: Different databases return different formats (hex string vs binary)
+                # This generic version assumes hex string output
                 hash_expr = f"MD5({concat_col})"
                 hash_selects.append(f"{hash_expr} as {hash_col}")
 
@@ -429,7 +436,7 @@ class IbisMetadataStore(MetadataStore):
 
     def _can_compute_native(self) -> bool:
         """
-        Ibis backends support native components (Narwhals-based).
+        Ibis backends support native data version calculations (Narwhals-based).
 
         Returns:
             True (use Narwhals components with Ibis-backed tables)

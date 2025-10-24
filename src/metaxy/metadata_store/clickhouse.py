@@ -105,7 +105,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         return HashAlgorithm.XXHASH64
 
     def _supports_native_components(self) -> bool:
-        """ClickHouse stores support native components when connection is open."""
+        """ClickHouse stores support native data version calculations when connection is open."""
         return self._conn is not None
 
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
@@ -123,8 +123,9 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             hash_selects: list[str] = []
             for field_key, concat_col in concat_columns.items():
                 hash_col = f"__hash_{field_key}"
-                # Cast to String for consistency
-                hash_expr = f"CAST(MD5({concat_col}) AS String)"
+                # MD5() in ClickHouse returns FixedString(16) binary, convert to lowercase hex string
+                # Use lower(hex(MD5(...))) to match DuckDB's md5() lowercase hex output
+                hash_expr = f"lower(hex(MD5({concat_col})))"
                 hash_selects.append(f"{hash_expr} as {hash_col}")
 
             hash_clause = ", ".join(hash_selects)

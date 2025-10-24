@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -130,72 +129,39 @@ class DuckDBMetadataStore(IbisMetadataStore):
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for DuckDB stores.
 
-        Uses XXHASH64 which requires the hashfuncs extension (auto-loaded).
+        Uses XXHASH64 which requires the hashfuncs extension (lazily loaded).
         """
         return HashAlgorithm.XXHASH64
 
     def _supports_native_components(self) -> bool:
-        """DuckDB stores support native components when connection is open."""
+        """DuckDB stores support native data version calculations when connection is open."""
         return self._conn is not None
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
-        """Get hash SQL generators for DuckDB.
+    def _create_native_components(self):
+        """Create components for native SQL execution with DuckDB.
 
-        DuckDB supports:
-        - MD5: Always available (built-in)
-        - XXHASH32, XXHASH64: Available when 'hashfuncs' extension is loaded
-
-        Returns:
-            Dictionary mapping HashAlgorithm to SQL generator functions
+        Uses DuckDBDataVersionCalculator which handles extension loading lazily.
+        Extensions are loaded when the calculator is created (on-demand), not on store open.
         """
-        generators: dict[HashAlgorithm, HashSQLGenerator] = {}
+        from metaxy.data_versioning.calculators.duckdb import (
+            DuckDBDataVersionCalculator,
+        )
+        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
-        # MD5 is always available
-        def md5_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # Cast to VARCHAR for consistency
-                hash_expr = f"CAST(md5({concat_col}) AS VARCHAR)"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        if self._conn is None:
+            raise RuntimeError(
+                "Cannot create native data version calculations: store is not open. "
+                "Ensure store is used as context manager."
+            )
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        # All components accept/return Narwhals LazyFrames
+        # DuckDBDataVersionCalculator loads extensions and generates SQL for hashing
+        joiner = NarwhalsJoiner()
+        calculator = DuckDBDataVersionCalculator(
+            backend=self._conn,
+            extensions=self.extensions,
+        )
+        diff_resolver = NarwhalsDiffResolver()
 
-        generators[HashAlgorithm.MD5] = md5_generator
-
-        # Check if hashfuncs extension is in the list
-        extension_names = [
-            ext if isinstance(ext, str) else ext.get("name", "")
-            for ext in self.extensions
-        ]
-
-        if "hashfuncs" in extension_names:
-
-            def xxhash32_generator(table, concat_columns: dict[str, str]) -> str:
-                hash_selects: list[str] = []
-                for field_key, concat_col in concat_columns.items():
-                    hash_col = f"__hash_{field_key}"
-                    hash_expr = f"CAST(xxh32({concat_col}) AS VARCHAR)"
-                    hash_selects.append(f"{hash_expr} as {hash_col}")
-
-                hash_clause = ", ".join(hash_selects)
-                table_sql = table.compile()
-                return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-            def xxhash64_generator(table, concat_columns: dict[str, str]) -> str:
-                hash_selects: list[str] = []
-                for field_key, concat_col in concat_columns.items():
-                    hash_col = f"__hash_{field_key}"
-                    hash_expr = f"CAST(xxh64({concat_col}) AS VARCHAR)"
-                    hash_selects.append(f"{hash_expr} as {hash_col}")
-
-                hash_clause = ", ".join(hash_selects)
-                table_sql = table.compile()
-                return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-            generators[HashAlgorithm.XXHASH32] = xxhash32_generator
-            generators[HashAlgorithm.XXHASH64] = xxhash64_generator
-
-        return generators
+        return joiner, calculator, diff_resolver

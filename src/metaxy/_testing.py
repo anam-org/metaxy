@@ -169,6 +169,38 @@ class TempFeatureModule:
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
+def assert_all_results_equal(results: dict, snapshot=None) -> None:
+    """Compare all results from different store type combinations.
+
+    Ensures all variants produce identical results, then optionally snapshots all results.
+
+    Args:
+        results: Dict mapping store_type to result data
+        snapshot: Optional syrupy snapshot fixture to record all results
+
+    Raises:
+        AssertionError: If any variants produce different results
+    """
+    if not results:
+        return
+
+    # Get all result values as a list
+    all_results = list(results.items())
+    reference_key, reference_result = all_results[0]
+
+    # Compare each result to the reference
+    for key, result in all_results[1:]:
+        assert result == reference_result, (
+            f"{key} produced different results than {reference_key}:\n"
+            f"Expected: {reference_result}\n"
+            f"Got: {result}"
+        )
+
+    # Snapshot ALL results if snapshot provided
+    if snapshot is not None:
+        assert results == snapshot
+
+
 class HashAlgorithmCases:
     """Test cases for different hash algorithms."""
 

@@ -17,6 +17,7 @@ class LazyDiffResult(NamedTuple):
     - Materialize to Polars: result.added.collect().to_native()
     - Materialize to Pandas: result.added.collect().to_pandas()
     - Materialize to PyArrow: result.added.collect().to_arrow()
+    - Convert to DiffResult: result.collect()
 
     Backend execution:
     - SQL stores: All operations stay in SQL until .collect()
@@ -38,6 +39,18 @@ class LazyDiffResult(NamedTuple):
     added: "nw.LazyFrame"
     changed: "nw.LazyFrame"
     removed: "nw.LazyFrame"
+
+    def collect(self) -> "DiffResult":
+        """Materialize all lazy frames to create a DiffResult.
+
+        Returns:
+            DiffResult with all frames materialized to eager DataFrames.
+        """
+        return DiffResult(
+            added=self.added.collect(),
+            changed=self.changed.collect(),
+            removed=self.removed.collect(),
+        )
 
 
 class DiffResult(NamedTuple):

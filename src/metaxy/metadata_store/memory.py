@@ -70,7 +70,7 @@ class InMemoryMetadataStore(MetadataStore):
     ]:
         """Not supported - in-memory store only uses Polars components."""
         raise NotImplementedError(
-            "InMemoryMetadataStore does not support native components"
+            "InMemoryMetadataStore does not support native data version calculations"
         )
 
     def _write_metadata_impl(

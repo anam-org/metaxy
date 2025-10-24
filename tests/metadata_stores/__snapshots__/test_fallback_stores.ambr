@@ -1,0 +1,265 @@
+# serializer version: 1
+# name: test_fallback_store_switches_to_polars_components[inmemory-duckdb-md5]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '7e1d3affe5aea0d00c692644d5ba3d2d',
+        }),
+        dict({
+          'default': 'e56cfe4bcedde39531b308c4a4e22d7f',
+        }),
+        dict({
+          'default': '7aac95929eced4844ff351378c5f51f4',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '7e1d3affe5aea0d00c692644d5ba3d2d',
+        }),
+        dict({
+          'default': 'e56cfe4bcedde39531b308c4a4e22d7f',
+        }),
+        dict({
+          'default': '7aac95929eced4844ff351378c5f51f4',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_switches_to_polars_components[inmemory-duckdb-xxhash32]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '254371657',
+        }),
+        dict({
+          'default': '473160855',
+        }),
+        dict({
+          'default': '1633101676',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '254371657',
+        }),
+        dict({
+          'default': '473160855',
+        }),
+        dict({
+          'default': '1633101676',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_switches_to_polars_components[inmemory-duckdb-xxhash64]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      'all_local',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '1767180422966263722',
+        }),
+        dict({
+          'default': '16849542910412307305',
+        }),
+        dict({
+          'default': '16165328265482895774',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      'with_fallback',
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '1767180422966263722',
+        }),
+        dict({
+          'default': '16849542910412307305',
+        }),
+        dict({
+          'default': '16165328265482895774',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[inmemory-duckdb-md5]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '7e1d3affe5aea0d00c692644d5ba3d2d',
+        }),
+        dict({
+          'default': 'e56cfe4bcedde39531b308c4a4e22d7f',
+        }),
+        dict({
+          'default': '7aac95929eced4844ff351378c5f51f4',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '7e1d3affe5aea0d00c692644d5ba3d2d',
+        }),
+        dict({
+          'default': 'e56cfe4bcedde39531b308c4a4e22d7f',
+        }),
+        dict({
+          'default': '7aac95929eced4844ff351378c5f51f4',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[inmemory-duckdb-xxhash32]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '254371657',
+        }),
+        dict({
+          'default': '473160855',
+        }),
+        dict({
+          'default': '1633101676',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '254371657',
+        }),
+        dict({
+          'default': '473160855',
+        }),
+        dict({
+          'default': '1633101676',
+        }),
+      ]),
+    }),
+  })
+# ---
+# name: test_fallback_store_warning_issued[inmemory-duckdb-xxhash64]
+  dict({
+    tuple(
+      'duckdb',
+      'inmemory',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '1767180422966263722',
+        }),
+        dict({
+          'default': '16849542910412307305',
+        }),
+        dict({
+          'default': '16165328265482895774',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb',
+      'inmemory',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '1767180422966263722',
+        }),
+        dict({
+          'default': '16849542910412307305',
+        }),
+        dict({
+          'default': '16165328265482895774',
+        }),
+      ]),
+    }),
+  })
+# ---

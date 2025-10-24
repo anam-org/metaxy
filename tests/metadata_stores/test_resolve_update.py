@@ -24,7 +24,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
-from metaxy._testing import HashAlgorithmCases
+from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -58,38 +58,6 @@ def get_available_store_types() -> list[str]:
     return store_types
 
 
-def assert_all_results_equal(results: dict, snapshot=None) -> None:
-    """Compare all results from different store type combinations.
-
-    Ensures all variants produce identical results, then optionally snapshots all results.
-
-    Args:
-        results: Dict mapping store_type to result data
-        snapshot: Optional syrupy snapshot fixture to record all results
-
-    Raises:
-        AssertionError: If any variants produce different results
-    """
-    if not results:
-        return
-
-    # Get all result values as a list
-    all_results = list(results.items())
-    reference_key, reference_result = all_results[0]
-
-    # Compare each result to the reference
-    for key, result in all_results[1:]:
-        assert result == reference_result, (
-            f"{key} produced different results than {reference_key}:\n"
-            f"Expected: {reference_result}\n"
-            f"Got: {result}"
-        )
-
-    # Snapshot ALL results if snapshot provided
-    if snapshot is not None:
-        assert results == snapshot
-
-
 def create_store(
     store_type: str,
     prefer_native: bool,
@@ -100,7 +68,7 @@ def create_store(
 
     Args:
         store_type: "inmemory", "duckdb", "sqlite", or "clickhouse"
-        prefer_native: Whether to prefer native components
+        prefer_native: Whether to prefer native data version calculations
         hash_algorithm: Hash algorithm to use
         params: Store-specific parameters dict containing:
             - tmp_path: Temporary directory for file-based stores (duckdb, sqlite)
@@ -378,79 +346,173 @@ def simple_chain_graph():
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("graph_config", cases=FeatureGraphCases)
+@pytest.mark.parametrize("prefer_native", [True, False])
+@pytest.mark.parametrize("use_native_samples", [True, False])
 def test_resolve_update_no_upstream(
     store_params: dict,
     graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
+    prefer_native: bool,
+    use_native_samples: bool,
     snapshot,
-    recwarn,
+    caplog,
 ):
-    """Test resolve_update for a feature with no upstream dependencies.
+    """Test resolve_update for root features with samples parameter.
 
-    Verifies that prefer_native=True and prefer_native=False produce identical results
-    across all store types and different feature graphs.
+    Root features have no upstream dependencies, so users must provide samples
+    with manually computed data_version. This test verifies:
+    1. ValueError raised when samples not provided
+    2. Correct diff results when samples provided
+    3. Warning issued when Polars samples provided to SQL store (use_native_samples=False)
+    4. No warning when samples match store backend (use_native_samples=True)
+    5. Results are consistent across all stores and prefer_native settings
     """
+    import narwhals as nw
+    import polars as pl
+
     graph, features = graph_config
 
     # Test the first feature (root/upstream with no dependencies)
     root_feature = features[0]
 
-    # Iterate over store types and prefer_native variants
+    # 1. Source of truth: Polars DataFrame with sample data
+    source_samples = pl.DataFrame(
+        {
+            "sample_id": [1, 2, 3],
+            "data_version": [
+                {"field_a": "hash1"},
+                {"field_a": "hash2"},
+                {"field_a": "hash3"},
+            ],
+        }
+    )
+
+    # Collect results from all stores
     results = {}
 
     for store_type in get_available_store_types():
-        for prefer_native in [True, False]:
-            store = create_store(
-                store_type,
-                prefer_native,
-                hash_algorithm,
-                params=store_params,
-            )
+        store = create_store(
+            store_type,
+            prefer_native,
+            hash_algorithm,
+            params=store_params,
+        )
 
-            # Try to open store - will fail validation if hash algorithm not supported
-            try:
-                with store, graph.use():
-                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
-                    # since they share the same database (unlike DuckDB/SQLite which use separate files)
-                    if store_type == "clickhouse":
-                        for feature in features:
-                            store.drop_feature_metadata(feature)
+        try:
+            with store, graph.use():
+                # For ClickHouse, drop feature metadata to ensure clean state
+                if store_type == "clickhouse":
+                    store.drop_feature_metadata(root_feature)
 
-                    # Root feature has no dependencies - resolve_update should return empty result
-                    # since there's no metadata yet
-                    recwarn.clear()
-                    result = store.resolve_update(root_feature)
+                # First verify that resolve_update raises ValueError without samples
+                try:
+                    store.resolve_update(root_feature)
+                    pytest.fail("Expected ValueError for root feature without samples")
+                except ValueError as e:
+                    assert "root feature" in str(e)
 
-                    # Assert no warning when prefer_native=True for stores that support native components
-                    # Check if store actually supports native components
-                    if prefer_native and store._supports_native_components():
-                        prefer_native_warnings = [
-                            w
-                            for w in recwarn
-                            if "prefer_native=True but using Polars" in str(w.message)
-                        ]
-                        assert len(prefer_native_warnings) == 0, (
-                            f"Unexpected warning with prefer_native=True for {store_type}: "
-                            f"{[str(w.message) for w in prefer_native_warnings]}"
-                        )
+                # 2. Adapt samples based on use_native_samples parameter
+                temp_table_name: str | None = None
+                if use_native_samples and store._supports_native_components():
+                    # Convert to Ibis for SQL stores to match backend
+                    # Write samples to temp table and read back as Ibis table
+                    from metaxy.metadata_store.ibis import IbisMetadataStore
 
-                    # Collect results
-                    results[(store_type, prefer_native)] = {
-                        "added": len(result.added),
-                        "changed": len(result.changed),
-                        "removed": len(result.removed),
-                    }
-            except HashAlgorithmNotSupportedError:
-                # Hash algorithm not supported by this store - skip
-                continue
+                    assert isinstance(store, IbisMetadataStore), (
+                        "Native stores must be Ibis-based"
+                    )
+                    temp_table_name = f"_test_samples_{root_feature.spec.key[-1]}"
+                    store.conn.create_table(
+                        temp_table_name, source_samples.to_arrow(), overwrite=True
+                    )
+                    ibis_samples = store.conn.table(temp_table_name)
+                    adapted_samples = nw.from_native(ibis_samples)
+                    should_warn = False
+                else:
+                    # Use Polars directly (either in-memory store or testing warning path)
+                    adapted_samples = nw.from_native(source_samples)
+                    # Should warn if SQL store but using Polars samples
+                    should_warn = store._supports_native_components()
 
-    # All variants should produce identical results
-    assert_all_results_equal(results, snapshot)
+                # 3. Call resolve_update with adapted samples and capture logs
+                import logging
 
-    # Verify expected behavior: no samples
+                with caplog.at_level(logging.WARNING):
+                    result = store.resolve_update(root_feature, samples=adapted_samples)
+
+                # 4. Verify warning behavior matches expectation
+                polars_warnings = [
+                    record
+                    for record in caplog.records
+                    if "Polars-backed but store uses native SQL backend"
+                    in record.message
+                ]
+                if should_warn:
+                    assert len(polars_warnings) == 1, (
+                        f"Expected Polars fallback warning for {store_type} with "
+                        f"use_native_samples={use_native_samples}, but got {len(polars_warnings)} warnings"
+                    )
+                else:
+                    assert len(polars_warnings) == 0, (
+                        f"Unexpected Polars fallback warning for {store_type} with "
+                        f"use_native_samples={use_native_samples}: {[r.message for r in polars_warnings]}"
+                    )
+
+                caplog.clear()
+
+                # 5. Record results for comparison - include data versions
+                # Convert Narwhals to Polars for manipulation
+                added_sorted = (
+                    result.added.to_polars()
+                    if isinstance(result.added, nw.DataFrame)
+                    else result.added
+                ).sort("sample_id")
+                versions = added_sorted["data_version"].to_list()
+
+                results[(store_type, prefer_native, use_native_samples)] = {
+                    "added": len(result.added),
+                    "changed": len(result.changed),
+                    "removed": len(result.removed),
+                    "versions": versions,
+                }
+
+                # Clean up temp table for SQL stores if created
+                if (
+                    temp_table_name is not None
+                    and use_native_samples
+                    and store._supports_native_components()
+                ):
+                    from metaxy.metadata_store.ibis import IbisMetadataStore
+
+                    assert isinstance(store, IbisMetadataStore), (
+                        "Native stores must be Ibis-based"
+                    )
+                    store.conn.drop_table(temp_table_name)
+
+        except HashAlgorithmNotSupportedError:
+            # Hash algorithm not supported by this store - continue with other stores
+            continue
+
+    # 6. Ensure results from all stores are correct and consistent
     if results:
+        # All variants should produce identical results (including data versions)
+        assert_all_results_equal(results, snapshot)
+
+        # Verify expected behavior: all samples are new (added)
         reference = list(results.values())[0]
-        assert reference == {"added": 0, "changed": 0, "removed": 0}
+        assert reference["added"] == 3
+        assert reference["changed"] == 0
+        assert reference["removed"] == 0
+
+        # Verify versions structure
+        assert len(reference["versions"]) == 3
+        assert all(isinstance(v, dict) for v in reference["versions"])
+        # All versions should match the source (user provided them manually)
+        assert reference["versions"] == [
+            {"field_a": "hash1"},
+            {"field_a": "hash2"},
+            {"field_a": "hash3"},
+        ]
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -545,7 +607,7 @@ def test_resolve_update_with_upstream(
                     # Now resolve update for the final downstream feature
                     result = store.resolve_update(downstream_feature)
 
-                    # Assert no warning when prefer_native=True for stores that support native components
+                    # Assert no warning when prefer_native=True for stores that support native data version calculations
                     if prefer_native and store._supports_native_components():
                         prefer_native_warnings = [
                             w
@@ -764,7 +826,7 @@ def test_resolve_update_detects_changes(
                     # Resolve update again for downstream - should detect changes
                     result2 = store.resolve_update(downstream_feature)
 
-                    # Assert no warning when prefer_native=True for stores that support native components
+                    # Assert no warning when prefer_native=True for stores that support native data version calculations
                     if prefer_native and store._supports_native_components():
                         prefer_native_warnings = [
                             w
