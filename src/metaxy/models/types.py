@@ -3,8 +3,8 @@ from typing import Any, TypeAlias
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
-FEATURE_KEY_SEPARATOR = "__"
-FIELD_KEY_SEPARATOR = "__"
+FEATURE_KEY_SEPARATOR = "/"
+FIELD_KEY_SEPARATOR = "/"
 
 
 class FeatureKey(list):  # type: ignore[type-arg]
@@ -13,26 +13,34 @@ class FeatureKey(list):  # type: ignore[type-arg]
 
     Hashable for use as dict keys in registries.
 
-    Parts cannot contain double underscores (__) as that's used as the separator.
+    Parts cannot contain forward slashes (/) or double underscores (__).
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        # Validate that no part contains "__"
+        # Validate that no part contains "/" or "__"
         for part in self:
             if not isinstance(part, str):
                 raise ValueError(
                     f"FeatureKey parts must be strings, got {type(part).__name__}"
                 )
+            if "/" in part:
+                raise ValueError(
+                    f"FeatureKey part '{part}' cannot contain forward slashes (/). "
+                    f"Forward slashes are reserved as the separator in to_string(). "
+                    f"Use underscores or hyphens instead."
+                )
             if "__" in part:
                 raise ValueError(
                     f"FeatureKey part '{part}' cannot contain double underscores (__). "
-                    f"Double underscores are reserved as the separator in to_string(). "
                     f"Use single underscores or hyphens instead."
                 )
 
     def to_string(self) -> str:
         return FEATURE_KEY_SEPARATOR.join(self)
+
+    def __repr__(self) -> str:
+        return self.to_string()
 
     def __hash__(self):
         return hash(tuple(self))
@@ -76,26 +84,34 @@ class FieldKey(list):
 
     Hashable for use as dict keys in registries.
 
-    Parts cannot contain double underscores (__) as that's used as the separator.
+    Parts cannot contain forward slashes (/) or double underscores (__).
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)  # pyrefly: ignore[not-iterable]
-        # Validate that no part contains "__"
+        # Validate that no part contains "/" or "__"
         for part in self:
             if not isinstance(part, str):
                 raise ValueError(
                     f"FieldKey parts must be strings, got {type(part).__name__}"
                 )
+            if "/" in part:
+                raise ValueError(
+                    f"FieldKey part '{part}' cannot contain forward slashes (/). "
+                    f"Forward slashes are reserved as the separator in to_string(). "
+                    f"Use underscores or hyphens instead."
+                )
             if "__" in part:
                 raise ValueError(
                     f"FieldKey part '{part}' cannot contain double underscores (__). "
-                    f"Double underscores are reserved as the separator in to_string(). "
                     f"Use single underscores or hyphens instead."
                 )
 
     def to_string(self) -> str:
         return FIELD_KEY_SEPARATOR.join(self)
+
+    def __repr__(self) -> str:
+        return self.to_string()
 
     def __hash__(self):
         return hash(tuple(self))

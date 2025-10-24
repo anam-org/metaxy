@@ -16,7 +16,10 @@ class FQFieldKey(FrozenBaseModel):
     feature: FeatureKey
 
     def to_string(self) -> str:
-        return f"{self.feature}/{self.field}"
+        return f"{self.feature.to_string()}.{self.field.to_string()}"
+
+    def __repr__(self) -> str:
+        return self.to_string()
 
     def __lt__(self, other: "FQFieldKey") -> bool:
         """Enable sorting of FQFieldKey objects."""

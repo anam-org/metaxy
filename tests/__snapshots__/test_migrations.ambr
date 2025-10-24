@@ -2,67 +2,18 @@
 # name: test_detect_uses_latest_version_from_multiple_materializations
   dict({
     'feature_keys': list([
-      'test_migrations__downstream',
-      'test_migrations__upstream',
+      'test_migrations/downstream',
+      'test_migrations/upstream',
     ]),
     'operation_count': 2,
   })
 # ---
-# name: test_feature_versions_snapshot
-  dict({
-    'downstream_v1': '2c55d52f81ec55f55add2cfcd904e20db0cd44b8ef390b6420fb3f685f9f8e58',
-    'downstream_v2': '107842fd1715673e3e924b206d6527e34c69a48cdadff877b67a75680d9dae02',
-    'upstream_v1': 'f5d314855e7a9822f2ed7ec28c45abf91cf0771893f19378c163f496f0259695',
-    'upstream_v2': '4600c0b5af10c66ee2fdebb56a4ced480c33c6357dcb1fff15fa8c84577821d7',
-  })
-# ---
-# name: test_generated_migration_yaml_snapshot
-  dict({
-    'operations': list([
-      dict({
-        'feature_key': list([
-          'test_migrations',
-          'downstream',
-        ]),
-        'operation_id': 'reconcile_test_migrations__downstream',
-        'reason': 'TODO: Describe what changed and why',
-      }),
-      dict({
-        'feature_key': list([
-          'test_migrations',
-          'upstream',
-        ]),
-        'operation_id': 'reconcile_test_migrations__upstream',
-        'reason': 'TODO: Describe what changed and why',
-      }),
-    ]),
-    'version': 1,
-  })
-# ---
-# name: test_migration_result_snapshots
-  dict({
-    'affected_features': list([
-    ]),
-    'has_errors': True,
-    'operations_applied': 0,
-    'operations_failed': 1,
-    'status': 'failed',
-  })
-# ---
-# name: test_migration_vs_recompute_comparison
-  dict({
-    'initial_data_versions_count': 3,
-    'migrated_data_versions_count': 6,
-    'migration_skipped_computation': True,
-    'migration_updated_hashes': True,
-  })
-# ---
 # name: test_record_feature_graph_snapshot
-  '0438666c8d5dcbf8dfe252cfbd5dc03ac6532098730db7624802a082c2c178d0'
+  '48fec02b57390ae1fcd5c825ad681f4766689922c3c33660c46c430dad29d5b6'
 # ---
 # name: test_snapshot_workflow_without_migrations
   dict({
-    'v1': '0438666c8d5dcbf8dfe252cfbd5dc03ac6532098730db7624802a082c2c178d0',
-    'v2': 'bfc31f87e4337a59cbb548e02b29c9746c0c059ce0ac447ec59fe55afd9cb797',
+    'v1': '48fec02b57390ae1fcd5c825ad681f4766689922c3c33660c46c430dad29d5b6',
+    'v2': '002977e40e4073d7cfb1d621e0de277099961a0aa4c806dcb696f887722c2fac',
   })
 # ---

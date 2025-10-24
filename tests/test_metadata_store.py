@@ -276,7 +276,7 @@ def test_list_features(populated_store: InMemoryMetadataStore) -> None:
         features = populated_store.list_features()
 
         assert len(features) == 1
-        assert any(f.to_string() == "upstream__a" for f in features)
+        assert any(f.to_string() == "upstream/a" for f in features)
 
 
 def test_list_features_with_fallback(
@@ -295,7 +295,7 @@ def test_list_features_with_fallback(
         # With fallback
         all_features = dev.list_features(include_fallback=True)
         assert len(all_features) == 1
-        assert any(f.to_string() == "upstream__a" for f in all_features)
+        assert any(f.to_string() == "upstream/a" for f in all_features)
 
 
 # Fallback Store Tests
@@ -356,8 +356,8 @@ def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
     with populated_store:
         upstream = populated_store.read_upstream_metadata(DownstreamFeature)
 
-        assert "upstream__a" in upstream
-        upstream_df = collect_to_polars(upstream["upstream__a"])
+        assert "upstream/a" in upstream
+        upstream_df = collect_to_polars(upstream["upstream/a"])
         assert len(upstream_df) == 3
         assert "data_version" in upstream_df.columns
 
@@ -365,7 +365,7 @@ def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
 def test_read_upstream_metadata_missing_dep(empty_store: InMemoryMetadataStore) -> None:
     """Test that missing dependencies raise error."""
     with empty_store:
-        with pytest.raises(DependencyError, match="upstream__a"):
+        with pytest.raises(DependencyError, match="upstream/a"):
             empty_store.read_upstream_metadata(DownstreamFeature, allow_fallback=False)
 
 
@@ -380,8 +380,8 @@ def test_read_upstream_metadata_from_fallback(
     with dev, staging, prod:
         upstream = dev.read_upstream_metadata(DownstreamFeature, allow_fallback=True)
 
-        assert "upstream__a" in upstream
-        upstream_df = collect_to_polars(upstream["upstream__a"])
+        assert "upstream/a" in upstream
+        upstream_df = collect_to_polars(upstream["upstream/a"])
         assert len(upstream_df) == 3
 
 

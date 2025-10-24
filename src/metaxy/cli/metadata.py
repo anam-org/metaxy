@@ -42,7 +42,7 @@ def copy(
         list[str] | None,
         cyclopts.Parameter(
             name=["--feature"],
-            help="Feature key to copy (e.g., 'my_feature' or 'namespace__my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
+            help="Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
         ),
     ] = None,
     all_features: Annotated[
@@ -123,10 +123,10 @@ def copy(
     if features:
         feature_keys = []
         for feature_str in features:
-            # Parse feature key (supports both "feature" and "namespace__feature" formats)
-            if "__" in feature_str:
-                namespace_parts = feature_str.split("__")
-                feature_keys.append(FeatureKey(namespace_parts))
+            # Parse feature key (supports both "feature" and "part1/part2/..." formats)
+            if "/" in feature_str:
+                parts = feature_str.split("/")
+                feature_keys.append(FeatureKey(parts))
             else:
                 # Single-part key
                 feature_keys.append(FeatureKey([feature_str]))
@@ -172,7 +172,7 @@ def drop(
         list[str] | None,
         cyclopts.Parameter(
             name=["--feature"],
-            help="Feature key to drop (e.g., 'my_feature' or 'namespace__my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
+            help="Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.",
         ),
     ] = None,
     all_features: Annotated[
@@ -235,10 +235,10 @@ def drop(
     feature_keys: list[FeatureKey] = []
     if features:
         for feature_str in features:
-            # Parse feature key (supports both "feature" and "namespace__feature" formats)
-            if "__" in feature_str:
-                namespace_parts = feature_str.split("__")
-                feature_keys.append(FeatureKey(namespace_parts))
+            # Parse feature key (supports both "feature" and "part1/part2/..." formats)
+            if "/" in feature_str:
+                parts = feature_str.split("/")
+                feature_keys.append(FeatureKey(parts))
             else:
                 # Single-part key
                 feature_keys.append(FeatureKey([feature_str]))

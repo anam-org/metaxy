@@ -262,7 +262,7 @@ def test_list_features(persistent_store, test_graph, test_features: dict) -> Non
         features = store.list_features()
         assert len(features) == 2
         feature_strs = {f.to_string() for f in features}
-        assert feature_strs == {"test_stores__upstream_a", "test_stores__upstream_b"}
+        assert feature_strs == {"test_stores/upstream_a", "test_stores/upstream_b"}
 
 
 # Data Version Calculation Tests
@@ -326,7 +326,7 @@ def test_display(persistent_store) -> None:
 
 
 def test_repr(persistent_store) -> None:
-    """Test __repr__ method."""
+    """Test /repr/ method."""
     with persistent_store as store:
         repr_str = repr(store)
         assert len(repr_str) > 0

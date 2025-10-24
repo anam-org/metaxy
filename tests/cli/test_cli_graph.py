@@ -163,7 +163,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
         assert "Graph Depth" in result.stdout
         assert "Root Features" in result.stdout
         assert "1" in result.stdout  # 1 feature
-        assert "video__files" in result.stdout
+        assert "video/files" in result.stdout
 
 
 def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
@@ -226,7 +226,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             # Depth should be 2 (root -> dependent)
             assert "Root Features" in result.stdout
             assert "1" in result.stdout  # 1 root feature
-            assert "video__files" in result.stdout
+            assert "video/files" in result.stdout
 
 
 def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):

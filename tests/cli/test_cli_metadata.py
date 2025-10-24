@@ -15,7 +15,7 @@ def _write_sample_metadata(
 
     Args:
         metaxy_project: Test project
-        feature_key_str: Feature key as string (e.g., "video__files")
+        feature_key_str: Feature key as string (e.g., "video/files")
         store_name: Name of store to write to (default: "dev")
         sample_ids: List of sample IDs to use (default: [1, 2, 3])
     """
@@ -25,7 +25,7 @@ def _write_sample_metadata(
         sample_ids = [1, 2, 3]
 
     # Parse feature key
-    feature_key = FeatureKey(feature_key_str.split("__"))
+    feature_key = FeatureKey(feature_key_str.split("/"))
 
     # Get feature class from graph
     feature_cls = metaxy_project.graph.features_by_key[feature_key]
@@ -68,7 +68,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video__files")
+        _write_sample_metadata(metaxy_project, "video/files")
 
         # Try to drop without specifying features
         result = metaxy_project.run_cli("metadata", "drop", "--confirm", check=False)
@@ -95,11 +95,11 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video__files")
+        _write_sample_metadata(metaxy_project, "video/files")
 
         # Try to drop without --confirm
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--feature", "video__files", check=False
+            "metadata", "drop", "--feature", "video/files", check=False
         )
 
         assert result.returncode == 1
@@ -134,16 +134,16 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
-        _write_sample_metadata(metaxy_project, "video__files")
-        _write_sample_metadata(metaxy_project, "audio__files")
+        _write_sample_metadata(metaxy_project, "video/files")
+        _write_sample_metadata(metaxy_project, "audio/files")
 
         # Drop one feature
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--feature", "video__files", "--confirm"
+            "metadata", "drop", "--feature", "video/files", "--confirm"
         )
 
         assert result.returncode == 0
-        assert "Dropped: video__files" in result.stdout
+        assert "Dropped: video/files" in result.stdout
 
 
 def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyProject):
@@ -165,13 +165,13 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
     with metaxy_project.with_features(features):
         # Write metadata to dev store with sample_ids [1, 2, 3]
         _write_sample_metadata(
-            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
         )
 
         # Write metadata to staging store with sample_ids [2, 3, 4]
         # sample_ids 2 and 3 overlap with dev
         _write_sample_metadata(
-            metaxy_project, "video__files", store_name="staging", sample_ids=[2, 3, 4]
+            metaxy_project, "video/files", store_name="staging", sample_ids=[2, 3, 4]
         )
 
         # Copy from dev to staging with incremental=True (default)
@@ -183,7 +183,7 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
             "--to",
             "staging",
             "--feature",
-            "video__files",
+            "video/files",
         )
 
         assert result.returncode == 0
@@ -233,12 +233,12 @@ def test_metadata_copy_non_incremental_creates_duplicates(
     with metaxy_project.with_features(features):
         # Write metadata to dev store with sample_ids [1, 2, 3]
         _write_sample_metadata(
-            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
         )
 
         # Write metadata to staging store with sample_ids [2, 3, 4]
         _write_sample_metadata(
-            metaxy_project, "video__files", store_name="staging", sample_ids=[2, 3, 4]
+            metaxy_project, "video/files", store_name="staging", sample_ids=[2, 3, 4]
         )
 
         # Copy from dev to staging with incremental=False (--no-incremental)
@@ -250,7 +250,7 @@ def test_metadata_copy_non_incremental_creates_duplicates(
             "--to",
             "staging",
             "--feature",
-            "video__files",
+            "video/files",
             "--no-incremental",
         )
 
@@ -298,7 +298,7 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
     with metaxy_project.with_features(features):
         # Write metadata to dev store only
         _write_sample_metadata(
-            metaxy_project, "video__files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
         )
 
         # Copy from dev to empty staging with incremental=True
@@ -310,7 +310,7 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
             "--to",
             "staging",
             "--feature",
-            "video__files",
+            "video/files",
         )
 
         assert result.returncode == 0
@@ -370,24 +370,24 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for all features
-        _write_sample_metadata(metaxy_project, "video__files")
-        _write_sample_metadata(metaxy_project, "audio__files")
-        _write_sample_metadata(metaxy_project, "text__files")
+        _write_sample_metadata(metaxy_project, "video/files")
+        _write_sample_metadata(metaxy_project, "audio/files")
+        _write_sample_metadata(metaxy_project, "text/files")
 
         # Drop multiple features
         result = metaxy_project.run_cli(
             "metadata",
             "drop",
             "--feature",
-            "video__files",
+            "video/files",
             "--feature",
-            "audio__files",
+            "audio/files",
             "--confirm",
         )
 
         assert result.returncode == 0
-        assert "Dropped: video__files" in result.stdout
-        assert "Dropped: audio__files" in result.stdout
+        assert "Dropped: video/files" in result.stdout
+        assert "Dropped: audio/files" in result.stdout
         assert "Drop complete: 2 feature(s) dropped" in result.stdout
 
 
@@ -419,8 +419,8 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for both features
-        _write_sample_metadata(metaxy_project, "video__files")
-        _write_sample_metadata(metaxy_project, "audio__files")
+        _write_sample_metadata(metaxy_project, "video/files")
+        _write_sample_metadata(metaxy_project, "audio/files")
 
         # Drop all features
         result = metaxy_project.run_cli(
@@ -430,8 +430,8 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
         assert result.returncode == 0
         assert "Dropping metadata for 2 feature(s)" in result.stdout
         assert (
-            "Dropped: video__files" in result.stdout
-            or "Dropped: audio__files" in result.stdout
+            "Dropped: video/files" in result.stdout
+            or "Dropped: audio/files" in result.stdout
         )
         assert "Drop complete: 2 feature(s) dropped" in result.stdout
 
@@ -488,7 +488,7 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
             "metadata",
             "drop",
             "--feature",
-            "video__files",
+            "video/files",
             "--all-features",
             "--confirm",
             check=False,
@@ -516,7 +516,7 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # Write actual metadata for the feature
-        _write_sample_metadata(metaxy_project, "video__files")
+        _write_sample_metadata(metaxy_project, "video/files")
 
         # Drop with explicit store
         result = metaxy_project.run_cli(
@@ -525,9 +525,9 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
             "--store",
             "dev",
             "--feature",
-            "video__files",
+            "video/files",
             "--confirm",
         )
 
         assert result.returncode == 0
-        assert "Dropped: video__files" in result.stdout
+        assert "Dropped: video/files" in result.stdout
