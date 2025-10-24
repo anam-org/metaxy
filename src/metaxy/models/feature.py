@@ -270,58 +270,6 @@ class FeatureGraph:
         return snapshot
 
     @classmethod
-    def from_snapshot_specs(
-        cls,
-        snapshot_data: dict[str, dict],
-    ) -> "FeatureGraph":
-        """Reconstruct graph from snapshot using only stored specs (no class imports).
-
-        This creates synthetic Feature classes from the stored FeatureSpec data,
-        without importing live code. This ensures historical snapshots are reconstructed
-        with the exact feature definitions that were stored, even if the live code has changed.
-
-        Use this for migration operations where you need exact historical fidelity.
-
-        Args:
-            snapshot_data: Dict of feature_key -> {
-                feature_spec: dict,
-                ...
-            }
-
-        Returns:
-            New FeatureGraph with synthetic features matching the snapshot
-
-        Example:
-            >>> # Reconstruct historical graph without importing classes
-            >>> historical_graph = FeatureGraph.from_snapshot_specs(snapshot_data)
-        """
-        from metaxy.models.feature_spec import FeatureSpec
-
-        graph = cls()
-
-        # Create synthetic Feature classes from specs
-        for feature_key_str, feature_data in snapshot_data.items():
-            # Parse FeatureSpec
-            feature_spec_dict = feature_data["feature_spec"]
-            spec = FeatureSpec.model_validate(feature_spec_dict)
-
-            # Create a synthetic Feature class with the stored spec
-            # We don't need to import the actual class - just need the spec for snapshot_id computation
-            # Pass spec=None to metaclass to prevent auto-registration, then set manually
-            class SyntheticFeature(Feature, spec=None):  # type: ignore[misc]
-                pass
-
-            # Set the spec and graph directly after class creation
-            SyntheticFeature.spec = spec  # type: ignore[misc]
-            SyntheticFeature.graph = graph  # type: ignore[misc]
-
-            # Manually add to graph (bypassing metaclass auto-registration)
-            graph.features_by_key[spec.key] = SyntheticFeature
-            graph.feature_specs_by_key[spec.key] = spec
-
-        return graph
-
-    @classmethod
     def from_snapshot(
         cls,
         snapshot_data: dict[str, dict],

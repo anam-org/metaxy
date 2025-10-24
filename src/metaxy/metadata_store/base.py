@@ -335,15 +335,6 @@ class MetadataStore(ABC):
         else:
             return feature.spec.key
 
-    def _resolve_feature_spec(self, feature: FeatureKey | type[Feature]):
-        """Resolve to FeatureSpec for accessing fields and deps."""
-        if isinstance(feature, FeatureKey):
-            # When given a FeatureKey, get the graph from the active context
-            return FeatureGraph.get_active().feature_specs_by_key[feature]
-        else:
-            # When given a Feature class, it already has the graph bound to it
-            return feature.spec
-
     def _resolve_feature_plan(self, feature: FeatureKey | type[Feature]) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
         if isinstance(feature, FeatureKey):

@@ -51,6 +51,7 @@ dev = [
     "syrupy>=5.0.0",
     "ibis-framework[duckdb,sqlite,clickhouse]>=11.0.0",
     "basedpyright>=1.32.1",
+    "vulture>=2.14",
 ]
 
 [tool.ruff]
@@ -67,3 +68,11 @@ extend-select = [
 # Ban certain modules from being imported at module level, instead requiring
 # that they're imported lazily (e.g., within a function definition).
 banned-module-level-imports = ["ibis", "duckdb"]
+
+[tool.vulture]
+exclude = [
+    "src/metaxy/_testing.py",
+    "src/metaxy/cli/",
+    "examples/**/feature*.py",
+]
+min_confidence = 60
