@@ -49,6 +49,8 @@ uv run pytest tests/test_migrations.py::test_migration_generation
 uv run pytest tests/metadata_stores/test_duckdb.py
 ```
 
+Always keep tests up-to-date and maintainable. Add or update tests as features are added or modified.
+
 ### Linting and Formatting
 ```bash
 # Run ruff linter

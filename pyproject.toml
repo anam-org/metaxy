@@ -23,6 +23,13 @@ ibis = [
     "pyarrow>=18.0.0",
     "ibis-framework>=11.0.0",
 ]
+rendering = [
+    "mermaid-py>=0.8.0",
+    "rich>=13.0.0",
+]
+graphviz = [
+    "pygraphviz>=1.14",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"

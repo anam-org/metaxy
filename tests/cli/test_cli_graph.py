@@ -342,3 +342,412 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         # Check that output contains "Describing snapshot" and the snapshot_id (may have newlines between them)
         assert "Describing snapshot" in describe_historical.stdout
         assert snapshot_id in describe_historical.stdout
+
+
+def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
+    """Test basic terminal rendering."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+
+        assert result.returncode == 0
+        assert "Graph" in result.stdout
+        assert "video/files" in result.stdout
+        assert "fields" in result.stdout
+        assert "default" in result.stdout
+
+
+def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
+    """Test cards format rendering."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--type", "cards")
+
+        assert result.returncode == 0
+        assert "Graph" in result.stdout
+        assert "video/files" in result.stdout
+        assert "Features:" in result.stdout
+
+
+def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
+    """Test rendering graph with dependencies shows edges."""
+
+    def root_features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def dependent_features():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldDep,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class VideoProcessing(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "processing"]),
+                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["frames"]),
+                        code_version=1,
+                        deps=[
+                            FieldDep(
+                                feature_key=FeatureKey(["video", "files"]),
+                                fields=[FieldKey(["default"])],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(root_features):
+        with metaxy_project.with_features(dependent_features):
+            # Test terminal format shows dependencies
+            result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+            assert result.returncode == 0
+            assert "video/files" in result.stdout
+            assert "video/processing" in result.stdout
+            assert "depends on" in result.stdout
+
+            # Test cards format shows edges
+            result_cards = metaxy_project.run_cli("graph", "render", "--type", "cards")
+            assert result_cards.returncode == 0
+            assert "video/files" in result_cards.stdout
+            assert "video/processing" in result_cards.stdout
+            assert "→" in result_cards.stdout  # Arrow for dependency
+
+
+def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
+    """Test Mermaid format rendering."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--format", "mermaid")
+
+        assert result.returncode == 0
+        assert "flowchart" in result.stdout
+        assert "video/files" in result.stdout
+        assert "title:" in result.stdout
+
+
+def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
+    """Test minimal preset hides version information."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--minimal")
+
+        assert result.returncode == 0
+        assert "video/files" in result.stdout
+        # Should not show versions in minimal mode
+        assert "v:" not in result.stdout
+
+
+def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
+    """Test verbose preset shows all information."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--verbose")
+
+        assert result.returncode == 0
+        assert "video/files" in result.stdout
+        # Verbose should show versions
+        assert "v:" in result.stdout
+        # Verbose should show code versions
+        assert "cv:" in result.stdout
+
+
+def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
+    """Test graph rendering with focus feature filtering."""
+
+    def root_features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def dependent_features():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class VideoProcessing(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "processing"]),
+                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(root_features):
+        with metaxy_project.with_features(dependent_features):
+            # Focus on video/processing with upstream dependencies
+            result = metaxy_project.run_cli(
+                "graph",
+                "render",
+                "--feature",
+                "video/processing",
+                "--up",
+                "1",
+            )
+
+            assert result.returncode == 0
+            assert "video/files" in result.stdout
+            assert "video/processing" in result.stdout
+
+
+def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
+    """Test rendering output to file."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        output_file = metaxy_project.project_dir / "graph.mmd"
+        result = metaxy_project.run_cli(
+            "graph",
+            "render",
+            "--format",
+            "mermaid",
+            "--output",
+            str(output_file),
+        )
+
+        assert result.returncode == 0
+        assert "saved to" in result.stdout
+        assert output_file.exists()
+
+        # Check file contents
+        content = output_file.read_text()
+        assert "flowchart" in content
+        assert "video/files" in content
+
+
+def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
+    """Test that field dependencies are shown in rendering."""
+
+    def root_features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def dependent_features():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldDep,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class VideoProcessing(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "processing"]),
+                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["frames"]),
+                        code_version=1,
+                        deps=[
+                            FieldDep(
+                                feature_key=FeatureKey(["video", "files"]),
+                                fields=[FieldKey(["path"])],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(root_features):
+        with metaxy_project.with_features(dependent_features):
+            result = metaxy_project.run_cli("graph", "render", "--format", "terminal")
+
+            assert result.returncode == 0
+            # Should show field dependency
+            assert "frames" in result.stdout
+            assert "video/files.path" in result.stdout or "←" in result.stdout
+
+
+def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
+    """Test custom rendering flags."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Test with no fields shown
+        result = metaxy_project.run_cli(
+            "graph", "render", "--no-show-fields", "--no-show-snapshot-id"
+        )
+
+        assert result.returncode == 0
+        assert "video/files" in result.stdout
+        # Should not show "fields" section when disabled
+        assert "🔧" not in result.stdout or "fields" not in result.stdout
+
+
+def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapshot):
+    """Test Graphviz DOT format rendering."""
+
+    def features():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class Parent(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["examples", "parent"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["embeddings"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class Child(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["examples", "child"]),
+                deps=[FeatureDep(key=FeatureKey(["examples", "parent"]))],
+                fields=[FieldSpec(key=FieldKey(["predictions"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli("graph", "render", "--format", "graphviz")
+
+        assert result.returncode == 0
+        assert result.stdout == snapshot
