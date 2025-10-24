@@ -8,7 +8,6 @@ from metaxy.data_versioning.calculators.ibis import (
     IbisDataVersionCalculator,
 )
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.metadata_store.duckdb import ExtensionSpec
 
 if TYPE_CHECKING:
     import ibis
@@ -16,6 +15,11 @@ if TYPE_CHECKING:
 
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
+    from metaxy.metadata_store.duckdb import ExtensionSpec
+else:
+    from typing import Any
+
+    ExtensionSpec = dict[str, Any]
 
 
 class DuckLakeDataVersionCalculator(DataVersionCalculator):
