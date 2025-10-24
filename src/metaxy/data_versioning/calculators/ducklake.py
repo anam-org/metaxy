@@ -1,6 +1,7 @@
 """DuckLake-specific data version calculator."""
 
-from typing import TYPE_CHECKING, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
 from metaxy.data_versioning.calculators.ibis import (
@@ -13,9 +14,9 @@ if TYPE_CHECKING:
     import ibis
     import narwhals as nw
 
+    from metaxy.metadata_store.duckdb import ExtensionSpec
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
-    from metaxy.metadata_store.duckdb import ExtensionSpec
 else:
     from typing import Any
 
@@ -46,7 +47,7 @@ class DuckLakeDataVersionCalculator(DataVersionCalculator):
         self.alias = alias
         self.extensions = ext_list
         self._hash_sql_generators = hash_sql_generators
-        self._backend: "ibis.BaseBackend | None" = None
+        self._backend: ibis.BaseBackend | None = None
         self._calculator: IbisDataVersionCalculator | None = None
 
         if connection is not None:

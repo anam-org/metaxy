@@ -6,6 +6,7 @@ from metaxy.metadata_store.base import (
     MetadataStore,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -16,7 +17,6 @@ from metaxy.metadata_store.exceptions import (
     StoreNotOpenError,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.metadata_store.ducklake import DuckLakeMetadataStore
 
 __all__ = [
     "MetadataStore",

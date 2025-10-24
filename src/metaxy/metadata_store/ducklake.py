@@ -5,11 +5,11 @@ and related plugins, and attaches a DuckLake instance using secrets that
 reference configurable metadata and storage backends.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, TypeAdapter
-from typing_extensions import Literal
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore, ExtensionSpec
 
@@ -213,15 +213,11 @@ class DuckLakeAttachmentManager:
 
             ducklake_secret = f"secret_{self._config.alias}"
             cursor.execute(
-                "CREATE OR REPLACE SECRET {name} ("
+                f"CREATE OR REPLACE SECRET {ducklake_secret} ("
                 " TYPE DUCKLAKE,"
-                " {metadata_params},"
-                " {storage_params}"
-                " );".format(
-                    name=ducklake_secret,
-                    metadata_params=metadata_params_sql,
-                    storage_params=storage_params_sql,
-                )
+                f" {metadata_params_sql},"
+                f" {storage_params_sql}"
+                " );"
             )
 
             options_clause = self._build_attach_options_clause()
@@ -306,12 +302,12 @@ class DuckLakeMetadataStore(DuckDBMetadataStore):
     def _create_native_components(self):
         """Create DuckLake-specific native components."""
         from metaxy.data_versioning.calculators.base import DataVersionCalculator
-        from metaxy.data_versioning.diff.base import MetadataDiffResolver
-        from metaxy.data_versioning.joiners.base import UpstreamJoiner
         from metaxy.data_versioning.calculators.ducklake import (
             DuckLakeDataVersionCalculator,
         )
+        from metaxy.data_versioning.diff.base import MetadataDiffResolver
         from metaxy.data_versioning.diff.ducklake import DuckLakeDiffResolver
+        from metaxy.data_versioning.joiners.base import UpstreamJoiner
         from metaxy.data_versioning.joiners.ducklake import DuckLakeJoiner
 
         if self._conn is None:
