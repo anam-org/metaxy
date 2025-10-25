@@ -358,7 +358,7 @@ def _register_operation(
         {
             "migration_id": [migration_id],
             "operation_id": [operation.id],
-            "operation_type": [operation.type],  # type: ignore[attr-defined]
+            "operation_type": [operation.type],  # pyright: ignore[reportAttributeAccessIssue]
             "feature_key": [FeatureKey(operation.feature_key).to_string()],
             "expected_steps": [expected_steps_json],
             "operation_config_hash": [operation.operation_config_hash()],

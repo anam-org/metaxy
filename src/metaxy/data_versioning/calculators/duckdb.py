@@ -3,6 +3,7 @@
 This calculator extends IbisDataVersionCalculator to handle DuckDB-specific
 extension loading (e.g., hashfuncs for xxHash support).
 """
+# pyright: reportImportCycles=false
 
 from typing import TYPE_CHECKING
 
@@ -13,7 +14,9 @@ if TYPE_CHECKING:
     import ibis
 
     from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
-    from metaxy.metadata_store.duckdb import ExtensionSpec
+    from metaxy.metadata_store.duckdb import (
+        ExtensionSpec,  # pyright: ignore[reportImportCycles]
+    )
 
 
 class DuckDBDataVersionCalculator(IbisDataVersionCalculator):

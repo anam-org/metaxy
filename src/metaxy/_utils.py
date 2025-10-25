@@ -1,8 +1,10 @@
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 
 
-def collect_to_polars(lazy_frame: nw.LazyFrame) -> pl.DataFrame:
+def collect_to_polars(lazy_frame: nw.LazyFrame[Any]) -> pl.DataFrame:
     """Helper to collect a Narwhals LazyFrame and convert to Polars DataFrame.
 
     This handles all backend conversions (Polars, DuckDB/PyArrow, etc.) transparently.

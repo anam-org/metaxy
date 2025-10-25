@@ -1,7 +1,7 @@
 """Data models for migration system."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import pydantic
 
@@ -33,7 +33,7 @@ def _load_operation_class(class_path: str) -> type:
     return cls
 
 
-def _register_operation_classes(operations_data: list[dict]) -> None:
+def _register_operation_classes(operations_data: list[dict[str, Any]]) -> None:
     """Register all operation classes for Pydantic discriminated union.
 
     Dynamically imports user-defined operation classes so Pydantic can
@@ -87,7 +87,7 @@ class Migration(pydantic.BaseModel):
 
     # Operations as list of dicts - will be validated/loaded dynamically
     # Can't use Union with discriminator because we support user-defined subclasses
-    operations: list[dict]
+    operations: list[dict[str, Any]]
 
     def get_operations(self) -> list["BaseOperation"]:
         """Parse operations into BaseOperation objects.

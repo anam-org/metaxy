@@ -1,10 +1,11 @@
 """Configuration system for Metaxy using pydantic-settings."""
+# pyright: reportImportCycles=false
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
 try:
-    import tomllib  # Python 3.11+
+    import tomllib  # Python 3.11+  # pyright: ignore[reportMissingImports]
 except ImportError:
     import tomli as tomllib  # Fallback for Python 3.10
 
@@ -16,7 +17,9 @@ from pydantic_settings import (
 )
 
 if TYPE_CHECKING:
-    from metaxy.metadata_store.base import MetadataStore
+    from metaxy.metadata_store.base import (
+        MetadataStore,  # pyright: ignore[reportImportCycles]
+    )
 
 T = TypeVar("T")
 

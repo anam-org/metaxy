@@ -1,10 +1,12 @@
 """Abstract base class for metadata diff resolvers."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
+
+import narwhals as nw
 
 if TYPE_CHECKING:
-    import narwhals as nw
+    pass
 
 
 class LazyDiffResult(NamedTuple):
@@ -36,9 +38,9 @@ class LazyDiffResult(NamedTuple):
         depending on what was passed to resolve_update() via align_upstream_metadata.
     """
 
-    added: "nw.LazyFrame"
-    changed: "nw.LazyFrame"
-    removed: "nw.LazyFrame"
+    added: nw.LazyFrame[Any]
+    changed: nw.LazyFrame[Any]
+    removed: nw.LazyFrame[Any]
 
     def collect(self) -> "DiffResult":
         """Materialize all lazy frames to create a DiffResult.
@@ -76,9 +78,9 @@ class DiffResult(NamedTuple):
         depending on what was passed to resolve_update() via align_upstream_metadata.
     """
 
-    added: "nw.DataFrame"
-    changed: "nw.DataFrame"
-    removed: "nw.DataFrame"
+    added: nw.DataFrame[Any]
+    changed: nw.DataFrame[Any]
+    removed: nw.DataFrame[Any]
 
 
 class MetadataDiffResolver(ABC):
@@ -113,8 +115,8 @@ class MetadataDiffResolver(ABC):
     @abstractmethod
     def find_changes(
         self,
-        target_versions: "nw.LazyFrame",
-        current_metadata: "nw.LazyFrame | None",
+        target_versions: nw.LazyFrame[Any],
+        current_metadata: nw.LazyFrame[Any] | None,
     ) -> LazyDiffResult:
         """Find all changes between target and current metadata.
 

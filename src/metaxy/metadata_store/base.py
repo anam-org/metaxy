@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, TypeGuard, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
 
 import narwhals as nw
 import polars as pl
@@ -405,7 +405,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[Feature],
-        df: nw.DataFrame | pl.DataFrame,
+        df: nw.DataFrame[Any] | pl.DataFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -653,7 +653,7 @@ class MetadataStore(ABC):
         feature_version: str | None = None,
         filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> nw.LazyFrame | None:
+    ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from THIS store only (no fallback).
 
@@ -678,7 +678,7 @@ class MetadataStore(ABC):
         columns: list[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
-    ) -> nw.LazyFrame:
+    ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
 
@@ -1260,7 +1260,7 @@ class MetadataStore(ABC):
         *,
         allow_fallback: bool = True,
         current_only: bool = True,
-    ) -> dict[str, nw.LazyFrame]:
+    ) -> dict[str, nw.LazyFrame[Any]]:
         """
         Read all upstream dependencies for a feature/field.
 
@@ -1364,7 +1364,7 @@ class MetadataStore(ABC):
         feature: type[Feature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
-        lazy: bool = False,
+        lazy: Literal[False] = False,
         **kwargs,
     ) -> DiffResult: ...
 
@@ -1374,7 +1374,7 @@ class MetadataStore(ABC):
         feature: type[Feature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
-        lazy: bool = True,
+        lazy: Literal[True],
         **kwargs,
     ) -> LazyDiffResult: ...
 
@@ -1598,7 +1598,7 @@ class MetadataStore(ABC):
             )
 
         # Load upstream as Narwhals LazyFrames (stays lazy in SQL for native stores)
-        upstream_refs: dict[str, nw.LazyFrame] = {}
+        upstream_refs: dict[str, nw.LazyFrame[Any]] = {}
         for upstream_spec in plan.deps or []:
             upstream_key_str = (
                 upstream_spec.key.to_string()

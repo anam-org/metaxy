@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-class BaseOperation(pydantic.BaseModel, ABC):
+class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Base class for all migration operations.
 
     All operations must have:
