@@ -10,15 +10,15 @@
     }),
     'operation': dict({
       'expected_steps': list([
-        'test_stores__downstream',
+        'test_stores/downstream',
       ]),
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'operation_id': 'reconcile_downstream',
       'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
     }),
     'step': dict({
       'error': None,
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'migration_id': 'test_serialization',
       'operation_id': 'reconcile_downstream',
       'rows_affected': 1,
@@ -30,13 +30,13 @@
     'row_count': 2,
     'rows': list([
       dict({
-        'data_version': "{'default': '4254511067739015015'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'data_version': "{'default': '6865575771891373631'}",
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
     ]),
@@ -53,15 +53,15 @@
     }),
     'operation': dict({
       'expected_steps': list([
-        'test_stores__downstream',
+        'test_stores/downstream',
       ]),
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'operation_id': 'reconcile_downstream',
       'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
     }),
     'step': dict({
       'error': None,
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'migration_id': 'test_serialization',
       'operation_id': 'reconcile_downstream',
       'rows_affected': 1,
@@ -73,13 +73,13 @@
     'row_count': 2,
     'rows': list([
       dict({
-        'data_version': "{'default': '4254511067739015015'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'data_version': "{'default': '6865575771891373631'}",
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
     ]),
@@ -96,15 +96,15 @@
     }),
     'operation': dict({
       'expected_steps': list([
-        'test_stores__downstream',
+        'test_stores/downstream',
       ]),
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'operation_id': 'reconcile_downstream',
       'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
     }),
     'step': dict({
       'error': None,
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'migration_id': 'test_serialization',
       'operation_id': 'reconcile_downstream',
       'rows_affected': 1,
@@ -116,13 +116,13 @@
     'row_count': 2,
     'rows': list([
       dict({
-        'data_version': "{'default': '4254511067739015015'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'data_version': "{'default': '6865575771891373631'}",
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
     ]),
@@ -139,15 +139,15 @@
     }),
     'operation': dict({
       'expected_steps': list([
-        'test_stores__downstream',
+        'test_stores/downstream',
       ]),
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'operation_id': 'reconcile_downstream',
       'operation_type': 'metaxy.migrations.ops.DataVersionReconciliation',
     }),
     'step': dict({
       'error': None,
-      'feature_key': 'test_stores__downstream',
+      'feature_key': 'test_stores/downstream',
       'migration_id': 'test_serialization',
       'operation_id': 'reconcile_downstream',
       'rows_affected': 1,
@@ -159,13 +159,13 @@
     'row_count': 2,
     'rows': list([
       dict({
-        'data_version': "{'default': '7f2ba7a7fb8336974d2aa3efccbfb130'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'data_version': "{'default': '5f748113fd60f0d964c320c298e759c2'}",
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
-        'feature_version': 'b2d98bfb83b4bbc37bb9cead0435ed2cb108ca8340019748b4253e5c1d74c980',
+        'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
         'sample_id': 1,
       }),
     ]),

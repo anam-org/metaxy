@@ -565,7 +565,7 @@ def test_apply_migration_propagates_downstream(
             print(f"Summary:\n{result.summary()}")
 
         assert result.status == "completed"
-        assert "test_migrations__downstream" in result.affected_features
+        assert "test_migrations/downstream" in result.affected_features
 
         # Verify downstream was recalculated
         # Note: migration writes with V1 feature_version (from_=to=V1), so read with current_only=False
@@ -735,7 +735,7 @@ def test_system_tables_created(graph_v1: FeatureGraph) -> None:
         assert "snapshot_id" in version_history.columns
 
         # Should have recorded upstream
-        assert "test_migrations__upstream" in version_history["feature_key"].to_list()
+        assert "test_migrations/upstream" in version_history["feature_key"].to_list()
 
 
 def test_graph_rejects_duplicate_keys() -> None:
@@ -810,8 +810,8 @@ def test_detect_uses_latest_version_from_multiple_materializations(
         # Verify both features detected
         feature_keys = {FeatureKey(op.feature_key).to_string() for op in changes}
         assert feature_keys == {
-            "test_migrations__upstream",
-            "test_migrations__downstream",
+            "test_migrations/upstream",
+            "test_migrations/downstream",
         }
 
         # Snapshot the detected changes
@@ -986,16 +986,16 @@ def test_record_feature_graph_snapshot(
         # Verify correct features recorded
         feature_keys = set(version_history["feature_key"].to_list())
         assert feature_keys == {
-            "test_migrations__upstream",
-            "test_migrations__downstream",
+            "test_migrations/upstream",
+            "test_migrations/downstream",
         }
 
         # Verify feature_versions match
         upstream_row = version_history.filter(
-            pl.col("feature_key") == "test_migrations__upstream"
+            pl.col("feature_key") == "test_migrations/upstream"
         )
         downstream_row = version_history.filter(
-            pl.col("feature_key") == "test_migrations__downstream"
+            pl.col("feature_key") == "test_migrations/downstream"
         )
 
         assert upstream_row["feature_version"][0] == UpstreamV1.feature_version()
@@ -1144,7 +1144,7 @@ def test_snapshot_workflow_without_migrations(
 
         # Verify downstream recorded twice (feature_version changed due to upstream dependency)
         downstream_records = version_history.filter(
-            pl.col("feature_key") == "test_migrations__downstream"
+            pl.col("feature_key") == "test_migrations/downstream"
         )
         assert (
             len(downstream_records) == 2

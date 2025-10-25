@@ -460,7 +460,7 @@ def render(
             for key in sorted(
                 graph.features_by_key.keys(), key=lambda k: k.to_string()
             ):
-                console.print(f"  • {'/'.join(key)}")
+                console.print(f"  • {key.to_string()}")
             raise SystemExit(1)
 
     # Determine which graph to render

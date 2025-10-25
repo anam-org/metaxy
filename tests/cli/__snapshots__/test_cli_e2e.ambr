@@ -7,7 +7,7 @@
           'video',
           'processing',
         ]),
-        'id': 'reconcile_video__processing',
+        'id': 'reconcile_video/processing',
         'reason': 'TODO: Describe what changed and why',
         'type': 'metaxy.migrations.ops.DataVersionReconciliation',
       }),
@@ -19,8 +19,8 @@
 # name: test_cli_e2e_duckdb_workflow.1
   dict({
     'feature_versions': list([
-      '72ea98c339e10d1cc50d80225152d6c68541d8783e97fbe9ff7c67f3909f3814',
-      'e5619afa376379367e7a48a02986ce4d497eeaab8ff75799721b333734e69fbe',
+      '367ec6fb70be09de7dd481d46be8b1c69a0544ab686acd582a9819255eb5be5e',
+      '3c5b4c900fdf1b7f5c08736233f70738a9ca73f94c6aa2b60aeefb5b46105085',
     ]),
     'row_count': 4,
     'sample_ids': list([

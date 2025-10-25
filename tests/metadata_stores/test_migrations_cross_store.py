@@ -112,7 +112,7 @@ def test_migration_system_tables_serialize_cross_store(
         )
         assert len(ops) == 1
         assert ops["operation_id"][0] == "reconcile_downstream"
-        assert ops["feature_key"][0] == "test_stores__downstream"
+        assert ops["feature_key"][0] == "test_stores/downstream"
 
         # Parse expected_steps (handles both JSON string and native list)
         expected_steps_raw = ops["expected_steps"][0]
@@ -126,7 +126,7 @@ def test_migration_system_tables_serialize_cross_store(
                 expected_steps = expected_steps_raw.to_list()
             else:
                 expected_steps = list(expected_steps_raw)
-        assert expected_steps == ["test_stores__downstream"]
+        assert expected_steps == ["test_stores/downstream"]
 
         # Test steps table
         steps = collect_to_polars(
@@ -135,7 +135,7 @@ def test_migration_system_tables_serialize_cross_store(
         assert len(steps) == 1
         assert steps["migration_id"][0] == "test_serialization"
         assert steps["operation_id"][0] == "reconcile_downstream"
-        assert steps["feature_key"][0] == "test_stores__downstream"
+        assert steps["feature_key"][0] == "test_stores/downstream"
         assert steps["error"][0] is None  # Should complete without errors
 
         # Snapshot system table contents for verification

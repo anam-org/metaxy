@@ -10,7 +10,7 @@
           'examples',
           'child',
         ]),
-        'id': 'reconcile_examples__child',
+        'id': 'reconcile_examples/child',
         'reason': 'TODO: Describe what changed and why',
         'type': 'metaxy.migrations.ops.DataVersionReconciliation',
       }),
