@@ -1,5 +1,7 @@
 """In-memory metadata store implementation."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 
@@ -117,7 +119,7 @@ class InMemoryMetadataStore(MetadataStore):
         feature_version: str | None = None,
         filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> nw.LazyFrame | None:
+    ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
 

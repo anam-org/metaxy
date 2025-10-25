@@ -1,7 +1,7 @@
 """Polars implementation of data version calculator."""
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 import polars as pl
@@ -25,11 +25,11 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
 
     # Map HashAlgorithm enum to polars-hash functions
     _HASH_FUNCTION_MAP: dict[HashAlgorithm, Callable[[pl.Expr], pl.Expr]] = {
-        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # type: ignore[attr-defined]
-        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # type: ignore[attr-defined]
-        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # type: ignore[attr-defined]
-        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # type: ignore[attr-defined]
-        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # type: ignore[attr-defined]
+        HashAlgorithm.XXHASH64: lambda expr: expr.nchash.xxhash64(),  # pyright: ignore[reportAttributeAccessIssue]
+        HashAlgorithm.XXHASH32: lambda expr: expr.nchash.xxhash32(),  # pyright: ignore[reportAttributeAccessIssue]
+        HashAlgorithm.WYHASH: lambda expr: expr.nchash.wyhash(),  # pyright: ignore[reportAttributeAccessIssue]
+        HashAlgorithm.SHA256: lambda expr: expr.chash.sha2_256(),  # pyright: ignore[reportAttributeAccessIssue]
+        HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
     }
 
     @property
@@ -44,12 +44,12 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
 
     def calculate_data_versions(
         self,
-        joined_upstream: nw.LazyFrame,
+        joined_upstream: nw.LazyFrame[Any],
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> nw.LazyFrame:
+    ) -> nw.LazyFrame[Any]:
         """Calculate data_version using polars-hash.
 
         Args:

@@ -3,6 +3,7 @@ import sys
 import tempfile
 from functools import cached_property
 from pathlib import Path
+from typing import Any
 
 from metaxy import (
     FeatureSpec,
@@ -70,7 +71,7 @@ class TempFeatureModule:
         if self.module_name in sys.modules:
             importlib.reload(sys.modules[self.module_name])
 
-    def _generate_spec_repr(self, spec_dict: dict) -> str:
+    def _generate_spec_repr(self, spec_dict: dict[str, Any]) -> str:
         """Generate FeatureSpec constructor call from dict."""
         # This is a simple representation - could be made more robust
         parts = []
@@ -154,7 +155,7 @@ class TempFeatureModule:
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
 
-def assert_all_results_equal(results: dict, snapshot=None) -> None:
+def assert_all_results_equal(results: dict[str, Any], snapshot=None) -> None:
     """Compare all results from different store type combinations.
 
     Ensures all variants produce identical results, then optionally snapshots all results.

@@ -3,7 +3,7 @@
 Unified diff resolver that works with any backend (Polars, Ibis/SQL) through Narwhals.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 
@@ -34,8 +34,8 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
     def find_changes(
         self,
-        target_versions: nw.LazyFrame,
-        current_metadata: nw.LazyFrame | None,
+        target_versions: nw.LazyFrame[Any],
+        current_metadata: nw.LazyFrame[Any] | None,
     ) -> LazyDiffResult:
         """Find all changes between target and current.
 

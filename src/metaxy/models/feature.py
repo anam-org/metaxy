@@ -231,7 +231,7 @@ class FeatureGraph:
             hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
         return hasher.hexdigest()
 
-    def to_snapshot(self) -> dict[str, dict]:
+    def to_snapshot(self) -> dict[str, dict[str, Any]]:
         """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
@@ -272,7 +272,7 @@ class FeatureGraph:
     @classmethod
     def from_snapshot(
         cls,
-        snapshot_data: dict[str, dict],
+        snapshot_data: dict[str, dict[str, Any]],
         *,
         class_path_overrides: dict[str, str] | None = None,
         force_reload: bool = False,
@@ -493,7 +493,7 @@ class _FeatureMeta(ModelMetaclass):
         *,
         spec: FeatureSpec | None,
         **kwargs,
-    ) -> type[Self]:
+    ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
         new_cls = super().__new__(cls, cls_name, bases, namespace)
 
         if spec:
@@ -661,8 +661,8 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     def join_upstream_metadata(
         cls,
         joiner: "UpstreamJoiner",
-        upstream_refs: dict[str, "nw.LazyFrame"],
-    ) -> tuple["nw.LazyFrame", dict[str, str]]:
+        upstream_refs: dict[str, "nw.LazyFrame[Any]"],
+    ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
         """Join upstream feature metadata.
 
         Override for custom join logic (1:many, different keys, filtering, etc.).
@@ -702,8 +702,8 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
     def resolve_data_version_diff(
         cls,
         diff_resolver: "MetadataDiffResolver",
-        target_versions: "nw.LazyFrame",
-        current_metadata: "nw.LazyFrame | None",
+        target_versions: "nw.LazyFrame[Any]",
+        current_metadata: "nw.LazyFrame[Any] | None",
         *,
         lazy: bool = False,
     ) -> "DiffResult | LazyDiffResult":

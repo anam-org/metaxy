@@ -1,6 +1,6 @@
 """ClickHouse metadata store - thin wrapper around IbisMetadataStore."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
@@ -54,7 +54,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         self,
         connection_string: str | None = None,
         *,
-        connection_params: dict | None = None,
+        connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
         **kwargs,
     ):

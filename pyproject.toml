@@ -92,3 +92,15 @@ exclude = [
     "examples/**/feature*.py",
 ]
 min_confidence = 60
+
+[tool.pyright]
+reportAny = "none"
+reportExplicitAny = "none"
+include = [
+    "src/metaxy",
+]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/*venv/**/*",
+]

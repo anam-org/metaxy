@@ -1,7 +1,7 @@
 """Abstract base class for data version calculators."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 
@@ -61,12 +61,12 @@ class DataVersionCalculator(ABC):
     @abstractmethod
     def calculate_data_versions(
         self,
-        joined_upstream: nw.LazyFrame,
+        joined_upstream: nw.LazyFrame[Any],
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> nw.LazyFrame:
+    ) -> nw.LazyFrame[Any]:
         """Calculate data_version column from joined upstream data.
 
         Computes a Merkle tree hash for each sample by:

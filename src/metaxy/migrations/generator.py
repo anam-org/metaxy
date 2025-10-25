@@ -149,6 +149,9 @@ def generate_migration(
     # Step 3: Detect changes by comparing snapshot_ids directly
     # We don't reconstruct from_graph - just compare snapshot_ids from the store
     # This avoids issues with stale cached imports when files have changed
+    assert from_snapshot_id is not None, "from_snapshot_id must be set by now"
+    assert to_snapshot_id is not None, "to_snapshot_id must be set by now"
+
     root_operations = detect_feature_changes(
         store,
         from_snapshot_id,

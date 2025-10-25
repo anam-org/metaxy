@@ -3,7 +3,7 @@
 Unified joiner that works with any backend (Polars, Ibis/SQL) through Narwhals.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 
@@ -34,10 +34,10 @@ class NarwhalsJoiner(UpstreamJoiner):
 
     def join_upstream(
         self,
-        upstream_refs: dict[str, nw.LazyFrame],
+        upstream_refs: dict[str, nw.LazyFrame[Any]],
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
-    ) -> tuple[nw.LazyFrame, dict[str, str]]:
+    ) -> tuple[nw.LazyFrame[Any], dict[str, str]]:
         """Join upstream Narwhals LazyFrames together.
 
         Args:

@@ -4,7 +4,7 @@ This calculator uses Ibis to generate backend-specific SQL for hash computation,
 executing entirely in the database without pulling data into memory.
 """
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import narwhals as nw
 
@@ -91,12 +91,12 @@ class IbisDataVersionCalculator(DataVersionCalculator):
 
     def calculate_data_versions(
         self,
-        joined_upstream: nw.LazyFrame,
+        joined_upstream: nw.LazyFrame[Any],
         feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
-    ) -> nw.LazyFrame:
+    ) -> nw.LazyFrame[Any]:
         """Calculate data_version using SQL hash functions.
 
         Args:
@@ -188,7 +188,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
             # Concatenate all components with separator
             concat_expr = components[0]
             for component in components[1:]:
-                concat_expr = concat_expr.concat(ibis.literal("|")).concat(component)  # type: ignore[attr-defined]
+                concat_expr = concat_expr.concat(ibis.literal("|")).concat(component)  # pyright: ignore[reportAttributeAccessIssue]
 
             # Store concat column for this field
             concat_col_name = f"__concat_{field_key_str}"
@@ -199,7 +199,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         hash_sql = hash_sql_gen(ibis_table, concat_columns)
 
         # Execute SQL to get table with hash columns
-        result_table = self._backend.sql(hash_sql)  # type: ignore[attr-defined]
+        result_table = self._backend.sql(hash_sql)  # pyright: ignore[reportAttributeAccessIssue]
 
         # Build data_version struct from hash columns
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]

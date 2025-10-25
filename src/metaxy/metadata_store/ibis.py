@@ -239,7 +239,10 @@ class IbisMetadataStore(MetadataStore):
         else:
             # Use backend + params
             # Get backend-specific connect function
-            backend_module = getattr(self._ibis, self.backend)  # type: ignore[arg-type]
+            assert self.backend is not None, (
+                "backend must be set if connection_string is None"
+            )
+            backend_module = getattr(self._ibis, self.backend)
             self._conn = backend_module.connect(**self.connection_params)
 
     def close(self) -> None:
@@ -324,7 +327,7 @@ class IbisMetadataStore(MetadataStore):
             self.conn.create_table(table_name, obj=df_typed)
         else:
             # Append to existing table
-            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]
+            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop the table for a feature.
@@ -345,7 +348,7 @@ class IbisMetadataStore(MetadataStore):
         feature_version: str | None = None,
         filters: list[nw.Expr] | None = None,
         columns: list[str] | None = None,
-    ) -> nw.LazyFrame | None:
+    ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
 
@@ -370,7 +373,7 @@ class IbisMetadataStore(MetadataStore):
         table = self.conn.table(table_name)
 
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        nw_lazy: nw.LazyFrame = nw.from_native(table, eager_only=False)
+        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:

@@ -7,7 +7,7 @@ FEATURE_KEY_SEPARATOR = "/"
 FIELD_KEY_SEPARATOR = "/"
 
 
-class FeatureKey(list):  # type: ignore[type-arg]
+class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]
     """
     Feature key as a list of strings.
 
@@ -42,7 +42,7 @@ class FeatureKey(list):  # type: ignore[type-arg]
     def __repr__(self) -> str:
         return self.to_string()
 
-    def __hash__(self):
+    def __hash__(self):  # pyright: ignore[reportIncompatibleVariableOverride]
         return hash(tuple(self))
 
     def __eq__(self, other):
@@ -78,7 +78,7 @@ class FeatureKey(list):  # type: ignore[type-arg]
         return cls(validated)
 
 
-class FieldKey(list):
+class FieldKey(list):  # pyright: ignore[reportMissingTypeArgument]
     """
     Field key as a list of strings.
 
@@ -113,7 +113,7 @@ class FieldKey(list):
     def __repr__(self) -> str:
         return self.to_string()
 
-    def __hash__(self):
+    def __hash__(self):  # pyright: ignore[reportIncompatibleVariableOverride]
         return hash(tuple(self))
 
     def __eq__(self, other):
