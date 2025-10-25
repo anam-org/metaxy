@@ -170,7 +170,7 @@ Handles metadata updates when feature definitions change:
 - **Idempotent execution**: Safely re-runnable, recovers from partial failures
 - **DataVersionReconciliation**: Operation type for code refactors that don't change computation
 - **Snapshot-based**: References `from_snapshot_version` and `to_snapshot_version` to derive feature versions
-- **Requires Feature classes**: Imports actual Feature classes (via `FeatureGraph.from_snapshot()`) to support custom `align_metadata_with_upstream()` methods
+- **Requires Feature classes**: Imports actual Feature classes (via `FeatureGraph.from_snapshot()`) to support custom `load_input()` methods
 
 Migration workflow:
 1. `metaxy push` in CD to record feature graph snapshot
@@ -233,7 +233,7 @@ This enables:
 - Multi-graph applications
 
 #### Custom Metadata Alignment
-Features can override `align_metadata_with_upstream()` for custom join logic:
+Features can override `load_input()` for custom join logic:
 - **Default**: Inner join on `sample_uid` (only samples in ALL upstream features)
 - **One-to-many**: Generate multiple child samples per parent (e.g., video frames)
 - **Filtering**: Only process samples meeting certain conditions

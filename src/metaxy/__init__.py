@@ -20,9 +20,9 @@ from metaxy.migrations import (
     generate_migration,
 )
 from metaxy.models.feature import Feature, FeatureGraph, get_feature_by_key, graph
-from metaxy.models.feature_spec import FeatureDep, FeatureDepMetadata, FeatureSpec
+from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
-from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 
 __all__ = [
     "Feature",

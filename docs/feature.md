@@ -52,7 +52,7 @@ This enables:
 
 ## User-Defined Metadata Alignment
 
-When feature definitions change, you may need custom logic to align metadata with upstream changes. Override `Feature.align_metadata_with_upstream`:
+When feature definitions change, you may need custom logic to align metadata with upstream changes. Override `Feature.load_input`:
 
 ### Default Behavior (Inner Join)
 
@@ -79,7 +79,7 @@ class VideoFrames(Feature, spec=FeatureSpec(
     ...
 )):
     @classmethod
-    def align_metadata_with_upstream(
+    def load_input(
         cls,
         current_metadata: pl.DataFrame,
         upstream_metadata: dict[str, pl.DataFrame],
@@ -108,7 +108,7 @@ class VideoFrames(Feature, spec=FeatureSpec(
 ```python
 class ProcessedVideos(Feature, spec=...):
     @classmethod
-    def align_metadata_with_upstream(
+    def load_input(
         cls,
         current_metadata: pl.DataFrame,
         upstream_metadata: dict[str, pl.DataFrame],
@@ -136,7 +136,7 @@ class ProcessedVideos(Feature, spec=...):
 ```python
 class MergedFeature(Feature, spec=...):
     @classmethod
-    def align_metadata_with_upstream(
+    def load_input(
         cls,
         current_metadata: pl.DataFrame,
         upstream_metadata: dict[str, pl.DataFrame],

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Metaxy's migration system enables safe, automated updates to feature metadata when feature definitions change. Migrations are explicit, idempotent, and automatically propagate through the entire dependency graph by default. They can be customized and user-defined. Migrations respect custom `align_metadata_with_upstream` method which may be implemented for specific features.
+Metaxy's migration system enables safe, automated updates to feature metadata when feature definitions change. Migrations are explicit, idempotent, and automatically propagate through the entire dependency graph by default. They can be customized and user-defined. Migrations respect custom `load_input` method which may be implemented for specific features.
 
 **Prerequisites:** The migration system requires that you record feature graph snapshots in your CD (Continuous Deployment) workflow using `metaxy push`. This command snapshots the complete feature graph state and is essential for migration detection to work.
 
@@ -480,13 +480,13 @@ reason: "Updated algorithm"  # ✗ Bad (vague - did results change?)
 
 ### 5. Test Alignment Logic
 
-If you override `align_metadata_with_upstream()`, test it thoroughly:
+If you override `load_input()`, test it thoroughly:
 ```python
 def test_custom_alignment():
     current = pl.DataFrame({"sample_uid": [1, 2, 3], "custom_field": ["a", "b", "c"]})
     upstream = {"videos": pl.DataFrame({"sample_uid": [2, 3, 4]})}
 
-    result = MyFeature.align_metadata_with_upstream(current, upstream)
+    result = MyFeature.load_input(current, upstream)
 
     # Verify alignment behavior
     assert set(result["sample_uid"].to_list()) == {2, 3}  # Inner join

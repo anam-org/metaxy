@@ -1,0 +1,905 @@
+"""Tests for column selection and renaming in feature dependencies."""
+
+import narwhals as nw
+import polars as pl
+import pytest
+
+from metaxy import (
+    Feature,
+    FeatureDep,
+    FeatureGraph,
+    FeatureKey,
+    FeatureSpec,
+)
+from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+
+
+class TestColumnSelection:
+    """Test column selection in feature dependencies."""
+
+    def test_default_behavior_keeps_all_columns(self):
+        """Test that all columns are kept by default (new behavior)."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create upstream feature with custom columns
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Create downstream feature with default column handling
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
+                ),
+            ):
+                pass
+
+            # Create test data with custom columns
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "custom_col1": ["a", "b", "c"],
+                    "custom_col2": [10, 20, 30],
+                }
+            )
+
+            # Join upstream
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, mapping = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify all columns are present
+            assert "sample_uid" in joined_df.columns
+            assert "__upstream_test/upstream__data_version" in joined_df.columns
+            assert "custom_col1" in joined_df.columns
+            assert "custom_col2" in joined_df.columns
+            assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
+            assert joined_df["custom_col2"].to_list() == [10, 20, 30]
+
+    def test_column_selection_specific_columns(self):
+        """Test selecting specific columns from upstream."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Select only custom_col1
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=("custom_col1",),
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "custom_col1": ["a", "b", "c"],
+                    "custom_col2": [10, 20, 30],
+                    "custom_col3": [100, 200, 300],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify only selected columns are present
+            assert "sample_uid" in joined_df.columns
+            assert "__upstream_test/upstream__data_version" in joined_df.columns
+            assert "custom_col1" in joined_df.columns
+            assert "custom_col2" not in joined_df.columns
+            assert "custom_col3" not in joined_df.columns
+
+    def test_empty_columns_keeps_only_system_columns(self):
+        """Test that empty tuple keeps only system columns."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Empty tuple - keep only system columns
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=(),  # Only system columns
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "feature_version": ["v1", "v1", "v1"],
+                    "custom_col1": ["a", "b", "c"],
+                    "custom_col2": [10, 20, 30],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify only essential system columns are present
+            # Note: feature_version and snapshot_version are NOT considered essential for joining
+            # to avoid conflicts when joining multiple upstream features
+            assert "sample_uid" in joined_df.columns
+            assert "__upstream_test/upstream__data_version" in joined_df.columns
+            assert (
+                "feature_version" not in joined_df.columns
+            )  # Not essential, dropped to avoid conflicts
+            assert "custom_col1" not in joined_df.columns
+            assert "custom_col2" not in joined_df.columns
+
+    def test_column_renaming(self):
+        """Test renaming columns to avoid conflicts."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Rename columns
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            rename={
+                                "custom_col1": "upstream_col1",
+                                "custom_col2": "upstream_col2",
+                            },
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "custom_col1": ["a", "b", "c"],
+                    "custom_col2": [10, 20, 30],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify columns are renamed
+            assert "sample_uid" in joined_df.columns
+            assert "__upstream_test/upstream__data_version" in joined_df.columns
+            assert "upstream_col1" in joined_df.columns
+            assert "upstream_col2" in joined_df.columns
+            assert "custom_col1" not in joined_df.columns
+            assert "custom_col2" not in joined_df.columns
+            assert joined_df["upstream_col1"].to_list() == ["a", "b", "c"]
+            assert joined_df["upstream_col2"].to_list() == [10, 20, 30]
+
+    def test_selection_and_renaming_combined(self):
+        """Test combining column selection with renaming."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Select and rename
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=("custom_col1", "custom_col2"),
+                            rename={"custom_col1": "renamed_col1"},
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "custom_col1": ["a", "b", "c"],
+                    "custom_col2": [10, 20, 30],
+                    "custom_col3": [100, 200, 300],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify selection and renaming
+            assert "renamed_col1" in joined_df.columns
+            assert "custom_col2" in joined_df.columns  # Not renamed
+            assert "custom_col3" not in joined_df.columns  # Not selected
+            assert joined_df["renamed_col1"].to_list() == ["a", "b", "c"]
+
+    def test_column_conflict_detection(self):
+        """Test that column conflicts are detected and raise errors."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class Upstream1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream1"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream2"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Both upstreams have 'conflict_col' without renaming
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(key=FeatureKey(["test", "upstream1"])),
+                        FeatureDep(key=FeatureKey(["test", "upstream2"])),
+                    ],
+                ),
+            ):
+                pass
+
+            upstream1_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "conflict_col": ["a", "b", "c"],
+                }
+            )
+
+            upstream2_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h4"},
+                        {"default": "h5"},
+                        {"default": "h6"},
+                    ],
+                    "conflict_col": ["d", "e", "f"],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream1": nw.from_native(
+                    upstream1_data.lazy(), eager_only=False
+                ),
+                "test/upstream2": nw.from_native(
+                    upstream2_data.lazy(), eager_only=False
+                ),
+            }
+
+            # Should raise error about column conflict
+            with pytest.raises(ValueError, match="Column name conflict.*conflict_col"):
+                DownstreamFeature.load_input(joiner, upstream_refs)
+
+    def test_column_conflict_resolved_with_rename(self):
+        """Test that column conflicts can be resolved with renaming."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class Upstream1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream1"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream2"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Rename conflicting columns
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream1"]),
+                            rename={"conflict_col": "upstream1_col"},
+                        ),
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream2"]),
+                            rename={"conflict_col": "upstream2_col"},
+                        ),
+                    ],
+                ),
+            ):
+                pass
+
+            upstream1_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "conflict_col": ["a", "b", "c"],
+                }
+            )
+
+            upstream2_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h4"},
+                        {"default": "h5"},
+                        {"default": "h6"},
+                    ],
+                    "conflict_col": ["d", "e", "f"],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream1": nw.from_native(
+                    upstream1_data.lazy(), eager_only=False
+                ),
+                "test/upstream2": nw.from_native(
+                    upstream2_data.lazy(), eager_only=False
+                ),
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify both renamed columns are present
+            assert "upstream1_col" in joined_df.columns
+            assert "upstream2_col" in joined_df.columns
+            assert joined_df["upstream1_col"].to_list() == ["a", "b", "c"]
+            assert joined_df["upstream2_col"].to_list() == ["d", "e", "f"]
+
+    def test_essential_system_columns_preserved(self):
+        """Test that essential system columns (sample_uid, data_version) are always preserved."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Select only a custom column, but system columns should be preserved
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=(
+                                "custom_col",
+                            ),  # Don't explicitly list system columns
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "feature_version": ["v1", "v1", "v1"],
+                    "snapshot_version": ["s1", "s1", "s1"],
+                    "custom_col": ["a", "b", "c"],
+                    "other_col": [10, 20, 30],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify essential system columns are preserved
+            assert "sample_uid" in joined_df.columns
+            assert "__upstream_test/upstream__data_version" in joined_df.columns
+            # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
+            assert "feature_version" not in joined_df.columns
+            assert "snapshot_version" not in joined_df.columns
+            # Verify selected column
+            assert "custom_col" in joined_df.columns
+            # Verify non-selected column is not present
+            assert "other_col" not in joined_df.columns
+
+    def test_pydantic_validation_rename_to_system_column(self):
+        """Test that renaming to system column names is rejected."""
+        with pytest.raises(ValueError, match="Cannot rename column to system column"):
+            FeatureDep(
+                key=FeatureKey(["test", "upstream"]),
+                rename={"old_col": "data_version"},  # Can't rename to system column
+            )
+
+        with pytest.raises(ValueError, match="Cannot rename column to system column"):
+            FeatureDep(
+                key=FeatureKey(["test", "upstream"]),
+                rename={"old_col": "sample_uid"},  # Can't rename to system column
+            )
+
+    def test_pydantic_serialization(self):
+        """Test that FeatureDep with columns and rename serializes correctly."""
+        dep = FeatureDep(
+            key=FeatureKey(["test", "upstream"]),
+            columns=("col1", "col2"),
+            rename={"col1": "new_col1"},
+        )
+
+        # Serialize to dict
+        dep_dict = dep.model_dump()
+        assert dep_dict["key"] == ["test", "upstream"]
+        assert dep_dict["columns"] == ("col1", "col2")
+        assert dep_dict["rename"] == {"col1": "new_col1"}
+
+        # Round-trip through JSON
+        dep_json = dep.model_dump_json()
+        dep_restored = FeatureDep.model_validate_json(dep_json)
+        assert dep_restored.key == FeatureKey(["test", "upstream"])
+        assert dep_restored.columns == ("col1", "col2")
+        assert dep_restored.rename == {"col1": "new_col1"}
+
+    def test_multiple_upstream_features_complex_scenario(self):
+        """Test complex scenario with multiple upstream features."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class Upstream1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream1"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream2"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream3(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream3"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Complex downstream with different operations for each upstream
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        # Keep all columns from upstream1 (default)
+                        FeatureDep(key=FeatureKey(["test", "upstream1"])),
+                        # Select specific columns from upstream2
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream2"]),
+                            columns=("important_col",),
+                        ),
+                        # Rename columns from upstream3
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream3"]),
+                            columns=("shared_col", "unique_col"),
+                            rename={"shared_col": "upstream3_shared"},
+                        ),
+                    ],
+                ),
+            ):
+                pass
+
+            upstream1_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "col_a": ["a1", "a2", "a3"],
+                    "col_b": [1, 2, 3],
+                }
+            )
+
+            upstream2_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h4"},
+                        {"default": "h5"},
+                        {"default": "h6"},
+                    ],
+                    "important_col": ["i1", "i2", "i3"],
+                    "unimportant_col": ["u1", "u2", "u3"],
+                }
+            )
+
+            upstream3_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "data_version": [
+                        {"default": "h7"},
+                        {"default": "h8"},
+                        {"default": "h9"},
+                    ],
+                    "shared_col": ["s1", "s2", "s3"],
+                    "unique_col": ["q1", "q2", "q3"],
+                    "excluded_col": ["e1", "e2", "e3"],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream1": nw.from_native(
+                    upstream1_data.lazy(), eager_only=False
+                ),
+                "test/upstream2": nw.from_native(
+                    upstream2_data.lazy(), eager_only=False
+                ),
+                "test/upstream3": nw.from_native(
+                    upstream3_data.lazy(), eager_only=False
+                ),
+            }
+
+            joined, mapping = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify all expected columns
+            # From upstream1 (all columns)
+            assert "col_a" in joined_df.columns
+            assert "col_b" in joined_df.columns
+            # From upstream2 (only selected)
+            assert "important_col" in joined_df.columns
+            assert "unimportant_col" not in joined_df.columns
+            # From upstream3 (selected and renamed)
+            assert "upstream3_shared" in joined_df.columns  # Renamed
+            assert "unique_col" in joined_df.columns  # Not renamed
+            assert "excluded_col" not in joined_df.columns  # Not selected
+
+            # Verify data_version columns
+            assert "__upstream_test/upstream1__data_version" in joined_df.columns
+            assert "__upstream_test/upstream2__data_version" in joined_df.columns
+            assert "__upstream_test/upstream3__data_version" in joined_df.columns
+
+            # Verify mapping
+            assert (
+                mapping["test/upstream1"] == "__upstream_test/upstream1__data_version"
+            )
+            assert (
+                mapping["test/upstream2"] == "__upstream_test/upstream2__data_version"
+            )
+            assert (
+                mapping["test/upstream3"] == "__upstream_test/upstream3__data_version"
+            )
+
+    def test_custom_load_input_with_filtering(self):
+        """Test overriding load_input with custom filtering logic."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Override load_input to add custom filtering
+            class CustomFilterFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "custom_filter"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=("value", "category"),
+                            rename={"value": "upstream_value"},
+                        )
+                    ],
+                ),
+            ):
+                @classmethod
+                def load_input(cls, joiner, upstream_refs):
+                    """Custom load_input that filters data after joining."""
+                    # First, do the standard join with column selection/renaming
+                    joined, mapping = super().load_input(joiner, upstream_refs)
+
+                    # Then apply custom filtering
+                    # Keep only rows where category is "important"
+                    filtered = joined.filter(nw.col("category") == "important")
+
+                    return filtered, mapping
+
+            # Create test data
+            upstream_data = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3, 4, 5],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                        {"default": "h4"},
+                        {"default": "h5"},
+                    ],
+                    "value": [10, 20, 30, 40, 50],
+                    "category": [
+                        "important",
+                        "other",
+                        "important",
+                        "other",
+                        "important",
+                    ],
+                    "extra_col": [
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                        "e",
+                    ],  # Should be dropped by columns spec
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            joined, mapping = CustomFilterFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify filtering worked
+            assert len(joined_df) == 3  # Only 3 "important" rows
+            assert joined_df["sample_uid"].to_list() == [1, 3, 5]
+
+            # Verify column selection worked
+            assert "upstream_value" in joined_df.columns  # Renamed
+            assert "value" not in joined_df.columns  # Original name gone
+            assert "category" in joined_df.columns  # Selected
+            assert "extra_col" not in joined_df.columns  # Not selected
+
+            # Verify renamed column has correct values
+            assert joined_df["upstream_value"].to_list() == [10, 30, 50]
+
+            # Verify mapping
+            assert mapping["test/upstream"] == "__upstream_test/upstream__data_version"
+
+    def test_columns_and_rename_serialized_to_snapshot(self):
+        """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
+        import json
+
+        from metaxy.metadata_store import InMemoryMetadataStore
+        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create features with columns and rename specified
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            columns=("col1", "col2"),
+                            rename={"col1": "renamed_col1"},
+                        )
+                    ],
+                ),
+            ):
+                pass
+
+            # Create store and push snapshot
+            store = InMemoryMetadataStore()
+            with store:
+                snapshot_version, _ = store.record_feature_graph_snapshot()
+
+                # Read the snapshot from feature_versions table
+                versions = (
+                    store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
+                    .collect()
+                    .to_polars()
+                )
+
+                # Find the downstream feature record
+                downstream_record = versions.filter(
+                    pl.col("feature_key") == "test/downstream"
+                )
+                assert len(downstream_record) == 1
+
+                # Parse the feature_spec JSON
+                feature_spec_json = downstream_record["feature_spec"][0]
+                feature_spec_dict = json.loads(feature_spec_json)
+
+                # Verify the spec contains deps
+                assert "deps" in feature_spec_dict
+                assert len(feature_spec_dict["deps"]) == 1
+
+                # Verify columns and rename are serialized
+                dep = feature_spec_dict["deps"][0]
+                assert dep["key"] == ["test", "upstream"]
+                assert dep["columns"] == [
+                    "col1",
+                    "col2",
+                ]  # Pydantic serializes tuple as list
+                assert dep["rename"] == {"col1": "renamed_col1"}
+
+                # Verify round-trip through to_snapshot/from Pydantic
+                snapshot_dict = test_graph.to_snapshot()
+                downstream_snapshot = snapshot_dict["test/downstream"]
+
+                # Verify feature_spec dict has the fields
+                downstream_spec_dict = downstream_snapshot["feature_spec"]
+                assert "deps" in downstream_spec_dict
+                dep_dict = downstream_spec_dict["deps"][0]
+                assert dep_dict["key"] == ["test", "upstream"]
+                assert dep_dict["columns"] == ["col1", "col2"]
+                assert dep_dict["rename"] == {"col1": "renamed_col1"}
+
+                # Verify Pydantic can deserialize it back
+                reconstructed_spec = FeatureSpec.model_validate(downstream_spec_dict)
+                assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
+                reconstructed_dep = reconstructed_spec.deps[0]
+                assert reconstructed_dep.columns == ("col1", "col2")
+                assert reconstructed_dep.rename == {"col1": "renamed_col1"}

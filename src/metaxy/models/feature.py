@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar
 
-import polars as pl
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
@@ -280,7 +279,7 @@ class FeatureGraph:
         """Reconstruct graph from snapshot by importing Feature classes.
 
         Strictly requires Feature classes to exist at their recorded import paths.
-        This ensures custom methods (like align_metadata_with_upstream) are available.
+        This ensures custom methods (like load_input) are available.
 
         If a feature has been moved/renamed, use class_path_overrides to specify
         the new location.
@@ -544,108 +543,6 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         return cls.graph.get_feature_version(cls.spec.key)
 
     @classmethod
-    def align_metadata_with_upstream(
-        cls,
-        current_metadata: pl.DataFrame,
-        upstream_metadata: dict[str, pl.DataFrame],
-    ) -> pl.DataFrame:
-        """Align metadata with upstream by joining on sample_uid.
-
-        Override this method to customize alignment logic when upstream features change.
-        This is called during migration propagation to determine which samples to process.
-
-        Common use cases:
-        - One-to-many mappings (e.g., one video -> many frames)
-        - Filtering based on upstream conditions
-        - Cross-product joins for combinatorial features
-        - Custom sample ID generation
-
-        Default behavior: Inner join on 'sample_uid' with all upstream features.
-        Only preserves sample_uid column - all other columns are dropped and will
-        be recalculated during data version computation.
-
-        Args:
-            current_metadata: Existing metadata for this feature (may be empty)
-            upstream_metadata: Dict mapping upstream feature keys to their metadata DataFrames.
-                Each DataFrame includes sample_uid, data_version, and other columns.
-
-        Returns:
-            DataFrame with 'sample_uid' column (at minimum), ready for data version calculation.
-            Other columns are preserved if present in current_metadata.
-
-        Example - One-to-many (video frames):
-            >>> @classmethod
-            >>> def align_metadata_with_upstream(
-            ...     cls,
-            ...     current_metadata: pl.DataFrame,
-            ...     upstream_metadata: dict[str, pl.DataFrame],
-            ... ) -> pl.DataFrame:
-            ...     # Each video produces 30 frames
-            ...     video_samples = upstream_metadata["videos"]["sample_uid"]
-            ...     frames = []
-            ...     for video_id in video_samples:
-            ...         for frame_idx in range(30):
-            ...             frames.append({
-            ...                 "sample_uid": f"{video_id}_frame_{frame_idx}",
-            ...                 "video_id": video_id,
-            ...                 "frame_idx": frame_idx,
-            ...             })
-            ...     return pl.DataFrame(frames)
-
-        Example - Conditional filtering:
-            >>> @classmethod
-            >>> def align_metadata_with_upstream(
-            ...     cls,
-            ...     current_metadata: pl.DataFrame,
-            ...     upstream_metadata: dict[str, pl.DataFrame],
-            ... ) -> pl.DataFrame:
-            ...     # Only process videos longer than 10 seconds
-            ...     videos = upstream_metadata["videos"]
-            ...     return videos.filter(pl.col("duration") > 10).select(["sample_uid", "duration"])
-
-        Example - Outer join (keep all upstream samples):
-            >>> @classmethod
-            >>> def align_metadata_with_upstream(
-            ...     cls,
-            ...     current_metadata: pl.DataFrame,
-            ...     upstream_metadata: dict[str, pl.DataFrame],
-            ... ) -> pl.DataFrame:
-            ...     # Union of all upstream sample IDs
-            ...     all_samples = set()
-            ...     for upstream_df in upstream_metadata.values():
-            ...         all_samples.update(upstream_df["sample_uid"].to_list())
-            ...     return pl.DataFrame({"sample_uid": sorted(all_samples)})
-        """
-        if not upstream_metadata:
-            # No upstream, return current metadata with only sample_uid
-            if len(current_metadata) > 0:
-                return current_metadata.select(pl.col("sample_uid"))
-            else:
-                return pl.DataFrame({"sample_uid": []})
-
-        # Default: inner join on sample_uid across all upstream features
-        # This ensures we only process samples that exist in ALL upstream features
-        common_samples: set[int] | None = None
-        for upstream_df in upstream_metadata.values():
-            sample_uids = set(upstream_df["sample_uid"].to_list())
-            if common_samples is None:
-                common_samples = sample_uids
-            else:
-                common_samples &= sample_uids  # Intersection
-
-        if not common_samples:
-            return pl.DataFrame({"sample_uid": []})
-
-        # Filter current metadata to common samples, preserving existing columns
-        if len(current_metadata) > 0:
-            return current_metadata.filter(
-                pl.col("sample_uid").is_in(list(common_samples))
-            )
-        else:
-            # No current metadata, create from upstream sample IDs
-            return pl.DataFrame({"sample_uid": sorted(common_samples)})
-
-    @classmethod
     def data_version(cls) -> dict[str, str]:
         """Get the code-level data version for this feature.
 
@@ -658,7 +555,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         return cls.graph.get_feature_version_by_field(cls.spec.key)
 
     @classmethod
-    def join_upstream_metadata(
+    def load_input(
         cls,
         joiner: "UpstreamJoiner",
         upstream_refs: dict[str, "nw.LazyFrame[Any]"],
@@ -675,27 +572,26 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             (joined_upstream, upstream_column_mapping)
             - joined_upstream: All upstream data joined together
             - upstream_column_mapping: Maps upstream_key -> column name
-
-        Example (default):
-            >>> class MyFeature(Feature, spec=...):
-            ...     pass  # Uses joiner's default implementation
-
-        Example (custom 1:many join):
-            >>> class VideoFramesFeature(Feature, spec=...):
-            ...     @classmethod
-            ...     def join_upstream_metadata(cls, joiner, upstream_refs):
-            ...         # Custom join logic using joiner's methods
-            ...         # This is backend-agnostic - works with Polars, Ibis, etc.!
-            ...         return joiner.join_upstream(
-            ...             upstream_refs=upstream_refs,
-            ...             feature_spec=cls.spec,
-            ...             feature_plan=cls.graph.get_feature_plan(cls.spec.key),
-            ...         )
         """
+        from metaxy.models.feature_spec import FeatureDep
+
+        # Extract columns and renames from deps
+        upstream_columns: dict[str, tuple[str, ...] | None] = {}
+        upstream_renames: dict[str, dict[str, str] | None] = {}
+
+        if cls.spec.deps:
+            for dep in cls.spec.deps:
+                if isinstance(dep, FeatureDep):
+                    dep_key_str = dep.key.to_string()
+                    upstream_columns[dep_key_str] = dep.columns
+                    upstream_renames[dep_key_str] = dep.rename
+
         return joiner.join_upstream(
             upstream_refs=upstream_refs,
             feature_spec=cls.spec,
             feature_plan=cls.graph.get_feature_plan(cls.spec.key),
+            upstream_columns=upstream_columns,
+            upstream_renames=upstream_renames,
         )
 
     @classmethod
