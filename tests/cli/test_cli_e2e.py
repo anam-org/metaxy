@@ -220,7 +220,7 @@ class VideoProcessing(Feature, spec=FeatureSpec(
             "operations": [
                 {
                     "id": op.id,
-                    "type": op.type,  # type: ignore[attr-defined]
+                    "type": op.type,  # pyright: ignore[reportAttributeAccessIssue]
                     "feature_key": op.feature_key,
                     "reason": op.reason,
                 }

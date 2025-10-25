@@ -543,8 +543,10 @@ def test_polars_calculator_multiple_fields(
     result = with_versions.collect()
 
     # Should have data_version struct with both fields
-    data_version_schema = result.schema["data_version"]
-    field_names = {f.name for f in data_version_schema.fields}  # type: ignore[attr-defined]
+    # Convert to Polars to access struct fields
+    result_pl = result.to_native()
+    data_version_schema = result_pl.schema["data_version"]
+    field_names = {f.name for f in data_version_schema.fields}
     assert field_names == {"fusion", "analysis"}
 
     # Different code versions should produce different hashes
@@ -577,7 +579,7 @@ def test_polars_calculator_unsupported_algorithm(
             feature_spec=feature.spec,
             feature_plan=plan,
             upstream_column_mapping={"video": "__upstream_video__data_version"},
-            hash_algorithm=FakeAlgorithm(),  # type: ignore
+            hash_algorithm=FakeAlgorithm(),  # pyright: ignore[reportArgumentType]
         )
 
 
@@ -781,13 +783,19 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
 
     # Call overridden method (this calls find_changes which needs current_feature_version=False)
     # The test feature class needs to pass the parameter through
+    # Explicitly pass lazy=False to get DiffResult (eager) instead of LazyDiffResult
     result = CustomDiffFeature.resolve_data_version_diff(
         diff_resolver=diff_resolver,
         target_versions=target,
         current_metadata=current,
+        lazy=False,
     )
 
-    # Should identify: added=2, changed=1
+    # Should identify: added=1, changed=1
+    # Type assertion to help type checker understand result is DiffResult (eager)
+    from metaxy.data_versioning.diff import DiffResult
+
+    assert isinstance(result, DiffResult)
     assert len(result.added) == 1
     assert len(result.changed) == 1
 

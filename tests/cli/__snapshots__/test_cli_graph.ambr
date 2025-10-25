@@ -1,0 +1,23 @@
+# serializer version: 1
+# name: test_graph_render_graphviz_format
+  '''
+  strict digraph {
+      rankdir=TB;
+      label="Graph (snapshot: d49e39c7)";
+      labelloc=t;
+      fontsize=14;
+      fontname=helvetica;
+  
+      "examples/child" ;
+      "examples/parent" ;
+  
+      "examples/parent" -> "examples/child";
+  
+      "examples/child::predictions" ;
+      "examples/child" -> "examples/child::predictions" ;
+      "examples/parent::embeddings" ;
+      "examples/parent" -> "examples/parent::embeddings" ;
+  }
+  
+  '''
+# ---

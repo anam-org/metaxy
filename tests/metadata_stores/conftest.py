@@ -316,14 +316,14 @@ class StoreCases:
 
     def case_inmemory(
         self, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """InMemory store case."""
         # Registry is accessed globally via FeatureGraph.get_active()
         return (InMemoryMetadataStore, {})
 
     def case_duckdb(
         self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """DuckDB store case."""
         db_path = tmp_path / "test.duckdb"
         # Registry is accessed globally via FeatureGraph.get_active()
@@ -331,7 +331,7 @@ class StoreCases:
 
     def case_sqlite(
         self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """SQLite store case."""
         db_path = tmp_path / "test.sqlite"
         # Registry is accessed globally via FeatureGraph.get_active()
@@ -339,7 +339,7 @@ class StoreCases:
 
     def case_clickhouse(
         self, clickhouse_db: str, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """ClickHouse store case."""
         # Registry is accessed globally via FeatureGraph.get_active()
         # clickhouse_db provides a clean database connection string
@@ -348,7 +348,9 @@ class StoreCases:
 
 @fixture
 @parametrize_with_cases("store_config", cases=StoreCases)
-def persistent_store(store_config: tuple[type[MetadataStore], dict]) -> MetadataStore:
+def persistent_store(
+    store_config: tuple[type[MetadataStore], dict[str, Any]],
+) -> MetadataStore:
     """Parametrized persistent store fixture.
 
     This fixture runs tests for all persistent store implementations.

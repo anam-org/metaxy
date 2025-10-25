@@ -1,0 +1,102 @@
+# serializer version: 1
+# name: test_code_version_changes_propagate
+  dict({
+    'base': dict({
+      'data': '4c4a9f5d680468f38542e678b9fe8ef73c45714ae2bad795f008364f2e883dbd',
+    }),
+    'derived': dict({
+      'processed': '0589e503fa9229073a90ff01c5588a34557b02f3bff0d9fc28e6bc616f64f1f0',
+    }),
+  })
+# ---
+# name: test_complex_multi_level_graph
+  dict({
+    'analysis': dict({
+      'full_analysis': 'cf80aff98c9f876b15753f1375f86162eeff225c95c688fbc735573615503d97',
+      'visual_metadata': '3191f125ed53b813cad8c458ff1a81e42c803e9ca272bf28a94b18d035adecd7',
+    }),
+    'processed_video': dict({
+      'enhanced_frames': '909fa8c63882392a163500b3bcb426d81875d465487a92d8fb3dd08deb36c177',
+      'normalized_audio': '5e4947940ae343feec23dc0a68e1f83a5f82662e46996892dba89cce98a62d94',
+    }),
+    'raw_metadata': dict({
+      'info': '762fd106b00226d3ba49ce0f4204f68a0a4cf63fe84a003f544b3d4e1f6cfd8e',
+    }),
+    'raw_video': dict({
+      'audio': 'aa2eb77108681306dce586821337565d86a376c5458a21e78f070340cce423be',
+      'frames': '3da1d9817abfaf6a7cd936a27654d4b380f4e2b0575e1deb5ddb572f62bd9fd7',
+    }),
+  })
+# ---
+# name: test_diamond_dependency_graph
+  dict({
+    'branch_left': dict({
+      'left_processed': '117cbeba8f64bbe8d621c6e7c18b2d2a06b892a49e8f3f9d99908d6fa738aaf5',
+    }),
+    'branch_right': dict({
+      'right_processed': '189ab2150cf910aa890d12b3c0d0a8c44795d3db5c950c56ad4450a4a7fd2a57',
+    }),
+    'merged': dict({
+      'fusion': 'f91e2e67cad0a4c2f8cf18ad4152f7197f5208044698d388b323063441af2df3',
+    }),
+    'root': dict({
+      'data': '27a4d7603b466599a64a16d036d0e277a13705ea38dbd96619bcdfec54506cb5',
+    }),
+  })
+# ---
+# name: test_feature_with_multiple_fields
+  dict({
+    'audio': '4c0dc244aa810846c4211759251a117b83da98c455d897ab74f02c3c149cfbef',
+    'frames': '3081ee93fda4b4a8388d60f090fd202ec8510e88aceb4b9727ee83fd5d29aabb',
+    'metadata': '0f1afba6adb09746506b1d90468a1955a90a7949ee9772034c31bb38adcbd5e0',
+  })
+# ---
+# name: test_linear_dependency_chain
+  dict({
+    'a': dict({
+      'raw': '520c9eecbe731350e126e2494c9020868232538030ad1c2e879c7fe31b6f17cd',
+    }),
+    'b': dict({
+      'processed': '42f231657d815ab66825b2f91293c566fed03be65f184ba8978f9fe69c8654df',
+    }),
+    'c': dict({
+      'final': 'ce8b78182f2440e685aa0aed0eabce2f9ecd9efc6cc73d303ed00ea7c095380a',
+    }),
+  })
+# ---
+# name: test_multiple_fields_different_deps
+  dict({
+    'x': dict({
+      'x1': '81937486de8791d1683829da57b7d3550d62ce1a659a8fb1d8a22afa1420913a',
+      'x2': 'a11b3accfe12d4a755228c3986399c8592a75ee658884242196e07232477cc31',
+    }),
+    'y': dict({
+      'y1': '9b8521b33ba438c3d440bde17454c29e4c53cc96c123925d730c06857921e10b',
+      'y2': '68ea5edf063a5c158c5456a112751697e3582e4ba187603c1aba57e1a7b59102',
+    }),
+    'z': dict({
+      'z1': '60d0ed1bf0c8abd35051d6febcdb78fa4d027dcb32366e4c172ab1a1b9498f08',
+      'z2': '2b3f131b4e17ab4c2cc1eff3707d2ae979af77993ed590b0b221a8a92e6bb0e2',
+      'z3': '7482c990ae86e7360f098cb3e0fcffa6d420e894f4a06037af20c729c4764faf',
+    }),
+  })
+# ---
+# name: test_single_feature_data_version
+  dict({
+    'default': '8aa2ac16379005571ba10a1d73d038001526faf4b0abc62db9dd2f3c8afeea6c',
+  })
+# ---
+# name: test_specific_field_dependencies
+  dict({
+    'multi': dict({
+      'audio': 'a0adde3c223350027245d9b1cd5d9137befc0b833ef94ac857df431cf553ab5d',
+      'frames': 'c1cd5f751322d6d8910b33f91236779fcf74efdd64824a371366088be87b26b9',
+      'text': '3b03a87362c4680790dbdf1d7fbffd08e78219979af0816196b64d827e0f46c8',
+    }),
+    'selective': dict({
+      'audio_only': 'bb5ec0041d2e41fa8f0e6c4967f42a8ffd9d336987092c995a2cfae904118286',
+      'mixed': '1e9b5457f80a747f4eab7c77ff20cf8b206f724ddaea7f6fa1b6f7c2b96bd9a6',
+      'visual': '30286c9ae703eab9c9af38debc9a3078e4c282ff731af603172cab4fb58d7a1a',
+    }),
+  })
+# ---

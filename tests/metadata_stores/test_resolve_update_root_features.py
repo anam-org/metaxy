@@ -6,6 +6,8 @@ Root features are special because:
 3. resolve_update should compare user-provided data_version with stored metadata
 """
 
+from typing import Any
+
 import polars as pl
 import pytest
 from pytest_cases import parametrize_with_cases
@@ -46,7 +48,7 @@ class TestResolveUpdateRootFeatures:
     @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_requires_samples(
         self,
-        store_config: tuple[type[MetadataStore], dict],
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
     ):
         """Test that resolve_update raises ValueError without samples parameter.
 
@@ -67,7 +69,7 @@ class TestResolveUpdateRootFeatures:
     @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_with_samples_no_existing_metadata(
         self,
-        store_config: tuple[type[MetadataStore], dict],
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
     ):
         """Test resolve_update with samples for root feature (no existing metadata).
 
@@ -107,7 +109,7 @@ class TestResolveUpdateRootFeatures:
     @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_with_samples_and_changes(
         self,
-        store_config: tuple[type[MetadataStore], dict],
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
     ):
         """Test resolve_update with samples parameter detects all changes correctly.
 

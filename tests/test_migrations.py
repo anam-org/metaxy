@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -352,8 +353,8 @@ def test_apply_migration_rejects_root_features(
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     # Get features
-    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     # Get actual snapshot_id from store
     v1_snapshot_id = get_latest_snapshot_id(store_with_v1_data)
@@ -370,8 +371,6 @@ def test_apply_migration_rejects_root_features(
             DataVersionReconciliation(
                 id="reconcile_upstream",
                 feature_key=["test_migrations", "upstream"],
-                from_=UpstreamV1.feature_version(),
-                to=UpstreamV2.feature_version(),
                 reason="Test",
             ).model_dump(by_alias=True)
         ],
@@ -398,9 +397,7 @@ def test_apply_migration_idempotent(
     """Test that migrations are idempotent."""
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    DownstreamV1 = graph_v1.features_by_key[
-        FeatureKey(["test_migrations", "downstream"])
-    ]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "downstream"])]
     graph_v2.features_by_key[FeatureKey(["test_migrations", "downstream"])]
 
     # Create migration for downstream feature (has upstream)
@@ -415,8 +412,6 @@ def test_apply_migration_idempotent(
             DataVersionReconciliation(
                 id="reconcile_downstream",
                 feature_key=["test_migrations", "downstream"],
-                from_=DownstreamV1.feature_version(),
-                to=DownstreamV1.feature_version(),  # Same version, just reconciling
                 reason="Test",
             ).model_dump(by_alias=True)
         ],
@@ -459,8 +454,6 @@ def test_apply_migration_dry_run(
             DataVersionReconciliation(
                 id="reconcile_downstream",
                 feature_key=["test_migrations", "downstream"],
-                from_=DownstreamV1.feature_version(),
-                to=DownstreamV1.feature_version(),  # Same version
                 reason="Test",
             ).model_dump(by_alias=True)
         ],
@@ -501,9 +494,7 @@ def test_apply_migration_propagates_downstream(
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
     UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    DownstreamV1 = graph_v1.features_by_key[
-        FeatureKey(["test_migrations", "downstream"])
-    ]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "downstream"])]
     DownstreamV2 = graph_v2.features_by_key[
         FeatureKey(["test_migrations", "downstream"])
     ]
@@ -549,8 +540,6 @@ def test_apply_migration_propagates_downstream(
                 DataVersionReconciliation(
                     id="reconcile_downstream",
                     feature_key=["test_migrations", "downstream"],
-                    from_=DownstreamV1.feature_version(),
-                    to=DownstreamV1.feature_version(),  # Same version, just reconciling data_versions
                     reason="Reconcile data_versions due to upstream change",
                 ).model_dump(by_alias=True),
             ],
@@ -831,8 +820,8 @@ def test_migration_result_snapshots(
     """Test migration execution with snapshot of affected features."""
     store_v2 = migrate_store_to_graph(store_with_v1_data, graph_v2)
 
-    UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
-    UpstreamV2 = graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
+    graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
     migration = Migration(
         version=1,
@@ -845,8 +834,6 @@ def test_migration_result_snapshots(
             DataVersionReconciliation(
                 id="test_op_id",
                 feature_key=["test_migrations", "upstream"],
-                from_=UpstreamV1.feature_version(),
-                to=UpstreamV2.feature_version(),
                 reason="Test snapshot",
             ).model_dump(by_alias=True)
         ],
@@ -1228,8 +1215,6 @@ def test_migrations_preserve_immutability(
             DataVersionReconciliation(
                 id="reconcile_downstream",
                 feature_key=["test_migrations", "downstream"],
-                from_=DownstreamV1.feature_version(),
-                to=DownstreamV1.feature_version(),  # Same version, reconciling data_versions
                 reason="Test",
             ).model_dump(by_alias=True)
         ],
@@ -1279,9 +1264,17 @@ def test_metadata_backfill_operation() -> None:
     # Create test backfill subclass for a feature WITH upstream dependencies
     class TestBackfill(MetadataBackfill):
         type: str = "tests.test_migrations.TestBackfill"
-        test_data: list[dict]
+        test_data: list[dict[str, Any]]
 
-        def execute(self, store, *, dry_run=False):  # pyrefly: ignore[bad-override]
+        def execute(
+            self,
+            store,
+            *,
+            from_snapshot_id: str,
+            to_snapshot_id: str,
+            dry_run=False,
+            **kwargs,
+        ):
             import polars as pl
 
             from metaxy.models.feature import FeatureGraph
@@ -1307,8 +1300,10 @@ def test_metadata_backfill_operation() -> None:
                 # Calculate data_versions via resolve_update
                 diff = store.resolve_update(feature_cls, sample_df=external_df)
                 if len(diff.added) > 0:
+                    # Convert Narwhals to Polars for join
+                    added_pl = diff.added.to_polars()
                     to_write = external_df.join(
-                        diff.added.select(["sample_id", "data_version"]), on="sample_id"
+                        added_pl.select(["sample_id", "data_version"]), on="sample_id"
                     )
                     store.write_metadata(feature_cls, to_write)
                     return len(to_write)
@@ -1352,11 +1347,15 @@ def test_metadata_backfill_operation() -> None:
             )
 
             # Test dry run
-            rows = backfill.execute(store, dry_run=True)
+            rows = backfill.execute(
+                store, from_snapshot_id="test", to_snapshot_id="test", dry_run=True
+            )
             assert rows == 2
 
             # Execute for real
-            rows = backfill.execute(store)
+            rows = backfill.execute(
+                store, from_snapshot_id="test", to_snapshot_id="test"
+            )
             assert rows == 2
 
             # Verify data was written
@@ -2092,8 +2091,6 @@ def test_migration_vs_recompute_comparison(
                 DataVersionReconciliation(
                     id="reconcile_downstream",
                     feature_key=["test_migrations", "downstream"],
-                    from_=DownstreamV1.feature_version(),
-                    to=DownstreamV1.feature_version(),  # Same version, reconciling
                     reason="Test",
                 ).model_dump(by_alias=True)
             ],

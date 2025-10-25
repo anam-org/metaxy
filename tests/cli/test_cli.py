@@ -183,8 +183,6 @@ config.database = "{db_path}"
                 DataVersionReconciliation(
                     id="test_op",
                     feature_key=["test_cli", "feature"],
-                    from_="abc123",
-                    to="def456",
                     reason="Test migration",
                 ).model_dump(by_alias=True)
             ],
