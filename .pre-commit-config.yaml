@@ -1,0 +1,28 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: 'https://github.com/pre-commit/pre-commit-hooks'
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+    - id: ruff-check
+      name: Ruff Check
+      entry: ruff check --fix
+      language: system
+      pass_filenames: false
+    - id: ruff-format
+      name: Ruff Format
+      entry: ruff format
+      language: system
+      pass_filenames: false
+    - id: basedpyright
+      name: Basedpyright
+      entry: basedpyright --level error
+      language: system
+      pass_filenames: true
+      types: [python]
