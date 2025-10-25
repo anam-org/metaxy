@@ -34,7 +34,7 @@ with MetaxyConfig.load().get_store() as store:
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:
         existing = store.read_metadata(ParentFeature, current_only=True)
-        if existing.collect().height > 0:
+        if existing.collect().shape[0] > 0:
             print(
                 f"Metadata already exists for feature {parent_key} (feature_version: {ParentFeature.feature_version()[:16]}...)"
             )

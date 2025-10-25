@@ -80,7 +80,7 @@ def create_store_for_fallback(
         return DuckDBMetadataStore(
             db_path,
             hash_algorithm=hash_algorithm,
-            extensions=extensions,  # type: ignore[arg-type]
+            extensions=extensions,  # pyright: ignore[reportArgumentType]
             prefer_native=prefer_native,
             fallback_stores=fallback_stores,
         )
@@ -147,7 +147,7 @@ class DownstreamFeature(
     "fallback_store_type", ["inmemory"]
 )  # Parametrized for future expansion
 def test_fallback_store_warning_issued(
-    store_params: dict,
+    store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -261,7 +261,7 @@ def test_fallback_store_warning_issued(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 def test_no_fallback_warning_when_all_local(
-    store_params: dict,
+    store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     store_type: str,
     caplog,
@@ -333,7 +333,7 @@ def test_no_fallback_warning_when_all_local(
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
 @pytest.mark.parametrize("fallback_store_type", ["inmemory"])
 def test_fallback_store_switches_to_polars_components(
-    store_params: dict,
+    store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
@@ -475,7 +475,7 @@ def test_fallback_store_switches_to_polars_components(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 def test_prefer_native_false_no_warning_even_without_fallback(
-    store_params: dict,
+    store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     store_type: str,
     caplog,
@@ -534,7 +534,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 def test_sqlite_no_warning_with_fallback_since_no_native(
-    store_params: dict,
+    store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     caplog,
 ):

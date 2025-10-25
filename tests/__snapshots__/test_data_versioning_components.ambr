@@ -1,0 +1,120 @@
+# serializer version: 1
+# name: test_code_version_changes_snapshots
+  dict({
+    'code_v1': '10167418423534341111',
+    'code_v10': '6407017139336446128',
+    'code_v2': '17724424375143333935',
+    'code_v5': '1603558698768056863',
+  })
+# ---
+# name: test_diff_result_snapshots
+  dict({
+    'added_ids': list([
+      4,
+      5,
+    ]),
+    'changed_ids': list([
+      2,
+    ]),
+    'removed_ids': list([
+      6,
+    ]),
+  })
+# ---
+# name: test_hash_output_snapshots
+  list([
+    '16401394179783035154',
+    '1766329184577422370',
+    '7930906766220635975',
+  ])
+# ---
+# name: test_multi_field_hash_snapshots
+  dict({
+    'analysis': '7182592377912622692',
+    'fusion': '15253767068807735795',
+  })
+# ---
+# name: test_multi_upstream_multi_field_snapshots[HashAlgorithm.SHA256]
+  list([
+    dict({
+      'analysis': '2f84e757b1addd884db7365ed37557a320ab69dbd4fe09975f509c07b336a43f',
+      'fusion': 'ad303eba05da467ded17cc6eaf72d16dbc40c338c802a0911a4aa229d7bdd482',
+      'sample_id': 1,
+    }),
+    dict({
+      'analysis': '39cd90847cb18c3f7c31a73be7f6d269364e8263dce2a9d923144489a78338c6',
+      'fusion': '5dba65c3be22714cfaf969bcd63c4df6d329761b62f01e430316bde62b2ea53a',
+      'sample_id': 2,
+    }),
+  ])
+# ---
+# name: test_multi_upstream_multi_field_snapshots[HashAlgorithm.WYHASH]
+  list([
+    dict({
+      'analysis': '13727348181400861260',
+      'fusion': '370342096193421791',
+      'sample_id': 1,
+    }),
+    dict({
+      'analysis': '5047585375639731387',
+      'fusion': '1768440773501995386',
+      'sample_id': 2,
+    }),
+  ])
+# ---
+# name: test_multi_upstream_multi_field_snapshots[HashAlgorithm.XXHASH64]
+  list([
+    dict({
+      'analysis': '11444342552948413717',
+      'fusion': '3008611161107019102',
+      'sample_id': 1,
+    }),
+    dict({
+      'analysis': '10628887372866074486',
+      'fusion': '14013057675311053626',
+      'sample_id': 2,
+    }),
+  ])
+# ---
+# name: test_single_upstream_single_field_snapshots[HashAlgorithm.MD5]
+  list([
+    '6adfd76497c9621a5a70cc6f0e5988c5',
+    'af599634188a17615f28c1f7ac69ef3d',
+    '8c4021310e97f146994c5dc176839a1c',
+  ])
+# ---
+# name: test_single_upstream_single_field_snapshots[HashAlgorithm.SHA256]
+  list([
+    '2ef4ffd693f92e72447dc47a09ecdf25c1c6f18acf88715aeb5472937ae19419',
+    'ba08ef288e228285b68179cd8bb18a3a1e0180c058232182c00b12e5e1e94cee',
+    'dc371b4ee27230a953f1bd87bb895edfdb12f3cd79b7668de9eed57f81e349c2',
+  ])
+# ---
+# name: test_single_upstream_single_field_snapshots[HashAlgorithm.WYHASH]
+  list([
+    '13136332531082150110',
+    '13387170137092530908',
+    '3652911779766440235',
+  ])
+# ---
+# name: test_single_upstream_single_field_snapshots[HashAlgorithm.XXHASH32]
+  list([
+    '4058237226',
+    '1188157467',
+    '2632372314',
+  ])
+# ---
+# name: test_single_upstream_single_field_snapshots[HashAlgorithm.XXHASH64]
+  list([
+    '10823186911388391974',
+    '18274202742589849974',
+    '10301923923001759408',
+  ])
+# ---
+# name: test_upstream_data_changes_snapshots
+  dict({
+    'different': '13001925192780457010',
+    'modified': '6049362021993965297',
+    'original': '8924297014343013831',
+  })
+# ---

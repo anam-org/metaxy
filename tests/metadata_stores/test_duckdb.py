@@ -1,6 +1,7 @@
 """DuckDB-specific tests that don't apply to other stores."""
 
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 import pytest
@@ -13,7 +14,9 @@ from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
-def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict) -> None:
+def test_duckdb_table_naming(
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
+) -> None:
     """Test that feature keys are converted to table names correctly.
 
     Args:
@@ -39,7 +42,7 @@ def test_duckdb_table_naming(tmp_path: Path, test_graph, test_features: dict) ->
 
 
 def test_duckdb_with_custom_config(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test creating DuckDB store with custom configuration.
 
@@ -61,7 +64,7 @@ def test_duckdb_with_custom_config(
 
 
 def test_duckdb_uses_ibis_backend(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that DuckDB store uses Ibis backend.
 
@@ -79,7 +82,7 @@ def test_duckdb_uses_ibis_backend(
 
 
 def test_duckdb_conn_property_enforcement(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that conn property enforces store is open.
 
@@ -103,7 +106,7 @@ def test_duckdb_conn_property_enforcement(
 
 
 def test_duckdb_persistence_across_instances(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that data persists across different store instances.
 
@@ -139,7 +142,7 @@ def test_duckdb_persistence_across_instances(
 
 
 def test_duckdb_close_idempotent(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that close() can be called multiple times safely.
 

@@ -98,6 +98,8 @@ reportAny = "none"
 reportExplicitAny = "none"
 include = [
     "src/metaxy",
+    "tests",
+    "examples",
 ]
 exclude = [
     "**/node_modules",

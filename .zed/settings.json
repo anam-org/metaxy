@@ -5,7 +5,7 @@
 {
   "languages": {
     "Python": {
-      "language_servers": ["pyrefly", "ruff", "!pyright", "!pylsp"]
+      "language_servers": ["basedpyright", "ruff", "!pyrefly", "!pyright", "!pylsp"]
     }
   }
 }

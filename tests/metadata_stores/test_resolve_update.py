@@ -97,7 +97,7 @@ def create_store(
         return DuckDBMetadataStore(
             db_path,
             hash_algorithm=hash_algorithm,
-            extensions=extensions,  # type: ignore[arg-type]
+            extensions=extensions,  # pyright: ignore[reportArgumentType]
             prefer_native=prefer_native,
         )
     elif store_type == "sqlite":
@@ -349,7 +349,7 @@ def simple_chain_graph():
 @pytest.mark.parametrize("prefer_native", [True, False])
 @pytest.mark.parametrize("use_native_samples", [True, False])
 def test_resolve_update_no_upstream(
-    store_params: dict,
+    store_params: dict[str, Any],
     graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     prefer_native: bool,
@@ -518,7 +518,7 @@ def test_resolve_update_no_upstream(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_with_upstream(
-    store_params: dict,
+    store_params: dict[str, Any],
     graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
@@ -536,7 +536,7 @@ def test_resolve_update_with_upstream(
     downstream_feature = features[-1]
 
     # Helper to create data_version dicts for a feature's fields
-    def make_data_versions(feature: type[Feature], prefix: str) -> list[dict]:
+    def make_data_versions(feature: type[Feature], prefix: str) -> list[dict[str, Any]]:
         fields = [c.key for c in feature.spec.fields]
         if len(fields) == 1:
             field_name = "_".join(fields[0])
@@ -659,7 +659,7 @@ def test_resolve_update_with_upstream(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_detects_changes(
-    store_params: dict,
+    store_params: dict[str, Any],
     graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
@@ -680,7 +680,9 @@ def test_resolve_update_detects_changes(
     root_fields = [c.key for c in root_feature.spec.fields]
 
     # Create data version dicts for fields
-    def make_data_versions(version_prefix: str, sample_ids: list[int]) -> list[dict]:
+    def make_data_versions(
+        version_prefix: str, sample_ids: list[int]
+    ) -> list[dict[str, Any]]:
         if len(root_fields) == 1:
             field_name = "_".join(root_fields[0])
             return [{field_name: f"{version_prefix}{i}"} for i in sample_ids]
@@ -892,7 +894,7 @@ def test_resolve_update_detects_changes(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @parametrize_with_cases("graph_config", cases=FeatureGraphCases)
 def test_resolve_update_feature_version_change_idempotency(
-    store_params: dict,
+    store_params: dict[str, Any],
     graph_config: tuple[FeatureGraph, list[type[Feature]]],
     hash_algorithm: HashAlgorithm,
     snapshot,
