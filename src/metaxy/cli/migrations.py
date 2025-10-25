@@ -28,11 +28,15 @@ def generate(
     ] = None,
     from_snapshot: Annotated[
         str | None,
-        cyclopts.Parameter(help="Compare from this historical snapshot ID (optional)"),
+        cyclopts.Parameter(
+            help="Compare from this historical snapshot version (optional)"
+        ),
     ] = None,
     to_snapshot: Annotated[
         str | None,
-        cyclopts.Parameter(help="Compare to this historical snapshot ID (optional)"),
+        cyclopts.Parameter(
+            help="Compare to this historical snapshot version (optional)"
+        ),
     ] = None,
 ):
     """Generate migration file from detected feature changes.
@@ -78,8 +82,8 @@ def generate(
         # Generate migration (returns Migration object)
         migration = generate_migration(
             metadata_store,
-            from_snapshot_id=from_snapshot,
-            to_snapshot_id=to_snapshot,
+            from_snapshot_version=from_snapshot,
+            to_snapshot_version=to_snapshot,
         )
 
         if migration is None:
@@ -128,20 +132,20 @@ def scaffold(
     from_snapshot: Annotated[
         str | None,
         cyclopts.Parameter(
-            help="Use this as from_snapshot_id (defaults to latest in store)"
+            help="Use this as from_snapshot_version (defaults to latest in store)"
         ),
     ] = None,
     to_snapshot: Annotated[
         str | None,
         cyclopts.Parameter(
-            help="Use this as to_snapshot_id (defaults to current graph)"
+            help="Use this as to_snapshot_version (defaults to current graph)"
         ),
     ] = None,
 ):
     """Create an empty migration scaffold for user-defined operations.
 
     Generates a migration file template with:
-    - Snapshot IDs from current store state
+    - Snapshot versions from current store state
     - Empty operations list for manual editing
     - Proper structure and metadata
 
@@ -174,7 +178,7 @@ def scaffold(
 
     metadata_store = get_store()
     with metadata_store:
-        # Get from_snapshot_id (use provided or default to latest in store)
+        # Get from_snapshot_version (use provided or default to latest in store)
         if from_snapshot is None:
             try:
                 feature_versions = metadata_store.read_metadata(
@@ -191,7 +195,7 @@ def scaffold(
                     # Convert to Polars for indexing
 
                     latest_native = nw.from_native(latest_snapshot).to_polars()
-                    from_snapshot_id = latest_native["snapshot_id"].item()
+                    from_snapshot_version = latest_native["snapshot_version"].item()
                 else:
                     app.error_console.print(
                         "[red]✗[/red] No feature snapshots found in store."
@@ -209,14 +213,14 @@ def scaffold(
                 )
                 raise SystemExit(1)
         else:
-            from_snapshot_id = from_snapshot
+            from_snapshot_version = from_snapshot
 
-        # Get to_snapshot_id (use provided or default to current graph)
+        # Get to_snapshot_version (use provided or default to current graph)
         if to_snapshot is None:
             graph = FeatureGraph.get_active()
-            to_snapshot_id = graph.snapshot_id
+            to_snapshot_version = graph.snapshot_version
         else:
-            to_snapshot_id = to_snapshot
+            to_snapshot_version = to_snapshot
 
         # Get parent migration ID
         parent_migration_id = None
@@ -249,8 +253,8 @@ def scaffold(
             version=1,
             id=migration_id,
             parent_migration_id=parent_migration_id,
-            from_snapshot_id=from_snapshot_id,
-            to_snapshot_id=to_snapshot_id,
+            from_snapshot_version=from_snapshot_version,
+            to_snapshot_version=to_snapshot_version,
             description=description or "User-defined migration",
             created_at=timestamp,
             operations=[],  # Empty - user will add custom operations

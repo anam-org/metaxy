@@ -49,8 +49,8 @@ class MermaidRenderer(GraphRenderer):
 
         # Create flowchart
         title = ""
-        if self.config.show_snapshot_id:
-            snapshot_hash = self._format_hash(self.graph.snapshot_id)
+        if self.config.show_snapshot_version:
+            snapshot_hash = self._format_hash(self.graph.snapshot_version)
             title = f"Feature Graph (snapshot: {snapshot_hash})"
         else:
             title = "Feature Graph"

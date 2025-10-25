@@ -9,7 +9,7 @@ def _write_sample_metadata(
     metaxy_project: TempMetaxyProject,
     feature_key_str: str,
     store_name: str = "dev",
-    sample_ids: list[int] | None = None,
+    sample_uids: list[int] | None = None,
 ):
     """Helper to write sample metadata for a feature.
 
@@ -17,12 +17,12 @@ def _write_sample_metadata(
         metaxy_project: Test project
         feature_key_str: Feature key as string (e.g., "video/files")
         store_name: Name of store to write to (default: "dev")
-        sample_ids: List of sample IDs to use (default: [1, 2, 3])
+        sample_uids: List of sample IDs to use (default: [1, 2, 3])
     """
     from metaxy.models.types import FeatureKey
 
-    if sample_ids is None:
-        sample_ids = [1, 2, 3]
+    if sample_uids is None:
+        sample_uids = [1, 2, 3]
 
     # Parse feature key
     feature_key = FeatureKey(feature_key_str.split("/"))
@@ -33,9 +33,9 @@ def _write_sample_metadata(
     # Create sample data with data_version column
     sample_data = pl.DataFrame(
         {
-            "sample_id": sample_ids,
-            "value": [f"val_{i}" for i in sample_ids],
-            "data_version": [{"default": f"hash{i}"} for i in sample_ids],
+            "sample_uid": sample_uids,
+            "value": [f"val_{i}" for i in sample_uids],
+            "data_version": [{"default": f"hash{i}"} for i in sample_uids],
         }
     )
 
@@ -46,7 +46,7 @@ def _write_sample_metadata(
         store = metaxy_project.stores[store_name]
         with store:
             store.write_metadata(feature_cls, sample_data)
-            # Record the feature graph snapshot so copy_metadata can determine snapshot_id
+            # Record the feature graph snapshot so copy_metadata can determine snapshot_version
             store.record_feature_graph_snapshot()
 
 
@@ -147,7 +147,7 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
 
 def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyProject):
-    """Test that incremental copy skips existing sample_ids."""
+    """Test that incremental copy skips existing sample_uids."""
 
     def features():
         from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
@@ -163,15 +163,15 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
             pass
 
     with metaxy_project.with_features(features):
-        # Write metadata to dev store with sample_ids [1, 2, 3]
+        # Write metadata to dev store with sample_uids [1, 2, 3]
         _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
         )
 
-        # Write metadata to staging store with sample_ids [2, 3, 4]
-        # sample_ids 2 and 3 overlap with dev
+        # Write metadata to staging store with sample_uids [2, 3, 4]
+        # sample_uids 2 and 3 overlap with dev
         _write_sample_metadata(
-            metaxy_project, "video/files", store_name="staging", sample_ids=[2, 3, 4]
+            metaxy_project, "video/files", store_name="staging", sample_uids=[2, 3, 4]
         )
 
         # Copy from dev to staging with incremental=True (default)
@@ -190,7 +190,7 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
         assert "Copy complete" in result.stdout
 
         # Verify staging now has [1, 2, 3, 4] (no duplicates)
-        # Only sample_id 1 should have been copied (2 and 3 were skipped)
+        # Only sample_uid 1 should have been copied (2 and 3 were skipped)
         store = metaxy_project.stores["staging"]
         with store:
             from metaxy.models.types import FeatureKey
@@ -204,18 +204,18 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
             # Should have 4 total rows (original 3 + 1 new)
             assert df.height == 4
 
-            # Check sample_ids
-            sample_ids = sorted(df["sample_id"].to_list())
-            assert sample_ids == [1, 2, 3, 4]
+            # Check sample_uids
+            sample_uids = sorted(df["sample_uid"].to_list())
+            assert sample_uids == [1, 2, 3, 4]
 
-            # Verify no duplicate sample_ids
-            assert len(sample_ids) == len(set(sample_ids))
+            # Verify no duplicate sample_uids
+            assert len(sample_uids) == len(set(sample_uids))
 
 
 def test_metadata_copy_non_incremental_creates_duplicates(
     metaxy_project: TempMetaxyProject,
 ):
-    """Test that non-incremental copy allows duplicate sample_ids."""
+    """Test that non-incremental copy allows duplicate sample_uids."""
 
     def features():
         from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
@@ -231,14 +231,14 @@ def test_metadata_copy_non_incremental_creates_duplicates(
             pass
 
     with metaxy_project.with_features(features):
-        # Write metadata to dev store with sample_ids [1, 2, 3]
+        # Write metadata to dev store with sample_uids [1, 2, 3]
         _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
         )
 
-        # Write metadata to staging store with sample_ids [2, 3, 4]
+        # Write metadata to staging store with sample_uids [2, 3, 4]
         _write_sample_metadata(
-            metaxy_project, "video/files", store_name="staging", sample_ids=[2, 3, 4]
+            metaxy_project, "video/files", store_name="staging", sample_uids=[2, 3, 4]
         )
 
         # Copy from dev to staging with incremental=False (--no-incremental)
@@ -257,7 +257,7 @@ def test_metadata_copy_non_incremental_creates_duplicates(
         assert result.returncode == 0
         assert "Copy complete" in result.stdout
 
-        # Verify staging now has duplicates for sample_ids 2 and 3
+        # Verify staging now has duplicates for sample_uids 2 and 3
         store = metaxy_project.stores["staging"]
         with store:
             from metaxy.models.types import FeatureKey
@@ -272,11 +272,11 @@ def test_metadata_copy_non_incremental_creates_duplicates(
             assert df.height == 6
 
             # Check that we have duplicates
-            sample_ids = df["sample_id"].to_list()
-            assert sample_ids.count(2) == 2  # sample_id 2 appears twice
-            assert sample_ids.count(3) == 2  # sample_id 3 appears twice
-            assert sample_ids.count(1) == 1  # sample_id 1 appears once
-            assert sample_ids.count(4) == 1  # sample_id 4 appears once
+            sample_uids = df["sample_uid"].to_list()
+            assert sample_uids.count(2) == 2  # sample_uid 2 appears twice
+            assert sample_uids.count(3) == 2  # sample_uid 3 appears twice
+            assert sample_uids.count(1) == 1  # sample_uid 1 appears once
+            assert sample_uids.count(4) == 1  # sample_uid 4 appears once
 
 
 def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyProject):
@@ -298,7 +298,7 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
     with metaxy_project.with_features(features):
         # Write metadata to dev store only
         _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_ids=[1, 2, 3]
+            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
         )
 
         # Copy from dev to empty staging with incremental=True
@@ -328,8 +328,8 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
             df = metadata.collect().to_polars()
 
             assert df.height == 3
-            sample_ids = sorted(df["sample_id"].to_list())
-            assert sample_ids == [1, 2, 3]
+            sample_uids = sorted(df["sample_uid"].to_list())
+            assert sample_uids == [1, 2, 3]
 
 
 def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):

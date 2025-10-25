@@ -91,15 +91,15 @@ $ metaxy migrations generate [OPTIONS]
 **Options**:
 
 * `--migrations-dir`: Directory for migration files (uses config if not specified)
-* `--from-snapshot`: Compare from this historical snapshot ID (optional)
-* `--to-snapshot`: Compare to this historical snapshot ID (optional)
+* `--from-snapshot`: Compare from this historical snapshot version (optional)
+* `--to-snapshot`: Compare to this historical snapshot version (optional)
 
 
 ## `metaxy migrations scaffold`
 
 Create an empty migration scaffold for user-defined operations.
 
-Generates a migration file template with: - Snapshot IDs from current store state - Empty operations list for manual 
+Generates a migration file template with: - Snapshot versions from current store state - Empty operations list for manual 
 editing - Proper structure and metadata
 
 Use this when you need to write custom migration operations that can't be auto-generated (e.g., complex data 
@@ -115,8 +115,8 @@ $ metaxy migrations scaffold [OPTIONS]
 
 * `--migrations-dir`: Directory for migration files (uses config if not specified)
 * `--description`: Migration description (optional)
-* `--from-snapshot`: Use this as from_snapshot_id (defaults to latest in store)
-* `--to-snapshot`: Use this as to_snapshot_id (defaults to current graph)
+* `--from-snapshot`: Use this as from_snapshot_version (defaults to latest in store)
+* `--to-snapshot`: Use this as to_snapshot_version (defaults to current graph)
 
 
 ## `metaxy migrations apply`
@@ -179,7 +179,7 @@ $ metaxy graph COMMAND
 
 Record all feature versions (push graph snapshot).
 
-Records all features in the active graph to the metadata store with a deterministic snapshot ID. This should be run 
+Records all features in the active graph to the metadata store with a deterministic snapshot version. This should be run 
 after deploying new feature definitions.
 
 **Usage**:
@@ -197,7 +197,7 @@ $ metaxy graph push [ARGS]
 
 Show history of recorded graph snapshots.
 
-Displays all recorded graph snapshots from the metadata store, showing snapshot IDs, when they were recorded, and 
+Displays all recorded graph snapshots from the metadata store, showing snapshot versions, when they were recorded, and 
 feature counts.
 
 **Usage**:
@@ -227,7 +227,7 @@ $ metaxy graph describe [ARGS]
 
 **Options**:
 
-* `SNAPSHOT, --snapshot`: Snapshot ID to describe (defaults to current graph from code)
+* `SNAPSHOT, --snapshot`: Snapshot version to describe (defaults to current graph from code)
 * `STORE, --store`: Metadata store to use (defaults to configured default store)
 
 
@@ -261,7 +261,7 @@ $ metaxy graph render [ARGS]
 * `SHOW-FEATURE-VERSIONS, --show-feature-versions, --no-show-feature-versions`: Render configuration  *[default: --show-feature-versions]*
 * `SHOW-FIELD-VERSIONS, --show-field-versions, --no-show-field-versions`: Render configuration  *[default: --show-field-versions]*
 * `SHOW-CODE-VERSIONS, --show-code-versions, --no-show-code-versions`: Render configuration  *[default: --no-show-code-versions]*
-* `SHOW-SNAPSHOT-ID, --show-snapshot-id, --no-show-snapshot-id`: Render configuration  *[default: --show-snapshot-id]*
+* `SHOW-SNAPSHOT-VERSION, --show-snapshot-version, --no-show-snapshot-version`: Render configuration  *[default: --show-snapshot-version]*
 * `HASH-LENGTH, --hash-length`: Render configuration  *[default: 8]*
 * `DIRECTION, --direction`: Render configuration  *[default: TB]*
 * `FEATURE, --feature`: Render configuration
@@ -270,7 +270,7 @@ $ metaxy graph render [ARGS]
 * `-f, --format`: Output format: terminal, mermaid, or graphviz  *[default: terminal]*
 * `-t, --type`: Terminal rendering type: graph or cards (only for --format terminal)  *[choices: graph, cards]*  *[default: graph]*
 * `-o, --output`: Output file path (default: stdout)
-* `SNAPSHOT, --snapshot`: Snapshot ID to render (default: current graph from code)
+* `SNAPSHOT, --snapshot`: Snapshot version to render (default: current graph from code)
 * `STORE, --store`: Metadata store to use (for loading historical snapshots)
 * `MINIMAL, --minimal, --no-minimal`: Minimal output: only feature keys and dependencies  *[default: --no-minimal]*
 * `VERBOSE, --verbose, --no-verbose`: Verbose output: show all available information  *[default: --no-verbose]*
@@ -324,9 +324,9 @@ Copies metadata for specified features from one store to another, optionally usi
 Migrating data between environments - Backfilling metadata - Copying specific feature versions
 
 Incremental Mode (default):
-    By default, performs an anti-join on sample_id to skip rows that already exist in the destination for the same 
-snapshot_id. This prevents duplicate writes.  Disabling incremental (--no-incremental) may improve performance when: - 
-The destination store is empty or has no overlap with source - The destination store has eventual deduplication
+    By default, performs an anti-join on sample_uid to skip rows that already exist in the destination for the same 
+snapshot_version. This prevents duplicate writes.  Disabling incremental (--no-incremental) may improve performance 
+when: - The destination store is empty or has no overlap with source - The destination store has eventual deduplication
 
 **Usage**:
 
@@ -344,7 +344,7 @@ $ metaxy metadata copy FROM TO [ARGS]
 * `FEATURE, --feature, --empty-feature`: Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
 --all-features.
 * `ALL-FEATURES, --all-features, --no-all-features`: Copy all features from source store  *[default: --no-all-features]*
-* `SNAPSHOT, --snapshot`: Snapshot ID to copy (defaults to latest in source store). The snapshot_id is preserved in the destination.
+* `SNAPSHOT, --snapshot`: Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.
 * `INCREMENTAL, --incremental, --no-incremental`: Use incremental copy (compare data_version to skip existing rows). Disable for better performance if destination is 
 empty or uses deduplication.  *[default: --incremental]*
 

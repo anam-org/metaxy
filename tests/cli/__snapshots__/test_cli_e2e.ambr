@@ -23,7 +23,7 @@
       '3c5b4c900fdf1b7f5c08736233f70738a9ca73f94c6aa2b60aeefb5b46105085',
     ]),
     'row_count': 4,
-    'sample_ids': list([
+    'sample_uids': list([
       'video1.mp4',
       'video2.mp4',
     ]),

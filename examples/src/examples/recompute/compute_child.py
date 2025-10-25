@@ -27,15 +27,15 @@ ParentFeature = get_feature_by_key(parent_key)
 # Get metadata store from metaxy.toml config
 with MetaxyConfig.load().get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
-    snapshot_id, _ = store.record_feature_graph_snapshot()
+    snapshot_version, _ = store.record_feature_graph_snapshot()
 
-    print(f"Graph snapshot_id: {snapshot_id}")
+    print(f"Graph snapshot_version: {snapshot_version}")
 
     # Compute child feature (e.g., generate predictions from embeddings)
     print(f"\n📊 Computing {ChildFeature.spec.key.to_string()}...")
     print(f"  feature_version: {ChildFeature.feature_version()}")
 
-    ids_lazy = store.read_metadata(ParentFeature, columns=["sample_id"])
+    ids_lazy = store.read_metadata(ParentFeature, columns=["sample_uid"])
     # Materialize for now (sample_df parameter support pending)
     ids = ids_lazy.collect().to_polars()
 
@@ -62,4 +62,4 @@ with MetaxyConfig.load().get_store() as store:
     child_df = child_result.collect().to_polars()
     for row in child_df.iter_rows(named=True):
         dv = row["data_version"]
-        print(f"  sample_id={row['sample_id']}: {dv}")
+        print(f"  sample_uid={row['sample_uid']}: {dv}")

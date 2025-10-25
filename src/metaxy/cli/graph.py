@@ -32,18 +32,18 @@ def push(
     """Record all feature versions (push graph snapshot).
 
     Records all features in the active graph to the metadata store
-    with a deterministic snapshot ID. This should be run after deploying
+    with a deterministic snapshot version. This should be run after deploying
     new feature definitions.
 
     Example:
         $ metaxy graph push
 
         ✓ Recorded feature graph
-          Snapshot ID: abc123def456...
+          Snapshot version: abc123def456...
 
         # Or if already recorded:
         ℹ Snapshot already recorded (skipped)
-          Snapshot ID: abc123def456...
+          Snapshot version: abc123def456...
     """
     from metaxy.cli.context import get_store
     from metaxy.entrypoints import load_features
@@ -54,16 +54,16 @@ def push(
     metadata_store = get_store(store)
 
     with metadata_store:
-        snapshot_id, was_already_recorded = (
+        snapshot_version, was_already_recorded = (
             metadata_store.record_feature_graph_snapshot()
         )
 
         if was_already_recorded:
             console.print("[blue]ℹ[/blue] Snapshot already recorded (skipped)")
-            console.print(f"  Snapshot ID: {snapshot_id}")
+            console.print(f"  Snapshot version: {snapshot_version}")
         else:
             console.print("[green]✓[/green] Recorded feature graph")
-            console.print(f"  Snapshot ID: {snapshot_id}")
+            console.print(f"  Snapshot version: {snapshot_version}")
 
 
 @app.command()
@@ -86,14 +86,14 @@ def history(
     """Show history of recorded graph snapshots.
 
     Displays all recorded graph snapshots from the metadata store,
-    showing snapshot IDs, when they were recorded, and feature counts.
+    showing snapshot versions, when they were recorded, and feature counts.
 
     Example:
         $ metaxy graph history
 
         Graph Snapshot History
         ┌──────────────┬─────────────────────┬───────────────┐
-        │ Snapshot ID  │ Recorded At         │ Feature Count │
+        │ Snapshot version  │ Recorded At         │ Feature Count │
         ├──────────────┼─────────────────────┼───────────────┤
         │ abc123...    │ 2025-01-15 10:30:00 │ 42            │
         │ def456...    │ 2025-01-14 09:15:00 │ 40            │
@@ -121,7 +121,9 @@ def history(
 
         # Create table
         table = Table(title="Graph Snapshot History")
-        table.add_column("Snapshot ID", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column(
+            "Snapshot version", style="cyan", no_wrap=False, overflow="fold"
+        )
         table.add_column("Recorded At", style="green", no_wrap=False)
         table.add_column(
             "Feature Count", style="yellow", justify="right", no_wrap=False
@@ -129,11 +131,11 @@ def history(
 
         # Add rows
         for row in snapshots_df.iter_rows(named=True):
-            snapshot_id = row["snapshot_id"]
+            snapshot_version = row["snapshot_version"]
             recorded_at = row["recorded_at"].strftime("%Y-%m-%d %H:%M:%S")
             feature_count = str(row["feature_count"])
 
-            table.add_row(snapshot_id, recorded_at, feature_count)
+            table.add_row(snapshot_version, recorded_at, feature_count)
 
         console.print(table)
         console.print(f"\nTotal snapshots: {snapshots_df.height}")
@@ -145,7 +147,7 @@ def describe(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot ID to describe (defaults to current graph from code)",
+            help="Snapshot version to describe (defaults to current graph from code)",
         ),
     ] = None,
     store: Annotated[
@@ -194,21 +196,21 @@ def describe(
         if snapshot is None:
             # Use current graph from code
             graph = FeatureGraph.get_active()
-            snapshot_id = graph.snapshot_id
+            snapshot_version = graph.snapshot_version
             console.print("[cyan]Describing current graph from code[/cyan]")
         else:
             # Use specified snapshot
-            snapshot_id = snapshot
-            console.print(f"[cyan]Describing snapshot: {snapshot_id}[/cyan]")
+            snapshot_version = snapshot
+            console.print(f"[cyan]Describing snapshot: {snapshot_version}[/cyan]")
 
             # Load graph from snapshot
             features_df = metadata_store.read_features(
-                current=False, snapshot_id=snapshot_id
+                current=False, snapshot_version=snapshot_version
             )
 
             if features_df.height == 0:
                 console.print(
-                    f"[red]✗[/red] No features found for snapshot {snapshot_id}"
+                    f"[red]✗[/red] No features found for snapshot {snapshot_version}"
                 )
                 return
 
@@ -254,7 +256,7 @@ def describe(
 
         # Display summary table
         console.print()
-        summary_table = Table(title=f"Graph Snapshot: {snapshot_id}")
+        summary_table = Table(title=f"Graph Snapshot: {snapshot_version}")
         summary_table.add_column("Metric", style="cyan", no_wrap=False)
         summary_table.add_column(
             "Value", style="yellow", justify="right", no_wrap=False
@@ -303,7 +305,7 @@ def render(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot ID to render (default: current graph from code)",
+            help="Snapshot version to render (default: current graph from code)",
         ),
     ] = None,
     store: Annotated[
@@ -484,7 +486,7 @@ def render(
         with metadata_store:
             # Read features for this snapshot
             features_df = metadata_store.read_features(
-                current=False, snapshot_id=snapshot
+                current=False, snapshot_version=snapshot
             )
 
             if features_df.height == 0:

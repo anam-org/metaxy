@@ -31,8 +31,8 @@ from metaxy.migrations import (
 from metaxy.models.feature import FeatureGraph
 
 
-def get_latest_snapshot_id(store: InMemoryMetadataStore) -> str:
-    """Get the latest snapshot_id from store's feature_versions table."""
+def get_latest_snapshot_version(store: InMemoryMetadataStore) -> str:
+    """Get the latest snapshot_version from store's feature_versions table."""
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
     with store:
@@ -42,7 +42,7 @@ def get_latest_snapshot_id(store: InMemoryMetadataStore) -> str:
         if len(versions) == 0:
             raise ValueError("No snapshots recorded in store")
         latest = versions.sort("recorded_at", descending=True).head(1)
-        return latest["snapshot_id"][0]
+        return latest["snapshot_version"][0]
 
 
 # Additional test feature classes for specific tests (must be importable)
@@ -205,7 +205,7 @@ def store_with_v1_data(graph_v1: FeatureGraph) -> InMemoryMetadataStore:
         # Write upstream
         upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "hash1"},
                     {"default": "hash2"},
@@ -218,7 +218,7 @@ def store_with_v1_data(graph_v1: FeatureGraph) -> InMemoryMetadataStore:
         store.record_feature_graph_snapshot()
 
         # Write downstream using new API
-        downstream_data = pl.DataFrame({"sample_id": [1, 2, 3]})
+        downstream_data = pl.DataFrame({"sample_uid": [1, 2, 3]})
         diff_result = store.resolve_update(DownstreamV1, sample_df=downstream_data)
         if len(diff_result.added) > 0:
             store.write_metadata(DownstreamV1, diff_result.added)
@@ -241,8 +241,8 @@ def test_detect_no_changes(
         # Compare v1 graph with itself (no changes)
         changes = detect_feature_changes(
             store_with_v1_data,
-            graph_v1.snapshot_id,
-            graph_v1.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_v1.snapshot_version,
         )
 
     # Should detect no changes (v1 graph, v1 data)
@@ -273,8 +273,8 @@ def test_detect_single_change(
     with store_v2:
         operations = detect_feature_changes(
             store_v2,
-            graph_v1.snapshot_id,
-            graph_v2.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_v2.snapshot_version,
         )
 
         # Both features changed (downstream version depends on upstream)
@@ -356,8 +356,8 @@ def test_apply_migration_rejects_root_features(
     graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
     graph_v2.features_by_key[FeatureKey(["test_migrations", "upstream"])]
 
-    # Get actual snapshot_id from store
-    v1_snapshot_id = get_latest_snapshot_id(store_with_v1_data)
+    # Get actual snapshot_version from store
+    v1_snapshot_version = get_latest_snapshot_version(store_with_v1_data)
 
     # Create migration attempting to reconcile a root feature
     migration = Migration(
@@ -365,8 +365,8 @@ def test_apply_migration_rejects_root_features(
         id="migration_test_recalc",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id=v1_snapshot_id,
-        to_snapshot_id=v1_snapshot_id,
+        from_snapshot_version=v1_snapshot_version,
+        to_snapshot_version=v1_snapshot_version,
         operations=[
             DataVersionReconciliation(
                 id="reconcile_upstream",
@@ -406,8 +406,8 @@ def test_apply_migration_idempotent(
         id="migration_test_idempotent",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
-        to_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
+        from_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
+        to_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -448,8 +448,8 @@ def test_apply_migration_dry_run(
         id="migration_test_dryrun",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
-        to_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
+        from_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
+        to_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -516,7 +516,7 @@ def test_apply_migration_propagates_downstream(
 
         new_upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "new_h1"},
                     {"default": "new_h2"},
@@ -533,8 +533,8 @@ def test_apply_migration_propagates_downstream(
             id="migration_test_propagate",
             description="Test",
             created_at=datetime(2025, 1, 1, 0, 0, 0),
-            from_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
-            to_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
+            from_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
+            to_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
             operations=[
                 # Only downstream reconciliation (upstream already updated manually)
                 DataVersionReconciliation(
@@ -574,8 +574,8 @@ def test_migration_yaml_roundtrip(tmp_path: Path) -> None:
         id="migration_test_yaml",
         description="Test YAML",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id="abc123",
-        to_snapshot_id="def456",
+        from_snapshot_version="abc123",
+        to_snapshot_version="def456",
         operations=[
             DataVersionReconciliation(
                 id="test_op_id",
@@ -615,7 +615,7 @@ def test_feature_version_in_metadata(graph_v1: FeatureGraph) -> None:
     # Write data without feature_version
     data = pl.DataFrame(
         {
-            "sample_id": [1, 2],
+            "sample_uid": [1, 2],
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
@@ -648,7 +648,7 @@ def test_current_only_filtering(
 
     data_v1 = pl.DataFrame(
         {
-            "sample_id": [1, 2],
+            "sample_uid": [1, 2],
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
@@ -661,7 +661,7 @@ def test_current_only_filtering(
 
     data_v2 = pl.DataFrame(
         {
-            "sample_id": [3, 4],
+            "sample_uid": [3, 4],
             "data_version": [{"default": "h3"}, {"default": "h4"}],
         }
     )
@@ -673,14 +673,14 @@ def test_current_only_filtering(
             store_v2.read_metadata(UpstreamV2, current_only=True)
         )
         assert len(current) == 2
-        assert set(current["sample_id"].to_list()) == {3, 4}
+        assert set(current["sample_uid"].to_list()) == {3, 4}
 
         # Read all versions
         all_data = collect_to_polars(
             store_v2.read_metadata(UpstreamV2, current_only=False)
         )
         assert len(all_data) == 4
-        assert set(all_data["sample_id"].to_list()) == {1, 2, 3, 4}
+        assert set(all_data["sample_uid"].to_list()) == {1, 2, 3, 4}
 
         # Verify feature_version values
         v1_rows = all_data.filter(
@@ -702,7 +702,7 @@ def test_system_tables_created(graph_v1: FeatureGraph) -> None:
     # Write some data
     data = pl.DataFrame(
         {
-            "sample_id": [1, 2],
+            "sample_uid": [1, 2],
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
@@ -721,7 +721,7 @@ def test_system_tables_created(graph_v1: FeatureGraph) -> None:
         assert "feature_key" in version_history.columns
         assert "feature_version" in version_history.columns
         assert "recorded_at" in version_history.columns
-        assert "snapshot_id" in version_history.columns
+        assert "snapshot_version" in version_history.columns
 
         # Should have recorded upstream
         assert "test_migrations/upstream" in version_history["feature_key"].to_list()
@@ -775,7 +775,7 @@ def test_detect_uses_latest_version_from_multiple_materializations(
 
         upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [{"default": "h1"}, {"default": "h2"}],
             }
         )
@@ -789,8 +789,8 @@ def test_detect_uses_latest_version_from_multiple_materializations(
     with store:
         changes = detect_feature_changes(
             store,
-            graph_v1.snapshot_id,
-            graph_v2.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_v2.snapshot_version,
         )
 
         # Both upstream and downstream changed (downstream version depends on upstream)
@@ -828,8 +828,8 @@ def test_migration_result_snapshots(
         id="migration_snapshot_test",
         description="Test for snapshots",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
-        to_snapshot_id=get_latest_snapshot_id(store_with_v1_data),
+        from_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
+        to_snapshot_version=get_latest_snapshot_version(store_with_v1_data),
         operations=[
             DataVersionReconciliation(
                 id="test_op_id",
@@ -926,7 +926,7 @@ def test_record_feature_graph_snapshot(
     graph_v1: FeatureGraph,
     snapshot: SnapshotAssertion,
 ) -> None:
-    """Test recording all features with deterministic snapshot_id."""
+    """Test recording all features with deterministic snapshot_version."""
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
     store = InMemoryMetadataStore()
@@ -939,24 +939,24 @@ def test_record_feature_graph_snapshot(
     # Write data for both features
     upstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
     with graph_v1.use(), store:
         store.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_data = pl.DataFrame({"sample_id": [1, 2, 3]})
+        downstream_data = pl.DataFrame({"sample_uid": [1, 2, 3]})
         diff_result = store.resolve_update(DownstreamV1, sample_df=downstream_data)
         if len(diff_result.added) > 0:
             store.write_metadata(DownstreamV1, diff_result.added)
 
         # Record all features at once
-        snapshot_id, _ = store.record_feature_graph_snapshot()
+        snapshot_version, _ = store.record_feature_graph_snapshot()
 
-        # Verify snapshot_id is deterministic
-        assert len(snapshot_id) == 64
-        assert all(c in "0123456789abcdef" for c in snapshot_id)
+        # Verify snapshot_version is deterministic
+        assert len(snapshot_version) == 64
+        assert all(c in "0123456789abcdef" for c in snapshot_version)
 
         # Verify both features were recorded
         version_history = collect_to_polars(
@@ -965,10 +965,10 @@ def test_record_feature_graph_snapshot(
 
         assert len(version_history) == 2  # Both features
 
-        # Both should have the same snapshot_id
-        snapshot_ids = version_history["snapshot_id"].unique().to_list()
-        assert len(snapshot_ids) == 1
-        assert snapshot_ids[0] == snapshot_id
+        # Both should have the same snapshot_version
+        snapshot_versions = version_history["snapshot_version"].unique().to_list()
+        assert len(snapshot_versions) == 1
+        assert snapshot_versions[0] == snapshot_version
 
         # Verify correct features recorded
         feature_keys = set(version_history["feature_key"].to_list())
@@ -988,14 +988,14 @@ def test_record_feature_graph_snapshot(
         assert upstream_row["feature_version"][0] == UpstreamV1.feature_version()
         assert downstream_row["feature_version"][0] == DownstreamV1.feature_version()
 
-        # Snapshot the snapshot_id (should be deterministic)
-        assert snapshot_id == snapshot
+        # Snapshot the snapshot_version (should be deterministic)
+        assert snapshot_version == snapshot
 
 
 def test_record_feature_graph_snapshot_is_idempotent(
     graph_v1: FeatureGraph,
 ) -> None:
-    """Test that snapshot_id is deterministic and recording is idempotent."""
+    """Test that snapshot_version is deterministic and recording is idempotent."""
     store = InMemoryMetadataStore()
 
     UpstreamV1 = graph_v1.features_by_key[FeatureKey(["test_migrations", "upstream"])]
@@ -1006,14 +1006,14 @@ def test_record_feature_graph_snapshot_is_idempotent(
     # Write data
     upstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2],
+            "sample_uid": [1, 2],
             "data_version": [{"default": "h1"}, {"default": "h2"}],
         }
     )
     with graph_v1.use(), store:
         store.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_data = pl.DataFrame({"sample_id": [1, 2]})
+        downstream_data = pl.DataFrame({"sample_uid": [1, 2]})
         diff_result = store.resolve_update(DownstreamV1, sample_df=downstream_data)
         if len(diff_result.added) > 0:
             store.write_metadata(DownstreamV1, diff_result.added)
@@ -1021,12 +1021,12 @@ def test_record_feature_graph_snapshot_is_idempotent(
         # Record twice
         import time
 
-        snapshot_id1, was_recorded1 = store.record_feature_graph_snapshot()
+        snapshot_version1, was_recorded1 = store.record_feature_graph_snapshot()
         time.sleep(0.01)  # Small delay
-        snapshot_id2, was_recorded2 = store.record_feature_graph_snapshot()
+        snapshot_version2, was_recorded2 = store.record_feature_graph_snapshot()
 
-        # snapshot_id should be identical (deterministic, no timestamp)
-        assert snapshot_id1 == snapshot_id2
+        # snapshot_version should be identical (deterministic, no timestamp)
+        assert snapshot_version1 == snapshot_version2
         # First call should not be marked as already recorded
         assert not was_recorded1
         # Second call should be marked as already recorded
@@ -1042,9 +1042,10 @@ def test_record_feature_graph_snapshot_is_idempotent(
         # The idempotency check prevents duplicate records
         assert len(version_history) == 2
 
-        # Both should have the same snapshot_id
+        # Both should have the same snapshot_version
         assert all(
-            sid == snapshot_id1 for sid in version_history["snapshot_id"].to_list()
+            sid == snapshot_version1
+            for sid in version_history["snapshot_version"].to_list()
         )
 
 
@@ -1063,14 +1064,14 @@ def test_snapshot_workflow_without_migrations(
 
     upstream_data_v1 = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
     with graph_v1.use(), store_v1:
         store_v1.write_metadata(UpstreamV1, upstream_data_v1)
 
-        downstream_data_v1 = pl.DataFrame({"sample_id": [1, 2, 3]})
+        downstream_data_v1 = pl.DataFrame({"sample_uid": [1, 2, 3]})
         diff_result = store_v1.resolve_update(
             DownstreamV1, sample_df=downstream_data_v1
         )
@@ -1078,7 +1079,7 @@ def test_snapshot_workflow_without_migrations(
             store_v1.write_metadata(DownstreamV1, diff_result.added)
 
         # Record v1 graph snapshot
-        snapshot_id_v1, _ = store_v1.record_feature_graph_snapshot()
+        snapshot_version_v1, _ = store_v1.record_feature_graph_snapshot()
 
     # Step 2: Code changes (v1 -> v2), migrate store to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
@@ -1091,14 +1092,14 @@ def test_snapshot_workflow_without_migrations(
     # This is the standard workflow when algorithm actually changed
     upstream_data_v2 = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [{"default": "h4"}, {"default": "h5"}, {"default": "h6"}],
         }
     )
     with graph_v2.use(), store_v2:
         store_v2.write_metadata(UpstreamV2, upstream_data_v2)
 
-        downstream_data_v2 = pl.DataFrame({"sample_id": [1, 2, 3]})
+        downstream_data_v2 = pl.DataFrame({"sample_uid": [1, 2, 3]})
         diff_result = store_v2.resolve_update(
             DownstreamV2, sample_df=downstream_data_v2
         )
@@ -1106,7 +1107,7 @@ def test_snapshot_workflow_without_migrations(
             store_v2.write_metadata(DownstreamV2, diff_result.added)
 
         # Record v2 graph snapshot
-        snapshot_id_v2, _ = store_v2.record_feature_graph_snapshot()
+        snapshot_version_v2, _ = store_v2.record_feature_graph_snapshot()
 
         # Verify both snapshots recorded
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
@@ -1122,12 +1123,12 @@ def test_snapshot_workflow_without_migrations(
         # - downstream v2 (new feature_version because upstream changed)
         assert len(version_history) == 4
 
-        # Verify snapshot_ids are different (different graph states)
-        snapshot_ids = version_history["snapshot_id"].unique().to_list()
-        assert len(snapshot_ids) == 2
-        assert snapshot_id_v1 in snapshot_ids
-        assert snapshot_id_v2 in snapshot_ids
-        assert snapshot_id_v1 != snapshot_id_v2
+        # Verify snapshot_versions are different (different graph states)
+        snapshot_versions = version_history["snapshot_version"].unique().to_list()
+        assert len(snapshot_versions) == 2
+        assert snapshot_version_v1 in snapshot_versions
+        assert snapshot_version_v2 in snapshot_versions
+        assert snapshot_version_v1 != snapshot_version_v2
 
         # Verify downstream recorded twice (feature_version changed due to upstream dependency)
         downstream_records = version_history.filter(
@@ -1142,7 +1143,7 @@ def test_snapshot_workflow_without_migrations(
             store_v2.read_metadata(UpstreamV2, current_only=True)
         )
         assert len(current_upstream) == 3
-        assert set(current_upstream["sample_id"].to_list()) == {1, 2, 3}
+        assert set(current_upstream["sample_uid"].to_list()) == {1, 2, 3}
 
         # Verify v1 data still exists (immutable)
         v1_upstream = collect_to_polars(
@@ -1154,8 +1155,8 @@ def test_snapshot_workflow_without_migrations(
         )
         assert len(v1_upstream) == 3
 
-        # Snapshot the snapshot_ids (should be deterministic)
-        assert {"v1": snapshot_id_v1, "v2": snapshot_id_v2} == snapshot
+        # Snapshot the snapshot_versions (should be deterministic)
+        assert {"v1": snapshot_version_v1, "v2": snapshot_version_v2} == snapshot
 
 
 def test_migrations_preserve_immutability(
@@ -1172,13 +1173,13 @@ def test_migrations_preserve_immutability(
 
     upstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
     downstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],  # User metadata
             "data_version": [{"default": "d1"}, {"default": "d2"}, {"default": "d3"}],
         }
@@ -1202,15 +1203,15 @@ def test_migrations_preserve_immutability(
     ]
 
     # Apply migration to downstream (has upstream dependencies)
-    snapshot_id_v1 = get_latest_snapshot_id(store_v1)
+    snapshot_version_v1 = get_latest_snapshot_version(store_v1)
 
     migration = Migration(
         version=1,
         id="test_immutability",
         description="Test",
         created_at=datetime(2025, 1, 1, 0, 0, 0),
-        from_snapshot_id=snapshot_id_v1,
-        to_snapshot_id=snapshot_id_v1,
+        from_snapshot_version=snapshot_version_v1,
+        to_snapshot_version=snapshot_version_v1,
         operations=[
             DataVersionReconciliation(
                 id="reconcile_downstream",
@@ -1254,7 +1255,7 @@ def test_migrations_preserve_immutability(
             "/data/2.mp4",
             "/data/3.mp4",
         }
-        assert set(all_data["sample_id"].to_list()) == {1, 2, 3}
+        assert set(all_data["sample_uid"].to_list()) == {1, 2, 3}
 
 
 def test_metadata_backfill_operation() -> None:
@@ -1270,8 +1271,8 @@ def test_metadata_backfill_operation() -> None:
             self,
             store,
             *,
-            from_snapshot_id: str,
-            to_snapshot_id: str,
+            from_snapshot_version: str,
+            to_snapshot_version: str,
             dry_run=False,
             **kwargs,
         ):
@@ -1303,7 +1304,7 @@ def test_metadata_backfill_operation() -> None:
                     # Convert Narwhals to Polars for join
                     added_pl = diff.added.to_polars()
                     to_write = external_df.join(
-                        added_pl.select(["sample_id", "data_version"]), on="sample_id"
+                        added_pl.select(["sample_uid", "data_version"]), on="sample_uid"
                     )
                     store.write_metadata(feature_cls, to_write)
                     return len(to_write)
@@ -1341,27 +1342,30 @@ def test_metadata_backfill_operation() -> None:
                 feature_key=["backfill", "test"],
                 reason="Test backfill",
                 test_data=[
-                    {"sample_id": "s1", "path": "/data/1.txt", "size": 100},
-                    {"sample_id": "s2", "path": "/data/2.txt", "size": 200},
+                    {"sample_uid": "s1", "path": "/data/1.txt", "size": 100},
+                    {"sample_uid": "s2", "path": "/data/2.txt", "size": 200},
                 ],
             )
 
             # Test dry run
             rows = backfill.execute(
-                store, from_snapshot_id="test", to_snapshot_id="test", dry_run=True
+                store,
+                from_snapshot_version="test",
+                to_snapshot_version="test",
+                dry_run=True,
             )
             assert rows == 2
 
             # Execute for real
             rows = backfill.execute(
-                store, from_snapshot_id="test", to_snapshot_id="test"
+                store, from_snapshot_version="test", to_snapshot_version="test"
             )
             assert rows == 2
 
             # Verify data was written
             result = collect_to_polars(store.read_metadata(RootFeature))
             assert len(result) == 2
-            assert set(result["sample_id"].to_list()) == {"s1", "s2"}
+            assert set(result["sample_uid"].to_list()) == {"s1", "s2"}
             assert set(result["path"].to_list()) == {"/data/1.txt", "/data/2.txt"}
             assert set(result["size"].to_list()) == {100, 200}
             assert "data_version" in result.columns
@@ -1382,15 +1386,15 @@ def test_migration_chaining_validates_parent() -> None:
             # Write initial data
             store.write_metadata(
                 UpFeature,
-                pl.DataFrame({"sample_id": [1], "data_version": [{"d": "h1"}]}),
+                pl.DataFrame({"sample_uid": [1], "data_version": [{"d": "h1"}]}),
             )
             store.write_metadata(
                 DownFeature,
-                pl.DataFrame({"sample_id": [1], "data_version": [{"d": "d1"}]}),
+                pl.DataFrame({"sample_uid": [1], "data_version": [{"d": "d1"}]}),
             )
 
             # Record snapshot
-            snapshot_id, _ = store.record_feature_graph_snapshot()
+            snapshot_version, _ = store.record_feature_graph_snapshot()
 
             # Create migration 1 (no parent) - empty operations but registers in system
             migration1 = Migration(
@@ -1399,8 +1403,8 @@ def test_migration_chaining_validates_parent() -> None:
                 parent_migration_id=None,
                 description="First migration",
                 created_at=datetime(2025, 1, 1),
-                from_snapshot_id=snapshot_id,
-                to_snapshot_id=snapshot_id,
+                from_snapshot_version=snapshot_version,
+                to_snapshot_version=snapshot_version,
                 operations=[],
             )
 
@@ -1411,8 +1415,8 @@ def test_migration_chaining_validates_parent() -> None:
                 parent_migration_id="migration_001",
                 description="Second migration",
                 created_at=datetime(2025, 1, 2),
-                from_snapshot_id=snapshot_id,
-                to_snapshot_id=snapshot_id,
+                from_snapshot_version=snapshot_version,
+                to_snapshot_version=snapshot_version,
                 operations=[],
             )
 
@@ -1496,7 +1500,7 @@ def test_migration_ignores_new_features(
     with graph_v1.use(), store:
         upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [{"default": "h1"}, {"default": "h2"}],
             }
         )
@@ -1514,8 +1518,8 @@ def test_migration_ignores_new_features(
         # Detect changes - should ignore new_feature (no existing data)
         operations = detect_feature_changes(
             store_new,
-            graph_v1.snapshot_id,
-            graph_with_new.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_with_new.snapshot_version,
         )
 
         # Should only detect 0 operations (upstream unchanged, new_feature has no data)
@@ -1624,15 +1628,15 @@ def test_migration_with_dependency_change() -> None:
         # Write root features with user-defined data_versions
         store.write_metadata(
             upstream_a,
-            pl.DataFrame({"sample_id": [1], "data_version": [{"default": "ha"}]}),
+            pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "ha"}]}),
         )
         store.write_metadata(
             upstream_b,
-            pl.DataFrame({"sample_id": [1], "data_version": [{"default": "hb"}]}),
+            pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "hb"}]}),
         )
 
         # Downstream is not a root feature - use resolve_update to get correct data_version
-        downstream_samples = pl.DataFrame({"sample_id": [1]})
+        downstream_samples = pl.DataFrame({"sample_uid": [1]})
         diff = store.resolve_update(down_v1, sample_df=downstream_samples)
         if len(diff.added) > 0:
             store.write_metadata(down_v1, diff.added)
@@ -1650,8 +1654,8 @@ def test_migration_with_dependency_change() -> None:
         # Should detect downstream as changed (dependencies changed)
         operations = detect_feature_changes(
             store_v2,
-            graph_v1.snapshot_id,
-            graph_v2.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_v2.snapshot_version,
         )
 
         # Downstream should be detected as changed
@@ -1755,12 +1759,12 @@ def test_migration_with_field_dependency_change() -> None:
         store.write_metadata(
             upstream_v1,
             pl.DataFrame(
-                {"sample_id": [1], "data_version": [{"frames": "hf", "audio": "ha"}]}
+                {"sample_uid": [1], "data_version": [{"frames": "hf", "audio": "ha"}]}
             ),
         )
 
         # Downstream is not a root feature - use resolve_update to get correct data_version
-        downstream_samples = pl.DataFrame({"sample_id": [1]})
+        downstream_samples = pl.DataFrame({"sample_uid": [1]})
         diff = store.resolve_update(down_v1, sample_df=downstream_samples)
         if len(diff.added) > 0:
             store.write_metadata(down_v1, diff.added)
@@ -1778,8 +1782,8 @@ def test_migration_with_field_dependency_change() -> None:
         # Should detect downstream as changed (field deps changed)
         operations = detect_feature_changes(
             store_v2,
-            graph_v1.snapshot_id,
-            graph_v2.snapshot_id,
+            graph_v1.snapshot_version,
+            graph_v2.snapshot_version,
         )
 
         # Downstream should be detected as changed
@@ -1817,7 +1821,7 @@ def test_sequential_migration_application():
             test_feature,
             pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"default": "h1"},
                         {"default": "h2"},
@@ -1826,7 +1830,7 @@ def test_sequential_migration_application():
                 }
             ),
         )
-        snapshot_id, _ = store.record_feature_graph_snapshot()
+        snapshot_version, _ = store.record_feature_graph_snapshot()
 
     # Create 3 migrations with side effects (using MetadataBackfill with unique markers)
     from datetime import datetime
@@ -1836,8 +1840,8 @@ def test_sequential_migration_application():
         version=1,
         id="migration_001",
         parent_migration_id=None,
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="First migration",
         created_at=datetime(2025, 1, 1),
         operations=[],
@@ -1848,8 +1852,8 @@ def test_sequential_migration_application():
         version=1,
         id="migration_002",
         parent_migration_id="migration_001",
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Second migration",
         created_at=datetime(2025, 1, 2),
         operations=[],
@@ -1860,8 +1864,8 @@ def test_sequential_migration_application():
         version=1,
         id="migration_003",
         parent_migration_id="migration_002",
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Third migration",
         created_at=datetime(2025, 1, 3),
         operations=[],
@@ -1922,9 +1926,9 @@ def test_multiple_migration_heads_detection():
     with graph.use(), store:
         store.write_metadata(
             test_feature,
-            pl.DataFrame({"sample_id": [1], "data_version": [{"default": "h1"}]}),
+            pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "h1"}]}),
         )
-        snapshot_id, _ = store.record_feature_graph_snapshot()
+        snapshot_version, _ = store.record_feature_graph_snapshot()
 
     from datetime import datetime
 
@@ -1934,8 +1938,8 @@ def test_multiple_migration_heads_detection():
         version=1,
         id="migration_a1",
         parent_migration_id=None,
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Chain A - step 1",
         created_at=datetime(2025, 1, 1),
         operations=[],
@@ -1945,8 +1949,8 @@ def test_multiple_migration_heads_detection():
         version=1,
         id="migration_a2",
         parent_migration_id="migration_a1",
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Chain A - step 2",
         created_at=datetime(2025, 1, 2),
         operations=[],
@@ -1957,8 +1961,8 @@ def test_multiple_migration_heads_detection():
         version=1,
         id="migration_b1",
         parent_migration_id=None,
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Chain B - step 1",
         created_at=datetime(2025, 1, 3),
         operations=[],
@@ -1968,8 +1972,8 @@ def test_multiple_migration_heads_detection():
         version=1,
         id="migration_b2",
         parent_migration_id="migration_b1",
-        from_snapshot_id=snapshot_id,
-        to_snapshot_id=snapshot_id,
+        from_snapshot_version=snapshot_version,
+        to_snapshot_version=snapshot_version,
         description="Chain B - step 2",
         created_at=datetime(2025, 1, 4),
         operations=[],
@@ -2038,14 +2042,14 @@ def test_migration_vs_recompute_comparison(
 
     upstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [{"default": "h1"}, {"default": "h2"}, {"default": "h3"}],
         }
     )
     with graph_v1.use(), store_v1:
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_data = pl.DataFrame({"sample_id": [1, 2, 3]})
+        downstream_data = pl.DataFrame({"sample_uid": [1, 2, 3]})
         diff_result = store_v1.resolve_update(DownstreamV1, sample_df=downstream_data)
         if len(diff_result.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff_result.added)
@@ -2067,7 +2071,7 @@ def test_migration_vs_recompute_comparison(
         # User manually writes new upstream data (root feature changed)
         new_upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "new_h1"},
                     {"default": "new_h2"},
@@ -2078,15 +2082,15 @@ def test_migration_vs_recompute_comparison(
         store_migration.write_metadata(UpstreamV2, new_upstream_data)
 
         # Now reconcile downstream to reflect new upstream
-        snapshot_id_v1 = get_latest_snapshot_id(store_v1)
+        snapshot_version_v1 = get_latest_snapshot_version(store_v1)
 
         migration = Migration(
             version=1,
             id="migration_test_comparison",
             description="Test",
             created_at=datetime(2025, 1, 1, 0, 0, 0),
-            from_snapshot_id=snapshot_id_v1,
-            to_snapshot_id=snapshot_id_v1,
+            from_snapshot_version=snapshot_version_v1,
+            to_snapshot_version=snapshot_version_v1,
             operations=[
                 DataVersionReconciliation(
                     id="reconcile_downstream",

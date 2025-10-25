@@ -37,7 +37,7 @@ class UpstreamJoiner(ABC):
     ) -> tuple[nw.LazyFrame[Any], dict[str, str]]:
         """Join all upstream features together.
 
-        Joins upstream feature metadata on sample_id to create a unified reference
+        Joins upstream feature metadata on sample_uid to create a unified reference
         containing all upstream data_version columns needed for hash calculation.
 
         Args:
@@ -50,12 +50,12 @@ class UpstreamJoiner(ABC):
         Returns:
             Tuple of (joined_ref, upstream_column_mapping):
             - joined_ref: Narwhals LazyFrame with all upstream data joined
-                Shape: [sample_id, __upstream_video__data_version, __upstream_audio__data_version, ...]
+                Shape: [sample_uid, __upstream_video__data_version, __upstream_audio__data_version, ...]
             - upstream_column_mapping: Maps upstream feature key -> column name
                 Example: {"video": "__upstream_video__data_version"}
 
         Note:
-            Uses INNER join by default - only sample_ids present in ALL upstream features
+            Uses INNER join by default - only sample_uids present in ALL upstream features
             are included. This ensures we can compute valid data_versions.
         """
         pass

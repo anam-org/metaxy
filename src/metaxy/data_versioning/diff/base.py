@@ -27,14 +27,14 @@ class LazyDiffResult(NamedTuple):
 
     Attributes:
         added: New samples (lazy, never None - empty LazyFrame instead)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
         changed: Changed samples (lazy, never None)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
         removed: Removed samples (lazy, never None)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
 
     Note:
-        May contain additional user columns beyond sample_id and data_version,
+        May contain additional user columns beyond sample_uid and data_version,
         depending on what was passed to resolve_update() via align_upstream_metadata.
     """
 
@@ -67,14 +67,14 @@ class DiffResult(NamedTuple):
 
     Attributes:
         added: New samples (eager, never None - empty DataFrame instead)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
         changed: Changed samples (eager, never None)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
         removed: Removed samples (eager, never None)
-            Columns: [sample_id, data_version, ...user columns...]
+            Columns: [sample_uid, data_version, ...user columns...]
 
     Note:
-        May contain additional user columns beyond sample_id and data_version,
+        May contain additional user columns beyond sample_uid and data_version,
         depending on what was passed to resolve_update() via align_upstream_metadata.
     """
 
@@ -125,9 +125,9 @@ class MetadataDiffResolver(ABC):
 
         Args:
             target_versions: Narwhals LazyFrame with newly calculated data_versions
-                Shape: [sample_id, data_version (calculated), upstream columns...]
+                Shape: [sample_uid, data_version (calculated), upstream columns...]
             current_metadata: Narwhals LazyFrame with current metadata, or None
-                Shape: [sample_id, data_version (existing), feature_version, custom columns...]
+                Shape: [sample_uid, data_version (existing), feature_version, custom columns...]
                 Should be pre-filtered by feature_version at the caller level if needed.
 
         Returns:

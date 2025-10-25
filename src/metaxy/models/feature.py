@@ -220,8 +220,8 @@ class FeatureGraph:
         return result
 
     @property
-    def snapshot_id(self) -> str:
-        """Generate a snapshot ID representing the current topology + versions of the feature graph"""
+    def snapshot_version(self) -> str:
+        """Generate a snapshot version representing the current topology + versions of the feature graph"""
         if len(self.feature_specs_by_key) == 0:
             return "empty"
 
@@ -549,7 +549,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         current_metadata: pl.DataFrame,
         upstream_metadata: dict[str, pl.DataFrame],
     ) -> pl.DataFrame:
-        """Align metadata with upstream by joining on sample_id.
+        """Align metadata with upstream by joining on sample_uid.
 
         Override this method to customize alignment logic when upstream features change.
         This is called during migration propagation to determine which samples to process.
@@ -560,17 +560,17 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
         - Cross-product joins for combinatorial features
         - Custom sample ID generation
 
-        Default behavior: Inner join on 'sample_id' with all upstream features.
-        Only preserves sample_id column - all other columns are dropped and will
+        Default behavior: Inner join on 'sample_uid' with all upstream features.
+        Only preserves sample_uid column - all other columns are dropped and will
         be recalculated during data version computation.
 
         Args:
             current_metadata: Existing metadata for this feature (may be empty)
             upstream_metadata: Dict mapping upstream feature keys to their metadata DataFrames.
-                Each DataFrame includes sample_id, data_version, and other columns.
+                Each DataFrame includes sample_uid, data_version, and other columns.
 
         Returns:
-            DataFrame with 'sample_id' column (at minimum), ready for data version calculation.
+            DataFrame with 'sample_uid' column (at minimum), ready for data version calculation.
             Other columns are preserved if present in current_metadata.
 
         Example - One-to-many (video frames):
@@ -581,12 +581,12 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             ...     upstream_metadata: dict[str, pl.DataFrame],
             ... ) -> pl.DataFrame:
             ...     # Each video produces 30 frames
-            ...     video_samples = upstream_metadata["videos"]["sample_id"]
+            ...     video_samples = upstream_metadata["videos"]["sample_uid"]
             ...     frames = []
             ...     for video_id in video_samples:
             ...         for frame_idx in range(30):
             ...             frames.append({
-            ...                 "sample_id": f"{video_id}_frame_{frame_idx}",
+            ...                 "sample_uid": f"{video_id}_frame_{frame_idx}",
             ...                 "video_id": video_id,
             ...                 "frame_idx": frame_idx,
             ...             })
@@ -601,7 +601,7 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             ... ) -> pl.DataFrame:
             ...     # Only process videos longer than 10 seconds
             ...     videos = upstream_metadata["videos"]
-            ...     return videos.filter(pl.col("duration") > 10).select(["sample_id", "duration"])
+            ...     return videos.filter(pl.col("duration") > 10).select(["sample_uid", "duration"])
 
         Example - Outer join (keep all upstream samples):
             >>> @classmethod
@@ -613,37 +613,37 @@ class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
             ...     # Union of all upstream sample IDs
             ...     all_samples = set()
             ...     for upstream_df in upstream_metadata.values():
-            ...         all_samples.update(upstream_df["sample_id"].to_list())
-            ...     return pl.DataFrame({"sample_id": sorted(all_samples)})
+            ...         all_samples.update(upstream_df["sample_uid"].to_list())
+            ...     return pl.DataFrame({"sample_uid": sorted(all_samples)})
         """
         if not upstream_metadata:
-            # No upstream, return current metadata with only sample_id
+            # No upstream, return current metadata with only sample_uid
             if len(current_metadata) > 0:
-                return current_metadata.select(pl.col("sample_id"))
+                return current_metadata.select(pl.col("sample_uid"))
             else:
-                return pl.DataFrame({"sample_id": []})
+                return pl.DataFrame({"sample_uid": []})
 
-        # Default: inner join on sample_id across all upstream features
+        # Default: inner join on sample_uid across all upstream features
         # This ensures we only process samples that exist in ALL upstream features
         common_samples: set[int] | None = None
         for upstream_df in upstream_metadata.values():
-            sample_ids = set(upstream_df["sample_id"].to_list())
+            sample_uids = set(upstream_df["sample_uid"].to_list())
             if common_samples is None:
-                common_samples = sample_ids
+                common_samples = sample_uids
             else:
-                common_samples &= sample_ids  # Intersection
+                common_samples &= sample_uids  # Intersection
 
         if not common_samples:
-            return pl.DataFrame({"sample_id": []})
+            return pl.DataFrame({"sample_uid": []})
 
         # Filter current metadata to common samples, preserving existing columns
         if len(current_metadata) > 0:
             return current_metadata.filter(
-                pl.col("sample_id").is_in(list(common_samples))
+                pl.col("sample_uid").is_in(list(common_samples))
             )
         else:
             # No current metadata, create from upstream sample IDs
-            return pl.DataFrame({"sample_id": sorted(common_samples)})
+            return pl.DataFrame({"sample_uid": sorted(common_samples)})
 
     @classmethod
     def data_version(cls) -> dict[str, str]:

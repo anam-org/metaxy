@@ -103,7 +103,7 @@ def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
         # Add upstream feature A
         upstream_a_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
                 "data_version": [
                     {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
@@ -130,7 +130,7 @@ def multi_env_stores(
         # Populate prod with upstream data
         upstream_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "prod_hash1", "audio": "prod_hash1"},
                     {"frames": "prod_hash2", "audio": "prod_hash2"},
@@ -151,7 +151,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
     with empty_store:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "hash1", "audio": "hash1"},
                     {"frames": "hash2", "audio": "hash2"},
@@ -164,7 +164,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
 
         assert len(result) == 3
-        assert "sample_id" in result.columns
+        assert "sample_uid" in result.columns
         assert "data_version" in result.columns
 
 
@@ -173,7 +173,7 @@ def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
     with empty_store:
         invalid_df = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "path": ["/a", "/b", "/c"],
             }
         )
@@ -187,7 +187,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
     with empty_store:
         df1 = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -197,7 +197,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
 
         df2 = pl.DataFrame(
             {
-                "sample_id": [3, 4],
+                "sample_uid": [3, 4],
                 "data_version": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
@@ -210,7 +210,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
 
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
         assert len(result) == 4
-        assert set(result["sample_id"].to_list()) == {1, 2, 3, 4}
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
 def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
@@ -218,12 +218,12 @@ def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
     with populated_store:
         result = collect_to_polars(
             populated_store.read_metadata(
-                UpstreamFeatureA, filters=[nw.col("sample_id") > 1]
+                UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]
             )
         )
 
         assert len(result) == 2
-        assert set(result["sample_id"].to_list()) == {2, 3}
+        assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
 def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> None:
@@ -231,11 +231,11 @@ def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> N
     with populated_store:
         result = collect_to_polars(
             populated_store.read_metadata(
-                UpstreamFeatureA, columns=["sample_id", "data_version"]
+                UpstreamFeatureA, columns=["sample_uid", "data_version"]
             )
         )
 
-        assert set(result.columns) == {"sample_id", "data_version"}
+        assert set(result.columns) == {"sample_uid", "data_version"}
         assert "path" not in result.columns
 
 
@@ -334,7 +334,7 @@ def test_write_to_dev_not_prod(
     with dev, prod:
         new_data = pl.DataFrame(
             {
-                "sample_id": [4, 5],
+                "sample_uid": [4, 5],
                 "data_version": [{"default": "hash4"}, {"default": "hash5"}],
             }
         )
@@ -414,7 +414,7 @@ def test_store_not_open_write_raises(empty_store: InMemoryMetadataStore) -> None
     """Test that writing to a closed store raises StoreNotOpenError."""
     metadata = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [
                 {"frames": "hash1", "audio": "hash1"},
                 {"frames": "hash2", "audio": "hash2"},

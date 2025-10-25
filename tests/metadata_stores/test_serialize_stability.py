@@ -1,4 +1,4 @@
-"""Test that record_feature_graph_snapshot produces stable snapshot_ids."""
+"""Test that record_feature_graph_snapshot produces stable snapshot_versions."""
 
 from typing import Any
 
@@ -9,24 +9,24 @@ from metaxy.models.feature import FeatureGraph
 def test_record_feature_graph_snapshot_stability(
     persistent_store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
 ) -> None:
-    """Test that record_feature_graph_snapshot produces consistent snapshot_ids.
+    """Test that record_feature_graph_snapshot produces consistent snapshot_versions.
 
     Verifies that:
     1. record_feature_graph_snapshot uses to_snapshot() internally
-    2. The snapshot_id from record_feature_graph_snapshot matches graph.snapshot_id
-    3. Serializing the same graph multiple times produces the same snapshot_id
-    4. The snapshot can be deserialized and produces the same snapshot_id
+    2. The snapshot_version from record_feature_graph_snapshot matches graph.snapshot_version
+    3. Serializing the same graph multiple times produces the same snapshot_version
+    4. The snapshot can be deserialized and produces the same snapshot_version
     """
     graph, features = test_graph
 
     # Ensure this graph is active so record_feature_graph_snapshot uses it
     with graph.use():
         with persistent_store:
-            # Get the original snapshot_id from the graph
-            original_snapshot_id = graph.snapshot_id
+            # Get the original snapshot_version from the graph
+            original_snapshot_version = graph.snapshot_version
 
             # Serialize the graph for the first time
-            snapshot_id_1, was_already_recorded_1 = (
+            snapshot_version_1, was_already_recorded_1 = (
                 persistent_store.record_feature_graph_snapshot()
             )
 
@@ -35,13 +35,13 @@ def test_record_feature_graph_snapshot_stability(
                 "First serialization should not be marked as already recorded"
             )
 
-            # Should match the graph's snapshot_id
-            assert snapshot_id_1 == original_snapshot_id, (
-                f"Serialized snapshot_id {snapshot_id_1} doesn't match graph.snapshot_id {original_snapshot_id}"
+            # Should match the graph's snapshot_version
+            assert snapshot_version_1 == original_snapshot_version, (
+                f"Serialized snapshot_version {snapshot_version_1} doesn't match graph.snapshot_version {original_snapshot_version}"
             )
 
             # Serialize again - should be idempotent
-            snapshot_id_2, was_already_recorded_2 = (
+            snapshot_version_2, was_already_recorded_2 = (
                 persistent_store.record_feature_graph_snapshot()
             )
 
@@ -50,9 +50,9 @@ def test_record_feature_graph_snapshot_stability(
                 "Second serialization should be marked as already recorded"
             )
 
-            # Should produce the same snapshot_id
-            assert snapshot_id_2 == snapshot_id_1, (
-                f"Second serialization produced different snapshot_id: {snapshot_id_2} vs {snapshot_id_1}"
+            # Should produce the same snapshot_version
+            assert snapshot_version_2 == snapshot_version_1, (
+                f"Second serialization produced different snapshot_version: {snapshot_version_2} vs {snapshot_version_1}"
             )
 
             # Read the snapshot back and verify it can be reconstructed
@@ -60,11 +60,11 @@ def test_record_feature_graph_snapshot_stability(
 
             # Reconstruct graph from snapshot
             reconstructed_graph = FeatureGraph.from_snapshot(snapshot_dict)
-            reconstructed_snapshot_id = reconstructed_graph.snapshot_id
+            reconstructed_snapshot_version = reconstructed_graph.snapshot_version
 
-            # Reconstructed graph should have the same snapshot_id
-            assert reconstructed_snapshot_id == original_snapshot_id, (
-                f"Reconstructed snapshot_id {reconstructed_snapshot_id} doesn't match original {original_snapshot_id}"
+            # Reconstructed graph should have the same snapshot_version
+            assert reconstructed_snapshot_version == original_snapshot_version, (
+                f"Reconstructed snapshot_version {reconstructed_snapshot_version} doesn't match original {original_snapshot_version}"
             )
 
 
@@ -84,7 +84,7 @@ def test_serialize_uses_to_snapshot(
     with graph.use():
         with persistent_store:
             # Serialize to the store
-            snapshot_id, _ = persistent_store.record_feature_graph_snapshot()
+            snapshot_version, _ = persistent_store.record_feature_graph_snapshot()
 
             # Read back the serialized data from the store
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
@@ -114,36 +114,38 @@ def test_serialize_uses_to_snapshot(
                 assert (
                     row["feature_class_path"] == feature_data["feature_class_path"]
                 ), f"Feature class path mismatch for {feature_key_str}"
-                assert row["snapshot_id"] == snapshot_id, (
-                    f"Snapshot ID mismatch for {feature_key_str}"
+                assert row["snapshot_version"] == snapshot_version, (
+                    f"Snapshot version mismatch for {feature_key_str}"
                 )
 
 
-def test_snapshot_id_deterministic_across_stores(
+def test_snapshot_version_deterministic_across_stores(
     test_graph: tuple[FeatureGraph, dict[str, Any]],
 ) -> None:
-    """Test that snapshot_id is deterministic regardless of store type.
+    """Test that snapshot_version is deterministic regardless of store type.
 
-    The snapshot_id should be computed from the graph structure alone,
+    The snapshot_version should be computed from the graph structure alone,
     not from any store-specific details.
     """
     graph, _ = test_graph
 
-    # Get snapshot_id directly from graph
-    snapshot_id_1 = graph.snapshot_id
+    # Get snapshot_version directly from graph
+    snapshot_version_1 = graph.snapshot_version
 
     # Get it again
-    snapshot_id_2 = graph.snapshot_id
+    snapshot_version_2 = graph.snapshot_version
 
     # Should be identical
-    assert snapshot_id_1 == snapshot_id_2, "snapshot_id should be deterministic"
+    assert snapshot_version_1 == snapshot_version_2, (
+        "snapshot_version should be deterministic"
+    )
 
     # Get snapshot dict and reconstruct
     snapshot_dict = graph.to_snapshot()
     reconstructed_graph = FeatureGraph.from_snapshot(snapshot_dict)
-    snapshot_id_3 = reconstructed_graph.snapshot_id
+    snapshot_version_3 = reconstructed_graph.snapshot_version
 
     # Should still be identical
-    assert snapshot_id_3 == snapshot_id_1, (
-        "Reconstructed graph should have same snapshot_id"
+    assert snapshot_version_3 == snapshot_version_1, (
+        "Reconstructed graph should have same snapshot_version"
     )

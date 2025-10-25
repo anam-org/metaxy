@@ -11,7 +11,7 @@ data_dir.mkdir(exist_ok=True)
 # Create upstream data
 upstream_data = pl.DataFrame(
     {
-        "sample_id": ["video1", "video2", "video3"],
+        "sample_uid": ["video1", "video2", "video3"],
         "data_version": [
             {"frames": "upstream_v1_frames"},
             {"frames": "upstream_v2_frames"},

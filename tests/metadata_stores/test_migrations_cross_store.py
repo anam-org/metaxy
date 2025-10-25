@@ -39,12 +39,12 @@ def test_migration_system_tables_serialize_cross_store(
     with graph.use(), store:
         # Record feature graph snapshot first (mimics CI/CD workflow)
         # This must be done before any operations that need historical graph
-        snapshot_id, _ = store.record_feature_graph_snapshot()
+        snapshot_version, _ = store.record_feature_graph_snapshot()
 
         # Write minimal data for downstream feature (has upstream deps)
         upstream_data = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "f1", "audio": "a1"}],
             }
         )
@@ -52,7 +52,7 @@ def test_migration_system_tables_serialize_cross_store(
 
         downstream_data = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"default": "d1"}],
             }
         )
@@ -64,8 +64,8 @@ def test_migration_system_tables_serialize_cross_store(
             id="test_serialization",
             description="Test system table serialization",
             created_at=datetime(2025, 1, 1),
-            from_snapshot_id=snapshot_id,
-            to_snapshot_id=snapshot_id,
+            from_snapshot_version=snapshot_version,
+            to_snapshot_version=snapshot_version,
             operations=[
                 DataVersionReconciliation(
                     id="reconcile_downstream",
@@ -165,13 +165,13 @@ def test_migration_system_tables_serialize_cross_store(
         final_downstream = collect_to_polars(
             store.read_metadata(DownstreamFeature, current_only=False)
         ).sort(
-            ["sample_id", "feature_version", "snapshot_id"]
+            ["sample_uid", "feature_version", "snapshot_version"]
         )  # Sort by multiple columns for determinism
 
         # Convert to snapshot-friendly format (sorted by keys for consistency)
         rows_list = [
             {
-                "sample_id": row["sample_id"],
+                "sample_uid": row["sample_uid"],
                 "feature_version": row["feature_version"],
                 # Sort dict keys for deterministic string representation
                 "data_version": str(dict(sorted(row["data_version"].items()))),
@@ -183,7 +183,11 @@ def test_migration_system_tables_serialize_cross_store(
             "row_count": len(final_downstream),
             "rows": sorted(
                 rows_list,
-                key=lambda x: (x["sample_id"], x["feature_version"], x["data_version"]),
+                key=lambda x: (
+                    x["sample_uid"],
+                    x["feature_version"],
+                    x["data_version"],
+                ),
             ),
         }
         assert downstream_snapshot == snapshot

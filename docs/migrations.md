@@ -23,7 +23,7 @@ Tracks when each feature version was recorded:
     "feature_version": "a3f8b2c1",
     "recorded_at": datetime(2025, 1, 10, 14, 30, 0),
     "fields": ["frames", "audio"],
-    "snapshot_id": "9fee05a3",  # Graph snapshot hash (if recorded with record_feature_graph_snapshot)
+    "snapshot_version": "9fee05a3",  # Graph snapshot hash (if recorded with record_feature_graph_snapshot)
 }
 ```
 
@@ -71,9 +71,9 @@ $ metaxy push
 
 This command:
 1. Serializes the complete feature graph (all features, dependencies, field definitions)
-2. Generates a deterministic `snapshot_id` (hash of all feature_versions)
+2. Generates a deterministic `snapshot_version` (hash of all feature_versions)
 3. Records the snapshot in the `__metaxy__/feature_versions` system table
-4. Returns the snapshot_id for your records
+4. Returns the snapshot_version for your records
 
 **Example CD Workflow:**
 ```bash
@@ -111,18 +111,18 @@ metaxy migrations apply
 {
     "feature_key": "video_processing",
     "feature_version": "a3f8b2c1",  # Hash of feature definition
-    "snapshot_id": "9fee05a3",      # Hash of entire graph
+    "snapshot_version": "9fee05a3",      # Hash of entire graph
     "recorded_at": "2025-01-13T10:30:00Z",
     "feature_spec": {...},          # Complete feature definition (serialized)
     "feature_class_path": "myproject.features.VideoProcessing"
 }
 ```
 
-**Snapshot ID Properties:**
+**Snapshot version Properties:**
 
-The `snapshot_id` is a deterministic hash representing the entire feature graph state:
-- ✅ Idempotent - same graph = same snapshot_id every time
-- ✅ Unique - any change = different snapshot_id
+The `snapshot_version` is a deterministic hash representing the entire feature graph state:
+- ✅ Idempotent - same graph = same snapshot_version every time
+- ✅ Unique - any change = different snapshot_version
 - ✅ No timestamp - purely content-based hash
 - ✅ Groups all features deployed together
 
@@ -256,13 +256,13 @@ if _is_migration_completed(store, migration.id):
 **Step 2: Migrate Source Features (Immutable Copy-on-Write)**
 ```python
 for operation in migration.operations:
-    # Operations derive old/new feature_versions from migration's snapshot IDs
+    # Operations derive old/new feature_versions from migration's snapshot versions
     # Query feature versions from snapshot metadata
     from_feature_version = get_version_from_snapshot(
-        store, operation.feature_key, migration.from_snapshot_id
+        store, operation.feature_key, migration.from_snapshot_version
     )
     to_feature_version = get_version_from_snapshot(
-        store, operation.feature_key, migration.to_snapshot_id
+        store, operation.feature_key, migration.to_snapshot_version
     )
 
     # Query rows with OLD feature_version
@@ -277,17 +277,17 @@ for operation in migration.operations:
         continue
 
     # Copy ALL metadata columns (preserves paths, labels, etc.)
-    # Exclude only data_version, feature_version, and snapshot_id (will be recalculated)
+    # Exclude only data_version, feature_version, and snapshot_version (will be recalculated)
     columns_to_keep = [c for c in old_rows.columns
-                      if c not in ["data_version", "feature_version", "snapshot_id"]]
+                      if c not in ["data_version", "feature_version", "snapshot_version"]]
     sample_metadata = old_rows.select(columns_to_keep)
 
     # Recalculate data versions and APPEND new rows
     # Old rows remain unchanged (immutable!)
     # New rows get:
-    # - Same sample_id and user metadata columns
+    # - Same sample_uid and user metadata columns
     # - Recalculated data_version (based on new feature definition)
-    # - New feature_version and snapshot_id
+    # - New feature_version and snapshot_version
     store.calculate_and_write_data_versions(
         feature=feature,
         sample_df=sample_metadata,
@@ -295,8 +295,8 @@ for operation in migration.operations:
 ```
 
 **Result:** Metadata store now contains BOTH old and new versions:
-- Old rows: `feature_version=abc123`, `snapshot_id=snap1`, original `data_version`, original metadata
-- New rows: `feature_version=def456`, `snapshot_id=snap2`, recalculated `data_version`, **same metadata**
+- Old rows: `feature_version=abc123`, `snapshot_version=snap1`, original `data_version`, original metadata
+- New rows: `feature_version=def456`, `snapshot_version=snap2`, recalculated `data_version`, **same metadata**
 
 Reading with `current_only=True` returns only new rows.
 
@@ -314,11 +314,11 @@ for operation in migration.operations:
         # For features with upstream dependencies:
         # 1. Load existing metadata (old feature_version)
         # 2. Recalculate data_versions based on upstream changes
-        # 3. Write new rows with updated feature_version + snapshot_id
+        # 3. Write new rows with updated feature_version + snapshot_version
         operation.execute(
             store,
-            from_snapshot_id=migration.from_snapshot_id,
-            to_snapshot_id=migration.to_snapshot_id
+            from_snapshot_version=migration.from_snapshot_version,
+            to_snapshot_version=migration.to_snapshot_version
         )
 ```
 
@@ -365,9 +365,9 @@ parent_migration_id: "migration_20250110_120000"  # Previous migration (if any)
 description: "Auto-generated migration for 2 changed features + 3 downstream"
 created_at: "2025-01-13T10:30:00Z"
 
-# Snapshot IDs identify the complete feature graph state (before and after)
-from_snapshot_id: "a3f8b2c1..."  # Source snapshot (old state in store)
-to_snapshot_id: "def67890..."    # Target snapshot (new state in code)
+# Snapshot versions identify the complete feature graph state (before and after)
+from_snapshot_version: "a3f8b2c1..."  # Source snapshot (old state in store)
+to_snapshot_version: "def67890..."    # Target snapshot (new state in code)
 
 operations:
   # Root features that changed (code refactoring, not computation changes)
@@ -387,7 +387,7 @@ operations:
     feature_key: ["speech", "diarization"]
     reason: "Reconcile data_versions due to changes in: speech/transcription"
 
-# Feature versions are derived from snapshot IDs at runtime
+# Feature versions are derived from snapshot versions at runtime
 # Each snapshot uniquely identifies all feature versions in the graph
 
 # IMPORTANT: DataVersionReconciliation is for when CODE changed but COMPUTATION didn't
@@ -483,13 +483,13 @@ reason: "Updated algorithm"  # ✗ Bad (vague - did results change?)
 If you override `align_metadata_with_upstream()`, test it thoroughly:
 ```python
 def test_custom_alignment():
-    current = pl.DataFrame({"sample_id": [1, 2, 3], "custom_field": ["a", "b", "c"]})
-    upstream = {"videos": pl.DataFrame({"sample_id": [2, 3, 4]})}
+    current = pl.DataFrame({"sample_uid": [1, 2, 3], "custom_field": ["a", "b", "c"]})
+    upstream = {"videos": pl.DataFrame({"sample_uid": [2, 3, 4]})}
 
     result = MyFeature.align_metadata_with_upstream(current, upstream)
 
     # Verify alignment behavior
-    assert set(result["sample_id"].to_list()) == {2, 3}  # Inner join
+    assert set(result["sample_uid"].to_list()) == {2, 3}  # Inner join
     assert "custom_field" in result.columns  # Preserved
 ```
 

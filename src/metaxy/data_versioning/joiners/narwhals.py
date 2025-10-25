@@ -22,7 +22,7 @@ class NarwhalsJoiner(UpstreamJoiner):
 
     Strategy:
     - Starts with first upstream feature
-    - Sequentially inner joins remaining upstream features on sample_id
+    - Sequentially inner joins remaining upstream features on sample_uid
     - Renames data_version columns to avoid conflicts
     - All operations are lazy (no materialization until collect)
     - Backend-agnostic: same code works for in-memory and SQL backends
@@ -50,13 +50,13 @@ class NarwhalsJoiner(UpstreamJoiner):
         """
         if not upstream_refs:
             # No upstream dependencies - source feature
-            # Return empty LazyFrame with just sample_id column (with proper type)
+            # Return empty LazyFrame with just sample_uid column (with proper type)
             import polars as pl
 
-            # Create empty frame with explicit Int64 type for sample_id
+            # Create empty frame with explicit Int64 type for sample_uid
             # This ensures it's not NULL-typed which would fail with Ibis backends
             empty_df = pl.LazyFrame(
-                {"sample_id": pl.Series("sample_id", [], dtype=pl.Int64)}
+                {"sample_uid": pl.Series("sample_uid", [], dtype=pl.Int64)}
             )
             return nw.from_native(empty_df), {}
 
@@ -67,7 +67,7 @@ class NarwhalsJoiner(UpstreamJoiner):
         # Start with first upstream, rename its data_version column
         col_name_first = f"__upstream_{first_key}__data_version"
         joined = upstream_refs[first_key].select(
-            "sample_id", nw.col("data_version").alias(col_name_first)
+            "sample_uid", nw.col("data_version").alias(col_name_first)
         )
 
         upstream_mapping = {first_key: col_name_first}
@@ -77,13 +77,13 @@ class NarwhalsJoiner(UpstreamJoiner):
             col_name = f"__upstream_{upstream_key}__data_version"
 
             upstream_renamed = upstream_refs[upstream_key].select(
-                "sample_id", nw.col("data_version").alias(col_name)
+                "sample_uid", nw.col("data_version").alias(col_name)
             )
 
             joined = joined.join(
                 upstream_renamed,
-                on="sample_id",
-                how="inner",  # Only sample_ids present in ALL upstream
+                on="sample_uid",
+                how="inner",  # Only sample_uids present in ALL upstream
             )
 
             upstream_mapping[upstream_key] = col_name

@@ -25,9 +25,9 @@ with config.get_store() as store:
     # Simulate computing embeddings - same computation in both versions
     parent_data = pl.DataFrame(
         {
-            "sample_id": upstream_data["sample_id"],
+            "sample_uid": upstream_data["sample_uid"],
             "data_version": [
-                {"embeddings": f"embed_{sid}"} for sid in upstream_data["sample_id"]
+                {"embeddings": f"embed_{sid}"} for sid in upstream_data["sample_uid"]
             ],
         }
     )

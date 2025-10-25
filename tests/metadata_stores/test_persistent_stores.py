@@ -26,7 +26,7 @@ def test_store_requires_context_manager(
     """Test that operations outside context manager raise error."""
     data = pl.DataFrame(
         {
-            "sample_id": [1, 2],
+            "sample_uid": [1, 2],
             "data_version": [
                 {"frames": "h1", "audio": "h1"},
                 {"frames": "h2", "audio": "h2"},
@@ -54,7 +54,7 @@ def test_store_context_manager(
         # Can perform operations
         data = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -74,7 +74,7 @@ def test_write_and_read_metadata(
     with persistent_store as store:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
                 "data_version": [
                     {"frames": "hash1", "audio": "hash1"},
@@ -90,7 +90,7 @@ def test_write_and_read_metadata(
         )
 
         assert len(result) == 3
-        assert "sample_id" in result.columns
+        assert "sample_uid" in result.columns
         assert "data_version" in result.columns
         assert "path" in result.columns
 
@@ -102,7 +102,7 @@ def test_write_invalid_schema(
     with persistent_store as store:
         invalid_df = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "path": ["/a", "/b", "/c"],
             }
         )
@@ -118,7 +118,7 @@ def test_write_append(
     with persistent_store as store:
         df1 = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -128,7 +128,7 @@ def test_write_append(
 
         df2 = pl.DataFrame(
             {
-                "sample_id": [3, 4],
+                "sample_uid": [3, 4],
                 "data_version": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
@@ -143,7 +143,7 @@ def test_write_append(
             store.read_metadata(test_features["UpstreamFeatureA"])
         )
         assert len(result) == 4
-        assert set(result["sample_id"].to_list()) == {1, 2, 3, 4}
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3, 4}
 
 
 def test_read_with_filters(
@@ -153,7 +153,7 @@ def test_read_with_filters(
     with persistent_store as store:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -165,12 +165,12 @@ def test_read_with_filters(
 
         result = collect_to_polars(
             store.read_metadata(
-                test_features["UpstreamFeatureA"], filters=[nw.col("sample_id") > 1]
+                test_features["UpstreamFeatureA"], filters=[nw.col("sample_uid") > 1]
             )
         )
 
         assert len(result) == 2
-        assert set(result["sample_id"].to_list()) == {2, 3}
+        assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
 def test_read_with_column_selection(
@@ -180,7 +180,7 @@ def test_read_with_column_selection(
     with persistent_store as store:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "path": ["/a", "/b", "/c"],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
@@ -193,11 +193,12 @@ def test_read_with_column_selection(
 
         result = collect_to_polars(
             store.read_metadata(
-                test_features["UpstreamFeatureA"], columns=["sample_id", "data_version"]
+                test_features["UpstreamFeatureA"],
+                columns=["sample_uid", "data_version"],
             )
         )
 
-        assert set(result.columns) == {"sample_id", "data_version"}
+        assert set(result.columns) == {"sample_uid", "data_version"}
         assert "path" not in result.columns
 
 
@@ -224,7 +225,7 @@ def test_has_feature_local(
 
         metadata = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -255,7 +256,7 @@ def test_list_features(
         # Add features
         data_a = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -263,7 +264,7 @@ def test_list_features(
 
         data_b = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"default": "h1"}],
             }
         )
@@ -301,7 +302,7 @@ def test_system_tables(
         # Write data and record version
         data = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -364,7 +365,7 @@ def test_nested_context_managers(
 
             metadata = pl.DataFrame(
                 {
-                    "sample_id": [1],
+                    "sample_uid": [1],
                     "data_version": [{"frames": "h1", "audio": "h1"}],
                 }
             )
@@ -397,7 +398,7 @@ def test_multiple_features(
         # Write feature A
         data_a = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -409,7 +410,7 @@ def test_multiple_features(
         # Write feature B
         data_b = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "h1"},
                     {"default": "h2"},

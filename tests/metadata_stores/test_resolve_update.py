@@ -378,7 +378,7 @@ def test_resolve_update_no_upstream(
     # 1. Source of truth: Polars DataFrame with sample data
     source_samples = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [
                 {"field_a": "hash1"},
                 {"field_a": "hash2"},
@@ -466,7 +466,7 @@ def test_resolve_update_no_upstream(
                     result.added.to_polars()
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
-                ).sort("sample_id")
+                ).sort("sample_uid")
                 versions = added_sorted["data_version"].to_list()
 
                 results[(store_type, prefer_native, use_native_samples)] = {
@@ -549,7 +549,7 @@ def test_resolve_update_with_upstream(
     # Create upstream data for root feature
     upstream_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
             "data_version": make_data_versions(root_feature, "manual"),
         }
@@ -591,13 +591,13 @@ def test_resolve_update_with_upstream(
                                 # Write metadata with computed data versions
                                 feature_data = pl.DataFrame(
                                     {
-                                        "sample_id": [1, 2, 3],
+                                        "sample_uid": [1, 2, 3],
                                         "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
                                     }
                                 ).with_columns(
                                     pl.Series(
                                         "data_version",
-                                        result.added.sort("sample_id")[
+                                        result.added.sort("sample_uid")[
                                             "data_version"
                                         ].to_list(),
                                     )
@@ -625,7 +625,7 @@ def test_resolve_update_with_upstream(
                         result.added.to_polars()
                         if isinstance(result.added, nw.DataFrame)
                         else result.added
-                    ).sort("sample_id")
+                    ).sort("sample_uid")
                     versions = added_sorted["data_version"].to_list()
 
                     results[(store_type, prefer_native)] = {
@@ -681,21 +681,21 @@ def test_resolve_update_detects_changes(
 
     # Create data version dicts for fields
     def make_data_versions(
-        version_prefix: str, sample_ids: list[int]
+        version_prefix: str, sample_uids: list[int]
     ) -> list[dict[str, Any]]:
         if len(root_fields) == 1:
             field_name = "_".join(root_fields[0])
-            return [{field_name: f"{version_prefix}{i}"} for i in sample_ids]
+            return [{field_name: f"{version_prefix}{i}"} for i in sample_uids]
         else:
             return [
                 {"_".join(ck): f"{version_prefix}{i}_{ck}" for ck in root_fields}
-                for i in sample_ids
+                for i in sample_uids
             ]
 
     # Initial upstream data
     initial_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
             "data_version": make_data_versions("v", [1, 2, 3]),
         }
@@ -704,7 +704,7 @@ def test_resolve_update_detects_changes(
     # Changed upstream data (change sample 2)
     changed_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "value": ["a1", "a2_CHANGED", "a3"],  # Changed
             "data_version": make_data_versions(
                 "v_new", [1, 2, 3]
@@ -750,13 +750,13 @@ def test_resolve_update_detects_changes(
                                 )
                                 feature_data = pl.DataFrame(
                                     {
-                                        "sample_id": [1, 2, 3],
+                                        "sample_uid": [1, 2, 3],
                                         "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
                                     }
                                 ).with_columns(
                                     pl.Series(
                                         "data_version",
-                                        added_df.sort("sample_id")[
+                                        added_df.sort("sample_uid")[
                                             "data_version"
                                         ].to_list(),
                                     )
@@ -771,12 +771,12 @@ def test_resolve_update_detects_changes(
                         if isinstance(result1.added, nw.DataFrame)
                         else result1.added
                     )
-                    initial_versions = initial_versions_nw.sort("sample_id")
+                    initial_versions = initial_versions_nw.sort("sample_uid")
 
                     # Write downstream feature with these versions
                     downstream_data = pl.DataFrame(
                         {
-                            "sample_id": [1, 2, 3],
+                            "sample_uid": [1, 2, 3],
                             "feature_data": ["b1", "b2", "b3"],
                         }
                     ).with_columns(
@@ -811,7 +811,7 @@ def test_resolve_update_detects_changes(
                             )
                             feature_data = pl.DataFrame(
                                 {
-                                    "sample_id": [1, 2, 3],
+                                    "sample_uid": [1, 2, 3],
                                     "value": [
                                         f"f{i}_1_new",
                                         f"f{i}_2_new",
@@ -819,8 +819,8 @@ def test_resolve_update_detects_changes(
                                     ],
                                 }
                             ).join(
-                                updated.select(["sample_id", "data_version"]),
-                                on="sample_id",
+                                updated.select(["sample_uid", "data_version"]),
+                                on="sample_uid",
                                 how="left",
                             )
                             store.write_metadata(feature, feature_data)
@@ -848,18 +848,18 @@ def test_resolve_update_detects_changes(
                     )
 
                     if len(changed_df_pl) > 0:
-                        changed_sample_ids = changed_df_pl["sample_id"].to_list()
+                        changed_sample_uids = changed_df_pl["sample_uid"].to_list()
                     else:
-                        changed_sample_ids = []
+                        changed_sample_uids = []
 
                     # Check if any versions changed
                     version_changes = []
-                    for sample_id in changed_sample_ids:
+                    for sample_uid in changed_sample_uids:
                         new_version = changed_df_pl.filter(
-                            pl.col("sample_id") == sample_id
+                            pl.col("sample_uid") == sample_uid
                         )["data_version"][0]
                         old_version = initial_versions.filter(
-                            pl.col("sample_id") == sample_id
+                            pl.col("sample_uid") == sample_uid
                         )["data_version"][0]
                         version_changes.append(new_version != old_version)
 
@@ -867,7 +867,7 @@ def test_resolve_update_detects_changes(
                         "added": len(result2.added),
                         "changed": len(result2.changed),
                         "removed": len(result2.removed),
-                        "changed_sample_ids": sorted(changed_sample_ids),
+                        "changed_sample_uids": sorted(changed_sample_uids),
                         "any_version_changed": any(version_changes)
                         if version_changes
                         else False,
@@ -885,7 +885,7 @@ def test_resolve_update_detects_changes(
         assert reference["added"] == 0, "No new samples"
         assert reference["changed"] >= 1, "Should detect at least 1 changed sample"
         assert reference["removed"] == 0, "No removed samples"
-        assert len(reference["changed_sample_ids"]) >= 1, (
+        assert len(reference["changed_sample_uids"]) >= 1, (
             "At least one sample should change"
         )
         assert reference["any_version_changed"], "Data version should have changed"
@@ -954,11 +954,11 @@ def test_resolve_update_feature_version_change_idempotency(
 
                     root_data_v1 = pl.DataFrame(
                         {
-                            "sample_id": [1, 2, 3],
+                            "sample_uid": [1, 2, 3],
                             "data_version": root_data_version_dicts,
                         },
                         schema={
-                            "sample_id": pl.UInt32,
+                            "sample_uid": pl.UInt32,
                             "data_version": pl.Struct(
                                 {fn: pl.Utf8 for fn in root_field_names}
                             ),

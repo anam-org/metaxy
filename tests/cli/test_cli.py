@@ -111,7 +111,7 @@ database = "{db_path}"
             TestFeature = cli_graph.features_by_key[FeatureKey(["test_cli", "feature"])]
             data = pl.DataFrame(
                 {
-                    "sample_id": [1, 2],
+                    "sample_uid": [1, 2],
                     "data_version": [{"default": "h1"}, {"default": "h2"}],
                 }
             )
@@ -154,7 +154,7 @@ config.database = "{db_path}"
 
         # Record a snapshot first so migration can load historical graph
         with store:
-            snapshot_id, _ = store.record_feature_graph_snapshot()
+            snapshot_version, _ = store.record_feature_graph_snapshot()
 
             # Verify snapshot was recorded
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
@@ -163,8 +163,8 @@ config.database = "{db_path}"
                 store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
             )
             assert len(fv) > 0, "No feature versions recorded"
-            assert snapshot_id in fv["snapshot_id"].to_list(), (
-                f"Snapshot {snapshot_id} not in table"
+            assert snapshot_version in fv["snapshot_version"].to_list(), (
+                f"Snapshot {snapshot_version} not in table"
             )
 
         # Create test migration file
@@ -175,8 +175,8 @@ config.database = "{db_path}"
             version=1,
             id="test_migration",
             parent_migration_id=None,
-            from_snapshot_id=snapshot_id,
-            to_snapshot_id=snapshot_id,
+            from_snapshot_version=snapshot_version,
+            to_snapshot_version=snapshot_version,
             description="Test",
             created_at=datetime(2025, 1, 1, 0, 0, 0),
             operations=[

@@ -34,9 +34,9 @@ class RenderConfig:
         metadata={"help": "Show feature and field code versions"},
     )
 
-    show_snapshot_id: bool = field(
+    show_snapshot_version: bool = field(
         default=True,
-        metadata={"help": "Show graph snapshot ID in output"},
+        metadata={"help": "Show graph snapshot version in output"},
     )
 
     # Display options
@@ -97,7 +97,7 @@ class RenderConfig:
             show_feature_versions=False,
             show_field_versions=False,
             show_code_versions=False,
-            show_snapshot_id=False,
+            show_snapshot_version=False,
         )
 
     @classmethod
@@ -108,7 +108,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=False,
-            show_snapshot_id=True,
+            show_snapshot_version=True,
             hash_length=8,
         )
 
@@ -120,7 +120,7 @@ class RenderConfig:
             show_feature_versions=True,
             show_field_versions=True,
             show_code_versions=True,
-            show_snapshot_id=True,
+            show_snapshot_version=True,
             hash_length=0,  # Full hashes
         )
 

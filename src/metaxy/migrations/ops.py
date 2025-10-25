@@ -35,16 +35,16 @@ class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMul
         self,
         store: "MetadataStore",
         *,
-        from_snapshot_id: str,
-        to_snapshot_id: str,
+        from_snapshot_version: str,
+        to_snapshot_version: str,
         dry_run: bool = False,
     ) -> int:
         """Execute the operation.
 
         Args:
             store: Metadata store to operate on
-            from_snapshot_id: Source snapshot ID (old state)
-            to_snapshot_id: Target snapshot ID (new state)
+            from_snapshot_version: Source snapshot version (old state)
+            to_snapshot_version: Target snapshot version (new state)
             dry_run: If True, only validate and return count without executing
 
         Returns:
@@ -71,7 +71,7 @@ class DataVersionReconciliation(BaseOperation):
     """Reconcile data versions when feature definition changes BUT computation is unchanged.
 
     This operation:
-    1. Derives old/new feature_versions from migration's from_snapshot_id/to_snapshot_id
+    1. Derives old/new feature_versions from migration's from_snapshot_version/to_snapshot_version
     2. Finds rows with old feature_version
     3. Recalculates data_versions based on new feature definition
     4. Writes new rows with updated feature_version and data_version
@@ -87,7 +87,7 @@ class DataVersionReconciliation(BaseOperation):
     - Bug fixes that affect output → re-run pipeline instead
     - New model version → re-run pipeline instead
 
-    Feature versions are automatically derived from the migration's snapshot IDs,
+    Feature versions are automatically derived from the migration's snapshot versions,
     eliminating redundancy since each snapshot uniquely identifies all feature versions.
 
     Example YAML:
@@ -108,8 +108,8 @@ class DataVersionReconciliation(BaseOperation):
         self,
         store: "MetadataStore",
         *,
-        from_snapshot_id: str,
-        to_snapshot_id: str,
+        from_snapshot_version: str,
+        to_snapshot_version: str,
         dry_run: bool = False,
     ) -> int:
         """Execute data version reconciliation.
@@ -124,12 +124,12 @@ class DataVersionReconciliation(BaseOperation):
         3. Load existing metadata with old feature_version
         4. Use resolve_update() to calculate expected data_versions based on current upstream
         5. Join existing user metadata with new data_versions
-        6. Write with new feature_version and snapshot_id
+        6. Write with new feature_version and snapshot_version
 
         Args:
             store: Metadata store
-            from_snapshot_id: Source snapshot ID (old state)
-            to_snapshot_id: Target snapshot ID (new state)
+            from_snapshot_version: Source snapshot version (old state)
+            to_snapshot_version: Target snapshot version (new state)
             dry_run: If True, return row count without executing
 
         Returns:
@@ -171,7 +171,7 @@ class DataVersionReconciliation(BaseOperation):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_id") == from_snapshot_id)
+                    (nw.col("snapshot_version") == from_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -184,7 +184,7 @@ class DataVersionReconciliation(BaseOperation):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_id") == to_snapshot_id)
+                    (nw.col("snapshot_version") == to_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -211,11 +211,11 @@ class DataVersionReconciliation(BaseOperation):
 
         if from_version_data is None:
             raise ValueError(
-                f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_id}"
+                f"Feature {feature_key_str} not found in from_snapshot {from_snapshot_version}"
             )
         if to_version_data is None:
             raise ValueError(
-                f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_id}"
+                f"Feature {feature_key_str} not found in to_snapshot {to_snapshot_version}"
             )
 
         assert from_feature_version is not None
@@ -246,7 +246,7 @@ class DataVersionReconciliation(BaseOperation):
         user_columns = [
             c
             for c in existing_metadata_df.columns
-            if c not in ["data_version", "feature_version", "snapshot_id"]
+            if c not in ["data_version", "feature_version", "snapshot_version"]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
@@ -261,21 +261,21 @@ class DataVersionReconciliation(BaseOperation):
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_data_versions = changed_pl.select(["sample_id", "data_version"])
+            new_data_versions = changed_pl.select(["sample_uid", "data_version"])
             df_to_write = sample_metadata_pl.join(
-                new_data_versions, on="sample_id", how="inner"
+                new_data_versions, on="sample_uid", how="inner"
             )
         elif len(diff_result.added) > 0:
             df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
         else:
             return 0
 
-        # 6. Write with new feature_version and snapshot_id
+        # 6. Write with new feature_version and snapshot_version
         # Wrap in Narwhals for write_metadata
         df_to_write_nw = nw.from_native(df_to_write)
         df_to_write_nw = df_to_write_nw.with_columns(
             nw.lit(to_feature_version).alias("feature_version"),
-            nw.lit(to_snapshot_id).alias("snapshot_id"),
+            nw.lit(to_snapshot_version).alias("snapshot_version"),
         )
 
         with allow_feature_version_override():
@@ -316,7 +316,7 @@ class MetadataBackfill(BaseOperation, ABC):
 
                 external_df = pl.DataFrame([
                     {
-                        "sample_id": obj['Key'],
+                        "sample_uid": obj['Key'],
                         "path": f"s3://{self.s3_bucket}/{obj['Key']}",
                         "size_bytes": obj['Size']
                     }
@@ -335,11 +335,11 @@ class MetadataBackfill(BaseOperation, ABC):
                 feature_cls = graph.features_by_key[FeatureKey(self.feature_key)]
                 diff = store.resolve_update(
                     feature_cls,
-                    sample_df=external_df.select(["sample_id"])
+                    sample_df=external_df.select(["sample_uid"])
                 )
 
                 # Join external metadata with calculated data_versions
-                to_write = external_df.join(diff.added, on="sample_id", how="inner")
+                to_write = external_df.join(diff.added, on="sample_uid", how="inner")
 
                 # Write
                 store.write_metadata(feature_cls, to_write)
@@ -362,8 +362,8 @@ class MetadataBackfill(BaseOperation, ABC):
         self,
         store: "MetadataStore",
         *,
-        from_snapshot_id: str,
-        to_snapshot_id: str,
+        from_snapshot_version: str,
+        to_snapshot_version: str,
         dry_run: bool = False,
         **kwargs,
     ) -> int:
@@ -377,8 +377,8 @@ class MetadataBackfill(BaseOperation, ABC):
 
         Args:
             store: Metadata store to write to
-            from_snapshot_id: Source snapshot ID (old state)
-            to_snapshot_id: Target snapshot ID (new state)
+            from_snapshot_version: Source snapshot version (old state)
+            to_snapshot_version: Target snapshot version (new state)
             dry_run: If True, validate and return count without writing
 
         Returns:

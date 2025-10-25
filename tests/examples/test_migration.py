@@ -106,8 +106,8 @@ def test_pipeline(tmp_path, snapshot):
     snapshot_data = migration_data.copy()
     snapshot_data.pop("id", None)  # Contains timestamp
     snapshot_data.pop("created_at", None)  # Timestamp
-    snapshot_data.pop("from_snapshot_id", None)  # Hash
-    snapshot_data.pop("to_snapshot_id", None)  # Hash
+    snapshot_data.pop("from_snapshot_version", None)  # Hash
+    snapshot_data.pop("to_snapshot_version", None)  # Hash
 
     # Snapshot the deterministic parts
     assert snapshot_data == snapshot

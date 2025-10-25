@@ -56,7 +56,7 @@ def copy(
         str | None,
         cyclopts.Parameter(
             name=["--snapshot"],
-            help="Snapshot ID to copy (defaults to latest in source store). The snapshot_id is preserved in the destination.",
+            help="Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.",
         ),
     ] = None,
     incremental: Annotated[
@@ -76,8 +76,8 @@ def copy(
     - Copying specific feature versions
 
     Incremental Mode (default):
-        By default, performs an anti-join on sample_id to skip rows that already exist
-        in the destination for the same snapshot_id. This prevents duplicate writes.
+        By default, performs an anti-join on sample_uid to skip rows that already exist
+        in the destination for the same snapshot_version. This prevents duplicate writes.
 
         Disabling incremental (--no-incremental) may improve performance when:
         - The destination store is empty or has no overlap with source

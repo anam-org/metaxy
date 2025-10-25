@@ -26,7 +26,7 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         assert "Recorded feature graph" in result.stdout
-        assert "Snapshot ID:" in result.stdout
+        assert "Snapshot version:" in result.stdout
 
 
 def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
@@ -53,7 +53,7 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
         # Second push - should skip
         result2 = metaxy_project.run_cli("graph", "push")
         assert "already recorded" in result2.stdout
-        assert "Snapshot ID:" in result2.stdout
+        assert "Snapshot version:" in result2.stdout
 
 
 def test_graph_history_empty(metaxy_project: TempMetaxyProject):
@@ -104,7 +104,7 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         assert "Graph Snapshot History" in result.stdout
-        assert "Snapshot ID" in result.stdout
+        assert "Snapshot version" in result.stdout
         assert "Recorded At" in result.stdout
         assert "Feature Count" in result.stdout
         assert "1" in result.stdout  # 1 feature
@@ -230,7 +230,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
 
 
 def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
-    """Test graph describe with specific snapshot ID."""
+    """Test graph describe with specific snapshot version."""
 
     def features():
         from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
@@ -249,18 +249,20 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
         # Push to create snapshot
         push_result = metaxy_project.run_cli("graph", "push")
 
-        # Extract snapshot ID from output
-        match = re.search(r"Snapshot ID: ([a-f0-9]+)", push_result.stdout)
-        assert match, "Could not find snapshot ID in push output"
-        snapshot_id = match.group(1)
+        # Extract snapshot version from output
+        match = re.search(r"Snapshot version: ([a-f0-9]+)", push_result.stdout)
+        assert match, "Could not find snapshot version in push output"
+        snapshot_version = match.group(1)
 
         # Describe specific snapshot
-        result = metaxy_project.run_cli("graph", "describe", "--snapshot", snapshot_id)
+        result = metaxy_project.run_cli(
+            "graph", "describe", "--snapshot", snapshot_version
+        )
 
         assert result.returncode == 0
-        # Check that output contains "Describing snapshot" and the snapshot_id (may have newlines between them)
+        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
         assert "Describing snapshot" in result.stdout
-        assert snapshot_id in result.stdout
+        assert snapshot_version in result.stdout
         assert "Graph Snapshot:" in result.stdout
         assert "Feature Count" in result.stdout
 
@@ -320,14 +322,14 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         push_result = metaxy_project.run_cli("graph", "push")
         assert "Recorded feature graph" in push_result.stdout
 
-        # Extract snapshot ID
-        match = re.search(r"Snapshot ID: ([a-f0-9]+)", push_result.stdout)
+        # Extract snapshot version
+        match = re.search(r"Snapshot version: ([a-f0-9]+)", push_result.stdout)
         assert match is not None
-        snapshot_id = match.group(1)
+        snapshot_version = match.group(1)
 
         # Step 2: History should show the snapshot
         history_result = metaxy_project.run_cli("graph", "history")
-        assert snapshot_id[:13] in history_result.stdout
+        assert snapshot_version[:13] in history_result.stdout
         assert "2" in history_result.stdout  # 2 features
 
         # Step 3: Describe should show current graph
@@ -337,11 +339,11 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
 
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(
-            "graph", "describe", "--snapshot", snapshot_id
+            "graph", "describe", "--snapshot", snapshot_version
         )
-        # Check that output contains "Describing snapshot" and the snapshot_id (may have newlines between them)
+        # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
         assert "Describing snapshot" in describe_historical.stdout
-        assert snapshot_id in describe_historical.stdout
+        assert snapshot_version in describe_historical.stdout
 
 
 def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
@@ -704,7 +706,7 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Test with no fields shown
         result = metaxy_project.run_cli(
-            "graph", "render", "--no-show-fields", "--no-show-snapshot-id"
+            "graph", "render", "--no-show-fields", "--no-show-snapshot-version"
         )
 
         assert result.returncode == 0

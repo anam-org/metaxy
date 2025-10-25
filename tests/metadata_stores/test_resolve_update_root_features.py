@@ -87,7 +87,7 @@ class TestResolveUpdateRootFeatures:
 
             user_samples = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
@@ -102,7 +102,7 @@ class TestResolveUpdateRootFeatures:
 
             # All samples should be added
             assert len(result.added) == 3
-            assert sorted(result.added["sample_id"].to_list()) == [1, 2, 3]
+            assert sorted(result.added["sample_uid"].to_list()) == [1, 2, 3]
             assert len(result.changed) == 0
             assert len(result.removed) == 0
 
@@ -125,7 +125,7 @@ class TestResolveUpdateRootFeatures:
             # Write initial metadata
             initial_metadata = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
@@ -140,7 +140,7 @@ class TestResolveUpdateRootFeatures:
 
             user_samples = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 4],
+                    "sample_uid": [1, 2, 4],
                     "data_version": [
                         {"embedding": "hash1"},  # unchanged
                         {"embedding": "hash2_updated"},  # changed
@@ -155,10 +155,10 @@ class TestResolveUpdateRootFeatures:
 
             # Should detect changes correctly
             assert len(result.added) == 1
-            assert result.added["sample_id"].to_list() == [4]
+            assert result.added["sample_uid"].to_list() == [4]
 
             assert len(result.changed) == 1
-            assert result.changed["sample_id"].to_list() == [2]
+            assert result.changed["sample_uid"].to_list() == [2]
 
             assert len(result.removed) == 1
-            assert result.removed["sample_id"].to_list() == [3]
+            assert result.removed["sample_uid"].to_list() == [3]

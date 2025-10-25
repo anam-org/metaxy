@@ -52,7 +52,7 @@ class FilteredFeature:
         >>> # Copy only specific samples for a feature
         >>> filtered = FilteredFeature(
         ...     feature=FeatureKey(["my_feature"]),
-        ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])]
+        ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])]
         ... )
         >>> dest_store.copy_metadata(
         ...     from_store=source,
@@ -79,7 +79,7 @@ SYSTEM_NAMESPACE = "metaxy-system"
 
 # Metaxy-managed column names (to distinguish from user-defined columns)
 METAXY_FEATURE_VERSION_COL = "metaxy_feature_version"
-METAXY_SNAPSHOT_ID_COL = "metaxy_snapshot_id"
+METAXY_SNAPSHOT_ID_COL = "metaxy_snapshot_version"
 METAXY_DATA_VERSION_COL = "metaxy_data_version"
 
 # System table keys
@@ -94,7 +94,7 @@ FEATURE_VERSIONS_SCHEMA = {
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,
     "feature_class_path": pl.String,
-    "snapshot_id": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
+    "snapshot_version": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
 }
 
 # Context variable for suppressing feature_version warning in migrations
@@ -452,10 +452,10 @@ class MetadataStore(ABC):
             self._write_metadata_impl(feature_key, df)
             return
 
-        # For regular features: add feature_version and snapshot_id, validate, and write
-        # Check if feature_version and snapshot_id already exist in DataFrame
-        if "feature_version" in df.columns and "snapshot_id" in df.columns:
-            # DataFrame already has feature_version and snapshot_id - use as-is
+        # For regular features: add feature_version and snapshot_version, validate, and write
+        # Check if feature_version and snapshot_version already exist in DataFrame
+        if "feature_version" in df.columns and "snapshot_version" in df.columns:
+            # DataFrame already has feature_version and snapshot_version - use as-is
             # This is intended for migrations writing historical versions
             # Issue a warning unless we're in a suppression context
             if not _suppress_feature_version_warning.get():
@@ -463,13 +463,13 @@ class MetadataStore(ABC):
 
                 warnings.warn(
                     f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"feature_version and snapshot_id columns. This is intended for migrations only. "
+                    f"feature_version and snapshot_version columns. This is intended for migrations only. "
                     f"Normal code should let write_metadata() add the current versions automatically.",
                     UserWarning,
                     stacklevel=2,
                 )
         else:
-            # Get current feature version and snapshot_id from code and add them
+            # Get current feature version and snapshot_version from code and add them
             if isinstance(feature, type) and issubclass(feature, Feature):
                 current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
             else:
@@ -479,16 +479,16 @@ class MetadataStore(ABC):
                 feature_cls = graph.features_by_key[feature_key]
                 current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
-            # Get snapshot_id from active graph
+            # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
-            current_snapshot_id = graph.snapshot_id
+            current_snapshot_version = graph.snapshot_version
 
             df = df.with_columns(
                 [
                     pl.lit(current_feature_version).alias("feature_version"),
-                    pl.lit(current_snapshot_id).alias("snapshot_id"),
+                    pl.lit(current_snapshot_version).alias("snapshot_version"),
                 ]
             )
 
@@ -525,9 +525,9 @@ class MetadataStore(ABC):
         if "feature_version" not in df.columns:
             raise MetadataSchemaError("DataFrame must have 'feature_version' column")
 
-        # Check for snapshot_id column
-        if "snapshot_id" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'snapshot_id' column")
+        # Check for snapshot_version column
+        if "snapshot_version" not in df.columns:
+            raise MetadataSchemaError("DataFrame must have 'snapshot_version' column")
 
     def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
@@ -563,20 +563,20 @@ class MetadataStore(ABC):
         self._drop_feature_metadata_impl(feature_key)
 
     def record_feature_graph_snapshot(self) -> tuple[str, bool]:
-        """Record all features in graph with a graph snapshot ID.
+        """Record all features in graph with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
         feature versions are being deployed. Typically invoked via `metaxy push`.
 
-        Records all features in the graph with the same snapshot_id, representing
+        Records all features in the graph with the same snapshot_version, representing
         a consistent state of the entire feature graph based on code definitions.
 
-        The snapshot_id is a deterministic hash of all feature_version hashes
+        The snapshot_version is a deterministic hash of all feature_version hashes
         in the graph, making it idempotent - calling multiple times with the
-        same feature definitions produces the same snapshot_id.
+        same feature definitions produces the same snapshot_version.
 
         Returns:
-            A tuple containing the generated snapshot_id (deterministic hash) and a boolean indicating if the snapshot was recorded or already exists.
+            A tuple containing the generated snapshot_version (deterministic hash) and a boolean indicating if the snapshot was recorded or already exists.
         """
 
         from metaxy.models.feature import FeatureGraph
@@ -586,8 +586,8 @@ class MetadataStore(ABC):
         # Use to_snapshot() to get the snapshot dict
         snapshot_dict = graph.to_snapshot()
 
-        # Generate deterministic snapshot_id from graph
-        snapshot_id = graph.snapshot_id
+        # Generate deterministic snapshot_version from graph
+        snapshot_version = graph.snapshot_version
 
         # Read existing feature versions once
         try:
@@ -606,13 +606,15 @@ class MetadataStore(ABC):
         snapshot_already_exists = False
         if existing_versions is not None:
             snapshot_already_exists = (
-                existing_versions.filter(pl.col("snapshot_id") == snapshot_id).height
+                existing_versions.filter(
+                    pl.col("snapshot_version") == snapshot_version
+                ).height
                 > 0
             )
 
         # If snapshot already exists, we're done (idempotent)
         if snapshot_already_exists:
-            return snapshot_id, True
+            return snapshot_version, True
 
         # Build records from snapshot_dict
         records = []
@@ -631,7 +633,7 @@ class MetadataStore(ABC):
                     "recorded_at": datetime.now(),
                     "feature_spec": feature_spec_json,
                     "feature_class_path": feature_data["feature_class_path"],
-                    "snapshot_id": snapshot_id,
+                    "snapshot_version": snapshot_version,
                 }
             )
 
@@ -643,7 +645,7 @@ class MetadataStore(ABC):
             )
             self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
 
-        return snapshot_id, False
+        return snapshot_version, False
 
     @abstractmethod
     def _read_metadata_native(
@@ -832,7 +834,7 @@ class MetadataStore(ABC):
         """Read all recorded graph snapshots from the feature_versions system table.
 
         Returns a DataFrame with columns:
-        - snapshot_id: Unique identifier for each graph snapshot
+        - snapshot_version: Unique identifier for each graph snapshot
         - recorded_at: Timestamp when the snapshot was recorded
         - feature_count: Number of features in this snapshot
 
@@ -845,7 +847,7 @@ class MetadataStore(ABC):
         Example:
             >>> with store:
             ...     snapshots = store.read_graph_snapshots()
-            ...     latest_snapshot = snapshots["snapshot_id"][0]
+            ...     latest_snapshot = snapshots["snapshot_version"][0]
             ...     print(f"Latest snapshot: {latest_snapshot}")
         """
         self._check_open()
@@ -855,7 +857,7 @@ class MetadataStore(ABC):
             # No snapshots recorded yet
             return pl.DataFrame(
                 schema={
-                    "snapshot_id": pl.String,
+                    "snapshot_version": pl.String,
                     "recorded_at": pl.Datetime("us"),
                     "feature_count": pl.UInt32,
                 }
@@ -863,9 +865,9 @@ class MetadataStore(ABC):
 
         versions_df = versions_lazy.collect().to_polars()
 
-        # Group by snapshot_id and get earliest recorded_at and count
+        # Group by snapshot_version and get earliest recorded_at and count
         snapshots = (
-            versions_df.group_by("snapshot_id")
+            versions_df.group_by("snapshot_version")
             .agg(
                 [
                     pl.col("recorded_at").min().alias("recorded_at"),
@@ -881,14 +883,14 @@ class MetadataStore(ABC):
         self,
         *,
         current: bool = True,
-        snapshot_id: str | None = None,
+        snapshot_version: str | None = None,
     ) -> pl.DataFrame:
         """Read feature version information from the feature_versions system table.
 
         Args:
             current: If True, only return features from the current code snapshot.
-                     If False, must provide snapshot_id.
-            snapshot_id: Specific snapshot ID to filter by. Required if current=False.
+                     If False, must provide snapshot_version.
+            snapshot_version: Specific snapshot version to filter by. Required if current=False.
 
         Returns:
             Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
@@ -897,11 +899,11 @@ class MetadataStore(ABC):
             - recorded_at: When this version was recorded
             - feature_spec: JSON serialized feature specification
             - feature_class_path: Python import path to the feature class
-            - snapshot_id: Graph snapshot this feature belongs to
+            - snapshot_version: Graph snapshot this feature belongs to
 
         Raises:
             StoreNotOpenError: If store is not open
-            ValueError: If current=False but no snapshot_id provided
+            ValueError: If current=False but no snapshot_version provided
 
         Examples:
             >>> # Get features from current code
@@ -911,14 +913,14 @@ class MetadataStore(ABC):
 
             >>> # Get features from a specific snapshot
             >>> with store:
-            ...     features = store.read_features(current=False, snapshot_id="abc123")
+            ...     features = store.read_features(current=False, snapshot_version="abc123")
             ...     for row in features.iter_rows(named=True):
             ...         print(f"{row['feature_key']}: {row['feature_version']}")
         """
         self._check_open()
 
-        if not current and snapshot_id is None:
-            raise ValueError("Must provide snapshot_id when current=False")
+        if not current and snapshot_version is None:
+            raise ValueError("Must provide snapshot_version when current=False")
 
         versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
         if versions_lazy is None:
@@ -928,11 +930,11 @@ class MetadataStore(ABC):
         if current:
             # Get current snapshot from active graph
             graph = FeatureGraph.get_active()
-            snapshot_id = graph.snapshot_id
+            snapshot_version = graph.snapshot_version
 
-        # Filter by snapshot_id
+        # Filter by snapshot_version
         versions_df = (
-            versions_lazy.filter(nw.col("snapshot_id") == snapshot_id)
+            versions_lazy.filter(nw.col("snapshot_version") == snapshot_version)
             .collect()
             .to_polars()
         )
@@ -951,7 +953,7 @@ class MetadataStore(ABC):
         """Copy metadata from another store with fine-grained filtering.
 
         This is a reusable method that can be called programmatically or from CLI/migrations.
-        Copies metadata for specified features, preserving the original snapshot_id.
+        Copies metadata for specified features, preserving the original snapshot_version.
 
         Args:
             from_store: Source metadata store to copy from (must be opened)
@@ -960,16 +962,16 @@ class MetadataStore(ABC):
                 - List of FeatureKey or Feature classes: copies specified features
                 - List of FilteredFeature: copies features with per-feature filters
                 Can mix all types in the same list.
-            from_snapshot: Snapshot ID to filter source data by. If None, uses latest snapshot
-                from source store. Only rows with this snapshot_id will be copied.
-                The snapshot_id is preserved in the destination store.
+            from_snapshot: Snapshot version to filter source data by. If None, uses latest snapshot
+                from source store. Only rows with this snapshot_version will be copied.
+                The snapshot_version is preserved in the destination store.
             filters: Global filters to apply to all features (Narwhals expressions).
                 Combined with per-feature filters from FilteredFeature objects.
             incremental: If True (default), filter out rows that already exist in the destination
-                store by performing an anti-join on sample_id for the same snapshot_id.
+                store by performing an anti-join on sample_uid for the same snapshot_version.
 
-                The implementation uses an anti-join: source LEFT ANTI JOIN destination ON sample_id
-                filtered by snapshot_id.
+                The implementation uses an anti-join: source LEFT ANTI JOIN destination ON sample_uid
+                filtered by snapshot_version.
 
                 Disabling incremental (incremental=False) may improve performance when:
                 - You know the destination is empty or has no overlap with source
@@ -999,7 +1001,7 @@ class MetadataStore(ABC):
             >>> # Copy with global filters
             >>> stats = dest_store.copy_metadata(
             ...     from_store=source_store,
-            ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])],
+            ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
             ... )
 
             >>> # Copy with per-feature filters
@@ -1012,7 +1014,7 @@ class MetadataStore(ABC):
             ...         ),
             ...         FeatureKey(["feature_b"]),  # No specific filters
             ...     ],
-            ...     filters=[nw.col("sample_id").is_in(["s1", "s2"])],  # Applied to all
+            ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])],  # Applied to all
             ... )
         """
         import logging
@@ -1101,11 +1103,11 @@ class MetadataStore(ABC):
                                 "Source store feature_versions table is empty. No snapshots found."
                             )
                     else:
-                        # Get most recent snapshot_id by recorded_at
+                        # Get most recent snapshot_version by recorded_at
                         from_snapshot = (
                             versions_df.sort("recorded_at", descending=True)
-                            .select("snapshot_id")
-                            .head(1)["snapshot_id"][0]
+                            .select("snapshot_version")
+                            .head(1)["snapshot_version"][0]
                         )
                         logger.info(
                             f"Using latest snapshot from source: {from_snapshot}"
@@ -1142,7 +1144,7 @@ class MetadataStore(ABC):
                     import narwhals as nw
 
                     source_filtered = source_lazy.filter(
-                        nw.col("snapshot_id") == from_snapshot
+                        nw.col("snapshot_version") == from_snapshot
                     )
 
                     # Apply global filters (if any)
@@ -1158,30 +1160,30 @@ class MetadataStore(ABC):
                     # Apply incremental filtering if enabled
                     if incremental:
                         try:
-                            # Read existing sample_ids from destination for the same snapshot
+                            # Read existing sample_uids from destination for the same snapshot
                             # This is much cheaper than comparing data_version structs
                             dest_lazy = self.read_metadata(
                                 feature_key,
                                 allow_fallback=False,
                                 current_only=False,
                             )
-                            # Filter destination to same snapshot_id
+                            # Filter destination to same snapshot_version
                             dest_for_snapshot = dest_lazy.filter(
-                                nw.col("snapshot_id") == from_snapshot
+                                nw.col("snapshot_version") == from_snapshot
                             )
 
-                            # Materialize destination sample_ids to avoid cross-backend join issues
+                            # Materialize destination sample_uids to avoid cross-backend join issues
                             # When copying between different stores (e.g., different DuckDB files),
                             # Ibis can't join tables from different backends
-                            dest_sample_ids = (
-                                dest_for_snapshot.select("sample_id")
+                            dest_sample_uids = (
+                                dest_for_snapshot.select("sample_uid")
                                 .collect()
                                 .to_polars()
                             )
 
                             # Convert to Polars LazyFrame and wrap in Narwhals
-                            dest_sample_ids_lazy = nw.from_native(
-                                dest_sample_ids.lazy(), eager_only=False
+                            dest_sample_uids_lazy = nw.from_native(
+                                dest_sample_uids.lazy(), eager_only=False
                             )
 
                             # Collect source to Polars for anti-join
@@ -1190,10 +1192,10 @@ class MetadataStore(ABC):
                                 source_df.lazy(), eager_only=False
                             )
 
-                            # Anti-join: keep only source rows with sample_id not in destination
+                            # Anti-join: keep only source rows with sample_uid not in destination
                             source_filtered = source_lazy.join(
-                                dest_sample_ids_lazy,
-                                on="sample_id",
+                                dest_sample_uids_lazy,
+                                on="sample_uid",
                                 how="anti",
                             )
 
@@ -1201,7 +1203,7 @@ class MetadataStore(ABC):
                             source_df = source_filtered.collect().to_polars()
 
                             logger.info(
-                                f"Incremental: copying only new sample_ids for {feature_key.to_string()}"
+                                f"Incremental: copying only new sample_uids for {feature_key.to_string()}"
                             )
                         except FeatureNotFoundError:
                             # Feature doesn't exist in destination yet - copy all rows
@@ -1225,7 +1227,7 @@ class MetadataStore(ABC):
                         )
                         continue
 
-                    # Write to destination (preserving snapshot_id and feature_version)
+                    # Write to destination (preserving snapshot_version and feature_version)
                     self.write_metadata(feature_key, source_df)
 
                     features_copied += 1
@@ -1396,7 +1398,7 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature class to resolve updates for
-            samples: **Escape hatch parameter**. Pre-computed DataFrame with sample_id
+            samples: **Escape hatch parameter**. Pre-computed DataFrame with sample_uid
                 and data_version columns. When provided, skips upstream loading, joining,
                 and data version calculation - goes straight to diff.
 
@@ -1424,7 +1426,7 @@ class MetadataStore(ABC):
             - changed: Existing samples with different data_versions
             - removed: Samples in current but not in upstream
 
-            Each frame has columns: [sample_id, data_version, ...user columns...]
+            Each frame has columns: [sample_uid, data_version, ...user columns...]
 
         Raises:
             ValueError: If samples not provided for root features (no upstream)
@@ -1432,7 +1434,7 @@ class MetadataStore(ABC):
         Examples:
             >>> # Root feature - samples required
             >>> samples = pl.DataFrame({
-            ...     "sample_id": [1, 2, 3],
+            ...     "sample_uid": [1, 2, 3],
             ...     "data_version": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
             ... })
             >>> result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
@@ -1511,7 +1513,7 @@ class MetadataStore(ABC):
         if not plan.deps:
             raise ValueError(
                 f"Feature {feature.spec.key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_id and data_version columns. "
+                f"Must provide 'samples' parameter with sample_uid and data_version columns. "
                 f"Root features require manual data_version computation."
             )
 
@@ -1712,10 +1714,10 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Select only sample_id and data_version for diff
+        # Select only sample_uid and data_version for diff
         # The calculator returns the full joined DataFrame with upstream columns,
         # but diff resolver only needs these two columns
-        target_versions_nw = target_versions_nw.select(["sample_id", "data_version"])
+        target_versions_nw = target_versions_nw.select(["sample_uid", "data_version"])
 
         # Step 3: Diff with current (filtered by feature_version at database level)
         current_lazy = self._read_metadata_native(

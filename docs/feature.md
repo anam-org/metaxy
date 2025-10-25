@@ -38,7 +38,7 @@ print(VideoProcessing.feature_version())  # "d7e9f4a2" (different!)
 Every metadata row includes a `feature_version` column:
 ```python
 metadata = pl.DataFrame({
-    "sample_id": [1, 2, 3],
+    "sample_uid": [1, 2, 3],
     "data_version": [...],
     "feature_version": "a3f8b2c1",  # Auto-added by store
 })
@@ -58,13 +58,13 @@ When feature definitions change, you may need custom logic to align metadata wit
 
 ```python
 class MyFeature(Feature, spec=...):
-    # Default behavior: inner join on sample_id
+    # Default behavior: inner join on sample_uid
     # Only keeps samples present in ALL upstream features
     pass
 
 # During migration:
 # - Reads current metadata
-# - Inner joins with upstream on sample_id
+# - Inner joins with upstream on sample_uid
 # - Only samples present in both current AND upstream survive
 ```
 
@@ -88,14 +88,14 @@ class VideoFrames(Feature, spec=FeatureSpec(
 
         When videos upstream change, regenerate all frame sample IDs.
         """
-        video_samples = upstream_metadata["videos"]["sample_id"]
+        video_samples = upstream_metadata["videos"]["sample_uid"]
 
         # Generate frame sample IDs
         frames = []
         for video_id in video_samples:
             for frame_idx in range(30):
                 frames.append({
-                    "sample_id": f"{video_id}_frame_{frame_idx}",
+                    "sample_uid": f"{video_id}_frame_{frame_idx}",
                     "video_id": video_id,
                     "frame_idx": frame_idx,
                 })
@@ -123,12 +123,12 @@ class ProcessedVideos(Feature, spec=...):
         # Keep custom columns from current_metadata if available
         if len(current_metadata) > 0:
             return current_metadata.join(
-                valid_videos.select(pl.col("sample_id")),
-                on="sample_id",
+                valid_videos.select(pl.col("sample_uid")),
+                on="sample_uid",
                 how="inner",  # Only keep samples that pass filter
             )
         else:
-            return valid_videos.select(["sample_id", "duration", "path"])
+            return valid_videos.select(["sample_uid", "duration", "path"])
 ```
 
 #### Outer Join (Keep All Samples)
@@ -145,7 +145,7 @@ class MergedFeature(Feature, spec=...):
 
         all_samples = set()
         for upstream_df in upstream_metadata.values():
-            all_samples.update(upstream_df["sample_id"].to_list())
+            all_samples.update(upstream_df["sample_uid"].to_list())
 
-        return pl.DataFrame({"sample_id": sorted(all_samples)})
+        return pl.DataFrame({"sample_uid": sorted(all_samples)})
 ```

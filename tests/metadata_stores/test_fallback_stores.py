@@ -172,7 +172,7 @@ def test_fallback_store_warning_issued(
     # Prepare root data
     root_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [
                 {"default": "hash1"},
                 {"default": "hash2"},
@@ -232,7 +232,7 @@ def test_fallback_store_warning_issued(
                     result.added.to_polars()
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
-                ).sort("sample_id")
+                ).sort("sample_uid")
                 versions = added_sorted["data_version"].to_list()
 
                 results[(primary_store_type, fallback_store_type, prefer_native)] = {
@@ -290,7 +290,7 @@ def test_no_fallback_warning_when_all_local(
             # Write root feature to same store
             root_data = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"default": "hash1"},
                         {"default": "hash2"},
@@ -355,7 +355,7 @@ def test_fallback_store_switches_to_polars_components(
     # Setup root feature data
     root_data = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "data_version": [
                 {"default": "hash1"},
                 {"default": "hash2"},
@@ -397,7 +397,7 @@ def test_fallback_store_switches_to_polars_components(
                 if isinstance(result_local.added, nw.DataFrame)
                 else result_local.added
             )
-            versions_local = added_local.sort("sample_id")["data_version"].to_list()
+            versions_local = added_local.sort("sample_uid")["data_version"].to_list()
 
             results[(primary_store_type, fallback_store_type, "all_local")] = {
                 "added": len(result_local.added),
@@ -449,7 +449,7 @@ def test_fallback_store_switches_to_polars_components(
             if isinstance(result_fallback.added, nw.DataFrame)
             else result_fallback.added
         )
-        versions_fallback = added_fallback.sort("sample_id")["data_version"].to_list()
+        versions_fallback = added_fallback.sort("sample_uid")["data_version"].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
             "added": len(result_fallback.added),
@@ -503,7 +503,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
         with store, graph.use():
             root_data = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"default": "hash1"},
                         {"default": "hash2"},
@@ -566,7 +566,7 @@ def test_sqlite_no_warning_with_fallback_since_no_native(
         with fallback_store, graph.use():
             root_data = pl.DataFrame(
                 {
-                    "sample_id": [1, 2, 3],
+                    "sample_uid": [1, 2, 3],
                     "data_version": [
                         {"default": "hash1"},
                         {"default": "hash2"},
