@@ -10,9 +10,16 @@ Metaxy - Feature Metadata Management
   - [`scaffold`](#metaxy-migrations-scaffold)
   - [`apply`](#metaxy-migrations-apply)
   - [`status`](#metaxy-migrations-status)
-- [`push`](#metaxy-push)
+- [`graph`](#metaxy-graph)
+  - [`push`](#metaxy-graph-push)
+  - [`history`](#metaxy-graph-history)
+  - [`describe`](#metaxy-graph-describe)
+  - [`render`](#metaxy-graph-render)
 - [`list`](#metaxy-list)
   - [`features`](#metaxy-list-features)
+- [`metadata`](#metaxy-metadata)
+  - [`copy`](#metaxy-metadata-copy)
+  - [`drop`](#metaxy-metadata-drop)
 
 **Usage**:
 
@@ -25,9 +32,10 @@ $ metaxy COMMAND
 
 **Commands**:
 
+* `graph`: Manage feature graphs
 * `list`: List Metaxy entities
+* `metadata`: Manage Metaxy metadata
 * `migrations`: Metadata migration commands
-* `push`: Record all feature versions (push graph snapshot).
 * `shell`: Start interactive shell.
 
 ## `metaxy shell`
@@ -150,7 +158,24 @@ $ metaxy migrations status
 ```
 
 
-## `metaxy push`
+## `metaxy graph`
+
+Manage feature graphs
+
+**Usage**:
+
+```console
+$ metaxy graph COMMAND
+```
+
+**Commands**:
+
+* `describe`: Describe a graph snapshot.
+* `history`: Show history of recorded graph snapshots.
+* `push`: Record all feature versions (push graph snapshot).
+* `render`: Render feature graph visualization.
+
+## `metaxy graph push`
 
 Record all feature versions (push graph snapshot).
 
@@ -160,14 +185,96 @@ after deploying new feature definitions.
 **Usage**:
 
 ```console
-$ metaxy push [ARGS]
+$ metaxy graph push [ARGS]
 ```
 
 **Options**:
 
-### Options
+* `STORE, --store`: Metadata store to use (defaults to configured default store)
 
-* `STORE, --store`: The metadata store to use. Defaults to the default store.
+
+## `metaxy graph history`
+
+Show history of recorded graph snapshots.
+
+Displays all recorded graph snapshots from the metadata store, showing snapshot IDs, when they were recorded, and 
+feature counts.
+
+**Usage**:
+
+```console
+$ metaxy graph history [ARGS]
+```
+
+**Options**:
+
+* `STORE, --store`: Metadata store to use (defaults to configured default store)
+* `LIMIT, --limit`: Limit number of snapshots to show (defaults to all)
+
+
+## `metaxy graph describe`
+
+Describe a graph snapshot.
+
+Shows detailed information about a graph snapshot including: - Feature count - Graph depth (longest dependency chain) - 
+Root features (features with no dependencies)
+
+**Usage**:
+
+```console
+$ metaxy graph describe [ARGS]
+```
+
+**Options**:
+
+* `SNAPSHOT, --snapshot`: Snapshot ID to describe (defaults to current graph from code)
+* `STORE, --store`: Metadata store to use (defaults to configured default store)
+
+
+## `metaxy graph render`
+
+Render feature graph visualization.
+
+Visualize the feature graph in different formats: - terminal: Terminal rendering with two types:
+
+    graph (default): Hierarchical tree view  cards: Panel/card-based view with dependency edges
+
+
+ • mermaid: Mermaid flowchart markup
+ • graphviz: Graphviz DOT format
+╭───────────────────────────────── System Message: ERROR/3 (<rst-document>, line 5); ──────────────────────────────────╮
+│ <rst-document>:5: (ERROR/3) Unexpected indentation.                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────── System Message: WARNING/2 (<rst-document>, line 7); ─────────────────────────────────╮
+│ <rst-document>:7: (WARNING/2) Block quote ends without a blank line; unexpected unindent.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+**Usage**:
+
+```console
+$ metaxy graph render [ARGS]
+```
+
+**Options**:
+
+* `SHOW-FIELDS, --show-fields, --no-show-fields`: Render configuration  *[default: --show-fields]*
+* `SHOW-FEATURE-VERSIONS, --show-feature-versions, --no-show-feature-versions`: Render configuration  *[default: --show-feature-versions]*
+* `SHOW-FIELD-VERSIONS, --show-field-versions, --no-show-field-versions`: Render configuration  *[default: --show-field-versions]*
+* `SHOW-CODE-VERSIONS, --show-code-versions, --no-show-code-versions`: Render configuration  *[default: --no-show-code-versions]*
+* `SHOW-SNAPSHOT-ID, --show-snapshot-id, --no-show-snapshot-id`: Render configuration  *[default: --show-snapshot-id]*
+* `HASH-LENGTH, --hash-length`: Render configuration  *[default: 8]*
+* `DIRECTION, --direction`: Render configuration  *[default: TB]*
+* `FEATURE, --feature`: Render configuration
+* `UP, --up`: Render configuration
+* `DOWN, --down`: Render configuration
+* `-f, --format`: Output format: terminal, mermaid, or graphviz  *[default: terminal]*
+* `-t, --type`: Terminal rendering type: graph or cards (only for --format terminal)  *[choices: graph, cards]*  *[default: graph]*
+* `-o, --output`: Output file path (default: stdout)
+* `SNAPSHOT, --snapshot`: Snapshot ID to render (default: current graph from code)
+* `STORE, --store`: Metadata store to use (for loading historical snapshots)
+* `MINIMAL, --minimal, --no-minimal`: Minimal output: only feature keys and dependencies  *[default: --no-minimal]*
+* `VERBOSE, --verbose, --no-verbose`: Verbose output: show all available information  *[default: --no-verbose]*
+
 
 ## `metaxy list`
 
@@ -192,3 +299,74 @@ List Metaxy features
 ```console
 $ metaxy list features
 ```
+
+
+## `metaxy metadata`
+
+Manage Metaxy metadata
+
+**Usage**:
+
+```console
+$ metaxy metadata COMMAND
+```
+
+**Commands**:
+
+* `copy`: Copy metadata between stores.
+* `drop`: Drop metadata from a store.
+
+## `metaxy metadata copy`
+
+Copy metadata between stores.
+
+Copies metadata for specified features from one store to another, optionally using a historical version. Useful for: - 
+Migrating data between environments - Backfilling metadata - Copying specific feature versions
+
+Incremental Mode (default):
+    By default, performs an anti-join on sample_id to skip rows that already exist in the destination for the same 
+snapshot_id. This prevents duplicate writes.  Disabling incremental (--no-incremental) may improve performance when: - 
+The destination store is empty or has no overlap with source - The destination store has eventual deduplication
+
+**Usage**:
+
+```console
+$ metaxy metadata copy FROM TO [ARGS]
+```
+
+**Arguments**:
+
+* `FROM`: Source store name (must be configured in metaxy.toml)  **[required]**
+* `TO`: Destination store name (must be configured in metaxy.toml)  **[required]**
+
+**Options**:
+
+* `FEATURE, --feature, --empty-feature`: Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
+--all-features.
+* `ALL-FEATURES, --all-features, --no-all-features`: Copy all features from source store  *[default: --no-all-features]*
+* `SNAPSHOT, --snapshot`: Snapshot ID to copy (defaults to latest in source store). The snapshot_id is preserved in the destination.
+* `INCREMENTAL, --incremental, --no-incremental`: Use incremental copy (compare data_version to skip existing rows). Disable for better performance if destination is 
+empty or uses deduplication.  *[default: --incremental]*
+
+
+## `metaxy metadata drop`
+
+Drop metadata from a store.
+
+Removes metadata for specified features from the store. This is a destructive operation and requires --confirm flag.
+
+Useful for: - Cleaning up test data - Re-computing feature metadata from scratch - Removing obsolete features
+
+**Usage**:
+
+```console
+$ metaxy metadata drop [ARGS]
+```
+
+**Options**:
+
+* `STORE, --store`: Store name to drop metadata from (defaults to configured default store)
+* `FEATURE, --feature, --empty-feature`: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
+--all-features.
+* `ALL-FEATURES, --all-features, --no-all-features`: Drop metadata for all features in the store  *[default: --no-all-features]*
+* `CONFIRM, --confirm, --no-confirm`: Confirm the drop operation (required to prevent accidental deletion)  *[default: --no-confirm]*
