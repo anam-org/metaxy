@@ -7,6 +7,13 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.metadata_store._ducklake_support import (
+    DuckLakeAttachmentConfig,
+    DuckLakeAttachmentManager,
+    DuckLakeConfigInput,
+    build_ducklake_attachment,
+    ensure_extensions_with_plugins,
+)
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
@@ -70,6 +77,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         config: dict[str, str] | None = None,
         extensions: list[ExtensionSpec | str] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
+        ducklake: DuckLakeConfigInput | None = None,
         **kwargs,
     ):
         """
@@ -97,6 +105,10 @@ class DuckDBMetadataStore(IbisMetadataStore):
                     extensions=[{'name': 'spatial', 'repository': 'core_nightly'}]
                     extensions=[{'name': 'my_ext', 'repository': 'https://my-repo.com'}]
             fallback_stores: Ordered list of read-only fallback stores.
+            ducklake: Optional DuckLake attachment configuration. Provide either a
+                mapping with 'metadata_backend' and 'storage_backend' entries or a
+                DuckLakeAttachmentConfig instance. When supplied, the DuckDB
+                connection is configured to ATTACH the DuckLake catalog after open().
             **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
         """
         database_str = str(database)
@@ -108,7 +120,17 @@ class DuckDBMetadataStore(IbisMetadataStore):
             connection_params.update(config)
 
         self.database = database_str
-        self.extensions = extensions or []
+        base_extensions = list(extensions or [])
+
+        self._ducklake_config: DuckLakeAttachmentConfig | None = None
+        self._ducklake_attachment: DuckLakeAttachmentManager | None = None
+        if ducklake is not None:
+            attachment_config, manager = build_ducklake_attachment(ducklake)
+            ensure_extensions_with_plugins(base_extensions, attachment_config.plugins)
+            self._ducklake_config = attachment_config
+            self._ducklake_attachment = manager
+
+        self.extensions = base_extensions
 
         # Auto-add hashfuncs extension if not present (needed for default XXHASH64)
         extension_names = [
@@ -165,3 +187,32 @@ class DuckDBMetadataStore(IbisMetadataStore):
         diff_resolver = NarwhalsDiffResolver()
 
         return joiner, calculator, diff_resolver
+
+    # ------------------------------------------------------------------ DuckLake
+    def open(self) -> None:
+        """Open DuckDB connection and configure optional DuckLake attachment."""
+        super().open()
+        if self._ducklake_attachment is not None:
+            if self._conn is None:
+                raise RuntimeError(
+                    "DuckDBMetadataStore failed to open DuckDB connection."
+                )
+            self._ducklake_attachment.configure(self._conn)
+
+    def preview_ducklake_sql(self) -> list[str]:
+        """Return DuckLake attachment SQL if configured."""
+        if self._ducklake_attachment is None:
+            raise RuntimeError("DuckLake attachment is not configured.")
+        return self._ducklake_attachment.preview_sql()
+
+    def get_ducklake_attachment_manager(self) -> DuckLakeAttachmentManager:
+        """Expose DuckLake attachment manager for advanced scenarios."""
+        if self._ducklake_attachment is None:
+            raise RuntimeError("DuckLake attachment is not configured.")
+        return self._ducklake_attachment
+
+    def get_ducklake_attachment_config(self) -> DuckLakeAttachmentConfig:
+        """Return the DuckLake attachment configuration."""
+        if self._ducklake_config is None:
+            raise RuntimeError("DuckLake attachment is not configured.")
+        return self._ducklake_config
