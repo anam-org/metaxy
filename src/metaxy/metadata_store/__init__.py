@@ -3,7 +3,6 @@
 from metaxy.metadata_store.base import (
     FEATURE_VERSIONS_KEY,
     MIGRATION_HISTORY_KEY,
-    FilteredFeature,
     MetadataStore,
     allow_feature_version_override,
 )
@@ -21,7 +20,6 @@ from metaxy.metadata_store.memory import InMemoryMetadataStore
 __all__ = [
     "MetadataStore",
     "InMemoryMetadataStore",
-    "FilteredFeature",
     "MetadataStoreError",
     "FeatureNotFoundError",
     "FieldNotFoundError",

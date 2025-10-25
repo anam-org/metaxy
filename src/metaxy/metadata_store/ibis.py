@@ -6,6 +6,7 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -346,8 +347,8 @@ class IbisMetadataStore(MetadataStore):
         feature: FeatureKey | type[Feature],
         *,
         feature_version: str | None = None,
-        filters: list[nw.Expr] | None = None,
-        columns: list[str] | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).

@@ -1,5 +1,6 @@
 """In-memory metadata store implementation."""
 
+from collections.abc import Sequence
 from typing import Any
 
 import narwhals as nw
@@ -117,8 +118,8 @@ class InMemoryMetadataStore(MetadataStore):
         feature: FeatureKey | type[Feature],
         *,
         feature_version: str | None = None,
-        filters: list[nw.Expr] | None = None,
-        columns: list[str] | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).

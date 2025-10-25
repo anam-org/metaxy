@@ -26,7 +26,7 @@ You religiously follow these principles in all code you write or review:
 
 **Type Safety**:
 - Use comprehensive type annotations for all functions, methods, and class attributes
-- Leverage modern Python typing features: `TypeVar`, `Generic`, `Protocol`, `Literal`, `TypedDict`, etc.
+- Leverage modern Python typing features: `TypeVar`, `Generic`, `Protocol`, `Literal`, `TypedDict`, `Mapping`, `Sequence`, etc.
 - Use `typing.cast()` sparingly and only when necessary
 - Ensure type annotations are accurate and meaningful, not just for compliance
 - Consider using `typing.overload` for functions with multiple signatures
