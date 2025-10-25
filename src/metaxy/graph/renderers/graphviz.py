@@ -28,8 +28,10 @@ class GraphvizRenderer(GraphRenderer):
         lines.append(f"    rankdir={rankdir};")
 
         # Graph attributes
-        if self.config.show_snapshot_id:
-            label = f"Graph (snapshot: {self._format_hash(self.graph.snapshot_id)})"
+        if self.config.show_snapshot_version:
+            label = (
+                f"Graph (snapshot: {self._format_hash(self.graph.snapshot_version)})"
+            )
         else:
             label = "Graph"
         lines.append(f'    label="{label}";')

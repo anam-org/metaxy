@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 def detect_feature_changes(
     store: "MetadataStore",
-    from_snapshot_id: str,
-    to_snapshot_id: str,
+    from_snapshot_version: str,
+    to_snapshot_version: str,
 ) -> list[DataVersionReconciliation]:
-    """Detect feature changes by comparing snapshot_ids directly.
+    """Detect feature changes by comparing snapshot_versions directly.
 
     Pure comparison function that compares feature versions between two snapshots
     by querying their snapshot metadata from the store.
@@ -32,15 +32,15 @@ def detect_feature_changes(
 
     Args:
         store: Metadata store containing snapshot metadata
-        from_snapshot_id: Source snapshot ID (old state)
-        to_snapshot_id: Target snapshot ID (new state)
+        from_snapshot_version: Source snapshot version (old state)
+        to_snapshot_version: Target snapshot version (new state)
 
     Returns:
         List of DataVersionReconciliation operations for changed features
 
     Example:
         >>> # Compare latest snapshot in store vs current snapshot
-        >>> operations = detect_feature_changes(store, old_snapshot_id, new_snapshot_id)
+        >>> operations = detect_feature_changes(store, old_snapshot_version, new_snapshot_version)
         >>> for op in operations:
         ...     print(f"Changed: {op.feature_key} - {op.reason}")
     """
@@ -52,7 +52,7 @@ def detect_feature_changes(
             FEATURE_VERSIONS_KEY,
             current_only=False,
             allow_fallback=False,
-            filters=[nw.col("snapshot_id") == from_snapshot_id],
+            filters=[nw.col("snapshot_version") == from_snapshot_version],
         )
     except FeatureNotFoundError:
         # No from_snapshot - nothing to migrate from
@@ -63,7 +63,7 @@ def detect_feature_changes(
             FEATURE_VERSIONS_KEY,
             current_only=False,
             allow_fallback=False,
-            filters=[nw.col("snapshot_id") == to_snapshot_id],
+            filters=[nw.col("snapshot_version") == to_snapshot_version],
         )
     except FeatureNotFoundError:
         # No to_snapshot - nothing to migrate to

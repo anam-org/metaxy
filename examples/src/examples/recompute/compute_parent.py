@@ -27,9 +27,9 @@ ParentFeature = get_feature_by_key(parent_key)
 # Get metadata store from metaxy.toml config
 with MetaxyConfig.load().get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
-    snapshot_id, _ = store.record_feature_graph_snapshot()
+    snapshot_version, _ = store.record_feature_graph_snapshot()
 
-    print(f"Graph snapshot_id: {snapshot_id}")
+    print(f"Graph snapshot_version: {snapshot_version}")
 
     # Check if metadata already exists for current feature_version (avoid duplicates)
     try:
@@ -46,7 +46,7 @@ with MetaxyConfig.load().get_store() as store:
 
     parent_metadata = pl.DataFrame(
         {
-            "sample_id": [1, 2, 3],
+            "sample_uid": [1, 2, 3],
             "raw_data": ["sample_1_data", "sample_2_data", "sample_3_data"],
             "data_version": [
                 {"embeddings": "v1"},
@@ -55,7 +55,7 @@ with MetaxyConfig.load().get_store() as store:
             ],
         },
         schema={
-            "sample_id": pl.UInt32,
+            "sample_uid": pl.UInt32,
             "raw_data": pl.Utf8,
             "data_version": pl.Struct({"embeddings": pl.Utf8}),
         },

@@ -12,7 +12,7 @@ load_features()
 # Get feature class
 ChildFeature = get_feature_by_key(FeatureKey(["examples", "child"]))
 
-# Load upstream data for sample_ids
+# Load upstream data for sample_uids
 data_dir = Path("/tmp/migration_example_data")
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
 
@@ -23,7 +23,7 @@ with config.get_store() as store:
     print(f"  feature_version: {ChildFeature.feature_version()[:16]}...")
 
     # Use resolve_update to calculate what needs computing
-    child_samples = upstream_data.select("sample_id")
+    child_samples = upstream_data.select("sample_uid")
     diff_result = store.resolve_update(ChildFeature, sample_df=child_samples)
 
     print(
@@ -47,4 +47,4 @@ with config.get_store() as store:
     print("\n📋 Child data_versions:")
     for row in child_eager.iter_rows(named=True):
         dv = row["data_version"]["predictions"]
-        print(f"  sample_id={row['sample_id']}: {dv[:16]}...")
+        print(f"  sample_uid={row['sample_uid']}: {dv[:16]}...")

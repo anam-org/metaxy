@@ -317,7 +317,7 @@ class IbisMetadataStore(MetadataStore):
         if table_name not in existing_tables:
             # Create table from DataFrame
             # Ensure NULL columns have proper types by filling with a typed value
-            # This handles cases like snapshot_id which can be NULL
+            # This handles cases like snapshot_version which can be NULL
             df_typed = df
             for col in df.columns:
                 if df[col].dtype == pl.Null:

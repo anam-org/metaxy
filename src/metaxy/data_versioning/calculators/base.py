@@ -89,7 +89,7 @@ class DataVersionCalculator(ABC):
 
         Returns:
             Narwhals LazyFrame with data_version column added
-            Shape: [sample_id, __upstream_*__data_version columns, data_version (new)]
+            Shape: [sample_uid, __upstream_*__data_version columns, data_version (new)]
 
         Raises:
             ValueError: If hash_algorithm not in supported_algorithms

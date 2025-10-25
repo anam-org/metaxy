@@ -30,7 +30,7 @@ def test_sqlite_table_naming(
 
         metadata = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -100,7 +100,7 @@ def test_sqlite_persistence_across_instances(
     with SQLiteMetadataStore(db_path) as store1:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -117,7 +117,7 @@ def test_sqlite_persistence_across_instances(
         )
 
         assert len(result) == 3
-        assert set(result["sample_id"].to_list()) == {1, 2, 3}
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
 def test_sqlite_in_memory(test_graph, test_features: dict[str, Any]) -> None:
@@ -132,7 +132,7 @@ def test_sqlite_in_memory(test_graph, test_features: dict[str, Any]) -> None:
     with SQLiteMetadataStore(":memory:") as store:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -145,7 +145,7 @@ def test_sqlite_in_memory(test_graph, test_features: dict[str, Any]) -> None:
             store.read_metadata(test_features["UpstreamFeatureA"])
         )
         assert len(result) == 2
-        assert set(result["sample_id"].to_list()) == {1, 2}
+        assert set(result["sample_uid"].to_list()) == {1, 2}
 
 
 def test_sqlite_close_idempotent(

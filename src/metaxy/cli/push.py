@@ -9,18 +9,18 @@ def push(store: str | None = None):
     """Record all feature versions (push graph snapshot).
 
     Records all features in the active graph to the metadata store
-    with a deterministic snapshot ID. This should be run after deploying
+    with a deterministic snapshot version. This should be run after deploying
     new feature definitions.
 
     Example:
         $ metaxy push
 
         ✓ Recorded feature graph
-          Snapshot ID: abc123def456...
+          Snapshot version: abc123def456...
 
         # Or if already recorded:
         ℹ Snapshot already recorded (skipped)
-          Snapshot ID: abc123def456...
+          Snapshot version: abc123def456...
 
     Args:
         store: The metadata store to use. Defaults to the default store.
@@ -30,16 +30,16 @@ def push(store: str | None = None):
     metadata_store = get_store(store)
 
     with metadata_store:
-        snapshot_id, was_already_recorded = (
+        snapshot_version, was_already_recorded = (
             metadata_store.record_feature_graph_snapshot()
         )
 
         if was_already_recorded:
             console.print("[blue]ℹ[/blue] Snapshot already recorded (skipped)")
-            console.print(f"  Snapshot ID: {snapshot_id}")
+            console.print(f"  Snapshot version: {snapshot_version}")
         else:
             console.print("[green]✓[/green] Recorded feature graph")
-            console.print(f"  Snapshot ID: {snapshot_id}")
+            console.print(f"  Snapshot version: {snapshot_version}")
 
 
 if __name__ == "__main__":

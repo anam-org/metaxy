@@ -62,7 +62,7 @@ def test_copy_metadata_all_features(
         # Write metadata to source store
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3"],
+                "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
                 "data_version": [
                     {"field_a": "hash1"},
@@ -75,47 +75,47 @@ def test_copy_metadata_all_features(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2"],
+                "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
                 "data_version": [{"field_b": "hash10"}, {"field_b": "hash20"}],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
-        # Get the snapshot_id that was written
+        # Get the snapshot_version that was written
         written_data = (
             source_store.read_metadata(FeatureA, current_only=False)
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy with destination store (source will be opened automatically)
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=None,  # Copy all
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Verify stats
         assert stats["features_copied"] == 2
         assert stats["rows_copied"] == 5  # 3 + 2
 
-        # Verify data in destination has same snapshot_id
+        # Verify data in destination has same snapshot_version
         dest_data_a = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
         assert dest_data_a.height == 3
-        assert dest_data_a["sample_id"].to_list() == ["s1", "s2", "s3"]
-        assert all(sid == snapshot_id for sid in dest_data_a["snapshot_id"])
+        assert dest_data_a["sample_uid"].to_list() == ["s1", "s2", "s3"]
+        assert all(sid == snapshot_version for sid in dest_data_a["snapshot_version"])
 
         dest_data_b = (
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
         assert dest_data_b.height == 2
-        assert dest_data_b["sample_id"].to_list() == ["s1", "s2"]
-        assert all(sid == snapshot_id for sid in dest_data_b["snapshot_id"])
+        assert dest_data_b["sample_uid"].to_list() == ["s1", "s2"]
+        assert all(sid == snapshot_version for sid in dest_data_b["snapshot_version"])
 
 
 def test_copy_metadata_specific_features(
@@ -131,7 +131,7 @@ def test_copy_metadata_specific_features(
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_a": [1],
                 "data_version": [{"field_a": "hash1"}],
             }
@@ -140,27 +140,27 @@ def test_copy_metadata_specific_features(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_b": [10],
                 "data_version": [{"field_b": "hash10"}],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
-        # Get the snapshot_id that was written
+        # Get the snapshot_version that was written
         written_data = (
             source_store.read_metadata(FeatureA, current_only=False)
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy only FeatureA
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec.key],
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Verify stats
@@ -180,27 +180,27 @@ def test_copy_metadata_specific_features(
 def test_copy_metadata_with_snapshot_filter(
     sample_features: tuple[type[Feature], type[Feature]],
 ) -> None:
-    """Test copying metadata filtered by snapshot ID."""
+    """Test copying metadata filtered by snapshot version."""
     FeatureA, FeatureB = sample_features
 
     source_store = InMemoryMetadataStore()
     dest_store = InMemoryMetadataStore()
 
-    # Write data with different snapshot IDs to source
+    # Write data with different snapshot versions to source
     with source_store:
         snapshot_1 = "snapshot_123"
         snapshot_2 = "snapshot_456"
 
-        # Write metadata with different snapshot IDs
+        # Write metadata with different snapshot versions
         with allow_feature_version_override():
             # Data with snapshot 1
             data_snapshot_1 = pl.DataFrame(
                 {
-                    "sample_id": ["s1", "s2"],
+                    "sample_uid": ["s1", "s2"],
                     "field_a": [1, 2],
                     "data_version": [{"field_a": "hash1"}, {"field_a": "hash2"}],
                     "feature_version": [FeatureA.feature_version()] * 2,
-                    "snapshot_id": [snapshot_1] * 2,
+                    "snapshot_version": [snapshot_1] * 2,
                 }
             )
             source_store.write_metadata(FeatureA, data_snapshot_1)
@@ -208,7 +208,7 @@ def test_copy_metadata_with_snapshot_filter(
             # Data with snapshot 2
             data_snapshot_2 = pl.DataFrame(
                 {
-                    "sample_id": ["s3", "s4", "s5"],
+                    "sample_uid": ["s3", "s4", "s5"],
                     "field_a": [3, 4, 5],
                     "data_version": [
                         {"field_a": "hash3"},
@@ -216,7 +216,7 @@ def test_copy_metadata_with_snapshot_filter(
                         {"field_a": "hash5"},
                     ],
                     "feature_version": [FeatureA.feature_version()] * 3,
-                    "snapshot_id": [snapshot_2] * 3,
+                    "snapshot_version": [snapshot_2] * 3,
                 }
             )
             source_store.write_metadata(FeatureA, data_snapshot_2)
@@ -237,17 +237,17 @@ def test_copy_metadata_with_snapshot_filter(
             from_snapshot=snapshot_2,
         )
 
-        # Verify only snapshot 2 data was copied with same snapshot_id
+        # Verify only snapshot 2 data was copied with same snapshot_version
         assert stats["features_copied"] == 1
         assert stats["rows_copied"] == 3
 
-        # Verify destination has only the copied data with preserved snapshot_id
+        # Verify destination has only the copied data with preserved snapshot_version
         dest_data = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
         assert dest_data.height == 3
-        assert dest_data["sample_id"].to_list() == ["s3", "s4", "s5"]
-        assert all(sid == snapshot_2 for sid in dest_data["snapshot_id"])
+        assert dest_data["sample_uid"].to_list() == ["s3", "s4", "s5"]
+        assert all(sid == snapshot_2 for sid in dest_data["snapshot_version"])
 
 
 def test_copy_metadata_empty_source() -> None:
@@ -278,27 +278,27 @@ def test_copy_metadata_missing_feature(
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_a": [1],
                 "data_version": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        # Get the snapshot_id that was written
+        # Get the snapshot_version that was written
         written_data = (
             source_store.read_metadata(FeatureA, current_only=False)
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Try to copy both features (FeatureB doesn't exist)
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec.key, FeatureB.spec.key],
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Should copy only FeatureA and skip FeatureB with warning
@@ -320,27 +320,27 @@ def test_copy_metadata_preserves_feature_version(
         original_version = FeatureA.feature_version()
         source_data = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_a": [1],
                 "data_version": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
 
-        # Get the snapshot_id that was written
+        # Get the snapshot_version that was written
         written_data = (
             source_store.read_metadata(FeatureA, current_only=False)
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy to destination
     with dest_store:
         dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec.key],
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Verify feature_version is preserved
@@ -360,10 +360,10 @@ def test_copy_metadata_store_not_open() -> None:
         dest_store.copy_metadata(from_store=source_store)
 
 
-def test_copy_metadata_preserves_snapshot_id(
+def test_copy_metadata_preserves_snapshot_version(
     sample_features: tuple[type[Feature], type[Feature]],
 ) -> None:
-    """Test that snapshot_id is preserved during copy."""
+    """Test that snapshot_version is preserved during copy."""
     FeatureA, _ = sample_features
 
     source_store = InMemoryMetadataStore()
@@ -373,22 +373,22 @@ def test_copy_metadata_preserves_snapshot_id(
     with source_store:
         source_data = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_a": [1],
                 "data_version": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
 
-        # Get the snapshot_id that was written
+        # Get the snapshot_version that was written
         written_data = (
             source_store.read_metadata(FeatureA, current_only=False)
             .collect()
             .to_polars()
         )
-        original_snapshot = written_data["snapshot_id"][0]
+        original_snapshot = written_data["snapshot_version"][0]
 
-    # Copy - snapshot_id should be preserved
+    # Copy - snapshot_version should be preserved
     with dest_store:
         dest_store.copy_metadata(
             from_store=source_store,
@@ -396,11 +396,11 @@ def test_copy_metadata_preserves_snapshot_id(
             from_snapshot=original_snapshot,
         )
 
-        # Verify snapshot_id was preserved
+        # Verify snapshot_version was preserved
         dest_data = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert dest_data["snapshot_id"][0] == original_snapshot
+        assert dest_data["snapshot_version"][0] == original_snapshot
 
 
 def test_copy_metadata_no_rows_for_snapshot(
@@ -416,7 +416,7 @@ def test_copy_metadata_no_rows_for_snapshot(
     with source_store:
         source_data = pl.DataFrame(
             {
-                "sample_id": ["s1"],
+                "sample_uid": ["s1"],
                 "field_a": [1],
                 "data_version": [{"field_a": "hash1"}],
             }
@@ -445,11 +445,11 @@ def test_copy_metadata_with_global_filters(
     source_store = InMemoryMetadataStore()
     dest_store = InMemoryMetadataStore()
 
-    # Write metadata with different sample_ids
+    # Write metadata with different sample_uids
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3"],
+                "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
                 "data_version": [
                     {"field_a": "hash1"},
@@ -462,7 +462,7 @@ def test_copy_metadata_with_global_filters(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3", "s4"],
+                "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
                 "data_version": [
                     {"field_b": "hash10"},
@@ -480,15 +480,15 @@ def test_copy_metadata_with_global_filters(
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy with global filter - only s1 and s2
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=None,  # All features
-            from_snapshot=snapshot_id,
-            filters=[nw.col("sample_id").is_in(["s1", "s2"])],
+            from_snapshot=snapshot_version,
+            filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
         )
 
         # Verify both features were copied but filtered
@@ -499,13 +499,13 @@ def test_copy_metadata_with_global_filters(
         dest_data_a = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_a["sample_id"]) == {"s1", "s2"}
+        assert set(dest_data_a["sample_uid"]) == {"s1", "s2"}
 
         # Verify FeatureB has only s1, s2
         dest_data_b = (
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_b["sample_id"]) == {"s1", "s2"}
+        assert set(dest_data_b["sample_uid"]) == {"s1", "s2"}
 
 
 def test_copy_metadata_with_per_feature_filters(
@@ -521,7 +521,7 @@ def test_copy_metadata_with_per_feature_filters(
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3"],
+                "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
                 "data_version": [
                     {"field_a": "hash1"},
@@ -534,7 +534,7 @@ def test_copy_metadata_with_per_feature_filters(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3"],
+                "sample_uid": ["s1", "s2", "s3"],
                 "field_b": [10, 20, 30],
                 "data_version": [
                     {"field_b": "hash10"},
@@ -551,7 +551,7 @@ def test_copy_metadata_with_per_feature_filters(
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy with per-feature filters
     with dest_store:
@@ -567,7 +567,7 @@ def test_copy_metadata_with_per_feature_filters(
                     filters=[nw.col("field_b") < 30],  # Only rows where field_b < 30
                 ),
             ],
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Verify both features copied with their specific filters
@@ -578,14 +578,14 @@ def test_copy_metadata_with_per_feature_filters(
         dest_data_a = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_a["sample_id"]) == {"s2", "s3"}
+        assert set(dest_data_a["sample_uid"]) == {"s2", "s3"}
         assert all(dest_data_a["field_a"] > 1)
 
         # Verify FeatureB has only s1, s2 (field_b < 30)
         dest_data_b = (
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_b["sample_id"]) == {"s1", "s2"}
+        assert set(dest_data_b["sample_uid"]) == {"s1", "s2"}
         assert all(dest_data_b["field_b"] < 30)
 
 
@@ -602,7 +602,7 @@ def test_copy_metadata_with_mixed_filters(
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3", "s4"],
+                "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_a": [1, 2, 3, 4],
                 "data_version": [
                     {"field_a": "hash1"},
@@ -616,7 +616,7 @@ def test_copy_metadata_with_mixed_filters(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2", "s3", "s4"],
+                "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
                 "data_version": [
                     {"field_b": "hash10"},
@@ -634,7 +634,7 @@ def test_copy_metadata_with_mixed_filters(
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Copy with both global and per-feature filters
     with dest_store:
@@ -647,8 +647,8 @@ def test_copy_metadata_with_mixed_filters(
                 ),
                 FeatureB.spec.key,  # No per-feature filter, only global applies
             ],
-            from_snapshot=snapshot_id,
-            filters=[nw.col("sample_id").is_in(["s1", "s2", "s3"])],  # Global filter
+            from_snapshot=snapshot_version,
+            filters=[nw.col("sample_uid").is_in(["s1", "s2", "s3"])],  # Global filter
         )
 
         # Verify results
@@ -659,7 +659,7 @@ def test_copy_metadata_with_mixed_filters(
         dest_data_a = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_a["sample_id"]) == {"s1", "s2", "s3"}
+        assert set(dest_data_a["sample_uid"]) == {"s1", "s2", "s3"}
         assert all(dest_data_a["field_a"] <= 3)
 
         # FeatureB: only global filter (s1,s2,s3)
@@ -667,7 +667,7 @@ def test_copy_metadata_with_mixed_filters(
         dest_data_b = (
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
-        assert set(dest_data_b["sample_id"]) == {"s1", "s2", "s3"}
+        assert set(dest_data_b["sample_uid"]) == {"s1", "s2", "s3"}
 
 
 def test_copy_metadata_with_mixed_feature_types(
@@ -683,7 +683,7 @@ def test_copy_metadata_with_mixed_feature_types(
     with source_store:
         source_data_a = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2"],
+                "sample_uid": ["s1", "s2"],
                 "field_a": [1, 2],
                 "data_version": [{"field_a": "hash1"}, {"field_a": "hash2"}],
             }
@@ -692,7 +692,7 @@ def test_copy_metadata_with_mixed_feature_types(
 
         source_data_b = pl.DataFrame(
             {
-                "sample_id": ["s1", "s2"],
+                "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
                 "data_version": [{"field_b": "hash10"}, {"field_b": "hash20"}],
             }
@@ -705,7 +705,7 @@ def test_copy_metadata_with_mixed_feature_types(
             .collect()
             .to_polars()
         )
-        snapshot_id = written_data["snapshot_id"][0]
+        snapshot_version = written_data["snapshot_version"][0]
 
     # Mix FeatureKey and FilteredFeature
     with dest_store:
@@ -718,7 +718,7 @@ def test_copy_metadata_with_mixed_feature_types(
                 ),
                 FeatureB.spec.key,  # Plain FeatureKey
             ],
-            from_snapshot=snapshot_id,
+            from_snapshot=snapshot_version,
         )
 
         # Verify results
@@ -730,7 +730,7 @@ def test_copy_metadata_with_mixed_feature_types(
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
         assert dest_data_a.height == 1
-        assert dest_data_a["sample_id"][0] == "s2"
+        assert dest_data_a["sample_uid"][0] == "s2"
 
         # FeatureB not filtered
         dest_data_b = (

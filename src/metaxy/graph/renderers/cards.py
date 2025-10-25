@@ -37,9 +37,11 @@ class TerminalCardsRenderer(GraphRenderer):
 
         # Build edges representation
         edges_text = Text()
-        if self.config.show_snapshot_id:
-            snapshot_id = self._format_hash(self.graph.snapshot_id)
-            edges_text.append(f"📊 Graph (snapshot: {snapshot_id})\n\n", style="bold")
+        if self.config.show_snapshot_version:
+            snapshot_version = self._format_hash(self.graph.snapshot_version)
+            edges_text.append(
+                f"📊 Graph (snapshot: {snapshot_version})\n\n", style="bold"
+            )
         else:
             edges_text.append("📊 Graph\n\n", style="bold")
 

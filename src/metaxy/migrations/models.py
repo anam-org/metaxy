@@ -75,10 +75,10 @@ class Migration(pydantic.BaseModel):
     parent_migration_id: str | None = (
         None  # Parent migration (None for first migration)
     )
-    from_snapshot_id: (
+    from_snapshot_version: (
         str  # Feature graph snapshot before migration (current state in store)
     )
-    to_snapshot_id: str  # Feature graph snapshot after migration (target state)
+    to_snapshot_version: str  # Feature graph snapshot after migration (target state)
     description: str
     created_at: datetime  # When migration was created
 

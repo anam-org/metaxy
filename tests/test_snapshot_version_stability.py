@@ -1,4 +1,4 @@
-"""Test that snapshot_id is stable across serialize/deserialize"""
+"""Test that snapshot_version is stable across serialize/deserialize"""
 
 # Import from conftest since it's in the same tests directory
 
@@ -7,8 +7,8 @@ from metaxy._testing import TempFeatureModule
 from metaxy.models.feature import FeatureGraph
 
 
-def test_snapshot_id_stability_with_module():
-    """Test that snapshot_id matches after serialize and reconstruct using real module"""
+def test_snapshot_version_stability_with_module():
+    """Test that snapshot_version matches after serialize and reconstruct using real module"""
 
     # Create temp module with features
     temp_module = TempFeatureModule("test_snapshot_stability")
@@ -44,26 +44,26 @@ def test_snapshot_id_stability_with_module():
         # Get the graph with features
         graph1 = temp_module.graph
 
-        # Get original snapshot_id
-        original_snapshot_id = graph1.snapshot_id
-        print(f"\nOriginal snapshot_id: {original_snapshot_id}")
+        # Get original snapshot_version
+        original_snapshot_version = graph1.snapshot_version
+        print(f"\nOriginal snapshot_version: {original_snapshot_version}")
 
         # Serialize to snapshot dict
         snapshot_dict = graph1.to_snapshot()
 
         # Reconstruct from snapshot
         graph2 = FeatureGraph.from_snapshot(snapshot_dict)
-        reconstructed_snapshot_id = graph2.snapshot_id
-        print(f"Reconstructed snapshot_id: {reconstructed_snapshot_id}")
+        reconstructed_snapshot_version = graph2.snapshot_version
+        print(f"Reconstructed snapshot_version: {reconstructed_snapshot_version}")
 
         # Verify they match
-        assert original_snapshot_id == reconstructed_snapshot_id, (
-            f"Snapshot IDs don't match!\n"
-            f"Original: {original_snapshot_id}\n"
-            f"Reconstructed: {reconstructed_snapshot_id}"
+        assert original_snapshot_version == reconstructed_snapshot_version, (
+            f"Snapshot versions don't match!\n"
+            f"Original: {original_snapshot_version}\n"
+            f"Reconstructed: {reconstructed_snapshot_version}"
         )
 
-        print("✓ Snapshot IDs match!")
+        print("✓ Snapshot versions match!")
 
     finally:
         temp_module.cleanup()

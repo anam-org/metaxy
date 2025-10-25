@@ -112,7 +112,7 @@ Central registry managing feature definitions and their relationships:
 - **FeatureGraph**: Tracks all features by key, computes feature versions, and manages graph snapshots
 - **Feature (base class)**: All features inherit from this with `spec=FeatureSpec(...)` parameter
 - **Active graph context**: Uses context variables (`_active_graph`) to support multiple graphs in testing/migrations
-- **Snapshot ID**: Deterministic hash of entire graph state (all feature versions) for deployment tracking
+- **Snapshot version**: Deterministic hash of entire graph state (all feature versions) for deployment tracking
 
 Key methods:
 - `FeatureGraph.get_active()`: Returns currently active graph (default or from context)
@@ -146,7 +146,7 @@ Three-component architecture for calculating and comparing data versions:
 
 **UpstreamJoiner** (`joiners/`): Joins upstream feature metadata
 - `NarwhalsJoiner`: Primary implementation using Narwhals for backend-agnostic joins
-- Default: Inner join on `sample_id`
+- Default: Inner join on `sample_uid`
 - Native implementations execute joins directly in the database
 
 **DataVersionCalculator** (`calculators/`): Computes data version hashes
@@ -169,7 +169,7 @@ Handles metadata updates when feature definitions change:
 - **Explicit operations**: All affected features (root + downstream) listed in YAML
 - **Idempotent execution**: Safely re-runnable, recovers from partial failures
 - **DataVersionReconciliation**: Operation type for code refactors that don't change computation
-- **Snapshot-based**: References `from_snapshot_id` and `to_snapshot_id` to derive feature versions
+- **Snapshot-based**: References `from_snapshot_version` and `to_snapshot_version` to derive feature versions
 - **Requires Feature classes**: Imports actual Feature classes (via `FeatureGraph.from_snapshot()`) to support custom `align_metadata_with_upstream()` methods
 
 Migration workflow:
@@ -193,21 +193,21 @@ All metadata writes are append-only. When migrations update metadata:
 1. Query rows with old `feature_version`
 2. Copy all user columns (preserving custom metadata)
 3. Recalculate `data_version` based on new feature definition
-4. Write new rows with new `feature_version` and `snapshot_id`
+4. Write new rows with new `feature_version` and `snapshot_version`
 5. Old rows remain for historical queries and audit trail
 
 #### Feature Version vs Data Version
 - **Feature version**: Hash of feature definition (code, deps, fields). Deterministic from code alone.
 - **Data version**: Hash of upstream data versions for a specific sample. Depends on actual data.
-- **Snapshot ID**: Hash of all feature versions in graph. Represents entire graph state.
+- **Snapshot version**: Hash of all feature versions in graph. Represents entire graph state.
 
 Metadata rows have:
 ```python
 {
-    "sample_id": 123,
+    "sample_uid": 123,
     "data_version": {"field1": "hash1", "field2": "hash2"},  # Struct column
     "feature_version": "abc123",  # From feature definition
-    "snapshot_id": "def456",      # From graph snapshot
+    "snapshot_version": "def456",      # From graph snapshot
     ...user columns...
 }
 ```
@@ -234,7 +234,7 @@ This enables:
 
 #### Custom Metadata Alignment
 Features can override `align_metadata_with_upstream()` for custom join logic:
-- **Default**: Inner join on `sample_id` (only samples in ALL upstream features)
+- **Default**: Inner join on `sample_uid` (only samples in ALL upstream features)
 - **One-to-many**: Generate multiple child samples per parent (e.g., video frames)
 - **Filtering**: Only process samples meeting certain conditions
 - **Outer join**: Keep union of all upstream samples

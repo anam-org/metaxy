@@ -50,21 +50,21 @@ def _is_upstream_of(
 def generate_migration(
     store: "MetadataStore",
     *,
-    from_snapshot_id: str | None = None,
-    to_snapshot_id: str | None = None,
+    from_snapshot_version: str | None = None,
+    to_snapshot_version: str | None = None,
     class_path_overrides: dict[str, str] | None = None,
 ) -> Migration | None:
     """Generate migration from detected feature changes or between snapshots.
 
     Two modes of operation:
 
-    1. **Default mode** (both snapshot_ids None):
+    1. **Default mode** (both snapshot_versions None):
        - Compares latest recorded snapshot (store) vs current active graph (code)
        - This is the normal workflow: detect code changes
 
-    2. **Historical mode** (both snapshot_ids provided):
-       - Reconstructs from_graph from from_snapshot_id
-       - Reconstructs to_graph from to_snapshot_id
+    2. **Historical mode** (both snapshot_versions provided):
+       - Reconstructs from_graph from from_snapshot_version
+       - Reconstructs to_graph from to_snapshot_version
        - Compares these two historical registries
        - Useful for: backfilling migrations, testing, recovery
 
@@ -73,15 +73,15 @@ def generate_migration(
 
     Args:
         store: Metadata store to check
-        from_snapshot_id: Optional snapshot ID to compare from (historical mode)
-        to_snapshot_id: Optional snapshot ID to compare to (historical mode)
+        from_snapshot_version: Optional snapshot version to compare from (historical mode)
+        to_snapshot_version: Optional snapshot version to compare to (historical mode)
         class_path_overrides: Optional overrides for moved/renamed feature classes
 
     Returns:
         Migration object, or None if no changes detected
 
     Raises:
-        ValueError: If only one snapshot_id is provided, or snapshots not found
+        ValueError: If only one snapshot_version is provided, or snapshots not found
 
     Example (default mode):
         >>> migration = generate_migration(store)
@@ -91,13 +91,13 @@ def generate_migration(
     Example (historical mode):
         >>> migration = generate_migration(
         ...     store,
-        ...     from_snapshot_id="abc123...",
-        ...     to_snapshot_id="def456...",
+        ...     from_snapshot_version="abc123...",
+        ...     to_snapshot_version="def456...",
         ... )
     """
     from metaxy.models.feature import FeatureGraph
 
-    if from_snapshot_id is None:
+    if from_snapshot_version is None:
         # Default mode: get from store's latest snapshot
         from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
@@ -110,8 +110,8 @@ def generate_migration(
                 feature_versions.sort("recorded_at", descending=True).head(1).collect()
             )
             if latest_snapshot.shape[0] > 0:
-                from_snapshot_id = latest_snapshot["snapshot_id"][0]
-                print(f"From: latest snapshot {from_snapshot_id}...")
+                from_snapshot_version = latest_snapshot["snapshot_version"][0]
+                print(f"From: latest snapshot {from_snapshot_version}...")
             else:
                 raise ValueError(
                     "No feature graph snapshot found in metadata store. "
@@ -123,39 +123,45 @@ def generate_migration(
                 "Run 'metaxy push' first to record the feature graph snapshot."
             )
     else:
-        print(f"From: snapshot {from_snapshot_id}...")
+        print(f"From: snapshot {from_snapshot_version}...")
 
-    # Step 2: Determine to_graph and to_snapshot_id
-    if to_snapshot_id is None:
+    # Step 2: Determine to_graph and to_snapshot_version
+    if to_snapshot_version is None:
         # Default mode: record current active graph and use its snapshot
         # This ensures the to_snapshot is available in the store for comparison
-        to_snapshot_id, was_already_recorded = store.record_feature_graph_snapshot()
+        to_snapshot_version, was_already_recorded = (
+            store.record_feature_graph_snapshot()
+        )
         to_graph = FeatureGraph.get_active()
         if was_already_recorded:
             print(
-                f"To: current active graph (snapshot {to_snapshot_id}... already recorded)"
+                f"To: current active graph (snapshot {to_snapshot_version}... already recorded)"
             )
         else:
-            print(f"To: current active graph (snapshot {to_snapshot_id}... recorded)")
+            print(
+                f"To: current active graph (snapshot {to_snapshot_version}... recorded)"
+            )
 
     else:
         # Historical mode: load from snapshot with force_reload
         # force_reload ensures we get current code from disk, not cached imports
         from metaxy.migrations.executor import _load_historical_graph
 
-        to_graph = _load_historical_graph(store, to_snapshot_id, class_path_overrides)
-        print(f"To: snapshot {to_snapshot_id}...")
+        to_graph = _load_historical_graph(
+            store, to_snapshot_version, class_path_overrides
+        )
+        print(f"To: snapshot {to_snapshot_version}...")
 
-    # Step 3: Detect changes by comparing snapshot_ids directly
-    # We don't reconstruct from_graph - just compare snapshot_ids from the store
+    # Step 3: Detect changes by comparing snapshot_versions directly
+    # We don't reconstruct from_graph - just compare snapshot_versions from the store
     # This avoids issues with stale cached imports when files have changed
-    assert from_snapshot_id is not None, "from_snapshot_id must be set by now"
-    assert to_snapshot_id is not None, "to_snapshot_id must be set by now"
+    assert from_snapshot_version is not None, "from_snapshot_version must be set by now"
+    assert to_snapshot_version is not None, "to_snapshot_version must be set by now"
 
     root_operations = detect_feature_changes(
         store,
-        from_snapshot_id,
-        to_snapshot_id,
+        from_snapshot_version,
+        to_snapshot_version,
     )
 
     if not root_operations:
@@ -195,7 +201,7 @@ def generate_migration(
                 feature_cls,
                 current_only=False,
                 allow_fallback=False,
-                filters=[nw.col("snapshot_id") == from_snapshot_id],
+                filters=[nw.col("snapshot_version") == from_snapshot_version],
             )
             # Only collect head(1) to check existence
             from_metadata_sample = nw.from_native(from_metadata.head(1).collect())
@@ -264,7 +270,7 @@ def generate_migration(
         # No migrations yet
         pass
 
-    # Note: from_snapshot_id and to_snapshot_id were already resolved earlier
+    # Note: from_snapshot_version and to_snapshot_version were already resolved earlier
 
     # Create migration (serialize operations to dicts)
     root_count = len(root_operations)
@@ -272,8 +278,8 @@ def generate_migration(
         version=1,
         id=migration_id,
         parent_migration_id=parent_migration_id,
-        from_snapshot_id=from_snapshot_id,
-        to_snapshot_id=to_snapshot_id,
+        from_snapshot_version=from_snapshot_version,
+        to_snapshot_version=to_snapshot_version,
         description=f"Auto-generated migration for {root_count} changed feature(s) + {len(downstream_operations)} downstream",
         created_at=timestamp,
         operations=[op.model_dump(by_alias=True) for op in all_operations],

@@ -196,14 +196,14 @@ class MigrationStatus:
 
 def _load_historical_graph(
     store: "MetadataStore",
-    snapshot_id: str,
+    snapshot_version: str,
     class_path_overrides: dict[str, str] | None = None,
 ) -> "FeatureGraph":
     """Load historical graph from snapshot.
 
     Args:
         store: Metadata store
-        snapshot_id: Snapshot ID to reconstruct
+        snapshot_version: Snapshot version to reconstruct
         class_path_overrides: Optional overrides for moved/renamed feature classes
     Returns:
         FeatureGraph reconstructed from snapshot
@@ -220,12 +220,12 @@ def _load_historical_graph(
     try:
         features_data = store.read_metadata(
             FEATURE_VERSIONS_KEY,
-            filters=[nw.col("snapshot_id") == snapshot_id],
+            filters=[nw.col("snapshot_version") == snapshot_version],
             current_only=False,
         )
     except FeatureNotFoundError:
         raise ValueError(
-            f"Snapshot '{snapshot_id}' not found in metadata store. "
+            f"Snapshot '{snapshot_version}' not found in metadata store. "
             f"Cannot reconstruct historical feature graph."
         )
 
@@ -233,8 +233,8 @@ def _load_historical_graph(
     features_data_eager = nw.from_native(features_data.collect())
     if features_data_eager.shape[0] == 0:
         raise ValueError(
-            f"Snapshot '{snapshot_id}' is empty. "
-            f"No features recorded with this snapshot ID."
+            f"Snapshot '{snapshot_version}' is empty. "
+            f"No features recorded with this snapshot version."
         )
 
     # Build snapshot dict for from_snapshot()
@@ -538,7 +538,7 @@ def apply_migration(
     # TODO: better error messages here
     _load_historical_graph(
         store,
-        migration.from_snapshot_id,
+        migration.from_snapshot_version,
         class_path_overrides=migration.feature_class_overrides,
     )
 
@@ -546,7 +546,7 @@ def apply_migration(
     # Operations need the target feature definitions to properly resolve data versions
     target_graph = _load_historical_graph(
         store,
-        migration.to_snapshot_id,
+        migration.to_snapshot_version,
         class_path_overrides=migration.feature_class_overrides,
     )
 
@@ -615,8 +615,8 @@ def apply_migration(
             try:
                 rows_affected = operation.execute(
                     store,
-                    from_snapshot_id=migration.from_snapshot_id,
-                    to_snapshot_id=migration.to_snapshot_id,
+                    from_snapshot_version=migration.from_snapshot_version,
+                    to_snapshot_version=migration.to_snapshot_version,
                     dry_run=dry_run,
                 )
 

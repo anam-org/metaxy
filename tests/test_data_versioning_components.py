@@ -87,7 +87,7 @@ def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
     video_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
@@ -112,7 +112,7 @@ def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
     # Verify result
     result = joined.collect()
     assert len(result) == 3
-    assert "sample_id" in result.columns
+    assert "sample_uid" in result.columns
     assert "video" in mapping
     assert mapping["video"] in result.columns
 
@@ -134,7 +134,7 @@ def test_polars_hash_calculator(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "__upstream_video__data_version": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
@@ -176,7 +176,7 @@ def test_polars_hash_calculator_algorithms(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "__upstream_video__data_version": [
                     {"frames": "hash_v1", "audio": "hash_a1"}
                 ],
@@ -221,7 +221,7 @@ def test_polars_diff_resolver_no_current() -> None:
     target_versions = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "hash1"},
                     {"default": "hash2"},
@@ -250,7 +250,7 @@ def test_polars_diff_resolver_with_changes() -> None:
     target_versions = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3, 4],
+                "sample_uid": [1, 2, 3, 4],
                 "data_version": [
                     {"default": "hash1"},  # Unchanged
                     {"default": "hash2_new"},  # Changed
@@ -264,7 +264,7 @@ def test_polars_diff_resolver_with_changes() -> None:
     current_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3, 5],
+                "sample_uid": [1, 2, 3, 5],
                 "data_version": [
                     {"default": "hash1"},  # Same
                     {"default": "hash2_old"},  # Different
@@ -280,20 +280,20 @@ def test_polars_diff_resolver_with_changes() -> None:
         current_metadata=current_metadata,
     )
 
-    # Added: sample_id=4 - materialize to check
+    # Added: sample_uid=4 - materialize to check
     added_df = result.added.collect()
     assert len(added_df) == 1
-    assert added_df["sample_id"][0] == 4
+    assert added_df["sample_uid"][0] == 4
 
-    # Changed: sample_id=2
+    # Changed: sample_uid=2
     changed_df = result.changed.collect()
     assert len(changed_df) == 1
-    assert changed_df["sample_id"][0] == 2
+    assert changed_df["sample_uid"][0] == 2
 
-    # Removed: sample_id=5
+    # Removed: sample_uid=5
     removed_df = result.removed.collect()
     assert len(removed_df) == 1
-    assert removed_df["sample_id"][0] == 5
+    assert removed_df["sample_uid"][0] == 5
 
 
 def test_full_pipeline_integration(
@@ -306,7 +306,7 @@ def test_full_pipeline_integration(
     video_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
@@ -342,7 +342,7 @@ def test_full_pipeline_integration(
     current = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [
                     {"default": "old_hash1"},
                     {"default": "old_hash2"},
@@ -356,15 +356,15 @@ def test_full_pipeline_integration(
         current_metadata=current,
     )
 
-    # Added: sample_id=3 (not in current) - materialize to check
+    # Added: sample_uid=3 (not in current) - materialize to check
     added = diff_result.added.collect()
     assert len(added) == 1
-    assert added["sample_id"][0] == 3
+    assert added["sample_uid"][0] == 3
 
-    # Changed: sample_ids 1, 2 (different hashes)
+    # Changed: sample_uids 1, 2 (different hashes)
     changed = diff_result.changed.collect()
     assert len(changed) == 2
-    assert set(changed["sample_id"].to_list()) == {1, 2}
+    assert set(changed["sample_uid"].to_list()) == {1, 2}
 
     # Removed: none (all current samples are in target)
     removed = diff_result.removed.collect()
@@ -383,7 +383,7 @@ def test_polars_joiner_multiple_upstream(
     video_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
@@ -396,7 +396,7 @@ def test_polars_joiner_multiple_upstream(
     audio_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"waveform": "w1"},
                     {"waveform": "w2"},
@@ -425,19 +425,19 @@ def test_polars_joiner_multiple_upstream(
     assert mapping["video"] in result.columns
     assert mapping["audio"] in result.columns
 
-    # Should have all 3 samples (inner join on matching sample_ids)
+    # Should have all 3 samples (inner join on matching sample_uids)
     assert len(result) == 3
 
 
 def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
-    """Test joiner with partial sample_id overlap (inner join behavior)."""
+    """Test joiner with partial sample_uid overlap (inner join behavior)."""
     joiner = NarwhalsJoiner()
 
     # Video has samples 1, 2, 3
     video_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [{"frames": "v1"}, {"frames": "v2"}, {"frames": "v3"}],
             }
         ).lazy()
@@ -447,7 +447,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
     audio_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [2, 3, 4],
+                "sample_uid": [2, 3, 4],
                 "data_version": [
                     {"waveform": "w2"},
                     {"waveform": "w3"},
@@ -497,7 +497,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
 
     # Inner join - only samples 2, 3 (present in BOTH)
     assert len(result) == 2
-    assert set(result["sample_id"].to_list()) == {2, 3}
+    assert set(result["sample_uid"].to_list()) == {2, 3}
 
 
 # ========== Multi-Field Calculator Tests ==========
@@ -512,7 +512,7 @@ def test_polars_calculator_multiple_fields(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "__upstream_video__data_version": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
@@ -562,7 +562,7 @@ def test_polars_calculator_unsupported_algorithm(
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
-            {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+            {"sample_uid": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
         ).lazy()
     )
 
@@ -593,7 +593,7 @@ def test_diff_resolver_all_unchanged() -> None:
     target_versions = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "hash1"},
                     {"default": "hash2"},
@@ -607,7 +607,7 @@ def test_diff_resolver_all_unchanged() -> None:
     current_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"default": "hash1"},
                     {"default": "hash2"},
@@ -636,14 +636,14 @@ def test_joiner_deterministic_order(
 
     video_metadata = nw.from_native(
         pl.DataFrame(
-            {"sample_id": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
+            {"sample_uid": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
         ).lazy()
     )
 
     audio_metadata = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [{"waveform": "w1"}, {"waveform": "w2"}],
             }
         ).lazy()
@@ -669,8 +669,8 @@ def test_joiner_deterministic_order(
     assert mapping1 == mapping2
 
     # Results should be identical (order-independent)
-    result1 = joined1.collect().sort("sample_id")
-    result2 = joined2.collect().sort("sample_id")
+    result1 = joined1.collect().sort("sample_uid")
+    result2 = joined2.collect().sort("sample_uid")
 
     # Convert to Polars for comparison (Narwhals doesn't have equals method)
     assert result1.to_native().equals(result2.to_native())
@@ -715,7 +715,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
 
     joiner = NarwhalsJoiner()
     video_metadata = nw.from_native(
-        pl.DataFrame({"sample_id": [1], "data_version": [{"frames": "v1"}]}).lazy()
+        pl.DataFrame({"sample_uid": [1], "data_version": [{"frames": "v1"}]}).lazy()
     )
 
     # Call the overridden method
@@ -771,14 +771,14 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
     target = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "data_version": [{"default": "new1"}, {"default": "new2"}],
             }
         ).lazy()
     )
 
     current = nw.from_native(
-        pl.DataFrame({"sample_id": [1], "data_version": [{"default": "old1"}]}).lazy()
+        pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "old1"}]}).lazy()
     )
 
     # Call overridden method (this calls find_changes which needs current_feature_version=False)
@@ -812,7 +812,7 @@ def test_hash_output_snapshots(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "__upstream_video__data_version": [
                     {"frames": "frame_hash_1", "audio": "audio_hash_1"},
                     {"frames": "frame_hash_2", "audio": "audio_hash_2"},
@@ -850,7 +850,7 @@ def test_multi_field_hash_snapshots(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "__upstream_video__data_version": [{"frames": "v1", "audio": "a1"}],
                 "__upstream_audio__data_version": [{"waveform": "w1"}],
             }
@@ -909,7 +909,7 @@ def test_single_upstream_single_field_snapshots(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "__upstream_video__data_version": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
@@ -956,7 +956,7 @@ def test_multi_upstream_multi_field_snapshots(
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2],
+                "sample_uid": [1, 2],
                 "__upstream_video__data_version": [
                     {"frames": "frame1", "audio": "audio1"},
                     {"frames": "frame2", "audio": "audio2"},
@@ -993,7 +993,7 @@ def test_multi_upstream_multi_field_snapshots(
         dv = result["data_version"][i]
         data_versions.append(
             {
-                "sample_id": result["sample_id"][i],
+                "sample_uid": result["sample_uid"][i],
                 "fusion": dv["fusion"],
                 "analysis": dv["analysis"],
             }
@@ -1008,7 +1008,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
-            {"sample_id": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+            {"sample_uid": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
         ).lazy()
     )
 
@@ -1105,7 +1105,7 @@ def test_upstream_data_changes_snapshots(snapshot):
             joined_upstream = nw.from_native(
                 pl.DataFrame(
                     {
-                        "sample_id": [1],
+                        "sample_uid": [1],
                         "__upstream_video__data_version": data_version_list,
                     }
                 ).lazy()
@@ -1137,7 +1137,7 @@ def test_diff_result_snapshots(snapshot):
     target = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3, 4, 5],
+                "sample_uid": [1, 2, 3, 4, 5],
                 "data_version": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_new_hash"},
@@ -1152,7 +1152,7 @@ def test_diff_result_snapshots(snapshot):
     current = nw.from_native(
         pl.DataFrame(
             {
-                "sample_id": [1, 2, 3, 6],
+                "sample_uid": [1, 2, 3, 6],
                 "data_version": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_old_hash"},
@@ -1168,11 +1168,11 @@ def test_diff_result_snapshots(snapshot):
         current_metadata=current,
     )
 
-    # Snapshot the sample_ids in each category - materialize lazy frames first
+    # Snapshot the sample_uids in each category - materialize lazy frames first
     diff_summary = {
-        "added_ids": sorted(result.added.collect()["sample_id"].to_list()),
-        "changed_ids": sorted(result.changed.collect()["sample_id"].to_list()),
-        "removed_ids": sorted(result.removed.collect()["sample_id"].to_list()),
+        "added_ids": sorted(result.added.collect()["sample_uid"].to_list()),
+        "changed_ids": sorted(result.changed.collect()["sample_uid"].to_list()),
+        "removed_ids": sorted(result.removed.collect()["sample_uid"].to_list()),
     }
 
     assert diff_summary == snapshot

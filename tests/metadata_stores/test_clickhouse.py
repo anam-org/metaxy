@@ -31,7 +31,7 @@ def test_clickhouse_table_naming(
 
         metadata = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -98,7 +98,7 @@ def test_clickhouse_persistence(
     with ClickHouseMetadataStore(clickhouse_db) as store1:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -115,7 +115,7 @@ def test_clickhouse_persistence(
         )
 
         assert len(result) == 3
-        assert set(result["sample_id"].to_list()) == {1, 2, 3}
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
 def test_clickhouse_close_idempotent(
@@ -164,7 +164,7 @@ def test_clickhouse_hash_algorithms(
 
             metadata = pl.DataFrame(
                 {
-                    "sample_id": [1, 2],
+                    "sample_uid": [1, 2],
                     "data_version": [
                         {"frames": "h1", "audio": "h1"},
                         {"frames": "h2", "audio": "h2"},

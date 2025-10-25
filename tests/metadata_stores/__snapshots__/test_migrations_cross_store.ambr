@@ -32,12 +32,12 @@
       dict({
         'data_version': "{'default': '6865575771891373631'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
     ]),
   })
@@ -75,12 +75,12 @@
       dict({
         'data_version': "{'default': '6865575771891373631'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
     ]),
   })
@@ -118,12 +118,12 @@
       dict({
         'data_version': "{'default': '6865575771891373631'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
     ]),
   })
@@ -161,12 +161,12 @@
       dict({
         'data_version': "{'default': '5f748113fd60f0d964c320c298e759c2'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
       dict({
         'data_version': "{'default': 'd1'}",
         'feature_version': 'fd0daab32fce8549056ee84475e18d286ad86704fb90ec622faf29ee38c3d62e',
-        'sample_id': 1,
+        'sample_uid': 1,
       }),
     ]),
   })

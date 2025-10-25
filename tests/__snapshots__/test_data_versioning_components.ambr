@@ -39,12 +39,12 @@
     dict({
       'analysis': '2f84e757b1addd884db7365ed37557a320ab69dbd4fe09975f509c07b336a43f',
       'fusion': 'ad303eba05da467ded17cc6eaf72d16dbc40c338c802a0911a4aa229d7bdd482',
-      'sample_id': 1,
+      'sample_uid': 1,
     }),
     dict({
       'analysis': '39cd90847cb18c3f7c31a73be7f6d269364e8263dce2a9d923144489a78338c6',
       'fusion': '5dba65c3be22714cfaf969bcd63c4df6d329761b62f01e430316bde62b2ea53a',
-      'sample_id': 2,
+      'sample_uid': 2,
     }),
   ])
 # ---
@@ -53,12 +53,12 @@
     dict({
       'analysis': '13727348181400861260',
       'fusion': '370342096193421791',
-      'sample_id': 1,
+      'sample_uid': 1,
     }),
     dict({
       'analysis': '5047585375639731387',
       'fusion': '1768440773501995386',
-      'sample_id': 2,
+      'sample_uid': 2,
     }),
   ])
 # ---
@@ -67,12 +67,12 @@
     dict({
       'analysis': '11444342552948413717',
       'fusion': '3008611161107019102',
-      'sample_id': 1,
+      'sample_uid': 1,
     }),
     dict({
       'analysis': '10628887372866074486',
       'fusion': '14013057675311053626',
-      'sample_id': 2,
+      'sample_uid': 2,
     }),
   ])
 # ---

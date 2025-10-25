@@ -30,7 +30,7 @@ def test_duckdb_table_naming(
 
         metadata = pl.DataFrame(
             {
-                "sample_id": [1],
+                "sample_uid": [1],
                 "data_version": [{"frames": "h1", "audio": "h1"}],
             }
         )
@@ -121,7 +121,7 @@ def test_duckdb_persistence_across_instances(
     with DuckDBMetadataStore(db_path) as store1:
         metadata = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_uid": [1, 2, 3],
                 "data_version": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
@@ -138,7 +138,7 @@ def test_duckdb_persistence_across_instances(
         )
 
         assert len(result) == 3
-        assert set(result["sample_id"].to_list()) == {1, 2, 3}
+        assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
 def test_duckdb_close_idempotent(

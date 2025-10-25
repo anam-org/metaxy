@@ -25,9 +25,11 @@ class TerminalRenderer(GraphRenderer):
         console = Console()
 
         # Create root node
-        if self.config.show_snapshot_id:
-            snapshot_id = self._format_hash(self.graph.snapshot_id)
-            root = Tree(f"📊 [bold]Graph[/bold] [dim](snapshot: {snapshot_id})[/dim]")
+        if self.config.show_snapshot_version:
+            snapshot_version = self._format_hash(self.graph.snapshot_version)
+            root = Tree(
+                f"📊 [bold]Graph[/bold] [dim](snapshot: {snapshot_version})[/dim]"
+            )
         else:
             root = Tree("📊 [bold]Graph[/bold]")
 

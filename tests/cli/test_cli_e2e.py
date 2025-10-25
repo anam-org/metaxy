@@ -132,7 +132,7 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
             # Write initial metadata
             video_files_data = pl.DataFrame(
                 {
-                    "sample_id": ["video1.mp4", "video2.mp4"],
+                    "sample_uid": ["video1.mp4", "video2.mp4"],
                     "path": ["/data/video1.mp4", "/data/video2.mp4"],
                     "data_version": [{"default": "hash1"}, {"default": "hash2"}],
                 }
@@ -142,17 +142,17 @@ def test_cli_e2e_duckdb_workflow(e2e_project: Path, snapshot: SnapshotAssertion)
             # Write processing metadata
             processing_data = pl.DataFrame(
                 {
-                    "sample_id": ["video1.mp4", "video2.mp4"],
+                    "sample_uid": ["video1.mp4", "video2.mp4"],
                     "data_version": [{"frames": "proc1"}, {"frames": "proc2"}],
                 }
             )
             store.write_metadata(VideoProcessing, processing_data)
 
             # Step 2: Push (record feature versions)
-            snapshot_id_v1, _ = store.record_feature_graph_snapshot()
+            snapshot_version_v1, _ = store.record_feature_graph_snapshot()
 
-            assert snapshot_id_v1 is not None
-            assert len(snapshot_id_v1) == 64  # Full SHA256 hash
+            assert snapshot_version_v1 is not None
+            assert len(snapshot_version_v1) == 64  # Full SHA256 hash
 
         # Store is now closed, data is persisted to DuckDB
 
@@ -299,7 +299,7 @@ class VideoProcessing(Feature, spec=FeatureSpec(
             # Snapshot the final data state
             final_snapshot = {
                 "row_count": len(all_processing),
-                "sample_ids": sorted(all_processing["sample_id"].unique().to_list()),
+                "sample_uids": sorted(all_processing["sample_uid"].unique().to_list()),
                 "feature_versions": sorted(
                     all_processing["feature_version"].unique().to_list()
                 ),
@@ -361,7 +361,7 @@ def test_cli_migration_status_command(e2e_project: Path):
                 VideoFiles,
                 pl.DataFrame(
                     {
-                        "sample_id": ["v1"],
+                        "sample_uid": ["v1"],
                         "data_version": [{"default": "h1"}],
                     }
                 ),
