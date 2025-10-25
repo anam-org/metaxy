@@ -60,6 +60,7 @@ dev = [
     "ibis-framework[duckdb,sqlite,clickhouse]>=11.0.0",
     "basedpyright>=1.32.1",
     "vulture>=2.14",
+    "prek>=0.2.11",
 ]
 
 [tool.ruff]
