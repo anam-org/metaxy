@@ -23,7 +23,11 @@ Metaxy is a feature metadata management system for multimodal ML pipelines that 
 - **Immutable metadata** with copy-on-write storage preserving historical versions
 - **Graph snapshots** recording complete feature graph states in deployment pipelines
 
-## Development Commands
+## Development
+
+Always get `planner` agent involved for non-trivial changes.
+Always use `python-dev` agent for Python code changes.
+Always use `qa` agent after non-trivial changes.
 
 ### Environment Setup
 ```bash
@@ -66,7 +70,7 @@ uv run ruff format .
 ### Type Checking
 ```bash
 # Run pyrefly type checker
-uv run pyrefly check
+uv run basedpyright --level error
 ```
 
 ### CLI Usage
@@ -241,7 +245,7 @@ This is critical for migrations when upstream dependencies change.
 
 ### Narwhals as the Public Interface
 **Important**: The codebase uses Narwhals as the primary user-facing API:
-- All public methods accept and return `nw.DataFrame` or `nw.LazyFrame`
+- All public methods accept and return `nw.DataFrame[Any]` or `nw.LazyFrame[Any]`
 - When writing code, prefer Narwhals operations over backend-specific code
 - The `to_native()` method converts Narwhals to the underlying backend type when needed
 
