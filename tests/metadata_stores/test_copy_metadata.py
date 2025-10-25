@@ -7,7 +7,7 @@ import polars as pl
 import pytest
 
 from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
-from metaxy.metadata_store import FilteredFeature, InMemoryMetadataStore
+from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 from metaxy.models.feature import FeatureGraph
 
@@ -488,7 +488,10 @@ def test_copy_metadata_with_global_filters(
             from_store=source_store,
             features=None,  # All features
             from_snapshot=snapshot_version,
-            filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
+            filters={
+                "test/feature_a": [nw.col("sample_uid").is_in(["s1", "s2"])],
+                "test/feature_b": [nw.col("sample_uid").is_in(["s1", "s2"])],
+            },
         )
 
         # Verify both features were copied but filtered
@@ -511,7 +514,7 @@ def test_copy_metadata_with_global_filters(
 def test_copy_metadata_with_per_feature_filters(
     sample_features: tuple[type[Feature], type[Feature]],
 ) -> None:
-    """Test copying with per-feature filters using FilteredFeature."""
+    """Test copying with per-feature filters."""
     FeatureA, FeatureB = sample_features
 
     source_store = InMemoryMetadataStore()
@@ -557,17 +560,16 @@ def test_copy_metadata_with_per_feature_filters(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[
-                FilteredFeature(
-                    feature=FeatureA.spec.key,
-                    filters=[nw.col("field_a") > 1],  # Only rows where field_a > 1
-                ),
-                FilteredFeature(
-                    feature=FeatureB.spec.key,
-                    filters=[nw.col("field_b") < 30],  # Only rows where field_b < 30
-                ),
-            ],
+            features=[FeatureA.spec.key, FeatureB.spec.key],
             from_snapshot=snapshot_version,
+            filters={
+                "test/feature_a": [
+                    nw.col("field_a") > 1
+                ],  # Only rows where field_a > 1
+                "test/feature_b": [
+                    nw.col("field_b") < 30
+                ],  # Only rows where field_b < 30
+            },
         )
 
         # Verify both features copied with their specific filters
@@ -592,7 +594,7 @@ def test_copy_metadata_with_per_feature_filters(
 def test_copy_metadata_with_mixed_filters(
     sample_features: tuple[type[Feature], type[Feature]],
 ) -> None:
-    """Test copying with both global and per-feature filters combined."""
+    """Test copying with multiple filters combined."""
     FeatureA, FeatureB = sample_features
 
     source_store = InMemoryMetadataStore()
@@ -636,25 +638,25 @@ def test_copy_metadata_with_mixed_filters(
         )
         snapshot_version = written_data["snapshot_version"][0]
 
-    # Copy with both global and per-feature filters
+    # Copy with multiple filters combined for each feature
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[
-                FilteredFeature(
-                    feature=FeatureA.spec.key,
-                    filters=[nw.col("field_a") <= 3],  # Only field_a <= 3
-                ),
-                FeatureB.spec.key,  # No per-feature filter, only global applies
-            ],
+            features=[FeatureA.spec.key, FeatureB.spec.key],
             from_snapshot=snapshot_version,
-            filters=[nw.col("sample_uid").is_in(["s1", "s2", "s3"])],  # Global filter
+            filters={
+                "test/feature_a": [
+                    nw.col("sample_uid").is_in(["s1", "s2", "s3"]),
+                    nw.col("field_a") <= 3,
+                ],
+                "test/feature_b": [nw.col("sample_uid").is_in(["s1", "s2", "s3"])],
+            },
         )
 
         # Verify results
         assert stats["features_copied"] == 2
 
-        # FeatureA: global filter (s1,s2,s3) AND per-feature filter (field_a <= 3)
+        # FeatureA: both filters applied (s1,s2,s3) AND (field_a <= 3)
         # Result: s1, s2, s3
         dest_data_a = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
@@ -673,7 +675,7 @@ def test_copy_metadata_with_mixed_filters(
 def test_copy_metadata_with_mixed_feature_types(
     sample_features: tuple[type[Feature], type[Feature]],
 ) -> None:
-    """Test that we can mix FeatureKey and FilteredFeature in the features list."""
+    """Test that we can use different filter configurations for different features."""
     FeatureA, FeatureB = sample_features
 
     source_store = InMemoryMetadataStore()
@@ -707,18 +709,16 @@ def test_copy_metadata_with_mixed_feature_types(
         )
         snapshot_version = written_data["snapshot_version"][0]
 
-    # Mix FeatureKey and FilteredFeature
+    # Apply filter to one feature but not the other
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[
-                FilteredFeature(
-                    feature=FeatureA.spec.key,
-                    filters=[nw.col("field_a") > 1],
-                ),
-                FeatureB.spec.key,  # Plain FeatureKey
-            ],
+            features=[FeatureA.spec.key, FeatureB.spec.key],
             from_snapshot=snapshot_version,
+            filters={
+                "test/feature_a": [nw.col("field_a") > 1],
+                # No filter for feature_b
+            },
         )
 
         # Verify results

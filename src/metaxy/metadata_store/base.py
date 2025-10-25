@@ -2,10 +2,9 @@
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
 
@@ -35,43 +34,6 @@ if TYPE_CHECKING:
     pass
 
 # Removed TRef - all stores now use Narwhals LazyFrames universally
-
-
-@dataclass
-class FilteredFeature:
-    """Specifies a feature to copy with optional filters.
-
-    Used by copy_metadata() to provide fine-grained control over what data is copied.
-
-    Attributes:
-        feature: The feature to copy (FeatureKey or Feature class)
-        filters: Optional list of Narwhals filter expressions to apply to this feature only.
-                 These are combined with any global filters passed to copy_metadata.
-
-    Example:
-        >>> # Copy only specific samples for a feature
-        >>> filtered = FilteredFeature(
-        ...     feature=FeatureKey(["my_feature"]),
-        ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])]
-        ... )
-        >>> dest_store.copy_metadata(
-        ...     from_store=source,
-        ...     features=[filtered],
-        ...     from_snapshot="abc123"
-        ... )
-    """
-
-    feature: FeatureKey | type[Feature]
-    filters: list[nw.Expr] | None = None
-
-    @property
-    def feature_key(self) -> FeatureKey:
-        """Get the FeatureKey from either a FeatureKey or Feature class."""
-
-        if isinstance(self.feature, type):
-            # It's a Feature class
-            return self.feature.spec.key  # pyrefly: ignore[missing-attribute]
-        return self.feature
 
 
 # System namespace constant (use prefix without __ to avoid conflicts with separator)
@@ -653,8 +615,8 @@ class MetadataStore(ABC):
         feature: FeatureKey | type[Feature],
         *,
         feature_version: str | None = None,
-        filters: list[nw.Expr] | None = None,
-        columns: list[str] | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from THIS store only (no fallback).
@@ -662,8 +624,7 @@ class MetadataStore(ABC):
         Args:
             feature: Feature to read metadata for
             feature_version: Filter by specific feature_version (applied natively in store)
-            filters: List of Narwhals filter expressions (backend-agnostic)
-                Works with any backend (Polars, Ibis/SQL, Pandas, PyArrow)
+            filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
 
         Returns:
@@ -676,8 +637,8 @@ class MetadataStore(ABC):
         feature: FeatureKey | type[Feature],
         *,
         feature_version: str | None = None,
-        filters: list[nw.Expr] | None = None,
-        columns: list[str] | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
     ) -> nw.LazyFrame[Any]:
@@ -687,7 +648,8 @@ class MetadataStore(ABC):
         Args:
             feature: Feature to read metadata for
             feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
-            filters: List of Narwhals filter expressions (backend-agnostic, works with any store)
+            filters: Sequence of Narwhals filter expressions to apply to this feature.
+                Example: [nw.col("x") > 10, nw.col("y") < 5]
             columns: Subset of columns to return
             allow_fallback: If True, check fallback stores on local miss
             current_only: If True, only return rows with current feature_version
@@ -729,11 +691,11 @@ class MetadataStore(ABC):
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
-        # Try local first
+        # Try local first with filters
         lazy_frame = self._read_metadata_native(
             feature,
             feature_version=feature_version_filter,
-            filters=filters,
+            filters=filters,  # Pass filters directly
             columns=columns,
         )
 
@@ -748,7 +710,7 @@ class MetadataStore(ABC):
                     return store.read_metadata(
                         feature,
                         feature_version=feature_version,
-                        filters=filters,
+                        filters=filters,  # Pass through filters directly
                         columns=columns,
                         allow_fallback=True,
                         current_only=current_only,  # Pass through current_only
@@ -944,10 +906,10 @@ class MetadataStore(ABC):
     def copy_metadata(
         self,
         from_store: "MetadataStore",
-        features: list[FeatureKey | type[Feature] | FilteredFeature] | None = None,
+        features: list[FeatureKey | type[Feature]] | None = None,
         *,
         from_snapshot: str | None = None,
-        filters: list[nw.Expr] | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         incremental: bool = True,
     ) -> dict[str, int]:
         """Copy metadata from another store with fine-grained filtering.
@@ -960,13 +922,12 @@ class MetadataStore(ABC):
             features: List of features to copy. Can be:
                 - None: copies all features from source store
                 - List of FeatureKey or Feature classes: copies specified features
-                - List of FilteredFeature: copies features with per-feature filters
-                Can mix all types in the same list.
             from_snapshot: Snapshot version to filter source data by. If None, uses latest snapshot
                 from source store. Only rows with this snapshot_version will be copied.
                 The snapshot_version is preserved in the destination store.
-            filters: Global filters to apply to all features (Narwhals expressions).
-                Combined with per-feature filters from FilteredFeature objects.
+            filters: Dict mapping feature keys (as strings) to sequences of Narwhals filter expressions.
+                These filters are applied when reading from the source store.
+                Example: {"feature/key": [nw.col("x") > 10], "other/feature": [...]}
             incremental: If True (default), filter out rows that already exist in the destination
                 store by performing an anti-join on sample_uid for the same snapshot_version.
 
@@ -998,23 +959,23 @@ class MetadataStore(ABC):
             ...     from_snapshot="abc123",
             ... )
 
-            >>> # Copy with global filters
+            >>> # Copy with filters
             >>> stats = dest_store.copy_metadata(
             ...     from_store=source_store,
-            ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])],
+            ...     filters={"my/feature": [nw.col("sample_uid").is_in(["s1", "s2"])]},
             ... )
 
-            >>> # Copy with per-feature filters
+            >>> # Copy specific features with filters
             >>> stats = dest_store.copy_metadata(
             ...     from_store=source_store,
             ...     features=[
-            ...         FilteredFeature(
-            ...             feature=FeatureKey(["feature_a"]),
-            ...             filters=[nw.col("field_a") > 10]
-            ...         ),
-            ...         FeatureKey(["feature_b"]),  # No specific filters
+            ...         FeatureKey(["feature_a"]),
+            ...         FeatureKey(["feature_b"]),
             ...     ],
-            ...     filters=[nw.col("sample_uid").is_in(["s1", "s2"])],  # Applied to all
+            ...     filters={
+            ...         "feature_a": [nw.col("field_a") > 10, nw.col("sample_uid").is_in(["s1", "s2"])],
+            ...         "feature_b": [nw.col("field_b") < 30],
+            ...     },
             ... )
         """
         import logging
@@ -1046,32 +1007,31 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: "MetadataStore",
-        features: list[FeatureKey | type[Feature] | FilteredFeature] | None,
+        features: list[FeatureKey | type[Feature]] | None,
         from_snapshot: str | None,
-        filters: list[nw.Expr] | None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
         logger,
     ) -> dict[str, int]:
         """Internal implementation of copy_metadata."""
-        # Normalize features to list of FilteredFeature objects
-        feature_selections: list[FilteredFeature]
+        # Determine which features to copy
+        features_to_copy: list[FeatureKey]
         if features is None:
-            # Copy all features from source (no per-feature filters)
-            all_keys = from_store.list_features(include_fallback=False)
-            feature_selections = [FilteredFeature(feature=key) for key in all_keys]
+            # Copy all features from source
+            features_to_copy = from_store.list_features(include_fallback=False)
             logger.info(
-                f"Copying all features from source: {len(feature_selections)} features"
+                f"Copying all features from source: {len(features_to_copy)} features"
             )
         else:
-            # Convert mixed list to FilteredFeature objects
-            feature_selections = []
+            # Convert all to FeatureKey
+            features_to_copy = []
             for item in features:
-                if isinstance(item, FilteredFeature):
-                    feature_selections.append(item)
+                if isinstance(item, FeatureKey):
+                    features_to_copy.append(item)
                 else:
-                    # FeatureKey or Feature class - wrap in FilteredFeature with no filters
-                    feature_selections.append(FilteredFeature(feature=item))
-            logger.info(f"Copying {len(feature_selections)} specified features")
+                    # Must be Feature class
+                    features_to_copy.append(item.spec.key)
+            logger.info(f"Copying {len(features_to_copy)} specified features")
 
         # Determine from_snapshot
         if from_snapshot is None:
@@ -1080,7 +1040,7 @@ class MetadataStore(ABC):
                 versions_lazy = from_store._read_metadata_native(FEATURE_VERSIONS_KEY)
                 if versions_lazy is None:
                     # No feature_versions table yet - if no features to copy, that's okay
-                    if len(feature_selections) == 0:
+                    if len(features_to_copy) == 0:
                         logger.info(
                             "No features to copy and no snapshots in source store"
                         )
@@ -1093,7 +1053,7 @@ class MetadataStore(ABC):
                     versions_df = versions_lazy.collect().to_polars()
                     if versions_df.height == 0:
                         # Empty versions table - if no features to copy, that's okay
-                        if len(feature_selections) == 0:
+                        if len(features_to_copy) == 0:
                             logger.info(
                                 "No features to copy and no snapshots in source store"
                             )
@@ -1114,7 +1074,7 @@ class MetadataStore(ABC):
                         )
             except Exception as e:
                 # If we have no features to copy, continue gracefully
-                if len(feature_selections) == 0:
+                if len(features_to_copy) == 0:
                     logger.info(f"No features to copy: {e}")
                     from_snapshot = None
                 else:
@@ -1129,8 +1089,7 @@ class MetadataStore(ABC):
         features_copied = 0
 
         with allow_feature_version_override():
-            for selection in feature_selections:
-                feature_key = selection.feature_key
+            for feature_key in features_to_copy:
                 try:
                     # Read metadata from source, filtering by from_snapshot
                     # Use current_only=False to avoid filtering by feature_version
@@ -1147,15 +1106,12 @@ class MetadataStore(ABC):
                         nw.col("snapshot_version") == from_snapshot
                     )
 
-                    # Apply global filters (if any)
+                    # Apply filters for this feature (if any)
                     if filters:
-                        for filter_expr in filters:
-                            source_filtered = source_filtered.filter(filter_expr)
-
-                    # Apply per-feature filters (if any)
-                    if selection.filters:
-                        for filter_expr in selection.filters:
-                            source_filtered = source_filtered.filter(filter_expr)
+                        feature_key_str = feature_key.to_string()
+                        if feature_key_str in filters:
+                            for filter_expr in filters[feature_key_str]:
+                                source_filtered = source_filtered.filter(filter_expr)
 
                     # Apply incremental filtering if enabled
                     if incremental:
@@ -1260,6 +1216,7 @@ class MetadataStore(ABC):
         feature: FeatureKey | type[Feature],
         field: FieldKey | None = None,
         *,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
     ) -> dict[str, nw.LazyFrame[Any]]:
@@ -1269,6 +1226,8 @@ class MetadataStore(ABC):
         Args:
             feature: Feature whose dependencies to load
             field: Specific field (if None, loads all deps for feature)
+            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
+                Example: {"upstream/feature1": [nw.col("x") > 10], "upstream/feature2": [...]}
             allow_fallback: Whether to check fallback stores
             current_only: If True, only read current feature_version for upstream
 
@@ -1305,12 +1264,20 @@ class MetadataStore(ABC):
         for upstream_fq_key in upstream_features:
             upstream_feature_key = upstream_fq_key.feature
 
+            # Extract filters for this specific upstream feature
+            upstream_filters = None
+            if filters:
+                upstream_key_str = upstream_feature_key.to_string()
+                if upstream_key_str in filters:
+                    upstream_filters = filters[upstream_key_str]
+
             try:
                 # Look up the Feature class from the graph and pass it to read_metadata
                 # This way we use the bound graph instead of relying on active context
                 upstream_feature_cls = graph.features_by_key[upstream_feature_key]
                 lazy_frame = self.read_metadata(
                     upstream_feature_cls,
+                    filters=upstream_filters,  # Pass extracted filters (Sequence or None)
                     allow_fallback=allow_fallback,
                     current_only=current_only,  # Pass through current_only
                 )
@@ -1366,6 +1333,7 @@ class MetadataStore(ABC):
         feature: type[Feature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         **kwargs,
     ) -> DiffResult: ...
@@ -1376,6 +1344,7 @@ class MetadataStore(ABC):
         feature: type[Feature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         **kwargs,
     ) -> LazyDiffResult: ...
@@ -1385,6 +1354,7 @@ class MetadataStore(ABC):
         feature: type[Feature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         **kwargs,
     ) -> DiffResult | LazyDiffResult:
@@ -1416,6 +1386,9 @@ class MetadataStore(ABC):
                 **Normal usage**: Don't provide this parameter. The system will automatically
                 load upstream features and calculate data versions.
 
+            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
+                Applied when reading upstream metadata to filter samples at the source.
+                Example: {"upstream/feature": [nw.col("x") > 10], ...}
             lazy: If True, return LazyDiffResult with lazy Narwhals LazyFrames.
                 If False, return DiffResult with eager Narwhals DataFrames (default).
             **kwargs: Backend-specific parameters (reserved for future use)
@@ -1523,10 +1496,10 @@ class MetadataStore(ABC):
 
         if upstream_location == "all_local":
             # All upstream in this store - use native data version calculations
-            return self._resolve_update_native(feature, lazy=lazy)
+            return self._resolve_update_native(feature, filters=filters, lazy=lazy)
         else:
             # Some upstream in fallback stores - use Polars components
-            return self._resolve_update_polars(feature, lazy=lazy)
+            return self._resolve_update_polars(feature, filters=filters, lazy=lazy)
 
     def _check_upstream_location(self, feature: type[Feature]) -> str:
         """Check if all upstream is in this store or in fallback stores.
@@ -1550,6 +1523,7 @@ class MetadataStore(ABC):
         self,
         feature: type[Feature],
         *,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
     ) -> DiffResult | LazyDiffResult:
         """Resolve using native data version calculations (all data in this store).
@@ -1607,7 +1581,15 @@ class MetadataStore(ABC):
                 if hasattr(upstream_spec.key, "to_string")
                 else "_".join(upstream_spec.key)
             )
-            upstream_lazy = self._read_metadata_native(upstream_spec.key)
+            # Extract filters for this upstream feature
+            upstream_filters = None
+            if filters and upstream_key_str in filters:
+                upstream_filters = filters[upstream_key_str]
+
+            upstream_lazy = self._read_metadata_native(
+                upstream_spec.key,
+                filters=upstream_filters,  # Apply extracted filters
+            )
             if upstream_lazy is not None:
                 upstream_refs[upstream_key_str] = upstream_lazy
 
@@ -1644,6 +1626,7 @@ class MetadataStore(ABC):
         self,
         feature: type[Feature],
         *,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
     ) -> DiffResult | LazyDiffResult:
         """Resolve using Polars components (cross-store scenario).
@@ -1674,7 +1657,9 @@ class MetadataStore(ABC):
             )
 
         # Load upstream from all sources (this store + fallbacks) as Narwhals LazyFrames
-        upstream_refs = self.read_upstream_metadata(feature, allow_fallback=True)
+        upstream_refs = self.read_upstream_metadata(
+            feature, filters=filters, allow_fallback=True
+        )
 
         # Create Narwhals components (work with any backend)
         narwhals_joiner = NarwhalsJoiner()

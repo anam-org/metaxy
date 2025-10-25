@@ -165,7 +165,8 @@ def test_read_with_filters(
 
         result = collect_to_polars(
             store.read_metadata(
-                test_features["UpstreamFeatureA"], filters=[nw.col("sample_uid") > 1]
+                test_features["UpstreamFeatureA"],
+                filters=[nw.col("sample_uid") > 1],
             )
         )
 
