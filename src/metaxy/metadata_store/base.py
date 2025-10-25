@@ -1594,7 +1594,7 @@ class MetadataStore(ABC):
                 upstream_refs[upstream_key_str] = upstream_lazy
 
         # Join upstream using Narwhals (stays lazy)
-        joined, mapping = feature.join_upstream_metadata(
+        joined, mapping = feature.load_input(
             joiner=joiner,
             upstream_refs=upstream_refs,
         )
@@ -1670,7 +1670,7 @@ class MetadataStore(ABC):
 
         # Step 1: Join upstream using Narwhals
         plan = feature.graph.get_feature_plan(feature.spec.key)
-        joined, mapping = feature.join_upstream_metadata(
+        joined, mapping = feature.load_input(
             joiner=narwhals_joiner,
             upstream_refs=upstream_refs,
         )

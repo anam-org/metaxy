@@ -680,7 +680,7 @@ def test_joiner_deterministic_order(
 
 
 def test_feature_join_upstream_override(graph: FeatureGraph):
-    """Test Feature.join_upstream_metadata can be overridden."""
+    """Test Feature.load_input can be overridden."""
 
     class CustomJoinFeature(
         Feature,
@@ -691,13 +691,28 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
         ),
     ):
         @classmethod
-        def join_upstream_metadata(cls, joiner, upstream_refs):
+        def load_input(cls, joiner, upstream_refs):
             # Custom: delegate to joiner but it's overridden
+            from metaxy.models.feature_spec import FeatureDep
+
+            # Extract columns and renames from deps (custom logic)
+            upstream_columns = {}
+            upstream_renames = {}
+
+            if cls.spec.deps:
+                for dep in cls.spec.deps:
+                    if isinstance(dep, FeatureDep):
+                        dep_key_str = dep.key.to_string()
+                        upstream_columns[dep_key_str] = dep.columns
+                        upstream_renames[dep_key_str] = dep.rename
+
             plan = cls.graph.get_feature_plan(cls.spec.key)
             joined, mapping = joiner.join_upstream(
                 upstream_refs=upstream_refs,
                 feature_spec=cls.spec,
                 feature_plan=plan,
+                upstream_columns=upstream_columns,
+                upstream_renames=upstream_renames,
             )
             # Could add custom logic here
             return joined, mapping
@@ -719,7 +734,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
     )
 
     # Call the overridden method
-    joined, mapping = CustomJoinFeature.join_upstream_metadata(
+    joined, mapping = CustomJoinFeature.load_input(
         joiner=joiner,
         upstream_refs={"video": video_metadata},
     )

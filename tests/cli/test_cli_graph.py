@@ -250,8 +250,13 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
         push_result = metaxy_project.run_cli("graph", "push")
 
         # Extract snapshot version from output
-        match = re.search(r"Snapshot version: ([a-f0-9]+)", push_result.stdout)
-        assert match, "Could not find snapshot version in push output"
+        # The snapshot version might be wrapped to the next line, so use DOTALL flag
+        match = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push_result.stdout, re.DOTALL
+        )
+        assert match, (
+            f"Could not find snapshot version in push output. Output: {push_result.stdout}"
+        )
         snapshot_version = match.group(1)
 
         # Describe specific snapshot
@@ -323,7 +328,10 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
         assert "Recorded feature graph" in push_result.stdout
 
         # Extract snapshot version
-        match = re.search(r"Snapshot version: ([a-f0-9]+)", push_result.stdout)
+        # The snapshot version might be wrapped to the next line, so use DOTALL flag
+        match = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push_result.stdout, re.DOTALL
+        )
         assert match is not None
         snapshot_version = match.group(1)
 

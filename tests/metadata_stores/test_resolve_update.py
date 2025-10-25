@@ -246,8 +246,8 @@ class LeafDiamond(
     spec=FeatureSpec(
         key=FeatureKey(["resolve", "leaf_diamond"]),
         deps=[
-            FeatureDep(key=FeatureKey(["resolve", "branch_b"])),
-            FeatureDep(key=FeatureKey(["resolve", "branch_c"])),
+            FeatureDep(key=FeatureKey(["resolve", "branch_b"]), columns=()),
+            FeatureDep(key=FeatureKey(["resolve", "branch_c"]), columns=()),
         ],
         fields=[
             FieldSpec(
