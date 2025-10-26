@@ -94,7 +94,7 @@ class FaceDetection(
 class SpeechToText(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["overview", "sst"]),
+        key=FeatureKey(["example", "stt"]),
         deps=[
             FeatureDep(
                 key=Video.spec.key,
@@ -108,28 +108,6 @@ class SpeechToText(
                     FieldDep(
                         feature_key=Video.spec.key,
                         fields=[FieldKey(["audio"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    pass
-
-
-class Embeddings(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["overview", "embeddings"]),
-        deps=[FeatureDep(key=Crop.spec.key)],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["embedding"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Crop.spec.key,
-                        fields=[FieldKey(["audio"]), FieldKey(["frames"])],
                     )
                 ],
             ),

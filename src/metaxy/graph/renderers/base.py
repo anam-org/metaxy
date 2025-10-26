@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 
+from metaxy.graph import utils
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -144,9 +145,7 @@ class GraphRenderer:
         Returns:
             Truncated hash if hash_length > 0, otherwise full hash
         """
-        if self.config.hash_length == 0:
-            return hash_str
-        return hash_str[: self.config.hash_length]
+        return utils.format_hash(hash_str, length=self.config.hash_length)
 
     def _format_feature_key(self, key: FeatureKey) -> str:
         """Format feature key for display.
@@ -159,7 +158,7 @@ class GraphRenderer:
         Returns:
             Formatted string like "my/feature/key"
         """
-        return "/".join(key)
+        return utils.format_feature_key(key)
 
     def _format_field_key(self, key: FieldKey) -> str:
         """Format field key for display.
@@ -170,7 +169,7 @@ class GraphRenderer:
         Returns:
             Formatted string like "field_name"
         """
-        return "/".join(key)
+        return utils.format_field_key(key)
 
     def _get_filtered_features(self) -> set[FeatureKey]:
         """Get features to render based on config filters.

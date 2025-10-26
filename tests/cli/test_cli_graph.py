@@ -761,3 +761,667 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
 
         assert result.returncode == 0
         assert result.stdout == snapshot
+
+
+def test_graph_diff_no_changes(metaxy_project: TempMetaxyProject):
+    """Test graph diff shows no changes when snapshots are identical."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Push snapshot
+        metaxy_project.run_cli("graph", "push")
+
+        # Compare latest with current (should be identical)
+        result = metaxy_project.run_cli("graph", "diff", "latest", "current")
+
+        assert result.returncode == 0
+        assert "merged view" in result.stdout
+        assert "video/files" in result.stdout
+        # All features should show as unchanged (no + - ~ symbols for the feature itself)
+        assert "+ video/files" not in result.stdout
+        assert "- video/files" not in result.stdout
+        assert "~ video/files" not in result.stdout
+
+
+def test_graph_diff_added_feature(metaxy_project: TempMetaxyProject):
+    """Test graph diff detects added features."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        # Extract first snapshot version
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        # Extract second snapshot version
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare the two snapshots
+        result = metaxy_project.run_cli("graph", "diff", snapshot1, snapshot2)
+
+        assert result.returncode == 0
+        assert (
+            "audio/files (added)" in result.stdout or "+ audio/files" in result.stdout
+        )
+
+
+def test_graph_diff_removed_feature(metaxy_project: TempMetaxyProject):
+    """Test graph diff detects removed features."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare the two snapshots
+        result = metaxy_project.run_cli("graph", "diff", snapshot1, snapshot2)
+
+        assert result.returncode == 0
+        assert (
+            "audio/files (removed)" in result.stdout or "- audio/files" in result.stdout
+        )
+
+
+def test_graph_diff_changed_feature(metaxy_project: TempMetaxyProject):
+    """Test graph diff detects changed features."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare the two snapshots
+        result = metaxy_project.run_cli("graph", "diff", snapshot1, snapshot2)
+
+        assert result.returncode == 0
+        assert (
+            "video/files (changed)" in result.stdout or "~ video/files" in result.stdout
+        )
+
+
+def test_graph_diff_with_store_flag(metaxy_project: TempMetaxyProject):
+    """Test graph diff works with --store flag."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Push with explicit store
+        metaxy_project.run_cli("graph", "push", "--store", "dev")
+
+        # Diff with explicit store
+        result = metaxy_project.run_cli(
+            "graph", "diff", "latest", "current", "--store", "dev"
+        )
+
+        assert result.returncode == 0
+        # Should show merged view (default) or diff list
+        assert (
+            "merged view" in result.stdout
+            or "Graph Diff:" in result.stdout
+            or "No changes" in result.stdout
+        )
+
+
+def test_graph_diff_invalid_snapshot(metaxy_project: TempMetaxyProject):
+    """Test graph diff fails gracefully with invalid snapshot."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            "graph", "diff", "nonexistent_snapshot", "current", check=False
+        )
+
+        assert result.returncode == 1
+        assert "Error:" in result.stdout
+
+
+def test_graph_diff_latest_empty_store(metaxy_project: TempMetaxyProject):
+    """Test graph diff fails when no snapshots exist in store."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        result = metaxy_project.run_cli(
+            "graph", "diff", "latest", "current", check=False
+        )
+
+        assert result.returncode == 1
+        assert "Error:" in result.stdout
+        assert "No snapshots found" in result.stdout
+
+
+def test_graph_diff_verbose_output(metaxy_project: TempMetaxyProject):
+    """Test graph diff verbose mode shows more details."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare the two snapshots with verbose
+        result = metaxy_project.run_cli(
+            "graph", "diff", snapshot1, snapshot2, "--verbose"
+        )
+
+        assert result.returncode == 0
+        assert (
+            "video/files (changed)" in result.stdout or "~ video/files" in result.stdout
+        )
+
+
+def test_graph_diff_format_json(metaxy_project: TempMetaxyProject):
+    """Test graph diff with JSON format output."""
+    import json
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare with JSON format (default is merged view)
+        result = metaxy_project.run_cli(
+            "graph", "diff", snapshot1, snapshot2, "--format", "json"
+        )
+
+        assert result.returncode == 0
+
+        # Parse JSON output - merged format has "nodes" and "edges"
+        data = json.loads(result.stdout)
+        assert "nodes" in data
+        assert "audio/files" in data["nodes"]
+        # Check that audio/files has status "added"
+        assert data["nodes"]["audio/files"]["status"] == "added"
+
+
+def test_graph_diff_format_yaml(metaxy_project: TempMetaxyProject):
+    """Test graph diff with YAML format output."""
+    import yaml
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class AudioFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare with YAML format (default is merged view)
+        result = metaxy_project.run_cli(
+            "graph", "diff", snapshot1, snapshot2, "--format", "yaml"
+        )
+
+        assert result.returncode == 0
+
+        # Parse YAML output - merged format has "nodes" and "edges"
+        data = yaml.safe_load(result.stdout)
+        assert "nodes" in data
+        assert "video/files" in data["nodes"]
+        assert "audio/files" in data["nodes"]
+        assert data["nodes"]["video/files"]["status"] == "removed"
+        assert data["nodes"]["audio/files"]["status"] == "added"
+
+
+def test_graph_diff_format_mermaid(metaxy_project: TempMetaxyProject):
+    """Test graph diff with Mermaid format output."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Compare with Mermaid format
+        result = metaxy_project.run_cli(
+            "graph", "diff", snapshot1, snapshot2, "--format", "mermaid"
+        )
+
+        assert result.returncode == 0
+        assert "flowchart TB" in result.stdout
+        assert "video/files" in result.stdout
+
+
+def test_graph_diff_output_to_file(metaxy_project: TempMetaxyProject):
+    """Test graph diff outputs to file."""
+
+    def features_v1():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class AudioFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Record first snapshot (v1)
+    with metaxy_project.with_features(features_v1):
+        push1_result = metaxy_project.run_cli("graph", "push")
+        match1 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push1_result.stdout, re.DOTALL
+        )
+        assert match1
+        snapshot1 = match1.group(1)
+
+    # Record second snapshot (v2)
+    with metaxy_project.with_features(features_v2):
+        push2_result = metaxy_project.run_cli("graph", "push")
+        match2 = re.search(
+            r"Snapshot version:\s+([a-f0-9]+)", push2_result.stdout, re.DOTALL
+        )
+        assert match2
+        snapshot2 = match2.group(1)
+
+        # Output to JSON file (merged format)
+        output_file = metaxy_project.project_dir / "diff.json"
+        result = metaxy_project.run_cli(
+            "graph",
+            "diff",
+            snapshot1,
+            snapshot2,
+            "--format",
+            "json",
+            "--output",
+            str(output_file),
+        )
+
+        assert result.returncode == 0
+        assert "saved to" in result.stdout
+        assert output_file.exists()
+
+        # Check file contents - merged format has "nodes" and "edges"
+        import json
+
+        with open(output_file) as f:
+            data = json.load(f)
+
+        assert "nodes" in data
+        assert "video/files" in data["nodes"]
+        assert "audio/files" in data["nodes"]
+
+
+def test_graph_diff_invalid_format(metaxy_project: TempMetaxyProject):
+    """Test graph diff fails with invalid format."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Push snapshot
+        metaxy_project.run_cli("graph", "push")
+
+        # Try invalid format
+        result = metaxy_project.run_cli(
+            "graph", "diff", "latest", "current", "--format", "invalid", check=False
+        )
+
+        assert result.returncode == 1
+        assert "Error:" in result.stdout
+        assert "Invalid format" in result.stdout

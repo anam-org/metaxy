@@ -113,7 +113,7 @@ class FaceDetection(
 class SpeechToText(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["overview", "sst"]),
+        key=FeatureKey(["overview", "stt"]),
         deps=[
             FeatureDep(
                 key=Video.spec.key,
@@ -134,28 +134,6 @@ class SpeechToText(
     ),
 ):
     pass
-
-
-class Embeddings(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["overview", "embeddings"]),
-        deps=[FeatureDep(key=Crop.spec.key)],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["embedding"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Crop.spec.key,
-                        fields=[FieldKey(["audio"]), FieldKey(["frames"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    pass
 ```
 
 When provided with this Python module, `metaxy graph render --format mermaid` (that's handy, right?) produces the following graph:
@@ -165,47 +143,56 @@ When provided with this Python module, `metaxy graph render --format mermaid` (t
 title: Feature Graph
 ---
 flowchart TB
-    %% Snapshot version: f3f57b8e
-        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/>---<br/>• audio <small>(v:
-22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
-        overview_sst["<div style="text-align:left"><b>overview/sst</b><br/><small>(v: bc3cae5c)</small><br/>---<br/>• transcription <small>(v:
-99b97ac1)</small></div>"]
+    %% Snapshot version: 215d5a6d
+    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/>---<br/>• audio
+<small>(v: 22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
         example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/>---<br/>• audio <small>(v:
 76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
-        overview_embeddings["<div style="text-align:left"><b>overview/embeddings</b><br/><small>(v: 944318e4)</small><br/>---<br/>• embedding
-<small>(v: b3f81f9e)</small></div>"]
-        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: fbe130cc)</small><br/>---<br/>•
-detections <small>(v: ab065369)</small></div>"]
+        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v:
+fbe130cc)</small><br/>---<br/>• detections <small>(v: ab065369)</small></div>"]
+        example_stt["<div style="text-align:left"><b>example/stt</b><br/><small>(v: c83a754a)</small><br/>---<br/>• transcription
+<small>(v: ac412b3c)</small></div>"]
         example_video --> example_crop
         example_crop --> example_face_detection
-        example_video --> overview_sst
-        example_crop --> overview_embeddings
+        example_video --> example_stt
 ```
 
-Now imagine the `audio` logical field (don't mix up with metadata columns!) of the very first `Video` feature has been changed. Perhaps it has been cleaned or denoised. In this case we'd typically want to recompute the downstream `Crop`, `SpeechToText`  and `Embeddings` features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
+Now imagine the `audio` logical field (don't mix up with metadata columns!) of the very first `Video` feature has been changed. Perhaps it has been cleaned or denoised.
 
-`metaxy graph render` reveals exactly that to us:
+```diff
+         key=FeatureKey(["example", "video"]),
+         deps=None,  # Root feature
+         fields=[
+             FieldSpec(
+                 key=FieldKey(["audio"]),
+-                code_version=1,
++                code_version=2,
+             ),
+```
+
+In this case we'd typically want to recompute the downstream `Crop`, `SpeechToText`  and `Embeddings` features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
+
+`metaxy graph diff` reveals exactly that:
 
 ```mermaid
 ---
-title: Feature Graph
+title: Merged Graph Diff
 ---
 flowchart TB
-    %% Snapshot version: f55ef3f1
-        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: 6db302e5)</small><br/>---<br/>• audio <small>(v:
-09c8398b)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
-        overview_sst["<div style="text-align:left"><b>overview/sst</b><br/><small>(v: a66dbf85)</small><br/>---<br/>• transcription <small>(v:
-e66ec0b2)</small></div>"]
-        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 54dc7f8a)</small><br/>---<br/>• audio <small>(v:
-f3130c0f)</small><br/>• frames <small>(v: abc79017)</small></div>"]
-        overview_embeddings["<div style="text-align:left"><b>overview/embeddings</b><br/><small>(v: 05016435)</small><br/>---<br/>• embedding
-<small>(v: 2d6af608)</small></div>"]
-        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: fbe130cc)</small><br/>---<br/>•
-detections <small>(v: ab065369)</small></div>"]
-        example_video --> example_crop
-        example_crop --> example_face_detection
-        example_video --> overview_sst
-        example_crop --> overview_embeddings
+    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+
+    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
+    style example_video stroke:#FFA500,stroke-width:3px
+    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
+    style example_crop stroke:#FFA500,stroke-width:3px
+    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>fbe130<br/><font color="#999">---</font><br/>- detections (ab0653)</div>"]
+    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
+    style example_stt stroke:#FFA500,stroke-width:3px
+
+    example_video --> example_crop
+    example_crop --> example_face_detection
+    example_video --> example_stt
 ```
 
 The versions of `audio` fields through the graph as well as the whole `FaceDetection` feature stayed the same!
