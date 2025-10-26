@@ -61,6 +61,7 @@ dev = [
     "basedpyright>=1.32.1",
     "vulture>=2.14",
     "prek>=0.2.11",
+    "pytest-cov>=7.0.0",
 ]
 
 [tool.ruff]
@@ -93,6 +94,28 @@ exclude = [
     "examples/**/feature*.py",
 ]
 min_confidence = 60
+
+[tool.coverage.run]
+source = ["src/metaxy"]
+omit = [
+    "src/metaxy/_testing.py",
+    "tests/*",
+    "examples/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
 
 [tool.pyright]
 reportAny = "none"
