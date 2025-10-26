@@ -37,15 +37,6 @@ sqlmodel = [
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 
-[tool.pyrefly]
-project-includes = ["src", "tests"]
-# search-path = ["src"]
-project-excludes = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/*venv/**/*",
-]
-
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]
 build-backend = "uv_build"
@@ -55,7 +46,6 @@ dev = [
     "examples",
     "ipython>=8.37.0",
     "duckdb>=1.4.1",
-    "pyrefly>=0.34.0",
     "pytest>=8.4.2",
     "pytest-cases>=3.9.1",
     "ruff>=0.13.1",
@@ -65,6 +55,7 @@ dev = [
     "vulture>=2.14",
     "prek>=0.2.11",
     "pytest-env>=1.2.0",
+    "pytest-cov>=7.0.0",
 ]
 
 docs = [
@@ -114,6 +105,28 @@ exclude = [
     "examples/**/feature*.py",
 ]
 min_confidence = 60
+
+[tool.coverage.run]
+source = ["src/metaxy"]
+omit = [
+    "src/metaxy/_testing.py",
+    "tests/*",
+    "examples/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+skip_covered = false
 
 [tool.pyright]
 reportAny = "none"

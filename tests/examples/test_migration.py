@@ -50,11 +50,16 @@ type = "duckdb"
 database = "{test_db}"
 """)
 
-    base_env = {
-        "METAXY_CONFIG": str(test_config_file),
-        # Ensure HOME is set for DuckDB extension installation
-        "HOME": os.environ.get("HOME", str(tmp_path)),
-    }
+    # Start with parent environment to preserve Nix paths
+    base_env = os.environ.copy()
+    # Override specific values for the test
+    base_env.update(
+        {
+            "METAXY_CONFIG": str(test_config_file),
+            # Ensure HOME is set for DuckDB extension installation
+            "HOME": os.environ.get("HOME", str(tmp_path)),
+        }
+    )
 
     # Step 0: Setup upstream data
     result = subprocess.run(
