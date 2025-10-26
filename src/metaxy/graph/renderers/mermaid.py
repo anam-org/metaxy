@@ -3,6 +3,7 @@
 Requires mermaid-py library to be installed.
 """
 
+from metaxy.graph import utils
 from metaxy.graph.renderers.base import GraphRenderer
 from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import FeatureKey
@@ -61,18 +62,31 @@ class MermaidRenderer(GraphRenderer):
 
         script = chart.script
 
-        # Add snapshot version as a comment if needed (avoids YAML parsing issues)
-        if self.config.show_snapshot_version:
-            snapshot_hash = self._format_hash(self.graph.snapshot_version)
-            # Insert comment after the flowchart directive
-            lines = script.split("\n")
-            # Find the flowchart line and add comment after it
-            for i, line in enumerate(lines):
-                if line.startswith("flowchart "):
-                    lines.insert(i + 1, f"    %% Snapshot version: {snapshot_hash}")
-                    break
-            script = "\n".join(lines)
+        # Modify script to add flexible node width styling and snapshot version
+        lines = script.split("\n")
 
+        # Find the flowchart line
+        for i, line in enumerate(lines):
+            if line.startswith("flowchart "):
+                insertions = []
+
+                # Add snapshot version comment if needed
+                if self.config.show_snapshot_version:
+                    snapshot_hash = self._format_hash(self.graph.snapshot_version)
+                    insertions.append(f"    %% Snapshot version: {snapshot_hash}")
+
+                # Add styling for flexible node width
+                # This ensures text doesn't get cut off
+                insertions.append(
+                    "    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%"
+                )
+
+                # Insert all additions after the flowchart line
+                for j, insertion in enumerate(insertions):
+                    lines.insert(i + 1 + j, insertion)
+                break
+
+        script = "\n".join(lines)
         return script
 
     def _node_id_from_key(self, key: FeatureKey) -> str:
@@ -86,7 +100,7 @@ class MermaidRenderer(GraphRenderer):
         """
         # Use underscore format for node IDs (Mermaid identifiers)
         # but the display label will use the formatted version with slashes
-        return key.to_string().replace("__", "_").lower()
+        return utils.sanitize_mermaid_id(key.to_string()).lower()
 
     def _build_feature_label_with_fields(
         self, feature_key: FeatureKey, feature_cls
@@ -121,7 +135,8 @@ class MermaidRenderer(GraphRenderer):
 
         # Fields (if configured)
         if self.config.show_fields and feature_cls.spec.fields:
-            lines.append("---")
+            # Subtle separator line before fields
+            lines.append('<font color="#999">---</font>')
             for field in feature_cls.spec.fields:
                 field_line = self._build_field_line(feature_key, field)
                 lines.append(field_line)
