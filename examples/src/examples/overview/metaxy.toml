@@ -1,0 +1,7 @@
+entrypoints = ["examples.overview.__entrypoint__"]
+
+[stores.dev]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "/tmp/example_overview.db"
