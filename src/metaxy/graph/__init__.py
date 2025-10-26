@@ -1,19 +1,28 @@
 """Graph visualization and rendering utilities."""
 
-from metaxy.graph.renderers import (
-    GraphRenderer,
+from metaxy.graph.diff import GraphData
+from metaxy.graph.diff.rendering import (
+    BaseRenderer,
+    CardsRenderer,
     GraphvizRenderer,
     MermaidRenderer,
     RenderConfig,
-    TerminalCardsRenderer,
     TerminalRenderer,
 )
 
+# Backward compatibility aliases
+TerminalCardsRenderer = CardsRenderer
+GraphRenderer = BaseRenderer
+
 __all__ = [
-    "GraphRenderer",
+    "BaseRenderer",
     "RenderConfig",
+    "GraphData",
     "TerminalRenderer",
-    "TerminalCardsRenderer",
+    "CardsRenderer",
     "MermaidRenderer",
     "GraphvizRenderer",
+    # Backward compatibility
+    "TerminalCardsRenderer",
+    "GraphRenderer",
 ]

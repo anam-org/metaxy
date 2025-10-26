@@ -368,7 +368,7 @@ class TestDiffFormatter:
 
     def test_format_dispatcher_terminal(self):
         """Test format dispatcher routes to terminal format."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -383,7 +383,7 @@ class TestDiffFormatter:
 
     def test_format_dispatcher_invalid(self):
         """Test format dispatcher raises error for invalid format."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(snapshot1="s1", snapshot2="s2")
         formatter = DiffFormatter()
@@ -395,7 +395,7 @@ class TestDiffFormatter:
         """Test JSON format for empty diff."""
         import json
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(snapshot1="snap1", snapshot2="snap2")
         formatter = DiffFormatter()
@@ -413,7 +413,7 @@ class TestDiffFormatter:
         """Test JSON format with various changes."""
         import json
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -454,7 +454,7 @@ class TestDiffFormatter:
         """Test YAML format for empty diff."""
         import yaml
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(snapshot1="snap1", snapshot2="snap2")
         formatter = DiffFormatter()
@@ -472,7 +472,7 @@ class TestDiffFormatter:
         """Test YAML format with various changes."""
         import yaml
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -499,7 +499,7 @@ class TestDiffFormatter:
 
     def test_format_mermaid_empty_diff(self):
         """Test Mermaid format for empty diff."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(snapshot1="s1", snapshot2="s2")
         formatter = DiffFormatter()
@@ -511,7 +511,7 @@ class TestDiffFormatter:
 
     def test_format_mermaid_with_added_features(self):
         """Test Mermaid format with added features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -524,11 +524,11 @@ class TestDiffFormatter:
 
         assert "flowchart TB" in result
         assert "new/feature" in result
-        assert "fill:#90EE90" in result  # Green fill for added
+        assert "stroke:#00FF00" in result  # Green border for added
 
     def test_format_mermaid_with_removed_features(self):
         """Test Mermaid format with removed features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -540,11 +540,11 @@ class TestDiffFormatter:
         result = formatter.format_mermaid_diff_only(diff)
 
         assert "old/feature" in result
-        assert "fill:#FFB6C1" in result  # Pink fill for removed
+        assert "stroke:#FF0000" in result  # Red border for removed
 
     def test_format_mermaid_with_changed_features(self):
         """Test Mermaid format with changed features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -562,11 +562,11 @@ class TestDiffFormatter:
         result = formatter.format_mermaid_diff_only(diff)
 
         assert "changed/feature" in result
-        assert "fill:#FFE4B5" in result  # Tan fill for changed
+        assert "stroke:#FFAA00" in result  # Orange border for changed
 
     def test_format_mermaid_verbose_with_field_changes(self):
         """Test Mermaid verbose format shows field changes."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -601,7 +601,7 @@ class TestDiffFormatter:
 
     def test_format_mermaid_sanitizes_node_ids(self):
         """Test Mermaid format sanitizes node IDs."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -807,7 +807,7 @@ class TestMergedFormatters:
 
     def test_format_terminal_merged_empty(self):
         """Test terminal formatting of empty merged graph."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {"nodes": {}, "edges": []}
         formatter = DiffFormatter()
@@ -817,7 +817,7 @@ class TestMergedFormatters:
 
     def test_format_terminal_merged_with_features(self):
         """Test terminal formatting with features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -842,7 +842,7 @@ class TestMergedFormatters:
         """Test JSON formatting of merged graph."""
         import json
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -870,7 +870,7 @@ class TestMergedFormatters:
         """Test YAML formatting of merged graph."""
         import yaml
 
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -896,7 +896,7 @@ class TestMergedFormatters:
 
     def test_format_mermaid_merged_empty(self):
         """Test Mermaid formatting of empty merged graph."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {"nodes": {}, "edges": []}
         formatter = DiffFormatter()
@@ -907,7 +907,7 @@ class TestMergedFormatters:
 
     def test_format_mermaid_merged_with_features(self):
         """Test Mermaid formatting with features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -945,13 +945,13 @@ class TestMergedFormatters:
         assert "feature/added" in result
         assert "feature/removed" in result
         assert "feature/changed" in result
-        assert "fill:#90EE90" in result  # Green for added
-        assert "fill:#FFB6C1" in result  # Red for removed
-        assert "stroke:#FFA500" in result  # Yellow border for changed
+        assert "stroke:#00FF00" in result  # Green border for added
+        assert "stroke:#FF0000" in result  # Red border for removed
+        assert "stroke:#FFAA00" in result  # Orange border for changed
 
     def test_format_mermaid_merged_with_edges(self):
         """Test Mermaid formatting includes edges."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -985,7 +985,7 @@ class TestFieldColorHighlighting:
 
     def test_terminal_merged_shows_all_fields_with_colors(self):
         """Test that terminal format shows all fields with color indicators for changed features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1025,7 +1025,7 @@ class TestFieldColorHighlighting:
 
     def test_mermaid_merged_shows_all_fields_with_colors(self):
         """Test that mermaid format shows all fields with color HTML for changed features."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1067,7 +1067,7 @@ class TestFieldColorHighlighting:
 
     def test_terminal_merged_shows_removed_fields_with_color(self):
         """Test that terminal format shows removed fields with red color."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1097,7 +1097,7 @@ class TestFieldColorHighlighting:
 
     def test_mermaid_merged_shows_removed_fields_with_color(self):
         """Test that mermaid format shows removed fields with red color."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1131,7 +1131,7 @@ class TestDiffFormatterDispatcher:
 
     def test_format_diff_only_mode(self):
         """Test dispatcher routes to diff_only methods."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         diff = GraphDiff(
             snapshot1="s1",
@@ -1145,7 +1145,7 @@ class TestDiffFormatterDispatcher:
 
     def test_format_merged_mode(self):
         """Test dispatcher routes to merged methods."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1170,7 +1170,7 @@ class TestDiffFormatterDispatcher:
 
     def test_format_requires_diff_for_diff_only(self):
         """Test that diff_only mode requires diff parameter."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         formatter = DiffFormatter()
 
@@ -1179,7 +1179,7 @@ class TestDiffFormatterDispatcher:
 
     def test_format_requires_merged_data_for_merged_mode(self):
         """Test that merged mode requires merged_data parameter."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         formatter = DiffFormatter()
 
@@ -1508,7 +1508,7 @@ class TestShowAllFieldsParameter:
 
     def test_format_terminal_shows_all_fields_by_default(self):
         """Test that terminal format shows all fields by default."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1545,7 +1545,7 @@ class TestShowAllFieldsParameter:
 
     def test_format_terminal_shows_only_changed_fields_when_requested(self):
         """Test that terminal format can show only changed fields."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1582,7 +1582,7 @@ class TestShowAllFieldsParameter:
 
     def test_format_mermaid_shows_all_fields_by_default(self):
         """Test that mermaid format shows all fields by default."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1619,7 +1619,7 @@ class TestShowAllFieldsParameter:
 
     def test_format_mermaid_shows_only_changed_fields_when_requested(self):
         """Test that mermaid format can show only changed fields."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {
@@ -1656,7 +1656,7 @@ class TestShowAllFieldsParameter:
 
     def test_format_dispatcher_passes_show_all_fields(self):
         """Test that format() dispatcher passes show_all_fields to formatters."""
-        from metaxy.formatters.graph_diff import DiffFormatter
+        from metaxy.graph.diff.rendering.formatter import DiffFormatter
 
         merged_data = {
             "nodes": {

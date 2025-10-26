@@ -95,7 +95,7 @@ class FaceDetection(
         ],
         fields=[
             FieldSpec(
-                key=FieldKey(["detections"]),
+                key=FieldKey(["faces"]),
                 code_version=1,
                 deps=[
                     FieldDep(
@@ -143,16 +143,16 @@ When provided with this Python module, `metaxy graph render --format mermaid` (t
 title: Feature Graph
 ---
 flowchart TB
-    %% Snapshot version: 215d5a6d
+    %% Snapshot version: 8468950d
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/>---<br/>• audio
-<small>(v: 22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
-        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/>---<br/>• audio <small>(v:
-76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
-        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v:
-fbe130cc)</small><br/>---<br/>• detections <small>(v: ab065369)</small></div>"]
-        example_stt["<div style="text-align:left"><b>example/stt</b><br/><small>(v: c83a754a)</small><br/>---<br/>• transcription
-<small>(v: ac412b3c)</small></div>"]
+        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/><font
+color="#999">---</font><br/>• audio <small>(v: 22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
+        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/><font
+color="#999">---</font><br/>• audio <small>(v: 76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
+        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: 1ac83b07)</small><br/><font
+color="#999">---</font><br/>• faces <small>(v: 2d75f0bd)</small></div>"]
+        example_stt["<div style="text-align:left"><b>example/stt</b><br/><small>(v: c83a754a)</small><br/><font
+color="#999">---</font><br/>• transcription <small>(v: ac412b3c)</small></div>"]
         example_video --> example_crop
         example_crop --> example_face_detection
         example_video --> example_stt
@@ -182,12 +182,19 @@ title: Merged Graph Diff
 flowchart TB
     %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
 
-    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
+    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font
+color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
+color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
     style example_video stroke:#FFA500,stroke-width:3px
-    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
+    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font
+color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
+color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
     style example_crop stroke:#FFA500,stroke-width:3px
-    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>fbe130<br/><font color="#999">---</font><br/>- detections (ab0653)</div>"]
-    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
+    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>1ac83b<br/><font
+color="#999">---</font><br/>- faces (2d75f0)</div>"]
+    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font
+color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font
+color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
     style example_stt stroke:#FFA500,stroke-width:3px
 
     example_video --> example_crop
