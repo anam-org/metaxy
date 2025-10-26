@@ -7,7 +7,6 @@ from rich.console import Console
 from rich.table import Table
 
 from metaxy.graph import RenderConfig
-from metaxy.graph_diff import GraphDiff
 
 # Rich console for formatted output
 console = Console()
@@ -277,253 +276,6 @@ def describe(
 
 
 @app.command()
-def diff(
-    snapshot1: Annotated[
-        str,
-        cyclopts.Parameter(
-            help='First snapshot to compare (can be "latest", "current", or snapshot hash)',
-        ),
-    ],
-    snapshot2: Annotated[
-        str,
-        cyclopts.Parameter(
-            help='Second snapshot to compare (can be "latest", "current", or snapshot hash)',
-        ),
-    ],
-    store: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--store"],
-            help="Metadata store to use (defaults to configured default store)",
-        ),
-    ] = None,
-    format: Annotated[
-        str,
-        cyclopts.Parameter(
-            name=["--format", "-f"],
-            help="Output format: terminal, json, yaml, or mermaid",
-        ),
-    ] = "terminal",
-    output: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--output", "-o"],
-            help="Output file path (default: stdout)",
-        ),
-    ] = None,
-    verbose: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--verbose", "-v"],
-            help="Show detailed changes",
-        ),
-    ] = False,
-    diff_only: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--diff-only"],
-            help="Show only the diff (list of changes) instead of merged graph visualization",
-        ),
-    ] = False,
-    feature: Annotated[
-        str | None,
-        cyclopts.Parameter(
-            name=["--feature"],
-            help="Focus on a specific feature (e.g., 'video/files' or 'video__files')",
-        ),
-    ] = None,
-    up: Annotated[
-        int | None,
-        cyclopts.Parameter(
-            name=["--up"],
-            help="Number of upstream dependency levels to include (default: all if --feature is set)",
-        ),
-    ] = None,
-    down: Annotated[
-        int | None,
-        cyclopts.Parameter(
-            name=["--down"],
-            help="Number of downstream dependent levels to include (default: all if --feature is set)",
-        ),
-    ] = None,
-    show_changed_fields_only: Annotated[
-        bool,
-        cyclopts.Parameter(
-            name=["--show-changed-fields-only"],
-            help="Show only fields that changed (hide unchanged fields)",
-        ),
-    ] = False,
-):
-    """Compare two graph snapshots and show differences.
-
-    By default, shows a merged graph visualization with all features color-coded
-    by status (added/removed/changed/unchanged). Use --diff-only to show only
-    a list of changes.
-
-    Special snapshot literals:
-    - "latest": Most recent snapshot in the store
-    - "current": Current graph state from code
-
-    Output formats:
-    - terminal: Interactive visualization (default)
-    - json: JSON representation
-    - yaml: YAML representation
-    - mermaid: Mermaid flowchart diagram
-
-    Examples:
-        # Show merged graph (default - all features with status colors)
-        $ metaxy graph diff latest current
-
-        # Show only changes (traditional diff view)
-        $ metaxy graph diff latest current --diff-only
-
-        # Compare two specific snapshots
-        $ metaxy graph diff abc123def456 def456abc123
-
-        # Show verbose details
-        $ metaxy graph diff latest current --verbose
-
-        # Focus on a specific feature and show 2 levels up and 1 level down
-        $ metaxy graph diff latest current --feature user/profile --up 2 --down 1
-
-        # Show only changed fields (hide unchanged fields)
-        $ metaxy graph diff latest current --show-changed-fields-only
-
-        # Combine slicing and field filtering
-        $ metaxy graph diff latest current --feature video/files --up 1 --down 2 --show-changed-fields-only
-
-        # Output as JSON
-        $ metaxy graph diff latest current --format json
-
-        # Save Mermaid diagram to file with graph slicing
-        $ metaxy graph diff latest current --feature user/profile --up 1 --format mermaid --output diff.mmd
-
-        # Export as YAML
-        $ metaxy graph diff latest current --format yaml --output diff.yaml
-    """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
-    from metaxy.formatters.graph_diff import DiffFormatter
-    from metaxy.graph_diff import GraphDiffer, SnapshotResolver
-    from metaxy.models.feature import FeatureGraph
-
-    # Validate format
-    valid_formats = ["terminal", "json", "yaml", "mermaid"]
-    if format not in valid_formats:
-        console.print(
-            f"[red]Error:[/red] Invalid format '{format}'. Must be one of: {', '.join(valid_formats)}"
-        )
-        raise SystemExit(1)
-
-    # Validate filtering options
-    if (up is not None or down is not None) and feature is None:
-        console.print(
-            "[red]Error:[/red] --up and --down require --feature to be specified"
-        )
-        raise SystemExit(1)
-
-    # Load features from entrypoints (needed for "current" literal)
-    load_features()
-    graph = FeatureGraph.get_active()
-
-    metadata_store = get_store(store)
-
-    with metadata_store:
-        # Resolve snapshot versions
-        resolver = SnapshotResolver()
-        try:
-            snapshot1_version = resolver.resolve_snapshot(
-                snapshot1, metadata_store, graph
-            )
-            snapshot2_version = resolver.resolve_snapshot(
-                snapshot2, metadata_store, graph
-            )
-        except ValueError as e:
-            console.print(f"[red]Error:[/red] {e}")
-            raise SystemExit(1)
-
-        # Load snapshot data
-        differ = GraphDiffer()
-        try:
-            snapshot1_data = differ.load_snapshot_data(
-                metadata_store, snapshot1_version
-            )
-            snapshot2_data = differ.load_snapshot_data(
-                metadata_store, snapshot2_version
-            )
-        except ValueError as e:
-            console.print(f"[red]Error:[/red] {e}")
-            raise SystemExit(1)
-
-        # Compute diff
-        graph_diff = differ.diff(snapshot1_data, snapshot2_data)
-        # Override snapshot versions in diff result
-        graph_diff = GraphDiff(
-            snapshot1=snapshot1_version,
-            snapshot2=snapshot2_version,
-            added_features=graph_diff.added_features,
-            removed_features=graph_diff.removed_features,
-            changed_features=graph_diff.changed_features,
-        )
-
-        # Format output
-        formatter = DiffFormatter(console)
-        try:
-            if diff_only:
-                # Show only diff list
-                formatted = formatter.format(
-                    diff=graph_diff,
-                    format=format,
-                    verbose=verbose,
-                    diff_only=True,
-                )
-            else:
-                # Show merged graph (default)
-                merged_data = differ.create_merged_graph_data(
-                    snapshot1_data, snapshot2_data, graph_diff
-                )
-
-                # Apply graph slicing if requested
-                if feature is not None:
-                    try:
-                        merged_data = differ.filter_merged_graph(
-                            merged_data, focus_feature=feature, up=up, down=down
-                        )
-                    except ValueError as e:
-                        console.print(f"[red]Error:[/red] {e}")
-                        raise SystemExit(1)
-
-                formatted = formatter.format(
-                    merged_data=merged_data,
-                    format=format,
-                    verbose=verbose,
-                    diff_only=False,
-                    show_all_fields=not show_changed_fields_only,
-                )
-        except ValueError as e:
-            console.print(f"[red]Error:[/red] {e}")
-            raise SystemExit(1)
-
-        # Output to file or stdout
-        if output:
-            try:
-                with open(output, "w") as f:
-                    f.write(formatted)
-                console.print(f"[green]✓[/green] Diff saved to: {output}")
-            except Exception as e:
-                console.print(f"[red]✗[/red] Failed to write to file: {e}")
-                raise SystemExit(1)
-        else:
-            # Print to stdout
-            if format == "terminal":
-                # Use Rich console for colored output
-                console.print(formatted)
-            else:
-                # Use plain print for non-terminal formats
-                print(formatted)
-
-
-@app.command()
 def render(
     config: Annotated[
         RenderConfig | None, cyclopts.Parameter(name="*", help="Render configuration")
@@ -622,9 +374,9 @@ def render(
     from metaxy.cli.context import get_store
     from metaxy.entrypoints import load_features
     from metaxy.graph import (
+        CardsRenderer,
         GraphvizRenderer,
         MermaidRenderer,
-        TerminalCardsRenderer,
         TerminalRenderer,
     )
     from metaxy.models.feature import FeatureGraph
@@ -777,7 +529,7 @@ def render(
         if type == "graph":
             renderer = TerminalRenderer(graph, config)
         elif type == "cards":
-            renderer = TerminalCardsRenderer(graph, config)
+            renderer = CardsRenderer(graph, config)
         else:
             # Should not reach here due to validation above
             console.print(f"[red]Error:[/red] Unknown type: {type}")

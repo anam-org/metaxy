@@ -297,7 +297,14 @@ class DiffFormatter:
                 for fc in diff.changed_features
             ],
         }
-        return yaml.safe_dump(data, default_flow_style=False, sort_keys=False)
+        # Use width=999999 to prevent line wrapping for long hashes
+        return yaml.safe_dump(
+            data,
+            default_flow_style=False,
+            sort_keys=False,
+            width=999999,
+            allow_unicode=True,
+        )
 
     def format_mermaid_diff_only(self, diff: GraphDiff, verbose: bool = False) -> str:
         """Format GraphDiff as Mermaid flowchart.
@@ -337,18 +344,18 @@ class DiffFormatter:
         def sanitize_id(s: str) -> str:
             return s.replace("/", "_").replace("-", "_")
 
-        # Define nodes with styling
+        # Define nodes with styling (border only, no fill)
         for fk in diff.added_features:
             node_id = sanitize_id(fk.to_string())
             feature_str = fk.to_string()
             lines.append(f'    {node_id}["{feature_str}"]')
-            lines.append(f"    style {node_id} fill:#90EE90,stroke:#006400")
+            lines.append(f"    style {node_id} stroke:#00FF00,stroke-width:2px")
 
         for fk in diff.removed_features:
             node_id = sanitize_id(fk.to_string())
             feature_str = fk.to_string()
             lines.append(f'    {node_id}["{feature_str}"]')
-            lines.append(f"    style {node_id} fill:#FFB6C1,stroke:#DC143C")
+            lines.append(f"    style {node_id} stroke:#FF0000,stroke-width:2px")
 
         for fc in diff.changed_features:
             node_id = sanitize_id(fc.feature_key.to_string())
@@ -366,7 +373,7 @@ class DiffFormatter:
             else:
                 lines.append(f'    {node_id}["{feature_str}"]')
 
-            lines.append(f"    style {node_id} fill:#FFE4B5,stroke:#FFA500")
+            lines.append(f"    style {node_id} stroke:#FFAA00,stroke-width:2px")
 
         lines.append("")
 
@@ -608,7 +615,14 @@ class DiffFormatter:
             "nodes": nodes_yaml,
             "edges": merged_data["edges"],
         }
-        return yaml.safe_dump(data, default_flow_style=False, sort_keys=False)
+        # Use width=999999 to prevent line wrapping for long hashes
+        return yaml.safe_dump(
+            data,
+            default_flow_style=False,
+            sort_keys=False,
+            width=999999,
+            allow_unicode=True,
+        )
 
     def format_mermaid_merged(
         self,
@@ -768,14 +782,13 @@ class DiffFormatter:
             label = f'<div style="text-align:left">{label}</div>'
             lines.append(f'    {node_id}["{label}"]')
 
-            # Apply styling based on status
+            # Apply styling based on status (border only, no fill)
             if status == "added":
-                lines.append(f"    style {node_id} fill:#90EE90,stroke:#006400")
+                lines.append(f"    style {node_id} stroke:#00FF00,stroke-width:2px")
             elif status == "removed":
-                lines.append(f"    style {node_id} fill:#FFB6C1,stroke:#DC143C")
+                lines.append(f"    style {node_id} stroke:#FF0000,stroke-width:2px")
             elif status == "changed":
-                # Yellow border only, not filled
-                lines.append(f"    style {node_id} stroke:#FFA500,stroke-width:3px")
+                lines.append(f"    style {node_id} stroke:#FFAA00,stroke-width:2px")
             # else: unchanged - no special styling
 
         lines.append("")

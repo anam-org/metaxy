@@ -384,17 +384,9 @@ class FeatureGraph:
                     feature_cls = getattr(module, class_name)
                 except (ImportError, AttributeError) as e:
                     raise ImportError(
-                        f"Cannot import Feature class '{class_path}' for historical migration. "
-                        f"Feature '{feature_key_str}' is required for this migration but the class "
+                        f"Cannot import Feature class '{class_path}' for feature graph reconstruction from snapshot. "
+                        f"Feature '{feature_key_str}' is required to reconstruct the graph, but the class "
                         f"cannot be found at the recorded import path. "
-                        f"\n\n"
-                        f"Options:\n"
-                        f"1. Restore the feature class at '{class_path}'\n"
-                        f"2. If the feature was moved, add a class_path_override in the migration YAML:\n"
-                        f"   feature_class_overrides:\n"
-                        f'     {feature_key_str}: "new.module.path.ClassName"\n'
-                        f"\n"
-                        f"Original error: {e}"
                     ) from e
 
                 # Validate the imported class matches the stored spec

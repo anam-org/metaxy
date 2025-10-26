@@ -76,7 +76,7 @@ class FaceDetection(
         ],
         fields=[
             FieldSpec(
-                key=FieldKey(["detections"]),
+                key=FieldKey(["faces"]),
                 code_version=1,
                 deps=[
                     FieldDep(

@@ -145,6 +145,9 @@ class MetaxyConfig(BaseSettings):
     # Entrypoints to load (list of module paths)
     entrypoints: list[str] = PydanticField(default_factory=list)
 
+    # Graph rendering theme
+    theme: str = "default"
+
     @classmethod
     def settings_customise_sources(
         cls,
