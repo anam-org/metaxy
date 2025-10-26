@@ -48,12 +48,9 @@ class MermaidRenderer(GraphRenderer):
                         links.append(Link(origin=source_node, end=target_node))
 
         # Create flowchart
-        title = ""
-        if self.config.show_snapshot_version:
-            snapshot_hash = self._format_hash(self.graph.snapshot_version)
-            title = f"Feature Graph (snapshot: {snapshot_hash})"
-        else:
-            title = "Feature Graph"
+        # Note: We avoid complex titles in YAML frontmatter as GitHub's Mermaid
+        # renderer has stricter YAML parsing. Use simple title or comment instead.
+        title = "Feature Graph"
 
         chart = FlowChart(
             title=title,
@@ -62,7 +59,21 @@ class MermaidRenderer(GraphRenderer):
             orientation=self.config.direction,
         )
 
-        return chart.script
+        script = chart.script
+
+        # Add snapshot version as a comment if needed (avoids YAML parsing issues)
+        if self.config.show_snapshot_version:
+            snapshot_hash = self._format_hash(self.graph.snapshot_version)
+            # Insert comment after the flowchart directive
+            lines = script.split("\n")
+            # Find the flowchart line and add comment after it
+            for i, line in enumerate(lines):
+                if line.startswith("flowchart "):
+                    lines.insert(i + 1, f"    %% Snapshot version: {snapshot_hash}")
+                    break
+            script = "\n".join(lines)
+
+        return script
 
     def _node_id_from_key(self, key: FeatureKey) -> str:
         """Generate valid node ID from feature key.
@@ -73,6 +84,8 @@ class MermaidRenderer(GraphRenderer):
         Returns:
             Valid node identifier (lowercase, no special chars)
         """
+        # Use underscore format for node IDs (Mermaid identifiers)
+        # but the display label will use the formatted version with slashes
         return key.to_string().replace("__", "_").lower()
 
     def _build_feature_label_with_fields(
@@ -113,7 +126,9 @@ class MermaidRenderer(GraphRenderer):
                 field_line = self._build_field_line(feature_key, field)
                 lines.append(field_line)
 
-        return "<br/>".join(lines)
+        # Wrap content in a div with left alignment
+        content = "<br/>".join(lines)
+        return f'<div style="text-align:left">{content}</div>'
 
     def _build_field_line(self, feature_key: FeatureKey, field_spec) -> str:
         """Build single line for field display.
