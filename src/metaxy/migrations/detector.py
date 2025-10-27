@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.models.feature import FeatureGraph
+from metaxy.utils.hashing import ensure_hash_compatibility, get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -70,9 +71,19 @@ def detect_migration(
 
     to_snapshot_version = active_graph.snapshot_version
 
-    # Check if versions are the same (no changes)
-    if from_snapshot_version == to_snapshot_version:
-        return None
+    # Check hash truncation compatibility
+    # If truncation is in use, the snapshot versions should be compatible
+    # (either exactly equal or one is a truncated version of the other)
+    truncation_length = get_hash_truncation_length()
+    if truncation_length is not None:
+        # When using truncation, we need to check compatibility rather than exact equality
+        if ensure_hash_compatibility(from_snapshot_version, to_snapshot_version):
+            # Hashes are compatible (same or truncated versions) - no changes
+            return None
+    else:
+        # No truncation - use exact comparison
+        if from_snapshot_version == to_snapshot_version:
+            return None
 
     # Load snapshot data using GraphDiffer
     try:

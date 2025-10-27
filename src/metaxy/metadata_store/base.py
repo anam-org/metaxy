@@ -92,6 +92,7 @@ class MetadataStore(ABC):
         self,
         *,
         hash_algorithm: HashAlgorithm | None = None,
+        hash_truncation_length: int | None = None,
         prefer_native: bool = True,
         fallback_stores: list[MetadataStore] | None = None,
     ):
@@ -101,13 +102,15 @@ class MetadataStore(ABC):
         Args:
             hash_algorithm: Hash algorithm to use for data versioning.
                 Default: None (uses default algorithm for this store type)
+            hash_truncation_length: Length to truncate hashes to (minimum 8).
+                Default: None (uses global setting or no truncation)
             prefer_native: If True, prefer native data version calculations when possible.
                 If False, always use Polars components. Default: True
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
 
         Raises:
-            ValueError: If fallback stores use different hash algorithms
+            ValueError: If fallback stores use different hash algorithms or truncation lengths
         """
         # Initialize state early so properties can check it
         self._is_open = False
@@ -119,6 +122,21 @@ class MetadataStore(ABC):
             hash_algorithm = self._get_default_hash_algorithm()
 
         self.hash_algorithm = hash_algorithm
+
+        # Set hash truncation length - use explicit value or get from global setting
+        if hash_truncation_length is not None:
+            # Validate minimum length
+            if hash_truncation_length < 8:
+                raise ValueError(
+                    f"hash_truncation_length must be at least 8 characters, got {hash_truncation_length}"
+                )
+            self.hash_truncation_length = hash_truncation_length
+        else:
+            # Use global setting if available
+            from metaxy.utils.hashing import get_hash_truncation_length
+
+            self.hash_truncation_length = get_hash_truncation_length()
+
         self.fallback_stores = fallback_stores or []
 
         # Validation happens in open()
@@ -208,6 +226,16 @@ class MetadataStore(ABC):
                     f"Fallback store {i} uses hash_algorithm='{fallback_store.hash_algorithm.value}' "
                     f"but this store uses '{self.hash_algorithm.value}'. "
                     f"All stores in a fallback chain must use the same hash algorithm."
+                )
+
+        # Validate fallback stores use the same hash truncation length
+        for i, fallback_store in enumerate(self.fallback_stores):
+            if fallback_store.hash_truncation_length != self.hash_truncation_length:
+                raise ValueError(
+                    f"Fallback store {i} uses hash_truncation_length="
+                    f"'{fallback_store.hash_truncation_length}' "
+                    f"but this store uses '{self.hash_truncation_length}'. "
+                    f"All stores in a fallback chain must use the same hash truncation length."
                 )
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

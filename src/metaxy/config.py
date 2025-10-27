@@ -13,7 +13,7 @@ import warnings
 from contextvars import ContextVar
 
 from pydantic import Field as PydanticField
-from pydantic import PrivateAttr
+from pydantic import PrivateAttr, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -100,6 +100,7 @@ class StoreConfig(BaseSettings):
 
     model_config = SettingsConfigDict(
         extra="forbid",  # Only type and config fields allowed
+        frozen=True,
     )
 
     # Store class (full import path)
@@ -112,6 +113,10 @@ class StoreConfig(BaseSettings):
 
 class PluginConfig(BaseSettings):
     """Configuration for Metaxy plugins"""
+
+    model_config = SettingsConfigDict(
+        frozen=True,
+    )
 
     enable: bool = PydanticField(
         default=False,
@@ -143,6 +148,7 @@ class ExtConfig(BaseSettings):
 
     model_config = SettingsConfigDict(
         extra="allow",
+        frozen=True,
     )
 
     sqlmodel: SQLModelConfig = PydanticField(default_factory=SQLModelConfig)
@@ -180,6 +186,7 @@ class MetaxyConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="METAXY_",
         env_nested_delimiter="__",
+        frozen=True,  # Make the config immutable
     )
 
     # Store to use
@@ -199,6 +206,10 @@ class MetaxyConfig(BaseSettings):
 
     ext: ExtConfig = PydanticField(default_factory=ExtConfig)
 
+    # Global hash truncation length (None = no truncation, default)
+    # Minimum 8 characters if set
+    hash_truncation_length: int | None = None
+
     @property
     def plugins(self) -> list[str]:
         """Returns all enabled plugin names from ext configuration."""
@@ -208,6 +219,16 @@ class MetaxyConfig(BaseSettings):
             if hasattr(field_value, "_plugin") and field_value.enable:
                 plugins.append(field_value._plugin)
         return plugins
+
+    @field_validator("hash_truncation_length")
+    @classmethod
+    def validate_hash_truncation_length(cls, v: int | None) -> int | None:
+        """Validate hash truncation length is at least 8 if set."""
+        if v is not None and v < 8:
+            raise ValueError(
+                f"hash_truncation_length must be at least 8 characters, got {v}"
+            )
+        return v
 
     @classmethod
     def settings_customise_sources(
@@ -412,6 +433,11 @@ class MetaxyConfig(BaseSettings):
             # Use default
             configured_hash_algorithm = HashAlgorithm.XXHASH64
             config_copy["hash_algorithm"] = configured_hash_algorithm
+
+        # Get hash_truncation_length from global config (unless overridden in store config)
+        if "hash_truncation_length" not in config_copy:
+            # Use global setting from MetaxyConfig if not specified per-store
+            config_copy["hash_truncation_length"] = self.hash_truncation_length
 
         # Build fallback stores recursively
         fallback_stores = []
