@@ -6,7 +6,7 @@ from typing import Any
 from rich.console import Console
 
 from metaxy.graph import utils
-from metaxy.graph_diff import GraphDiff
+from metaxy.graph.diff.diff_models import FieldChange, GraphDiff
 
 
 class DiffFormatter:
@@ -107,56 +107,59 @@ class DiffFormatter:
 
         # Header
         lines.append(
-            f"Graph Diff: {utils.format_hash(diff.snapshot1)}... → {utils.format_hash(diff.snapshot2)}..."
+            f"Graph Diff: {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
         )
         lines.append("")
 
-        # Added features
-        if diff.added_features:
-            lines.append(
-                f"[bold green]Added ({len(diff.added_features)}):[/bold green]"
-            )
-            for feature_key in diff.added_features:
+        # Added nodes
+        if diff.added_nodes:
+            lines.append(f"[bold green]Added ({len(diff.added_nodes)}):[/bold green]")
+            for node in diff.added_nodes:
                 lines.append(
-                    f"  [green]+[/green] {utils.format_feature_key(feature_key)}"
+                    f"  [green]+[/green] {utils.format_feature_key(node.feature_key)}"
                 )
             lines.append("")
 
-        # Removed features
-        if diff.removed_features:
-            lines.append(
-                f"[bold red]Removed ({len(diff.removed_features)}):[/bold red]"
-            )
-            for feature_key in diff.removed_features:
-                lines.append(f"  [red]-[/red] {utils.format_feature_key(feature_key)}")
+        # Removed nodes
+        if diff.removed_nodes:
+            lines.append(f"[bold red]Removed ({len(diff.removed_nodes)}):[/bold red]")
+            for node in diff.removed_nodes:
+                lines.append(
+                    f"  [red]-[/red] {utils.format_feature_key(node.feature_key)}"
+                )
             lines.append("")
 
-        # Changed features
-        if diff.changed_features:
+        # Changed nodes
+        if diff.changed_nodes:
             lines.append(
-                f"[bold yellow]Changed ({len(diff.changed_features)}):[/bold yellow]"
+                f"[bold yellow]Changed ({len(diff.changed_nodes)}):[/bold yellow]"
             )
-            for feature_change in diff.changed_features:
+            for node_change in diff.changed_nodes:
                 # Show feature-level change
                 old_ver = (
-                    utils.format_hash(feature_change.old_version)
-                    if feature_change.old_version
+                    utils.format_hash(node_change.old_version)
+                    if node_change.old_version
                     else "none"
                 )
                 new_ver = (
-                    utils.format_hash(feature_change.new_version)
-                    if feature_change.new_version
+                    utils.format_hash(node_change.new_version)
+                    if node_change.new_version
                     else "none"
                 )
                 lines.append(
-                    f"  [yellow]~[/yellow] {utils.format_feature_key(feature_change.feature_key)} "
+                    f"  [yellow]~[/yellow] {utils.format_feature_key(node_change.feature_key)} "
                     f"({old_ver}... → {new_ver}...)"
                 )
 
                 # Show field changes if any
-                if feature_change.has_field_changes:
+                all_field_changes = (
+                    node_change.added_fields
+                    + node_change.removed_fields
+                    + node_change.changed_fields
+                )
+                if all_field_changes:
                     lines.append("    fields:")
-                    for field_change in feature_change.field_changes:
+                    for field_change in all_field_changes:
                         field_key_str = utils.format_field_key(field_change.field_key)
 
                         if field_change.is_added:
@@ -196,9 +199,7 @@ class DiffFormatter:
 
         # Summary
         total_changes = (
-            len(diff.added_features)
-            + len(diff.removed_features)
-            + len(diff.changed_features)
+            len(diff.added_nodes) + len(diff.removed_nodes) + len(diff.changed_nodes)
         )
         lines.append(f"[dim]Total changes: {total_changes}[/dim]")
 
@@ -208,7 +209,7 @@ class DiffFormatter:
         """Format message when there are no changes."""
         return (
             f"[green]No changes between snapshots[/green]\n"
-            f"  {utils.format_hash(diff.snapshot1)}... → {utils.format_hash(diff.snapshot2)}..."
+            f"  {utils.format_hash(diff.from_snapshot_version)}... → {utils.format_hash(diff.to_snapshot_version)}..."
         )
 
     def print(self, diff: GraphDiff, verbose: bool = False) -> None:
@@ -231,19 +232,20 @@ class DiffFormatter:
             JSON string representation of the diff
         """
         data = {
-            "snapshot1": diff.snapshot1,
-            "snapshot2": diff.snapshot2,
-            "added_features": [
-                utils.format_feature_key(fk) for fk in diff.added_features
+            "from_snapshot_version": diff.from_snapshot_version,
+            "to_snapshot_version": diff.to_snapshot_version,
+            "added_nodes": [
+                utils.format_feature_key(node.feature_key) for node in diff.added_nodes
             ],
-            "removed_features": [
-                utils.format_feature_key(fk) for fk in diff.removed_features
+            "removed_nodes": [
+                utils.format_feature_key(node.feature_key)
+                for node in diff.removed_nodes
             ],
-            "changed_features": [
+            "changed_nodes": [
                 {
-                    "feature_key": utils.format_feature_key(fc.feature_key),
-                    "old_version": fc.old_version,
-                    "new_version": fc.new_version,
+                    "feature_key": utils.format_feature_key(nc.feature_key),
+                    "old_version": nc.old_version,
+                    "new_version": nc.new_version,
                     "field_changes": [
                         {
                             "field_key": utils.format_field_key(field.field_key),
@@ -253,10 +255,12 @@ class DiffFormatter:
                             "is_removed": field.is_removed,
                             "is_changed": field.is_changed,
                         }
-                        for field in fc.field_changes
+                        for field in (
+                            nc.added_fields + nc.removed_fields + nc.changed_fields
+                        )
                     ],
                 }
-                for fc in diff.changed_features
+                for nc in diff.changed_nodes
             ],
         }
         return json.dumps(data, indent=2)
@@ -273,15 +277,17 @@ class DiffFormatter:
         import yaml
 
         data = {
-            "snapshot1": diff.snapshot1,
-            "snapshot2": diff.snapshot2,
-            "added_features": [fk.to_string() for fk in diff.added_features],
-            "removed_features": [fk.to_string() for fk in diff.removed_features],
-            "changed_features": [
+            "from_snapshot_version": diff.from_snapshot_version,
+            "to_snapshot_version": diff.to_snapshot_version,
+            "added_nodes": [node.feature_key.to_string() for node in diff.added_nodes],
+            "removed_nodes": [
+                node.feature_key.to_string() for node in diff.removed_nodes
+            ],
+            "changed_nodes": [
                 {
-                    "feature_key": fc.feature_key.to_string(),
-                    "old_version": fc.old_version,
-                    "new_version": fc.new_version,
+                    "feature_key": nc.feature_key.to_string(),
+                    "old_version": nc.old_version,
+                    "new_version": nc.new_version,
                     "field_changes": [
                         {
                             "field_key": field.field_key.to_string(),
@@ -291,10 +297,12 @@ class DiffFormatter:
                             "is_removed": field.is_removed,
                             "is_changed": field.is_changed,
                         }
-                        for field in fc.field_changes
+                        for field in (
+                            nc.added_fields + nc.removed_fields + nc.changed_fields
+                        )
                     ],
                 }
-                for fc in diff.changed_features
+                for nc in diff.changed_nodes
             ],
         }
         # Use width=999999 to prevent line wrapping for long hashes
@@ -328,12 +336,12 @@ class DiffFormatter:
 
         # Collect all features
         all_features = set()
-        for fk in diff.added_features:
-            all_features.add(fk.to_string())
-        for fk in diff.removed_features:
-            all_features.add(fk.to_string())
-        for fc in diff.changed_features:
-            all_features.add(fc.feature_key.to_string())
+        for node in diff.added_nodes:
+            all_features.add(node.feature_key.to_string())
+        for node in diff.removed_nodes:
+            all_features.add(node.feature_key.to_string())
+        for nc in diff.changed_nodes:
+            all_features.add(nc.feature_key.to_string())
 
         if not all_features:
             lines.append("    Empty[No changes]")
@@ -345,28 +353,29 @@ class DiffFormatter:
             return s.replace("/", "_").replace("-", "_")
 
         # Define nodes with styling (border only, no fill)
-        for fk in diff.added_features:
-            node_id = sanitize_id(fk.to_string())
-            feature_str = fk.to_string()
+        for node in diff.added_nodes:
+            node_id = sanitize_id(node.feature_key.to_string())
+            feature_str = node.feature_key.to_string()
             lines.append(f'    {node_id}["{feature_str}"]')
             lines.append(f"    style {node_id} stroke:#00FF00,stroke-width:2px")
 
-        for fk in diff.removed_features:
-            node_id = sanitize_id(fk.to_string())
-            feature_str = fk.to_string()
+        for node in diff.removed_nodes:
+            node_id = sanitize_id(node.feature_key.to_string())
+            feature_str = node.feature_key.to_string()
             lines.append(f'    {node_id}["{feature_str}"]')
             lines.append(f"    style {node_id} stroke:#FF0000,stroke-width:2px")
 
-        for fc in diff.changed_features:
-            node_id = sanitize_id(fc.feature_key.to_string())
-            feature_str = fc.feature_key.to_string()
+        for nc in diff.changed_nodes:
+            node_id = sanitize_id(nc.feature_key.to_string())
+            feature_str = nc.feature_key.to_string()
 
-            if verbose and fc.has_field_changes:
+            all_field_changes = nc.added_fields + nc.removed_fields + nc.changed_fields
+            if verbose and all_field_changes:
                 # Show field changes in verbose mode
                 field_changes_str = "<br/>".join(
                     [
                         f"{'+ ' if field.is_added else '- ' if field.is_removed else '~ '}{field.field_key.to_string()}"
-                        for field in fc.field_changes
+                        for field in all_field_changes
                     ]
                 )
                 lines.append(f'    {node_id}["{feature_str}<br/>{field_changes_str}"]')
@@ -397,8 +406,6 @@ class DiffFormatter:
         Returns:
             Formatted string with Rich markup
         """
-        from metaxy.graph_diff import FieldChange
-
         nodes = merged_data["nodes"]
 
         if not nodes:
@@ -540,8 +547,6 @@ class DiffFormatter:
         Returns:
             JSON string representation of merged graph
         """
-        from metaxy.graph_diff import FieldChange
-
         # Convert to JSON-serializable format
         nodes_json = {}
         for feature_key, node_data in merged_data["nodes"].items():
@@ -583,8 +588,6 @@ class DiffFormatter:
             YAML string representation of merged graph
         """
         import yaml
-
-        from metaxy.graph_diff import FieldChange
 
         # Convert to YAML-serializable format
         nodes_yaml = {}
@@ -640,8 +643,6 @@ class DiffFormatter:
         Returns:
             Mermaid flowchart markup
         """
-        from metaxy.graph_diff import FieldChange
-
         nodes = merged_data["nodes"]
         edges = merged_data["edges"]
 

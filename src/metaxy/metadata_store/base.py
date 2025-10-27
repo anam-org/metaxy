@@ -1,11 +1,11 @@
 """Abstract base class for metadata storage backends."""
 
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
-from contextlib import contextmanager
-from contextvars import ContextVar
-from datetime import datetime
+from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
 
 import narwhals as nw
@@ -25,6 +25,13 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.system_tables import (
+    FEATURE_VERSIONS_KEY,
+    FEATURE_VERSIONS_SCHEMA,
+    SYSTEM_NAMESPACE,
+    _suppress_feature_version_warning,
+    allow_feature_version_override,
+)
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
@@ -34,55 +41,6 @@ if TYPE_CHECKING:
     pass
 
 # Removed TRef - all stores now use Narwhals LazyFrames universally
-
-
-# System namespace constant (use prefix without __ to avoid conflicts with separator)
-SYSTEM_NAMESPACE = "metaxy-system"
-
-# Metaxy-managed column names (to distinguish from user-defined columns)
-METAXY_FEATURE_VERSION_COL = "metaxy_feature_version"
-METAXY_SNAPSHOT_ID_COL = "metaxy_snapshot_version"
-METAXY_DATA_VERSION_COL = "metaxy_data_version"
-
-# System table keys
-FEATURE_VERSIONS_KEY = FeatureKey([SYSTEM_NAMESPACE, "feature_versions"])
-MIGRATION_HISTORY_KEY = FeatureKey([SYSTEM_NAMESPACE, "migrations"])
-
-# Common Polars schemas for system tables
-# TODO: Migrate to use METAXY_*_COL constants instead of plain names
-FEATURE_VERSIONS_SCHEMA = {
-    "feature_key": pl.String,
-    "feature_version": pl.String,  # TODO: Use METAXY_FEATURE_VERSION_COL
-    "recorded_at": pl.Datetime("us"),
-    "feature_spec": pl.String,
-    "feature_class_path": pl.String,
-    "snapshot_version": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
-}
-
-# Context variable for suppressing feature_version warning in migrations
-_suppress_feature_version_warning: ContextVar[bool] = ContextVar(
-    "_suppress_feature_version_warning", default=False
-)
-
-
-@contextmanager
-def allow_feature_version_override() -> Iterator[None]:
-    """
-    Context manager to suppress warnings when writing metadata with pre-existing feature_version.
-
-    This should only be used in migration code where writing historical feature versions
-    is intentional and necessary.
-
-    Example:
-        >>> with allow_feature_version_override():
-        ...     # DataFrame already has feature_version column from migration
-        ...     store.write_metadata(MyFeature, df_with_feature_version)
-    """
-    token = _suppress_feature_version_warning.set(True)
-    try:
-        yield
-    finally:
-        _suppress_feature_version_warning.reset(token)
 
 
 def _is_using_polars_components(
@@ -135,7 +93,7 @@ class MetadataStore(ABC):
         *,
         hash_algorithm: HashAlgorithm | None = None,
         prefer_native: bool = True,
-        fallback_stores: list["MetadataStore"] | None = None,
+        fallback_stores: list[MetadataStore] | None = None,
     ):
         """
         Initialize metadata store.
@@ -592,7 +550,7 @@ class MetadataStore(ABC):
                 {
                     "feature_key": feature_key_str,
                     "feature_version": feature_data["feature_version"],
-                    "recorded_at": datetime.now(),
+                    "recorded_at": datetime.now(timezone.utc),
                     "feature_spec": feature_spec_json,
                     "feature_class_path": feature_data["feature_class_path"],
                     "snapshot_version": snapshot_version,
@@ -905,7 +863,7 @@ class MetadataStore(ABC):
 
     def copy_metadata(
         self,
-        from_store: "MetadataStore",
+        from_store: MetadataStore,
         features: list[FeatureKey | type[Feature]] | None = None,
         *,
         from_snapshot: str | None = None,
@@ -1006,7 +964,7 @@ class MetadataStore(ABC):
 
     def _copy_metadata_impl(
         self,
-        from_store: "MetadataStore",
+        from_store: MetadataStore,
         features: list[FeatureKey | type[Feature]] | None,
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,

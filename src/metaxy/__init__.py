@@ -10,14 +10,16 @@ from metaxy.metadata_store import (
 )
 from metaxy.migrations import (
     BaseOperation,
+    CustomMigration,
     DataVersionReconciliation,
+    DiffMigration,
+    FullGraphMigration,
     MetadataBackfill,
     Migration,
+    MigrationExecutor,
     MigrationResult,
-    MigrationStatus,
-    apply_migration,
-    detect_feature_changes,
-    generate_migration,
+    SystemTableStorage,
+    detect_migration,
 )
 from metaxy.models.feature import Feature, FeatureGraph, get_feature_by_key, graph
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
@@ -44,14 +46,16 @@ __all__ = [
     "load_module_entrypoint",
     "load_package_entrypoints",
     "Migration",
+    "DiffMigration",
+    "FullGraphMigration",
+    "CustomMigration",
     "MigrationResult",
-    "MigrationStatus",
+    "MigrationExecutor",
+    "SystemTableStorage",
     "BaseOperation",
     "DataVersionReconciliation",
     "MetadataBackfill",
-    "detect_feature_changes",
-    "generate_migration",
-    "apply_migration",
+    "detect_migration",
     "MetaxyConfig",
     "StoreConfig",
 ]

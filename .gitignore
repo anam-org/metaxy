@@ -12,3 +12,6 @@ wheels/
 
 # clickhouse
 preprocessed_configs
+
+# Metaxy
+.metaxy

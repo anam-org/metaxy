@@ -1,9 +1,15 @@
 """Migration system for metadata version updates."""
 
-from metaxy.migrations.detector import detect_feature_changes
-from metaxy.migrations.executor import MigrationStatus, apply_migration
-from metaxy.migrations.generator import generate_migration
-from metaxy.migrations.models import Migration, MigrationResult
+from metaxy.metadata_store.system_tables import SystemTableStorage
+from metaxy.migrations.detector import detect_migration
+from metaxy.migrations.executor import MigrationExecutor
+from metaxy.migrations.models import (
+    CustomMigration,
+    DiffMigration,
+    FullGraphMigration,
+    Migration,
+    MigrationResult,
+)
 from metaxy.migrations.ops import (
     BaseOperation,
     DataVersionReconciliation,
@@ -11,13 +17,18 @@ from metaxy.migrations.ops import (
 )
 
 __all__ = [
+    # Core migration types
     "Migration",
+    "DiffMigration",
+    "FullGraphMigration",
+    "CustomMigration",
     "MigrationResult",
-    "MigrationStatus",
+    # Operations (for custom migrations)
     "BaseOperation",
     "DataVersionReconciliation",
     "MetadataBackfill",
-    "detect_feature_changes",
-    "generate_migration",
-    "apply_migration",
+    # Migration workflow
+    "detect_migration",
+    "MigrationExecutor",
+    "SystemTableStorage",
 ]

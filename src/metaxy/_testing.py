@@ -211,7 +211,109 @@ class HashAlgorithmCases:
         return HashAlgorithm.MD5
 
 
-class TempMetaxyProject:
+class MetaxyProject:
+    """Base class for Metaxy projects.
+
+    Provides common functionality for running CLI commands with proper
+    environment setup and accessing project configuration.
+    """
+
+    def __init__(self, project_dir: Path):
+        """Initialize a Metaxy project.
+
+        Args:
+            project_dir: Path to project directory containing metaxy.toml
+        """
+        self.project_dir = Path(project_dir)
+
+    def run_cli(
+        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
+    ):
+        """Run CLI command with proper environment setup.
+
+        Args:
+            *args: CLI command arguments (e.g., "graph", "push")
+            check: If True (default), raises CalledProcessError on non-zero exit
+            env: Optional dict of additional environment variables
+            **kwargs: Additional arguments to pass to subprocess.run()
+
+        Returns:
+            subprocess.CompletedProcess: Result of the CLI command
+
+        Raises:
+            subprocess.CalledProcessError: If check=True and command fails
+
+        Example:
+            >>> result = project.run_cli("graph", "history", "--limit", "5")
+            >>> print(result.stdout)
+        """
+        import os
+        import subprocess
+
+        # Start with current environment
+        cmd_env = os.environ.copy()
+
+        # Add project directory to PYTHONPATH so modules can be imported
+        pythonpath = str(self.project_dir)
+        if "PYTHONPATH" in cmd_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
+        cmd_env["PYTHONPATH"] = pythonpath
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run CLI command
+        result = subprocess.run(
+            [sys.executable, "-m", "metaxy.cli.app", *args],
+            cwd=str(self.project_dir),
+            capture_output=True,
+            text=True,
+            env=cmd_env,
+            check=check,
+            **kwargs,
+        )
+
+        return result
+
+    @cached_property
+    def config(self) -> MetaxyConfig:
+        """Load configuration from project's metaxy.toml."""
+        return MetaxyConfig.load(self.project_dir / "metaxy.toml")
+
+    @cached_property
+    def stores(self) -> dict[str, MetadataStore]:
+        """Get all configured stores from project config."""
+        return {k: self.config.get_store(k) for k in self.config.stores}
+
+
+class ExternalMetaxyProject(MetaxyProject):
+    """Helper for working with existing Metaxy projects.
+
+    Use this class to interact with pre-existing projects like examples,
+    running CLI commands and accessing their configuration.
+
+    Example:
+        >>> project = ExternalMetaxyProject(Path("examples/src/examples/migration"))
+        >>> result = project.run_cli("graph", "push", env={"STAGE": "1"})
+        >>> assert result.returncode == 0
+    """
+
+    def __init__(self, project_dir: Path):
+        """Initialize an external Metaxy project.
+
+        Args:
+            project_dir: Path to existing project directory containing metaxy.toml
+        """
+        super().__init__(project_dir)
+        if not (self.project_dir / "metaxy.toml").exists():
+            raise ValueError(
+                f"No metaxy.toml found in {self.project_dir}. "
+                "ExternalMetaxyProject requires an existing project configuration."
+            )
+
+
+class TempMetaxyProject(MetaxyProject):
     """Helper for creating temporary Metaxy projects.
 
     Provides a context manager API for dynamically creating feature modules
@@ -241,7 +343,7 @@ class TempMetaxyProject:
         Args:
             tmp_path: Temporary directory path (usually from pytest tmp_path fixture)
         """
-        self.project_dir = tmp_path
+        super().__init__(tmp_path)
         self.project_dir.mkdir(exist_ok=True)
         self._feature_modules: list[str] = []
         self._write_config()
@@ -430,11 +532,3 @@ database = "{staging_db_path}"
                 sys.path.remove(project_dir_str)
 
         return graph
-
-    @cached_property
-    def config(self) -> MetaxyConfig:
-        return MetaxyConfig.load(self.project_dir / "metaxy.toml")
-
-    @cached_property
-    def stores(self) -> dict[str, MetadataStore]:
-        return {k: self.config.get_store(k) for k in self.config.stores}

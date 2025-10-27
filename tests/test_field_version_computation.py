@@ -2,7 +2,7 @@
 
 import pytest
 
-from metaxy.graph_diff import GraphDiffer
+from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureSpec

@@ -1,120 +1,153 @@
 """Feature change detection for automatic migration generation."""
 
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-import narwhals as nw
-
-from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
-from metaxy.metadata_store.exceptions import FeatureNotFoundError
-from metaxy.migrations.ops import DataVersionReconciliation
-from metaxy.models.types import FEATURE_KEY_SEPARATOR
+from metaxy.graph.diff.differ import GraphDiffer
+from metaxy.models.feature import FeatureGraph
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
+    from metaxy.migrations.models import DiffMigration
 
 
-def detect_feature_changes(
+def detect_migration(
     store: "MetadataStore",
-    from_snapshot_version: str,
-    to_snapshot_version: str,
-) -> list[DataVersionReconciliation]:
-    """Detect feature changes by comparing snapshot_versions directly.
+    from_snapshot_version: str | None = None,
+    ops: list[dict[str, Any]] | None = None,
+    migrations_dir: Path | None = None,
+    name: str | None = None,
+) -> "DiffMigration | None":
+    """Detect migration needed between snapshots and write YAML file.
 
-    Pure comparison function that compares feature versions between two snapshots
-    by querying their snapshot metadata from the store.
-
-    This does NOT reconstruct graphs, avoiding issues with:
-    - Importing stale cached code when files have changed
-    - Need for custom methods during detection (only needed for execution)
-
-    For actual computation changes (new models, different algorithms), users must
-    re-run their pipeline - migrations cannot recreate lost computation.
+    Compares the latest snapshot in the store (or specified from_snapshot_version)
+    with the current active graph to detect changes and generate a migration YAML file.
 
     Args:
         store: Metadata store containing snapshot metadata
-        from_snapshot_version: Source snapshot version (old state)
-        to_snapshot_version: Target snapshot version (new state)
+        from_snapshot_version: Source snapshot version (defaults to latest in store)
+        ops: List of operation dicts with "type" field (defaults to [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}])
+        migrations_dir: Directory to write migration YAML (defaults to .metaxy/migrations/)
+        name: Migration name (creates {timestamp}_{name} ID and filename)
 
     Returns:
-        List of DataVersionReconciliation operations for changed features
+        DiffMigration if changes detected and written, None otherwise
 
     Example:
-        >>> # Compare latest snapshot in store vs current snapshot
-        >>> operations = detect_feature_changes(store, old_snapshot_version, new_snapshot_version)
-        >>> for op in operations:
-        ...     print(f"Changed: {op.feature_key} - {op.reason}")
+        >>> # Compare latest snapshot in store vs current graph
+        >>> with store:
+        ...     migration = detect_migration(store)
+        ...     if migration:
+        ...         print(f"Migration written to {migration.yaml_path}")
+
+        >>> # Use custom operation
+        >>> migration = detect_migration(store, ops=[{"type": "myproject.ops.CustomOp"}])
+
+        >>> # Use custom name
+        >>> migration = detect_migration(store, name="example_migration")
     """
-    operations = []
+    from metaxy.migrations.models import DiffMigration
 
-    # Query feature versions for both snapshots
+    differ = GraphDiffer()
+
+    # Get from_snapshot_version (use latest if not specified)
+    if from_snapshot_version is None:
+        snapshots = store.read_graph_snapshots()
+        if snapshots.height == 0:
+            # No snapshots in store - nothing to migrate from
+            return None
+        from_snapshot_version = snapshots["snapshot_version"][0]
+
+    # At this point, from_snapshot_version is guaranteed to be a str
+    assert from_snapshot_version is not None  # Type narrowing for type checker
+
+    # Get to_snapshot_version from current active graph
+    active_graph = FeatureGraph.get_active()
+    if len(active_graph.features_by_key) == 0:
+        # No features in active graph - nothing to migrate to
+        return None
+
+    to_snapshot_version = active_graph.snapshot_version
+
+    # Check if versions are the same (no changes)
+    if from_snapshot_version == to_snapshot_version:
+        return None
+
+    # Load snapshot data using GraphDiffer
     try:
-        from_versions = store.read_metadata(
-            FEATURE_VERSIONS_KEY,
-            current_only=False,
-            allow_fallback=False,
-            filters=[nw.col("snapshot_version") == from_snapshot_version],
+        from_snapshot_data = differ.load_snapshot_data(store, from_snapshot_version)
+    except ValueError:
+        # Snapshot not found - nothing to migrate from
+        return None
+
+    # Build snapshot data for to_snapshot (current graph)
+    to_snapshot_data = active_graph.to_snapshot()
+
+    # Compute GraphDiff using GraphDiffer
+    graph_diff = differ.diff(
+        from_snapshot_data,
+        to_snapshot_data,
+        from_snapshot_version,
+        to_snapshot_version,
+    )
+
+    # Check if there are any changes
+    if not graph_diff.has_changes:
+        return None
+
+    # Generate migration ID (timestamp first for sorting)
+    timestamp = datetime.now(timezone.utc)
+    timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S")
+    if name is not None:
+        migration_id = f"{timestamp_str}_{name}"
+    else:
+        migration_id = f"{timestamp_str}"
+
+    # ops is required - caller must specify
+    if ops is None:
+        raise ValueError(
+            "ops parameter is required - must explicitly specify migration operations. "
+            "Example: ops=[{'type': 'metaxy.migrations.ops.DataVersionReconciliation'}]"
         )
-    except FeatureNotFoundError:
-        # No from_snapshot - nothing to migrate from
-        return []
 
-    try:
-        to_versions = store.read_metadata(
-            FEATURE_VERSIONS_KEY,
-            current_only=False,
-            allow_fallback=False,
-            filters=[nw.col("snapshot_version") == to_snapshot_version],
-        )
-    except FeatureNotFoundError:
-        # No to_snapshot - nothing to migrate to
-        return []
+    # Default migrations directory
+    if migrations_dir is None:
+        migrations_dir = Path(".metaxy/migrations")
 
-    # Collect to iterate (we need to build dictionaries)
-    from_versions_eager = nw.from_native(from_versions.collect())
-    to_versions_eager = nw.from_native(to_versions.collect())
+    migrations_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build lookup dictionaries: feature_key -> feature_version
-    from_versions_dict = {
-        row["feature_key"]: row["feature_version"]
-        for row in from_versions_eager.iter_rows(named=True)
+    # Find parent migration (latest migration in chain)
+    from metaxy.migrations.loader import find_latest_migration
+
+    parent = find_latest_migration(migrations_dir)
+    if parent is None:
+        parent = "initial"
+
+    # Create minimal DiffMigration - affected_features and description are computed on-demand
+    migration = DiffMigration(
+        migration_id=migration_id,
+        created_at=timestamp,
+        parent=parent,
+        from_snapshot_version=from_snapshot_version,
+        to_snapshot_version=to_snapshot_version,
+        ops=ops,
+    )
+
+    # Write migration YAML file
+    import yaml
+
+    yaml_path = migrations_dir / f"{migration_id}.yaml"
+    migration_yaml = {
+        "id": migration.migration_id,
+        "created_at": migration.created_at.isoformat(),
+        "parent": migration.parent,
+        "from_snapshot_version": migration.from_snapshot_version,
+        "to_snapshot_version": migration.to_snapshot_version,
+        "ops": migration.ops,
     }
-    to_versions_dict = {
-        row["feature_key"]: row["feature_version"]
-        for row in to_versions_eager.iter_rows(named=True)
-    }
 
-    # Check each feature in to_versions (target state)
-    for feature_key_str in to_versions_dict.keys():
-        # Get versions from both snapshots
-        from_version = from_versions_dict.get(feature_key_str)
-        to_version = to_versions_dict.get(feature_key_str)
+    with open(yaml_path, "w") as f:
+        yaml.safe_dump(migration_yaml, f, sort_keys=False, default_flow_style=False)
 
-        if from_version is None:
-            # Feature doesn't exist in from_snapshot - it's new, no migration needed
-            continue
-
-        if to_version is None:
-            # Feature exists in from_snapshot but not in to_snapshot - it was removed
-            # No migration needed (we don't migrate deleted features)
-            continue
-
-        if from_version == to_version:
-            # Versions match - no migration needed
-            continue
-
-        # Feature changed! Create operation with auto-generated ID
-        # Parse feature_key from string (e.g., "video__files" -> ["video", "files"])
-        from metaxy.models.types import FeatureKey
-
-        feature_key = FeatureKey(feature_key_str.split(FEATURE_KEY_SEPARATOR))
-        op_id = f"reconcile_{feature_key_str}"
-
-        operations.append(
-            DataVersionReconciliation(
-                id=op_id,
-                feature_key=list(feature_key),
-                reason="TODO: Describe what changed and why",
-            )
-        )
-
-    return operations
+    return migration

@@ -120,7 +120,7 @@ def render(
         GraphData,
         GraphvizRenderer,
     )
-    from metaxy.graph_diff import GraphDiffer, SnapshotResolver
+    from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
     from metaxy.models.feature import FeatureGraph
 
     # Validate format

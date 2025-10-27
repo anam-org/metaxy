@@ -61,6 +61,7 @@ You have zero tolerance for meaningless tests. For every test:
   - Hacks, shortcuts that avoid refactoring and better abstraction
   - Unnecessary complexity or duplication
   - lack of refactoring
+- Forbid code that is written for the sake of backward compatibility: we do not have any users yet, the project is extremely early in its development lifecycle, and **backwards compatibility is not a concern at all**.
 
 ### 4. Intelligent Test Execution
 

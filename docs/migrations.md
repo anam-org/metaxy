@@ -42,7 +42,7 @@ Tracks applied migrations:
 
 ```python
 {
-    "migration_id": "migration_20250113_103000",
+    "migration_id": "20250113_103000",
     "applied_at": datetime(2025, 1, 13, 10, 30, 0),
     "status": "completed",  # or "partial", "failed"
     "operations_count": 2,
@@ -93,7 +93,7 @@ python -m myproject.compute_features
 
 # 4. Generate migration if code changed
 metaxy migrations generate
-# If features changed, creates: migrations/migration_20250113_103000.yaml
+# If features changed, creates: migrations/20250113_103000.yaml
 
 # 5. Apply migrations automatically (discovers all pending migrations)
 metaxy migrations apply
@@ -207,7 +207,7 @@ $ metaxy migrations generate
 #   ✓ speech/analysis
 #
 # Generated 3 total operations (1 root + 2 downstream)
-# Created: migrations/migration_20250113_103000.yaml
+# Created: migrations/20250113_103000.yaml
 ```
 
 The generated migration file contains explicit operations for ALL affected features.
@@ -215,7 +215,7 @@ The generated migration file contains explicit operations for ALL affected featu
 ### Step 4: Review Migration YAML
 
 ```bash
-$ cat migrations/migration_20250113_103000.yaml
+$ cat migrations/20250113_103000.yaml
 ```
 
 See the [Migration File Format](#migration-file-format-yaml) section below for the complete structure.
@@ -229,7 +229,7 @@ $ metaxy migrations apply  # Auto-discovers migration files
 
 # Output:
 # Discovered 1 migration file(s)
-# Applying migration_20250113_103000...
+# Applying 20250113_103000...
 #   ✓ reconcile_stt_transcription: 1,234 rows affected
 #   ✓ reconcile_speaker_diarization: 856 rows affected
 #   ✓ reconcile_speech_analysis: 2,100 rows affected
@@ -360,8 +360,8 @@ Migrations can be safely re-run multiple times.
 
 ```yaml
 version: 1  # Migration schema version
-id: "migration_20250113_103000"  # Unique ID (timestamp-based)
-parent_migration_id: "migration_20250110_120000"  # Previous migration (if any)
+id: "20250113_103000"  # Unique ID (timestamp-based)
+parent: "20250110_120000"  # Previous migration (if any)
 description: "Auto-generated migration for 2 changed features + 3 downstream"
 created_at: "2025-01-13T10:30:00Z"
 

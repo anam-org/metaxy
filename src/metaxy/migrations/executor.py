@@ -1,676 +1,208 @@
-"""Migration execution logic with 3-table progress tracking."""
+"""Migration executor using event-based tracking and GraphWalker.
 
-import time
-from datetime import datetime
+This is the new executor that replaces the old 3-table system with a single
+event-based system stored in system tables via SystemTableStorage.
+"""
+
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-import narwhals as nw
-import polars as pl
-
-from metaxy.metadata_store.base import SYSTEM_NAMESPACE
-from metaxy.metadata_store.exceptions import FeatureNotFoundError
-from metaxy.migrations.models import Migration, MigrationResult
-from metaxy.migrations.ops import BaseOperation
-from metaxy.models.types import FeatureKey
+from metaxy.migrations.ops import DataVersionReconciliation
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import FeatureGraph
-
-# System table keys for migration tracking
-MIGRATIONS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migrations"])
-MIGRATION_OPS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migration_ops"])
-MIGRATION_OP_STEPS_KEY = FeatureKey([SYSTEM_NAMESPACE, "migration_op_steps"])
-
-# Schema constants for migration tables
-MIGRATIONS_SCHEMA = {
-    "migration_id": pl.String,
-    "created_at": pl.Datetime("us"),
-    "description": pl.String,
-    "operation_ids": pl.String,
-    "migration_yaml": pl.String,
-}
-
-MIGRATION_OPS_SCHEMA = {
-    "migration_id": pl.String,
-    "operation_id": pl.String,
-    "operation_type": pl.String,
-    "feature_key": pl.String,
-    "expected_steps": pl.String,
-    "operation_config_hash": pl.String,
-    "created_at": pl.Datetime("us"),
-}
-
-MIGRATION_OP_STEPS_SCHEMA = {
-    "migration_id": pl.String,
-    "operation_id": pl.String,
-    "feature_key": pl.String,
-    "step_type": pl.String,
-    "completed_at": pl.Datetime("us"),
-    "rows_affected": pl.Int64,
-    "error": pl.String,
-}
+    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.migrations.models import (
+        DiffMigration,
+        FullGraphMigration,
+        Migration,
+        MigrationResult,
+    )
 
 
-class MigrationStatus:
-    """Query and check migration completion status.
+class MigrationExecutor:
+    """Executes migrations with event-based progress tracking.
 
-    Provides methods to check completion at migration, operation, and step levels.
-    All status is derived from immutable system tables, not stored.
+    Uses GraphWalker for topological traversal and SystemTableStorage for
+    event logging. Supports resumability after failures.
     """
 
-    def __init__(self, store: "MetadataStore"):
-        self.store = store
-
-    def is_step_complete(
-        self, migration_id: str, operation_id: str, feature_key: str
-    ) -> bool:
-        """Check if specific step completed successfully.
+    def __init__(self, storage: "SystemTableStorage"):
+        """Initialize executor.
 
         Args:
-            migration_id: Migration ID
-            operation_id: Operation ID
-            feature_key: Feature key (string)
-
-        Returns:
-            True if step completed without errors
+            storage: System table storage for event logging
         """
-        try:
-            steps = self.store.read_metadata(
-                MIGRATION_OP_STEPS_KEY,
-                filters=[
-                    (nw.col("migration_id") == migration_id)
-                    & (nw.col("operation_id") == operation_id)
-                    & (nw.col("feature_key") == feature_key)
-                    & (nw.col("error").is_null())
-                ],
-                current_only=False,
-            )
-            # Check if any rows exist - only collect head(1)
-            steps_sample = nw.from_native(steps.head(1).collect())
-            return steps_sample.shape[0] > 0
-        except FeatureNotFoundError:
-            return False
+        self.storage = storage
 
-    def is_operation_complete(self, migration_id: str, operation_id: str) -> bool:
-        """Check if operation is complete.
+    def execute(
+        self, migration: "Migration", store: "MetadataStore", *, dry_run: bool = False
+    ) -> "MigrationResult":
+        """Execute migration with event logging and resumability.
 
-        An operation is complete when all expected_steps have successful completion records.
+        Process:
+        1. Log migration_started event
+        2. Get features to process from migration
+        3. Use GraphWalker to get topological order
+        4. For each feature:
+           - Check if already completed (resume support)
+           - Log feature_started
+           - Execute migration logic
+           - Log feature_completed/failed
+        5. Log migration_completed/failed
 
         Args:
-            migration_id: Migration ID
-            operation_id: Operation ID
+            migration: Migration to execute
+            store: Metadata store to operate on
+            dry_run: If True, only validate without executing
 
         Returns:
-            True if all steps completed successfully
+            MigrationResult with execution details
+
+        Raises:
+            Exception: If migration fails and cannot continue
         """
-        # Get operation definition
-        try:
-            op_def = self.store.read_metadata(
-                MIGRATION_OPS_KEY,
-                filters=[
-                    (nw.col("migration_id") == migration_id)
-                    & (nw.col("operation_id") == operation_id)
-                ],
-                current_only=False,
-            )
-        except FeatureNotFoundError:
-            return False
+        # Import here to avoid circular dependency
+        from metaxy.migrations.models import DiffMigration, FullGraphMigration
 
-        # Collect only head(1) to check existence and get expected_steps
-        op_def_eager = nw.from_native(op_def.head(1).collect())
-        if op_def_eager.shape[0] == 0:
-            return False
-
-        expected_steps_raw = op_def_eager["expected_steps"][0]
-
-        # Convert to Python list (handles JSON string, Polars Series, or native list)
-        if isinstance(expected_steps_raw, str):
-            import json
-
-            expected_steps = json.loads(expected_steps_raw)
-        elif hasattr(expected_steps_raw, "to_list"):
-            # Polars Series (from SQLite/DuckDB deserialization)
-            expected_steps = expected_steps_raw.to_list()
+        # Delegate to migration's execute method (which uses this executor internally)
+        if isinstance(migration, DiffMigration):
+            return self._execute_diff_migration(migration, store, dry_run=dry_run)
+        elif isinstance(migration, FullGraphMigration):
+            return self._execute_full_graph_migration(migration, store, dry_run=dry_run)
         else:
-            # Already a list
-            expected_steps = expected_steps_raw
+            # CustomMigration - call its execute method directly
+            return migration.execute(store, dry_run=dry_run)
 
-        # Check if all steps completed
-        for feature_key in expected_steps:
-            if not self.is_step_complete(migration_id, operation_id, feature_key):
-                return False
-
-        return True
-
-    def is_migration_complete(self, migration_id: str) -> bool:
-        """Check if migration is complete.
-
-        A migration is complete when all operations are complete.
+    def _execute_diff_migration(
+        self, migration: "DiffMigration", store: "MetadataStore", dry_run: bool
+    ) -> "MigrationResult":
+        """Execute DiffMigration using GraphWalker.
 
         Args:
-            migration_id: Migration ID
+            migration: DiffMigration to execute
+            store: Metadata store
+            dry_run: If True, only validate
 
         Returns:
-            True if all operations completed successfully
+            MigrationResult
         """
-        # Get migration definition
-        try:
-            migration = self.store.read_metadata(
-                MIGRATIONS_KEY,
-                filters=[nw.col("migration_id") == migration_id],
-                current_only=False,
-            )
-        except FeatureNotFoundError:
-            return False
+        from metaxy.migrations.models import MigrationResult
 
-        # Collect only head(1) to check existence and get operation_ids
-        migration_eager = nw.from_native(migration.head(1).collect())
-        if migration_eager.shape[0] == 0:
-            return False
+        start_time = datetime.now(timezone.utc)
 
-        expected_op_ids_raw = migration_eager["operation_ids"][0]
+        # Note: GraphDiff is not needed for execution
+        # It can be computed on-demand via migration.compute_graph_diff(store) if needed
 
-        # Convert to Python list (handles JSON string, Polars Series, or native list)
-        if isinstance(expected_op_ids_raw, str):
-            import json
-
-            expected_op_ids = json.loads(expected_op_ids_raw)
-        elif hasattr(expected_op_ids_raw, "to_list"):
-            # Polars Series (from SQLite/DuckDB deserialization)
-            expected_op_ids = expected_op_ids_raw.to_list()
-        else:
-            # Already a list
-            expected_op_ids = expected_op_ids_raw
-
-        # Check if all operations completed
-        for op_id in expected_op_ids:
-            if not self.is_operation_complete(migration_id, op_id):
-                return False
-
-        return True
-
-
-# ========== Helper Functions for 3-Table System ==========
-
-
-def _load_historical_graph(
-    store: "MetadataStore",
-    snapshot_version: str,
-    class_path_overrides: dict[str, str] | None = None,
-) -> "FeatureGraph":
-    """Load historical graph from snapshot.
-
-    Args:
-        store: Metadata store
-        snapshot_version: Snapshot version to reconstruct
-        class_path_overrides: Optional overrides for moved/renamed feature classes
-    Returns:
-        FeatureGraph reconstructed from snapshot
-
-    Raises:
-        ValueError: If snapshot not found
-        ImportError: If feature class cannot be imported
-    """
-    from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
-    from metaxy.metadata_store.exceptions import FeatureNotFoundError
-    from metaxy.models.feature import FeatureGraph
-
-    # Load all features from this snapshot
-    try:
-        features_data = store.read_metadata(
-            FEATURE_VERSIONS_KEY,
-            filters=[nw.col("snapshot_version") == snapshot_version],
-            current_only=False,
-        )
-    except FeatureNotFoundError:
-        raise ValueError(
-            f"Snapshot '{snapshot_version}' not found in metadata store. "
-            f"Cannot reconstruct historical feature graph."
-        )
-
-    # Collect to iterate and build snapshot dict
-    features_data_eager = nw.from_native(features_data.collect())
-    if features_data_eager.shape[0] == 0:
-        raise ValueError(
-            f"Snapshot '{snapshot_version}' is empty. "
-            f"No features recorded with this snapshot version."
-        )
-
-    # Build snapshot dict for from_snapshot()
-    snapshot_dict = {}
-    for row in features_data_eager.iter_rows(named=True):
-        feature_key_str = row["feature_key"]
-        feature_spec_raw = row["feature_spec"]
-        feature_class_path = row.get("feature_class_path")
-
-        # Parse feature_spec (handle both JSON string and struct)
-        if isinstance(feature_spec_raw, str):
-            import json
-
-            feature_spec_dict = json.loads(feature_spec_raw)
-        else:
-            # Already parsed (DuckDB/ClickHouse return structs)
-            feature_spec_dict = feature_spec_raw
-
-        snapshot_dict[feature_key_str] = {
-            "feature_spec": feature_spec_dict,
-            "feature_class_path": feature_class_path,
-        }
-
-    graph = FeatureGraph.from_snapshot(
-        snapshot_dict,
-        class_path_overrides=class_path_overrides,
-        force_reload=True,
-    )
-
-    return graph
-
-
-def _is_migration_registered(store: "MetadataStore", migration_id: str) -> bool:
-    """Check if migration is registered in migrations table."""
-    try:
-        migrations = store.read_metadata(
-            MIGRATIONS_KEY,
-            filters=[nw.col("migration_id") == migration_id],
-            current_only=False,
-        )
-        # Check if any rows exist - only collect head(1)
-        migrations_sample = nw.from_native(migrations.head(1).collect())
-        return migrations_sample.shape[0] > 0
-    except FeatureNotFoundError:
-        return False
-
-
-def _register_migration(store: "MetadataStore", migration: Migration) -> None:
-    """Record migration declaration in migrations table (idempotent).
-
-    Args:
-        store: Metadata store
-        migration: Migration to register
-    """
-    import json
-
-    if _is_migration_registered(store, migration.id):
-        return  # Already registered
-
-    # Serialize complex types to JSON strings for storage compatibility
-    operation_ids_json = json.dumps([op.get("id") for op in migration.operations])
-    migration_yaml_json = json.dumps(migration.model_dump(mode="json", by_alias=True))
-
-    migration_record = pl.DataFrame(
-        {
-            "migration_id": [migration.id],
-            "created_at": [migration.created_at],
-            "description": [migration.description],
-            "operation_ids": [operation_ids_json],
-            "migration_yaml": [migration_yaml_json],
-        },
-        schema=MIGRATIONS_SCHEMA,
-    )
-
-    store._write_metadata_impl(MIGRATIONS_KEY, migration_record)
-
-
-def _is_operation_registered(
-    store: "MetadataStore", migration_id: str, operation_id: str
-) -> bool:
-    """Check if operation is registered in ops table."""
-    try:
-        ops = store.read_metadata(
-            MIGRATION_OPS_KEY,
-            filters=[
-                (nw.col("migration_id") == migration_id)
-                & (nw.col("operation_id") == operation_id)
-            ],
-            current_only=False,
-        )
-        # Check if any rows exist - only collect head(1)
-        ops_sample = nw.from_native(ops.head(1).collect())
-        return ops_sample.shape[0] > 0
-    except FeatureNotFoundError:
-        return False
-
-
-def _register_operation(
-    store: "MetadataStore", migration_id: str, operation: BaseOperation
-) -> None:
-    """Record operation definition in ops table (idempotent).
-
-    Computes expected_steps (root feature only - no implicit downstream).
-
-    Args:
-        store: Metadata store
-        migration_id: Parent migration ID
-        operation: Operation to register
-    """
-    import json
-
-    if _is_operation_registered(store, migration_id, operation.id):
-        return  # Already registered
-
-    # Expected steps is just the root feature (no implicit downstream)
-    # All features are explicit operations in the migration YAML
-    expected_steps_list = [FeatureKey(operation.feature_key).to_string()]
-    expected_steps_json = json.dumps(expected_steps_list)
-
-    op_record = pl.DataFrame(
-        {
-            "migration_id": [migration_id],
-            "operation_id": [operation.id],
-            "operation_type": [operation.type],  # pyright: ignore[reportAttributeAccessIssue]
-            "feature_key": [FeatureKey(operation.feature_key).to_string()],
-            "expected_steps": [expected_steps_json],
-            "operation_config_hash": [operation.operation_config_hash()],
-            "created_at": [datetime.now()],
-        },
-        schema=MIGRATION_OPS_SCHEMA,
-    )
-
-    store._write_metadata_impl(MIGRATION_OPS_KEY, op_record)
-
-
-def _validate_operation_not_changed(
-    store: "MetadataStore", migration_id: str, operation: BaseOperation
-) -> None:
-    """Validate operation config hasn't changed since registration.
-
-    Args:
-        store: Metadata store
-        migration_id: Migration ID
-        operation: Current operation from YAML
-
-    Raises:
-        ValueError: If operation content changed
-    """
-    if not _is_operation_registered(store, migration_id, operation.id):
-        return  # Not registered yet, nothing to validate
-
-    stored_op = store.read_metadata(
-        MIGRATION_OPS_KEY,
-        filters=[
-            (nw.col("migration_id") == migration_id)
-            & (nw.col("operation_id") == operation.id)
-        ],
-        current_only=False,
-    )
-
-    # Collect only head(1) to get the hash
-    stored_op_eager = nw.from_native(stored_op.head(1).collect())
-    if stored_op_eager.shape[0] == 0:
-        return
-
-    stored_hash = stored_op_eager["operation_config_hash"][0]
-    current_hash = operation.operation_config_hash()
-
-    if stored_hash != current_hash:
-        raise ValueError(
-            f"Operation '{operation.id}' content changed since last run. "
-            f"This is unsafe after partial migration. "
-            f"Revert changes or use --force to restart migration."
-        )
-
-
-def _is_step_complete(
-    store: "MetadataStore", migration_id: str, operation_id: str, feature_key: str
-) -> bool:
-    """Check if specific step already completed successfully.
-
-    Delegates to MigrationStatus class.
-    """
-    return MigrationStatus(store).is_step_complete(
-        migration_id, operation_id, feature_key
-    )
-
-
-def _record_step_completion(
-    store: "MetadataStore",
-    migration_id: str,
-    operation_id: str,
-    feature_key: str,
-    step_type: str,
-    rows_affected: int,
-    error: str | None,
-) -> None:
-    """Record feature step completion/failure in steps table.
-
-    Args:
-        store: Metadata store
-        migration_id: Migration ID
-        operation_id: Operation ID
-        feature_key: Feature key (string)
-        step_type: "operation_execution"
-        rows_affected: Number of rows processed
-        error: Error message if failed, None if successful
-    """
-    step_record = pl.DataFrame(
-        {
-            "migration_id": [migration_id],
-            "operation_id": [operation_id],
-            "feature_key": [feature_key],
-            "step_type": [step_type],
-            "completed_at": [datetime.now()],
-            "rows_affected": [rows_affected],
-            "error": [error],
-        },
-        schema=MIGRATION_OP_STEPS_SCHEMA,
-    )
-
-    store._write_metadata_impl(MIGRATION_OP_STEPS_KEY, step_record)
-
-
-def _is_operation_complete(
-    store: "MetadataStore", migration_id: str, operation_id: str
-) -> bool:
-    """Check if operation is complete.
-
-    Delegates to MigrationStatus class.
-    """
-    return MigrationStatus(store).is_operation_complete(migration_id, operation_id)
-
-
-def _is_migration_complete(store: "MetadataStore", migration_id: str) -> bool:
-    """Check if migration is complete.
-
-    Delegates to MigrationStatus class.
-    """
-    return MigrationStatus(store).is_migration_complete(migration_id)
-
-
-# ========== Main Execution Function ==========
-
-
-def apply_migration(
-    store: "MetadataStore",
-    migration: Migration,
-    *,
-    dry_run: bool = False,
-    force: bool = False,
-) -> MigrationResult:
-    """Apply a migration with fine-grained progress tracking.
-
-    Process:
-    1. Validate parent migration is completed (if specified)
-    2. Register migration and operations in system tables (idempotent)
-    3. For each operation:
-       a. Validate operation hasn't changed (content hash check)
-       b. Execute operation (calls operation.execute())
-       c. Record step completion
-    4. Derive final status from system tables
-
-    All operations are explicit in YAML - no implicit downstream propagation.
-    The migration generator creates explicit operations for all affected features.
-
-    Progress is tracked at three levels:
-    - Migration level (migrations table)
-    - Operation level (migration_ops table)
-    - Feature step level (migration_op_steps table)
-
-    All tables are immutable/append-only. Status is derived at query time.
-
-    Migrations form an explicit dependency chain via parent_migration_id.
-    Parent migrations must be completed before applying child migrations.
-
-    Args:
-        store: Metadata store
-        migration: Migration to apply
-        dry_run: Show what would happen without executing (default: False)
-        force: Re-apply even if already completed, skip validation (default: False)
-
-    Returns:
-        Result of migration execution
-
-    Raises:
-        ValueError: If parent migration is not completed
-
-    Example:
-        >>> result = apply_migration(store, migration, dry_run=True)
-        >>> print(result.summary())
-
-        >>> result = apply_migration(store, migration)
-        >>> if result.status == "completed":
-        ...     print("Success!")
-    """
-    start_time = time.time()
-    timestamp = datetime.now()
-
-    # Load historical graph from the "from" snapshot for validation
-    # TODO: better error messages here
-    _load_historical_graph(
-        store,
-        migration.from_snapshot_version,
-        class_path_overrides=migration.feature_class_overrides,
-    )
-
-    # Load target graph from the "to" snapshot for execution
-    # Operations need the target feature definitions to properly resolve data versions
-    target_graph = _load_historical_graph(
-        store,
-        migration.to_snapshot_version,
-        class_path_overrides=migration.feature_class_overrides,
-    )
-
-    # Execute migration within target graph context (operations need new definitions)
-    with target_graph.use():
-        # Parse operations from dict to objects
-        # Operations will use historical graph via FeatureGraph.get_active()
-        operations = migration.get_operations()
-
-        # 1. Validate parent migration is completed (if specified)
-        if migration.parent_migration_id is not None and not force and not dry_run:
-            if not _is_migration_complete(store, migration.parent_migration_id):
-                raise ValueError(
-                    f"Parent migration '{migration.parent_migration_id}' must be completed "
-                    f"before applying migration '{migration.id}'. "
-                    f"Apply parent migration first or use --force to skip validation."
-                )
-
-        # 2. Register migration (idempotent)
+        # Write migration_started event
         if not dry_run:
-            _register_migration(store, migration)
+            self.storage.write_event(migration.migration_id, "started")
 
-        # 3. Check if already complete
-        if not force and not dry_run and _is_migration_complete(store, migration.id):
-            return MigrationResult(
-                migration_id=migration.id,
-                status="skipped",
-                operations_applied=len(operations),
-                operations_failed=0,
-                affected_features=[],
-                errors={},
-                duration_seconds=time.time() - start_time,
-                timestamp=timestamp,
-            )
-
-        # 4. Execute each operation (using historical graph)
         affected_features = []
         errors = {}
-        operations_applied = 0
+        rows_affected_total = 0
 
-        for operation in operations:
-            # Register operation (idempotent)
-            if not dry_run:
-                _register_operation(store, migration.id, operation)
+        # Get affected features (computed on-demand for DiffMigration)
+        affected_features_to_process = migration.get_affected_features(store)
 
-                # Validate operation hasn't changed (unless force)
-                if not force:
-                    try:
-                        _validate_operation_not_changed(store, migration.id, operation)
-                    except ValueError as e:
-                        errors[operation.id] = str(e)
-                        continue
-
-            feature_key_str = FeatureKey(operation.feature_key).to_string()
-
-            # Check if step already complete (idempotent)
-            if not dry_run and _is_step_complete(
-                store, migration.id, operation.id, feature_key_str
+        # Execute for each affected feature in topological order
+        for feature_key_str in affected_features_to_process:
+            # Check if already completed (resume support)
+            if not dry_run and self.storage.is_feature_completed(
+                migration.migration_id, feature_key_str
             ):
-                # Already completed, skip
                 affected_features.append(feature_key_str)
-                operations_applied += 1
                 continue
 
-            # Execute operation
+            # Log feature_started
+            if not dry_run:
+                self.storage.write_event(
+                    migration.migration_id,
+                    "feature_started",
+                    feature_key=feature_key_str,
+                )
+
             try:
-                rows_affected = operation.execute(
+                # Execute data version reconciliation for this feature
+                op = DataVersionReconciliation()
+
+                rows_affected = op.execute_for_feature(
                     store,
+                    feature_key_str,
                     from_snapshot_version=migration.from_snapshot_version,
                     to_snapshot_version=migration.to_snapshot_version,
                     dry_run=dry_run,
                 )
 
-                # Record step completion (unless dry-run)
+                # Log feature_completed
                 if not dry_run:
-                    _record_step_completion(
-                        store,
-                        migration.id,
-                        operation.id,
-                        feature_key_str,
-                        "operation_execution",
-                        rows_affected,
-                        None,  # No error
+                    self.storage.write_event(
+                        migration.migration_id,
+                        "feature_completed",
+                        feature_key=feature_key_str,
+                        rows_affected=rows_affected,
                     )
 
                 affected_features.append(feature_key_str)
-                operations_applied += 1
+                rows_affected_total += rows_affected
 
             except Exception as e:
                 error_msg = str(e)
-                errors[operation.id] = error_msg
+                errors[feature_key_str] = error_msg
 
-                # Record step failure
+                # Log feature_failed
                 if not dry_run:
-                    _record_step_completion(
-                        store,
-                        migration.id,
-                        operation.id,
-                        feature_key_str,
-                        "operation_execution",
-                        0,
-                        error_msg,
+                    self.storage.write_event(
+                        migration.migration_id,
+                        "feature_completed",
+                        feature_key=feature_key_str,
+                        error_message=error_msg,
                     )
 
-                # Continue with other operations (fail-graceful)
                 continue
 
-        # 5. Determine final status (after all operations)
+        # Determine status
         if dry_run:
             status = "skipped"
-        elif operations_applied == len(operations):
+        elif len(errors) == 0:
             status = "completed"
-        elif operations_applied == 0:
-            status = "failed"
+            if not dry_run:
+                self.storage.write_event(migration.migration_id, "completed")
         else:
-            status = "failed"  # Partial execution treated as failed
+            status = "failed"
+            if not dry_run:
+                self.storage.write_event(migration.migration_id, "failed")
+
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
         return MigrationResult(
-            migration_id=migration.id,
+            migration_id=migration.migration_id,
             status=status,
-            operations_applied=operations_applied,
-            operations_failed=len(errors),
+            features_completed=len(affected_features),
+            features_failed=len(errors),
             affected_features=affected_features,
             errors=errors,
-            duration_seconds=time.time() - start_time,
-            timestamp=timestamp,
+            rows_affected=rows_affected_total,
+            duration_seconds=duration,
+            timestamp=start_time,
         )
+
+    def _execute_full_graph_migration(
+        self,
+        migration: "FullGraphMigration",
+        store: "MetadataStore",
+        dry_run: bool,
+    ) -> "MigrationResult":
+        """Execute FullGraphMigration.
+
+        Args:
+            migration: FullGraphMigration to execute
+            store: Metadata store
+            dry_run: If True, only validate
+
+        Returns:
+            MigrationResult
+        """
+        # FullGraphMigration has custom execute logic in the subclass
+        # Base implementation is a no-op
+        return migration.execute(store, dry_run=dry_run)

@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from pydantic import Field
+from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
@@ -115,6 +116,129 @@ class GraphData(FrozenBaseModel):
         """
         return [node for node in self.nodes.values() if node.status == status]
 
+    def to_struct(self) -> dict[str, Any]:
+        """Serialize to struct (native Python types for storage).
+
+        Note: This uses custom serialization instead of Pydantic's model_dump() because:
+        1. Polars struct columns require specific type conversions (e.g., None → "" for strings, None → 0 for ints)
+        2. Custom types (FeatureKey, FieldKey) need explicit string conversion for storage
+        3. The storage schema is a separate concern from the domain model's Python representation
+        4. Different storage backends may need different serialization formats in the future
+
+        Returns:
+            Dict with structure compatible with Polars struct type
+        """
+        nodes_list = []
+        for node in self.nodes.values():
+            fields_list = []
+            for field in node.fields:
+                fields_list.append(
+                    {
+                        "key": field.key.to_string(),
+                        "version": field.version if field.version is not None else "",
+                        "code_version": field.code_version
+                        if field.code_version is not None
+                        else 0,
+                    }
+                )
+
+            nodes_list.append(
+                {
+                    "key": node.key.to_string(),
+                    "version": node.version if node.version is not None else "",
+                    "code_version": node.code_version
+                    if node.code_version is not None
+                    else 0,
+                    "fields": fields_list,
+                    "dependencies": [dep.to_string() for dep in node.dependencies],
+                }
+            )
+
+        edges_list = []
+        for edge in self.edges:
+            edges_list.append(
+                {
+                    "from_key": edge.from_key.to_string(),
+                    "to_key": edge.to_key.to_string(),
+                }
+            )
+
+        result: dict[str, Any] = {
+            "nodes": nodes_list,
+            "edges": edges_list,
+        }
+
+        # Include snapshot_version if present
+        if self.snapshot_version is not None:
+            result["snapshot_version"] = self.snapshot_version
+
+        # Include old_snapshot_version if present (for diffs)
+        if self.old_snapshot_version is not None:
+            result["old_snapshot_version"] = self.old_snapshot_version
+
+        return result
+
+    @classmethod
+    def from_struct(cls, struct_data: dict[str, Any]) -> Self:
+        """Deserialize from struct.
+
+        Args:
+            struct_data: Dict with structure from to_struct()
+
+        Returns:
+            GraphData instance
+        """
+        nodes = {}
+        for node_data in struct_data["nodes"]:
+            fields = []
+            for field_data in node_data["fields"]:
+                fields.append(
+                    FieldNode(
+                        key=FieldKey(field_data["key"].split("/")),
+                        version=field_data["version"]
+                        if field_data["version"]
+                        else None,
+                        code_version=field_data["code_version"]
+                        if field_data["code_version"] != 0
+                        else None,
+                    )
+                )
+
+            node = GraphNode(
+                key=FeatureKey(node_data["key"].split("/")),
+                version=node_data["version"] if node_data["version"] else None,
+                code_version=node_data["code_version"]
+                if node_data["code_version"] != 0
+                else None,
+                fields=fields,
+                dependencies=[
+                    FeatureKey(dep.split("/")) for dep in node_data["dependencies"]
+                ],
+            )
+            nodes[node_data["key"]] = node
+
+        edges = []
+        for edge_data in struct_data["edges"]:
+            edges.append(
+                EdgeData(
+                    from_key=FeatureKey(edge_data["from_key"].split("/")),
+                    to_key=FeatureKey(edge_data["to_key"].split("/")),
+                )
+            )
+
+        # Extract snapshot_version if present
+        snapshot_version = struct_data.get("snapshot_version")
+
+        # Extract old_snapshot_version if present (for diffs)
+        old_snapshot_version = struct_data.get("old_snapshot_version")
+
+        return cls(
+            nodes=nodes,
+            edges=edges,
+            snapshot_version=snapshot_version,
+            old_snapshot_version=old_snapshot_version,
+        )
+
     @classmethod
     def from_feature_graph(cls, graph: "FeatureGraph") -> "GraphData":
         """Convert a FeatureGraph to GraphData.
@@ -190,7 +314,7 @@ class GraphData(FrozenBaseModel):
         Returns:
             GraphData with status annotations
         """
-        from metaxy.graph_diff import FieldChange
+        from metaxy.graph.diff.diff_models import FieldChange
 
         nodes: dict[str, GraphNode] = {}
         edges: list[EdgeData] = []
