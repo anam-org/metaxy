@@ -509,7 +509,7 @@ def render(
             try:
                 graph = FeatureGraph.from_snapshot(snapshot_data)
                 console.print(
-                    f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot[:8]}..."
+                    f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
                 )
             except ImportError as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")

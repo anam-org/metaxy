@@ -106,6 +106,7 @@ When writing new code:
 6. Write or update tests
 7. Refactor for clarity and elegance
 8. Verify adherence to SOLID and DRY principles
+9. Do not attempt maintaining backward compatibility: we do not have any users yet, the project is extremely early in its development lifecycle, and **backwards compatibility is not a concern at all**.
 
 When reviewing code:
 1. Check for violations of DRY and SOLID principles

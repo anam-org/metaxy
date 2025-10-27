@@ -1,82 +1,19 @@
-"""Core graph diff engine for comparing feature graph snapshots."""
+"""Graph diffing logic and snapshot resolution."""
 
 import json
+import warnings
 from typing import Any
 
-from pydantic import Field
-
+from metaxy.graph.diff.diff_models import (
+    AddedNode,
+    FieldChange,
+    GraphDiff,
+    NodeChange,
+    RemovedNode,
+)
 from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY, MetadataStore
-from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
-
-
-class FieldChange(FrozenBaseModel):
-    """Represents a change in a field between two snapshots."""
-
-    field_key: FieldKey
-    old_version: str | None = None  # None if field was added
-    new_version: str | None = None  # None if field was removed
-
-    @property
-    def is_added(self) -> bool:
-        """Check if field was added."""
-        return self.old_version is None
-
-    @property
-    def is_removed(self) -> bool:
-        """Check if field was removed."""
-        return self.new_version is None
-
-    @property
-    def is_changed(self) -> bool:
-        """Check if field version changed."""
-        return (
-            self.old_version is not None
-            and self.new_version is not None
-            and self.old_version != self.new_version
-        )
-
-
-class FeatureChange(FrozenBaseModel):
-    """Represents a change in a feature between two snapshots."""
-
-    feature_key: FeatureKey
-    old_version: str | None = None  # None if feature was added
-    new_version: str | None = None  # None if feature was removed
-    field_changes: list[FieldChange] = Field(default_factory=list)
-
-    @property
-    def is_added(self) -> bool:
-        """Check if feature was added."""
-        return self.old_version is None
-
-    @property
-    def is_removed(self) -> bool:
-        """Check if feature was removed."""
-        return self.new_version is None
-
-    @property
-    def has_field_changes(self) -> bool:
-        """Check if feature has any field changes."""
-        return len(self.field_changes) > 0
-
-
-class GraphDiff(FrozenBaseModel):
-    """Result of comparing two graph snapshots."""
-
-    snapshot1: str
-    snapshot2: str
-    added_features: list[FeatureKey] = Field(default_factory=list)
-    removed_features: list[FeatureKey] = Field(default_factory=list)
-    changed_features: list[FeatureChange] = Field(default_factory=list)
-
-    @property
-    def has_changes(self) -> bool:
-        """Check if diff contains any changes."""
-        return bool(
-            self.added_features or self.removed_features or self.changed_features
-        )
 
 
 class SnapshotResolver:
@@ -118,7 +55,7 @@ class SnapshotResolver:
         if snapshots_df.height == 0:
             raise ValueError(
                 "No snapshots found in store. Cannot resolve 'latest'. "
-                "Run 'metaxy graph push' to record a snapshot."
+                "Run 'metaxy push' to record a snapshot."
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
@@ -149,12 +86,16 @@ class GraphDiffer:
         self,
         snapshot1_data: dict[str, dict[str, Any]],
         snapshot2_data: dict[str, dict[str, Any]],
+        from_snapshot_version: str = "unknown",
+        to_snapshot_version: str = "unknown",
     ) -> GraphDiff:
         """Compute diff between two snapshots.
 
         Args:
-            snapshot1_data: First snapshot (feature_key -> {feature_version, fields})
-            snapshot2_data: Second snapshot (feature_key -> {feature_version, fields})
+            snapshot1_data: First snapshot (feature_key -> {feature_version, feature_spec, fields})
+            snapshot2_data: Second snapshot (feature_key -> {feature_version, feature_spec, fields})
+            from_snapshot_version: Source snapshot version
+            to_snapshot_version: Target snapshot version
 
         Returns:
             GraphDiff with added, removed, and changed features
@@ -168,45 +109,135 @@ class GraphDiffer:
         removed_keys = keys1 - keys2
         common_keys = keys1 & keys2
 
-        added_features = [FeatureKey(k.split("/")) for k in sorted(added_keys)]
-        removed_features = [FeatureKey(k.split("/")) for k in sorted(removed_keys)]
+        # Build added nodes
+        added_nodes = []
+        for key_str in sorted(added_keys):
+            feature_data = snapshot2_data[key_str]
+            feature_spec = feature_data.get("feature_spec", {})
+
+            # Extract fields
+            fields_list = []
+            for field_dict in feature_spec.get("fields", []):
+                field_key_list = field_dict.get("key", [])
+                field_key_str = (
+                    "/".join(field_key_list)
+                    if isinstance(field_key_list, list)
+                    else field_key_list
+                )
+                fields_list.append(
+                    {
+                        "key": field_key_str,
+                        "version": feature_data.get("fields", {}).get(
+                            field_key_str, ""
+                        ),
+                        "code_version": field_dict.get("code_version"),
+                    }
+                )
+
+            # Extract dependencies
+            deps = []
+            if feature_spec.get("deps"):
+                for dep in feature_spec["deps"]:
+                    dep_key = dep.get("key", [])
+                    if isinstance(dep_key, list):
+                        deps.append(FeatureKey(dep_key))
+                    else:
+                        deps.append(FeatureKey(dep_key.split("/")))
+
+            added_nodes.append(
+                AddedNode(
+                    feature_key=FeatureKey(key_str.split("/")),
+                    version=feature_data["feature_version"],
+                    code_version=feature_spec.get("code_version"),
+                    fields=fields_list,
+                    dependencies=deps,
+                )
+            )
+
+        # Build removed nodes
+        removed_nodes = []
+        for key_str in sorted(removed_keys):
+            feature_data = snapshot1_data[key_str]
+            feature_spec = feature_data.get("feature_spec", {})
+
+            # Extract fields
+            fields_list = []
+            for field_dict in feature_spec.get("fields", []):
+                field_key_list = field_dict.get("key", [])
+                field_key_str = (
+                    "/".join(field_key_list)
+                    if isinstance(field_key_list, list)
+                    else field_key_list
+                )
+                fields_list.append(
+                    {
+                        "key": field_key_str,
+                        "version": feature_data.get("fields", {}).get(
+                            field_key_str, ""
+                        ),
+                        "code_version": field_dict.get("code_version"),
+                    }
+                )
+
+            # Extract dependencies
+            deps = []
+            if feature_spec.get("deps"):
+                for dep in feature_spec["deps"]:
+                    dep_key = dep.get("key", [])
+                    if isinstance(dep_key, list):
+                        deps.append(FeatureKey(dep_key))
+                    else:
+                        deps.append(FeatureKey(dep_key.split("/")))
+
+            removed_nodes.append(
+                RemovedNode(
+                    feature_key=FeatureKey(key_str.split("/")),
+                    version=feature_data["feature_version"],
+                    code_version=feature_spec.get("code_version"),
+                    fields=fields_list,
+                    dependencies=deps,
+                )
+            )
 
         # Identify changed features
-        changed_features = []
+        changed_nodes = []
         for key_str in sorted(common_keys):
             feature1 = snapshot1_data[key_str]
             feature2 = snapshot2_data[key_str]
 
             version1 = feature1["feature_version"]
             version2 = feature2["feature_version"]
+
+            spec1 = feature1.get("feature_spec", {})
+            spec2 = feature2.get("feature_spec", {})
+
             fields1 = feature1.get("fields", {})
             fields2 = feature2.get("fields", {})
 
-            # Check if feature version changed or fields changed
-            if version1 != version2 or fields1 != fields2:
+            # Check if feature version changed
+            if version1 != version2:
                 # Compute field changes
                 field_changes = self._compute_field_changes(fields1, fields2)
 
-                changed_features.append(
-                    FeatureChange(
+                changed_nodes.append(
+                    NodeChange(
                         feature_key=FeatureKey(key_str.split("/")),
                         old_version=version1,
                         new_version=version2,
-                        field_changes=field_changes,
+                        old_code_version=spec1.get("code_version"),
+                        new_code_version=spec2.get("code_version"),
+                        added_fields=[fc for fc in field_changes if fc.is_added],
+                        removed_fields=[fc for fc in field_changes if fc.is_removed],
+                        changed_fields=[fc for fc in field_changes if fc.is_changed],
                     )
                 )
 
-        # Determine snapshot versions from data
-        # For now, use placeholder - caller should provide these
-        snapshot1_version = "snapshot1"
-        snapshot2_version = "snapshot2"
-
         return GraphDiff(
-            snapshot1=snapshot1_version,
-            snapshot2=snapshot2_version,
-            added_features=added_features,
-            removed_features=removed_features,
-            changed_features=changed_features,
+            from_snapshot_version=from_snapshot_version,
+            to_snapshot_version=to_snapshot_version,
+            added_nodes=added_nodes,
+            removed_nodes=removed_nodes,
+            changed_nodes=changed_nodes,
         )
 
     def _compute_field_changes(
@@ -237,6 +268,8 @@ class GraphDiffer:
                     field_key=FieldKey(field_key_str.split("/")),
                     old_version=None,
                     new_version=fields2[field_key_str],
+                    old_code_version=None,
+                    new_code_version=None,  # TODO: Extract from spec if available
                 )
             )
 
@@ -247,6 +280,8 @@ class GraphDiffer:
                     field_key=FieldKey(field_key_str.split("/")),
                     old_version=fields1[field_key_str],
                     new_version=None,
+                    old_code_version=None,  # TODO: Extract from spec if available
+                    new_code_version=None,
                 )
             )
 
@@ -261,6 +296,8 @@ class GraphDiffer:
                         field_key=FieldKey(field_key_str.split("/")),
                         old_version=version1,
                         new_version=version2,
+                        old_code_version=None,  # TODO: Extract from spec if available
+                        new_code_version=None,  # TODO: Extract from spec if available
                     )
                 )
 
@@ -291,7 +328,7 @@ class GraphDiffer:
                         'old_version': str | None,
                         'new_version': str | None,
                         'fields': {...},  # fields from relevant snapshot
-                        'field_changes': [...],  # for changed nodes only
+                        'field_changes': [...],  # FieldChange objects for changed nodes
                         'dependencies': [feature_key_str, ...],  # deps from relevant snapshot
                     }
                 },
@@ -301,9 +338,11 @@ class GraphDiffer:
             }
         """
         # Create status mapping for efficient lookup
-        added_keys = {fk.to_string() for fk in diff.added_features}
-        removed_keys = {fk.to_string() for fk in diff.removed_features}
-        changed_keys = {fc.feature_key.to_string(): fc for fc in diff.changed_features}
+        added_keys = {node.feature_key.to_string() for node in diff.added_nodes}
+        removed_keys = {node.feature_key.to_string() for node in diff.removed_nodes}
+        changed_keys = {
+            node.feature_key.to_string(): node for node in diff.changed_nodes
+        }
 
         # Get all feature keys from both snapshots
         all_keys = set(snapshot1_data.keys()) | set(snapshot2_data.keys())
@@ -335,11 +374,16 @@ class GraphDiffer:
                 )
             elif feature_key_str in changed_keys:
                 status = "changed"
-                feature_change = changed_keys[feature_key_str]
-                old_version = feature_change.old_version
-                new_version = feature_change.new_version
+                node_change = changed_keys[feature_key_str]
+                old_version = node_change.old_version
+                new_version = node_change.new_version
                 fields = snapshot2_data[feature_key_str].get("fields", {})
-                field_changes = feature_change.field_changes
+                # Combine all field changes from the NodeChange
+                field_changes = (
+                    node_change.added_fields
+                    + node_change.removed_fields
+                    + node_change.changed_fields
+                )
                 # Dependencies from snapshot2 (current version)
                 deps = self._extract_dependencies(
                     snapshot2_data[feature_key_str].get("feature_spec", {})
@@ -578,7 +622,7 @@ class GraphDiffer:
             snapshot_version: Snapshot version to load
 
         Returns:
-            Dict mapping feature_key (string) -> {feature_version, fields}
+            Dict mapping feature_key (string) -> {feature_version, feature_spec, fields}
             where fields is dict mapping field_key (string) -> field_version (hash)
 
         Raises:
@@ -604,13 +648,13 @@ class GraphDiffer:
             if features_df.height == 0:
                 raise ValueError(
                     f"Snapshot {snapshot_version} not found in store. "
-                    "Run 'metaxy graph push' to record snapshots or check the version hash."
+                    "Run 'metaxy push' to record snapshots or check the version hash."
                 )
 
         except Exception as e:
             raise ValueError(f"Failed to load snapshot {snapshot_version}: {e}") from e
 
-        # Build snapshot data structure for FeatureGraph.from_snapshot()
+        # Build snapshot data structure
         snapshot_dict = {}
         for row in features_df.iter_rows(named=True):
             feature_key_str = row["feature_key"]
@@ -626,39 +670,25 @@ class GraphDiffer:
                 "feature_class_path": feature_class_path,
             }
 
-        # Reconstruct FeatureGraph from snapshot to compute field versions
+        # Try to reconstruct FeatureGraph from snapshot to compute field versions
+        # This may fail if features have been removed/moved, so we handle that gracefully
+        graph: FeatureGraph | None = None
         try:
             graph = FeatureGraph.from_snapshot(snapshot_dict)
-        except Exception as e:
-            # If we can't reconstruct the graph (e.g., feature classes moved),
-            # fall back to using feature_version as field version (best effort)
-            import warnings
-
+            graph_available = True
+        except ImportError:
+            # Some features can't be imported (likely removed) - proceed without graph
+            # For diff purposes, we can still show feature-level changes
+            # We'll use feature_version as a fallback for all field versions
+            graph_available = False
             warnings.warn(
-                f"Could not reconstruct graph from snapshot {snapshot_version}: {e}. "
-                "Using feature_version as field_version (field-level diffs may be inaccurate)."
+                "Using feature_version as field_version fallback for features that cannot be imported. "
+                "This may occur when features have been removed or moved.",
+                UserWarning,
+                stacklevel=2,
             )
-            # Fall back to old behavior
-            snapshot_data = {}
-            for feature_key_str, data in snapshot_dict.items():
-                feature_spec_dict = data["feature_spec"]
-                fields_data = {}
-                for field_dict in feature_spec_dict.get("fields", []):
-                    field_key_list = field_dict.get("key")
-                    if isinstance(field_key_list, list):
-                        field_key_str_normalized = "/".join(field_key_list)
-                    else:
-                        field_key_str_normalized = field_key_list
-                    fields_data[field_key_str_normalized] = data["feature_version"]
 
-                snapshot_data[feature_key_str] = {
-                    "feature_version": data["feature_version"],
-                    "fields": fields_data,
-                    "feature_spec": feature_spec_dict,
-                }
-            return snapshot_data
-
-        # Now compute proper field versions using the reconstructed graph
+        # Compute field versions using the reconstructed graph (if available)
         from metaxy.models.plan import FQFieldKey
 
         snapshot_data = {}
@@ -667,21 +697,39 @@ class GraphDiffer:
             feature_spec = snapshot_dict[feature_key_str]["feature_spec"]
             feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
-            # Compute field versions using graph
+            # Compute field versions using graph (if available)
             fields_data = {}
-            for field_dict in feature_spec.get("fields", []):
-                field_key_list = field_dict.get("key")
-                if isinstance(field_key_list, list):
-                    field_key = FieldKey(field_key_list)
-                    field_key_str_normalized = "/".join(field_key_list)
-                else:
-                    field_key = FieldKey([field_key_list])
-                    field_key_str_normalized = field_key_list
+            if (
+                graph_available
+                and graph is not None
+                and feature_key_obj in graph.features_by_key
+            ):
+                # Feature exists in reconstructed graph - compute precise field versions
+                for field_dict in feature_spec.get("fields", []):
+                    field_key_list = field_dict.get("key")
+                    if isinstance(field_key_list, list):
+                        field_key = FieldKey(field_key_list)
+                        field_key_str_normalized = "/".join(field_key_list)
+                    else:
+                        field_key = FieldKey([field_key_list])
+                        field_key_str_normalized = field_key_list
 
-                # Compute field version using the graph
-                fq_key = FQFieldKey(feature=feature_key_obj, field=field_key)
-                field_version = graph.get_field_version(fq_key)
-                fields_data[field_key_str_normalized] = field_version
+                    # Compute field version using the graph
+                    fq_key = FQFieldKey(feature=feature_key_obj, field=field_key)
+                    field_version = graph.get_field_version(fq_key)
+                    fields_data[field_key_str_normalized] = field_version
+            else:
+                # Feature doesn't exist in graph (removed/moved) - use feature_version as fallback
+                # All fields get the same version (the feature version)
+                for field_dict in feature_spec.get("fields", []):
+                    field_key_list = field_dict.get("key")
+                    if isinstance(field_key_list, list):
+                        field_key_str_normalized = "/".join(field_key_list)
+                    else:
+                        field_key_str_normalized = field_key_list
+
+                    # Use feature_version directly as fallback
+                    fields_data[field_key_str_normalized] = feature_version
 
             snapshot_data[feature_key_str] = {
                 "feature_version": feature_version,

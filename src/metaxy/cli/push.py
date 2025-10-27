@@ -26,15 +26,24 @@ def push(store: str | None = None):
         store: The metadata store to use. Defaults to the default store.
     """
     from metaxy.cli.context import get_store
+    from metaxy.models.feature import FeatureGraph
 
     metadata_store = get_store(store)
 
     with metadata_store:
-        snapshot_version, was_already_recorded = (
+        # Get active graph
+        active_graph = FeatureGraph.get_active()
+        if len(active_graph.features_by_key) == 0:
+            console.print("[yellow]⚠[/yellow] No features in active graph")
+            return
+
+        # Record feature graph snapshot (idempotent)
+        # Returns (snapshot_version, already_exists)
+        snapshot_version, already_exists = (
             metadata_store.record_feature_graph_snapshot()
         )
 
-        if was_already_recorded:
+        if already_exists:
             console.print("[blue]ℹ[/blue] Snapshot already recorded (skipped)")
             console.print(f"  Snapshot version: {snapshot_version}")
         else:

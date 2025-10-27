@@ -10,10 +10,6 @@ from metaxy.graph.diff.rendering import (
     TerminalRenderer,
 )
 
-# Backward compatibility aliases
-TerminalCardsRenderer = CardsRenderer
-GraphRenderer = BaseRenderer
-
 __all__ = [
     "BaseRenderer",
     "RenderConfig",
@@ -22,7 +18,4 @@ __all__ = [
     "CardsRenderer",
     "MermaidRenderer",
     "GraphvizRenderer",
-    # Backward compatibility
-    "TerminalCardsRenderer",
-    "GraphRenderer",
 ]

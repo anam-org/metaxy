@@ -1,11 +1,6 @@
 """Metadata store for feature pipeline management."""
 
-from metaxy.metadata_store.base import (
-    FEATURE_VERSIONS_KEY,
-    MIGRATION_HISTORY_KEY,
-    MetadataStore,
-    allow_feature_version_override,
-)
+from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -16,6 +11,10 @@ from metaxy.metadata_store.exceptions import (
     StoreNotOpenError,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system_tables import (
+    FEATURE_VERSIONS_KEY,
+    allow_feature_version_override,
+)
 
 __all__ = [
     "MetadataStore",
@@ -28,6 +27,5 @@ __all__ = [
     "StoreNotOpenError",
     "HashAlgorithmNotSupportedError",
     "FEATURE_VERSIONS_KEY",
-    "MIGRATION_HISTORY_KEY",
     "allow_feature_version_override",
 ]

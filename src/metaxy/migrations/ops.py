@@ -67,11 +67,14 @@ class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMul
         return hashlib.sha256(content.encode()).hexdigest()
 
 
-class DataVersionReconciliation(BaseOperation):
+class DataVersionReconciliation(pydantic.BaseModel):
     """Reconcile data versions when feature definition changes BUT computation is unchanged.
 
+    This operation applies to ALL affected features in the migration.
+    Feature keys are deducible from snapshot changes, so they're not specified here.
+
     This operation:
-    1. Derives old/new feature_versions from migration's from_snapshot_version/to_snapshot_version
+    1. For each affected feature, derives old/new feature_versions from snapshots
     2. Finds rows with old feature_version
     3. Recalculates data_versions based on new feature definition
     4. Writes new rows with updated feature_version and data_version
@@ -87,32 +90,28 @@ class DataVersionReconciliation(BaseOperation):
     - Bug fixes that affect output → re-run pipeline instead
     - New model version → re-run pipeline instead
 
-    Feature versions are automatically derived from the migration's snapshot versions,
-    eliminating redundancy since each snapshot uniquely identifies all feature versions.
+    Feature versions are automatically derived from the migration's snapshot versions.
+    Affected features are determined from the snapshot diff.
 
     Example YAML:
-        - id: "reconcile_stt_transcription"
-          type: "metaxy.migrations.ops.DataVersionReconciliation"
-          feature_key: ["speech", "transcription"]
-          reason: "Fixed dependency: now depends only on audio field instead of entire video. Transcription logic unchanged."
+        operations:
+          - type: metaxy.migrations.ops.DataVersionReconciliation
     """
-
-    model_config = pydantic.ConfigDict(populate_by_name=True)
 
     type: Literal["metaxy.migrations.ops.DataVersionReconciliation"] = (
         "metaxy.migrations.ops.DataVersionReconciliation"
     )
-    reason: str
 
-    def execute(
+    def execute_for_feature(
         self,
         store: "MetadataStore",
+        feature_key: str,
         *,
         from_snapshot_version: str,
         to_snapshot_version: str,
         dry_run: bool = False,
     ) -> int:
-        """Execute data version reconciliation.
+        """Execute data version reconciliation for a single feature.
 
         Only works for features with upstream dependencies. For root features
         (no upstream), data_versions are user-defined and cannot be automatically
@@ -128,6 +127,7 @@ class DataVersionReconciliation(BaseOperation):
 
         Args:
             store: Metadata store
+            feature_key: Feature key string (e.g., "examples/child")
             from_snapshot_version: Source snapshot version (old state)
             to_snapshot_version: Target snapshot version (new state)
             dry_run: If True, return row count without executing
@@ -148,13 +148,13 @@ class DataVersionReconciliation(BaseOperation):
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
 
-        feature_key = FeatureKey(self.feature_key)
-        feature_key_str = feature_key.to_string()
+        feature_key_obj = FeatureKey(feature_key.split("/"))
+        feature_key_str = feature_key_obj.to_string()
         graph = FeatureGraph.get_active()
-        feature_cls = graph.features_by_key[feature_key]
+        feature_cls = graph.features_by_key[feature_key_obj]
 
         # 1. Verify feature has upstream dependencies
-        plan = graph.get_feature_plan(feature_key)
+        plan = graph.get_feature_plan(feature_key_obj)
         has_upstream = plan.deps is not None and len(plan.deps) > 0
 
         if not has_upstream:

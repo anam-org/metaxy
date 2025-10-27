@@ -1,13 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Always use the following agents:
+- @agent-planner
+- @agent-python-dev
+- @agent-qa
 
 ## Project Status
 
 **⚠️ Early Development - No Stable API**
 
 This project is in active development with no users yet. Breaking changes are expected and encouraged:
-- **No backward compatibility required** - refactor freely
+- **No backward compatibility required** - **we have no users yet**, refactor freely, prioritize changes that improve design and functionality
 - **API changes allowed** - improve interfaces without deprecation warnings
 - **Breaking changes welcome** - prioritize better design over stability
 - **Move fast** - optimize for the best long-term architecture, not short-term compatibility

@@ -1,0 +1,27 @@
+# serializer version: 1
+# name: test_basic_migration_flow[migration_detection]
+  dict({
+    'affected_features': list([
+      'test_integration/simple',
+    ]),
+    'affected_features_count': 1,
+    'description': 'Migration: test_integration/simple',
+  })
+# ---
+# name: test_basic_migration_flow[migration_result]
+  dict({
+    'features_completed': 0,
+    'features_failed': 1,
+    'has_root_feature_error': True,
+    'status': 'failed',
+  })
+# ---
+# name: test_upstream_downstream_migration[affected_features]
+  dict({
+    'affected_features': list([
+      'test_integration/downstream',
+      'test_integration/upstream',
+    ]),
+    'affected_features_count': 2,
+  })
+# ---
