@@ -24,7 +24,7 @@ if __name__ == "__main__":
     assert isinstance(
         ducklake_store, DuckDBMetadataStore
     ), "DuckLake example misconfigured: expected DuckDBMetadataStore."
-    ducklake_store.get_ducklake_attachment_manager()
+    ducklake_store.ducklake_attachment
     print("DuckLake store initialised. Extensions:", ducklake_store.extensions)
     print("\nPreview of DuckLake ATTACH SQL:")
     for line in preview_attachment_sql(ducklake_store):

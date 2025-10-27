@@ -119,7 +119,7 @@ def test_duckdb_store_preview_via_config_manager() -> None:
         ducklake=_ducklake_config_payload(),
     )
 
-    manager = store.get_ducklake_attachment_manager()
+    manager = store.ducklake_attachment
     preview = manager.preview_sql()
     assert preview[0] == "INSTALL ducklake;"
     assert preview[-1] == "USE ducklake;"

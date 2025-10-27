@@ -1,28 +1,13 @@
 """Shared DuckLake configuration helpers."""
 
 import os
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
-try:  # pragma: no cover - optional dependency in some environments
-    import duckdb  # type: ignore
-except ImportError:  # pragma: no cover
-    duckdb = None  # type: ignore[assignment]
-    _CATALOG_EXCEPTIONS: tuple[type[Exception], ...] = ()
-    DuckDBConnection = Any  # type: ignore[assignment]
-else:  # pragma: no cover - runtime dependent
-    candidates: list[type[Exception]] = []
-    for name in ("CatalogException", "CatalogError"):
-        exc = getattr(duckdb, name, None)
-        if isinstance(exc, type) and issubclass(exc, Exception):
-            candidates.append(exc)
-    if not candidates and hasattr(duckdb, "Error"):
-        base_exc = getattr(duckdb, "Error")
-        if isinstance(base_exc, type) and issubclass(base_exc, Exception):
-            candidates.append(base_exc)
-    _CATALOG_EXCEPTIONS = tuple(candidates)
-    DuckDBConnection = duckdb.DuckDBPyConnection  # type: ignore[attr-defined]
+from duckdb import DuckDBPyConnection  # noqa: TID252
+
+DuckDBConnection = DuckDBPyConnection
 
 
 @runtime_checkable
@@ -43,7 +28,9 @@ DuckLakeBackendInput = Mapping[str, Any] | SupportsDuckLakeParts | SupportsModel
 DuckLakeBackend = SupportsDuckLakeParts | dict[str, Any]
 
 
-def coerce_backend_config(backend: DuckLakeBackendInput, *, role: str) -> DuckLakeBackend:
+def coerce_backend_config(
+    backend: DuckLakeBackendInput, *, role: str
+) -> DuckLakeBackend:
     """Normalize metadata/storage backend configuration."""
     if isinstance(backend, SupportsDuckLakeParts):
         return backend
@@ -290,14 +277,6 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            if _CATALOG_EXCEPTIONS:
-                try:
-                    cursor.execute(f"DETACH {self._config.alias};")
-                except _CATALOG_EXCEPTIONS:  # type: ignore[arg-type]
-                    pass
-            else:
-                cursor.execute(f"DETACH {self._config.alias};")
-
             metadata_secret_sql, metadata_params_sql = resolve_metadata_backend(
                 self._config.metadata_backend, self._config.alias
             )
@@ -344,8 +323,8 @@ def build_ducklake_attachment(
     if isinstance(config, DuckLakeAttachmentConfig):
         metadata_input = config.metadata_backend
         storage_input = config.storage_backend
-        alias = config.alias
-        plugins: Iterable[str] = tuple(config.plugins)
+        alias = str(config.alias)
+        plugins_input = tuple(config.plugins)
         attach_options = dict(config.attach_options or {})
     elif isinstance(config, Mapping):
         if "metadata_backend" not in config or "storage_backend" not in config:
@@ -355,7 +334,7 @@ def build_ducklake_attachment(
         metadata_input = config["metadata_backend"]
         storage_input = config["storage_backend"]
         alias = str(config.get("alias", "ducklake"))
-        plugins = config.get("plugins") or ("ducklake",)
+        plugins_input = config.get("plugins") or ("ducklake",)
         attach_options = dict(config.get("attach_options") or {})
     else:  # pragma: no cover - defensive programming
         raise TypeError(
@@ -365,12 +344,17 @@ def build_ducklake_attachment(
     metadata_backend = coerce_backend_config(metadata_input, role="metadata backend")
     storage_backend = coerce_backend_config(storage_input, role="storage backend")
 
-    plugin_list = [str(plugin) for plugin in plugins]
+    if isinstance(plugins_input, str):
+        plugins_seq = (plugins_input,)
+    else:
+        plugins_seq = tuple(plugins_input)
+
+    plugin_list = tuple(str(plugin) for plugin in plugins_seq)
     attachment_config = DuckLakeAttachmentConfig(
         metadata_backend=metadata_backend,
         storage_backend=storage_backend,
         alias=alias,
-        plugins=tuple(plugin_list),
+        plugins=plugin_list,
         attach_options=attach_options,
     )
     manager = DuckLakeAttachmentManager(attachment_config)
