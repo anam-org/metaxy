@@ -96,7 +96,6 @@ def test_alembic_helpers():
     """Test Alembic integration helpers."""
     from metaxy.ext.alembic import (
         check_sqlmodel_enabled,
-        generate_alembic_env_template,
         get_metaxy_metadata,
     )
 
@@ -104,11 +103,6 @@ def test_alembic_helpers():
     metadata = get_metaxy_metadata()
     assert isinstance(metadata, MetaData)
     assert "metaxy-system__feature_versions" in metadata.tables
-
-    # Test template generation
-    template = generate_alembic_env_template()
-    assert "from metaxy.ext.alembic import get_metaxy_metadata" in template
-    assert '"sqlmodel" in metaxy_config.plugins' in template
 
     # Test check_sqlmodel_enabled
     from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig

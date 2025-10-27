@@ -63,6 +63,30 @@ Metaxy's metadata store automatically manages versioning columns:
 
 These columns need not be defined in your SQLModel class. The metadata store injects them during write and read operations.
 
+### Loading Features and Populating Metadata
+
+When using `metaxy.load_features()` to discover and import feature modules, all `SQLModelFeature` classes are automatically registered in SQLModel's metadata:
+
+```python
+from metaxy import load_features
+from sqlmodel import SQLModel
+
+# Load all features from configured entrypoints
+graph = load_features()
+
+# All SQLModelFeature tables are now registered in SQLModel.metadata
+# This metadata can be used with Alembic for migrations
+print(f"Tables registered: {list(SQLModel.metadata.tables.keys())}")
+```
+
+This is particularly useful when:
+- Generating Alembic migrations that need to discover all tables
+- Setting up database connections that require the complete schema
+- Using SQLModel's `create_all()` for development/testing (Metaxy's `auto_create_tables` setting should be preferred over `create_all()`)
+
+!!! tip "Migration Generation"
+    After calling `load_features()`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
+
 ## Configuration
 
 Configure automatic table naming behavior:
@@ -89,7 +113,7 @@ Configure automatic table naming behavior:
 
 ## Database Migrations with Alembic
 
-Metaxy provides SQLModel definitions for its system tables that integrate with [Alembic](https://alembic.sqlalchemy.org/) for database migrations. This allows you to version control schema changes alongside your application code.
+Metaxy provides SQLModel definitions for its system tables that integrate with [Alembic](https://alembic.sqlalchemy.org/) for database migrations. This allows you to version control schema changes alongside your application code. Note that you might want to keep separate migrations per each DB-backed `MetadataStore` used with Metaxy.
 
 ### Separate Migration Management
 
@@ -113,9 +137,10 @@ project/
 ├── alembic/              # User application migrations
 │   ├── versions/
 │   └── env.py
-├── alembic_metaxy/       # Metaxy system table migrations
-│   ├── versions/
-│   └── env.py
+├── .metaxy/
+│   └── alembic-system/   # Metaxy system table migrations
+│       ├── versions/
+│       └── env.py
 └── metaxy.toml
 ```
 
@@ -126,78 +151,29 @@ Initialize both Alembic directories:
 alembic init alembic
 
 # Initialize metaxy system migrations
-alembic init alembic_metaxy
+alembic init .metaxy/alembic-system
 ```
 
 ### Metaxy System Tables Configuration
 
-Configure `alembic_metaxy/env.py` to manage only metaxy system tables:
+Configure `.metaxy/alembic-system/env.py` to manage only metaxy system tables:
 
 ```python
-"""Alembic environment for metaxy system tables only."""
-
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
-
-# Import metaxy helpers
+# typical Alembic boilerplate
 from metaxy.ext.alembic import get_metaxy_metadata
 
-# Alembic Config object
-config = context.config
+metaxy_system_metadata = get_metaxy_metadata()
 
-# Configure logging
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# metaxy_system_metadata has system tables
 
-# Get metaxy system tables metadata ONLY
-target_metadata = get_metaxy_metadata()
-
-
-def run_migrations_offline() -> None:
-    """Run migrations in offline mode."""
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-def run_migrations_online() -> None:
-    """Run migrations in online mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+# continue with alembic boilerplate
 ```
 
-Configure `alembic_metaxy/alembic.ini` with your database URL:
+Configure `.metaxy/alembic-system/alembic.ini` with your database URL:
 
 ```ini
 [alembic]
-script_location = alembic_metaxy
-sqlalchemy.url = postgresql://user:pass@localhost/dbname
+script_location = .metaxy/alembic-system
 ```
 
 ### User Application Tables Configuration
@@ -205,70 +181,16 @@ sqlalchemy.url = postgresql://user:pass@localhost/dbname
 Configure `alembic/env.py` to manage user tables, excluding metaxy system tables:
 
 ```python
-"""Alembic environment for user application tables."""
+# standard Alembic boilerplate
+from sqlmodel import SQLModel
+from metaxy import load_features
 
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
+load_features()
 
-# Import your application models
-from myapp.models import Base
-
-config = context.config
-
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
-# Use your application's metadata
-# This should NOT include metaxy system tables
-target_metadata = Base.metadata
+# SQLModel.metadata now has user-defined Metaxy tables
 
 
-def run_migrations_offline() -> None:
-    """Run migrations in offline mode."""
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-        # Exclude metaxy system tables
-        include_schemas=False,
-        include_object=lambda obj, name, type_, reflected, compare_to: (
-            not name.startswith("metaxy-system__")
-        ),
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-def run_migrations_online() -> None:
-    """Run migrations in online mode."""
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            # Exclude metaxy system tables
-            include_object=lambda obj, name, type_, reflected, compare_to: (
-                not name.startswith("metaxy-system__")
-            ),
-        )
-
-        with context.begin_transaction():
-            context.run_migrations()
-
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    run_migrations_online()
+# continue with alembic boilerplate
 ```
 
 ### Migration Workflow
@@ -277,8 +199,8 @@ Generate and apply migrations separately for each concern:
 
 ```bash
 # 1. Create metaxy system tables (run once during initial setup)
-alembic -c alembic_metaxy/alembic.ini revision --autogenerate -m "create metaxy system tables"
-alembic -c alembic_metaxy/alembic.ini upgrade head
+alembic -c .metaxy/alembic-system/alembic.ini revision --autogenerate -m "create metaxy system tables"
+alembic -c .metaxy/alembic-system/alembic.ini upgrade head
 
 # 2. Create and apply user table migrations
 alembic revision --autogenerate -m "add video feature table"
@@ -293,18 +215,16 @@ When deploying to production, always apply system table migrations before user m
 
 ```bash
 # Production deployment order
-alembic -c alembic_metaxy/alembic.ini upgrade head  # System tables first
+alembic -c .metaxy/alembic-system/alembic.ini upgrade head  # System tables first
 alembic upgrade head                                 # Then user tables
 ```
 
-### Enabling SQLModel System Tables
+### Disabling SQLModel System Tables
 
-Enable SQLModel system tables in `metaxy.toml`:
+If required, disable SQLModel system tables in `metaxy.toml`:
 
 ```toml
 [ext.sqlmodel]
-enabled = true          # Enable SQLModel plugin
-system_tables = true    # Use SQLModel definitions for system tables
+enabled = true
+system_tables = false
 ```
-
-Once enabled, metaxy system tables are available to Alembic through the `metaxy.ext.alembic` helpers. The tables appear in your database with the `metaxy-system__` prefix and can be managed through the separate Alembic configuration described above.
