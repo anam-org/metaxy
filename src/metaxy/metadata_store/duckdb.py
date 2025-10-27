@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store._ducklake_support import (
+    DuckDBConnection,
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
     DuckLakeConfigInput,
@@ -193,26 +194,55 @@ class DuckDBMetadataStore(IbisMetadataStore):
         """Open DuckDB connection and configure optional DuckLake attachment."""
         super().open()
         if self._ducklake_attachment is not None:
-            if self._conn is None:
-                raise RuntimeError(
-                    "DuckDBMetadataStore failed to open DuckDB connection."
-                )
-            self._ducklake_attachment.configure(self._conn)
+            duckdb_conn = self._duckdb_raw_connection()
+            self._ducklake_attachment.configure(duckdb_conn)
 
     def preview_ducklake_sql(self) -> list[str]:
         """Return DuckLake attachment SQL if configured."""
-        if self._ducklake_attachment is None:
-            raise RuntimeError("DuckLake attachment is not configured.")
-        return self._ducklake_attachment.preview_sql()
+        return self.ducklake_attachment.preview_sql()
 
-    def get_ducklake_attachment_manager(self) -> DuckLakeAttachmentManager:
-        """Expose DuckLake attachment manager for advanced scenarios."""
+    @property
+    def ducklake_attachment(self) -> DuckLakeAttachmentManager:
+        """DuckLake attachment manager (raises if not configured)."""
         if self._ducklake_attachment is None:
             raise RuntimeError("DuckLake attachment is not configured.")
         return self._ducklake_attachment
 
-    def get_ducklake_attachment_config(self) -> DuckLakeAttachmentConfig:
-        """Return the DuckLake attachment configuration."""
+    @property
+    def ducklake_attachment_config(self) -> DuckLakeAttachmentConfig:
+        """DuckLake attachment configuration (raises if not configured)."""
         if self._ducklake_config is None:
             raise RuntimeError("DuckLake attachment is not configured.")
         return self._ducklake_config
+
+    def _duckdb_raw_connection(self) -> DuckDBConnection:
+        """Return the underlying DuckDBPyConnection from the Ibis backend."""
+        if self._conn is None:
+            raise RuntimeError("DuckDB connection is not open.")
+
+        backend = self._conn
+        candidate = getattr(backend, "con", None)
+        if isinstance(candidate, DuckDBConnection):
+            return candidate
+
+        candidate = getattr(backend, "connection", None)
+        if isinstance(candidate, DuckDBConnection):
+            return candidate
+
+        candidate = getattr(backend, "_conn", None)
+        if isinstance(candidate, DuckDBConnection):
+            return candidate
+
+        candidate = getattr(backend, "_con", None)
+        if isinstance(candidate, DuckDBConnection):
+            return candidate
+
+        if hasattr(backend, "raw_connection"):
+            raw_candidate = backend.raw_connection()  # type: ignore[call-arg]
+            if isinstance(raw_candidate, DuckDBConnection):
+                return raw_candidate
+
+        raise RuntimeError(
+            "DuckDB Ibis backend does not expose a DuckDBPyConnection via "
+            "'con', 'connection', or 'raw_connection()'."
+        )
