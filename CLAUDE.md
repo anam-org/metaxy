@@ -283,10 +283,6 @@ This prevents unnecessary dependencies from loading when not needed.
 
 ### imports
 
-# ❌ Don't do this
-from __future__ import annotations
-this is not needed for modern versions of python!
-
 ### Hash Algorithm Consistency
 All stores in a fallback chain must use the same hash algorithm. This is validated at store open time.
 
