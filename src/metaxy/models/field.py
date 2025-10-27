@@ -1,5 +1,7 @@
 from enum import Enum
 
+from pydantic import Field as PydanticField
+
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -14,7 +16,7 @@ class FieldDep(FrozenBaseModel):
 
 
 class FieldSpec(FrozenBaseModel):
-    key: FieldKey
+    key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
     code_version: int = 1
 
     # field-level dependencies can be one of the following:

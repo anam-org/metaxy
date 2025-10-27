@@ -37,10 +37,6 @@
           pkgs.clickhouse
           pkgs.graphviz
         ];
-        # UV_PYTHON = "${python}/bin/python";
-        shellHook = ''
-          uv python pin 3.10
-        '';
       };
     };
   };

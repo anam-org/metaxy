@@ -48,35 +48,37 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
     """Test that feature_version changes when code_version changes."""
     from metaxy.models.feature import FeatureGraph
 
-    # Use separate registries
+    # Use separate registries with context managers
     graph_v1 = FeatureGraph()
     graph_v2 = FeatureGraph()
 
-    class FeatureV1(
-        Feature,
-        spec=FeatureSpec(
-            key=FeatureKey(["versioned", "feature", "test_v1"]),
-            deps=None,
-            fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
-            ],
-        ),
-        graph=graph_v1,
-    ):
-        pass
+    with graph_v1.use():
 
-    class FeatureV2(
-        Feature,
-        spec=FeatureSpec(
-            key=FeatureKey(["versioned", "feature", "test_v2"]),
-            deps=None,
-            fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
-            ],
-        ),
-        graph=graph_v2,
-    ):
-        pass
+        class FeatureV1(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["versioned", "feature", "test_v1"]),
+                deps=None,
+                fields=[
+                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                ],
+            ),
+        ):
+            pass
+
+    with graph_v2.use():
+
+        class FeatureV2(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["versioned", "feature", "test_v2"]),
+                deps=None,
+                fields=[
+                    FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+                ],
+            ),
+        ):
+            pass
 
     v1 = FeatureV1.feature_version()
     v2 = FeatureV2.feature_version()

@@ -62,6 +62,10 @@ class FeatureDep(pydantic.BaseModel):
                     )
         return self
 
+    def table_name(self) -> str:
+        """Get SQL-like table name for this feature spec."""
+        return self.key.table_name
+
 
 class FeatureSpec(pydantic.BaseModel):
     key: FeatureKey
@@ -80,3 +84,22 @@ class FeatureSpec(pydantic.BaseModel):
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
         return {c.key: c for c in self.fields}
+
+    def table_name(self) -> str:
+        """Get SQL-like table name for this feature spec."""
+        return self.key.table_name
+
+    @pydantic.model_validator(mode="after")
+    def validate_unique_field_keys(self) -> "FeatureSpec":
+        """Validate that all fields have unique keys."""
+        seen_keys: set[tuple[str, ...]] = set()
+        for field in self.fields:
+            # Convert to tuple for hashability in case it's a plain list
+            key_tuple = tuple(field.key)
+            if key_tuple in seen_keys:
+                raise ValueError(
+                    f"Duplicate field key found: {field.key}. "
+                    f"All fields must have unique keys."
+                )
+            seen_keys.add(key_tuple)
+        return self
