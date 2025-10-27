@@ -1,5 +1,8 @@
 name: QA
 
+env:
+  UV_MANAGED_PYTHON: "1"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -38,21 +41,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-24.05
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: nicknovitski/nix-develop@v1
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Install Python 3.10
-        run: uv python install 3.10 && uv python pin 3.10
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: nicknovitski/nix-develop@v1
+      - run: uv python pin 3.10 && uv python install 3.10
       - name: Sync dependencies
-        run: uv sync --all-extras --all-groups --python 3.10
+        run: uv sync --all-extras --all-groups
       - name: Run Basedpyright
         run: uv run basedpyright --level error
 
@@ -65,21 +67,20 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-24.05
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: nicknovitski/nix-develop@v1
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: Install Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }} && uv python pin ${{ matrix.python-version }}
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: nicknovitski/nix-develop@v1
+      - run: uv python pin ${{ matrix.python-version }} && uv python install ${{ matrix.python-version }}
       - name: Sync dependencies
-        run: uv sync --all-extras --all-groups --python ${{ matrix.python-version }}
+        run: uv sync --all-extras --all-groups
       - name: Run Tests
         run: uv run pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
       - name: Coverage comment
