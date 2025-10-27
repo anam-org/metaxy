@@ -1,4 +1,4 @@
-entrypoints = []
+entrypoints = ["examples.ducklake.demo"]
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
