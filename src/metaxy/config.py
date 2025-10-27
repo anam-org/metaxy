@@ -9,12 +9,17 @@ try:
 except ImportError:
     import tomli as tomllib  # Fallback for Python 3.10
 
+import warnings
+from contextvars import ContextVar
+
 from pydantic import Field as PydanticField
+from pydantic import PrivateAttr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import (
@@ -105,6 +110,50 @@ class StoreConfig(BaseSettings):
     config: dict[str, Any] = PydanticField(default_factory=dict)
 
 
+class PluginConfig(BaseSettings):
+    """Configuration for Metaxy plugins"""
+
+    enable: bool = PydanticField(
+        default=False,
+        description="Whether to enable the plugin.",
+    )
+
+    _plugin: str = PrivateAttr()
+
+
+class SQLModelConfig(PluginConfig):
+    """Configuration for SQLModel"""
+
+    infer_db_table_names: bool = PydanticField(
+        default=True,
+        description="Whether to automatically use `FeatureKey.table_name` for sqlalchemy's __tablename__ value.",
+    )
+
+    # Whether to use SQLModel definitions for system tables (for Alembic migrations)
+    system_tables: bool = PydanticField(
+        default=True,
+        description="Whether to use SQLModel definitions for system tables (for Alembic migrations).",
+    )
+
+    _plugin: str = PrivateAttr(default="sqlmodel")
+
+
+class ExtConfig(BaseSettings):
+    """Configuration for Metaxy integrations with third-party tools"""
+
+    model_config = SettingsConfigDict(
+        extra="allow",
+    )
+
+    sqlmodel: SQLModelConfig = PydanticField(default_factory=SQLModelConfig)
+
+
+# Context variable for storing the app context
+_metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
+    "_metaxy_config", default=None
+)
+
+
 class MetaxyConfig(BaseSettings):
     """Main Metaxy configuration.
 
@@ -140,13 +189,25 @@ class MetaxyConfig(BaseSettings):
     stores: dict[str, StoreConfig] = PydanticField(default_factory=dict)
 
     # Migrations directory
-    migrations_dir: str = "metaxy/migrations"
+    migrations_dir: str = ".metaxy/migrations"
 
     # Entrypoints to load (list of module paths)
     entrypoints: list[str] = PydanticField(default_factory=list)
 
     # Graph rendering theme
     theme: str = "default"
+
+    ext: ExtConfig = PydanticField(default_factory=ExtConfig)
+
+    @property
+    def plugins(self) -> list[str]:
+        """Returns all enabled plugin names from ext configuration."""
+        plugins = []
+        for field_name in type(self.ext).model_fields:
+            field_value = getattr(self.ext, field_name)
+            if hasattr(field_value, "_plugin") and field_value.enable:
+                plugins.append(field_value._plugin)
+        return plugins
 
     @classmethod
     def settings_customise_sources(
@@ -166,6 +227,30 @@ class MetaxyConfig(BaseSettings):
         """
         toml_settings = TomlConfigSettingsSource(settings_cls)
         return (init_settings, env_settings, toml_settings)
+
+    @classmethod
+    def get(cls) -> "MetaxyConfig":
+        """Get the current Metaxy configuration."""
+        cfg = _metaxy_config.get()
+        if cfg is None:
+            warnings.warn(
+                UserWarning(
+                    "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved)."
+                )
+            )
+            return cls()
+        else:
+            return cfg
+
+    @classmethod
+    def set(cls, config: Self | None) -> None:
+        """Set the current Metaxy configuration."""
+        _metaxy_config.set(config)
+
+    @classmethod
+    def reset(cls) -> None:
+        """Reset the current Metaxy configuration to None."""
+        _metaxy_config.set(None)
 
     @classmethod
     def load(
@@ -232,11 +317,7 @@ class MetaxyConfig(BaseSettings):
             # Use default sources (auto-discovery + env vars)
             config = cls()
 
-        # Load entrypoints if configured (do this after config is created)
-        if config.entrypoints:
-            from metaxy.entrypoints import load_entrypoints
-
-            load_entrypoints(config.entrypoints)
+        cls.set(config)
 
         return config
 

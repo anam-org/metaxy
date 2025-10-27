@@ -475,7 +475,7 @@ class FeatureGraph:
 graph = FeatureGraph()
 
 
-class _FeatureMeta(ModelMetaclass):
+class MetaxyMeta(ModelMetaclass):
     def __new__(
         cls,
         cls_name: str,
@@ -485,7 +485,7 @@ class _FeatureMeta(ModelMetaclass):
         spec: FeatureSpec | None,
         **kwargs,
     ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
-        new_cls = super().__new__(cls, cls_name, bases, namespace)
+        new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
 
         if spec:
             # Get graph from context at class definition time
@@ -499,9 +499,30 @@ class _FeatureMeta(ModelMetaclass):
         return new_cls
 
 
-class Feature(FrozenBaseModel, metaclass=_FeatureMeta, spec=None):
+class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     spec: ClassVar[FeatureSpec]
     graph: ClassVar[FeatureGraph]
+
+    @classmethod
+    def table_name(cls) -> str:
+        """Get SQL-like table name for this feature.
+
+        Converts feature key to SQL-compatible table name by joining
+        parts with double underscores, consistent with IbisMetadataStore.
+
+        Returns:
+            Table name string (e.g., "my_namespace__my_feature")
+
+        Example:
+            >>> class VideoFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["video", "processing"]),
+            ...     ...
+            ... )):
+            ...     pass
+            >>> VideoFeature.table_name()
+            'video__processing'
+        """
+        return cls.spec.table_name()
 
     @classmethod
     def feature_version(cls) -> str:

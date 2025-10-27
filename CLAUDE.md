@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - @agent-planner
 - @agent-python-dev
 - @agent-qa
+- @agent-python-test-engineer
 
 ## Project Status
 
@@ -28,9 +29,7 @@ Metaxy is a feature metadata management system for multimodal ML pipelines that 
 
 ## Development
 
-Always get `planner` agent involved for non-trivial changes.
-Always use `python-dev` agent for Python code changes.
-Always use `qa` agent after non-trivial changes.
+Never create git commits unless asked for explicitly by the user.
 
 ### Environment Setup
 ```bash
@@ -85,7 +84,7 @@ uv run metaxy --help
 uv run metaxy list features
 
 # Push graph snapshot (CD workflow)
-uv run metaxy push
+uv run metaxy graph push
 
 # Generate migration
 uv run metaxy migrations generate
@@ -99,7 +98,7 @@ uv run metaxy migrations apply
 # Run examples - each example is a directory with metaxy.toml
 cd examples/src/<example_name>  # e.g., recompute, migration
 
-# Set VERSION to switch between stages
+# Set VERSION to switch between feature definition variants
 VERSION=1 uv run metaxy list features
 VERSION=2 uv run metaxy list features
 
@@ -326,10 +325,10 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 4. Add tests for new algorithm
 
 ### Extending Migration Operations
-1. Create operation class in `migrations/ops.py` inheriting from `MigrationOperation`
+1. Create operation class in `migrations/ops.py` inheriting from `BaseOperation`
 2. Implement `execute()` method
 3. Update migration YAML schema to support new operation type
-4. Add tests in `tests/test_migrations.py`
+4. Add tests in `tests/migrations`
 
 ## Key Files Reference
 
@@ -337,7 +336,7 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 - `models/feature.py`: Feature, FeatureGraph, graph context management
 - `models/feature_spec.py`: FeatureSpec, FieldSpec, dependency specifications
 - `models/types.py`: FeatureKey, FieldKey, type definitions
-- `models/plan.py`: FeaturePlan, dependency resolution
+- `models/graph.py`: FeatureGraph, dependency resolution
 
 ### Metadata Storage
 - `metadata_store/base.py`: Abstract MetadataStore with full API
@@ -352,7 +351,7 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 - `data_versioning/hash_algorithms.py`: HashAlgorithm enum
 
 ### Migrations
-- `migrations/detection.py`: Change detection logic
+- `migrations/detector.py`: Change detection logic
 - `migrations/ops.py`: Migration operation types
 - `migrations/models.py`: Migration YAML schema (Pydantic models)
 

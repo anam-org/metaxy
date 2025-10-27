@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "pyyaml>=6.0.0",
     "tomli>=2.3.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
@@ -23,12 +24,14 @@ ibis = [
     "pyarrow>=18.0.0",
     "ibis-framework>=11.0.0",
 ]
-rendering = [
+mermaid = [
     "mermaid-py>=0.8.0",
-    "rich>=13.0.0",
 ]
 graphviz = [
     "pygraphviz>=1.14",
+]
+sqlmodel = [
+    "sqlmodel>=0.0.27",
 ]
 
 [project.scripts]

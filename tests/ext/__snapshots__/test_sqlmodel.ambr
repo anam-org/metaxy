@@ -1,0 +1,71 @@
+# serializer version: 1
+# name: test_basic_sqlmodel_feature_creation
+  'd7b29b90a0189084ce830c7e4dc76624e8abb44744ed82a18b5d0449f0739928'
+# ---
+# name: test_data_version_method
+  dict({
+    'embeddings': '072b1924ad607ebd51b35a9420e2cca977084bd89635295bc31a9e836241036b',
+    'processed_data': '168d29320093e6d2ac5be6da0eb586415aef1326f074bca039afff80fd113910',
+  })
+# ---
+# name: test_feature_version_method
+  '1d0dde62c113307f47edbac71bd43064f914735c1df7c7ce2d30163b5b0deb40'
+# ---
+# name: test_feature_with_dependencies
+  dict({
+    'child': 'f5609fc0467446b76d2eb4d1dc7317e62aa9782a61a3357741f1e2901f743b3a',
+    'parent': '734df67d44e731a7b5687c43a3f809ad749565f263bd822cfd40c50031f31d10',
+  })
+# ---
+# name: test_feature_with_field_dependencies
+  'bbee5ac35083c47d7a98a805f2e83e473bcb0796931e518b97bd3cad7598e64b'
+# ---
+# name: test_graph_snapshot_inclusion
+  '88c4365cba5fe82fd5a93743c156631fe676ddea4014d991d34529bb397ac8b2'
+# ---
+# name: test_sqlmodel_feature_multiple_fields
+  '5af13273b2c95417cf75ad5a075cb43218939d3688cc8c6b2c0e9a4c55858eaf'
+# ---
+# name: test_sqlmodel_feature_with_duckdb_store
+  list([
+    dict({
+      'data_version': dict({
+        'duration': 'hash1',
+        'frames': 'hash1',
+      }),
+      'duration': 120.5,
+      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'path': '/videos/v1.mp4',
+      'sample_uid': 1,
+      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+    }),
+    dict({
+      'data_version': dict({
+        'duration': 'hash2',
+        'frames': 'hash2',
+      }),
+      'duration': 90.0,
+      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'path': '/videos/v2.mp4',
+      'sample_uid': 2,
+      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+    }),
+    dict({
+      'data_version': dict({
+        'duration': 'hash3',
+        'frames': 'hash3',
+      }),
+      'duration': 150.3,
+      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'path': '/videos/v3.mp4',
+      'sample_uid': 3,
+      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+    }),
+  ])
+# ---
+# name: test_version_changes_with_code_version
+  dict({
+    'v1': 'b20eb9151a785331e8094ebe3e86f459f427f158b42178f9504f6908d11b4d5a',
+    'v2': '8826af99bb73ef997a26da65fc368392b40f36adcfa5d8f960c0019218e6ef2d',
+  })
+# ---

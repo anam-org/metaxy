@@ -337,22 +337,30 @@ class TempMetaxyProject(MetaxyProject):
         ...     assert result.returncode == 0
     """
 
-    def __init__(self, tmp_path: Path):
+    def __init__(self, tmp_path: Path, config_content: str | None = None):
         """Initialize a temporary Metaxy project.
 
         Args:
             tmp_path: Temporary directory path (usually from pytest tmp_path fixture)
+            config_content: Optional custom configuration content for metaxy.toml.
+                If not provided, uses default DuckDB configuration.
         """
         super().__init__(tmp_path)
         self.project_dir.mkdir(exist_ok=True)
         self._feature_modules: list[str] = []
+        self._custom_config = config_content
         self._write_config()
 
     def _write_config(self):
-        """Write basic metaxy.toml with DuckDB store configuration."""
-        dev_db_path = self.project_dir / "metadata.duckdb"
-        staging_db_path = self.project_dir / "metadata_staging.duckdb"
-        config_content = f'''store = "dev"
+        """Write metaxy.toml configuration file."""
+        if self._custom_config is not None:
+            # Use custom config content
+            config_content = self._custom_config
+        else:
+            # Default DuckDB store configuration
+            dev_db_path = self.project_dir / "metadata.duckdb"
+            staging_db_path = self.project_dir / "metadata_staging.duckdb"
+            config_content = f'''store = "dev"
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"

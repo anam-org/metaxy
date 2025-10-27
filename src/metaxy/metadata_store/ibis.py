@@ -253,16 +253,6 @@ class IbisMetadataStore(MetadataStore):
             # but setting to None releases resources
             self._conn = None
 
-    def _feature_key_to_table_name(self, feature_key: FeatureKey) -> str:
-        """
-        Convert feature key to SQL table name.
-
-        Examples:
-            FeatureKey(["my_namespace", "my_feature"]) -> "my_namespace__my_feature"
-            FeatureKey(["metaxy-system", "feature_versions"]) -> "metaxy-system__feature_versions"
-        """
-        return "__".join(feature_key)
-
     def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
         """Convert table name back to feature key."""
         return FeatureKey(table_name.split("__"))
@@ -307,7 +297,7 @@ class IbisMetadataStore(MetadataStore):
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
         """
-        table_name = self._feature_key_to_table_name(feature_key)
+        table_name = feature_key.table_name
 
         # Serialize for storage (e.g., convert structs to JSON for SQLite)
         df = self._serialize_for_storage(df)
@@ -336,7 +326,7 @@ class IbisMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to drop metadata for
         """
-        table_name = self._feature_key_to_table_name(feature_key)
+        table_name = feature_key.table_name
 
         # Check if table exists
         if table_name in self.conn.list_tables():
@@ -363,7 +353,7 @@ class IbisMetadataStore(MetadataStore):
             Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
-        table_name = self._feature_key_to_table_name(feature_key)
+        table_name = feature_key.table_name
 
         # Check if table exists
         existing_tables = self.conn.list_tables()

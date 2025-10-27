@@ -77,6 +77,11 @@ class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]
         # Wrap in FeatureKey
         return cls(validated)
 
+    @property
+    def table_name(self) -> str:
+        """Get SQL-like table name for this feature key."""
+        return "__".join(self)
+
 
 class FieldKey(list):  # pyright: ignore[reportMissingTypeArgument]
     """
