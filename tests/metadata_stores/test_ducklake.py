@@ -1,8 +1,14 @@
 """Tests for DuckLake integration via DuckDB metadata store."""
 
+import polars as pl
+import pytest
+from polars.testing import assert_frame_equal
+
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store._ducklake_support import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
+    _PreviewConnection,
     format_attach_options,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -123,3 +129,58 @@ def test_duckdb_store_preview_via_config_manager() -> None:
     preview = manager.preview_sql()
     assert preview[0] == "INSTALL ducklake;"
     assert preview[-1] == "USE ducklake;"
+
+
+@pytest.mark.usefixtures("test_graph")
+def test_ducklake_store_read_write_roundtrip(
+    tmp_path, test_features, monkeypatch
+) -> None:
+    """DuckLake-configured store should still support read/write API."""
+    recorded_commands: list[str] = []
+    original_configure = DuckLakeAttachmentManager.configure
+
+    def fake_configure(self, conn):
+        preview_conn = _PreviewConnection()
+        original_configure(self, preview_conn)
+        recorded_commands.extend(preview_conn.cursor().commands)
+
+    monkeypatch.setattr(DuckLakeAttachmentManager, "configure", fake_configure)
+
+    db_path = tmp_path / "ducklake_roundtrip.duckdb"
+    metadata_path = tmp_path / "ducklake_catalog.duckdb"
+    storage_dir = tmp_path / "ducklake_storage"
+
+    ducklake_config = {
+        "alias": "lake",
+        "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
+        "storage_backend": {"type": "local", "path": str(storage_dir)},
+    }
+
+    feature = test_features["UpstreamFeatureA"]
+    payload = pl.DataFrame(
+        {
+            "sample_id": [1, 2],
+            "data_version": [
+                {"frames": "hash_1", "audio": "hash_1"},
+                {"frames": "hash_2", "audio": "hash_2"},
+            ],
+        }
+    )
+
+    store = DuckDBMetadataStore(
+        database=db_path,
+        extensions=["json"],
+        ducklake=ducklake_config,
+    )
+
+    with store:
+        store.write_metadata(feature, payload)
+        result = collect_to_polars(store.read_metadata(feature))
+
+    actual = result.sort("sample_id").select(["sample_id", "data_version"])
+    expected = payload.sort("sample_id")
+    assert_frame_equal(actual, expected)
+
+    assert recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
+    assert any(cmd.startswith("ATTACH 'ducklake:") for cmd in recorded_commands)
+    assert recorded_commands[-1] == "USE lake;"
