@@ -2,10 +2,11 @@
 
 import os
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from duckdb import DuckDBPyConnection  # noqa: TID252
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 DuckDBConnection = DuckDBPyConnection
 
@@ -122,6 +123,13 @@ def _storage_sql_from_mapping(config: Mapping[str, Any], alias: str) -> tuple[st
         path = config.get("path")
         if not path:
             raise ValueError("DuckLake local storage backend requires 'path'.")
+        if isinstance(path, (str, os.PathLike)):
+            try:
+                Path(path).mkdir(parents=True, exist_ok=True)
+            except OSError as exc:  # pragma: no cover - pass-through failure
+                raise ValueError(
+                    f"Unable to create local DuckLake storage directory at {path!r}: {exc}"
+                ) from exc
         literal_path = _stringify_scalar(path)
         return "", f"DATA_PATH {literal_path}"
     raise ValueError(f"Unsupported DuckLake storage backend type: {storage_type!r}")
@@ -230,15 +238,68 @@ def format_attach_options(options: Mapping[str, Any] | None) -> str:
     return f" ({', '.join(parts)})" if parts else ""
 
 
-@dataclass
-class DuckLakeAttachmentConfig:
+class DuckLakeAttachmentConfig(BaseModel):
     """Configuration payload used to attach DuckLake to a DuckDB connection."""
 
     metadata_backend: DuckLakeBackend
     storage_backend: DuckLakeBackend
     alias: str = "ducklake"
-    plugins: Sequence[str] = ("ducklake",)
-    attach_options: Mapping[str, Any] | None = None
+    plugins: tuple[str, ...] = Field(default_factory=lambda: ("ducklake",))
+    attach_options: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("metadata_backend", mode="before")
+    @classmethod
+    def _coerce_metadata_backend(cls, value: DuckLakeBackendInput) -> DuckLakeBackend:
+        return coerce_backend_config(value, role="metadata backend")
+
+    @field_validator("storage_backend", mode="before")
+    @classmethod
+    def _coerce_storage_backend(cls, value: DuckLakeBackendInput) -> DuckLakeBackend:
+        return coerce_backend_config(value, role="storage backend")
+
+    @field_validator("alias", mode="before")
+    @classmethod
+    def _normalise_alias(cls, value: Any) -> str:
+        if value is None:
+            return "ducklake"
+        return str(value)
+
+    @field_validator("plugins", mode="before")
+    @classmethod
+    def _coerce_plugins(cls, value: Any) -> tuple[str, ...]:
+        if value is None:
+            return ("ducklake",)
+        if isinstance(value, str):
+            candidate = (value,)
+        else:
+            try:
+                candidate = tuple(value)
+            except TypeError as exc:  # pragma: no cover - defensive guard
+                raise TypeError(
+                    "plugins must be a string or sequence of strings."
+                ) from exc
+        return tuple(str(plugin) for plugin in candidate)
+
+    @field_validator("attach_options", mode="before")
+    @classmethod
+    def _normalise_attach_options(cls, value: Any) -> dict[str, Any]:
+        if value is None:
+            return {}
+        if isinstance(value, Mapping):
+            return dict(value)
+        raise TypeError("attach_options must be a mapping if provided.")
+
+    @computed_field(return_type=tuple[str, str])
+    def metadata_sql_parts(self) -> tuple[str, str]:
+        """Pre-computed metadata SQL components for DuckLake attachments."""
+        return resolve_metadata_backend(self.metadata_backend, self.alias)
+
+    @computed_field(return_type=tuple[str, str])
+    def storage_sql_parts(self) -> tuple[str, str]:
+        """Pre-computed storage SQL components for DuckLake attachments."""
+        return resolve_storage_backend(self.storage_backend, self.alias)
 
 
 class _PreviewCursor:
@@ -277,12 +338,8 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            metadata_secret_sql, metadata_params_sql = resolve_metadata_backend(
-                self._config.metadata_backend, self._config.alias
-            )
-            storage_secret_sql, storage_params_sql = resolve_storage_backend(
-                self._config.storage_backend, self._config.alias
-            )
+            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts
+            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts
 
             if metadata_secret_sql:
                 cursor.execute(metadata_secret_sql)
@@ -321,42 +378,18 @@ def build_ducklake_attachment(
 ) -> tuple[DuckLakeAttachmentConfig, DuckLakeAttachmentManager]:
     """Normalise ducklake configuration and create attachment manager."""
     if isinstance(config, DuckLakeAttachmentConfig):
-        metadata_input = config.metadata_backend
-        storage_input = config.storage_backend
-        alias = str(config.alias)
-        plugins_input = tuple(config.plugins)
-        attach_options = dict(config.attach_options or {})
+        attachment_config = config
     elif isinstance(config, Mapping):
         if "metadata_backend" not in config or "storage_backend" not in config:
             raise ValueError(
                 "DuckLake configuration requires both 'metadata_backend' and 'storage_backend'."
             )
-        metadata_input = config["metadata_backend"]
-        storage_input = config["storage_backend"]
-        alias = str(config.get("alias", "ducklake"))
-        plugins_input = config.get("plugins") or ("ducklake",)
-        attach_options = dict(config.get("attach_options") or {})
+        attachment_config = DuckLakeAttachmentConfig.model_validate(dict(config))
     else:  # pragma: no cover - defensive programming
         raise TypeError(
             "DuckLake configuration must be a DuckLakeAttachmentConfig or mapping."
         )
 
-    metadata_backend = coerce_backend_config(metadata_input, role="metadata backend")
-    storage_backend = coerce_backend_config(storage_input, role="storage backend")
-
-    if isinstance(plugins_input, str):
-        plugins_seq = (plugins_input,)
-    else:
-        plugins_seq = tuple(plugins_input)
-
-    plugin_list = tuple(str(plugin) for plugin in plugins_seq)
-    attachment_config = DuckLakeAttachmentConfig(
-        metadata_backend=metadata_backend,
-        storage_backend=storage_backend,
-        alias=alias,
-        plugins=plugin_list,
-        attach_options=attach_options,
-    )
     manager = DuckLakeAttachmentManager(attachment_config)
     return attachment_config, manager
 

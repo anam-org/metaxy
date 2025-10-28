@@ -12,3 +12,4 @@ wheels/
 
 # clickhouse
 preprocessed_configs
+.hypothesis/

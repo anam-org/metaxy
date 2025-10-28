@@ -225,24 +225,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if isinstance(candidate, DuckDBConnection):
             return candidate
 
-        candidate = getattr(backend, "connection", None)
-        if isinstance(candidate, DuckDBConnection):
-            return candidate
-
-        candidate = getattr(backend, "_conn", None)
-        if isinstance(candidate, DuckDBConnection):
-            return candidate
-
-        candidate = getattr(backend, "_con", None)
-        if isinstance(candidate, DuckDBConnection):
-            return candidate
-
-        if hasattr(backend, "raw_connection"):
-            raw_candidate = backend.raw_connection()  # type: ignore[call-arg]
+        raw_connection = getattr(backend, "raw_connection", None)
+        if callable(raw_connection):
+            raw_candidate = raw_connection()
             if isinstance(raw_candidate, DuckDBConnection):
                 return raw_candidate
 
         raise RuntimeError(
-            "DuckDB Ibis backend does not expose a DuckDBPyConnection via "
-            "'con', 'connection', or 'raw_connection()'."
+            "DuckDB Ibis backend does not expose a DuckDBPyConnection via 'con' or raw_connection()."
         )
