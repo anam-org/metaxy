@@ -550,6 +550,7 @@ class MetadataStore(ABC):
                 {
                     "feature_key": feature_key_str,
                     "feature_version": feature_data["feature_version"],
+                    "feature_spec_version": feature_data["feature_spec_version"],
                     "recorded_at": datetime.now(timezone.utc),
                     "feature_spec": feature_spec_json,
                     "feature_class_path": feature_data["feature_class_path"],

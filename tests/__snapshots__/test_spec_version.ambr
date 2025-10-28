@@ -1,0 +1,45 @@
+# serializer version: 1
+# name: test_feature_spec_version_deterministic
+  '77fdaff09ea39d0c983ec88624968f12e51b96e20e14e5fde56be6eb9994d846'
+# ---
+# name: test_feature_spec_version_includes_all_properties
+  'ce4a15e0272aaf2b7c2d8f40ee2faf7ced87c5f80849c0490be5b4339dffa0a1'
+# ---
+# name: test_feature_spec_version_recorded_in_metadata_store
+  dict({
+    'feature_key': 'recorded/feature',
+    'feature_spec_version': 'c888fd04f3579951feb5cbc6737a25c0c82bef39959f2978494e7c9d7de1eade',
+    'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
+    'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+  })
+# ---
+# name: test_feature_spec_version_stored_in_snapshot
+  dict({
+    'feature_class_path': 'tests.test_spec_version.SnapshotFeature',
+    'feature_spec': dict({
+      'code_version': 2,
+      'deps': None,
+      'fields': list([
+        dict({
+          'code_version': 1,
+          'deps': '__METAXY_ALL_DEP__',
+          'key': list([
+            'data',
+          ]),
+        }),
+      ]),
+      'key': list([
+        'snapshot',
+        'test',
+      ]),
+    }),
+    'feature_spec_version': '9ef997067455d27839454654219132532043828421b4c1f2b89d2ed982843fb7',
+    'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+  })
+# ---
+# name: test_feature_spec_version_with_column_selection_and_rename
+  'd16558576d2a0b335de5be1ab38730b4511490935180dd01724b6580dde07fe0'
+# ---
+# name: test_feature_spec_version_with_multiple_complex_deps
+  'bc758e8b2fa34b4bc7f0f385680b4615085db51d877a384264960e5c7b473267'
+# ---

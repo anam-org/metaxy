@@ -240,6 +240,7 @@ class FeatureGraph:
             Dict of feature_key -> {
                 feature_spec: dict,
                 feature_version: str,
+                feature_spec_version: str,
                 feature_class_path: str
             }
 
@@ -247,6 +248,8 @@ class FeatureGraph:
             >>> snapshot = graph.to_snapshot()
             >>> snapshot["video_processing"]["feature_version"]
             'abc12345'
+            >>> snapshot["video_processing"]["feature_spec_version"]
+            'def67890'
             >>> snapshot["video_processing"]["feature_class_path"]
             'myapp.features.video.VideoProcessing'
         """
@@ -256,6 +259,7 @@ class FeatureGraph:
             feature_key_str = feature_key.to_string()
             feature_spec_dict = feature_cls.spec.model_dump(mode="json")  # type: ignore[attr-defined]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+            feature_spec_version = feature_cls.spec.feature_spec_version  # type: ignore[attr-defined]
 
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
@@ -263,6 +267,7 @@ class FeatureGraph:
             snapshot[feature_key_str] = {
                 "feature_spec": feature_spec_dict,
                 "feature_version": feature_version,
+                "feature_spec_version": feature_spec_version,
                 "feature_class_path": class_path,
             }
 
@@ -554,6 +559,37 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             'a3f8b2c1...'
         """
         return cls.graph.get_feature_version(cls.spec.key)
+
+    @classmethod
+    def feature_spec_version(cls) -> str:
+        """Get hash of the complete feature specification.
+
+        Returns a hash representing ALL specification properties including:
+        - Feature key
+        - Dependencies
+        - Fields
+        - Code versions
+        - Any future metadata, tags, or other properties
+
+        Unlike feature_version which only hashes computational properties
+        (for migration triggering), feature_spec_version captures the entire specification
+        for complete reproducibility and audit purposes.
+
+        Stored in the 'feature_spec_version' column of metadata DataFrames.
+
+        Returns:
+            SHA256 hex digest of the complete specification
+
+        Example:
+            >>> class MyFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ... )):
+            ...     pass
+            >>> MyFeature.feature_spec_version()
+            'def456...'  # Different from feature_version
+        """
+        return cls.spec.feature_spec_version
 
     @classmethod
     def data_version(cls) -> dict[str, str]:

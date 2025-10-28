@@ -171,7 +171,7 @@ Now imagine the `audio` logical field (don't mix up with metadata columns!) of t
              ),
 ```
 
-In this case we'd typically want to recompute the downstream `Crop`, `SpeechToText`  and `Embeddings` features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
+In this case we'd typically want to recompute the downstream `Crop` and `SpeechToText features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
 
 `metaxy graph diff` reveals exactly that:
 
