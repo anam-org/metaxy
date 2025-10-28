@@ -2,7 +2,7 @@
 
 Metaxy is a feature metadata management system for ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
 
-> [!warning] Giga Alpha
+> [!WARNING] Giga Alpha
 > This project is as raw as a steak still saying ‘moo.’
 
 Metaxy is:
