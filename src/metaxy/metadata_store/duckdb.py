@@ -262,33 +262,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
-        from typing import Any, cast
+        candidate = self._conn.con  # pyright: ignore[reportAttributeAccessIssue]
 
-        backend = cast(Any, self._conn)  # DuckDB backend has specific attributes
-
-        # Try 'con' attribute first (standard for DuckDB backend)
-        if hasattr(backend, "con"):
-            candidate = backend.con
-            if isinstance(candidate, DuckDBConnection):
-                return candidate
+        if not isinstance(candidate, DuckDBConnection):
             raise TypeError(
-                f"Expected DuckDB backend 'con' attribute to be DuckDBPyConnection, "
+                f"Expected DuckDB backend 'con' to be DuckDBPyConnection, "
                 f"got {type(candidate).__name__}"
             )
 
-        # Fallback to raw_connection() method
-        if hasattr(backend, "raw_connection"):
-            raw_connection = backend.raw_connection
-            if callable(raw_connection):
-                raw_candidate = raw_connection()
-                if isinstance(raw_candidate, DuckDBConnection):
-                    return raw_candidate
-                raise TypeError(
-                    f"Expected raw_connection() to return DuckDBPyConnection, "
-                    f"got {type(raw_candidate).__name__}"
-                )
-
-        raise RuntimeError(
-            f"DuckDB Ibis backend ({type(backend).__name__}) does not expose "
-            f"DuckDBPyConnection via 'con' attribute or raw_connection() method."
-        )
+        return candidate
