@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -77,3 +78,34 @@ class FieldSpec(FrozenBaseModel):
     # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
     # - a list of FieldDep to depend on particular fields of specific features
     deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL
+
+    @field_validator("key", mode="before")
+    @classmethod
+    def _validate_key(cls, value: Any) -> FieldKey:
+        return _coerce_field_key(value)
+
+
+def _coerce_feature_key(value: Any) -> FeatureKey:
+    if isinstance(value, FeatureKey):
+        return value
+    if isinstance(value, str):
+        return FeatureKey([value])
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        parts = list(value)
+        if not all(isinstance(part, str) for part in parts):
+            raise TypeError("Feature key parts must be strings.")
+        return FeatureKey(parts)
+    raise TypeError("feature_key must be a FeatureKey, string, or sequence of strings.")
+
+
+def _coerce_field_key(value: Any) -> FieldKey:
+    if isinstance(value, FieldKey):
+        return value
+    if isinstance(value, str):
+        return FieldKey([value])
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        parts = list(value)
+        if not all(isinstance(part, str) for part in parts):
+            raise TypeError("Field key parts must be strings.")
+        return FieldKey(parts)
+    raise TypeError("field key must be a FieldKey, string, or sequence of strings.")
