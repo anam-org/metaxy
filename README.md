@@ -1,210 +1,47 @@
 # Metaxy
 
-## Overview
+# Metaxy 🌌
 
-**Metaxy** is a declarative metadata management system for multi-modal data and machine learning pipelines. Metaxy allows statically defining graphs of features with versioned **fields** -- logical components like `audio`, `frames` for `.mp4` files and **columns** for feature metadata stored in Metaxy's metadata store. With this in place, Metaxy provides:
+Metaxy is a feature metadata management system for ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
 
-- **Sample-level data versioning**: Track field and column lineage, compute versions as hashes of upstream versions for each sample
-- **Incremental computation**: Automatically detect which samples need recomputation when upstream fields change
-- **Migration system**: When feature code changes without changing outputs (refactoring, graph restructuring), Metaxy can reconcile metadata versions without recomputing expensive features
-- **Storage flexibility**: Pluggable backends (DuckDB, ClickHouse, PostgreSQL, SQLite, in-memory) with native SQL optimization where possible
-- **Big Metadata**: Metaxy is designed with large-scale distributed systems in mind and can handle large amounts of metadata efficiently.
+Read the [docs](https://anam-org.github.io/metaxy) to learn more.
 
-Metaxy is designed for production data and ML systems where data and features evolve over time, and you need to track what changed, why, and whether expensive recomputation is actually necessary.
+Metaxy is:
 
-## Data Versioning
+- **🧩 composable** --- bring your own everything!
 
-To demonstrate how Metaxy handles data versioning, let's consider a video processing pipeline:
+    - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
+    - supports **lakehouse storage** formats such as DeltaLake or DuckLake
+    - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
+    - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
 
-```py
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FeatureSpec,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-)
+- **🪨 rock solid** where it matters:
 
+    - [data versioning](https://anam-org.github.io/metaxy/learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+    - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
+    - unique **field-level dependency system** prevents unnecessary recomputations for features that depend on partial data
+    - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
 
-class Video(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["example", "video"]),
-        deps=None,  # Root feature
-        fields=[
-            FieldSpec(
-                key=FieldKey(["audio"]),
-                code_version=1,
-            ),
-            FieldSpec(
-                key=FieldKey(["frames"]),
-                code_version=1,
-            ),
-        ],
-    ),
-):
-    """Video metadata feature (root)."""
+- **🤸 flexible** to work around restrictions consciously:
 
-    frames: int
-    duration: float
-    size: int
+    - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
 
+- **📈 scalable**:
 
-class Crop(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["example", "crop"]),
-        deps=[FeatureDep(key=Video.spec.key)],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["audio"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Video.spec.key,
-                        fields=[FieldKey(["audio"])],
-                    )
-                ],
-            ),
-            FieldSpec(
-                key=FieldKey(["frames"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Video.spec.key,
-                        fields=[FieldKey(["frames"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    pass  # omit columns for the sake of simplicity
+    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
+    - is built with **performance** in mind: all operations default to **run in the DB**, Metaxy does not stand in the way of metadata flow
 
+- **🧑‍💻 dev friendly**:
 
-class FaceDetection(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["example", "face_detection"]),
-        deps=[
-            FeatureDep(
-                key=Crop.spec.key,
-            )
-        ],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["faces"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Crop.spec.key,
-                        fields=[FieldKey(["frames"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    pass
+    - clean, **intuitive Python API** that stays out of your way when you don't need it
+    - [feature discovery](https://anam-org.github.io/metaxy/learn/feature_discovery.md) system for effortless dependency management
+    - comprehensive **type hints** and Pydantic integration for excellent IDE support
+    - first-class support for **local development, testing, preview environments, CI/CD**
+    - [CLI](https://anam-org.github.io/metaxy/reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
+    - integrations with popular tools such as [SQLModel](https://anam-org.github.io/metaxy/learn/integrations/sqlmodel.md), Dagster, and Ray.
+    - [testing helpers](https://anam-org.github.io/metaxy/learn/testing.md) that you're going to appreciate
 
-
-class SpeechToText(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["overview", "stt"]),
-        deps=[
-            FeatureDep(
-                key=Video.spec.key,
-            )
-        ],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["transcription"]),
-                code_version=1,
-                deps=[
-                    FieldDep(
-                        feature_key=Video.spec.key,
-                        fields=[FieldKey(["audio"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    pass
-```
-
-When provided with this Python module, `metaxy graph render --format mermaid` (that's handy, right?) produces the following graph:
-
-```mermaid
----
-title: Feature Graph
----
-flowchart TB
-    %% Snapshot version: 8468950d
-    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/><font
-color="#999">---</font><br/>• audio <small>(v: 22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
-        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/><font
-color="#999">---</font><br/>• audio <small>(v: 76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
-        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: 1ac83b07)</small><br/><font
-color="#999">---</font><br/>• faces <small>(v: 2d75f0bd)</small></div>"]
-        example_stt["<div style="text-align:left"><b>example/stt</b><br/><small>(v: c83a754a)</small><br/><font
-color="#999">---</font><br/>• transcription <small>(v: ac412b3c)</small></div>"]
-        example_video --> example_crop
-        example_crop --> example_face_detection
-        example_video --> example_stt
-```
-
-Now imagine the `audio` logical field (don't mix up with metadata columns!) of the very first `Video` feature has been changed. Perhaps it has been cleaned or denoised.
-
-```diff
-         key=FeatureKey(["example", "video"]),
-         deps=None,  # Root feature
-         fields=[
-             FieldSpec(
-                 key=FieldKey(["audio"]),
--                code_version=1,
-+                code_version=2,
-             ),
-```
-
-In this case we'd typically want to recompute the downstream `Crop` and `SpeechToText` features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
-
-`metaxy graph diff` reveals exactly that:
-
-```mermaid
----
-title: Merged Graph Diff
----
-flowchart TB
-    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
-
-    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font
-color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
-color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
-    style example_video stroke:#FFA500,stroke-width:3px
-    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font
-color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
-color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
-    style example_crop stroke:#FFA500,stroke-width:3px
-    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>1ac83b<br/><font
-color="#999">---</font><br/>- faces (2d75f0)</div>"]
-    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font
-color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font
-color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
-    style example_stt stroke:#FFA500,stroke-width:3px
-
-    example_video --> example_crop
-    example_crop --> example_face_detection
-    example_video --> example_stt
-```
-
-The versions of `audio` fields through the graph as well as the whole `FaceDetection` feature stayed the same!
-
-We can use Metaxy's static graph analysis to identify features that are out of sync after a topology change or a code version bump. In addition to feature- and field- level versions, Metaxy computes sample-level versions (for each row in the dataset), and it does it **ahead of computations** through the whole graph. This enables exciting features such as processing cost prediction and automatic migrations.
+Now let's get started with Metaxy! Learn more in [docs](https://anam-org.github.io/metaxy/)
 
 ## Development
 
@@ -217,4 +54,4 @@ uv run prek install
 
 ## Examples
 
-See [examples](examples/README.md).
+See [examples](https://github.com/anam-org/metaxy/tree/main/examples).
