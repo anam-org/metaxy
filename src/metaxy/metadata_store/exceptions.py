@@ -41,3 +41,9 @@ class HashAlgorithmNotSupportedError(MetadataStoreError):
     """Raised when a hash algorithm is not supported by the store or its components."""
 
     pass
+
+
+class TableNotFoundError(MetadataStoreError):
+    """Raised when a table does not exist and auto_create_tables is disabled."""
+
+    pass

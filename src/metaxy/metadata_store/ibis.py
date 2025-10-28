@@ -233,6 +233,8 @@ class IbisMetadataStore(MetadataStore):
 
         Subclasses should override this to add backend-specific initialization
         (e.g., loading extensions) and should call super().open() first.
+
+        If auto_create_tables is enabled, creates system tables.
         """
         if self.connection_string:
             # Use connection string
@@ -245,6 +247,40 @@ class IbisMetadataStore(MetadataStore):
             )
             backend_module = getattr(self._ibis, self.backend)
             self._conn = backend_module.connect(**self.connection_params)
+
+        # Auto-create system tables if enabled (warning is handled in base class)
+        if self.auto_create_tables:
+            self._create_system_tables()
+
+    def _create_system_tables(self) -> None:
+        """Create system tables if they don't exist.
+
+        Creates empty system tables with proper schemas:
+        - metaxy-system__feature_versions: Tracks feature versions and graph snapshots
+        - metaxy-system__migration_events: Tracks migration execution events
+
+        This method is idempotent - safe to call multiple times.
+        """
+        from metaxy.metadata_store.system_tables import (
+            FEATURE_VERSIONS_KEY,
+            FEATURE_VERSIONS_SCHEMA,
+            MIGRATION_EVENTS_KEY,
+            MIGRATION_EVENTS_SCHEMA,
+        )
+
+        existing_tables = self.conn.list_tables()
+
+        # Create feature_versions table if it doesn't exist
+        feature_versions_table = FEATURE_VERSIONS_KEY.table_name
+        if feature_versions_table not in existing_tables:
+            empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+            self.conn.create_table(feature_versions_table, obj=empty_df)
+
+        # Create migration_events table if it doesn't exist
+        migration_events_table = MIGRATION_EVENTS_KEY.table_name
+        if migration_events_table not in existing_tables:
+            empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
+            self.conn.create_table(migration_events_table, obj=empty_df)
 
     def close(self) -> None:
         """Close the Ibis connection."""
@@ -296,6 +332,9 @@ class IbisMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
+
+        Raises:
+            TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
         table_name = feature_key.table_name
 
@@ -306,6 +345,16 @@ class IbisMetadataStore(MetadataStore):
         existing_tables = self.conn.list_tables()
 
         if table_name not in existing_tables:
+            # Table doesn't exist - create it if auto_create_tables is enabled
+            if not self.auto_create_tables:
+                from metaxy.metadata_store.exceptions import TableNotFoundError
+
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
+                    f"Enable auto_create_tables=True to automatically create tables, "
+                    f"or use proper database migration tools like Alembic to create the table first."
+                )
+
             # Create table from DataFrame
             # Ensure NULL columns have proper types by filling with a typed value
             # This handles cases like snapshot_version which can be NULL

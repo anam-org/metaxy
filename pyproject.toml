@@ -64,6 +64,7 @@ dev = [
     "basedpyright>=1.32.1",
     "vulture>=2.14",
     "prek>=0.2.11",
+    "pytest-env>=1.2.0",
 ]
 
 docs = [
@@ -126,4 +127,13 @@ exclude = [
     "**/node_modules",
     "**/__pycache__",
     "**/*venv/**/*",
+]
+
+[tool.pytest.ini_options]
+env = [
+    "METAXY_AUTO_CREATE_TABLES=1",
+]
+filterwarnings = [
+    "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
+    "ignore:Global Metaxy configuration not initialized:UserWarning",
 ]

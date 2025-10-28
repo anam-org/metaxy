@@ -41,6 +41,10 @@ class InMemoryMetadataStore(MetadataStore):
         Only supports Polars components (no native backend).
     """
 
+    # Disable auto_create_tables warning for in-memory store
+    # (table creation concept doesn't apply to memory storage)
+    _should_warn_auto_create_tables: bool = False
+
     def __init__(self, **kwargs):
         """
         Initialize in-memory store.
@@ -197,9 +201,11 @@ class InMemoryMetadataStore(MetadataStore):
         """Open the in-memory store.
 
         For InMemoryMetadataStore, this is a no-op since no external
-        resources need initialization.
+        resources need initialization. The auto_create_tables setting
+        has no effect for in-memory stores (no tables to create).
         """
-        pass  # No resources to initialize for in-memory storage
+        # No resources to initialize for in-memory storage
+        pass
 
     def close(self) -> None:
         """Close the in-memory store.

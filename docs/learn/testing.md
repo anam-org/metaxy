@@ -91,6 +91,43 @@ def test_store_behavior(store_cls, tmp_path):
         pass
 ```
 
+### Suppressing AUTO_CREATE_TABLES Warnings
+
+When testing with `auto_create_tables=True`, Metaxy emits warnings to remind you not to use this in production. These warnings are important for production safety, but can clutter test output.
+
+To suppress these warnings in your test suite, use pytest's `filterwarnings` configuration:
+
+```toml
+# pyproject.toml
+[tool.pytest.ini_options]
+env = [
+    "METAXY_AUTO_CREATE_TABLES=1",  # Enable auto-creation in tests
+]
+filterwarnings = [
+    "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",  # Suppress the warning
+]
+```
+
+The warning is still emitted (important for production awareness), but pytest filters it from test output.
+
+**Testing the Warning Itself**
+
+If you need to verify that the warning is actually emitted, use `pytest.warns()`:
+
+```python
+import pytest
+
+def test_auto_create_tables_warning():
+    with pytest.warns(
+        UserWarning,
+        match=r"AUTO_CREATE_TABLES is enabled.*do not use in production"
+    ):
+        with DuckDBMetadataStore(":memory:", auto_create_tables=True) as store:
+            pass  # Warning is emitted and captured
+```
+
+This works even with `filterwarnings` configured, because `pytest.warns()` explicitly captures and verifies the warning.
+
 ## Testing Custom Alignment
 
 If your feature overrides `load_input()` for custom alignment, test it thoroughly:
