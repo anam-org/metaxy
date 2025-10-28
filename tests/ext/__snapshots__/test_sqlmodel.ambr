@@ -265,6 +265,19 @@
     ]),
   })
 # ---
+# name: test_sqlmodel_rename_validation_with_store
+  dict({
+    'dep_columns': tuple(
+      'status',
+      'priority',
+    ),
+    'dep_key': 'source/feature',
+    'dep_rename': dict({
+      'priority': 'source_priority',
+      'status': 'source_status',
+    }),
+  })
+# ---
 # name: test_version_changes_with_code_version
   dict({
     'v1': 'b20eb9151a785331e8094ebe3e86f459f427f158b42178f9504f6908d11b4d5a',

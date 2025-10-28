@@ -546,28 +546,128 @@ class TestColumnSelection:
             assert "other_col" not in joined_df.columns
 
     def test_pydantic_validation_rename_to_system_column(self):
-        """Test that renaming to system column names is rejected."""
-        # Test renaming to always-reserved system columns
-        with pytest.raises(ValueError, match="Cannot rename column to system column"):
-            FeatureDep(
-                key=FeatureKey(["test", "upstream"]),
-                rename={"old_col": "data_version"},  # Can't rename to data_version
-            )
+        """Test that renaming to system column names is forbidden."""
+        test_graph = FeatureGraph()
 
-        with pytest.raises(ValueError, match="Cannot rename column to system column"):
-            FeatureDep(
-                key=FeatureKey(["test", "upstream"]),
-                rename={
-                    "old_col": "feature_version"
-                },  # Can't rename to feature_version
-            )
+        with test_graph.use():
+            # Create upstream feature first
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
 
-        # Note: "sample_uid" is no longer validated here since it's feature-specific
-        # The validation for ID columns happens during joining when we have access to
-        # the upstream feature's spec
+            # Renaming to data_version should raise an error
+            with pytest.raises(
+                ValueError,
+                match="Cannot rename column.*to system column name.*data_version",
+            ):
 
-    def test_rename_to_id_column_validation(self):
-        """Test that renaming to an upstream feature's ID columns is rejected during joining."""
+                class BadFeature1(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad1"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={"old_col": "data_version"},  # Not allowed
+                            )
+                        ],
+                    ),
+                ):
+                    pass
+
+            # Renaming to feature_version should raise an error
+            with pytest.raises(
+                ValueError,
+                match="Cannot rename column.*to system column name.*feature_version",
+            ):
+
+                class BadFeature2(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad2"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={"old_col": "feature_version"},  # Not allowed
+                            )
+                        ],
+                    ),
+                ):
+                    pass
+
+            # Renaming to sample_uid should raise an error because upstream has sample_uid as its ID column
+            with pytest.raises(
+                ValueError,
+                match="Cannot rename column.*to ID column.*sample_uid",
+            ):
+
+                class BadFeature3(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad3"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "old_col": "sample_uid"
+                                },  # Not allowed - it's upstream's ID column
+                            )
+                        ],
+                    ),
+                ):
+                    pass
+
+    def test_rename_to_sample_uid_allowed_when_not_id_column(self):
+        """Test that renaming to sample_uid is allowed when it's not an upstream ID column."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create upstream with custom ID columns (not sample_uid)
+            class UpstreamWithCustomIDs(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                    id_columns=[
+                        "user_id",
+                        "session_id",
+                    ],  # sample_uid is NOT an ID column
+                ),
+            ):
+                pass
+
+            # Renaming to sample_uid should be allowed now since it's not an ID column
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            rename={
+                                "some_col": "sample_uid"  # Allowed - sample_uid is not upstream's ID column
+                            },
+                        )
+                    ],
+                    id_columns=[
+                        "user_id",
+                        "session_id",
+                    ],  # Must match upstream for joining
+                ),
+            ):
+                pass
+
+            # Verify the feature was created successfully
+            assert DownstreamFeature.spec.deps is not None
+            assert DownstreamFeature.spec.deps[0].rename == {"some_col": "sample_uid"}
+
+    def test_rename_column_to_different_name_than_id_columns(self):
+        """Test that renaming columns to names other than ID columns is allowed."""
         test_graph = FeatureGraph()
 
         with test_graph.use():
@@ -582,8 +682,7 @@ class TestColumnSelection:
             ):
                 pass
 
-            # Try to rename a column to one of the upstream's ID columns
-            # The downstream feature must have the same ID columns as upstream for joining to work
+            # Renaming to a name that is NOT an ID column or system column is allowed
             class DownstreamFeature(
                 Feature,
                 spec=FeatureSpec(
@@ -592,14 +691,14 @@ class TestColumnSelection:
                         FeatureDep(
                             key=FeatureKey(["test", "upstream"]),
                             rename={
-                                "some_col": "user_id"
-                            },  # Can't rename to upstream's ID column
+                                "some_col": "user_id_renamed"
+                            },  # Allowed - not renaming to actual ID column name
                         )
                     ],
                     id_columns=[
                         "user_id",
                         "session_id",
-                    ],  # Must match upstream ID columns
+                    ],  # Must match upstream ID columns for joining
                 ),
             ):
                 pass
@@ -622,11 +721,13 @@ class TestColumnSelection:
                 "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
             }
 
-            # Should raise an error about renaming to ID column
-            with pytest.raises(
-                ValueError, match="Cannot rename.*to ID column.*user_id"
-            ):
-                DownstreamFeature.load_input(joiner, upstream_refs)
+            # This should now work without raising an error
+            joined, _ = DownstreamFeature.load_input(joiner, upstream_refs)
+            joined_df = joined.collect().to_polars()
+
+            # Verify the renamed column is present
+            assert "user_id_renamed" in joined_df.columns
+            assert joined_df["user_id_renamed"].to_list() == ["x", "y", "z"]
 
     def test_pydantic_serialization(self):
         """Test that FeatureDep with columns and rename serializes correctly."""
@@ -972,3 +1073,255 @@ class TestColumnSelection:
                 reconstructed_dep = reconstructed_spec.deps[0]
                 assert reconstructed_dep.columns == ("col1", "col2")
                 assert reconstructed_dep.rename == {"col1": "renamed_col1"}
+
+    def test_duplicate_renamed_columns_within_single_dependency(self):
+        """Test that renaming multiple columns to the same name within a dependency is rejected."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create upstream feature first
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Should raise error when trying to rename multiple columns to the same name
+            with pytest.raises(
+                ValueError, match="Duplicate column names after renaming"
+            ):
+
+                class BadFeature(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "col1": "same_name",
+                                    "col2": "same_name",
+                                },  # Both renamed to same name
+                            )
+                        ],
+                    ),
+                ):
+                    pass
+
+    def test_duplicate_columns_across_dependencies_validation(self):
+        """Test that duplicate columns across dependencies are detected at graph assembly time."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create two upstream features
+            class Upstream1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream1"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream2"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # This should raise an error at graph assembly time
+            # because both dependencies rename columns to "duplicate_col"
+            with pytest.raises(ValueError, match="would have duplicate column names"):
+
+                class BadDownstreamFeature(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad_downstream"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream1"]),
+                                columns=("col1",),
+                                rename={"col1": "duplicate_col"},
+                            ),
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream2"]),
+                                columns=("col2",),
+                                rename={"col2": "duplicate_col"},
+                            ),
+                        ],
+                    ),
+                ):
+                    pass
+
+    def test_duplicate_columns_with_selected_columns(self):
+        """Test that duplicate detection works with column selection."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create two upstream features
+            class Upstream1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream1"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            class Upstream2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream2"]),
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # This should raise because both select "shared_col" without renaming
+            with pytest.raises(ValueError, match="would have duplicate column names"):
+
+                class BadDownstreamFeature(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad_downstream"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream1"]),
+                                columns=("shared_col", "col1"),  # Selects shared_col
+                            ),
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream2"]),
+                                columns=(
+                                    "shared_col",
+                                    "col2",
+                                ),  # Also selects shared_col
+                            ),
+                        ],
+                    ),
+                ):
+                    pass
+
+    def test_renaming_to_upstream_id_columns_forbidden(self):
+        """Test that renaming to upstream's ID columns is forbidden."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create upstream with custom ID columns
+            class UpstreamWithCustomIDs(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                    id_columns=["user_id", "session_id"],
+                ),
+            ):
+                pass
+
+            # Renaming to upstream's ID column should raise an error
+            with pytest.raises(
+                ValueError, match="Cannot rename column.*to ID column.*user_id"
+            ):
+
+                class BadFeature1(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad1"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "some_col": "user_id",  # Not allowed - upstream's ID column
+                                },
+                            )
+                        ],
+                        id_columns=["user_id", "session_id"],
+                    ),
+                ):
+                    pass
+
+            # Renaming to another upstream ID column should also raise an error
+            with pytest.raises(
+                ValueError, match="Cannot rename column.*to ID column.*session_id"
+            ):
+
+                class BadFeature2(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "bad2"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "some_col": "session_id",  # Not allowed - upstream's ID column
+                                },
+                            )
+                        ],
+                        id_columns=["user_id", "session_id"],
+                    ),
+                ):
+                    pass
+
+    def test_renaming_to_system_columns_forbidden(self):
+        """Test that renaming to system columns and ID columns is forbidden."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+
+            class UpstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                    # Default ID columns: ["sample_uid"]
+                ),
+            ):
+                pass
+
+            # Renaming to system column data_version should raise an error
+            with pytest.raises(
+                ValueError,
+                match="Cannot rename column.*to system column name.*data_version",
+            ):
+
+                class DownstreamFeature1(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "downstream1"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "old_version": "data_version",  # Not allowed - system column
+                                },
+                            )
+                        ],
+                    ),
+                ):
+                    pass
+
+            # Renaming to ID column sample_uid should raise an error
+            with pytest.raises(
+                ValueError, match="Cannot rename column.*to ID column.*sample_uid"
+            ):
+
+                class DownstreamFeature2(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "downstream2"]),
+                        deps=[
+                            FeatureDep(
+                                key=FeatureKey(["test", "upstream"]),
+                                rename={
+                                    "old_sample": "sample_uid",  # Not allowed - upstream's ID column
+                                },
+                            )
+                        ],
+                    ),
+                ):
+                    pass

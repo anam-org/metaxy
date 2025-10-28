@@ -90,7 +90,67 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
-        return super().__new__(cls, cls_name, bases, namespace, spec=spec, **kwargs)
+        new_class = super().__new__(
+            cls, cls_name, bases, namespace, spec=spec, **kwargs
+        )
+
+        # After class creation, validate id_columns are not server-defined
+        if kwargs.get("table") and spec is not None:
+            cls._validate_id_columns_not_server_defined(new_class, spec)
+
+        return new_class
+
+    @staticmethod
+    def _validate_id_columns_not_server_defined(
+        new_class: type[Any],
+        spec: FeatureSpec,
+    ) -> None:
+        """Validate that primary key id_columns are not autoincrement.
+
+        In analytical workloads, id_columns must be predictable ahead of time
+        to enable join predictions. Autoincrement primary keys break this predictability.
+
+        Args:
+            new_class: The newly created SQLModel class
+            spec: The FeatureSpec containing id_columns definition
+
+        Raises:
+            ValueError: If any id_column is an autoincrement primary key
+        """
+        # Get the actual id_columns (use default if not specified)
+        id_columns = spec.id_columns if spec.id_columns else ["sample_uid"]
+
+        # Check each id_column field
+        for col_name in id_columns:
+            # Get the field from the model_fields (SQLModel stores field info there)
+            # Use model_fields for Pydantic v2 compatibility
+            if not hasattr(new_class, "model_fields"):
+                continue  # SQLModel may not have initialized yet
+
+            fields = getattr(new_class, "model_fields", {})
+            if col_name not in fields:
+                continue  # Will be caught elsewhere if missing
+
+            # The field_info is the FieldInfo object directly
+            field_info = fields[col_name]
+
+            # Check if this is a primary key
+            is_primary_key = getattr(field_info, "primary_key", False)
+
+            # Get sa_column_kwargs
+            sa_column_kwargs = getattr(field_info, "sa_column_kwargs", {})
+
+            # sa_column_kwargs might be PydanticUndefined, None, or a dict
+            if not isinstance(sa_column_kwargs, dict):
+                sa_column_kwargs = {}
+
+            # Check for autoincrement on primary keys
+            if is_primary_key and sa_column_kwargs.get("autoincrement", False):
+                raise ValueError(
+                    f"ID column '{col_name}' in {new_class.__name__} cannot be an autoincrement primary key. "
+                    f"In analytical workloads, ID values must be predictable ahead of time "
+                    f"to enable join predictions. Use client-generated IDs instead."
+                )
 
 
 # pyright: reportIncompatibleMethodOverride=false, reportIncompatibleVariableOverride=false

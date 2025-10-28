@@ -5,7 +5,6 @@ from functools import cached_property
 
 import pydantic
 
-from metaxy.models.constants import ALL_SYSTEM_COLUMNS
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -51,18 +50,6 @@ class FeatureDep(pydantic.BaseModel):
         None  # None = all columns, () = only system columns
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
-
-    @pydantic.model_validator(mode="after")
-    def validate_column_operations(self) -> "FeatureDep":
-        """Validate column selection and renaming operations."""
-        if self.rename is not None:
-            for new_name in self.rename.values():
-                if new_name in ALL_SYSTEM_COLUMNS:
-                    raise ValueError(
-                        f"Cannot rename column to system column name: {new_name}. "
-                        f"System columns: {ALL_SYSTEM_COLUMNS}"
-                    )
-        return self
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""

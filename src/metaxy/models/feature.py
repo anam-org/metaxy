@@ -65,6 +65,7 @@ class FeatureGraph:
 
         Raises:
             ValueError: If a feature with the same key is already registered
+                       or if duplicate column names would result from renaming operations
         """
         if feature.spec.key in self.features_by_key:
             existing = self.features_by_key[feature.spec.key]
@@ -74,8 +75,150 @@ class FeatureGraph:
                 f"Each feature key must be unique within a graph."
             )
 
+        # Validate that there are no duplicate column names across dependencies after renaming
+        if feature.spec.deps:
+            self._validate_no_duplicate_columns(feature.spec)
+
         self.features_by_key[feature.spec.key] = feature
         self.feature_specs_by_key[feature.spec.key] = feature.spec
+
+    def _validate_no_duplicate_columns(self, spec: "FeatureSpec") -> None:
+        """Validate that there are no duplicate column names across dependencies after renaming.
+
+        This method checks that after all column selection and renaming operations,
+        no two columns have the same name (except for ID columns which are expected to be the same).
+        Also validates that columns are not renamed to system column names.
+
+        Args:
+            spec: Feature specification to validate
+
+        Raises:
+            ValueError: If duplicate column names would result from the dependency configuration
+                       or if columns are renamed to system column names
+        """
+        from metaxy.models.constants import ALL_SYSTEM_COLUMNS
+        from metaxy.models.feature_spec import FeatureDep
+
+        if not spec.deps:
+            return
+
+        # First, validate each dependency individually
+        for dep in spec.deps:
+            if not isinstance(dep, FeatureDep):
+                continue
+
+            if dep.rename:
+                # Get the upstream feature's spec to check its ID columns
+                upstream_spec = self.feature_specs_by_key.get(dep.key)
+                upstream_id_columns = upstream_spec.id_columns if upstream_spec else []
+
+                # Check for renaming to system columns or upstream's ID columns
+                for old_name, new_name in dep.rename.items():
+                    if new_name in ALL_SYSTEM_COLUMNS:
+                        raise ValueError(
+                            f"Cannot rename column '{old_name}' to system column name '{new_name}' "
+                            f"in dependency '{dep.key.to_string()}'. "
+                            f"System columns: {sorted(ALL_SYSTEM_COLUMNS)}"
+                        )
+
+                    # Check against upstream feature's ID columns
+                    if new_name in upstream_id_columns:
+                        raise ValueError(
+                            f"Cannot rename column '{old_name}' to ID column '{new_name}' "
+                            f"from upstream feature '{dep.key.to_string()}'. "
+                            f"ID columns for '{dep.key.to_string()}': {upstream_id_columns}"
+                        )
+
+                # Check for duplicate column names within this dependency
+                renamed_values = list(dep.rename.values())
+                if len(renamed_values) != len(set(renamed_values)):
+                    # Find the duplicate(s)
+                    seen = set()
+                    duplicates = set()
+                    for name in renamed_values:
+                        if name in seen:
+                            duplicates.add(name)
+                        seen.add(name)
+                    raise ValueError(
+                        f"Duplicate column names after renaming in dependency '{dep.key.to_string()}': "
+                        f"{sorted(duplicates)}. Cannot rename multiple columns to the same name within a single dependency."
+                    )
+
+        # Track all column names and their sources
+        column_sources: dict[str, list[str]] = {}  # column_name -> [source_features]
+        id_columns_set = set(spec.id_columns)
+
+        for dep in spec.deps:
+            if not isinstance(dep, FeatureDep):
+                continue
+
+            dep_key_str = dep.key.to_string()
+
+            # Get the upstream feature spec if available
+            upstream_spec = self.feature_specs_by_key.get(dep.key)
+            if not upstream_spec:
+                # If upstream feature isn't registered yet, skip validation
+                # This can happen during circular imports or when features are defined in different modules
+                continue
+
+            # Determine which columns will be present from this dependency
+            if dep.columns is None:
+                # All columns from upstream (except droppable system columns)
+                # We don't know exactly which columns without the actual data,
+                # but we can check the renamed columns at least
+                if dep.rename:
+                    for old_name, new_name in dep.rename.items():
+                        if (
+                            new_name not in id_columns_set
+                        ):  # ID columns are expected to be the same
+                            if new_name not in column_sources:
+                                column_sources[new_name] = []
+                            column_sources[new_name].append(
+                                f"{dep_key_str} (renamed from '{old_name}')"
+                            )
+                # For non-renamed columns, we can't validate without knowing the actual columns
+                # This validation will happen at runtime in the joiner
+            elif dep.columns == ():
+                # Only system columns - no user columns to track
+                pass
+            else:
+                # Specific columns selected
+                for col in dep.columns:
+                    # Check if this column is renamed
+                    if dep.rename and col in dep.rename:
+                        new_name = dep.rename[col]
+                        if new_name not in id_columns_set:
+                            if new_name not in column_sources:
+                                column_sources[new_name] = []
+                            column_sources[new_name].append(
+                                f"{dep_key_str} (renamed from '{col}')"
+                            )
+                    else:
+                        # Column keeps its original name
+                        if col not in id_columns_set:
+                            if col not in column_sources:
+                                column_sources[col] = []
+                            column_sources[col].append(dep_key_str)
+
+        # Check for duplicates
+        duplicates = {
+            col: sources for col, sources in column_sources.items() if len(sources) > 1
+        }
+
+        if duplicates:
+            # Format error message
+            error_lines = []
+            for col, sources in sorted(duplicates.items()):
+                error_lines.append(
+                    f"  - Column '{col}' appears in: {', '.join(sources)}"
+                )
+
+            raise ValueError(
+                f"Feature '{spec.key.to_string()}' would have duplicate column names after renaming:\n"
+                + "\n".join(error_lines)
+                + "\n\nUse the 'rename' parameter in FeatureDep to resolve conflicts, "
+                "or use 'columns' to select only the columns you need."
+            )
 
     def remove_feature(self, key: FeatureKey) -> None:
         """Remove a feature from the graph.
