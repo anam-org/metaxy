@@ -88,6 +88,10 @@ class MetadataStore(ABC):
         Stores must be used as context managers for resource management.
     """
 
+    # Subclasses can override this to disable auto_create_tables warning
+    # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
+    _should_warn_auto_create_tables: bool = True
+
     def __init__(
         self,
         *,
@@ -95,6 +99,7 @@ class MetadataStore(ABC):
         hash_truncation_length: int | None = None,
         prefer_native: bool = True,
         fallback_stores: list[MetadataStore] | None = None,
+        auto_create_tables: bool | None = None,
     ):
         """
         Initialize metadata store.
@@ -108,6 +113,12 @@ class MetadataStore(ABC):
                 If False, always use Polars components. Default: True
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
+            auto_create_tables: If True, automatically create tables when opening the store.
+                If None (default), reads from global MetaxyConfig (which reads from METAXY_AUTO_CREATE_TABLES env var).
+                If False, never auto-create tables.
+                WARNING: Auto-create is intended for development/testing only. Do not use in production.
+                Use proper database migration tools like Alembic for production deployments.
+                Default: None (reads from global config, falls back to False for safety)
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
@@ -116,6 +127,14 @@ class MetadataStore(ABC):
         self._is_open = False
         self._context_depth = 0
         self._prefer_native = prefer_native
+
+        # Resolve auto_create_tables from global config if not explicitly provided
+        if auto_create_tables is None:
+            from metaxy.config import MetaxyConfig
+
+            self.auto_create_tables = MetaxyConfig.get().auto_create_tables
+        else:
+            self.auto_create_tables = auto_create_tables
 
         # Use store's default algorithm if not specified
         if hash_algorithm is None:
@@ -202,6 +221,18 @@ class MetadataStore(ABC):
 
         # Only open on first enter
         if self._context_depth == 1:
+            # Warn if auto_create_tables is enabled (and store wants warnings)
+            if self.auto_create_tables and self._should_warn_auto_create_tables:
+                import warnings
+
+                warnings.warn(
+                    f"AUTO_CREATE_TABLES is enabled for {self.display()} - "
+                    "do not use in production! "
+                    "Use proper database migration tools like Alembic for production deployments.",
+                    UserWarning,
+                    stacklevel=3,  # stacklevel=3 to point to user's 'with store:' line
+                )
+
             self.open()
             self._is_open = True
 
@@ -777,6 +808,17 @@ class MetadataStore(ABC):
     @abstractmethod
     def _list_features_local(self) -> list[FeatureKey]:
         """List features in THIS store only."""
+        pass
+
+    @abstractmethod
+    def display(self) -> str:
+        """Return a human-readable display string for this store.
+
+        Used in warnings, logs, and CLI output to identify the store.
+
+        Returns:
+            Display string (e.g., "DuckDBMetadataStore(database=/path/to/db.duckdb)")
+        """
         pass
 
     def read_graph_snapshots(self) -> pl.DataFrame:

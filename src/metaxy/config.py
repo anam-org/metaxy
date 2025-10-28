@@ -83,10 +83,6 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
 class StoreConfig(BaseSettings):
     """Configuration for a single metadata store.
 
-    Structure:
-        type: Full import path to store class
-        config: Dict of all configuration (including fallback_stores)
-
     Example:
         >>> config = StoreConfig(
         ...     type="metaxy_delta.DeltaMetadataStore",
@@ -103,16 +99,13 @@ class StoreConfig(BaseSettings):
         frozen=True,
     )
 
-    # Store class (full import path)
     type: str = PydanticField(
-        description="Full import path to the metadata store class (e.g., 'metaxy.metadata_store.DuckDBMetadataStore')"
+        description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
     )
 
-    # Store configuration (all kwargs for __init__)
-    # This includes fallback_stores, table_uri, db_path, storage_options, etc.
     config: dict[str, Any] = PydanticField(
         default_factory=dict,
-        description="Configuration dictionary passed to the store's __init__ method (includes fallback_stores, table_uri, db_path, storage_options, etc.)",
+        description="Store-specific configuration parameters (kwargs for __init__). Includes fallback_stores, database paths, connection parameters, etc.",
     )
 
 
@@ -197,44 +190,45 @@ class MetaxyConfig(BaseSettings):
         frozen=True,  # Make the config immutable
     )
 
-    # Store to use
     store: str = PydanticField(
         default="dev",
-        description="Name of the default metadata store (must match a key in the 'stores' configuration)",
+        description="Default metadata store to use",
     )
 
-    # Named store configurations
     stores: dict[str, StoreConfig] = PydanticField(
         default_factory=dict,
-        description="Dictionary of named metadata store configurations",
+        description="Named store configurations",
     )
 
-    # Migrations directory
     migrations_dir: str = PydanticField(
         default=".metaxy/migrations",
         description="Directory where migration files are stored",
     )
 
-    # Entrypoints to load (list of module paths)
     entrypoints: list[str] = PydanticField(
         default_factory=list,
-        description="List of Metaxy entrypoints --- Python module paths to import on startup (e.g., ['myapp.features', 'myapp.entities'])",
+        description="List of Python module paths to load for feature discovery",
     )
 
-    # Graph rendering theme
     theme: str = PydanticField(
         default="default",
-        description="Theme to use for feature graph visualization",
+        description="Graph rendering theme for CLI visualization",
     )
 
     ext: ExtConfig = PydanticField(
         default_factory=ExtConfig,
-        description="Configuration for third-party tool integrations",
+        description="Configuration for Metaxy integrations with third-party tools",
     )
 
-    # Global hash truncation length (None = no truncation, default)
-    # Minimum 8 characters if set
-    hash_truncation_length: int | None = None
+    hash_truncation_length: int | None = PydanticField(
+        default=None,
+        description="Truncate hash values to this length (minimum 8 characters). None = no truncation.",
+    )
+
+    auto_create_tables: bool = PydanticField(
+        default=False,
+        description="Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.",
+    )
 
     @property
     def plugins(self) -> list[str]:
@@ -461,9 +455,20 @@ class MetaxyConfig(BaseSettings):
             config_copy["hash_algorithm"] = configured_hash_algorithm
 
         # Get hash_truncation_length from global config (unless overridden in store config)
-        if "hash_truncation_length" not in config_copy:
+        if (
+            "hash_truncation_length" not in config_copy
+            and self.hash_truncation_length is not None
+        ):
             # Use global setting from MetaxyConfig if not specified per-store
             config_copy["hash_truncation_length"] = self.hash_truncation_length
+
+        # Get auto_create_tables from global config (unless overridden in store config)
+        if (
+            "auto_create_tables" not in config_copy
+            and self.auto_create_tables is not None
+        ):
+            # Use global setting from MetaxyConfig if not specified per-store
+            config_copy["auto_create_tables"] = self.auto_create_tables
 
         # Build fallback stores recursively
         fallback_stores = []

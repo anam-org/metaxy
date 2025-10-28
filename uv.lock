@@ -916,6 +916,7 @@ dev = [
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "pytest-cases" },
+    { name = "pytest-env" },
     { name = "ruff" },
     { name = "syrupy" },
     { name = "vulture" },
@@ -966,6 +967,7 @@ dev = [
     { name = "pyrefly", specifier = ">=0.34.0" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-cases", specifier = ">=3.9.1" },
+    { name = "pytest-env", specifier = ">=1.2.0" },
     { name = "ruff", specifier = ">=0.13.1" },
     { name = "syrupy", specifier = ">=5.0.0" },
     { name = "vulture", specifier = ">=2.14" },
@@ -1861,6 +1863,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c1/69/8b41e074e9e1a9fa85c3765971f213e1b8d4a2f648b457af32dea792bdb8/pytest_cases-3.9.1.tar.gz", hash = "sha256:c4e181f1b525c931a318d4812fa8de656c2c8fb77fccf1571ecf0cc5fe8e7f8f", size = 1094071, upload-time = "2025-06-09T20:05:03.291Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/92/82/db006f1d06e5d31805ac47f9ce979937e3d026292f2759543b744f8040be/pytest_cases-3.9.1-py2.py3-none-any.whl", hash = "sha256:60507716650c5ed1ce4a36a3c137f1c3ec58f4fef1ee8678404be074612fcd21", size = 108262, upload-time = "2025-06-09T20:05:01.915Z" },
+]
+
+[[package]]
+name = "pytest-env"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/12/9c87d0ca45d5992473208bcef2828169fa7d39b8d7fc6e3401f5c08b8bf7/pytest_env-1.2.0.tar.gz", hash = "sha256:475e2ebe8626cee01f491f304a74b12137742397d6c784ea4bc258f069232b80", size = 8973, upload-time = "2025-10-09T19:15:47.42Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/27/98/822b924a4a3eb58aacba84444c7439fce32680592f394de26af9c76e2569/pytest_env-1.2.0-py3-none-any.whl", hash = "sha256:d7e5b7198f9b83c795377c09feefa45d56083834e60d04767efd64819fc9da00", size = 6251, upload-time = "2025-10-09T19:15:46.077Z" },
 ]
 
 [[package]]
