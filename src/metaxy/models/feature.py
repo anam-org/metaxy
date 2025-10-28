@@ -65,6 +65,7 @@ class FeatureGraph:
 
         Raises:
             ValueError: If a feature with the same key is already registered
+                       or if column renaming creates conflicts
         """
         if feature.spec.key in self.features_by_key:
             existing = self.features_by_key[feature.spec.key]
@@ -74,8 +75,117 @@ class FeatureGraph:
                 f"Each feature key must be unique within a graph."
             )
 
+        # Validate column renaming before adding to graph
+        self._validate_column_renames(feature.spec)
+
         self.features_by_key[feature.spec.key] = feature
         self.feature_specs_by_key[feature.spec.key] = feature.spec
+
+    def _validate_column_renames(self, spec: FeatureSpec) -> None:
+        """Validate that column renames don't create duplicate columns.
+
+        This checks:
+        1. No duplicate renamed columns across different dependencies
+        2. Renamed columns don't conflict with existing columns from upstream features
+
+        System column validation is handled separately in FeatureDep.
+
+        Args:
+            spec: The FeatureSpec to validate
+
+        Raises:
+            ValueError: If renaming creates duplicate columns
+        """
+        from metaxy.models.feature_spec import FeatureDep
+
+        if not spec.deps:
+            return
+
+        # Track all columns that will be present after renaming
+        # Map: column_name -> (source_dep_key, is_renamed)
+        all_columns: dict[str, tuple[str, bool]] = {}
+
+        for dep in spec.deps:
+            if not isinstance(dep, FeatureDep):
+                continue
+
+            dep_key_str = dep.key.to_string()
+
+            # Get the upstream feature if it exists
+            upstream_feature = self.features_by_key.get(dep.key)
+            if not upstream_feature:
+                # Upstream feature not registered yet, skip validation
+                # This can happen during circular imports
+                continue
+
+            # Get columns from the upstream feature
+            # All pydantic fields on the upstream Feature are potential columns
+            upstream_columns = set(upstream_feature.model_fields.keys())
+
+            # Get ID columns from the upstream feature spec
+            upstream_id_columns = set(
+                upstream_feature.spec.id_columns
+                if hasattr(upstream_feature, "spec")
+                else []
+            )
+
+            # Exclude ID columns from conflict checking since they're used for joining
+            # When joining on ID columns, we get one set, not duplicates
+            upstream_columns = upstream_columns - upstream_id_columns
+
+            # If columns is specified, only those columns will be selected
+            if dep.columns is not None:
+                if dep.columns == ():
+                    # Empty tuple means only system columns, no data columns
+                    selected_columns = set()
+                else:
+                    # Specific columns selected
+                    selected_columns = set(dep.columns)
+            else:
+                # None means all columns from upstream
+                selected_columns = upstream_columns
+
+            # Apply renaming and check for conflicts
+            if dep.rename:
+                for old_name, new_name in dep.rename.items():
+                    if old_name in selected_columns:
+                        # Check if this creates a duplicate
+                        if new_name in all_columns:
+                            source_dep, was_renamed = all_columns[new_name]
+                            if was_renamed:
+                                raise ValueError(
+                                    f"Column name conflict after renaming: '{new_name}' appears in both "
+                                    f"'{dep_key_str}' (renaming '{old_name}') and '{source_dep}'. "
+                                    f"Use different rename targets to resolve the conflict."
+                                )
+                            else:
+                                raise ValueError(
+                                    f"Column '{new_name}' created by renaming '{old_name}' in '{dep_key_str}' "
+                                    f"conflicts with existing column from '{source_dep}'. "
+                                    f"Use a different rename target to resolve the conflict."
+                                )
+                        all_columns[new_name] = (dep_key_str, True)
+                        # Remove the old name since it's renamed
+                        selected_columns.discard(old_name)
+
+            # Add non-renamed columns
+            for col in selected_columns:
+                if dep.rename and col in dep.rename:
+                    # Already handled above
+                    continue
+                if col in all_columns:
+                    source_dep, was_renamed = all_columns[col]
+                    if was_renamed:
+                        raise ValueError(
+                            f"Column '{col}' from '{dep_key_str}' conflicts with renamed column "
+                            f"from '{source_dep}'. Use rename to resolve the conflict."
+                        )
+                    else:
+                        raise ValueError(
+                            f"Column '{col}' appears in both '{dep_key_str}' and '{source_dep}'. "
+                            f"Use rename or columns selection to resolve the conflict."
+                        )
+                all_columns[col] = (dep_key_str, False)
 
     def remove_feature(self, key: FeatureKey) -> None:
         """Remove a feature from the graph.

@@ -1117,6 +1117,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
         value_b: float
 
     # Create downstream feature that depends on both
+    # Need to handle the sample_uid conflict - both A and B inherit it from SQLModelFeature
     class FeatureC(
         SQLModelFeature,
         table=True,
@@ -1124,8 +1125,14 @@ def test_sqlmodel_feature_id_columns_with_joins(
             key=FeatureKey(["feature", "c"]),
             id_columns=["user_id", "date"],
             deps=[
-                FeatureDep(key=FeatureKey(["feature", "a"])),
-                FeatureDep(key=FeatureKey(["feature", "b"])),
+                FeatureDep(
+                    key=FeatureKey(["feature", "a"]),
+                    columns=("value_a",),  # Only select value_a, exclude sample_uid
+                ),
+                FeatureDep(
+                    key=FeatureKey(["feature", "b"]),
+                    columns=("value_b",),  # Only select value_b, exclude sample_uid
+                ),
             ],
             fields=[
                 FieldSpec(

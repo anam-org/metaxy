@@ -10,14 +10,10 @@ sync:
 
 # Resolve GitHub issue with Claude in an independent git worktree
 claude-resolve number:
-    git worktree add resolve-{{number}}
-    cd resolve-{{number}}
-    gt checkout main
-    gt get
+    git worktree add ../metaxy-worktrees/resolve-{{number}} origin/main
+    cd ../metaxy-worktrees/resolve-{{number}}
     direnv allow
-    source ./.venv/bin/activate
-    ISSUE=gh issue view {{number}}
-    claude -p "Please solve GitHub issue (do not create commits) #{{number}}:\n\n$ISSUE"
+    claude "Resolve GitHub issue (do not create commits) #{{number}}"
 
 docs-build:
     uv run --group docs mkdocs build --clean --strict
