@@ -393,8 +393,6 @@ def ensure_extensions_with_plugins(
     plugins: Sequence[str],
 ) -> None:
     """Ensure DuckLake plugins are present in the extensions list."""
-    from typing import cast
-
     existing_names: set[str] = set()
     for ext in extensions:
         if isinstance(ext, str):
@@ -404,12 +402,9 @@ def ensure_extensions_with_plugins(
             if name:
                 existing_names.add(name)
         else:
-            # Assume ExtensionSpec-like object with 'name' attribute
-            ext_any = cast(Any, ext)
-            if hasattr(ext_any, "name"):
-                name = str(ext_any.name)
-                if name:
-                    existing_names.add(name)
+            # Must be ExtensionSpec with 'name' attribute
+            existing_names.add(ext.name)  # pyright: ignore[reportAttributeAccessIssue]
+
     for plugin in plugins:
         if plugin not in existing_names:
             extensions.append(plugin)
