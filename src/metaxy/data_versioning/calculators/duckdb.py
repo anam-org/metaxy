@@ -88,15 +88,13 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
 
         for ext_spec in self.extensions:
             if isinstance(ext_spec, str):
-                # Simple string form - install from community repo
                 ext_name = ext_spec
                 # Install and load extension from community
                 backend.raw_sql(f"INSTALL {ext_name} FROM community")
                 backend.raw_sql(f"LOAD {ext_name}")
             else:
-                # Dict form with optional repository
-                ext_name = ext_spec.get("name", "")
-                ext_repo = ext_spec.get("repository", "community")
+                ext_name = str(getattr(ext_spec, "name", ""))
+                ext_repo = getattr(ext_spec, "repository", None) or "community"
 
                 if ext_repo == "community":
                     # Install from community repository
