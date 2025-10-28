@@ -56,8 +56,9 @@ def allow_feature_version_override() -> Iterator[None]:
 FEATURE_VERSIONS_SCHEMA = {
     "feature_key": pl.String,
     "feature_version": pl.String,  # TODO: Use METAXY_FEATURE_VERSION_COL
+    "feature_spec_version": pl.String,  # Hash of complete FeatureSpec (all properties)
     "recorded_at": pl.Datetime("us"),
-    "feature_spec": pl.String,
+    "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_class_path": pl.String,
     "snapshot_version": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
 }

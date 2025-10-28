@@ -1,0 +1,22 @@
+# serializer version: 1
+# name: test_computational_property_changes_trigger_migrations
+  list([
+    dict({
+      'changed': True,
+      'name': 'code_version_change',
+    }),
+    dict({
+      'changed': True,
+      'name': 'field_added',
+    }),
+    dict({
+      'changed': True,
+      'name': 'dependency_added',
+    }),
+  ])
+# ---
+# name: test_migration_detector_uses_feature_version_not_feature_spec_version
+  list([
+    'test/simple',
+  ])
+# ---

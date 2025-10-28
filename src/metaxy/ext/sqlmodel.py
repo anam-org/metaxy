@@ -160,6 +160,11 @@ class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=Non
         default=None, sa_column_kwargs={"name": "feature_version", "nullable": True}
     )
 
+    metaxy_feature_spec_version: str | None = Field(
+        default=None,
+        sa_column_kwargs={"name": "feature_spec_version", "nullable": True},
+    )
+
     metaxy_snapshot_version: str | None = Field(
         default=None, sa_column_kwargs={"name": "snapshot_version", "nullable": True}
     )

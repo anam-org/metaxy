@@ -1,3 +1,5 @@
+import hashlib
+import json
 from collections.abc import Mapping
 from functools import cached_property
 
@@ -103,3 +105,41 @@ class FeatureSpec(pydantic.BaseModel):
                 )
             seen_keys.add(key_tuple)
         return self
+
+    @property
+    def feature_spec_version(self) -> str:
+        """Compute SHA256 hash of the complete feature specification.
+
+        This property provides a deterministic hash of ALL specification properties,
+        including key, deps, fields, code_version, and any metadata/tags.
+        Used for audit trail and tracking specification changes.
+
+        Unlike feature_version which only hashes computational properties
+        (for migration triggering), feature_spec_version captures the entire specification
+        for complete reproducibility and audit purposes.
+
+        Returns:
+            SHA256 hex digest of the specification
+
+        Example:
+            >>> spec = FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     deps=None,
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ...     code_version=1
+            ... )
+            >>> spec.feature_spec_version
+            'abc123...'  # 64-character hex string
+        """
+        # Use model_dump with mode="json" for deterministic serialization
+        # This ensures all types (like FeatureKey) are properly serialized
+        spec_dict = self.model_dump(mode="json")
+
+        # Sort keys to ensure deterministic ordering
+        spec_json = json.dumps(spec_dict, sort_keys=True)
+
+        # Compute SHA256 hash
+        hasher = hashlib.sha256()
+        hasher.update(spec_json.encode("utf-8"))
+
+        return hasher.hexdigest()

@@ -192,10 +192,13 @@ class DataVersionReconciliation(pydantic.BaseModel):
             to_version_data = None
 
         # Extract feature versions from lazy frames
+        # Since we filter by snapshot_version and feature_key, there should be exactly one row
+        # We don't care about feature_spec_version changes, so just get the first row without sorting
         from_feature_version: str | None = None
         to_feature_version: str | None = None
 
         if from_version_data is not None:
+            # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             from_version_df = from_version_data.head(1).collect()
             if from_version_df.shape[0] > 0:
                 from_feature_version = str(from_version_df["feature_version"][0])
@@ -203,6 +206,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
                 from_version_data = None
 
         if to_version_data is not None:
+            # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             to_version_df = to_version_data.head(1).collect()
             if to_version_df.shape[0] > 0:
                 to_feature_version = str(to_version_df["feature_version"][0])
