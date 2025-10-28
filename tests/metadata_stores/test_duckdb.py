@@ -13,8 +13,6 @@ pytest.importorskip("pyarrow")
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
-from ._ducklake_utils import ensure_ducklake_extension
-
 
 def test_duckdb_table_naming(
     tmp_path: Path, test_graph, test_features: dict[str, Any]
@@ -180,12 +178,10 @@ def test_duckdb_ducklake_integration(
     tmp_path: Path, test_graph, test_features: dict
 ) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
-    ensure_ducklake_extension()
 
     db_path = tmp_path / "ducklake.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
     storage_dir = tmp_path / "ducklake_storage"
-    storage_dir.mkdir()
 
     ducklake_config = {
         "alias": "lake",
