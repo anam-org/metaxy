@@ -33,7 +33,7 @@ def generate_configuration_docs():
         "",
         "Here is the complete default configuration with all available options:",
         "",
-        '=== "metaxy.toml"',
+        '=== "!metaxy.toml"',
         "",
         "    ```toml",
     ]
@@ -144,7 +144,7 @@ def generate_configuration_docs():
             "",
             "### Example: Multiple Stores with Fallback Chain",
             "",
-            '=== "metaxy.toml"',
+            '=== "!metaxy.toml"',
             "",
             "    ```toml",
             "    # Default store to use",

@@ -104,11 +104,16 @@ class StoreConfig(BaseSettings):
     )
 
     # Store class (full import path)
-    type: str
+    type: str = PydanticField(
+        description="Full import path to the metadata store class (e.g., 'metaxy.metadata_store.DuckDBMetadataStore')"
+    )
 
     # Store configuration (all kwargs for __init__)
     # This includes fallback_stores, table_uri, db_path, storage_options, etc.
-    config: dict[str, Any] = PydanticField(default_factory=dict)
+    config: dict[str, Any] = PydanticField(
+        default_factory=dict,
+        description="Configuration dictionary passed to the store's __init__ method (includes fallback_stores, table_uri, db_path, storage_options, etc.)",
+    )
 
 
 class PluginConfig(BaseSettings):
@@ -151,7 +156,10 @@ class ExtConfig(BaseSettings):
         frozen=True,
     )
 
-    sqlmodel: SQLModelConfig = PydanticField(default_factory=SQLModelConfig)
+    sqlmodel: SQLModelConfig = PydanticField(
+        default_factory=SQLModelConfig,
+        description="SQLModel integration configuration",
+    )
 
 
 # Context variable for storing the app context
@@ -190,21 +198,39 @@ class MetaxyConfig(BaseSettings):
     )
 
     # Store to use
-    store: str = "dev"
+    store: str = PydanticField(
+        default="dev",
+        description="Name of the default metadata store (must match a key in the 'stores' configuration)",
+    )
 
     # Named store configurations
-    stores: dict[str, StoreConfig] = PydanticField(default_factory=dict)
+    stores: dict[str, StoreConfig] = PydanticField(
+        default_factory=dict,
+        description="Dictionary of named metadata store configurations",
+    )
 
     # Migrations directory
-    migrations_dir: str = ".metaxy/migrations"
+    migrations_dir: str = PydanticField(
+        default=".metaxy/migrations",
+        description="Directory where migration files are stored",
+    )
 
     # Entrypoints to load (list of module paths)
-    entrypoints: list[str] = PydanticField(default_factory=list)
+    entrypoints: list[str] = PydanticField(
+        default_factory=list,
+        description="List of Metaxy entrypoints --- Python module paths to import on startup (e.g., ['myapp.features', 'myapp.entities'])",
+    )
 
     # Graph rendering theme
-    theme: str = "default"
+    theme: str = PydanticField(
+        default="default",
+        description="Theme to use for feature graph visualization",
+    )
 
-    ext: ExtConfig = PydanticField(default_factory=ExtConfig)
+    ext: ExtConfig = PydanticField(
+        default_factory=ExtConfig,
+        description="Configuration for third-party tool integrations",
+    )
 
     # Global hash truncation length (None = no truncation, default)
     # Minimum 8 characters if set
