@@ -997,6 +997,7 @@ version = "0.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "cyclopts" },
+    { name = "frozendict" },
     { name = "narwhals" },
     { name = "polars" },
     { name = "polars-hash" },

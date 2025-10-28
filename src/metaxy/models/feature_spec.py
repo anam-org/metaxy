@@ -13,6 +13,8 @@ from metaxy.models.types import FeatureKey, FieldKey
 if TYPE_CHECKING:
     from metaxy.models.feature import Feature  # noqa: F401
 
+_METADATA_ADAPTER = TypeAdapter(dict[str, JsonValue])
+
 
 def _coerce_feature_key(value: Any) -> FeatureKey:
     """Normalize incoming values to FeatureKey."""
@@ -134,7 +136,7 @@ class FeatureDep(pydantic.BaseModel):
 
 class FeatureSpec(pydantic.BaseModel):
     key: FeatureKey
-    deps: list[FeatureDep] | None
+    deps: list[FeatureDep] | None = None
     fields: list[FieldSpec] = pydantic.Field(
         default_factory=lambda: [
             FieldSpec(
@@ -193,6 +195,19 @@ class FeatureSpec(pydantic.BaseModel):
     @classmethod
     def _validate_key(cls, value: Any) -> FeatureKey:
         return _coerce_feature_key(value)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> "frozendict[str, Any] | None":
+        if value is None:
+            return None
+        if isinstance(value, frozendict):
+            validated = _METADATA_ADAPTER.validate_python(dict(value))
+            return _freeze_metadata(validated)
+        if not isinstance(value, Mapping):
+            raise TypeError("metadata must be a mapping.")
+        validated = _METADATA_ADAPTER.validate_python(value)
+        return _freeze_metadata(validated)
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
