@@ -26,3 +26,8 @@ repos:
       language: system
       pass_filenames: true
       types: [python]
+    - id: build-docs
+      name: Build Docs
+      entry: mkdocs build --strict
+      language: system
+      pass_filenames: false

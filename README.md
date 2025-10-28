@@ -34,7 +34,7 @@ Metaxy is:
 - **🧑‍💻 dev friendly**:
 
     - clean, **intuitive Python API** that stays out of your way when you don't need it
-    - [feature discovery](https://anam-org.github.io/metaxy/learn/feature_discovery.md) system for effortless dependency management
+    - [feature discovery](https://anam-org.github.io/metaxy/learn/feature-discovery.md) system for effortless dependency management
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](https://anam-org.github.io/metaxy/reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
