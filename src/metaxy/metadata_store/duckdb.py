@@ -1,7 +1,10 @@
 """DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any
+
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -18,19 +21,48 @@ from metaxy.metadata_store._ducklake_support import (
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
-class ExtensionSpec(TypedDict, total=False):
+class DuckDBExtensionSpec(BaseModel):
     """
-    DuckDB extension specification.
+    DuckDB extension specification accepted by DuckDBMetadataStore.
 
-    Can be expressed in TOML as:
-        extensions = ["hashfuncs"]  # string form, uses 'community' repo
-        extensions = [{name = "hashfuncs"}]  # dict form, uses 'community' repo
-        extensions = [{name = "spatial", repository = "core_nightly"}]
-        extensions = [{name = "my_ext", repository = "https://my-repo.com"}]
+    Supports additional keys for forward compatibility.
     """
 
     name: str
-    repository: str  # defaults to "community" if not specified
+    repository: str | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "DuckDBExtensionSpec":
+        """Coerce arbitrary mappings into DuckDBExtensionSpec instances."""
+        try:
+            return cls.model_validate(value)
+        except ValidationError as exc:  # pragma: no cover - bubbles to caller
+            raise ValueError(f"Invalid DuckDB extension spec: {value!r}") from exc
+
+
+ExtensionInput = str | DuckDBExtensionSpec | Mapping[str, Any]
+NormalisedExtension = str | DuckDBExtensionSpec
+
+
+def _normalise_extensions(
+    extensions: Iterable[ExtensionInput],
+) -> list[NormalisedExtension]:
+    """Coerce extension inputs into strings or fully-validated specs."""
+    normalised: list[NormalisedExtension] = []
+    for ext in extensions:
+        if isinstance(ext, str):
+            normalised.append(ext)
+        elif isinstance(ext, DuckDBExtensionSpec):
+            normalised.append(ext)
+        elif isinstance(ext, Mapping):
+            normalised.append(DuckDBExtensionSpec.from_mapping(ext))
+        else:
+            raise TypeError(
+                "DuckDB extensions must be strings or mapping-like objects with a 'name'."
+            )
+    return normalised
 
 
 class DuckDBMetadataStore(IbisMetadataStore):
@@ -76,7 +108,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         database: str | Path,
         *,
         config: dict[str, str] | None = None,
-        extensions: list[ExtensionSpec | str] | None = None,
+        extensions: Sequence[ExtensionInput] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
         ducklake: DuckLakeConfigInput | None = None,
         **kwargs,
@@ -97,8 +129,8 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 before initializing the store.
             config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
             extensions: List of DuckDB extensions to install and load on open.
-                Can be strings (installed from 'community' repository) or dicts
-                specifying both name and repository.
+                Supports strings (community repo), mapping-like objects with
+                ``name``/``repository`` keys, or DuckDBExtensionSpec instances.
 
                 Examples:
                     extensions=['hashfuncs']  # Install hashfuncs from community
@@ -121,7 +153,9 @@ class DuckDBMetadataStore(IbisMetadataStore):
             connection_params.update(config)
 
         self.database = database_str
-        base_extensions = list(extensions or [])
+        base_extensions: list[NormalisedExtension] = _normalise_extensions(
+            extensions or []
+        )
 
         self._ducklake_config: DuckLakeAttachmentConfig | None = None
         self._ducklake_attachment: DuckLakeAttachmentManager | None = None
@@ -134,10 +168,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
         self.extensions = base_extensions
 
         # Auto-add hashfuncs extension if not present (needed for default XXHASH64)
-        extension_names = [
-            ext if isinstance(ext, str) else ext.get("name", "")
-            for ext in self.extensions
-        ]
+        extension_names: list[str] = []
+        for ext in self.extensions:
+            if isinstance(ext, str):
+                extension_names.append(ext)
+            elif isinstance(ext, Mapping):
+                extension_names.append(str(ext.get("name", "")))
+            else:
+                extension_names.append(str(getattr(ext, "name", "")))
         if "hashfuncs" not in extension_names:
             self.extensions.append("hashfuncs")
 

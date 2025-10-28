@@ -5,7 +5,8 @@ extension loading (e.g., hashfuncs for xxHash support).
 """
 # pyright: reportImportCycles=false
 
-from typing import TYPE_CHECKING
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -42,7 +43,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     def __init__(
         self,
         backend: "ibis.BaseBackend",
-        extensions: "list[ExtensionSpec | str] | None" = None,
+        extensions: "Sequence[Any] | None" = None,
     ):
         """Initialize DuckDB calculator and load extensions.
 
@@ -57,7 +58,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             >>> extensions = [{"name": "spatial", "repository": "core_nightly"}]
         """
         self._backend = backend
-        self.extensions = extensions or []
+        self.extensions = list(extensions or [])
 
         # Load extensions immediately (lazy at calculator creation time)
         self._load_extensions()
@@ -89,26 +90,23 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
 
         for ext_spec in self.extensions:
             if isinstance(ext_spec, str):
-                # Simple string form - install from community repo
                 ext_name = ext_spec
-                # Install and load extension from community
-                backend.raw_sql(f"INSTALL {ext_name} FROM community")
-                backend.raw_sql(f"LOAD {ext_name}")
+                ext_repo = "community"
+            elif isinstance(ext_spec, Mapping):
+                ext_name = str(ext_spec.get("name", ""))
+                ext_repo = str(ext_spec.get("repository", "community"))
             else:
-                # Dict form with optional repository
-                ext_name = ext_spec.get("name", "")
-                ext_repo = ext_spec.get("repository", "community")
+                ext_name = str(getattr(ext_spec, "name", ""))
+                ext_repo = getattr(ext_spec, "repository", None) or "community"
 
-                if ext_repo == "community":
-                    # Install from community repository
-                    backend.raw_sql(f"INSTALL {ext_name} FROM community")
-                else:
-                    # Set custom repository and install
-                    backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
-                    backend.raw_sql(f"INSTALL {ext_name}")
+            if not ext_name:
+                raise ValueError("DuckDB extension specification must include a name.")
 
-                # Load extension
-                backend.raw_sql(f"LOAD {ext_name}")
+            if ext_repo != "community":
+                backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
+
+            backend.raw_sql(f"INSTALL {ext_name}")
+            backend.raw_sql(f"LOAD {ext_name}")
 
     def _generate_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
         """Generate hash SQL generators for DuckDB.
@@ -138,10 +136,14 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
         generators[HashAlgorithm.MD5] = md5_generator
 
         # Check if hashfuncs extension is in the list
-        extension_names = [
-            ext if isinstance(ext, str) else ext.get("name", "")
-            for ext in self.extensions
-        ]
+        extension_names = []
+        for ext in self.extensions:
+            if isinstance(ext, str):
+                extension_names.append(ext)
+            elif isinstance(ext, Mapping):
+                extension_names.append(str(ext.get("name", "")))
+            else:
+                extension_names.append(str(getattr(ext, "name", "")))
 
         if "hashfuncs" in extension_names:
 

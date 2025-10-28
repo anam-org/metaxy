@@ -6,7 +6,14 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from duckdb import DuckDBPyConnection  # noqa: TID252
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 
 DuckDBConnection = DuckDBPyConnection
 
@@ -247,24 +254,22 @@ class DuckLakeAttachmentConfig(BaseModel):
     plugins: tuple[str, ...] = Field(default_factory=lambda: ("ducklake",))
     attach_options: dict[str, Any] = Field(default_factory=dict)
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
 
-    @field_validator("metadata_backend", mode="before")
+    @field_validator("metadata_backend", "storage_backend", mode="before")
     @classmethod
-    def _coerce_metadata_backend(cls, value: DuckLakeBackendInput) -> DuckLakeBackend:
-        return coerce_backend_config(value, role="metadata backend")
-
-    @field_validator("storage_backend", mode="before")
-    @classmethod
-    def _coerce_storage_backend(cls, value: DuckLakeBackendInput) -> DuckLakeBackend:
-        return coerce_backend_config(value, role="storage backend")
+    def _coerce_backends(
+        cls, value: DuckLakeBackendInput, info: ValidationInfo
+    ) -> DuckLakeBackend:
+        return coerce_backend_config(value, role=info.field_name.replace("_", " "))
 
     @field_validator("alias", mode="before")
     @classmethod
-    def _normalise_alias(cls, value: Any) -> str:
+    def _coerce_alias(cls, value: Any) -> str:
         if value is None:
             return "ducklake"
-        return str(value)
+        alias = str(value).strip()
+        return alias or "ducklake"
 
     @field_validator("plugins", mode="before")
     @classmethod
@@ -272,24 +277,24 @@ class DuckLakeAttachmentConfig(BaseModel):
         if value is None:
             return ("ducklake",)
         if isinstance(value, str):
-            candidate = (value,)
-        else:
+            return (value,)
+        if isinstance(value, Sequence):
             try:
-                candidate = tuple(value)
+                return tuple(str(item) for item in value)
             except TypeError as exc:  # pragma: no cover - defensive guard
                 raise TypeError(
-                    "plugins must be a string or sequence of strings."
+                    "DuckLake plugins must be a string or sequence of strings."
                 ) from exc
-        return tuple(str(plugin) for plugin in candidate)
+        raise TypeError("DuckLake plugins must be a string or sequence of strings.")
 
     @field_validator("attach_options", mode="before")
     @classmethod
-    def _normalise_attach_options(cls, value: Any) -> dict[str, Any]:
+    def _coerce_attach_options(cls, value: Any) -> dict[str, Any]:
         if value is None:
             return {}
         if isinstance(value, Mapping):
             return dict(value)
-        raise TypeError("attach_options must be a mapping if provided.")
+        raise TypeError("DuckLake attach_options must be a mapping if provided.")
 
     @computed_field(return_type=tuple[str, str])
     def metadata_sql_parts(self) -> tuple[str, str]:
@@ -380,11 +385,7 @@ def build_ducklake_attachment(
     if isinstance(config, DuckLakeAttachmentConfig):
         attachment_config = config
     elif isinstance(config, Mapping):
-        if "metadata_backend" not in config or "storage_backend" not in config:
-            raise ValueError(
-                "DuckLake configuration requires both 'metadata_backend' and 'storage_backend'."
-            )
-        attachment_config = DuckLakeAttachmentConfig.model_validate(dict(config))
+        attachment_config = DuckLakeAttachmentConfig.model_validate(config)
     else:  # pragma: no cover - defensive programming
         raise TypeError(
             "DuckLake configuration must be a DuckLakeAttachmentConfig or mapping."
@@ -399,11 +400,18 @@ def ensure_extensions_with_plugins(
     plugins: Sequence[str],
 ) -> None:
     """Ensure DuckLake plugins are present in the extensions list."""
-    existing_names = {
-        ext if isinstance(ext, str) else ext.get("name", "")
-        for ext in extensions
-        if isinstance(ext, (str, Mapping))
-    }
+    existing_names: set[str] = set()
+    for ext in extensions:
+        if isinstance(ext, str):
+            existing_names.add(ext)
+        elif isinstance(ext, Mapping):
+            name = str(ext.get("name", ""))
+            if name:
+                existing_names.add(name)
+        elif hasattr(ext, "name"):
+            name = str(getattr(ext, "name", ""))
+            if name:
+                existing_names.add(name)
     for plugin in plugins:
         if plugin not in existing_names:
             extensions.append(plugin)
