@@ -10,3 +10,14 @@ generate-docs-cli:
 
 sync:
     uv sync --all-extras --all-groups
+
+# Resolve GitHub issue with Claude in an independent git worktree
+claude-resolve number:
+    git worktree add resolve-{{number}}
+    cd resolve-{{number}}
+    gt checkout main
+    gt get
+    direnv allow
+    source ./.venv/bin/activate
+    ISSUE=gh issue view {{number}}
+    claude -p "Please solve GitHub issue (do not create commits) #{{number}}:\n\n$ISSUE"

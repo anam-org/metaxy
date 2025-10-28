@@ -2,6 +2,20 @@
 # name: test_basic_sqlmodel_feature_creation
   'd7b29b90a0189084ce830c7e4dc76624e8abb44744ed82a18b5d0449f0739928'
 # ---
+# name: test_composite_key_multiple_columns
+  dict({
+    'data_version': dict({
+      'event': '0e1c4ff52c78531ffe409d2ec18d0fe20a28a6a955666c185dc36c59625ae656',
+      'metric': '3f943f7bebadf7fc11989e6419eabde9ca44a17d77cb0976b667628e1d4a2fb9',
+    }),
+    'feature_version': '251b5f1d6cf4fc554da752e758ea7524a01e5f6160b50eeeffbbc672514f7c65',
+    'id_columns': list([
+      'user_id',
+      'session_id',
+      'timestamp',
+    ]),
+  })
+# ---
 # name: test_data_version_method
   dict({
     'embeddings': '072b1924ad607ebd51b35a9420e2cca977084bd89635295bc31a9e836241036b',
@@ -22,6 +36,185 @@
 # ---
 # name: test_graph_snapshot_inclusion
   '88c4365cba5fe82fd5a93743c156631fe676ddea4014d991d34529bb397ac8b2'
+# ---
+# name: test_sqlmodel_duckdb_custom_id_columns
+  dict({
+    'child': list([
+      dict({
+        'data_version': dict({
+          'total_duration': 'hash_t1',
+        }),
+        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'session_id': 10,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'summary': 'User 1 Session 10',
+        'total_duration': 30.5,
+        'user_id': 1,
+      }),
+      dict({
+        'data_version': dict({
+          'total_duration': 'hash_t2',
+        }),
+        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'session_id': 20,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'summary': 'User 1 Session 20',
+        'total_duration': 45.0,
+        'user_id': 1,
+      }),
+      dict({
+        'data_version': dict({
+          'total_duration': 'hash_t3',
+        }),
+        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'session_id': 10,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'summary': 'User 2 Session 10',
+        'total_duration': 15.0,
+        'user_id': 2,
+      }),
+      dict({
+        'data_version': dict({
+          'total_duration': 'hash_t4',
+        }),
+        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'session_id': 30,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'summary': 'User 2 Session 30',
+        'total_duration': 60.0,
+        'user_id': 2,
+      }),
+    ]),
+    'parent': list([
+      dict({
+        'activity_type': 'read',
+        'data_version': dict({
+          'activity_type': 'hash_a1',
+          'duration': 'hash_d1',
+        }),
+        'duration': 30.5,
+        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'session_id': 10,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'timestamp': 1000,
+        'user_id': 1,
+      }),
+      dict({
+        'activity_type': 'write',
+        'data_version': dict({
+          'activity_type': 'hash_a2',
+          'duration': 'hash_d2',
+        }),
+        'duration': 45.0,
+        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'session_id': 20,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'timestamp': 1100,
+        'user_id': 1,
+      }),
+      dict({
+        'activity_type': 'read',
+        'data_version': dict({
+          'activity_type': 'hash_a3',
+          'duration': 'hash_d3',
+        }),
+        'duration': 15.0,
+        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'session_id': 10,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'timestamp': 1200,
+        'user_id': 2,
+      }),
+      dict({
+        'activity_type': 'read',
+        'data_version': dict({
+          'activity_type': 'hash_a4',
+          'duration': 'hash_d4',
+        }),
+        'duration': 60.0,
+        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'session_id': 30,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'timestamp': 1300,
+        'user_id': 2,
+      }),
+      dict({
+        'activity_type': 'write',
+        'data_version': dict({
+          'activity_type': 'hash_a5',
+          'duration': 'hash_d5',
+        }),
+        'duration': 25.5,
+        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'session_id': 10,
+        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
+        'timestamp': 1400,
+        'user_id': 3,
+      }),
+    ]),
+  })
+# ---
+# name: test_sqlmodel_feature_id_columns_with_joins
+  dict({
+    'expected_join': list([
+      tuple(
+        1,
+        '2024-01-01',
+      ),
+      tuple(
+        1,
+        '2024-01-02',
+      ),
+      tuple(
+        2,
+        '2024-01-01',
+      ),
+      tuple(
+        3,
+        '2024-01-01',
+      ),
+    ]),
+    'feature_a_rows': list([
+      tuple(
+        1,
+        '2024-01-01',
+      ),
+      tuple(
+        1,
+        '2024-01-02',
+      ),
+      tuple(
+        2,
+        '2024-01-01',
+      ),
+      tuple(
+        2,
+        '2024-01-02',
+      ),
+      tuple(
+        3,
+        '2024-01-01',
+      ),
+    ]),
+    'feature_b_rows': list([
+      tuple(
+        1,
+        '2024-01-01',
+      ),
+      tuple(
+        1,
+        '2024-01-02',
+      ),
+      tuple(
+        2,
+        '2024-01-01',
+      ),
+      tuple(
+        3,
+        '2024-01-01',
+      ),
+    ]),
+  })
 # ---
 # name: test_sqlmodel_feature_multiple_fields
   '5af13273b2c95417cf75ad5a075cb43218939d3688cc8c6b2c0e9a4c55858eaf'
@@ -62,6 +255,15 @@
       'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
     }),
   ])
+# ---
+# name: test_sqlmodel_id_columns_in_snapshot
+  dict({
+    'feature_version': 'a035349dabfed08bee0bd6f0d5631ff5aaf5285488b915fe3d5ca64bda42cc2b',
+    'id_columns': list([
+      'customer_id',
+      'order_id',
+    ]),
+  })
 # ---
 # name: test_version_changes_with_code_version
   dict({

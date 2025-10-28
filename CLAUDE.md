@@ -140,7 +140,7 @@ Implementations:
 - `ClickHouseMetadataStore` (clickhouse.py): ClickHouse backend
 
 Key system tables (stored with prefix `metaxy-system`):
-- `feature_versions`: Tracks when each feature version was recorded (populated by `metaxy push`)
+- `feature_versions`: Tracks when each feature version was recorded (populated by `metaxy graph push`)
 - `migrations`: Tracks applied migrations and their status
 
 #### 3. Data Versioning (`src/metaxy/data_versioning/`)
@@ -175,7 +175,7 @@ Handles metadata updates when feature definitions change:
 - **Requires Feature classes**: Imports actual Feature classes (via `FeatureGraph.from_snapshot()`) to support custom `load_input()` methods
 
 Migration workflow:
-1. `metaxy push` in CD to record feature graph snapshot
+1. `metaxy graph push` in CD to record feature graph snapshot
 2. `metaxy migrations generate` to detect changes and create YAML
 3. Review migration YAML (check reasons, validate operations)
 4. `metaxy migrations apply` to execute operations (imports Feature classes for custom alignment logic)
@@ -285,7 +285,7 @@ This prevents unnecessary dependencies from loading when not needed.
 All stores in a fallback chain must use the same hash algorithm. This is validated at store open time.
 
 ### Migration Prerequisites
-The migration system requires `metaxy push` to be run in CD workflows. Without recorded snapshots, migration detection cannot work (no baseline to compare against).
+The migration system requires `metaxy graph push` to be run in CD workflows. Without recorded snapshots, migration detection cannot work (no baseline to compare against).
 
 ## Testing Patterns
 

@@ -763,3 +763,533 @@ def test_sqlmodel_feature_with_duckdb_store(
 
         # Snapshot result
         assert result_df.to_dicts() == snapshot
+
+
+# Custom ID Columns Tests
+
+
+def test_basic_custom_id_columns() -> None:
+    """Test creating SQLModelFeature with custom id_columns.
+
+    Verifies that:
+    - SQLModelFeature can be created with custom id_columns
+    - id_columns are accessible via Feature.id_columns() method
+    - Feature is registered correctly in the graph
+    """
+
+    class UserSessionFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["user", "session"]),
+            id_columns=["user_id", "session_id"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["activity"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "user_session"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: str = Field(primary_key=True)
+        session_id: str = Field(primary_key=True)
+        activity: str
+        timestamp: int
+
+    # Verify id_columns are set correctly
+    assert UserSessionFeature.id_columns() == ["user_id", "session_id"]
+
+    # Verify feature is registered
+    graph = FeatureGraph.get_active()
+    assert FeatureKey(["user", "session"]) in graph.features_by_key
+
+    # Verify spec has custom id_columns
+    assert UserSessionFeature.spec.id_columns == ["user_id", "session_id"]
+    assert UserSessionFeature.spec.id_columns == ["user_id", "session_id"]
+
+
+def test_sqlmodel_duckdb_custom_id_columns(
+    tmp_path: Path, snapshot: SnapshotAssertion
+) -> None:
+    """Test SQLModelFeature with DuckDB store using custom id_columns.
+
+    Verifies that:
+    - Parent and child SQLModelFeatures work with custom id_columns
+    - Metadata operations (write/read) respect custom ID columns
+    - Joins work correctly with custom ID columns
+    - Data versioning works with custom ID columns
+    """
+
+    # Create parent feature with custom ID columns
+    class UserActivityFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["user", "activity"]),
+            id_columns=["user_id", "session_id"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["activity_type"]), code_version=1),
+                FieldSpec(key=FieldKey(["duration"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "user_activity"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        session_id: int = Field(primary_key=True)
+        activity_type: str
+        duration: float
+        timestamp: int
+
+    # Create child feature with same custom ID columns
+    class UserSummaryFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["user", "summary"]),
+            id_columns=["user_id", "session_id"],
+            deps=[FeatureDep(key=FeatureKey(["user", "activity"]))],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["total_duration"]),
+                    code_version=1,
+                    deps=[
+                        FieldDep(
+                            feature_key=FeatureKey(["user", "activity"]),
+                            fields=[FieldKey(["duration"])],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ):
+        __tablename__: str = "user_summary"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        session_id: int = Field(primary_key=True)
+        total_duration: float
+        summary: str
+
+    # Create DuckDB store
+    db_path = tmp_path / "test_custom_ids.duckdb"
+
+    with DuckDBMetadataStore(db_path) as store:
+        # Create parent metadata with composite key
+        parent_df = pl.DataFrame(
+            {
+                "user_id": [1, 1, 2, 2, 3],
+                "session_id": [10, 20, 10, 30, 10],
+                "activity_type": ["read", "write", "read", "read", "write"],
+                "duration": [30.5, 45.0, 15.0, 60.0, 25.5],
+                "timestamp": [1000, 1100, 1200, 1300, 1400],
+                "data_version": [
+                    {"activity_type": "hash_a1", "duration": "hash_d1"},
+                    {"activity_type": "hash_a2", "duration": "hash_d2"},
+                    {"activity_type": "hash_a3", "duration": "hash_d3"},
+                    {"activity_type": "hash_a4", "duration": "hash_d4"},
+                    {"activity_type": "hash_a5", "duration": "hash_d5"},
+                ],
+            }
+        )
+
+        # Write parent metadata
+        store.write_metadata(UserActivityFeature, nw.from_native(parent_df))
+
+        # Read back parent metadata
+        parent_result = store.read_metadata(UserActivityFeature)
+        parent_result_df = collect_to_polars(parent_result)
+
+        # Verify parent data
+        assert len(parent_result_df) == 5
+        assert set(parent_result_df.columns) >= {
+            "user_id",
+            "session_id",
+            "activity_type",
+            "duration",
+        }
+
+        # Verify composite keys are preserved
+        composite_keys = list(
+            zip(
+                parent_result_df["user_id"].to_list(),
+                parent_result_df["session_id"].to_list(),
+            )
+        )
+        assert sorted(composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30), (3, 10)]
+
+        # Create child metadata with matching composite keys
+        child_df = pl.DataFrame(
+            {
+                "user_id": [1, 1, 2, 2],  # Note: (3, 10) missing
+                "session_id": [10, 20, 10, 30],
+                "total_duration": [30.5, 45.0, 15.0, 60.0],
+                "summary": [
+                    "User 1 Session 10",
+                    "User 1 Session 20",
+                    "User 2 Session 10",
+                    "User 2 Session 30",
+                ],
+                "data_version": [
+                    {"total_duration": "hash_t1"},
+                    {"total_duration": "hash_t2"},
+                    {"total_duration": "hash_t3"},
+                    {"total_duration": "hash_t4"},
+                ],
+            }
+        )
+
+        # Write child metadata
+        store.write_metadata(UserSummaryFeature, nw.from_native(child_df))
+
+        # Read back child metadata
+        child_result = store.read_metadata(UserSummaryFeature)
+        child_result_df = collect_to_polars(child_result)
+
+        # Verify child data
+        assert len(child_result_df) == 4
+
+        # Verify composite keys in child
+        child_composite_keys = list(
+            zip(
+                child_result_df["user_id"].to_list(),
+                child_result_df["session_id"].to_list(),
+            )
+        )
+        assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
+
+        # Snapshot results
+        assert {
+            "parent": parent_result_df.sort(["user_id", "session_id"]).to_dicts(),
+            "child": child_result_df.sort(["user_id", "session_id"]).to_dicts(),
+        } == snapshot
+
+
+def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
+    """Test SQLModelFeature with composite keys (multiple ID columns).
+
+    Verifies that:
+    - Features can have composite keys with 3+ columns
+    - Feature versioning works with composite keys
+    - Data versioning produces correct struct with composite keys
+    """
+
+    class MultiKeyFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["multi", "key"]),
+            id_columns=["user_id", "session_id", "timestamp"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["event"]), code_version=1),
+                FieldSpec(key=FieldKey(["metric"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "multi_key"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        session_id: int = Field(primary_key=True)
+        timestamp: int = Field(primary_key=True)
+        event: str
+        metric: float
+
+    # Verify 3-column composite key
+    assert MultiKeyFeature.id_columns() == ["user_id", "session_id", "timestamp"]
+
+    # Verify feature version is deterministic
+    version = MultiKeyFeature.feature_version()
+    assert len(version) == 64
+
+    # Verify data version structure
+    data_version = MultiKeyFeature.data_version()
+    assert "event" in data_version
+    assert "metric" in data_version
+
+    # Snapshot versions
+    assert {
+        "feature_version": version,
+        "data_version": data_version,
+        "id_columns": MultiKeyFeature.id_columns(),
+    } == snapshot
+
+
+def test_parent_child_different_id_columns() -> None:
+    """Test parent and child features with different ID column requirements.
+
+    Verifies that:
+    - Parent can have more ID columns than child
+    - Child specifies which ID columns it needs
+    - Feature registration and versioning work correctly
+    """
+
+    class DetailedParentFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["detailed", "parent"]),
+            id_columns=["user_id", "session_id", "device_id"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["detail"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "detailed_parent"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        session_id: int = Field(primary_key=True)
+        device_id: str = Field(primary_key=True)
+        detail: str
+
+    class AggregatedChildFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["aggregated", "child"]),
+            id_columns=["user_id", "session_id"],  # Doesn't need device_id
+            deps=[FeatureDep(key=FeatureKey(["detailed", "parent"]))],
+            fields=[
+                FieldSpec(key=FieldKey(["summary"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "aggregated_child"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        session_id: int = Field(primary_key=True)
+        summary: str
+
+    # Verify different ID columns
+    assert DetailedParentFeature.id_columns() == ["user_id", "session_id", "device_id"]
+    assert AggregatedChildFeature.id_columns() == ["user_id", "session_id"]
+
+    # Both should be registered
+    graph = FeatureGraph.get_active()
+    assert FeatureKey(["detailed", "parent"]) in graph.features_by_key
+    assert FeatureKey(["aggregated", "child"]) in graph.features_by_key
+
+    # Child should have parent as dependency
+    assert AggregatedChildFeature.spec.deps is not None
+    assert len(AggregatedChildFeature.spec.deps) == 1
+    assert AggregatedChildFeature.spec.deps[0].key == FeatureKey(["detailed", "parent"])
+
+
+def test_sqlmodel_feature_id_columns_with_joins(
+    tmp_path: Path, snapshot: SnapshotAssertion
+) -> None:
+    """Test that joins work correctly with custom ID columns in SQLModelFeature.
+
+    Verifies that:
+    - Upstream features are joined on custom ID columns
+    - Inner join behavior works as expected
+    - Data versions are calculated correctly after joins
+    """
+
+    # Create two upstream features with composite keys
+    class FeatureA(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["feature", "a"]),
+            id_columns=["user_id", "date"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["value_a"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "feature_a"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        date: str = Field(primary_key=True)
+        value_a: float
+
+    class FeatureB(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["feature", "b"]),
+            id_columns=["user_id", "date"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["value_b"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "feature_b"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        date: str = Field(primary_key=True)
+        value_b: float
+
+    # Create downstream feature that depends on both
+    class FeatureC(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["feature", "c"]),
+            id_columns=["user_id", "date"],
+            deps=[
+                FeatureDep(key=FeatureKey(["feature", "a"])),
+                FeatureDep(key=FeatureKey(["feature", "b"])),
+            ],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["combined"]),
+                    code_version=1,
+                    deps=[
+                        FieldDep(
+                            feature_key=FeatureKey(["feature", "a"]),
+                            fields=[FieldKey(["value_a"])],
+                        ),
+                        FieldDep(
+                            feature_key=FeatureKey(["feature", "b"]),
+                            fields=[FieldKey(["value_b"])],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ):
+        __tablename__: str = "feature_c"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int = Field(primary_key=True)
+        date: str = Field(primary_key=True)
+        combined: float
+
+    db_path = tmp_path / "test_joins.duckdb"
+
+    with DuckDBMetadataStore(db_path) as store:
+        # Write metadata for FeatureA
+        df_a = pl.DataFrame(
+            {
+                "user_id": [1, 1, 2, 2, 3],
+                "date": [
+                    "2024-01-01",
+                    "2024-01-02",
+                    "2024-01-01",
+                    "2024-01-02",
+                    "2024-01-01",
+                ],
+                "value_a": [10.0, 20.0, 30.0, 40.0, 50.0],
+                "data_version": [
+                    {"value_a": "hash_a1"},
+                    {"value_a": "hash_a2"},
+                    {"value_a": "hash_a3"},
+                    {"value_a": "hash_a4"},
+                    {"value_a": "hash_a5"},
+                ],
+            }
+        )
+        store.write_metadata(FeatureA, nw.from_native(df_a))
+
+        # Write metadata for FeatureB (missing some combinations)
+        df_b = pl.DataFrame(
+            {
+                "user_id": [1, 1, 2, 3],  # Missing (2, 2024-01-02)
+                "date": ["2024-01-01", "2024-01-02", "2024-01-01", "2024-01-01"],
+                "value_b": [100.0, 200.0, 300.0, 500.0],
+                "data_version": [
+                    {"value_b": "hash_b1"},
+                    {"value_b": "hash_b2"},
+                    {"value_b": "hash_b3"},
+                    {"value_b": "hash_b4"},
+                ],
+            }
+        )
+        store.write_metadata(FeatureB, nw.from_native(df_b))
+
+        # Now test that joining works correctly
+        # Inner join should only keep rows present in both A and B
+        # Expected matches: (1, 2024-01-01), (1, 2024-01-02), (2, 2024-01-01), (3, 2024-01-01)
+
+        # Read both features to verify
+        result_a = collect_to_polars(store.read_metadata(FeatureA))
+        result_b = collect_to_polars(store.read_metadata(FeatureB))
+
+        # Verify the data was written correctly
+        assert len(result_a) == 5
+        assert len(result_b) == 4
+
+        # Verify composite keys work
+        keys_a = set(zip(result_a["user_id"].to_list(), result_a["date"].to_list()))
+        keys_b = set(zip(result_b["user_id"].to_list(), result_b["date"].to_list()))
+
+        # Inner join result would be intersection
+        expected_joined_keys = keys_a & keys_b
+        assert len(expected_joined_keys) == 4
+
+        # Snapshot the results
+        assert {
+            "feature_a_rows": sorted(list(keys_a)),
+            "feature_b_rows": sorted(list(keys_b)),
+            "expected_join": sorted(list(expected_joined_keys)),
+        } == snapshot
+
+
+def test_sqlmodel_empty_id_columns_raises() -> None:
+    """Test that empty id_columns list raises an error.
+
+    Verifies that:
+    - Empty list for id_columns is not allowed
+    - Appropriate error message is raised
+    """
+
+    with pytest.raises(ValueError, match="id_columns must be non-empty"):
+
+        class InvalidFeature(
+            SQLModelFeature,
+            table=True,
+            spec=FeatureSpec(
+                key=FeatureKey(["invalid"]),
+                id_columns=[],  # Empty list not allowed
+                deps=None,
+                fields=[
+                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                ],
+            ),
+        ):
+            __tablename__: str = "invalid"  # pyright: ignore[reportIncompatibleVariableOverride]
+            data: str
+
+
+def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
+    """Test that custom id_columns are included in feature graph snapshots.
+
+    Verifies that:
+    - id_columns are serialized in graph snapshots
+    - Snapshot includes the custom ID column configuration
+    """
+
+    class SnapshotFeature(
+        SQLModelFeature,
+        table=True,
+        spec=FeatureSpec(
+            key=FeatureKey(["snapshot", "ids"]),
+            id_columns=["customer_id", "order_id"],
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["amount"]), code_version=1),
+            ],
+        ),
+    ):
+        __tablename__: str = "snapshot_ids"  # pyright: ignore[reportIncompatibleVariableOverride]
+        customer_id: int = Field(primary_key=True)
+        order_id: int = Field(primary_key=True)
+        amount: float
+
+    graph = FeatureGraph.get_active()
+
+    # Create snapshot
+    snapshot_data = graph.to_snapshot()
+
+    # Check feature in snapshot
+    feature_key_str = "snapshot/ids"
+    assert feature_key_str in snapshot_data
+
+    feature_snapshot = snapshot_data[feature_key_str]
+
+    # Check that id_columns are included in the spec
+    assert "feature_spec" in feature_snapshot
+    spec_data = feature_snapshot["feature_spec"]
+    assert "id_columns" in spec_data
+    assert spec_data["id_columns"] == ["customer_id", "order_id"]
+
+    # Snapshot the relevant parts
+    assert {
+        "id_columns": spec_data["id_columns"],
+        "feature_version": feature_snapshot["feature_version"],
+    } == snapshot

@@ -13,6 +13,8 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 
+DEFAULT_ID_COLUMNS = ["sample_uid"]
+
 
 class TempFeatureModule:
     """Helper to create temporary Python modules with feature definitions.

@@ -235,6 +235,7 @@ def test_polars_diff_resolver_no_current() -> None:
     result = diff_resolver.find_changes(
         target_versions=target_versions,
         current_metadata=None,
+        id_columns=["sample_uid"],  # Using default ID columns for testing
     )
 
     # Materialize lazy frames to check lengths
@@ -278,6 +279,7 @@ def test_polars_diff_resolver_with_changes() -> None:
     result = diff_resolver.find_changes(
         target_versions=target_versions,
         current_metadata=current_metadata,
+        id_columns=["sample_uid"],  # Using default ID columns for testing
     )
 
     # Added: sample_uid=4 - materialize to check
@@ -354,6 +356,7 @@ def test_full_pipeline_integration(
     diff_result = diff_resolver.find_changes(
         target_versions=with_versions,
         current_metadata=current,
+        id_columns=["sample_uid"],  # Using default ID columns for testing
     )
 
     # Added: sample_uid=3 (not in current) - materialize to check
@@ -620,6 +623,7 @@ def test_diff_resolver_all_unchanged() -> None:
     result = diff_resolver.find_changes(
         target_versions=target_versions,
         current_metadata=current_metadata,
+        id_columns=["sample_uid"],  # Using default ID columns for testing
     )
 
     # Nothing changed - materialize lazy frames to check
@@ -767,6 +771,7 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
             lazy_result = diff_resolver.find_changes(
                 target_versions,
                 current_metadata,
+                id_columns=cls.id_columns(),  # Pass ID columns from feature spec
             )
             # Could filter/modify result here
 
@@ -1181,6 +1186,7 @@ def test_diff_result_snapshots(snapshot):
     result = diff_resolver.find_changes(
         target_versions=target,
         current_metadata=current,
+        id_columns=["sample_uid"],  # Using default ID columns for testing
     )
 
     # Snapshot the sample_uids in each category - materialize lazy frames first
