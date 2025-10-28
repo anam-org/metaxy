@@ -15,7 +15,7 @@ claude-resolve number prompt="":
     git worktree add ../worktrees/metaxy-gh-{{number}} origin/main
     cd ../worktrees/metaxy-gh-{{number}}
     direnv allow
-    eval "$(direnv hook bash)"
+    eval "$(direnv export bash)"
     claude --dangerously-skip-permissions "Resolve GitHub issue #{{number}} (do not create commits). {{prompt}}"
 
 docs-build:
