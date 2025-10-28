@@ -46,6 +46,9 @@
             glibc
           ];
           packages = commonPackages ++ [python];
+          # NOTE: makeLibraryPath behavior may differ across platforms (Linux/macOS).
+          # This configuration works for now but may need adjustments in the future
+          # if library paths are handled differently on different systems.
           LD_LIBRARY_PATH = lib.makeLibraryPath (
             [
               pkgs.stdenv.cc.cc.lib
