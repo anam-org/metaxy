@@ -43,7 +43,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     def __init__(
         self,
         backend: "ibis.BaseBackend",
-        extensions: "Sequence[Any] | None" = None,
+        extensions: "Sequence[ExtensionInput] | None" = None,
     ):
         """Initialize DuckDB calculator and load extensions.
 

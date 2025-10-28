@@ -21,7 +21,7 @@ from metaxy.metadata_store._ducklake_support import (
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
-class DuckDBExtensionSpec(BaseModel):
+class ExtensionSpec(BaseModel):
     """
     DuckDB extension specification accepted by DuckDBMetadataStore.
 
@@ -34,16 +34,16 @@ class DuckDBExtensionSpec(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "DuckDBExtensionSpec":
-        """Coerce arbitrary mappings into DuckDBExtensionSpec instances."""
+    def from_mapping(cls, value: Mapping[str, Any]) -> "ExtensionSpec":
+        """Coerce arbitrary mappings into ExtensionSpec instances."""
         try:
             return cls.model_validate(value)
         except ValidationError as exc:  # pragma: no cover - bubbles to caller
             raise ValueError(f"Invalid DuckDB extension spec: {value!r}") from exc
 
 
-ExtensionInput = str | DuckDBExtensionSpec | Mapping[str, Any]
-NormalisedExtension = str | DuckDBExtensionSpec
+ExtensionInput = str | ExtensionSpec | Mapping[str, Any]
+NormalisedExtension = str | ExtensionSpec
 
 
 def _normalise_extensions(
@@ -54,10 +54,10 @@ def _normalise_extensions(
     for ext in extensions:
         if isinstance(ext, str):
             normalised.append(ext)
-        elif isinstance(ext, DuckDBExtensionSpec):
+        elif isinstance(ext, ExtensionSpec):
             normalised.append(ext)
         elif isinstance(ext, Mapping):
-            normalised.append(DuckDBExtensionSpec.from_mapping(ext))
+            normalised.append(ExtensionSpec.from_mapping(ext))
         else:
             raise TypeError(
                 "DuckDB extensions must be strings or mapping-like objects with a 'name'."
@@ -130,7 +130,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
             extensions: List of DuckDB extensions to install and load on open.
                 Supports strings (community repo), mapping-like objects with
-                ``name``/``repository`` keys, or DuckDBExtensionSpec instances.
+                ``name``/``repository`` keys, or ExtensionSpec instances.
 
                 Examples:
                     extensions=['hashfuncs']  # Install hashfuncs from community
