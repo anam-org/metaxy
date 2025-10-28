@@ -253,7 +253,8 @@ class DuckLakeAttachmentConfig(BaseModel):
     def _coerce_backends(
         cls, value: DuckLakeBackendInput, info: ValidationInfo
     ) -> DuckLakeBackend:
-        return coerce_backend_config(value, role=info.field_name.replace("_", " "))
+        field_name = info.field_name or "backend"
+        return coerce_backend_config(value, role=field_name.replace("_", " "))
 
     @field_validator("alias", mode="before")
     @classmethod
@@ -335,8 +336,8 @@ class DuckLakeAttachmentManager:
                 cursor.execute(f"INSTALL {plugin};")
                 cursor.execute(f"LOAD {plugin};")
 
-            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts
-            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts
+            metadata_secret_sql, metadata_params_sql = self._config.metadata_sql_parts  # pyright: ignore[reportGeneralTypeIssues]
+            storage_secret_sql, storage_params_sql = self._config.storage_sql_parts  # pyright: ignore[reportGeneralTypeIssues]
 
             if metadata_secret_sql:
                 cursor.execute(metadata_secret_sql)
