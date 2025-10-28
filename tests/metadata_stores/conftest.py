@@ -22,8 +22,6 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
 
-from ._ducklake_utils import ensure_ducklake_extension
-
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
@@ -335,12 +333,10 @@ class StoreCases:
         self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict]:
         """DuckDB store configured with DuckLake attachment."""
-        ensure_ducklake_extension()
 
         db_path = tmp_path / "test_ducklake.duckdb"
         metadata_path = tmp_path / "ducklake_catalog.duckdb"
         storage_dir = tmp_path / "ducklake_storage"
-        storage_dir.mkdir()
 
         ducklake_config = {
             "alias": "integration_lake",
