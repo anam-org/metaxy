@@ -1,14 +1,15 @@
-# Metaxy
-
-# Metaxy 🌌
+# 🌌 Metaxy
 
 Metaxy is a feature metadata management system for ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
 
-Read the [docs](https://anam-org.github.io/metaxy) to learn more.
+> [!warning] Giga Alpha
+> This project is as raw as a steak still saying ‘moo.’
 
-Metaxy is:
+Read the [few docs we have](https://anam-org.github.io/metaxy) to learn more.
 
-- **🧩 composable** --- bring your own everything!
+What's so special about this project? Metaxy is:
+
+- **🧩 composable** -- bring your own everything!
 
     - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
     - supports **lakehouse storage** formats such as DeltaLake or DuckLake
@@ -41,7 +42,7 @@ Metaxy is:
     - integrations with popular tools such as [SQLModel](https://anam-org.github.io/metaxy/learn/integrations/sqlmodel.md), Dagster, and Ray.
     - [testing helpers](https://anam-org.github.io/metaxy/learn/testing.md) that you're going to appreciate
 
-Now let's get started with Metaxy! Learn more in [docs](https://anam-org.github.io/metaxy/)
+Now let's get started with Metaxy! Learn more in the [docs](https://anam-org.github.io/metaxy/),
 
 ## Development
 
