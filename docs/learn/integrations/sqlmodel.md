@@ -101,7 +101,7 @@ Configure automatic table naming behavior:
 === "pyproject.toml"
 
     ```toml
-    [ext.sqlmodel]
+    [tool.metaxy.ext.sqlmodel]
     infer_db_table_names = true  # Default
     ```
 
