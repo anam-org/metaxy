@@ -51,6 +51,9 @@ theme:
 
 plugins:
   - search
+  - gen-files:
+      scripts:
+        - docs/gen_config_reference.py
   - cyclopts
   - autorefs
   - section-index
@@ -160,6 +163,7 @@ nav:
           - SQLModel: learn/integrations/sqlmodel.md
   - Reference:
       - CLI: reference/cli.md
+      - Configuration: reference/configuration.md
 
 extra:
   social:
