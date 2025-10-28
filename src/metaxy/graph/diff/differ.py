@@ -214,8 +214,13 @@ class GraphDiffer:
             fields1 = feature1.get("fields", {})
             fields2 = feature2.get("fields", {})
 
-            # Check if feature version changed
-            if version1 != version2:
+            # Get tracking versions for migration detection
+            # Use tracking version if available (new system), otherwise fall back to feature_version
+            tracking_version1 = feature1.get("feature_tracking_version", version1)
+            tracking_version2 = feature2.get("feature_tracking_version", version2)
+
+            # Check if feature tracking version changed (indicates migration needed)
+            if tracking_version1 != tracking_version2:
                 # Compute field changes
                 field_changes = self._compute_field_changes(fields1, fields2)
 
@@ -613,13 +618,14 @@ class GraphDiffer:
         return downstream
 
     def load_snapshot_data(
-        self, store: MetadataStore, snapshot_version: str
+        self, store: MetadataStore, snapshot_version: str, project: str | None = None
     ) -> dict[str, dict[str, Any]]:
         """Load snapshot data from store.
 
         Args:
             store: Metadata store to query
             snapshot_version: Snapshot version to load
+            project: Optional project name to filter by (None means all projects)
 
         Returns:
             Dict mapping feature_key (string) -> {feature_version, feature_spec, fields}
@@ -636,7 +642,7 @@ class GraphDiffer:
                     f"No feature_versions table found in store. Cannot load snapshot {snapshot_version}."
                 )
 
-            # Filter by snapshot_version
+            # Filter by snapshot_version and project
             import narwhals as nw
 
             features_df = (
@@ -668,6 +674,9 @@ class GraphDiffer:
                 "feature_version": feature_version,
                 "feature_spec": feature_spec_dict,
                 "feature_class_path": feature_class_path,
+                "feature_tracking_version": row.get(
+                    "feature_tracking_version", feature_version
+                ),  # Fallback for backward compatibility
             }
 
         # Try to reconstruct FeatureGraph from snapshot to compute field versions
@@ -735,6 +744,9 @@ class GraphDiffer:
                 "feature_version": feature_version,
                 "fields": fields_data,
                 "feature_spec": feature_spec,
+                "feature_tracking_version": snapshot_dict[feature_key_str].get(
+                    "feature_tracking_version", feature_version
+                ),
             }
 
         return snapshot_data

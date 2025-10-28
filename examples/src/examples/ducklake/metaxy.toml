@@ -1,4 +1,6 @@
+project = "examples"
 entrypoints = ["examples.ducklake.demo"]
+auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
@@ -7,7 +9,6 @@ type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 database = "/tmp/ducklake_demo.db"
 
 [stores.dev.config.ducklake.attach_options]
-api_version = "0.2"
 override_data_path = true
 
 [stores.dev.config.ducklake.metadata_backend]

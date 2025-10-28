@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
 
@@ -127,6 +128,7 @@ class MetadataStore(ABC):
         self._is_open = False
         self._context_depth = 0
         self._prefer_native = prefer_native
+        self._allow_cross_project_writes = False
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -364,6 +366,71 @@ class MetadataStore(ABC):
 
     # ========== Core CRUD Operations ==========
 
+    @contextmanager
+    def allow_cross_project_writes(self):
+        """Context manager to temporarily allow cross-project writes.
+
+        This is an escape hatch for legitimate cross-project operations like migrations,
+        where metadata needs to be written to features from different projects.
+
+        Example:
+            >>> # During migration, allow writing to features from different projects
+            >>> with store.allow_cross_project_writes():
+            ...     store.write_metadata(feature_from_project_a, metadata_a)
+            ...     store.write_metadata(feature_from_project_b, metadata_b)
+
+        Yields:
+            None - the context manager temporarily disables project validation
+        """
+        previous_value = self._allow_cross_project_writes
+        try:
+            self._allow_cross_project_writes = True
+            yield
+        finally:
+            self._allow_cross_project_writes = previous_value
+
+    def _validate_project_write(self, feature: FeatureKey | type[Feature]) -> None:
+        """Validate that writing to a feature matches the expected project from config.
+
+        Args:
+            feature: Feature to validate project for
+
+        Raises:
+            ValueError: If feature's project doesn't match the global config project
+        """
+        # Skip validation if cross-project writes are allowed
+        if self._allow_cross_project_writes:
+            return
+
+        # Get the expected project from global config
+        from metaxy.config import MetaxyConfig
+
+        config = MetaxyConfig.get()
+        expected_project = config.project
+
+        # Use existing method to resolve to FeatureKey
+        feature_key = self._resolve_feature_key(feature)
+
+        # Get the Feature class from the graph
+        from metaxy.models.feature import FeatureGraph
+
+        graph = FeatureGraph.get_active()
+        if feature_key not in graph.features_by_key:
+            # Feature not in graph - can't validate, skip
+            return
+
+        feature_cls = graph.features_by_key[feature_key]
+        feature_project = feature_cls.project  # type: ignore[attr-defined]
+
+        # Validate the project matches
+        if feature_project != expected_project:
+            raise ValueError(
+                f"Cannot write to feature {feature_key.to_string()} from project '{feature_project}' "
+                f"when the global configuration expects project '{expected_project}'. "
+                f"Use store.allow_cross_project_writes() context manager for legitimate "
+                f"cross-project operations like migrations."
+            )
+
     @abstractmethod
     def _write_metadata_impl(
         self,
@@ -401,16 +468,22 @@ class MetadataStore(ABC):
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
             StoreNotOpenError: If store is not open
+            ValueError: If writing to a feature from a different project than expected
 
         Note:
             - Always writes to current store, never to fallback stores.
             - If df already contains 'feature_version' column, it will be used
               as-is (no replacement). This allows migrations to write historical
               versions. A warning is issued unless suppressed via context manager.
+            - Project validation is performed unless disabled via allow_cross_project_writes()
         """
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
+
+        # Validate project for non-system tables
+        if not is_system_table:
+            self._validate_project_write(feature)
 
         # Convert Narwhals to Polars if needed
         if isinstance(df, nw.DataFrame):
@@ -590,14 +663,31 @@ class MetadataStore(ABC):
             # Table doesn't exist yet
             existing_versions = None
 
-        # Check if this exact snapshot already exists
+        # Get project from any feature in the graph (all should have the same project)
+        # Default to empty string if no features in graph
+        if graph.features_by_key:
+            # Get first feature's project
+            first_feature = next(iter(graph.features_by_key.values()))
+            project_name = first_feature.project  # type: ignore[attr-defined]
+        else:
+            project_name = ""
+
+        # Check if this exact snapshot already exists for this project
         snapshot_already_exists = False
         existing_spec_versions: dict[str, str] = {}
 
         if existing_versions is not None:
-            snapshot_rows = existing_versions.filter(
-                pl.col("snapshot_version") == snapshot_version
-            )
+            # Check if project column exists (it may not in old tables)
+            if "project" in existing_versions.columns:
+                snapshot_rows = existing_versions.filter(
+                    (pl.col("snapshot_version") == snapshot_version)
+                    & (pl.col("project") == project_name)
+                )
+            else:
+                # Old table without project column - just check snapshot_version
+                snapshot_rows = existing_versions.filter(
+                    pl.col("snapshot_version") == snapshot_version
+                )
             snapshot_already_exists = snapshot_rows.height > 0
 
             if snapshot_already_exists:
@@ -628,9 +718,13 @@ class MetadataStore(ABC):
                 # Each snapshot must be complete to support migration detection
                 records.append(
                     {
+                        "project": project_name,
                         "feature_key": feature_key_str,
                         "feature_version": feature_data["feature_version"],
                         "feature_spec_version": feature_data["feature_spec_version"],
+                        "feature_tracking_version": feature_data[
+                            "feature_tracking_version"
+                        ],
                         "recorded_at": datetime.now(timezone.utc),
                         "feature_spec": feature_spec_json,
                         "feature_class_path": feature_data["feature_class_path"],
@@ -674,9 +768,13 @@ class MetadataStore(ABC):
 
                 records.append(
                     {
+                        "project": project_name,
                         "feature_key": feature_key_str,
                         "feature_version": feature_data["feature_version"],
                         "feature_spec_version": feature_data["feature_spec_version"],
+                        "feature_tracking_version": feature_data[
+                            "feature_tracking_version"
+                        ],
                         "recorded_at": datetime.now(timezone.utc),
                         "feature_spec": feature_spec_json,
                         "feature_class_path": feature_data["feature_class_path"],
@@ -726,7 +824,7 @@ class MetadataStore(ABC):
             columns: Subset of columns to return
 
         Returns:
-            Narwhals LazyFrame with metadata, or None if feature not found locally
+            Narwhals LazyFrame with metadata, or None if feature not found in the store
         """
         pass
 
@@ -901,8 +999,11 @@ class MetadataStore(ABC):
         """
         pass
 
-    def read_graph_snapshots(self) -> pl.DataFrame:
-        """Read all recorded graph snapshots from the feature_versions system table.
+    def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
+        """Read recorded graph snapshots from the feature_versions system table.
+
+        Args:
+            project: Project name to filter by. If None, returns snapshots from all projects.
 
         Returns a DataFrame with columns:
         - snapshot_version: Unique identifier for each graph snapshot
@@ -917,13 +1018,26 @@ class MetadataStore(ABC):
 
         Example:
             >>> with store:
-            ...     snapshots = store.read_graph_snapshots()
+            ...     # Get snapshots for a specific project
+            ...     snapshots = store.read_graph_snapshots(project="my_project")
             ...     latest_snapshot = snapshots["snapshot_version"][0]
             ...     print(f"Latest snapshot: {latest_snapshot}")
+            ...
+            ...     # Get snapshots across all projects
+            ...     all_snapshots = store.read_graph_snapshots()
         """
         self._check_open()
 
-        versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
+        # Build filters based on project parameter
+        filters = None
+        if project is not None:
+            import narwhals as nw
+
+            filters = [nw.col("project") == project]
+
+        versions_lazy = self._read_metadata_native(
+            FEATURE_VERSIONS_KEY, filters=filters
+        )
         if versions_lazy is None:
             # No snapshots recorded yet
             return pl.DataFrame(
@@ -955,6 +1069,7 @@ class MetadataStore(ABC):
         *,
         current: bool = True,
         snapshot_version: str | None = None,
+        project: str | None = None,
     ) -> pl.DataFrame:
         """Read feature version information from the feature_versions system table.
 
@@ -962,6 +1077,7 @@ class MetadataStore(ABC):
             current: If True, only return features from the current code snapshot.
                      If False, must provide snapshot_version.
             snapshot_version: Specific snapshot version to filter by. Required if current=False.
+            project: Project name to filter by. Defaults to None.
 
         Returns:
             Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
@@ -993,22 +1109,24 @@ class MetadataStore(ABC):
         if not current and snapshot_version is None:
             raise ValueError("Must provide snapshot_version when current=False")
 
-        versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
-        if versions_lazy is None:
-            # No features recorded yet
-            return pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-
         if current:
             # Get current snapshot from active graph
             graph = FeatureGraph.get_active()
             snapshot_version = graph.snapshot_version
 
-        # Filter by snapshot_version
-        versions_df = (
-            versions_lazy.filter(nw.col("snapshot_version") == snapshot_version)
-            .collect()
-            .to_polars()
+        filters = [nw.col("snapshot_version") == snapshot_version]
+        if project is not None:
+            filters.append(nw.col("project") == project)
+
+        versions_lazy = self._read_metadata_native(
+            FEATURE_VERSIONS_KEY, filters=filters
         )
+        if versions_lazy is None:
+            # No features recorded yet
+            return pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+
+        # Filter by snapshot_version
+        versions_df = versions_lazy.collect().to_polars()
 
         return versions_df
 

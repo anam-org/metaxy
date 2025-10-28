@@ -25,7 +25,7 @@ def test_duckdb_table_naming(
     """
     db_path = tmp_path / "test.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         import polars as pl
 
         metadata = pl.DataFrame(
@@ -57,7 +57,7 @@ def test_duckdb_with_custom_config(
         "memory_limit": "1GB",
     }
 
-    with DuckDBMetadataStore(db_path, config=config) as store:
+    with DuckDBMetadataStore(db_path, config=config, auto_create_tables=True) as store:
         # Just verify store opens successfully with config
         assert store._is_open
         assert store.backend == "duckdb"
@@ -74,7 +74,7 @@ def test_duckdb_uses_ibis_backend(
     """
     db_path = tmp_path / "test.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         # Should have ibis_conn
         assert hasattr(store, "ibis_conn")
         # Backend should be duckdb
@@ -118,7 +118,7 @@ def test_duckdb_persistence_across_instances(
     db_path = tmp_path / "test.duckdb"
 
     # Write data in first instance
-    with DuckDBMetadataStore(db_path) as store1:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store1:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -132,7 +132,7 @@ def test_duckdb_persistence_across_instances(
         store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
     # Read data in second instance
-    with DuckDBMetadataStore(db_path) as store2:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store2:
         result = collect_to_polars(
             store2.read_metadata(test_features["UpstreamFeatureA"])
         )
@@ -163,7 +163,7 @@ def test_duckdb_ducklake_integration(
     }
 
     with DuckDBMetadataStore(
-        db_path, extensions=["json"], ducklake=ducklake_config
+        db_path, extensions=["json"], ducklake=ducklake_config, auto_create_tables=True
     ) as store:
         attachment_config = store.ducklake_attachment_config
         assert attachment_config.alias == "lake"

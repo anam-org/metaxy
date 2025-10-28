@@ -477,8 +477,8 @@ class TestMetadataStoreTruncation:
             ):
                 pass
 
-            # Enable truncation
-            config = MetaxyConfig(hash_truncation_length=16)
+            # Enable truncation (preserve project from test setup)
+            config = MetaxyConfig(project="test", hash_truncation_length=16)
             MetaxyConfig.set(config)
 
             # Store should use truncated data versions
@@ -521,8 +521,8 @@ class TestMigrationCompatibility:
         test_graph = FeatureGraph()
 
         with test_graph.use():
-            # Enable truncation
-            config = MetaxyConfig(hash_truncation_length=12)
+            # Enable truncation (preserve project from test setup)
+            config = MetaxyConfig(project="test", hash_truncation_length=12)
             MetaxyConfig.set(config)
 
             class TestFeature(
@@ -561,6 +561,7 @@ class TestMigrationCompatibility:
                 # Detect migration - should work with truncated versions
                 migration = detect_migration(
                     store,
+                    project="test",  # Use the same project as in config
                     ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
                 )
                 assert migration is not None
@@ -596,8 +597,8 @@ class TestEndToEnd:
         test_graph = FeatureGraph()
 
         with test_graph.use():
-            # Enable truncation globally
-            config = MetaxyConfig(hash_truncation_length=16)
+            # Enable truncation globally (preserve project from test setup)
+            config = MetaxyConfig(project="test", hash_truncation_length=16)
             MetaxyConfig.set(config)
 
             # Create features

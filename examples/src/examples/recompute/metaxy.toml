@@ -1,4 +1,6 @@
+project = "examples"
 entrypoints = ["examples.recompute.__entrypoint__"]
+auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"

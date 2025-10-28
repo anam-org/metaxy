@@ -63,12 +63,13 @@ def generate(
     """
     from pathlib import Path
 
-    from metaxy.cli.context import get_config
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.migrations.detector import detect_migration
 
-    # Load features from entrypoints
-    load_features()
+    context = AppContext.get()
+    context.raise_command_cannot_override_project()
+    config = context.config
+    project = config.project
 
     # Convert op_type list to ops format
     if len(op) == 0:
@@ -80,15 +81,16 @@ def generate(
 
     ops = [{"type": op} for op in op]
 
-    # Get store
-    config = get_config()
-    metadata_store = config.get_store(store)
+    # Get store and project from config
+    metadata_store = context.get_store(store)
     migrations_dir = Path(config.migrations_dir)
+    project = context.get_required_project()  # This command needs a specific project
 
     with metadata_store:
         # Detect migration and write YAML
         migration = detect_migration(
             metadata_store,
+            project=project,
             from_snapshot_version=from_snapshot,
             ops=ops,
             migrations_dir=migrations_dir,
@@ -109,11 +111,11 @@ def generate(
         app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
 
         # Show description
-        description = migration.get_description(metadata_store)
+        description = migration.get_description(metadata_store, project)
         app.console.print(f"  Description: {description}")
 
         # Get affected features (computed on-demand)
-        affected_features = migration.get_affected_features(metadata_store)
+        affected_features = migration.get_affected_features(metadata_store, project)
         app.console.print(f"\n  Affected features ({len(affected_features)}):")
         for feature_key in affected_features[:5]:
             app.console.print(f"    ✓ {feature_key}")
@@ -134,6 +136,10 @@ def apply(
         cyclopts.Parameter(
             help="Migration ID to apply (applies all unapplied if not specified)"
         ),
+    ] = None,
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(help="Metadata store to use."),
     ] = None,
     *,
     dry_run: Annotated[
@@ -159,16 +165,17 @@ def apply(
     """
     from pathlib import Path
 
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system_tables import SystemTableStorage
     from metaxy.migrations.executor import MigrationExecutor
     from metaxy.migrations.loader import build_migration_chain
 
-    # Load features from entrypoints
-    load_features()
+    context = AppContext.get()
+    context.raise_command_cannot_override_project()
 
-    metadata_store = get_store()
+    # Get context and project from config
+    project = context.get_required_project()  # This command needs a specific project
+    metadata_store = context.get_store(store)
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
@@ -189,7 +196,7 @@ def apply(
         # Get completed migrations from events
         completed_ids = set()
         for mid in [m.migration_id for m in chain]:
-            if storage.get_migration_status(mid) == "completed":
+            if storage.get_migration_status(mid, project) == "completed":
                 completed_ids.add(mid)
 
         # Filter to unapplied migrations
@@ -235,10 +242,12 @@ def apply(
         for migration in to_apply:
             app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
             app.console.print(
-                f"  Affecting {len(migration.get_affected_features(metadata_store))} feature(s)"
+                f"  Affecting {len(migration.get_affected_features(metadata_store, project))} feature(s)"
             )
 
-            result = executor.execute(migration, metadata_store, dry_run=dry_run)
+            result = executor.execute(
+                migration, metadata_store, project, dry_run=dry_run
+            )
 
             # Print result
             if result.status == "completed":
@@ -293,15 +302,15 @@ def status():
     """
     from pathlib import Path
 
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system_tables import SystemTableStorage
     from metaxy.migrations.loader import build_migration_chain
 
-    # Load features
-    load_features()
+    context = AppContext.get()
 
-    metadata_store = get_store()
+    # Get context and project from config
+    project = context.get_required_project()  # This command needs a specific project
+    metadata_store = context.get_store(None)
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
@@ -326,17 +335,19 @@ def status():
             migration_id = migration.migration_id
 
             # Get status from events
-            status_str = storage.get_migration_status(migration_id)
+            status_str = storage.get_migration_status(migration_id, project=project)
 
             # Get completion counts
-            completed_features = storage.get_completed_features(migration_id)
-            failed_features = storage.get_failed_features(migration_id)
+            completed_features = storage.get_completed_features(
+                migration_id, project=project
+            )
+            failed_features = storage.get_failed_features(migration_id, project=project)
 
             # Compute total affected
             if status_str == "not_started":
                 try:
                     total_affected = len(
-                        migration.get_affected_features(metadata_store)
+                        migration.get_affected_features(metadata_store, project)
                     )
                 except Exception:
                     total_affected = "?"
@@ -384,7 +395,7 @@ def status():
 
 @app.command(name="list")
 def list_migrations():
-    """List all migrations in chain order.
+    """List all migrations in chain order as defined in code.
 
     Displays a simple table showing migration ID, creation time, and operations.
 
@@ -398,60 +409,55 @@ def list_migrations():
 
     from rich.table import Table
 
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.migrations.loader import build_migration_chain
 
-    # Load features
-    load_features()
-
-    metadata_store = get_store()
+    AppContext.get()
     migrations_dir = Path(".metaxy/migrations")
 
-    with metadata_store:
-        # Build migration chain
-        try:
-            chain = build_migration_chain(migrations_dir)
-        except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
-            return
+    # Build migration chain
+    try:
+        chain = build_migration_chain(migrations_dir)
+    except ValueError as e:
+        app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+        return
 
-        if not chain:
-            app.console.print("[yellow]No migrations found.[/yellow]")
-            app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
-            return
+    if not chain:
+        app.console.print("[yellow]No migrations found.[/yellow]")
+        app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
+        return
 
-        # Create borderless table with blue headers (no truncation)
-        table = Table(
-            show_header=True,
-            show_edge=False,
-            box=None,
-            padding=(0, 2),
-            header_style="bold blue",
-        )
-        table.add_column("ID", style="bold", no_wrap=False, overflow="fold")
-        table.add_column("Created", style="dim", no_wrap=False, overflow="fold")
-        table.add_column("Operations", no_wrap=False, overflow="fold")
+    # Create borderless table with blue headers (no truncation)
+    table = Table(
+        show_header=True,
+        show_edge=False,
+        box=None,
+        padding=(0, 2),
+        header_style="bold blue",
+    )
+    table.add_column("ID", style="bold", no_wrap=False, overflow="fold")
+    table.add_column("Created", style="dim", no_wrap=False, overflow="fold")
+    table.add_column("Operations", no_wrap=False, overflow="fold")
 
-        for migration in chain:
-            # Format created_at - simpler format without seconds
-            created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
+    for migration in chain:
+        # Format created_at - simpler format without seconds
+        created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
 
-            # Format operations - extract short names
-            op_names = []
-            for op in migration.ops:
-                op_type = op.get("type", "unknown")
-                # Extract just the class name (last part after final dot)
-                op_short = op_type.split(".")[-1]
-                op_names.append(op_short)
+        # Format operations - extract short names
+        op_names = []
+        for op in migration.ops:
+            op_type = op.get("type", "unknown")
+            # Extract just the class name (last part after final dot)
+            op_short = op_type.split(".")[-1]
+            op_names.append(op_short)
 
-            ops_str = ", ".join(op_names)
+        ops_str = ", ".join(op_names)
 
-            table.add_row(migration.migration_id, created_str, ops_str)
+        table.add_row(migration.migration_id, created_str, ops_str)
 
-        app.console.print()
-        app.console.print(table)
-        app.console.print()
+    app.console.print()
+    app.console.print(table)
+    app.console.print()
 
 
 @app.command
@@ -477,18 +483,17 @@ def explain(
     """
     from pathlib import Path
 
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.migrations.loader import (
         find_latest_migration,
         find_migration_yaml,
         load_migration_from_yaml,
     )
 
-    # Load features
-    load_features()
-
-    metadata_store = get_store()
+    context = AppContext.get()
+    # Get context and project from config
+    project = context.get_required_project()  # This command needs a specific project
+    metadata_store = context.get_store(None)
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
@@ -532,13 +537,13 @@ def explain(
         app.console.print(f"To:   {migration.to_snapshot_version}")
 
         # Get description (computed on-demand)
-        description = migration.get_description(metadata_store)
+        description = migration.get_description(metadata_store, project)
         app.console.print(f"Description: {description}")
         app.console.print()
 
         # Compute diff on-demand
         try:
-            graph_diff = migration.compute_graph_diff(metadata_store)
+            graph_diff = migration.compute_graph_diff(metadata_store, project)
         except Exception as e:
             app.console.print(f"[red]✗[/red] Failed to compute diff: {e}")
             raise SystemExit(1)
@@ -652,7 +657,7 @@ def explain(
             app.console.print()
 
         # Print affected features summary (computed on-demand)
-        affected_features = migration.get_affected_features(metadata_store)
+        affected_features = migration.get_affected_features(metadata_store, project)
         app.console.print(f"[bold]Affected Features ({len(affected_features)}):[/bold]")
         for feature_key in affected_features[:10]:
             app.console.print(f"  • {feature_key}")
@@ -668,6 +673,10 @@ def describe(
             help="Migration IDs to describe (default: all migrations in order)"
         ),
     ] = [],
+    store: Annotated[
+        str | None,
+        cyclopts.Parameter(None, help="Metadata store to use."),
+    ] = None,
 ):
     """Show verbose description of migration(s).
 
@@ -689,8 +698,7 @@ def describe(
     """
     from pathlib import Path
 
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system_tables import SystemTableStorage
     from metaxy.migrations.loader import (
         build_migration_chain,
@@ -698,10 +706,10 @@ def describe(
         load_migration_from_yaml,
     )
 
-    # Load features
-    load_features()
-
-    metadata_store = get_store()
+    context = AppContext.get()
+    # Get context and project from config
+    project = context.get_required_project()  # This command needs a specific project
+    metadata_store = context.get_store(store)
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:
@@ -768,7 +776,9 @@ def describe(
             # Get affected features
             app.console.print("[bold]Computing affected features...[/bold]")
             try:
-                affected_features = migration_obj.get_affected_features(metadata_store)
+                affected_features = migration_obj.get_affected_features(
+                    metadata_store, project
+                )
             except Exception as e:
                 app.console.print(
                     f"[red]✗[/red] Failed to compute affected features: {e}"
@@ -826,11 +836,15 @@ def describe(
             app.console.print()
 
             # Execution status
-            status_str = storage.get_migration_status(migration_obj.migration_id)
-            completed_features = storage.get_completed_features(
-                migration_obj.migration_id
+            status_str = storage.get_migration_status(
+                migration_obj.migration_id, project
             )
-            failed_features = storage.get_failed_features(migration_obj.migration_id)
+            completed_features = storage.get_completed_features(
+                migration_obj.migration_id, project
+            )
+            failed_features = storage.get_failed_features(
+                migration_obj.migration_id, project
+            )
 
             app.console.print("[bold]Execution Status:[/bold]")
             if status_str == "completed":

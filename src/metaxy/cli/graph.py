@@ -52,13 +52,12 @@ def push(
             - user/profile
           Snapshot version: abc123def456...
     """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
 
-    # Load features from entrypoints
-    load_features()
+    context = AppContext.get()
+    context.raise_command_cannot_override_project()
 
-    metadata_store = get_store(store)
+    metadata_store = context.get_store(store)
 
     with metadata_store:
         result = metadata_store.record_feature_graph_snapshot()
@@ -118,17 +117,14 @@ def history(
         │ def456...    │ 2025-01-14 09:15:00 │ 40            │
         └──────────────┴─────────────────────┴───────────────┘
     """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
 
-    # Load features from entrypoints
-    load_features()
-
-    metadata_store = get_store(store)
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
 
     with metadata_store:
         # Read snapshot history
-        snapshots_df = metadata_store.read_graph_snapshots()
+        snapshots_df = metadata_store.read_graph_snapshots(project=context.project)
 
         if snapshots_df.height == 0:
             console.print("[yellow]No graph snapshots recorded yet[/yellow]")
@@ -180,9 +176,11 @@ def describe(
     """Describe a graph snapshot.
 
     Shows detailed information about a graph snapshot including:
-    - Feature count
+    - Feature count (optionally filtered by project)
     - Graph depth (longest dependency chain)
     - Root features (features with no dependencies)
+    - Leaf features (features with no dependents)
+    - Project breakdown (if multi-project)
 
     Example:
         $ metaxy graph describe
@@ -194,21 +192,23 @@ def describe(
         │ Feature Count       │ 42     │
         │ Graph Depth         │ 5      │
         │ Root Features       │ 8      │
+        │ Leaf Features       │ 12     │
         └─────────────────────┴────────┘
 
         Root Features:
         • user__profile
         • transaction__history
         ...
+
+        $ metaxy graph describe --project my_project
+        Shows metrics filtered to my_project features
     """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
+    from metaxy.cli.context import AppContext
+    from metaxy.graph.describe import describe_graph
     from metaxy.models.feature import FeatureGraph
 
-    # Load features from entrypoints
-    load_features()
-
-    metadata_store = get_store(store)
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
 
     with metadata_store:
         # Determine which snapshot to describe
@@ -224,79 +224,89 @@ def describe(
 
             # Load graph from snapshot
             features_df = metadata_store.read_features(
-                current=False, snapshot_version=snapshot_version
+                current=False,
+                snapshot_version=snapshot_version,
+                project=context.project,
             )
 
             if features_df.height == 0:
                 console.print(
                     f"[red]✗[/red] No features found for snapshot {snapshot_version}"
                 )
+                if context.project:
+                    console.print(f"  (filtered by project: {context.project})")
                 return
 
             # For historical snapshots, we'll use the current graph structure
             # but report on the features that were in that snapshot
             graph = FeatureGraph.get_active()
 
-        # Get graph metrics
-        feature_count = len(graph.features_by_key)
-
-        # Calculate graph depth (longest dependency chain)
-        def get_feature_depth(feature_key, visited=None):
-            if visited is None:
-                visited = set()
-
-            if feature_key in visited:
-                return 0  # Avoid cycles
-
-            visited.add(feature_key)
-
-            feature_cls = graph.features_by_key.get(feature_key)
-            if feature_cls is None or not feature_cls.spec.deps:
-                return 1
-
-            max_dep_depth = 0
-            for dep in feature_cls.spec.deps:
-                dep_depth = get_feature_depth(dep.key, visited.copy())
-                max_dep_depth = max(max_dep_depth, dep_depth)
-
-            return max_dep_depth + 1
-
-        max_depth = 0
-        for feature_key in graph.features_by_key:
-            depth = get_feature_depth(feature_key)
-            max_depth = max(max_depth, depth)
-
-        # Find root features (no dependencies)
-        root_features = [
-            feature_key
-            for feature_key, feature_cls in graph.features_by_key.items()
-            if not feature_cls.spec.deps
-        ]
+        # Get graph description with optional project filter
+        info = describe_graph(graph, project=context.project)
 
         # Display summary table
         console.print()
-        summary_table = Table(title=f"Graph Snapshot: {snapshot_version}")
+        table_title = f"Graph Snapshot: {info['snapshot_version']}"
+        if context.project:
+            table_title += f" (Project: {context.project})"
+
+        summary_table = Table(title=table_title)
         summary_table.add_column("Metric", style="cyan", no_wrap=False)
         summary_table.add_column(
             "Value", style="yellow", justify="right", no_wrap=False
         )
 
-        summary_table.add_row("Feature Count", str(feature_count))
-        summary_table.add_row("Graph Depth", str(max_depth))
-        summary_table.add_row("Root Features", str(len(root_features)))
+        # Only show filtered view if filtering actually reduces the feature count
+        if (
+            "filtered_features" in info
+            and info["filtered_features"] < info["total_features"]
+        ):
+            # Show both total and filtered counts when there's actual filtering
+            summary_table.add_row("Total Features", str(info["total_features"]))
+            summary_table.add_row(
+                f"Features in {info['filter_project']}", str(info["filtered_features"])
+            )
+        else:
+            # Show simple count when no filtering or all features are in the project
+            if "filtered_features" in info:
+                # Use filtered count if available (all features are in the project)
+                summary_table.add_row("Total Features", str(info["filtered_features"]))
+            else:
+                # Use total count
+                summary_table.add_row("Total Features", str(info["total_features"]))
+
+        summary_table.add_row("Graph Depth", str(info["graph_depth"]))
+        summary_table.add_row("Root Features", str(len(info["root_features"])))
+        summary_table.add_row("Leaf Features", str(len(info["leaf_features"])))
 
         console.print(summary_table)
 
+        # Display project breakdown if multi-project
+        if len(info["projects"]) > 1:
+            console.print("\n[bold]Features by Project:[/bold]")
+            for proj, count in sorted(info["projects"].items()):
+                console.print(f"  • {proj}: {count} features")
+
         # Display root features
-        if root_features:
+        if info["root_features"]:
             console.print("\n[bold]Root Features:[/bold]")
-            for feature_key in sorted(root_features, key=lambda k: k.to_string()):
-                console.print(f"  • {feature_key.to_string()}")
+            for feature_key_str in info["root_features"][:10]:  # Limit to 10
+                console.print(f"  • {feature_key_str}")
+            if len(info["root_features"]) > 10:
+                console.print(f"  ... and {len(info['root_features']) - 10} more")
+
+        # Display leaf features
+        if info["leaf_features"]:
+            console.print("\n[bold]Leaf Features:[/bold]")
+            for feature_key_str in info["leaf_features"][:10]:  # Limit to 10
+                console.print(f"  • {feature_key_str}")
+            if len(info["leaf_features"]) > 10:
+                console.print(f"  ... and {len(info['leaf_features']) - 10} more")
 
 
 @app.command()
 def render(
-    config: Annotated[
+    render_config: Annotated[
         RenderConfig | None, cyclopts.Parameter(name="*", help="Render configuration")
     ] = None,
     format: Annotated[
@@ -390,8 +400,6 @@ def render(
         # Render historical snapshot
         $ metaxy graph render --snapshot abc123... --store prod
     """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
     from metaxy.graph import (
         CardsRenderer,
         GraphvizRenderer,
@@ -429,53 +437,60 @@ def render(
         raise SystemExit(1)
 
     # If config is None, create a default instance
-    if config is None:
-        config = RenderConfig()
+    if render_config is None:
+        render_config = RenderConfig()
 
     # Apply presets if specified (overrides display settings but preserves filtering)
     if minimal:
         preset = RenderConfig.minimal()
         # Preserve filtering parameters from original config
-        preset.feature = config.feature
-        preset.up = config.up
-        preset.down = config.down
-        config = preset
+        preset.feature = render_config.feature
+        preset.up = render_config.up
+        preset.down = render_config.down
+        render_config = preset
     elif verbose:
         preset = RenderConfig.verbose()
         # Preserve filtering parameters from original config
-        preset.feature = config.feature
-        preset.up = config.up
-        preset.down = config.down
-        config = preset
+        preset.feature = render_config.feature
+        preset.up = render_config.up
+        preset.down = render_config.down
+        render_config = preset
 
     # Validate direction
-    if config.direction not in ["TB", "LR"]:
+    if render_config.direction not in ["TB", "LR"]:
         console.print(
-            f"[red]Error:[/red] Invalid direction '{config.direction}'. Must be TB or LR."
+            f"[red]Error:[/red] Invalid direction '{render_config.direction}'. Must be TB or LR."
         )
         raise SystemExit(1)
 
     # Validate filtering options
-    if (config.up is not None or config.down is not None) and config.feature is None:
+    if (
+        render_config.up is not None or render_config.down is not None
+    ) and render_config.feature is None:
         console.print(
             "[red]Error:[/red] --up and --down require --feature to be specified"
         )
         raise SystemExit(1)
 
     # Auto-disable field versions if fields are disabled
-    if not config.show_fields and config.show_field_versions:
-        config.show_field_versions = False
+    if not render_config.show_fields and render_config.show_field_versions:
+        render_config.show_field_versions = False
 
-    # Load features from entrypoints
-    load_features()
+    from metaxy.cli.context import AppContext
+
+    context = AppContext.get()
+
+    # Apply project filter from context if not specified in config
+    if render_config.project is None and context.project is not None:
+        render_config.project = context.project
 
     # Validate feature exists if specified
-    if config.feature is not None:
-        focus_key = config.get_feature_key()
-        graph = FeatureGraph.get_active()
+    if render_config.feature is not None:
+        focus_key = render_config.get_feature_key()
+        graph = context.graph
         if focus_key not in graph.features_by_key:
             console.print(
-                f"[red]Error:[/red] Feature '{config.feature}' not found in graph"
+                f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
             )
             console.print("\nAvailable features:")
             for key in sorted(
@@ -500,7 +515,7 @@ def render(
             return
     else:
         # Load historical snapshot from store
-        metadata_store = get_store(store)
+        metadata_store = context.get_store(store)
 
         with metadata_store:
             # Read features for this snapshot
@@ -546,18 +561,18 @@ def render(
     # Instantiate renderer based on format and type
     if format == "terminal":
         if type == "graph":
-            renderer = TerminalRenderer(graph, config)
+            renderer = TerminalRenderer(graph, render_config)
         elif type == "cards":
-            renderer = CardsRenderer(graph, config)
+            renderer = CardsRenderer(graph, render_config)
         else:
             # Should not reach here due to validation above
             console.print(f"[red]Error:[/red] Unknown type: {type}")
             raise SystemExit(1)
     elif format == "mermaid":
-        renderer = MermaidRenderer(graph, config)
+        renderer = MermaidRenderer(graph, render_config)
     elif format == "graphviz":
         try:
-            renderer = GraphvizRenderer(graph, config)
+            renderer = GraphvizRenderer(graph, render_config)
         except ImportError as e:
             console.print(f"[red]✗[/red] {e}")
             raise SystemExit(1)

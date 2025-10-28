@@ -163,6 +163,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
+      - Metadata Stores: learn/metadata-stores.md
       - Feature Definitions: learn/feature-definitions.md
       - Versioning: learn/data-versioning.md
       - Feature Discovery: learn/feature-discovery.md

@@ -32,10 +32,11 @@ def push(store: str | None = None):
     Args:
         store: The metadata store to use. Defaults to the default store.
     """
-    from metaxy.cli.context import get_store
+    from metaxy.cli.context import AppContext
     from metaxy.models.feature import FeatureGraph
 
-    metadata_store = get_store(store)
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
 
     with metadata_store:
         # Get active graph

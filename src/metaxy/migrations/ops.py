@@ -283,7 +283,8 @@ class DataVersionReconciliation(pydantic.BaseModel):
         )
 
         with allow_feature_version_override():
-            store.write_metadata(feature_cls, df_to_write_nw)
+            with store.allow_cross_project_writes():
+                store.write_metadata(feature_cls, df_to_write_nw)
 
         return len(df_to_write)
 

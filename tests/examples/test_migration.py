@@ -39,14 +39,14 @@ def test_pipeline(tmp_path, snapshot):
     test_config_file = test_config_dir / "config.toml"
     with open(test_config_file, "w") as f:
         f.write(f"""
-[default]
+project = "migration_test"
 migrations_dir = "{test_migrations_dir}"
+auto_create_tables = true
 
-[[default.stores]]
-name = "dev"
-type = "duckdb"
+[stores.dev]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
-[default.stores.config]
+[stores.dev.config]
 database = "{test_db}"
 """)
 

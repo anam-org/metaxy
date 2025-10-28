@@ -230,6 +230,35 @@ class MetaxyConfig(BaseSettings):
         description="Auto-create tables when opening stores (development/testing only). WARNING: Do not use in production. Use proper database migration tools like Alembic.",
     )
 
+    project: str = PydanticField(
+        default="default",
+        description="Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)",
+    )
+
+    @field_validator("project")
+    @classmethod
+    def validate_project(cls, v: str) -> str:
+        """Validate project name follows naming rules."""
+        if not v:
+            raise ValueError("project name cannot be empty")
+        if "/" in v:
+            raise ValueError(
+                f"project name '{v}' cannot contain forward slashes (/). "
+                f"Forward slashes are reserved for FeatureKey separation"
+            )
+        if "__" in v:
+            raise ValueError(
+                f"project name '{v}' cannot contain double underscores (__). "
+                f"Double underscores are reserved for table name generation"
+            )
+        import re
+
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                f"project name '{v}' must contain only alphanumeric characters, underscores, and hyphens"
+            )
+        return v
+
     @property
     def plugins(self) -> list[str]:
         """Returns all enabled plugin names from ext configuration."""
@@ -276,10 +305,10 @@ class MetaxyConfig(BaseSettings):
         if cfg is None:
             warnings.warn(
                 UserWarning(
-                    "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved)."
+                    "Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project='default')."
                 )
             )
-            return cls()
+            return cls(project="default")
         else:
             return cfg
 
@@ -287,6 +316,11 @@ class MetaxyConfig(BaseSettings):
     def set(cls, config: Self | None) -> None:
         """Set the current Metaxy configuration."""
         _metaxy_config.set(config)
+
+    @classmethod
+    def is_set(cls) -> bool:
+        """Check if the current Metaxy configuration is set."""
+        return _metaxy_config.get() is not None
 
     @classmethod
     def reset(cls) -> None:
@@ -394,10 +428,7 @@ class MetaxyConfig(BaseSettings):
 
         return None
 
-    def get_store(
-        self,
-        name: str | None = None,
-    ) -> "MetadataStore":
+    def get_store(self, name: str | None = None) -> "MetadataStore":
         """Instantiate metadata store by name.
 
         Args:

@@ -63,7 +63,9 @@ def test_load_snapshot_data_computes_proper_field_versions():
                 UserWarning,
                 match="Using feature_version as field_version",
             ):
-                snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+                snapshot_data = differ.load_snapshot_data(
+                    store, snapshot_version, project="default"
+                )
 
             # Verify structure is correct
             assert "parent" in snapshot_data
@@ -112,7 +114,9 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails():
                 UserWarning,
                 match="Using feature_version as field_version",
             ):
-                snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+                snapshot_data = differ.load_snapshot_data(
+                    store, snapshot_version, project="default"
+                )
 
             # Verify data was loaded (even with fallback)
             assert "test/feature" in snapshot_data
@@ -154,7 +158,9 @@ def test_field_key_normalization():
 
             # Load snapshot data (will use fallback since feature is in test scope)
             with pytest.warns(UserWarning):
-                snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+                snapshot_data = differ.load_snapshot_data(
+                    store, snapshot_version, project="default"
+                )
 
             # Field key should be normalized to "/" format, not "__"
             assert "test" in snapshot_data

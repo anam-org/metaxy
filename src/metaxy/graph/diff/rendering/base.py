@@ -78,6 +78,18 @@ class RenderConfig:
         },
     )
 
+    project: str | None = field(
+        default=None,
+        metadata={
+            "help": "Filter nodes by project (show only features from this project)"
+        },
+    )
+
+    show_projects: bool = field(
+        default=True,
+        metadata={"help": "Show project names in feature nodes"},
+    )
+
     def get_feature_key(self) -> FeatureKey | None:
         """Parse feature string into FeatureKey.
 
@@ -252,18 +264,53 @@ class BaseRenderer:
         Returns:
             GraphData with only filtered nodes and edges
         """
+        graph_data = self.graph_data
+
+        # Apply project filter if specified
+        if self.config.project is not None:
+            filtered_nodes = {}
+            for key, node in graph_data.nodes.items():
+                # Include node if it matches the project or if it's a parent of a matching node
+                if node.project == self.config.project:
+                    filtered_nodes[key] = node
+                else:
+                    # Check if this node is a parent of any node in the project
+                    for other_node in graph_data.nodes.values():
+                        if (
+                            other_node.project == self.config.project
+                            and node.key in other_node.dependencies
+                        ):
+                            filtered_nodes[key] = node
+                            break
+
+            # Filter edges to only include those between filtered nodes
+            filtered_edges = []
+            filtered_keys = set(filtered_nodes.keys())
+            for edge in graph_data.edges:
+                from_key_str = edge.from_key.to_string()
+                to_key_str = edge.to_key.to_string()
+                if from_key_str in filtered_keys and to_key_str in filtered_keys:
+                    filtered_edges.append(edge)
+
+            # Create new graph data with filtered nodes and edges
+            graph_data = GraphData(
+                nodes=filtered_nodes,
+                edges=filtered_edges,
+                snapshot_version=graph_data.snapshot_version,
+                old_snapshot_version=graph_data.old_snapshot_version,
+            )
+
+        # Apply feature focus filter if specified
         focus_key = self.config.get_feature_key()
+        if focus_key is not None:
+            # Use walker to extract subgraph
+            return self.walker.extract_subgraph(
+                focus_key=focus_key,
+                up=self.config.up,
+                down=self.config.down,
+            )
 
-        # If no focus feature specified, return full graph
-        if focus_key is None:
-            return self.graph_data
-
-        # Use walker to extract subgraph
-        return self.walker.extract_subgraph(
-            focus_key=focus_key,
-            up=self.config.up,
-            down=self.config.down,
-        )
+        return graph_data
 
     def render(self) -> str:
         """Render the graph and return string output.

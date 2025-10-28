@@ -1,0 +1,42 @@
+# serializer version: 1
+# name: test_get_downstream_features_across_projects
+  dict({
+    'downstream_keys': list([
+      'mid',
+      'leaf',
+    ]),
+    'leaf': 'project_c',
+    'mid': 'project_b',
+    'root': 'project_a',
+  })
+# ---
+# name: test_graph_contains_features_from_multiple_projects
+  dict({
+    'project_a/feature1': 'project_a',
+    'project_a/feature2': 'project_a',
+    'project_b/feature1': 'project_b',
+    'project_b/feature2': 'project_b',
+  })
+# ---
+# name: test_graph_from_snapshot_preserves_projects
+  dict({
+    'restore/feature_a': 'restore_a',
+    'restore/feature_b': 'restore_b',
+  })
+# ---
+# name: test_graph_snapshot_includes_all_projects
+  list([
+    'feature_a',
+    'feature_b',
+  ])
+# ---
+# name: test_graph_snapshot_version_includes_all_projects
+  'c4fab32026447b2afc7cae3c4c0e42044ea9a43a5d2c4454f00a6fb6587277e1'
+# ---
+# name: test_multi_project_dependency_graph
+  dict({
+    'downstream_project': 'downstream_project',
+    'has_dependency': True,
+    'upstream_project': 'upstream_project',
+  })
+# ---

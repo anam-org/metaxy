@@ -3,13 +3,10 @@
 from typing import Annotated
 
 import cyclopts
-from rich.console import Console
 
+from metaxy import init_metaxy
 from metaxy._version import __version__
-from metaxy.config import MetaxyConfig
-
-# Rich console for formatted output
-console = Console()
+from metaxy.cli.console import console
 
 # Main app
 app = cyclopts.App(
@@ -30,9 +27,32 @@ def shell():
 
 
 # Meta app for global parameters
+
+
 @app.meta.default
 def launcher(
     *tokens: Annotated[str, cyclopts.Parameter(show=False, allow_leading_hyphen=True)],
+    config_file: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            None,
+            help="Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.",
+        ),
+    ] = None,
+    project: Annotated[
+        str | None,
+        cyclopts.Parameter(
+            None,
+            help="Global option. Metaxy project to work with. Some commands may forbid setting this argument.",
+        ),
+    ] = None,
+    all_projects: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--all-projects"],
+            help="Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.",
+        ),
+    ] = False,
 ):
     """Metaxy CLI.
 
@@ -42,18 +62,21 @@ def launcher(
     Environment variables can override config (METAXY_STORE, METAXY_MIGRATIONS_DIR, etc).
     """
     import logging
+    import os
+    from pathlib import Path
 
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(os.environ.get("METAXY_LOG_LEVEL", "INFO"))
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
-    metaxy_config = MetaxyConfig.load(search_parents=True)
+    config_path = Path(config_file) if config_file else None
+    config = init_metaxy(config_file=config_path, search_parents=True)
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed
-    from metaxy.cli.context import set_config
+    from metaxy.cli.context import AppContext
 
-    set_config(metaxy_config)
+    AppContext.set(config, cli_project=project, all_projects=all_projects)
 
     # Run the actual command
     app(tokens)

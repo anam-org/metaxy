@@ -52,6 +52,7 @@ class GraphNode(FrozenBaseModel):
         fields: List of field nodes
         dependencies: List of feature keys this node depends on
         status: Node status (for diff rendering)
+        project: Project name this feature belongs to
         metadata: Additional custom metadata
     """
 
@@ -62,6 +63,7 @@ class GraphNode(FrozenBaseModel):
     fields: list[FieldNode] = Field(default_factory=list)
     dependencies: list[FeatureKey] = Field(default_factory=list)
     status: NodeStatus = NodeStatus.NORMAL
+    project: str | None = None  # Project name (None for legacy features)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -151,6 +153,7 @@ class GraphData(FrozenBaseModel):
                     else 0,
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
+                    "project": node.project if node.project is not None else "",
                 }
             )
 
@@ -214,6 +217,7 @@ class GraphData(FrozenBaseModel):
                 dependencies=[
                     FeatureKey(dep.split("/")) for dep in node_data["dependencies"]
                 ],
+                project=node_data.get("project") if node_data.get("project") else None,
             )
             nodes[node_data["key"]] = node
 
@@ -283,6 +287,9 @@ class GraphData(FrozenBaseModel):
             if spec.deps:
                 dependencies = [dep.key for dep in spec.deps]
 
+            # Get project from feature class
+            feature_project = feature_cls.project  # type: ignore[attr-defined]
+
             # Create node
             node = GraphNode(
                 key=feature_key,
@@ -291,6 +298,7 @@ class GraphData(FrozenBaseModel):
                 fields=field_nodes,
                 dependencies=dependencies,
                 status=NodeStatus.NORMAL,
+                project=feature_project,
             )
             nodes[feature_key_str] = node
 

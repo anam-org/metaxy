@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 def detect_migration(
     store: "MetadataStore",
+    project: str | None = None,
     from_snapshot_version: str | None = None,
     ops: list[dict[str, Any]] | None = None,
     migrations_dir: Path | None = None,
@@ -27,7 +28,8 @@ def detect_migration(
 
     Args:
         store: Metadata store containing snapshot metadata
-        from_snapshot_version: Source snapshot version (defaults to latest in store)
+        project: Project name for filtering snapshots
+        from_snapshot_version: Source snapshot version (defaults to latest in store for project)
         ops: List of operation dicts with "type" field (defaults to [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}])
         migrations_dir: Directory to write migration YAML (defaults to .metaxy/migrations/)
         name: Migration name (creates {timestamp}_{name} ID and filename)
@@ -38,15 +40,15 @@ def detect_migration(
     Example:
         >>> # Compare latest snapshot in store vs current graph
         >>> with store:
-        ...     migration = detect_migration(store)
+        ...     migration = detect_migration(store, project="my_project")
         ...     if migration:
         ...         print(f"Migration written to {migration.yaml_path}")
 
         >>> # Use custom operation
-        >>> migration = detect_migration(store, ops=[{"type": "myproject.ops.CustomOp"}])
+        >>> migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
 
         >>> # Use custom name
-        >>> migration = detect_migration(store, name="example_migration")
+        >>> migration = detect_migration(store, project="my_project", name="example_migration")
     """
     from metaxy.migrations.models import DiffMigration
 
@@ -54,9 +56,9 @@ def detect_migration(
 
     # Get from_snapshot_version (use latest if not specified)
     if from_snapshot_version is None:
-        snapshots = store.read_graph_snapshots()
+        snapshots = store.read_graph_snapshots(project=project)
         if snapshots.height == 0:
-            # No snapshots in store - nothing to migrate from
+            # No snapshots in store for this project - nothing to migrate from
             return None
         from_snapshot_version = snapshots["snapshot_version"][0]
 
