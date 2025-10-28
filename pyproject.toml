@@ -66,6 +66,22 @@ dev = [
     "prek>=0.2.11",
 ]
 
+docs = [
+    "griffe>=1.14.0",
+    "griffe-inherited-docstrings>=1.1.2",
+    "griffe-pydantic>=1.1.7",
+    "mike>=2.1.3",
+    "mkdocs>=1.6.1",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-github-admonitions-plugin>=0.1.1",
+    "mkdocs-literate-nav>=0.6.2",
+    "mkdocs-material>=9.6.20",
+    "mkdocs-section-index>=0.3.10",
+    "mkdocstrings-python>=1.18.2",
+    "pymdown-extensions>=10.16.1",
+    "cyclopts[mkdocs]",
+]
+
 [tool.ruff]
 target-version = "py310"
 
@@ -88,6 +104,7 @@ members = [
 
 [tool.uv.sources]
 examples = { workspace = true }
+cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "mkdocs-plugin" }
 
 [tool.vulture]
 exclude = [

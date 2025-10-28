@@ -5,9 +5,6 @@ ruff:
 typecheck:
     uv run basedpyright --level error
 
-generate-docs-cli:
-    uv run cyclopts generate-docs src/metaxy/cli/app.py:app -f md -o docs/cli.md
-
 sync:
     uv sync --all-extras --all-groups
 
@@ -21,3 +18,12 @@ claude-resolve number:
     source ./.venv/bin/activate
     ISSUE=gh issue view {{number}}
     claude -p "Please solve GitHub issue (do not create commits) #{{number}}:\n\n$ISSUE"
+
+docs-build:
+    uv run --group docs mkdocs build --clean --strict
+
+docs-serve:
+    uv run --group docs mkdocs serve
+
+docs-publish version:
+    uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}

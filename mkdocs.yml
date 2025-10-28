@@ -1,0 +1,183 @@
+site_name: Metaxy
+site_description: Metadata layer for multi-modal ML pipelines
+site_url: https://anam-org.github.io/metaxy
+repo_url: https://github.com/anam-org/metaxy
+repo_name: anam-org/metaxy
+
+theme:
+  name: material
+  features:
+    # Content features
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    # Navigation features
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    # Search features
+    - search.suggest
+    - search.highlight
+    - search.share
+  palette:
+    # Auto mode (follows system preference)
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - cyclopts
+  - autorefs
+  - section-index
+  - gh-admonitions
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          paths: [src]
+          options:
+            filters: ["!^_[^_]"]
+            heading_level: 2
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+            show_source: true
+            show_docstring_classes: true
+            show_docstring_description: true
+            show_docstring_parameters: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_root_members_full_path: false
+            scoped_crossrefs: true
+            show_category_heading: true
+            show_signature_annotations: true
+            separate_signature: true
+            line_length: 120
+            merge_init_into_class: true
+            docstring_section_style: list
+            members_order: source
+            show_submodules: false
+            inherited_members: true
+            show_bases: true
+            show_signature: true
+            signature_crossrefs: true
+            annotations_path: brief
+            unwrap_annotated: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            extensions:
+              - griffe_inherited_docstrings
+              - griffe_pydantic:
+                  schema: true
+          inventories:
+            - https://docs.python.org/3/objects.inv
+            - https://docs.pydantic.dev/latest/objects.inv
+            - https://narwhals-dev.github.io/narwhals/objects.inv
+            - https://docs.pola.rs/api/python/stable/objects.inv
+
+markdown_extensions:
+  # Core extensions
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  # Pymdown extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: danielgafni
+      repo: metaxy
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Learn:
+      - Data Versioning: learn/data_versioning.md
+      - Feature Discovery: learn/feature_discovery.md
+      - Testing: learn/testing.md
+      - Integrations:
+          - SQLModel: learn/integrations/sqlmodel.md
+  - Reference:
+      - CLI: reference/cli.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/anam-org/metaxy
+  version:
+    provider: mike
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+watch:
+  - src
+  - examples
+  - docs
+  - mkdocs.yml
+  - pyproject.toml
+  - uv.lock
