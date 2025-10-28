@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/data_versioning/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/feature_discovery/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/testing/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/integrations/sqlmodel/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/cli/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+</urlset>
