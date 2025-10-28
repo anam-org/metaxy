@@ -10,6 +10,7 @@ from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
+from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -139,7 +140,7 @@ class FeatureGraph:
         for k, v in sorted(plan.get_parent_fields_for_field(key.field).items()):
             hasher.update(self.get_field_version(k).encode())
 
-        return hasher.hexdigest()
+        return truncate_hash(hasher.hexdigest())
 
     def get_feature_version_by_field(self, key: FeatureKey) -> dict[str, str]:
         """Computes the feature data version.
@@ -169,7 +170,7 @@ class FeatureGraph:
             hasher.update(field_key.encode())
             hasher.update(data_version[field_key].encode())
 
-        return hasher.hexdigest()
+        return truncate_hash(hasher.hexdigest())
 
     def get_downstream_features(self, sources: list[FeatureKey]) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
@@ -228,7 +229,7 @@ class FeatureGraph:
         for feature_key in sorted(self.feature_specs_by_key.keys()):
             hasher.update(feature_key.to_string().encode("utf-8"))
             hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
-        return hasher.hexdigest()
+        return truncate_hash(hasher.hexdigest())
 
     def to_snapshot(self) -> dict[str, dict[str, Any]]:
         """Serialize graph to snapshot format.

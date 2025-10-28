@@ -10,6 +10,7 @@ import narwhals as nw
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     import ibis
@@ -205,10 +206,22 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]
         field_keys = list(concat_columns.keys())
 
-        # Create struct column from hash columns
-        struct_fields = {
-            field_key: result_table[f"__hash_{field_key}"] for field_key in field_keys
-        }
+        # Apply truncation if configured
+        truncation_length = get_hash_truncation_length()
+        if truncation_length is not None:
+            # Apply substring to each hash column to truncate
+            struct_fields = {}
+            for field_key in field_keys:
+                hash_col = result_table[f"__hash_{field_key}"]
+                # Use substring to truncate the hash
+                truncated_hash = hash_col.substr(0, truncation_length)
+                struct_fields[field_key] = truncated_hash
+        else:
+            # Create struct column from hash columns (no truncation)
+            struct_fields = {
+                field_key: result_table[f"__hash_{field_key}"]
+                for field_key in field_keys
+            }
 
         # Drop temp columns and add data_version
         cols_to_keep = [

@@ -9,6 +9,7 @@ import polars_hash as plh
 
 from metaxy.data_versioning.calculators.base import DataVersionCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.utils.hashing import truncate_struct_column
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -124,6 +125,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
             # Concatenate and hash
             concat_expr = plh.concat_str(*components, separator="|")
             hashed = hash_fn(concat_expr).cast(pl.Utf8)
+
             field_exprs[field_key_str] = hashed
 
         # Create data_version struct
@@ -131,5 +133,13 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
 
         result_pl = pl_lazy.with_columns(data_version_expr.alias("data_version"))
 
-        # Convert back to Narwhals LazyFrame
-        return nw.from_native(result_pl, eager_only=False)
+        # Convert back to Narwhals LazyFrame and apply truncation
+        result_nw = nw.from_native(result_pl, eager_only=False)
+
+        # Use truncate_struct_column to apply hash truncation if configured
+        # This needs to be eager for the truncation function
+        result_eager = result_nw.collect()
+        result_truncated = truncate_struct_column(result_eager, "data_version")
+
+        # Convert back to lazy
+        return nw.from_native(result_truncated.to_native().lazy(), eager_only=False)
