@@ -389,10 +389,17 @@ def build_ducklake_attachment(
 
 
 def ensure_extensions_with_plugins(
-    extensions: list[Any],
+    extensions: list[
+        str | Any
+    ],  # list[str | ExtensionSpec] - ExtensionSpec from duckdb.py
     plugins: Sequence[str],
 ) -> None:
-    """Ensure DuckLake plugins are present in the extensions list."""
+    """Ensure DuckLake plugins are present in the extensions list.
+
+    Args:
+        extensions: List of extension names (str) or ExtensionSpec objects
+        plugins: DuckLake plugin names to ensure are in the extensions list
+    """
     existing_names: set[str] = set()
     for ext in extensions:
         if isinstance(ext, str):

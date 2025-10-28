@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     import ibis
 
     from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
+    from metaxy.metadata_store.duckdb import ExtensionInput
 
 
 class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
@@ -40,7 +41,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     def __init__(
         self,
         backend: "ibis.BaseBackend",
-        extensions: Sequence[Any] | None = None,
+        extensions: "Sequence[ExtensionInput] | None" = None,
     ):
         """Initialize DuckDB calculator and load extensions.
 
