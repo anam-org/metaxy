@@ -55,7 +55,7 @@ class SnapshotResolver:
         if snapshots_df.height == 0:
             raise ValueError(
                 "No snapshots found in store. Cannot resolve 'latest'. "
-                "Run 'metaxy push' to record a snapshot."
+                "Run 'metaxy graph push' to record a snapshot."
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
@@ -648,7 +648,7 @@ class GraphDiffer:
             if features_df.height == 0:
                 raise ValueError(
                     f"Snapshot {snapshot_version} not found in store. "
-                    "Run 'metaxy push' to record snapshots or check the version hash."
+                    "Run 'metaxy graph push' to record snapshots or check the version hash."
                 )
 
         except Exception as e:

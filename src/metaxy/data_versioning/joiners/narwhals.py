@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Any
 import narwhals as nw
 
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
-from metaxy.models.constants import DROPPABLE_SYSTEM_COLUMNS, ESSENTIAL_SYSTEM_COLUMNS
+from metaxy.models.constants import (
+    DROPPABLE_SYSTEM_COLUMNS,
+)
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -23,7 +25,9 @@ class NarwhalsJoiner(UpstreamJoiner):
 
     Strategy:
     - Starts with first upstream feature
-    - Sequentially inner joins remaining upstream features on sample_uid
+    - Sequentially inner joins remaining upstream features on configured ID columns
+    - ID columns come from feature spec (default: ["sample_uid"])
+    - Supports multi-column joins for composite keys
     - Renames data_version columns to avoid conflicts
     - All operations are lazy (no materialization until collect)
     - Backend-agnostic: same code works for in-memory and SQL backends
@@ -45,7 +49,7 @@ class NarwhalsJoiner(UpstreamJoiner):
 
         Args:
             upstream_refs: Dict of upstream feature key -> Narwhals LazyFrame
-            feature_spec: Feature specification
+            feature_spec: Feature specification (contains id_columns configuration)
             feature_plan: Feature plan
             upstream_columns: Optional column selection per upstream feature
             upstream_renames: Optional column renaming per upstream feature
@@ -53,16 +57,32 @@ class NarwhalsJoiner(UpstreamJoiner):
         Returns:
             (joined Narwhals LazyFrame, column mapping)
         """
+        # Get ID columns from feature spec (default to ["sample_uid"])
+        id_columns = feature_spec.id_columns
+
+        # Validate that all upstream features have the required ID columns
+        for upstream_key, upstream_ref in upstream_refs.items():
+            schema = upstream_ref.collect_schema()
+            available_cols = set(schema.names())
+            missing_cols = set(id_columns) - available_cols
+            if missing_cols:
+                raise ValueError(
+                    f"Upstream feature '{upstream_key}' is missing required ID columns: {sorted(missing_cols)}. "
+                    f"The target feature requires ID columns {id_columns} for joining, but upstream "
+                    f"only has columns: {sorted(available_cols)}. "
+                    f"Ensure all upstream features have the same ID columns as the target feature."
+                )
+
         if not upstream_refs:
-            # No upstream dependencies - source feature
-            # Return empty LazyFrame with just sample_uid column (with proper type)
+            # No upstream dependencies - root feature
+            # Root features should always be provided with samples parameter
+            # in resolve_update(), so this shouldn't happen in normal usage.
+            # Return empty result for now (mainly for testing)
             import polars as pl
 
-            # Create empty frame with explicit Int64 type for sample_uid
-            # This ensures it's not NULL-typed which would fail with Ibis backends
-            empty_df = pl.LazyFrame(
-                {"sample_uid": pl.Series("sample_uid", [], dtype=pl.Int64)}
-            )
+            # Create minimal empty LazyFrame with just ID columns (as Int64)
+            empty_data = {col: [] for col in id_columns}
+            empty_df = pl.LazyFrame(empty_data)
             return nw.from_native(empty_df), {}
 
         # Initialize parameters if not provided
@@ -70,7 +90,9 @@ class NarwhalsJoiner(UpstreamJoiner):
         upstream_renames = upstream_renames or {}
 
         # Use imported constants for system columns
-        system_cols = ESSENTIAL_SYSTEM_COLUMNS
+        # Essential columns now include id_columns and data_version
+        id_columns_set = set(id_columns)
+        system_cols = id_columns_set | {"data_version"}
         system_cols_to_drop = DROPPABLE_SYSTEM_COLUMNS
 
         # Track all column names to detect conflicts
@@ -85,6 +107,22 @@ class NarwhalsJoiner(UpstreamJoiner):
         first_ref = upstream_refs[first_key]
         first_columns_spec = upstream_columns.get(first_key)
         first_renames_spec = upstream_renames.get(first_key) or {}
+
+        # Validate that renaming doesn't target ID columns of upstream feature
+        # We need to get the upstream feature's ID columns from the feature plan
+        if first_renames_spec and feature_plan.deps:
+            # Find the upstream feature spec in the feature plan
+            for dep_spec in feature_plan.deps:
+                if dep_spec.key.to_string() == first_key:
+                    upstream_id_columns = set(dep_spec.id_columns)
+                    for new_name in first_renames_spec.values():
+                        if new_name in upstream_id_columns:
+                            raise ValueError(
+                                f"Cannot rename column to ID column '{new_name}'. "
+                                f"The upstream feature '{first_key}' uses ID columns {sorted(upstream_id_columns)} "
+                                f"for joining, and renaming to these columns would cause conflicts."
+                            )
+                    break
 
         # Get column names from first upstream
         # We need to collect schema to know available columns
@@ -137,14 +175,15 @@ class NarwhalsJoiner(UpstreamJoiner):
                 all_columns[new_name] = first_key
             else:
                 # Keep original name
-                if col != "sample_uid" and col in all_columns:
+                # Don't track ID columns for conflicts (they're expected to be the same)
+                if col not in id_columns_set and col in all_columns:
                     raise ValueError(
                         f"Column name conflict: '{col}' appears in both "
                         f"{first_key} and {all_columns[col]}. "
                         f"Use the 'rename' parameter to resolve the conflict."
                     )
                 select_exprs.append(nw.col(col))
-                if col != "sample_uid":
+                if col not in id_columns_set:
                     all_columns[col] = first_key
 
         joined = first_ref.select(select_exprs)
@@ -154,6 +193,21 @@ class NarwhalsJoiner(UpstreamJoiner):
             upstream_ref = upstream_refs[upstream_key]
             columns_spec = upstream_columns.get(upstream_key)
             renames_spec = upstream_renames.get(upstream_key) or {}
+
+            # Validate that renaming doesn't target ID columns of upstream feature
+            if renames_spec and feature_plan.deps:
+                # Find the upstream feature spec in the feature plan
+                for dep_spec in feature_plan.deps:
+                    if dep_spec.key.to_string() == upstream_key:
+                        upstream_id_columns = set(dep_spec.id_columns)
+                        for new_name in renames_spec.values():
+                            if new_name in upstream_id_columns:
+                                raise ValueError(
+                                    f"Cannot rename column to ID column '{new_name}'. "
+                                    f"The upstream feature '{upstream_key}' uses ID columns {sorted(upstream_id_columns)} "
+                                    f"for joining, and renaming to these columns would cause conflicts."
+                                )
+                        break
 
             # Get available columns
             schema = upstream_ref.collect_schema()
@@ -187,11 +241,11 @@ class NarwhalsJoiner(UpstreamJoiner):
 
             # Build select expressions with renaming
             select_exprs = []
-            join_cols = []  # Columns to include in join (exclude sample_uid)
+            join_cols = []  # Columns to include in join (exclude ID columns)
 
             for col in cols_to_select:
-                if col == "sample_uid":
-                    # Always include sample_uid for joining, but don't duplicate it
+                if col in id_columns_set:
+                    # Always include ID columns for joining, but don't duplicate them
                     select_exprs.append(nw.col(col))
                 elif col == "data_version":
                     # Always rename data_version to avoid conflicts
@@ -225,11 +279,11 @@ class NarwhalsJoiner(UpstreamJoiner):
 
             upstream_renamed = upstream_ref.select(select_exprs)
 
-            # Join with existing data
+            # Join with existing data on all ID columns
             joined = joined.join(
                 upstream_renamed,
-                on="sample_uid",
-                how="inner",  # Only sample_uids present in ALL upstream
+                on=id_columns,  # Use configured ID columns (may be composite key)
+                how="inner",  # Only rows present in ALL upstream with matching ID columns
             )
 
         return joined, upstream_mapping

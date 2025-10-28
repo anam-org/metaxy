@@ -514,7 +514,7 @@ class MetadataStore(ABC):
         """Record all features in graph with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
-        feature versions are being deployed. Typically invoked via `metaxy push`.
+        feature versions are being deployed. Typically invoked via `metaxy graph push`.
 
         Records all features in the graph with the same snapshot_version, representing
         a consistent state of the entire feature graph based on code definitions.
@@ -1465,6 +1465,7 @@ class MetadataStore(ABC):
             lazy_result = diff_resolver.find_changes(
                 target_versions=samples_lazy,
                 current_metadata=current_lazy,
+                id_columns=feature.id_columns(),  # Get ID columns from feature spec
             )
 
             return lazy_result if lazy else lazy_result.collect()

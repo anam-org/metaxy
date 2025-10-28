@@ -60,13 +60,13 @@ Tracks applied migrations:
 
 **YOU MUST** record feature graph snapshots in your CD workflow for migrations to work.
 
-### Using `metaxy push` in CD
+### Using `metaxy graph push` in CD
 
 Add this to your deployment pipeline (BEFORE materializing features):
 
 ```bash
 # In your CI/CD pipeline (GitHub Actions, Jenkins, etc.)
-$ metaxy push
+$ metaxy graph push
 ```
 
 This command:
@@ -85,7 +85,7 @@ git pull origin main
 pip install -e .
 
 # 2. Record feature graph snapshot (CRITICAL!)
-metaxy push
+metaxy graph push
 # Output: "Recorded snapshot: a3f8b2c1... (12 features)"
 
 # 3. Run your feature materialization pipeline
@@ -99,7 +99,7 @@ metaxy migrations generate
 metaxy migrations apply
 ```
 
-**Why is `metaxy push` required?**
+**Why is `metaxy graph push` required?**
 - Migration detection compares "latest snapshot in store" vs "current code"
 - Without snapshots, the system cannot detect what changed
 - Provides audit trail: what feature versions were deployed when
@@ -136,11 +136,11 @@ The `snapshot_version` is a deterministic hash representing the entire feature g
 
 ### Step 1: Initial State (Production)
 
-Your CD pipeline has already run `metaxy push` to record the current feature graph:
+Your CD pipeline has already run `metaxy graph push` to record the current feature graph:
 
 ```bash
 # In production CD (previously run)
-$ metaxy push
+$ metaxy graph push
 # Recorded snapshot: a3f8b2c1... (15 features)
 ```
 
@@ -224,7 +224,7 @@ See the [Migration File Format](#migration-file-format-yaml) section below for t
 
 ```bash
 # In your CD pipeline
-$ metaxy push  # Record new snapshot (def67890...)
+$ metaxy graph push  # Record new snapshot (def67890...)
 $ metaxy migrations apply  # Auto-discovers migration files
 
 # Output:

@@ -547,17 +547,86 @@ class TestColumnSelection:
 
     def test_pydantic_validation_rename_to_system_column(self):
         """Test that renaming to system column names is rejected."""
+        # Test renaming to always-reserved system columns
         with pytest.raises(ValueError, match="Cannot rename column to system column"):
             FeatureDep(
                 key=FeatureKey(["test", "upstream"]),
-                rename={"old_col": "data_version"},  # Can't rename to system column
+                rename={"old_col": "data_version"},  # Can't rename to data_version
             )
 
         with pytest.raises(ValueError, match="Cannot rename column to system column"):
             FeatureDep(
                 key=FeatureKey(["test", "upstream"]),
-                rename={"old_col": "sample_uid"},  # Can't rename to system column
+                rename={
+                    "old_col": "feature_version"
+                },  # Can't rename to feature_version
             )
+
+        # Note: "sample_uid" is no longer validated here since it's feature-specific
+        # The validation for ID columns happens during joining when we have access to
+        # the upstream feature's spec
+
+    def test_rename_to_id_column_validation(self):
+        """Test that renaming to an upstream feature's ID columns is rejected during joining."""
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Create upstream with custom ID columns
+            class UpstreamWithCustomIDs(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "upstream"]),
+                    deps=None,
+                    id_columns=["user_id", "session_id"],
+                ),
+            ):
+                pass
+
+            # Try to rename a column to one of the upstream's ID columns
+            # The downstream feature must have the same ID columns as upstream for joining to work
+            class DownstreamFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "downstream"]),
+                    deps=[
+                        FeatureDep(
+                            key=FeatureKey(["test", "upstream"]),
+                            rename={
+                                "some_col": "user_id"
+                            },  # Can't rename to upstream's ID column
+                        )
+                    ],
+                    id_columns=[
+                        "user_id",
+                        "session_id",
+                    ],  # Must match upstream ID columns
+                ),
+            ):
+                pass
+
+            upstream_data = pl.DataFrame(
+                {
+                    "user_id": [1, 2, 3],
+                    "session_id": ["a", "b", "c"],
+                    "data_version": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                    "some_col": ["x", "y", "z"],
+                }
+            )
+
+            joiner = NarwhalsJoiner()
+            upstream_refs = {
+                "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
+            }
+
+            # Should raise an error about renaming to ID column
+            with pytest.raises(
+                ValueError, match="Cannot rename.*to ID column.*user_id"
+            ):
+                DownstreamFeature.load_input(joiner, upstream_refs)
 
     def test_pydantic_serialization(self):
         """Test that FeatureDep with columns and rename serializes correctly."""

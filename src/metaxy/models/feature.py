@@ -531,6 +531,37 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         return cls.spec.table_name()
 
     @classmethod
+    def id_columns(cls) -> list[str]:
+        """Get the ID columns used for joining metadata.
+
+        Returns the ID columns from the feature spec, or the default ["sample_uid"]
+        if not specified. These columns are used as join keys when combining
+        upstream features.
+
+        Returns:
+            List of ID column names
+
+        Example:
+            >>> class DefaultFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     deps=None,
+            ... )):
+            ...     pass
+            >>> DefaultFeature.id_columns()
+            ['sample_uid']  # Default
+
+            >>> class CustomIDFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     id_columns=["user_id", "session_id"],
+            ...     deps=None,
+            ... )):
+            ...     pass
+            >>> CustomIDFeature.id_columns()
+            ['user_id', 'session_id']  # Custom composite key
+        """
+        return cls.spec.id_columns
+
+    @classmethod
     def feature_version(cls) -> str:
         """Get hash of feature specification.
 
@@ -676,7 +707,7 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             ...     @classmethod
             ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
             ...         # Get standard diff
-            ...         result = diff_resolver.find_changes(target_versions, current_metadata)
+            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.id_columns())
             ...
             ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
             ...         # Users can filter/modify the diff result here
@@ -687,6 +718,7 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         lazy_result = diff_resolver.find_changes(
             target_versions=target_versions,
             current_metadata=current_metadata,
+            id_columns=cls.id_columns(),  # Pass ID columns from feature spec
         )
 
         # Materialize to DiffResult if lazy=False

@@ -35,9 +35,8 @@ Example: `gh issue create --title "[core] add PostgreSQL support" --body "We nee
 3. **Draft Issue**: Create a structured issue with:
    - Clear, prefixed title
    - Concise problem statement or feature description
-   - Acceptance criteria or expected behavior
+   - Concise acceptance criteria or expected behavior, no more than 3 items
    - Implementation notes (if relevant)
-   - Estimated complexity
 4. **Seek Confirmation**: ALWAYS present the draft issue to the user for approval before creating it, unless they have explicitly pre-approved creation
 
 ## Issue Template

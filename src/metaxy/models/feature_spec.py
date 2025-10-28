@@ -82,6 +82,7 @@ class FeatureSpec(pydantic.BaseModel):
         ]
     )
     code_version: int = 1
+    id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
@@ -104,6 +105,15 @@ class FeatureSpec(pydantic.BaseModel):
                     f"All fields must have unique keys."
                 )
             seen_keys.add(key_tuple)
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def validate_id_columns(self) -> "FeatureSpec":
+        """Validate that id_columns is non-empty if specified."""
+        if self.id_columns is not None and len(self.id_columns) == 0:
+            raise ValueError(
+                "id_columns must be non-empty if specified. Use None for default."
+            )
         return self
 
     @property

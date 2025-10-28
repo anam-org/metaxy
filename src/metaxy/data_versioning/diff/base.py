@@ -117,6 +117,7 @@ class MetadataDiffResolver(ABC):
         self,
         target_versions: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
+        id_columns: list[str],
     ) -> LazyDiffResult:
         """Find all changes between target and current metadata.
 
@@ -125,10 +126,11 @@ class MetadataDiffResolver(ABC):
 
         Args:
             target_versions: Narwhals LazyFrame with newly calculated data_versions
-                Shape: [sample_uid, data_version (calculated), upstream columns...]
+                Shape: [ID columns, data_version (calculated), upstream columns...]
             current_metadata: Narwhals LazyFrame with current metadata, or None
-                Shape: [sample_uid, data_version (existing), feature_version, custom columns...]
+                Shape: [ID columns, data_version (existing), feature_version, custom columns...]
                 Should be pre-filtered by feature_version at the caller level if needed.
+            id_columns: List of ID columns to use for comparison (required - from feature spec)
 
         Returns:
             LazyDiffResult with three lazy Narwhals LazyFrames.
@@ -146,5 +148,7 @@ class MetadataDiffResolver(ABC):
             Feature version filtering should happen at the read_metadata() level,
             not in the diff resolver. The diff resolver just compares whatever
             metadata is passed to it.
+
+            ID columns must be explicitly provided from the feature spec.
         """
         pass

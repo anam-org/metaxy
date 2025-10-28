@@ -13,7 +13,7 @@ def push(store: str | None = None):
     new feature definitions.
 
     Example:
-        $ metaxy push
+        $ metaxy graph push
 
         ✓ Recorded feature graph
           Snapshot version: abc123def456...

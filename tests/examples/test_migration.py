@@ -13,7 +13,7 @@ def test_pipeline(tmp_path, snapshot):
     """Test that the migration workflow example runs successfully.
 
     This test orchestrates the migration workflow:
-    1. metaxy push (STAGE=1) - record feature graph v1
+    1. metaxy graph push (STAGE=1) - record feature graph v1
     2. Run pipeline with STAGE=1
     3. Deploy new code (STAGE=2) and push to record v2 snapshot
     4. Generate migration (compare v1 vs v2, both in store)
@@ -68,7 +68,7 @@ database = "{test_db}"
     assert result.returncode == 0, f"Setup failed: {result.stderr}"
     print(result.stdout)
 
-    # Step 1: metaxy push with STAGE=1
+    # Step 1: metaxy graph push with STAGE=1
     result = project.run_cli(
         "graph",
         "push",
