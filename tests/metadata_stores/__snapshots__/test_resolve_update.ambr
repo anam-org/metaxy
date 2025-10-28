@@ -82,6 +82,46 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -414,6 +454,46 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -578,6 +658,46 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 9,
+      'changed_sample_uids': list([
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -705,6 +825,34 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 0,
@@ -954,6 +1102,34 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -1070,6 +1246,34 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -1173,6 +1377,34 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 0,
@@ -1422,6 +1654,34 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -1538,6 +1798,34 @@
       'removed': 0,
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 0,
+      'any_version_changed': True,
+      'changed': 3,
+      'changed_sample_uids': list([
+        1,
+        2,
+        3,
+      ]),
+      'removed': 0,
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -1611,6 +1899,32 @@
       }),
     }),
     'clickhouse_native=True': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
       'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'first_run': dict({
         'added': 3,
@@ -1843,6 +2157,32 @@
         'removed': 0,
       }),
     }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
     'duckdb_native=False': dict({
       'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'first_run': dict({
@@ -1951,6 +2291,32 @@
         'removed': 0,
       }),
     }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
+      'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
     'duckdb_native=False': dict({
       'feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'first_run': dict({
@@ -2047,6 +2413,32 @@
       }),
     }),
     'clickhouse_native=True': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
       'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'first_run': dict({
         'added': 3,
@@ -2279,6 +2671,32 @@
         'removed': 0,
       }),
     }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
     'duckdb_native=False': dict({
       'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'first_run': dict({
@@ -2375,6 +2793,32 @@
       }),
     }),
     'clickhouse_native=True': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=False': dict({
+      'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
+      'first_run': dict({
+        'added': 3,
+        'changed': 0,
+        'removed': 0,
+      }),
+      'second_run': dict({
+        'added': 0,
+        'changed': 0,
+        'removed': 0,
+      }),
+    }),
+    'duckdb_ducklake_native=True': dict({
       'feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'first_run': dict({
         'added': 3,
@@ -2491,6 +2935,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       False,
     ): dict({
@@ -2682,6 +3146,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -2766,6 +3250,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -2831,6 +3335,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       False,
     ): dict({
@@ -3022,6 +3546,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -3106,6 +3650,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -3171,6 +3735,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       False,
     ): dict({
@@ -3362,6 +3946,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -3446,6 +4050,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       False,
@@ -3511,6 +4135,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       False,
     ): dict({
@@ -3702,6 +4346,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -3786,6 +4450,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -3851,6 +4535,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       False,
     ): dict({
@@ -4042,6 +4746,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -4126,6 +4850,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -4191,6 +4935,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       False,
     ): dict({
@@ -4382,6 +5146,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -4466,6 +5250,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       False,
@@ -4531,6 +5335,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       True,
     ): dict({
@@ -4722,6 +5546,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -4806,6 +5650,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -4871,6 +5735,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       True,
     ): dict({
@@ -5062,6 +5946,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -5146,6 +6050,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -5211,6 +6135,26 @@
     }),
     tuple(
       'duckdb',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       False,
       True,
     ): dict({
@@ -5402,6 +6346,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -5486,6 +6450,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
       True,
@@ -5551,6 +6535,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       True,
     ): dict({
@@ -5742,6 +6746,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       True,
@@ -5826,6 +6850,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       True,
@@ -5891,6 +6935,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       True,
     ): dict({
@@ -6082,6 +7146,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       True,
@@ -6166,6 +7250,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       True,
@@ -6231,6 +7335,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       True,
     ): dict({
@@ -6422,6 +7546,26 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       True,
       True,
@@ -6487,6 +7631,26 @@
     }),
     tuple(
       'duckdb',
+      True,
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'field_a': 'hash1',
+        }),
+        dict({
+          'field_a': 'hash2',
+        }),
+        dict({
+          'field_a': 'hash3',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
       True,
     ): dict({
@@ -6608,6 +7772,44 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
+        }),
+        dict({
+          'default': 'cb822ef624057e3b28ad202916ac71dd',
+        }),
+        dict({
+          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
+        }),
+        dict({
+          'default': 'cb822ef624057e3b28ad202916ac71dd',
+        }),
+        dict({
+          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 3,
@@ -6942,6 +8144,44 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '3644544197',
+        }),
+        dict({
+          'default': '3150898318',
+        }),
+        dict({
+          'default': '3999303356',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '3644544197',
+        }),
+        dict({
+          'default': '3150898318',
+        }),
+        dict({
+          'default': '3999303356',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -7098,6 +8338,44 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '4102418655400604945',
+        }),
+        dict({
+          'default': '4485303282459113117',
+        }),
+        dict({
+          'default': '16541571895607920915',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '4102418655400604945',
+        }),
+        dict({
+          'default': '4485303282459113117',
+        }),
+        dict({
+          'default': '16541571895607920915',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -7236,6 +8514,44 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '672f21cfef6762f70dcf94fa355db6b7',
+        }),
+        dict({
+          'default': 'e14fa6406edae92209947f24ee0dff64',
+        }),
+        dict({
+          'default': '72831a0fd08d2d33b5246095e906d6a4',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '672f21cfef6762f70dcf94fa355db6b7',
+        }),
+        dict({
+          'default': 'e14fa6406edae92209947f24ee0dff64',
+        }),
+        dict({
+          'default': '72831a0fd08d2d33b5246095e906d6a4',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 3,
@@ -7570,6 +8886,44 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '3076203247',
+        }),
+        dict({
+          'default': '2996209608',
+        }),
+        dict({
+          'default': '1133952890',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '3076203247',
+        }),
+        dict({
+          'default': '2996209608',
+        }),
+        dict({
+          'default': '1133952890',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -7726,6 +9080,44 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5703117408664097056',
+        }),
+        dict({
+          'default': '6708236814926810383',
+        }),
+        dict({
+          'default': '7678115697944854051',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '5703117408664097056',
+        }),
+        dict({
+          'default': '6708236814926810383',
+        }),
+        dict({
+          'default': '7678115697944854051',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -7864,6 +9256,44 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+        }),
+        dict({
+          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+        }),
+        dict({
+          'default': '82b916af3feb89882deb331e90c903d5',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+        }),
+        dict({
+          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+        }),
+        dict({
+          'default': '82b916af3feb89882deb331e90c903d5',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 3,
@@ -8198,6 +9628,44 @@
       ]),
     }),
     tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2923999235',
+        }),
+        dict({
+          'default': '2678760928',
+        }),
+        dict({
+          'default': '3500821944',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '2923999235',
+        }),
+        dict({
+          'default': '2678760928',
+        }),
+        dict({
+          'default': '3500821944',
+        }),
+      ]),
+    }),
+    tuple(
       'inmemory',
       False,
     ): dict({
@@ -8336,6 +9804,44 @@
     }),
     tuple(
       'duckdb',
+      True,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10367360247745986975',
+        }),
+        dict({
+          'default': '11278615146878285687',
+        }),
+        dict({
+          'default': '2591597587625471298',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
+      False,
+    ): dict({
+      'added': 3,
+      'changed': 0,
+      'removed': 0,
+      'versions': list([
+        dict({
+          'default': '10367360247745986975',
+        }),
+        dict({
+          'default': '11278615146878285687',
+        }),
+        dict({
+          'default': '2591597587625471298',
+        }),
+      ]),
+    }),
+    tuple(
+      'duckdb_ducklake',
       True,
     ): dict({
       'added': 3,
