@@ -153,8 +153,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
-      - Data Versioning: learn/data_versioning.md
-      - Feature Discovery: learn/feature_discovery.md
+      - Data Versioning: learn/data-versioning.md
+      - Feature Discovery: learn/feature-discovery.md
       - Testing: learn/testing.md
       - Integrations:
           - SQLModel: learn/integrations/sqlmodel.md

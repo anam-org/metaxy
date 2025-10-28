@@ -30,7 +30,7 @@ Metaxy is:
 - **🧑‍💻 dev friendly**:
 
     - clean, **intuitive Python API** that stays out of your way when you don't need it
-    - [feature discovery](./learn/feature_discovery.md) system for effortless dependency management
+    - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
@@ -117,5 +117,5 @@ We have successfully recorded the metadata for the computed samples.
 
 ## What's Next?
 
-- Learn more about [Data Versioning](./learn/data_versioning.md)
+- Learn more about [Data Versioning](./learn/data-versioning.md)
 - Take a look at [CLI reference](./reference/cli.md)
