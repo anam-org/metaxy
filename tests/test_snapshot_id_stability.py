@@ -16,7 +16,7 @@ def test_snapshot_id_stability_with_module():
     parent_spec = FeatureSpec(
         key=FeatureKey(["test", "parent"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     child_spec = FeatureSpec(
@@ -25,7 +25,7 @@ def test_snapshot_id_stability_with_module():
         fields=[
             FieldSpec(
                 key=FieldKey(["result"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test", "parent"]),

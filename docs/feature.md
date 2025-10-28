@@ -13,21 +13,21 @@ Feature and field versions are static and deterministic. They are available as c
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
     fields=[
-        FieldSpec(key=FieldKey(["frames"]), code_version=1),
-        FieldSpec(key=FieldKey(["audio"]), code_version=1),
+        FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+        FieldSpec(key=FieldKey(["audio"]), code_version="1"),
     ],
 )):
     pass
 
-# Get feature version
+# code_version is now a string, so you can use semantic tags or hashes
 print(VideoProcessing.feature_version())  # "a3f8b2c1"
 
 # Change code_version
 class VideoProcessing(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "processing"]),
     fields=[
-        FieldSpec(key=FieldKey(["frames"]), code_version=2),  # Changed!
-        FieldSpec(key=FieldKey(["audio"]), code_version=1),
+        FieldSpec(key=FieldKey(["frames"]), code_version="2"),  # Changed!
+        FieldSpec(key=FieldKey(["audio"]), code_version="1"),
     ],
 )):
     pass

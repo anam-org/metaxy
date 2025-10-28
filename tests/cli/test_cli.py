@@ -29,7 +29,7 @@ def cli_graph():
     test_feature_spec = FeatureSpec(
         key=FeatureKey(["test_cli", "feature"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_module.write_features({"TestFeature": test_feature_spec})

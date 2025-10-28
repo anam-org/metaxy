@@ -29,7 +29,7 @@ from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 class VideoFiles(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "files"]),
     deps=None,
-    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
 )):
     pass
 """)
@@ -45,7 +45,7 @@ class VideoProcessing(Feature, spec=FeatureSpec(
     deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
     fields=[FieldSpec(
         key=FieldKey(["frames"]),
-        code_version=1,
+        code_version="1",
         deps=[FieldDep(
             feature_key=FeatureKey(["video", "files"]),
             fields=[FieldKey(["default"])]
@@ -169,7 +169,7 @@ class VideoProcessing(Feature, spec=FeatureSpec(
     deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
     fields=[FieldSpec(
         key=FieldKey(["frames"]),
-        code_version=2,  # Changed from 1 to 2
+        code_version="2",  # Changed from 1 to 2
         deps=[FieldDep(
             feature_key=FeatureKey(["video", "files"]),
             fields=[FieldKey(["default"])]
@@ -377,7 +377,7 @@ from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 class VideoFiles(Feature, spec=FeatureSpec(
     key=FeatureKey(["video", "files"]),
     deps=None,
-    fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)]  # Changed!
+    fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")]  # Changed!
 )):
     pass
 """)

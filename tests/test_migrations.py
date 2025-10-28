@@ -54,7 +54,7 @@ with _temp_graph_chaining.use():
         spec=FeatureSpec(
             key=FeatureKey(["up"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["d"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["d"]), code_version="1")],
         ),
     ):
         pass
@@ -67,7 +67,7 @@ with _temp_graph_chaining.use():
             fields=[
                 FieldSpec(
                     key=FieldKey(["d"]),
-                    code_version=1,
+                    code_version="1",
                     deps=[
                         FieldDep(
                             feature_key=FeatureKey(["up"]),
@@ -105,7 +105,7 @@ def graph_v1():
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
@@ -115,7 +115,7 @@ def graph_v1():
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test_migrations", "upstream"]),
@@ -153,7 +153,7 @@ def graph_v2():
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+            FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
         ],
     )
 
@@ -163,7 +163,7 @@ def graph_v2():
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test_migrations", "upstream"]),
@@ -752,7 +752,7 @@ def test_graph_rejects_duplicate_keys() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["duplicate", "key"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
         graph=graph,
     ):
@@ -766,7 +766,7 @@ def test_graph_rejects_duplicate_keys() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["duplicate", "key"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
             graph=graph,
         ):
@@ -1336,7 +1336,7 @@ def test_metadata_backfill_operation() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["backfill", "test"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -1475,14 +1475,14 @@ def test_migration_ignores_new_features(
     upstream_spec = FeatureSpec(
         key=FeatureKey(["test_migrations", "upstream"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     # NEW feature that didn't exist in v1
     new_feature_spec = FeatureSpec(
         key=FeatureKey(["test_migrations", "new_feature"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_module.write_features(
@@ -1547,13 +1547,13 @@ def test_migration_with_dependency_change() -> None:
     upstream_a_spec = FeatureSpec(
         key=FeatureKey(["test", "upstream_a"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     upstream_b_spec = FeatureSpec(
         key=FeatureKey(["test", "upstream_b"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     downstream_v1_spec = FeatureSpec(
@@ -1562,7 +1562,7 @@ def test_migration_with_dependency_change() -> None:
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test", "upstream_a"]),
@@ -1592,7 +1592,7 @@ def test_migration_with_dependency_change() -> None:
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,  # Same code_version
+                code_version="1",  # Same code_version
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test", "upstream_b"]),  # Changed!
@@ -1681,8 +1681,8 @@ def test_migration_with_field_dependency_change() -> None:
         key=FeatureKey(["test", "upstream"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version=1),
-            FieldSpec(key=FieldKey(["audio"]), code_version=1),
+            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+            FieldSpec(key=FieldKey(["audio"]), code_version="1"),
         ],
     )
 
@@ -1692,7 +1692,7 @@ def test_migration_with_field_dependency_change() -> None:
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test", "upstream"]),
@@ -1724,7 +1724,7 @@ def test_migration_with_field_dependency_change() -> None:
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,  # Same code_version
+                code_version="1",  # Same code_version
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test", "upstream"]),
@@ -1808,7 +1808,7 @@ def test_sequential_migration_application():
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.get_graph()
@@ -1916,7 +1916,7 @@ def test_multiple_migration_heads_detection():
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
         deps=None,
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
     temp_module.write_features({"TestFeature": spec})
     graph = temp_module.get_graph()

@@ -35,12 +35,25 @@ class FieldDep(FrozenBaseModel):
 
 class FieldSpec(FrozenBaseModel):
     key: FieldKey
-    code_version: int = 1
+    code_version: str = "1"
 
     # field-level dependencies can be one of the following:
     # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
     # - a list of FieldDep to depend on particular fields of specific features
     deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL
+
+    @field_validator("code_version", mode="before")
+    @classmethod
+    def _validate_code_version(cls, value: Any) -> str:
+        if value is None:
+            return "1"
+        if isinstance(value, int):
+            return str(value)
+        if not isinstance(value, str):
+            raise TypeError("code_version must be a string.")
+        if not value:
+            raise ValueError("code_version cannot be empty.")
+        return value
 
     @field_validator("key", mode="before")
     @classmethod

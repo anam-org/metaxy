@@ -105,7 +105,7 @@ class RootFeature(
         key=FeatureKey(["fallback_test", "root"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     ),
 ):
@@ -122,7 +122,7 @@ class DownstreamFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["fallback_test", "root"]),
