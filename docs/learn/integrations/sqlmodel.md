@@ -63,6 +63,43 @@ Metaxy's metadata store automatically manages versioning columns:
 
 These columns need not be defined in your SQLModel class. The metadata store injects them during write and read operations.
 
+### ID Columns
+
+!!! warning "ID columns must exist before database insertion"
+    ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.
+
+    Metaxy validates against autoincrement primary keys but cannot detect all server-generated patterns. Ensure your ID columns use client-provided values.
+
+Example:
+
+```python
+# ✅ Good: Client-generated ID columns
+class UserActivity(
+    SQLModelFeature,
+    table=True,
+    spec=FeatureSpec(
+        key=FeatureKey(["user", "activity"]),
+        id_columns=["user_id", "session_id"],  # Client provides these
+        ...
+    ),
+):
+    user_id: str = Field(primary_key=True)  # Client-generated
+    session_id: str = Field(primary_key=True)  # Client-generated
+    created_at: str = Field(sa_column_kwargs={"server_default": "NOW()"})  # OK - not an ID column
+
+# ❌ Bad: Autoincrement ID column
+class BadFeature(
+    SQLModelFeature,
+    table=True,
+    spec=FeatureSpec(
+        key=FeatureKey(["bad"]),
+        id_columns=["id"],  # This is listed as an ID column
+        ...
+    ),
+):
+    id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})  # Will raise error
+```
+
 ### Loading Features and Populating Metadata
 
 When using `metaxy.load_features()` to discover and import feature modules, all `SQLModelFeature` classes are automatically registered in SQLModel's metadata:

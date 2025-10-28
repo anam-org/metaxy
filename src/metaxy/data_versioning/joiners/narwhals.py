@@ -108,22 +108,6 @@ class NarwhalsJoiner(UpstreamJoiner):
         first_columns_spec = upstream_columns.get(first_key)
         first_renames_spec = upstream_renames.get(first_key) or {}
 
-        # Validate that renaming doesn't target ID columns of upstream feature
-        # We need to get the upstream feature's ID columns from the feature plan
-        if first_renames_spec and feature_plan.deps:
-            # Find the upstream feature spec in the feature plan
-            for dep_spec in feature_plan.deps:
-                if dep_spec.key.to_string() == first_key:
-                    upstream_id_columns = set(dep_spec.id_columns)
-                    for new_name in first_renames_spec.values():
-                        if new_name in upstream_id_columns:
-                            raise ValueError(
-                                f"Cannot rename column to ID column '{new_name}'. "
-                                f"The upstream feature '{first_key}' uses ID columns {sorted(upstream_id_columns)} "
-                                f"for joining, and renaming to these columns would cause conflicts."
-                            )
-                    break
-
         # Get column names from first upstream
         # We need to collect schema to know available columns
         # Use lazy evaluation where possible
@@ -193,21 +177,6 @@ class NarwhalsJoiner(UpstreamJoiner):
             upstream_ref = upstream_refs[upstream_key]
             columns_spec = upstream_columns.get(upstream_key)
             renames_spec = upstream_renames.get(upstream_key) or {}
-
-            # Validate that renaming doesn't target ID columns of upstream feature
-            if renames_spec and feature_plan.deps:
-                # Find the upstream feature spec in the feature plan
-                for dep_spec in feature_plan.deps:
-                    if dep_spec.key.to_string() == upstream_key:
-                        upstream_id_columns = set(dep_spec.id_columns)
-                        for new_name in renames_spec.values():
-                            if new_name in upstream_id_columns:
-                                raise ValueError(
-                                    f"Cannot rename column to ID column '{new_name}'. "
-                                    f"The upstream feature '{upstream_key}' uses ID columns {sorted(upstream_id_columns)} "
-                                    f"for joining, and renaming to these columns would cause conflicts."
-                                )
-                        break
 
             # Get available columns
             schema = upstream_ref.collect_schema()
