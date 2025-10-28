@@ -82,7 +82,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             return
 
         # Type narrowing: we know this is a DuckDB backend
-        from typing import Any, cast
+        from typing import cast
 
         backend = cast(
             Any, self._backend
@@ -96,8 +96,15 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
                 ext_name = str(ext_spec.get("name", ""))
                 ext_repo = str(ext_spec.get("repository", "community"))
             else:
-                ext_name = str(getattr(ext_spec, "name", ""))
-                ext_repo = getattr(ext_spec, "repository", None) or "community"
+                # Must be ExtensionSpec (Pydantic model with name/repository attributes)
+                from metaxy.metadata_store.duckdb import ExtensionSpec
+
+                if not isinstance(ext_spec, ExtensionSpec):
+                    raise TypeError(
+                        f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext_spec)}"
+                    )
+                ext_name = ext_spec.name
+                ext_repo = ext_spec.repository or "community"
 
             if not ext_name:
                 raise ValueError("DuckDB extension specification must include a name.")
@@ -143,7 +150,15 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             elif isinstance(ext, Mapping):
                 extension_names.append(str(ext.get("name", "")))
             else:
-                extension_names.append(str(getattr(ext, "name", "")))
+                # Must be ExtensionSpec
+                from metaxy.metadata_store.duckdb import ExtensionSpec
+
+                if isinstance(ext, ExtensionSpec):
+                    extension_names.append(ext.name)
+                else:
+                    raise TypeError(
+                        f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
+                    )
 
         if "hashfuncs" in extension_names:
 

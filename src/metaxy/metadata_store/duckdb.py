@@ -174,8 +174,12 @@ class DuckDBMetadataStore(IbisMetadataStore):
                 extension_names.append(ext)
             elif isinstance(ext, Mapping):
                 extension_names.append(str(ext.get("name", "")))
+            elif isinstance(ext, ExtensionSpec):
+                extension_names.append(ext.name)
             else:
-                extension_names.append(str(getattr(ext, "name", "")))
+                raise TypeError(
+                    f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
+                )
         if "hashfuncs" not in extension_names:
             self.extensions.append("hashfuncs")
 
@@ -258,17 +262,33 @@ class DuckDBMetadataStore(IbisMetadataStore):
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
-        backend = self._conn
-        candidate = getattr(backend, "con", None)
-        if isinstance(candidate, DuckDBConnection):
-            return candidate
+        from typing import Any, cast
 
-        raw_connection = getattr(backend, "raw_connection", None)
-        if callable(raw_connection):
-            raw_candidate = raw_connection()
-            if isinstance(raw_candidate, DuckDBConnection):
-                return raw_candidate
+        backend = cast(Any, self._conn)  # DuckDB backend has specific attributes
+
+        # Try 'con' attribute first (standard for DuckDB backend)
+        if hasattr(backend, "con"):
+            candidate = backend.con
+            if isinstance(candidate, DuckDBConnection):
+                return candidate
+            raise TypeError(
+                f"Expected DuckDB backend 'con' attribute to be DuckDBPyConnection, "
+                f"got {type(candidate).__name__}"
+            )
+
+        # Fallback to raw_connection() method
+        if hasattr(backend, "raw_connection"):
+            raw_connection = backend.raw_connection
+            if callable(raw_connection):
+                raw_candidate = raw_connection()
+                if isinstance(raw_candidate, DuckDBConnection):
+                    return raw_candidate
+                raise TypeError(
+                    f"Expected raw_connection() to return DuckDBPyConnection, "
+                    f"got {type(raw_candidate).__name__}"
+                )
 
         raise RuntimeError(
-            "DuckDB Ibis backend does not expose a DuckDBPyConnection via 'con' or raw_connection()."
+            f"DuckDB Ibis backend ({type(backend).__name__}) does not expose "
+            f"DuckDBPyConnection via 'con' attribute or raw_connection() method."
         )

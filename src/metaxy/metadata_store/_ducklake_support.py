@@ -2,7 +2,6 @@
 
 import os
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from duckdb import DuckDBPyConnection  # noqa: TID252
@@ -130,13 +129,6 @@ def _storage_sql_from_mapping(config: Mapping[str, Any], alias: str) -> tuple[st
         path = config.get("path")
         if not path:
             raise ValueError("DuckLake local storage backend requires 'path'.")
-        if isinstance(path, (str, os.PathLike)):
-            try:
-                Path(path).mkdir(parents=True, exist_ok=True)
-            except OSError as exc:  # pragma: no cover - pass-through failure
-                raise ValueError(
-                    f"Unable to create local DuckLake storage directory at {path!r}: {exc}"
-                ) from exc
         literal_path = _stringify_scalar(path)
         return "", f"DATA_PATH {literal_path}"
     raise ValueError(f"Unsupported DuckLake storage backend type: {storage_type!r}")
@@ -400,6 +392,8 @@ def ensure_extensions_with_plugins(
     plugins: Sequence[str],
 ) -> None:
     """Ensure DuckLake plugins are present in the extensions list."""
+    from typing import cast
+
     existing_names: set[str] = set()
     for ext in extensions:
         if isinstance(ext, str):
@@ -408,10 +402,13 @@ def ensure_extensions_with_plugins(
             name = str(ext.get("name", ""))
             if name:
                 existing_names.add(name)
-        elif hasattr(ext, "name"):
-            name = str(getattr(ext, "name", ""))
-            if name:
-                existing_names.add(name)
+        else:
+            # Assume ExtensionSpec-like object with 'name' attribute
+            ext_any = cast(Any, ext)
+            if hasattr(ext_any, "name"):
+                name = str(ext_any.name)
+                if name:
+                    existing_names.add(name)
     for plugin in plugins:
         if plugin not in existing_names:
             extensions.append(plugin)
