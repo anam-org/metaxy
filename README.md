@@ -171,7 +171,7 @@ Now imagine the `audio` logical field (don't mix up with metadata columns!) of t
              ),
 ```
 
-In this case we'd typically want to recompute the downstream `Crop` and `SpeechToText features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
+In this case we'd typically want to recompute the downstream `Crop` and `SpeechToText` features, but not the `FaceDetection` feature, since it only depends on `frames` and not on `audio`.
 
 `metaxy graph diff` reveals exactly that:
 
@@ -204,7 +204,7 @@ color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
 
 The versions of `audio` fields through the graph as well as the whole `FaceDetection` feature stayed the same!
 
-We can use Metaxy's static graph analysis to identify which features need to be recomputed when a new version of a feature is introduced. In addition to feature and field level versions, Metaxy can also compute a sample-level version (may be different for each sample in the one million dataset you have) ahead of computations through the whole graph. This enables exciting features such as processing cost prediction and automatic migrations for metadata.
+We can use Metaxy's static graph analysis to identify features that are out of sync after a topology change or a code version bump. In addition to feature- and field- level versions, Metaxy computes sample-level versions (for each row in the dataset), and it does it **ahead of computations** through the whole graph. This enables exciting features such as processing cost prediction and automatic migrations.
 
 ## Development
 
