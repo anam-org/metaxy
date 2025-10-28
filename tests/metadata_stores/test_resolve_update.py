@@ -100,6 +100,38 @@ def create_store(
             extensions=extensions,  # pyright: ignore[reportArgumentType]
             prefer_native=prefer_native,
         )
+    elif store_type == "duckdb_ducklake":
+        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
+        db_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
+        )
+        metadata_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_catalog.duckdb"
+        )
+        storage_dir = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_storage"
+        )
+
+        ducklake_config = {
+            "alias": "integration_lake",
+            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
+            "storage_backend": {"type": "local", "path": str(storage_dir)},
+        }
+
+        extensions_ducklake: list[str] = ["json"]
+        if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]:
+            extensions_ducklake.append("hashfuncs")
+
+        return DuckDBMetadataStore(
+            db_path,
+            hash_algorithm=hash_algorithm,
+            extensions=extensions_ducklake,  # pyright: ignore[reportArgumentType]
+            prefer_native=prefer_native,
+            ducklake=ducklake_config,
+        )
     elif store_type == "sqlite":
         assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
         db_path = (
