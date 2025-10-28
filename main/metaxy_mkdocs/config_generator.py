@@ -266,18 +266,20 @@ def generate_toml_example(
 
         default = field["default"]
         if default is not None:
+            # Add description as comment on line before field
+            if field["description"]:
+                lines.append(f"# {field['description']}")
             value = format_toml_value(default)
-            comment = f"  # {field['description']}" if field["description"] else ""
-            lines.append(f"{field['name']} = {value}{comment}")
+            lines.append(f"{field['name']} = {value}")
         else:
             # Show optional fields as commented out
             desc = field["description"] if field["description"] else None
 
-            # Build comment - just description or "Optional"
+            # Add description or "Optional" as comment on line before
             if desc:
-                comment = f"  # Optional: {desc}"
+                lines.append(f"# Optional: {desc}")
             else:
-                comment = "  # Optional"
+                lines.append("# Optional")
 
             # Use appropriate placeholder based on type
             if "dict" in field["type"].lower():
@@ -287,7 +289,7 @@ def generate_toml_example(
             else:
                 placeholder = "null"
 
-            lines.append(f"# {field['name']} = {placeholder}{comment}")
+            lines.append(f"# {field['name']} = {placeholder}")
 
     # Generate nested sections
     sections: dict[str, list[dict[str, Any]]] = {}
@@ -306,7 +308,10 @@ def generate_toml_example(
             continue
 
         lines.append("")
-        lines.append(f"[{section_path}]")
+        if include_tool_section:
+            lines.append(f"[tool.metaxy.{section_path}]")
+        else:
+            lines.append(f"[{section_path}]")
 
         first_field_in_section = True
         for field in actual_fields:
@@ -317,18 +322,20 @@ def generate_toml_example(
 
             default = field["default"]
             if default is not None:
+                # Add description as comment on line before field
+                if field["description"]:
+                    lines.append(f"# {field['description']}")
                 value = format_toml_value(default)
-                comment = f"  # {field['description']}" if field["description"] else ""
-                lines.append(f"{field['path'][-1]} = {value}{comment}")
+                lines.append(f"{field['path'][-1]} = {value}")
             else:
                 # Show optional fields as commented out
                 desc = field["description"] if field["description"] else None
 
-                # Build comment - just description or "Optional"
+                # Add description or "Optional" as comment on line before
                 if desc:
-                    comment = f"  # Optional: {desc}"
+                    lines.append(f"# Optional: {desc}")
                 else:
-                    comment = "  # Optional"
+                    lines.append("# Optional")
 
                 # Use appropriate placeholder based on type
                 if "dict" in field["type"].lower():
@@ -338,7 +345,7 @@ def generate_toml_example(
                 else:
                     placeholder = "null"
 
-                lines.append(f"# {field['path'][-1]} = {placeholder}{comment}")
+                lines.append(f"# {field['path'][-1]} = {placeholder}")
 
     return "\n".join(lines)
 
@@ -515,7 +522,7 @@ def generate_individual_field_doc(
     lines.append("")
 
     # TOML Configuration (tabbed)
-    lines.append('=== "metaxy.toml"')
+    lines.append('=== "!metaxy.toml"')
     lines.append("")
     lines.append("    ```toml")
 
@@ -534,7 +541,8 @@ def generate_individual_field_doc(
             else:
                 placeholder = "null"
 
-            lines.append(f"    # {field['name']} = {placeholder}  # Optional")
+            lines.append("    # Optional")
+            lines.append(f"    # {field['name']} = {placeholder}")
     else:
         # Nested field
         section_path = ".".join(field["path"][:-1])
@@ -551,7 +559,8 @@ def generate_individual_field_doc(
             else:
                 placeholder = "null"
 
-            lines.append(f"    # {field['path'][-1]} = {placeholder}  # Optional")
+            lines.append("    # Optional")
+            lines.append(f"    # {field['path'][-1]} = {placeholder}")
 
     lines.append("    ```")
     lines.append("")
@@ -560,10 +569,10 @@ def generate_individual_field_doc(
     lines.append('=== "pyproject.toml"')
     lines.append("")
     lines.append("    ```toml")
-    lines.append("    [tool.metaxy]")
 
     if len(field["path"]) == 1:
-        # Top-level field
+        # Top-level field - show under [tool.metaxy]
+        lines.append("    [tool.metaxy]")
         if field["default"] is not None:
             value = format_toml_value(field["default"])
             lines.append(f"    {field['name']} = {value}")
@@ -576,11 +585,11 @@ def generate_individual_field_doc(
             else:
                 placeholder = "null"
 
-            lines.append(f"    # {field['name']} = {placeholder}  # Optional")
+            lines.append("    # Optional")
+            lines.append(f"    # {field['name']} = {placeholder}")
     else:
-        # Nested field - need full path with [tool.metaxy.section]
+        # Nested field - only show the nested section header
         section_path = ".".join(field["path"][:-1])
-        lines.append("")
         lines.append(f"    [tool.metaxy.{section_path}]")
         if field["default"] is not None:
             value = format_toml_value(field["default"])
@@ -594,7 +603,8 @@ def generate_individual_field_doc(
             else:
                 placeholder = "null"
 
-            lines.append(f"    # {field['path'][-1]} = {placeholder}  # Optional")
+            lines.append("    # Optional")
+            lines.append(f"    # {field['path'][-1]} = {placeholder}")
 
     lines.append("    ```")
     lines.append("")
