@@ -16,6 +16,7 @@
       commonPackages = with pkgs; [
         stdenv.cc
         uv
+        git
         clickhouse
         graphviz
         inputs.mermaid-ascii.outputs.packages.x86_64-linux.default
