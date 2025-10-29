@@ -272,262 +272,245 @@ def test_feature_spec_version_with_column_selection_and_rename(
     assert spec_different_rename.feature_spec_version != version
 
 
-def test_feature_feature_spec_version_classmethod() -> None:
+def test_feature_feature_spec_version_classmethod(graph) -> None:
     """Test that Feature.feature_spec_version() classmethod works correctly."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import Feature
 
-    graph = FeatureGraph()
+    class TestFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["test", "classmethod"]),
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
+            ],
+            code_version=1,
+        ),
+    ):
+        pass
 
-    with graph.use():
+    # Get feature_spec_version via classmethod
+    classmethod_version = TestFeature.feature_spec_version()
 
-        class TestFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "classmethod"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-                code_version=1,
-            ),
-        ):
-            pass
+    # Get feature_spec_version directly from spec
+    direct_version = TestFeature.spec.feature_spec_version
 
-        # Get feature_spec_version via classmethod
-        classmethod_version = TestFeature.feature_spec_version()
+    # They should be identical
+    assert classmethod_version == direct_version
 
-        # Get feature_spec_version directly from spec
-        direct_version = TestFeature.spec.feature_spec_version
-
-        # They should be identical
-        assert classmethod_version == direct_version
-
-        # Should be valid SHA256
-        assert len(classmethod_version) == 64
-        assert all(c in "0123456789abcdef" for c in classmethod_version)
+    # Should be valid SHA256
+    assert len(classmethod_version) == 64
+    assert all(c in "0123456789abcdef" for c in classmethod_version)
 
 
-def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) -> None:
+def test_feature_spec_version_stored_in_snapshot(
+    graph, snapshot: SnapshotAssertion
+) -> None:
     """Test that feature_spec_version is included in graph snapshots."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import Feature
 
-    graph = FeatureGraph()
+    class SnapshotFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["snapshot", "test"]),
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["data"]), code_version=1),
+            ],
+            code_version=2,
+        ),
+    ):
+        pass
 
-    with graph.use():
+    # Get snapshot dict
+    snapshot_dict = graph.to_snapshot()
 
-        class SnapshotFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["snapshot", "test"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
-                ],
-                code_version=2,
-            ),
-        ):
-            pass
+    # Should have the feature
+    feature_key_str = "snapshot/test"
+    assert feature_key_str in snapshot_dict
 
-        # Get snapshot dict
-        snapshot_dict = graph.to_snapshot()
+    # Should contain feature_spec_version
+    feature_data = snapshot_dict[feature_key_str]
+    assert "feature_spec_version" in feature_data
 
-        # Should have the feature
-        feature_key_str = "snapshot/test"
-        assert feature_key_str in snapshot_dict
+    # feature_spec_version should match the Feature's feature_spec_version
+    assert (
+        feature_data["feature_spec_version"]
+        == SnapshotFeature.spec.feature_spec_version
+    )
 
-        # Should contain feature_spec_version
-        feature_data = snapshot_dict[feature_key_str]
-        assert "feature_spec_version" in feature_data
+    # feature_spec_version should be different from feature_version
+    assert feature_data["feature_spec_version"] != feature_data["feature_version"]
 
-        # feature_spec_version should match the Feature's feature_spec_version
-        assert (
-            feature_data["feature_spec_version"]
-            == SnapshotFeature.spec.feature_spec_version
-        )
-
-        # feature_spec_version should be different from feature_version
-        assert feature_data["feature_spec_version"] != feature_data["feature_version"]
-
-        # Snapshot the entire feature data for stability
-        assert feature_data == snapshot
+    # Snapshot the entire feature data for stability
+    assert feature_data == snapshot
 
 
 def test_feature_spec_version_recorded_in_metadata_store(
+    graph,
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test that feature_spec_version is recorded when pushing to metadata store."""
 
-    from metaxy import Feature, FeatureGraph
+    from metaxy import Feature
     from metaxy.metadata_store import InMemoryMetadataStore
 
-    graph = FeatureGraph()
+    class RecordedFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["recorded", "feature"]),
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
+            ],
+            code_version=1,
+        ),
+    ):
+        pass
 
-    with graph.use():
+    store = InMemoryMetadataStore()
 
-        class RecordedFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["recorded", "feature"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-                code_version=1,
-            ),
-        ):
-            pass
+    with store:
+        # Record the feature graph snapshot
+        result = store.record_feature_graph_snapshot()
 
-        store = InMemoryMetadataStore()
+        is_existing = result.already_recorded
 
-        with store:
-            # Record the feature graph snapshot
-            result = store.record_feature_graph_snapshot()
+        # Should be a new snapshot
+        assert not is_existing
 
-            is_existing = result.already_recorded
+        # Read the feature_versions system table
+        features_df = store.read_features(current=True)
 
-            # Should be a new snapshot
-            assert not is_existing
+        # Should have one feature
+        assert len(features_df) == 1
 
-            # Read the feature_versions system table
-            features_df = store.read_features(current=True)
+        # Check that feature_spec_version column exists and has value
+        assert "feature_spec_version" in features_df.columns
 
-            # Should have one feature
-            assert len(features_df) == 1
+        # Get row as dict
+        feature_row = features_df.to_dicts()[0]
+        assert feature_row["feature_spec_version"] is not None
+        assert len(feature_row["feature_spec_version"]) == 64
 
-            # Check that feature_spec_version column exists and has value
-            assert "feature_spec_version" in features_df.columns
+        # feature_spec_version should match the Feature's feature_spec_version
+        assert (
+            feature_row["feature_spec_version"]
+            == RecordedFeature.spec.feature_spec_version
+        )
 
-            # Get row as dict
-            feature_row = features_df.to_dicts()[0]
-            assert feature_row["feature_spec_version"] is not None
-            assert len(feature_row["feature_spec_version"]) == 64
+        # feature_spec_version should be different from feature_version
+        assert feature_row["feature_spec_version"] != feature_row["feature_version"]
 
-            # feature_spec_version should match the Feature's feature_spec_version
-            assert (
-                feature_row["feature_spec_version"]
-                == RecordedFeature.spec.feature_spec_version
-            )
-
-            # feature_spec_version should be different from feature_version
-            assert feature_row["feature_spec_version"] != feature_row["feature_version"]
-
-            # Snapshot for stability
-            assert {
-                "feature_key": feature_row["feature_key"],
-                "feature_version": feature_row["feature_version"],
-                "feature_spec_version": feature_row["feature_spec_version"],
-                "snapshot_version": feature_row["snapshot_version"],
-            } == snapshot
+        # Snapshot for stability
+        assert {
+            "feature_key": feature_row["feature_key"],
+            "feature_version": feature_row["feature_version"],
+            "feature_spec_version": feature_row["feature_spec_version"],
+            "snapshot_version": feature_row["snapshot_version"],
+        } == snapshot
 
 
-def test_feature_spec_version_idempotent_snapshot_recording() -> None:
+def test_feature_spec_version_idempotent_snapshot_recording(graph) -> None:
     """Test that recording the same snapshot twice preserves feature_spec_version."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import Feature
     from metaxy.metadata_store import InMemoryMetadataStore
 
-    graph = FeatureGraph()
+    class IdempotentFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["idempotent", "test"]),
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
+            ],
+            code_version=1,
+        ),
+    ):
+        pass
 
-    with graph.use():
+    store = InMemoryMetadataStore()
 
-        class IdempotentFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["idempotent", "test"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-                code_version=1,
-            ),
-        ):
-            pass
+    with store:
+        # First push
+        result = store.record_feature_graph_snapshot()
 
-        store = InMemoryMetadataStore()
+        snapshot_v1 = result.snapshot_version
 
-        with store:
-            # First push
-            result = store.record_feature_graph_snapshot()
+        is_existing_1 = result.already_recorded
+        assert not is_existing_1
 
-            snapshot_v1 = result.snapshot_version
+        features_df_1 = store.read_features(current=True)
+        feature_spec_version_1 = features_df_1.to_dicts()[0]["feature_spec_version"]
 
-            is_existing_1 = result.already_recorded
-            assert not is_existing_1
+        # Second push (identical graph)
+        result = store.record_feature_graph_snapshot()
 
-            features_df_1 = store.read_features(current=True)
-            feature_spec_version_1 = features_df_1.to_dicts()[0]["feature_spec_version"]
+        snapshot_v2 = result.snapshot_version
 
-            # Second push (identical graph)
-            result = store.record_feature_graph_snapshot()
+        is_existing_2 = result.already_recorded
+        assert is_existing_2  # Should detect existing snapshot
+        assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            snapshot_v2 = result.snapshot_version
+        features_df_2 = store.read_features(current=True)
+        feature_spec_version_2 = features_df_2.to_dicts()[0]["feature_spec_version"]
 
-            is_existing_2 = result.already_recorded
-            assert is_existing_2  # Should detect existing snapshot
-            assert snapshot_v1 == snapshot_v2  # Same snapshot version
-
-            features_df_2 = store.read_features(current=True)
-            feature_spec_version_2 = features_df_2.to_dicts()[0]["feature_spec_version"]
-
-            # feature_spec_version should be identical
-            assert feature_spec_version_1 == feature_spec_version_2
+        # feature_spec_version should be identical
+        assert feature_spec_version_1 == feature_spec_version_2
 
 
-def test_feature_spec_version_different_from_feature_version_always() -> None:
+def test_feature_spec_version_different_from_feature_version_always(graph) -> None:
     """Test that feature_spec_version is always different from feature_version.
 
     These two hashes serve different purposes and use different computation methods:
     - feature_spec_version: Direct JSON serialization of FeatureSpec (all properties)
     - feature_version: Graph-based computation including dependency chains
     """
-    from metaxy import Feature, FeatureGraph
+    from metaxy import Feature
 
-    graph = FeatureGraph()
+    # Test with root feature (no deps)
+    class RootFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["root"]),
+            deps=None,
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
+            ],
+            code_version=1,
+        ),
+    ):
+        pass
 
-    with graph.use():
-        # Test with root feature (no deps)
-        class RootFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["root"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-                code_version=1,
-            ),
-        ):
-            pass
+    # Test with downstream feature (with deps)
+    class DownstreamFeature(
+        Feature,
+        spec=FeatureSpec(
+            key=FeatureKey(["downstream"]),
+            deps=[FeatureDep(key=FeatureKey(["root"]))],
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version=1),
+            ],
+            code_version=1,
+        ),
+    ):
+        pass
 
-        # Test with downstream feature (with deps)
-        class DownstreamFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["root"]))],
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-                code_version=1,
-            ),
-        ):
-            pass
+    # Both should have different feature_spec_version vs feature_version
+    assert RootFeature.feature_spec_version() != RootFeature.feature_version()
+    assert (
+        DownstreamFeature.feature_spec_version() != DownstreamFeature.feature_version()
+    )
 
-        # Both should have different feature_spec_version vs feature_version
-        assert RootFeature.feature_spec_version() != RootFeature.feature_version()
-        assert (
-            DownstreamFeature.feature_spec_version()
-            != DownstreamFeature.feature_version()
-        )
+    # Both versions should be valid SHA256 hashes
+    for feature_cls in [RootFeature, DownstreamFeature]:
+        spec_v = feature_cls.feature_spec_version()
+        feature_v = feature_cls.feature_version()
 
-        # Both versions should be valid SHA256 hashes
-        for feature_cls in [RootFeature, DownstreamFeature]:
-            spec_v = feature_cls.feature_spec_version()
-            feature_v = feature_cls.feature_version()
-
-            assert len(spec_v) == 64
-            assert len(feature_v) == 64
-            assert all(c in "0123456789abcdef" for c in spec_v)
-            assert all(c in "0123456789abcdef" for c in feature_v)
+        assert len(spec_v) == 64
+        assert len(feature_v) == 64
+        assert all(c in "0123456789abcdef" for c in spec_v)
+        assert all(c in "0123456789abcdef" for c in feature_v)
 
 
 def test_feature_spec_version_with_multiple_complex_deps(

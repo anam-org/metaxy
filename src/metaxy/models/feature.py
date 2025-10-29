@@ -10,9 +10,8 @@ from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
-from metaxy.utils.hashing import truncate_hash
 from metaxy.utils.class_property import ClassPropertyDescriptor
-
+from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -706,7 +705,6 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             ['user_id', 'session_id']  # Custom composite key
         """
         return cls.spec.id_columns
-
 
     @ClassPropertyDescriptor
     def code_version(cls) -> str:
