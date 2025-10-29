@@ -1,7 +1,7 @@
 name: QA
 
 env:
-  UV_MANAGED_PYTHON: "1"
+  UV_PYTHON_PREFERENCE: "only-system"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
