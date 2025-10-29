@@ -329,28 +329,6 @@ class StoreCases:
         # Registry is accessed globally via FeatureGraph.get_active()
         return (DuckDBMetadataStore, {"database": db_path})
 
-    def case_duckdb_ducklake(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
-        """DuckDB store configured with DuckLake attachment."""
-
-        db_path = tmp_path / "test_ducklake.duckdb"
-        metadata_path = tmp_path / "ducklake_catalog.duckdb"
-        storage_dir = tmp_path / "ducklake_storage"
-
-        ducklake_config = {
-            "alias": "integration_lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
-
-        config = {
-            "database": db_path,
-            "ducklake": ducklake_config,
-            "extensions": ["json"],
-        }
-        return (DuckDBMetadataStore, config)
-
     def case_sqlite(
         self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:

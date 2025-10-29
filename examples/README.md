@@ -2,7 +2,7 @@
 
 How to run the examples:
 
-The [src](./src) directory provides a few examples, each being a directory, such as [recompute](./src/examples/recompute), [migration](./src/examples/migration), and [ducklake](./src/examples/ducklake).
+The [src](./src) directory provides a few examples, each being a directory, such as [recompute](./src/examples/recompute) and [migration](./src/examples/migration).
 
 Set `EXAMPLE` environment variable to the name of the example you want to run.
 

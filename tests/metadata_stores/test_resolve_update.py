@@ -100,38 +100,6 @@ def create_store(
             extensions=extensions,  # pyright: ignore[reportArgumentType]
             prefer_native=prefer_native,
         )
-    elif store_type == "duckdb_ducklake":
-        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-        db_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
-        )
-        metadata_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_catalog.duckdb"
-        )
-        storage_dir = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_storage"
-        )
-
-        ducklake_config = {
-            "alias": "integration_lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
-
-        extensions_ducklake: list[str] = ["json"]
-        if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]:
-            extensions_ducklake.append("hashfuncs")
-
-        return DuckDBMetadataStore(
-            db_path,
-            hash_algorithm=hash_algorithm,
-            extensions=extensions_ducklake,  # pyright: ignore[reportArgumentType]
-            prefer_native=prefer_native,
-            ducklake=ducklake_config,
-        )
     elif store_type == "sqlite":
         assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
         db_path = (
@@ -423,11 +391,6 @@ def test_resolve_update_no_upstream(
     results = {}
 
     for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
         store = create_store(
             store_type,
             prefer_native,
@@ -596,11 +559,6 @@ def test_resolve_update_with_upstream(
     results = {}
 
     for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,
@@ -758,11 +716,6 @@ def test_resolve_update_detects_changes(
     results = {}
 
     for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,
@@ -971,11 +924,6 @@ def test_resolve_update_feature_version_change_idempotency(
     results = {}
 
     for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,

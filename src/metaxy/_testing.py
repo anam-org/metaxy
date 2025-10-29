@@ -185,10 +185,8 @@ def assert_all_results_equal(results: dict[str, Any], snapshot=None) -> None:
         )
 
     # Snapshot ALL results if snapshot provided
-    # Sort by keys to ensure deterministic ordering across test runs
     if snapshot is not None:
-        sorted_results = dict(sorted(results.items()))
-        assert sorted_results == snapshot
+        assert results == snapshot
 
 
 class HashAlgorithmCases:

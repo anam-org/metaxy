@@ -5,8 +5,7 @@ extension loading (e.g., hashfuncs for xxHash support).
 """
 # pyright: reportImportCycles=false
 
-from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -15,7 +14,9 @@ if TYPE_CHECKING:
     import ibis
 
     from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
-    from metaxy.metadata_store.duckdb import ExtensionInput
+    from metaxy.metadata_store.duckdb import (
+        ExtensionSpec,  # pyright: ignore[reportImportCycles]
+    )
 
 
 class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
@@ -41,7 +42,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     def __init__(
         self,
         backend: "ibis.BaseBackend",
-        extensions: "Sequence[ExtensionInput] | None" = None,
+        extensions: "list[ExtensionSpec | str] | None" = None,
     ):
         """Initialize DuckDB calculator and load extensions.
 
@@ -56,7 +57,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             >>> extensions = [{"name": "spatial", "repository": "core_nightly"}]
         """
         self._backend = backend
-        self.extensions = list(extensions or [])
+        self.extensions = extensions or []
 
         # Load extensions immediately (lazy at calculator creation time)
         self._load_extensions()
@@ -80,7 +81,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             return
 
         # Type narrowing: we know this is a DuckDB backend
-        from typing import cast
+        from typing import Any, cast
 
         backend = cast(
             Any, self._backend
@@ -137,27 +138,10 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
         generators[HashAlgorithm.MD5] = md5_generator
 
         # Check if hashfuncs extension is in the list
-        extension_names = []
-        for ext in self.extensions:
-            if isinstance(ext, str):
-                extension_names.append(ext)
-            elif isinstance(ext, Mapping):
-                name = ext.get("name")
-                if not name:
-                    raise ValueError(
-                        f"Extension mapping must have a non-empty 'name' key; got {ext}"
-                    )
-                extension_names.append(str(name))
-            else:
-                # Must be ExtensionSpec
-                from metaxy.metadata_store.duckdb import ExtensionSpec
-
-                if isinstance(ext, ExtensionSpec):
-                    extension_names.append(ext.name)
-                else:
-                    raise TypeError(
-                        f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
-                    )
+        extension_names = [
+            ext if isinstance(ext, str) else ext.get("name", "")
+            for ext in self.extensions
+        ]
 
         if "hashfuncs" in extension_names:
 
