@@ -64,6 +64,12 @@ nix develop  # enters a shell with the lowest supported Python version
 nix develop '.#"python3.11"'  # enters a shell with Python 3.11
 ```
 
+Since we are often dealing with external binaries that expect to find their dependencies in normal locations like `/usr/lib`, we also append these locations to `LD_LIBRARY_PATH`. This makes the `devShell` slightly but life much better.
+
+### GitHub Actions
+
+Metaxy is continuously tested on GitHub Actions. You can find the workflow file in `.github/workflows/QA.yml`. This workflow installs system dependencies with Nix and Python packages with `uv`.  The steps use the Nix `devShell` which is **almost** pure.
+
 ## Examples
 
 See [examples](https://github.com/anam-org/metaxy/tree/main/examples).
