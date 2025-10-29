@@ -7,17 +7,17 @@
       labelloc=t;
       fontsize=14;
       fontname=helvetica;
-
+  
       "examples/parent" ;
       "examples/child" ;
-
+  
       "examples/parent" -> "examples/child";
-
+  
       "examples/parent::embeddings" ;
       "examples/parent" -> "examples/parent::embeddings" ;
       "examples/child::predictions" ;
       "examples/child" -> "examples/child::predictions" ;
   }
-
+  
   '''
 # ---
