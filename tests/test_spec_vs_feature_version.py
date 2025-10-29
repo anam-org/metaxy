@@ -24,9 +24,9 @@ def test_feature_spec_version_vs_feature_version(graph) -> None:
                 key=FeatureKey(["test", "comparison"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
-                code_version=1,
+                code_version="1",
             ),
         ):
             pass
@@ -58,18 +58,18 @@ def test_feature_spec_version_stability_with_future_metadata(graph) -> None:
         key=FeatureKey(["test", "metadata"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
-        code_version=1,
+        code_version="1",
     )
 
     spec2 = FeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
-        code_version=1,
+        code_version="1",
     )
 
     # Their feature_spec_versions should be identical
@@ -99,7 +99,7 @@ def test_feature_spec_version_with_complex_dependencies(graph) -> None:
                 key=FeatureKey(["upstream", "one"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -111,7 +111,7 @@ def test_feature_spec_version_with_complex_dependencies(graph) -> None:
                 key=FeatureKey(["upstream", "two"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -135,9 +135,9 @@ def test_feature_spec_version_with_complex_dependencies(graph) -> None:
                     ),
                 ],
                 fields=[
-                    FieldSpec(key=FieldKey(["merged"]), code_version=1),
+                    FieldSpec(key=FieldKey(["merged"]), code_version="1"),
                 ],
-                code_version=2,
+                code_version="2",
             ),
         ):
             pass
@@ -175,9 +175,9 @@ def test_feature_spec_version_with_complex_dependencies(graph) -> None:
                 ),
             ],
             fields=[
-                FieldSpec(key=FieldKey(["merged"]), code_version=1),
+                FieldSpec(key=FieldKey(["merged"]), code_version="1"),
             ],
-            code_version=2,
+            code_version="2",
         )
 
         # Should have same feature_spec_version

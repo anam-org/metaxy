@@ -97,12 +97,12 @@ class FeatureSpec(pydantic.BaseModel):
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=SpecialFieldDep.ALL,
             )
         ]
     )
-    code_version: int = 1
+    code_version: str = "1"
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
 
     @field_validator("deps", mode="before")
@@ -198,8 +198,8 @@ class FeatureSpec(pydantic.BaseModel):
             >>> spec = FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
             ...     deps=None,
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
-            ...     code_version=1
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ...     code_version="1"
             ... )
             >>> spec.feature_spec_version
             'abc123...'  # 64-character hex string

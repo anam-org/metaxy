@@ -163,8 +163,8 @@ def test_complete_ergonomic_feature_definition():
                 key="upstream",
                 deps=None,
                 fields=[
-                    FieldSpec(key="field1", code_version=1),
-                    FieldSpec(key="field2", code_version=1),
+                    FieldSpec(key="field1", code_version="1"),
+                    FieldSpec(key="field2", code_version="1"),
                 ],
             ),
         ):
@@ -178,7 +178,7 @@ def test_complete_ergonomic_feature_definition():
                 fields=[
                     FieldSpec(
                         key="result",  # String instead of FieldKey
-                        code_version=1,
+                        code_version="1",
                         deps=[
                             FieldDep(
                                 feature_key=UpstreamFeature,  # Feature class!
@@ -209,7 +209,7 @@ def test_backward_compatibility_verbose_syntax():
                 key=FeatureKey(["upstream"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["field1"]), code_version=1),
+                    FieldSpec(key=FieldKey(["field1"]), code_version="1"),
                 ],
             ),
         ):
@@ -223,7 +223,7 @@ def test_backward_compatibility_verbose_syntax():
                 fields=[
                     FieldSpec(
                         key=FieldKey(["result"]),
-                        code_version=1,
+                        code_version="1",
                         deps=[
                             FieldDep(
                                 feature_key=FeatureKey(["upstream"]),
@@ -252,7 +252,7 @@ def test_mixed_syntax():
                 key="upstream",  # Ergonomic
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["field1"]), code_version=1),  # Verbose
+                    FieldSpec(key=FieldKey(["field1"]), code_version="1"),  # Verbose
                 ],
             ),
         ):
@@ -264,7 +264,7 @@ def test_mixed_syntax():
                 key=FeatureKey(["downstream"]),  # Verbose
                 deps=[UpstreamFeature],  # Ergonomic!
                 fields=[
-                    FieldSpec(key="result", code_version=1)  # Ergonomic
+                    FieldSpec(key="result", code_version="1")  # Ergonomic
                 ],
             ),
         ):

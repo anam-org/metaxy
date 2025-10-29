@@ -274,7 +274,7 @@ class TestFeatureVersionTruncation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature1"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                     deps=None,  # Root feature has no dependencies
                 ),
             ):
@@ -291,7 +291,7 @@ class TestFeatureVersionTruncation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature2"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                     deps=None,  # Root feature has no dependencies
                 ),
             ):
@@ -314,7 +314,7 @@ class TestFeatureVersionTruncation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                     deps=None,
                 ),
             ):
@@ -347,8 +347,8 @@ class TestFeatureVersionTruncation:
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[
-                        FieldSpec(key=FieldKey(["field1"]), code_version=1),
-                        FieldSpec(key=FieldKey(["field2"]), code_version=2),
+                        FieldSpec(key=FieldKey(["field1"]), code_version="1"),
+                        FieldSpec(key=FieldKey(["field2"]), code_version="2"),
                     ],
                     deps=None,
                 ),
@@ -471,7 +471,7 @@ class TestMetadataStoreTruncation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                     deps=None,
                 ),
             ):
@@ -529,7 +529,7 @@ class TestMigrationCompatibility:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                     deps=None,
                 ),
             ):
@@ -551,7 +551,7 @@ class TestMigrationCompatibility:
                     spec=FeatureSpec(
                         key=FeatureKey(["test", "feature"]),
                         fields=[
-                            FieldSpec(key=FieldKey(["field1"]), code_version=2)
+                            FieldSpec(key=FieldKey(["field1"]), code_version="2")
                         ],  # Changed
                         deps=None,
                     ),
@@ -605,7 +605,7 @@ class TestEndToEnd:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["parent"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     deps=None,
                 ),
             ):
@@ -617,7 +617,7 @@ class TestEndToEnd:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["child"]),
-                    fields=[FieldSpec(key=FieldKey(["derived"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],
                     deps=[FeatureDep(key=FeatureKey(["parent"]))],
                 ),
             ):

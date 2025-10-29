@@ -71,7 +71,7 @@ class FieldDep(FrozenBaseModel):
 
 class FieldSpec(FrozenBaseModel):
     key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
-    code_version: int = 1
+    code_version: str = "1"
 
     # field-level dependencies can be one of the following:
     # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
