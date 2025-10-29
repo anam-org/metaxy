@@ -2,18 +2,26 @@ import hashlib
 import json
 from collections.abc import Mapping
 from functools import cached_property
+from typing import Annotated, Any
 
 import pydantic
+from pydantic import BeforeValidator
 
 from metaxy.models.field import FieldSpec, SpecialFieldDep
-from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    FeatureKey,
+    FeatureKeyAdapter,
+    FieldKey,
+)
 
 
 class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection and renaming.
 
     Attributes:
-        key: The feature key to depend on
+        key: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
+            or FeatureKey instance.
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
             - Empty tuple (): Keep only system columns (sample_uid, data_version, etc.)
@@ -22,34 +30,55 @@ class FeatureDep(pydantic.BaseModel):
             Applied after column selection.
 
     Examples:
-        >>> # Keep all columns (default behavior)
+        >>> # Keep all columns (string key format)
+        >>> FeatureDep(key="upstream")
+
+        >>> # Keep all columns (list format)
+        >>> FeatureDep(key=["upstream"])
+
+        >>> # Keep all columns (FeatureKey instance)
         >>> FeatureDep(key=FeatureKey(["upstream"]))
 
         >>> # Keep only specific columns
         >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
+        ...     key="upstream/feature",
         ...     columns=("col1", "col2")
         ... )
 
         >>> # Rename columns to avoid conflicts
         >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
+        ...     key="upstream/feature",
         ...     rename={"old_name": "new_name"}
         ... )
 
         >>> # Select and rename
         >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
+        ...     key="upstream/feature",
         ...     columns=("col1", "col2"),
         ...     rename={"col1": "upstream_col1"}
         ... )
     """
 
-    key: FeatureKey
+    key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     columns: tuple[str, ...] | None = (
         None  # None = all columns, () = only system columns
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
+
+    def __init__(
+        self,
+        *,
+        key: CoercibleToFeatureKey,
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            key=FeatureKeyAdapter.validate_python(key),
+            columns=columns,
+            rename=rename,
+            **kwargs,
+        )
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
@@ -57,7 +86,7 @@ class FeatureDep(pydantic.BaseModel):
 
 
 class FeatureSpec(pydantic.BaseModel):
-    key: FeatureKey
+    key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None
     fields: list[FieldSpec] = pydantic.Field(
         default_factory=lambda: [
@@ -70,6 +99,9 @@ class FeatureSpec(pydantic.BaseModel):
     )
     code_version: int = 1
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
+
+    def __init__(self, key: CoercibleToFeatureKey, **kwargs):
+        super().__init__(key=FeatureKeyAdapter.validate_python(key), **kwargs)
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
