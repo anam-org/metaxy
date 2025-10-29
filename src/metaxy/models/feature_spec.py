@@ -108,10 +108,18 @@ class FeatureSpec(pydantic.BaseModel):
     @field_validator("deps", mode="before")
     @classmethod
     def _coerce_deps(cls, value: Any) -> list[FeatureDep] | None:
-        """Convert Feature classes in deps list to FeatureDep objects.
+        """Convert Feature classes and FeatureSpec objects in deps list to FeatureDep objects.
 
-        This allows passing Feature classes directly:
+        Accepts:
+        - FeatureDep objects (returned as-is)
+        - Feature classes: Extracts key from Feature.spec.key
+        - FeatureSpec objects: Extracts key from spec.key
+        - Dicts (from deserialization): Unpacks to FeatureDep
+        - str, list[str], FeatureKey: Passed to FeatureDep(key=...)
+
+        This allows ergonomic syntax:
         - deps=[UpstreamFeature] instead of deps=[FeatureDep(key=UpstreamFeature.spec.key)]
+        - deps=["upstream"] instead of deps=[FeatureDep(key=FeatureKey(["upstream"]))]
         """
         if value is None:
             return None
@@ -127,10 +135,13 @@ class FeatureSpec(pydantic.BaseModel):
             # Feature class - extract spec.key
             elif hasattr(item, "spec") and hasattr(item.spec, "key"):
                 coerced.append(FeatureDep(key=item.spec.key))
-            # FeatureSpec object - extract key
+            # FeatureSpec object - extract key (check for FeatureKey to distinguish from dicts)
             elif hasattr(item, "key") and isinstance(getattr(item, "key"), FeatureKey):
                 coerced.append(FeatureDep(key=item.key))
-            # Other types (str, list, FeatureKey) - let FeatureDep handle it
+            # Dict from deserialization - unpack it (FeatureDep's own validator will handle key coercion)
+            elif isinstance(item, dict):
+                coerced.append(FeatureDep(**item))
+            # Other types (str, list, FeatureKey) - let FeatureDep's validator handle it
             else:
                 coerced.append(FeatureDep(key=item))
 
