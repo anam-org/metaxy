@@ -33,14 +33,6 @@ class ExtensionSpec(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "ExtensionSpec":
-        """Coerce arbitrary mappings into ExtensionSpec instances."""
-        try:
-            return cls.model_validate(value)
-        except ValidationError as exc:  # pragma: no cover - bubbles to caller
-            raise ValueError(f"Invalid DuckDB extension spec: {value!r}") from exc
-
 
 ExtensionInput = str | ExtensionSpec | Mapping[str, Any]
 NormalisedExtension = str | ExtensionSpec
@@ -57,7 +49,10 @@ def _normalise_extensions(
         elif isinstance(ext, ExtensionSpec):
             normalised.append(ext)
         elif isinstance(ext, Mapping):
-            normalised.append(ExtensionSpec.from_mapping(ext))
+            try:
+                normalised.append(ExtensionSpec.model_validate(ext))
+            except ValidationError as exc:
+                raise ValueError(f"Invalid DuckDB extension spec: {ext!r}") from exc
         else:
             raise TypeError(
                 "DuckDB extensions must be strings or mapping-like objects with a 'name'."
@@ -172,13 +167,13 @@ class DuckDBMetadataStore(IbisMetadataStore):
         for ext in self.extensions:
             if isinstance(ext, str):
                 extension_names.append(ext)
-            elif isinstance(ext, Mapping):
-                extension_names.append(str(ext.get("name", "")))
             elif isinstance(ext, ExtensionSpec):
                 extension_names.append(ext.name)
             else:
+                # After _normalise_extensions, this should not happen
+                # But keep defensive check for type safety
                 raise TypeError(
-                    f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
+                    f"Extension must be str or ExtensionSpec after normalization; got {type(ext)}"
                 )
         if "hashfuncs" not in extension_names:
             self.extensions.append("hashfuncs")

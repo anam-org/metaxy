@@ -12,7 +12,7 @@ override_data_path = true
 
 [stores.dev.config.ducklake.metadata_backend]
 type = "sqlite"
-database = "/tmp/ducklake_meta.db"
+path = "/tmp/ducklake_meta.db"
 
 [stores.dev.config.ducklake.storage_backend]
 type = "local"

@@ -423,6 +423,11 @@ def test_resolve_update_no_upstream(
     results = {}
 
     for store_type in get_available_store_types():
+        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
+        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        if store_type == "duckdb_ducklake":
+            continue
+
         store = create_store(
             store_type,
             prefer_native,
@@ -591,6 +596,11 @@ def test_resolve_update_with_upstream(
     results = {}
 
     for store_type in get_available_store_types():
+        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
+        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        if store_type == "duckdb_ducklake":
+            continue
+
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,
@@ -748,6 +758,11 @@ def test_resolve_update_detects_changes(
     results = {}
 
     for store_type in get_available_store_types():
+        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
+        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        if store_type == "duckdb_ducklake":
+            continue
+
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,
@@ -956,6 +971,11 @@ def test_resolve_update_feature_version_change_idempotency(
     results = {}
 
     for store_type in get_available_store_types():
+        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
+        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        if store_type == "duckdb_ducklake":
+            continue
+
         for prefer_native in [True, False]:
             store = create_store(
                 store_type,
