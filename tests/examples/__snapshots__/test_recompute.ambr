@@ -15,7 +15,7 @@
     Fields:
       predictions (code_version 1, version
   1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4)
-  
+
   '''
 # ---
 # name: test_list_features[2]
@@ -34,6 +34,6 @@
     Fields:
       predictions (code_version 1, version
   bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997)
-  
+
   '''
 # ---
