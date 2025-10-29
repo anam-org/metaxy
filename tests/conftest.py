@@ -79,9 +79,9 @@ def metaxy_project(tmp_path):
     Example:
         def test_example(metaxy_project):
             def features():
-                from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+                from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-                class MyFeature(Feature, spec=FeatureSpec(
+                class MyFeature(Feature, spec=TestingFeatureSpec(
                     key=FeatureKey(["my_feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]

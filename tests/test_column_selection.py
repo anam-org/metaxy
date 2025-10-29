@@ -9,7 +9,7 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    FeatureSpec,
+    TestingFeatureSpec,
 )
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
@@ -25,7 +25,7 @@ class TestColumnSelection:
             # Create upstream feature with custom columns
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -35,7 +35,7 @@ class TestColumnSelection:
             # Create downstream feature with default column handling
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
                 ),
@@ -81,7 +81,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -91,7 +91,7 @@ class TestColumnSelection:
             # Select only custom_col1
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -140,7 +140,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -150,7 +150,7 @@ class TestColumnSelection:
             # Empty tuple - keep only system columns
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -203,7 +203,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -213,7 +213,7 @@ class TestColumnSelection:
             # Rename columns
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -267,7 +267,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -277,7 +277,7 @@ class TestColumnSelection:
             # Select and rename
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -326,7 +326,7 @@ class TestColumnSelection:
 
             class Upstream1(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
                     deps=None,
                 ),
@@ -335,7 +335,7 @@ class TestColumnSelection:
 
             class Upstream2(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
                     deps=None,
                 ),
@@ -345,7 +345,7 @@ class TestColumnSelection:
             # Both upstreams have 'conflict_col' without renaming
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(key=FeatureKey(["test", "upstream1"])),
@@ -401,7 +401,7 @@ class TestColumnSelection:
 
             class Upstream1(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
                     deps=None,
                 ),
@@ -410,7 +410,7 @@ class TestColumnSelection:
 
             class Upstream2(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
                     deps=None,
                 ),
@@ -420,7 +420,7 @@ class TestColumnSelection:
             # Rename conflicting columns
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -487,7 +487,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -497,7 +497,7 @@ class TestColumnSelection:
             # Select only a custom column, but system columns should be preserved
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -553,7 +553,7 @@ class TestColumnSelection:
             # Create upstream feature first
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -568,7 +568,7 @@ class TestColumnSelection:
 
                 class BadFeature1(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad1"]),
                         deps=[
                             FeatureDep(
@@ -588,7 +588,7 @@ class TestColumnSelection:
 
                 class BadFeature2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad2"]),
                         deps=[
                             FeatureDep(
@@ -608,7 +608,7 @@ class TestColumnSelection:
 
                 class BadFeature3(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad3"]),
                         deps=[
                             FeatureDep(
@@ -630,7 +630,7 @@ class TestColumnSelection:
             # Create upstream with custom ID columns (not sample_uid)
             class UpstreamWithCustomIDs(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                     id_columns=[
@@ -644,7 +644,7 @@ class TestColumnSelection:
             # Renaming to sample_uid should be allowed now since it's not an ID column
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -663,8 +663,9 @@ class TestColumnSelection:
                 pass
 
             # Verify the feature was created successfully
-            assert DownstreamFeature.spec.deps is not None
-            assert DownstreamFeature.spec.deps[0].rename == {"some_col": "sample_uid"}
+            deps = DownstreamFeature.spec().deps
+            assert deps is not None
+            assert deps[0].rename == {"some_col": "sample_uid"}
 
     def test_rename_column_to_different_name_than_id_columns(self):
         """Test that renaming columns to names other than ID columns is allowed."""
@@ -674,7 +675,7 @@ class TestColumnSelection:
             # Create upstream with custom ID columns
             class UpstreamWithCustomIDs(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                     id_columns=["user_id", "session_id"],
@@ -685,7 +686,7 @@ class TestColumnSelection:
             # Renaming to a name that is NOT an ID column or system column is allowed
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -758,7 +759,7 @@ class TestColumnSelection:
 
             class Upstream1(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
                     deps=None,
                 ),
@@ -767,7 +768,7 @@ class TestColumnSelection:
 
             class Upstream2(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
                     deps=None,
                 ),
@@ -776,7 +777,7 @@ class TestColumnSelection:
 
             class Upstream3(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream3"]),
                     deps=None,
                 ),
@@ -786,7 +787,7 @@ class TestColumnSelection:
             # Complex downstream with different operations for each upstream
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         # Keep all columns from upstream1 (default)
@@ -899,7 +900,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -909,7 +910,7 @@ class TestColumnSelection:
             # Override load_input to add custom filtering
             class CustomFilterFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "custom_filter"]),
                     deps=[
                         FeatureDep(
@@ -998,7 +999,7 @@ class TestColumnSelection:
             # Create features with columns and rename specified
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -1007,7 +1008,7 @@ class TestColumnSelection:
 
             class DownstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
@@ -1070,7 +1071,9 @@ class TestColumnSelection:
                 assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
                 # Verify Pydantic can deserialize it back
-                reconstructed_spec = FeatureSpec.model_validate(downstream_spec_dict)
+                reconstructed_spec = TestingFeatureSpec.model_validate(
+                    downstream_spec_dict
+                )
                 assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
                 reconstructed_dep = reconstructed_spec.deps[0]
                 assert reconstructed_dep.columns == ("col1", "col2")
@@ -1084,7 +1087,7 @@ class TestColumnSelection:
             # Create upstream feature first
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                 ),
@@ -1098,7 +1101,7 @@ class TestColumnSelection:
 
                 class BadFeature(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad"]),
                         deps=[
                             FeatureDep(
@@ -1121,7 +1124,7 @@ class TestColumnSelection:
             # Create two upstream features
             class Upstream1(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
                     deps=None,
                 ),
@@ -1130,7 +1133,7 @@ class TestColumnSelection:
 
             class Upstream2(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
                     deps=None,
                 ),
@@ -1143,7 +1146,7 @@ class TestColumnSelection:
 
                 class BadDownstreamFeature(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad_downstream"]),
                         deps=[
                             FeatureDep(
@@ -1169,7 +1172,7 @@ class TestColumnSelection:
             # Create two upstream features
             class Upstream1(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
                     deps=None,
                 ),
@@ -1178,7 +1181,7 @@ class TestColumnSelection:
 
             class Upstream2(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
                     deps=None,
                 ),
@@ -1190,7 +1193,7 @@ class TestColumnSelection:
 
                 class BadDownstreamFeature(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad_downstream"]),
                         deps=[
                             FeatureDep(
@@ -1217,7 +1220,7 @@ class TestColumnSelection:
             # Create upstream with custom ID columns
             class UpstreamWithCustomIDs(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                     id_columns=["user_id", "session_id"],
@@ -1232,7 +1235,7 @@ class TestColumnSelection:
 
                 class BadFeature1(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad1"]),
                         deps=[
                             FeatureDep(
@@ -1254,7 +1257,7 @@ class TestColumnSelection:
 
                 class BadFeature2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "bad2"]),
                         deps=[
                             FeatureDep(
@@ -1277,7 +1280,7 @@ class TestColumnSelection:
 
             class UpstreamFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
                     deps=None,
                     # Default ID columns: ["sample_uid"]
@@ -1293,7 +1296,7 @@ class TestColumnSelection:
 
                 class DownstreamFeature1(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "downstream1"]),
                         deps=[
                             FeatureDep(
@@ -1314,7 +1317,7 @@ class TestColumnSelection:
 
                 class DownstreamFeature2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "downstream2"]),
                         deps=[
                             FeatureDep(

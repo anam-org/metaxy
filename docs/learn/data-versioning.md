@@ -94,7 +94,7 @@ class Crop(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["example", "crop"]),
-        deps=[FeatureDep(key=Video.spec.key)],
+        deps=[FeatureDep(key=Video.spec().key)],
         fields=[
             FieldSpec(
                 key=FieldKey(["audio"]),
@@ -120,7 +120,7 @@ class FaceDetection(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["example", "face_detection"]),
-        deps=[FeatureDep(key=Crop.spec.key)],
+        deps=[FeatureDep(key=Crop.spec().key)],
         fields=[
             FieldSpec(
                 key=FieldKey(["faces"]),
@@ -139,7 +139,7 @@ class SpeechToText(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["example", "stt"]),
-        deps=[FeatureDep(key=Video.spec.key)],
+        deps=[FeatureDep(key=Video.spec().key)],
         fields=[
             FieldSpec(
                 key=FieldKey(["transcription"]),

@@ -2,7 +2,14 @@
 
 # Import from conftest since it's in the same tests directory
 
-from metaxy import FeatureDep, FeatureKey, FeatureSpec, FieldDep, FieldKey, FieldSpec
+from metaxy import (
+    FeatureDep,
+    FeatureKey,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
+    TestingFeatureSpec,
+)
 from metaxy._testing import TempFeatureModule
 from metaxy.models.feature import FeatureGraph
 
@@ -13,13 +20,13 @@ def test_snapshot_version_stability_with_module():
     # Create temp module with features
     temp_module = TempFeatureModule("test_snapshot_stability")
 
-    parent_spec = FeatureSpec(
+    parent_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "parent"]),
         deps=None,
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
-    child_spec = FeatureSpec(
+    child_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "child"]),
         deps=[FeatureDep(key=FeatureKey(["test", "parent"]))],
         fields=[

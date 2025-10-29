@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import ibis.expr.types
     import ibis.expr.types.relations
 
-    from metaxy.models.feature_spec import FeatureSpec
+    from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
     from metaxy.models.plan import FeaturePlan
 
 
@@ -93,7 +93,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
     def calculate_data_versions(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "FeatureSpec",
+        feature_spec: "BaseFeatureSpecWithIDColumns",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

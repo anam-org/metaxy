@@ -8,19 +8,19 @@ from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculato
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
 @pytest.fixture
-def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
+def features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
     """Create test features for component testing."""
 
     class UpstreamVideo(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
             fields=[
@@ -32,8 +32,8 @@ def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
         pass
 
     class UpstreamAudio(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["audio"]),
             deps=None,
             fields=[
@@ -44,8 +44,8 @@ def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
         pass
 
     class ProcessedVideo(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["processed"]),
             deps=[FeatureDep(key=FeatureKey(["video"]))],
             fields=[
@@ -56,8 +56,8 @@ def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
         pass
 
     class MultiUpstreamFeature(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=[
                 FeatureDep(key=FeatureKey(["video"])),
@@ -79,7 +79,7 @@ def features(graph: FeatureGraph) -> dict[str, type[Feature]]:
     }
 
 
-def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
+def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: FeatureGraph):
     """Test NarwhalsJoiner joins upstream features correctly."""
     joiner = NarwhalsJoiner()
 
@@ -101,11 +101,11 @@ def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
 
     # Join upstream
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     joined, mapping = joiner.join_upstream(
         upstream_refs=upstream_refs,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
     )
 
@@ -121,7 +121,7 @@ def test_polars_joiner(features: dict[str, type[Feature]], graph: FeatureGraph):
 
 
 def test_polars_hash_calculator(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test PolarsDataVersionCalculator computes hashes correctly."""
     calculator = PolarsDataVersionCalculator()
@@ -147,11 +147,11 @@ def test_polars_hash_calculator(
 
     # Calculate data versions
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
     )
@@ -170,7 +170,7 @@ def test_polars_hash_calculator(
 
 
 def test_polars_hash_calculator_algorithms(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test different hash algorithms produce different results."""
     joined_upstream = nw.from_native(
@@ -186,13 +186,13 @@ def test_polars_hash_calculator_algorithms(
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     # Calculate with xxHash64
     calc_xxhash = PolarsDataVersionCalculator()
     result_xxhash = calc_xxhash.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -202,7 +202,7 @@ def test_polars_hash_calculator_algorithms(
     calc_wyhash = PolarsDataVersionCalculator()
     result_wyhash = calc_wyhash.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
         hash_algorithm=HashAlgorithm.WYHASH,
@@ -299,7 +299,7 @@ def test_polars_diff_resolver_with_changes() -> None:
 
 
 def test_full_pipeline_integration(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test all three components working together."""
     # Step 1: Join upstream
@@ -319,11 +319,11 @@ def test_full_pipeline_integration(
     )
 
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     joined, mapping = joiner.join_upstream(
         upstream_refs={"video": video_metadata},
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
     )
 
@@ -332,7 +332,7 @@ def test_full_pipeline_integration(
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=mapping,
     )
@@ -378,7 +378,7 @@ def test_full_pipeline_integration(
 
 
 def test_polars_joiner_multiple_upstream(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test joining multiple upstream features."""
     joiner = NarwhalsJoiner()
@@ -412,11 +412,11 @@ def test_polars_joiner_multiple_upstream(
     upstream_refs = {"video": video_metadata, "audio": audio_metadata}
 
     feature = features["MultiUpstreamFeature"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     joined, mapping = joiner.join_upstream(
         upstream_refs=upstream_refs,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
     )
 
@@ -463,8 +463,8 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
     # Create a simple feature with both deps
 
     class TestFeature(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test"]),
             deps=[
                 FeatureDep(key=FeatureKey(["video"])),
@@ -477,22 +477,22 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
 
     # Need to register upstream features for the plan to work
     class Video(
-        Feature,
-        spec=FeatureSpec(key=FeatureKey(["video"]), deps=None),
+        TestingFeature,
+        spec=TestingFeatureSpec(key=FeatureKey(["video"]), deps=None),
     ):
         pass
 
     class Audio(
-        Feature,
-        spec=FeatureSpec(key=FeatureKey(["audio"]), deps=None),
+        TestingFeature,
+        spec=TestingFeatureSpec(key=FeatureKey(["audio"]), deps=None),
     ):
         pass
 
-    plan = graph.get_feature_plan(TestFeature.spec.key)
+    plan = graph.get_feature_plan(TestFeature.spec().key)
 
     joined, _ = joiner.join_upstream(
         upstream_refs={"video": video_metadata, "audio": audio_metadata},
-        feature_spec=TestFeature.spec,
+        feature_spec=TestFeature.spec(),
         feature_plan=plan,
     )
 
@@ -507,7 +507,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
 
 
 def test_polars_calculator_multiple_fields(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test calculator with multiple fields."""
     calculator = PolarsDataVersionCalculator()
@@ -534,11 +534,11 @@ def test_polars_calculator_multiple_fields(
     }
 
     feature = features["MultiUpstreamFeature"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
     )
@@ -558,7 +558,7 @@ def test_polars_calculator_multiple_fields(
 
 
 def test_polars_calculator_unsupported_algorithm(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test error when using unsupported hash algorithm."""
     calculator = PolarsDataVersionCalculator()
@@ -570,7 +570,7 @@ def test_polars_calculator_unsupported_algorithm(
     )
 
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     # Try to use an algorithm by creating a fake enum value
     class FakeAlgorithm:
@@ -579,7 +579,7 @@ def test_polars_calculator_unsupported_algorithm(
     with pytest.raises(ValueError, match="not supported"):
         calculator.calculate_data_versions(
             joined_upstream=joined_upstream,
-            feature_spec=feature.spec,
+            feature_spec=feature.spec(),
             feature_plan=plan,
             upstream_column_mapping={"video": "__upstream_video__data_version"},
             hash_algorithm=FakeAlgorithm(),  # pyright: ignore[reportArgumentType]
@@ -633,7 +633,7 @@ def test_diff_resolver_all_unchanged() -> None:
 
 
 def test_joiner_deterministic_order(
-    features: dict[str, type[Feature]], graph: FeatureGraph
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test that join order doesn't affect result."""
     joiner = NarwhalsJoiner()
@@ -654,18 +654,18 @@ def test_joiner_deterministic_order(
     )
 
     feature = features["MultiUpstreamFeature"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     # Join with different key orders
     joined1, mapping1 = joiner.join_upstream(
         upstream_refs={"video": video_metadata, "audio": audio_metadata},
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
     )
 
     joined2, mapping2 = joiner.join_upstream(
         upstream_refs={"audio": audio_metadata, "video": video_metadata},
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
     )
 
@@ -687,8 +687,8 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
     """Test Feature.load_input can be overridden."""
 
     class CustomJoinFeature(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["custom"]),
             deps=[FeatureDep(key=FeatureKey(["video"]))],
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -703,17 +703,18 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
             upstream_columns = {}
             upstream_renames = {}
 
-            if cls.spec.deps:
-                for dep in cls.spec.deps:
+            deps = cls.spec().deps
+            if deps:
+                for dep in deps:
                     if isinstance(dep, FeatureDep):
                         dep_key_str = dep.key.to_string()
                         upstream_columns[dep_key_str] = dep.columns
                         upstream_renames[dep_key_str] = dep.rename
 
-            plan = cls.graph.get_feature_plan(cls.spec.key)
+            plan = cls.graph.get_feature_plan(cls.spec().key)
             joined, mapping = joiner.join_upstream(
                 upstream_refs=upstream_refs,
-                feature_spec=cls.spec,
+                feature_spec=cls.spec(),
                 feature_plan=plan,
                 upstream_columns=upstream_columns,
                 upstream_renames=upstream_renames,
@@ -723,8 +724,8 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
 
     # Register upstream
     class Video(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
@@ -751,8 +752,8 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
     """Test Feature.resolve_data_version_diff can be overridden."""
 
     class CustomDiffFeature(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["custom_diff"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -824,7 +825,7 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
 
 
 def test_hash_output_snapshots(
-    snapshot, features: dict[str, type[Feature]], graph: FeatureGraph
+    snapshot, features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Snapshot test to detect hash algorithm changes."""
     calculator = PolarsDataVersionCalculator()
@@ -844,11 +845,11 @@ def test_hash_output_snapshots(
 
     upstream_mapping = {"video": "__upstream_video__data_version"}
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -862,7 +863,7 @@ def test_hash_output_snapshots(
 
 
 def test_multi_field_hash_snapshots(
-    snapshot, features: dict[str, type[Feature]], graph: FeatureGraph
+    snapshot, features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Snapshot test for multi-field hash outputs."""
     calculator = PolarsDataVersionCalculator()
@@ -883,11 +884,11 @@ def test_multi_field_hash_snapshots(
     }
 
     feature = features["MultiUpstreamFeature"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
     )
@@ -919,7 +920,7 @@ def test_multi_field_hash_snapshots(
 )
 def test_single_upstream_single_field_snapshots(
     snapshot,
-    features: dict[str, type[Feature]],
+    features: dict[str, type[TestingFeature]],
     graph: FeatureGraph,
     hash_algorithm,
 ):
@@ -940,11 +941,11 @@ def test_single_upstream_single_field_snapshots(
     )
 
     feature = features["ProcessedVideo"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping={"video": "__upstream_video__data_version"},
         hash_algorithm=hash_algorithm,
@@ -966,7 +967,7 @@ def test_single_upstream_single_field_snapshots(
 )
 def test_multi_upstream_multi_field_snapshots(
     snapshot,
-    features: dict[str, type[Feature]],
+    features: dict[str, type[TestingFeature]],
     graph: FeatureGraph,
     hash_algorithm,
 ):
@@ -995,11 +996,11 @@ def test_multi_upstream_multi_field_snapshots(
     }
 
     feature = features["MultiUpstreamFeature"]
-    plan = graph.get_feature_plan(feature.spec.key)
+    plan = graph.get_feature_plan(feature.spec().key)
 
     with_versions = calculator.calculate_data_versions(
         joined_upstream=joined_upstream,
-        feature_spec=feature.spec,
+        feature_spec=feature.spec(),
         feature_plan=plan,
         upstream_column_mapping=upstream_mapping,
         hash_algorithm=hash_algorithm,
@@ -1040,8 +1041,8 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
     for code_version in [1, 2, 5, 10]:
 
         class TestFeature(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey([f"test_v{code_version}"]),
                 deps=[FeatureDep(key=FeatureKey(["video"]))],
                 fields=[
@@ -1055,8 +1056,8 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
         if code_version == 1:
 
             class Video(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["video"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
@@ -1064,11 +1065,11 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
             ):
                 pass
 
-        plan = graph.get_feature_plan(TestFeature.spec.key)
+        plan = graph.get_feature_plan(TestFeature.spec().key)
 
         with_versions = calculator.calculate_data_versions(
             joined_upstream=joined_upstream,
-            feature_spec=TestFeature.spec,
+            feature_spec=TestFeature.spec(),
             feature_plan=plan,
             upstream_column_mapping=upstream_mapping,
         )
@@ -1091,8 +1092,8 @@ def test_upstream_data_changes_snapshots(snapshot):
     with FeatureGraph().use() as graph:
 
         class Video(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["video"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
@@ -1101,8 +1102,8 @@ def test_upstream_data_changes_snapshots(snapshot):
             pass
 
         class Processed(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["processed"]),
                 deps=[FeatureDep(key=FeatureKey(["video"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -1110,7 +1111,7 @@ def test_upstream_data_changes_snapshots(snapshot):
         ):
             pass
 
-        plan = graph.get_feature_plan(Processed.spec.key)
+        plan = graph.get_feature_plan(Processed.spec().key)
 
         # Different upstream data scenarios
         scenarios = {
@@ -1133,7 +1134,7 @@ def test_upstream_data_changes_snapshots(snapshot):
 
             with_versions = calculator.calculate_data_versions(
                 joined_upstream=joined_upstream,
-                feature_spec=Processed.spec,
+                feature_spec=Processed.spec(),
                 feature_plan=plan,
                 upstream_column_mapping={"video": "__upstream_video__data_version"},
             )

@@ -6,10 +6,10 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 
 
@@ -18,7 +18,7 @@ def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
 
     class TestFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             deps=None,
             fields=[
@@ -56,7 +56,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
 
         class FeatureV1(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["versioned", "feature", "test_v1"]),
                 deps=None,
                 fields=[
@@ -70,7 +70,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
 
         class FeatureV2(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["versioned", "feature", "test_v2"]),
                 deps=None,
                 fields=[
@@ -95,7 +95,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
 
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_deps", "upstream"]),
             deps=None,
             fields=[
@@ -107,7 +107,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
 
     class DownstreamNoDeps(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "no_deps"]),
             deps=None,  # No dependencies
             fields=[
@@ -119,7 +119,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
 
     class DownstreamWithDeps(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "with_deps"]),
             deps=[
                 FeatureDep(key=FeatureKey(["test_deps", "upstream"]))
@@ -146,7 +146,7 @@ def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
 
     class MultiField(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=None,
             fields=[
@@ -172,7 +172,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
 
     class Upstream(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_field_deps", "upstream"]),
             deps=None,
             fields=[
@@ -185,7 +185,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
 
     class DownstreamNoDeps(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_field_deps", "downstream", "no_deps"]),
             deps=[FeatureDep(key=FeatureKey(["test_field_deps", "upstream"]))],
             fields=[
@@ -201,7 +201,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
 
     class DownstreamWithFieldDeps(
         Feature,
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(["test_field_deps", "downstream", "with_deps"]),
             deps=[FeatureDep(key=FeatureKey(["test_field_deps", "upstream"]))],
             fields=[
