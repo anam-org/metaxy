@@ -8,6 +8,14 @@ typecheck:
 sync:
     uv sync --all-extras --all-groups
 
+snapshot-update path="":
+    #!/usr/bin/env bash
+    if [ -z "{{path}}" ]; then
+        uv run pytest --snapshot-update
+    else
+        uv run pytest {{path}} --snapshot-update
+    fi
+
 # Resolve GitHub issue with Claude in an independent git worktree
 claude-resolve number prompt="":
     #!/usr/bin/env bash
