@@ -142,7 +142,12 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             if isinstance(ext, str):
                 extension_names.append(ext)
             elif isinstance(ext, Mapping):
-                extension_names.append(str(ext.get("name", "")))
+                name = ext.get("name")
+                if not name:
+                    raise ValueError(
+                        f"Extension mapping must have a non-empty 'name' key; got {ext}"
+                    )
+                extension_names.append(str(name))
             else:
                 # Must be ExtensionSpec
                 from metaxy.metadata_store.duckdb import ExtensionSpec
