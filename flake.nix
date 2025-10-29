@@ -16,6 +16,7 @@
       commonPackages = with pkgs; [
         stdenv.cc
         uv
+        duckdb
         git
         clickhouse
         graphviz
@@ -25,21 +26,22 @@
 
       # Function to create a dev shell for a specific Python version
       mkPythonShell = python: pkgs.mkShell {
-        buildInputs = [
-          pkgs.stdenv.cc.cc.lib
-          pkgs.gcc-unwrapped.lib
-          pkgs.glibc
+        buildInputs = with pkgs; [
+          stdenv.cc.cc.lib
+          gcc-unwrapped.lib
+          glibc
         ];
         packages = commonPackages ++ [python];
-        LD_LIBRARY_PATH = lib.makeLibraryPath [
-          pkgs.stdenv.cc.cc.lib
-          pkgs.gcc-unwrapped.lib
-          pkgs.glibc
-          pkgs.glib
-          pkgs.clickhouse
-          pkgs.graphviz
+        LD_LIBRARY_PATH = lib.makeLibraryPath (with pkgs; [
+          stdenv.cc.cc.lib
+          gcc-unwrapped.lib
+          glibc
+          glib
+          duckdb.lib
+          clickhouse
+          graphviz
           python
-        ];
+        ]);
       };
     in {
       # Default shell with Python 3.10

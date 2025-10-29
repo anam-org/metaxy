@@ -91,20 +91,23 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             if isinstance(ext_spec, str):
                 # Simple string form - install from community repo
                 ext_name = ext_spec
-                # Install and load extension
-                backend.raw_sql(f"INSTALL {ext_name}")
+                # Install and load extension from community
+                backend.raw_sql(f"INSTALL {ext_name} FROM community")
                 backend.raw_sql(f"LOAD {ext_name}")
             else:
                 # Dict form with optional repository
                 ext_name = ext_spec.get("name", "")
                 ext_repo = ext_spec.get("repository", "community")
 
-                if ext_repo != "community":
-                    # Set custom repository
+                if ext_repo == "community":
+                    # Install from community repository
+                    backend.raw_sql(f"INSTALL {ext_name} FROM community")
+                else:
+                    # Set custom repository and install
                     backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
+                    backend.raw_sql(f"INSTALL {ext_name}")
 
-                # Install and load extension
-                backend.raw_sql(f"INSTALL {ext_name}")
+                # Load extension
                 backend.raw_sql(f"LOAD {ext_name}")
 
     def _generate_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
