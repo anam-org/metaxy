@@ -14,7 +14,7 @@ from metaxy import (
 )
 
 
-def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None:
+def test_feature_spec_version_deterministic(graph, snapshot: SnapshotAssertion) -> None:
     """Test that feature_spec_version is deterministic."""
     spec = FeatureSpec(
         key=FeatureKey(["test", "feature"]),
@@ -42,7 +42,7 @@ def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None
 
 
 def test_feature_spec_version_includes_all_properties(
-    snapshot: SnapshotAssertion,
+    graph, snapshot: SnapshotAssertion
 ) -> None:
     """Test that feature_spec_version includes all specification properties."""
     # Create a complex spec with all properties
@@ -77,7 +77,7 @@ def test_feature_spec_version_includes_all_properties(
     assert version == snapshot
 
 
-def test_feature_spec_version_changes_with_any_property() -> None:
+def test_feature_spec_version_changes_with_any_property(graph) -> None:
     """Test that feature_spec_version changes when any property changes."""
     base_spec = FeatureSpec(
         key=FeatureKey(["base", "feature"]),
@@ -146,7 +146,7 @@ def test_feature_spec_version_changes_with_any_property() -> None:
     assert spec_field_added.feature_spec_version != base_version
 
 
-def test_feature_spec_version_consistent_ordering() -> None:
+def test_feature_spec_version_consistent_ordering(graph) -> None:
     """Test that feature_spec_version is consistent regardless of field order."""
     # Create specs with fields in different order
     spec1 = FeatureSpec(
@@ -186,7 +186,7 @@ def test_feature_spec_version_consistent_ordering() -> None:
     assert spec1.feature_spec_version == spec3.feature_spec_version
 
 
-def test_feature_spec_version_manual_verification() -> None:
+def test_feature_spec_version_manual_verification(graph) -> None:
     """Manually verify the feature_spec_version computation."""
     spec = FeatureSpec(
         key=FeatureKey(["manual", "test"]),
@@ -210,7 +210,7 @@ def test_feature_spec_version_manual_verification() -> None:
 
 
 def test_feature_spec_version_with_column_selection_and_rename(
-    snapshot: SnapshotAssertion,
+    graph, snapshot: SnapshotAssertion
 ) -> None:
     """Test feature_spec_version with column selection and renaming in deps."""
     spec = FeatureSpec(
@@ -514,7 +514,7 @@ def test_feature_spec_version_different_from_feature_version_always(graph) -> No
 
 
 def test_feature_spec_version_with_multiple_complex_deps(
-    snapshot: SnapshotAssertion,
+    graph, snapshot: SnapshotAssertion
 ) -> None:
     """Test feature_spec_version with multiple complex dependencies."""
     spec = FeatureSpec(

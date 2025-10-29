@@ -47,7 +47,7 @@ def test_feature_spec_version_vs_feature_version(graph) -> None:
         assert feature_spec_version != feature_version
 
 
-def test_feature_spec_version_stability_with_future_metadata() -> None:
+def test_feature_spec_version_stability_with_future_metadata(graph) -> None:
     """Test that feature_spec_version will capture future metadata/tags when added.
 
     This test demonstrates that feature_spec_version automatically includes

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from metaxy import Feature, FeatureDep, FeatureKey, FeatureSpec, FieldKey, FieldSpec
@@ -146,7 +146,10 @@ def test_code_version_deterministic_per_class(graph) -> None:
         max_size=6,
     )
 )
-def test_code_version_consistent_across_field_order(code_versions: list[int]) -> None:
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+def test_code_version_consistent_across_field_order(
+    graph, code_versions: list[int]
+) -> None:
     field_items = [
         (FieldKey([f"field_{idx}"]), code_version)
         for idx, code_version in enumerate(code_versions)
