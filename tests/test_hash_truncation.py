@@ -537,7 +537,10 @@ class TestMigrationCompatibility:
 
             # Record snapshot
             with InMemoryMetadataStore() as store:
-                snapshot_v1, is_new = store.record_feature_graph_snapshot()
+                result = store.record_feature_graph_snapshot()
+
+                snapshot_v1 = result.snapshot_version
+
                 assert len(snapshot_v1) == 12  # Truncated
 
                 # Modify feature to trigger migration
@@ -628,7 +631,11 @@ class TestEndToEnd:
             # Store metadata
             with InMemoryMetadataStore() as store:
                 # Record snapshot
-                snapshot_version, _ = store.record_feature_graph_snapshot()
+                result = store.record_feature_graph_snapshot()
+
+                snapshot_version = result.snapshot_version
+
+                _ = result.already_recorded
                 assert len(snapshot_version) == 16
 
                 # Write parent metadata
