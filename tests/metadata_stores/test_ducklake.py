@@ -1,8 +1,14 @@
 """Tests for DuckLake integration via DuckDB metadata store."""
 
+import tempfile
+from pathlib import Path
+
 import polars as pl
 import pytest
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from polars.testing import assert_frame_equal
+from polars.testing.parametric import column, dataframes
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store._ducklake_support import (
@@ -12,6 +18,41 @@ from metaxy.metadata_store._ducklake_support import (
     format_attach_options,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+
+
+# Hypothesis strategies for generating metadata dataframes using Polars parametric testing
+@st.composite
+def metadata_dataframe_strategy(draw, fields=None, size=None):
+    """Generate a metadata DataFrame using Polars parametric testing.
+
+    Args:
+        draw: Hypothesis draw function
+        fields: List of field names for the data_version struct (default: ["default"])
+        size: Number of rows (default: between 1-10)
+    """
+    if fields is None:
+        fields = ["default"]
+    if size is None:
+        size = draw(st.integers(min_value=1, max_value=10))
+
+    # Define struct type for data_version
+    data_version_dtype = pl.Struct({field: pl.String for field in fields})
+
+    # Generate dataframe with sample_id and data_version columns
+    df_strategy = dataframes(
+        [
+            column("sample_id", dtype=pl.Int64),
+            column("data_version", dtype=data_version_dtype),
+        ],
+        size=size,
+    )
+
+    df = draw(df_strategy)
+
+    # Ensure sample_id is unique and sorted (required for test logic)
+    df = df.with_columns(pl.Series("sample_id", range(1, len(df) + 1)))
+
+    return df
 
 
 class _StubCursor:
@@ -187,10 +228,19 @@ def test_ducklake_store_read_write_roundtrip(
 
 
 @pytest.mark.usefixtures("test_graph")
-def test_ducklake_e2e_with_dependencies(tmp_path, test_features) -> None:
+@settings(
+    max_examples=5,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture],
+)
+@given(
+    num_samples=st.integers(min_value=1, max_value=5),
+)
+def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
     """Real end-to-end integration test for DuckLake with DuckDB catalog and local filesystem storage.
 
     This is a real integration test that actually uses the DuckLake extension (no mocking).
+    Uses hypothesis to generate test data with varying sample counts.
 
     This test exercises the full workflow:
     1. Write metadata for upstream features
@@ -200,140 +250,146 @@ def test_ducklake_e2e_with_dependencies(tmp_path, test_features) -> None:
     5. Verify persistence across store reopening
     """
 
-    # Setup paths for DuckLake catalog and storage
-    db_path = tmp_path / "ducklake_e2e.duckdb"
-    metadata_path = tmp_path / "ducklake_catalog.duckdb"
-    storage_dir = tmp_path / "ducklake_storage"
+    # Create temp directory manually (hypothesis doesn't work with function-scoped fixtures)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
 
-    ducklake_config = {
-        "alias": "e2e_lake",
-        "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-        "storage_backend": {"type": "local", "path": str(storage_dir)},
-        "attach_options": {"override_data_path": True},
-    }
+        # Setup paths for DuckLake catalog and storage
+        db_path = tmp_path / "ducklake_e2e.duckdb"
+        metadata_path = tmp_path / "ducklake_catalog.duckdb"
+        storage_dir = tmp_path / "ducklake_storage"
 
-    # Create store - this will actually attach DuckLake (no mocking)
-    store = DuckDBMetadataStore(
-        database=db_path,
-        extensions=["json"],
-        ducklake=ducklake_config,
-    )
-
-    # Test 1: Write upstream feature metadata
-    upstream_a = test_features["UpstreamFeatureA"]
-    upstream_b = test_features["UpstreamFeatureB"]
-    downstream = test_features["DownstreamFeature"]
-
-    upstream_a_data = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"frames": "hash_a1", "audio": "hash_a1"},
-                {"frames": "hash_a2", "audio": "hash_a2"},
-                {"frames": "hash_a3", "audio": "hash_a3"},
-            ],
+        ducklake_config = {
+            "alias": "e2e_lake",
+            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
+            "storage_backend": {"type": "local", "path": str(storage_dir)},
+            "attach_options": {"override_data_path": True},
         }
-    )
 
-    upstream_b_data = pl.DataFrame(
-        {
-            "sample_id": [1, 2, 3],
-            "data_version": [
-                {"default": "hash_b1"},
-                {"default": "hash_b2"},
-                {"default": "hash_b3"},
-            ],
-        }
-    )
-
-    with store:
-        # Write upstream features
-        store.write_metadata(upstream_a, upstream_a_data)
-        store.write_metadata(upstream_b, upstream_b_data)
-
-        # Verify upstream features can be read back
-        result_a = collect_to_polars(store.read_metadata(upstream_a))
-        result_b = collect_to_polars(store.read_metadata(upstream_b))
-
-        assert_frame_equal(
-            result_a.sort("sample_id").select(["sample_id", "data_version"]),
-            upstream_a_data.sort("sample_id"),
-        )
-        assert_frame_equal(
-            result_b.sort("sample_id").select(["sample_id", "data_version"]),
-            upstream_b_data.sort("sample_id"),
+        # Create store - this will actually attach DuckLake (no mocking)
+        store = DuckDBMetadataStore(
+            database=db_path,
+            extensions=["json"],
+            ducklake=ducklake_config,
         )
 
-        # Test 2: Write downstream feature with dependencies
-        downstream_data = pl.DataFrame(
+        # Test 1: Write upstream feature metadata
+        upstream_a = test_features["UpstreamFeatureA"]
+        upstream_b = test_features["UpstreamFeatureB"]
+        downstream = test_features["DownstreamFeature"]
+
+        # Generate test data using hypothesis-driven sample count
+        sample_ids = list(range(1, num_samples + 1))
+
+        upstream_a_data = pl.DataFrame(
             {
-                "sample_id": [1, 2, 3],
+                "sample_id": sample_ids,
                 "data_version": [
-                    {"default": "hash_d1"},
-                    {"default": "hash_d2"},
-                    {"default": "hash_d3"},
+                    {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
+                    for i in sample_ids
                 ],
             }
         )
 
-        store.write_metadata(downstream, downstream_data)
-
-        # Verify downstream feature can be read back
-        result_d = collect_to_polars(store.read_metadata(downstream))
-        assert_frame_equal(
-            result_d.sort("sample_id").select(["sample_id", "data_version"]),
-            downstream_data.sort("sample_id"),
-        )
-
-        # Test 3: List features
-        features_list = store.list_features()
-        assert len(features_list) == 3
-        feature_keys = set(features_list)
-        assert upstream_a.spec.key in feature_keys
-        assert upstream_b.spec.key in feature_keys
-        assert downstream.spec.key in feature_keys
-
-        # Test 4: Update metadata (append-only write)
-        # Metaxy uses immutable, append-only metadata storage
-        updated_upstream_a = pl.DataFrame(
+        upstream_b_data = pl.DataFrame(
             {
-                "sample_id": [4],  # Add just a new sample
-                "data_version": [
-                    {"frames": "hash_a4", "audio": "hash_a4"},
-                ],
+                "sample_id": sample_ids,
+                "data_version": [{"default": f"hash_b_{i}"} for i in sample_ids],
             }
         )
 
-        store.write_metadata(upstream_a, updated_upstream_a)
+        with store:
+            # Write upstream features
+            store.write_metadata(upstream_a, upstream_a_data)
+            store.write_metadata(upstream_b, upstream_b_data)
 
-        # Verify updated metadata - should have 4 samples total (3 + 1)
-        result_updated = collect_to_polars(store.read_metadata(upstream_a))
-        assert len(result_updated) == 4
-        assert set(result_updated["sample_id"].to_list()) == {1, 2, 3, 4}
+            # Verify upstream features can be read back
+            result_a = collect_to_polars(store.read_metadata(upstream_a))
+            result_b = collect_to_polars(store.read_metadata(upstream_b))
 
-    # Test 5: Verify persistence by reopening the store
-    # Reopen store and verify data persisted through DuckLake
-    store2 = DuckDBMetadataStore(
-        database=db_path,
-        extensions=["json"],
-        ducklake=ducklake_config,
-    )
+            assert_frame_equal(
+                result_a.sort("sample_id").select(["sample_id", "data_version"]),
+                upstream_a_data.sort("sample_id"),
+            )
+            assert_frame_equal(
+                result_b.sort("sample_id").select(["sample_id", "data_version"]),
+                upstream_b_data.sort("sample_id"),
+            )
 
-    with store2:
-        # Verify we can still read all features after reopening
-        result_a2 = collect_to_polars(store2.read_metadata(upstream_a))
-        assert len(result_a2) == 4
-        assert set(result_a2["sample_id"].to_list()) == {1, 2, 3, 4}
+            # Test 2: Write downstream feature with dependencies
+            downstream_data = pl.DataFrame(
+                {
+                    "sample_id": sample_ids,
+                    "data_version": [{"default": f"hash_d_{i}"} for i in sample_ids],
+                }
+            )
 
-        result_b2 = collect_to_polars(store2.read_metadata(upstream_b))
-        assert len(result_b2) == 3
+            store.write_metadata(downstream, downstream_data)
 
-        result_d2 = collect_to_polars(store2.read_metadata(downstream))
-        assert len(result_d2) == 3
+            # Verify downstream feature can be read back
+            result_d = collect_to_polars(store.read_metadata(downstream))
+            assert_frame_equal(
+                result_d.sort("sample_id").select(["sample_id", "data_version"]),
+                downstream_data.sort("sample_id"),
+            )
 
-        # Verify feature list persists
-        features_list2 = store2.list_features()
-        assert len(features_list2) == 3
+            # Test 3: List features
+            features_list = store.list_features()
+            assert len(features_list) == 3
+            feature_keys = set(features_list)
+            assert upstream_a.spec.key in feature_keys
+            assert upstream_b.spec.key in feature_keys
+            assert downstream.spec.key in feature_keys
 
-    # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)
-    assert metadata_path.exists(), "DuckLake catalog database should exist"
+            # Test 4: Update metadata (append-only write)
+            # Metaxy uses immutable, append-only metadata storage
+            new_sample_id = num_samples + 1
+            updated_upstream_a = pl.DataFrame(
+                {
+                    "sample_id": [new_sample_id],  # Add just a new sample
+                    "data_version": [
+                        {
+                            "frames": f"hash_frames_{new_sample_id}",
+                            "audio": f"hash_audio_{new_sample_id}",
+                        },
+                    ],
+                }
+            )
+
+            store.write_metadata(upstream_a, updated_upstream_a)
+
+            # Verify updated metadata - should have num_samples + 1 total
+            result_updated = collect_to_polars(store.read_metadata(upstream_a))
+            assert len(result_updated) == num_samples + 1
+            assert set(result_updated["sample_id"].to_list()) == set(
+                range(1, num_samples + 2)
+            )
+
+        # Test 5: Verify persistence by reopening the store
+        # Reopen store and verify data persisted through DuckLake
+        store2 = DuckDBMetadataStore(
+            database=db_path,
+            extensions=["json"],
+            ducklake=ducklake_config,
+        )
+
+        with store2:
+            # Verify we can still read all features after reopening
+            result_a2 = collect_to_polars(store2.read_metadata(upstream_a))
+            assert len(result_a2) == num_samples + 1  # Original samples + 1 appended
+            assert set(result_a2["sample_id"].to_list()) == set(
+                range(1, num_samples + 2)
+            )
+
+            result_b2 = collect_to_polars(store2.read_metadata(upstream_b))
+            assert len(result_b2) == num_samples
+
+            result_d2 = collect_to_polars(store2.read_metadata(downstream))
+            assert len(result_d2) == num_samples
+
+            # Verify feature list persists
+            features_list2 = store2.list_features()
+            assert len(features_list2) == 3
+
+        # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)
+        assert metadata_path.exists(), "DuckLake catalog database should exist"
