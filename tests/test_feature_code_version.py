@@ -146,9 +146,7 @@ def test_code_version_deterministic_per_class(graph) -> None:
         max_size=6,
     )
 )
-def test_code_version_consistent_across_field_order(
-    graph, code_versions: list[int]
-) -> None:
+def test_code_version_consistent_across_field_order(code_versions: list[int]) -> None:
     field_items = [
         (FieldKey([f"field_{idx}"]), code_version)
         for idx, code_version in enumerate(code_versions)
