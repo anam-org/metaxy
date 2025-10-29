@@ -24,6 +24,7 @@ class ClassPropertyDescriptor:
             objtype = type(obj)
         return self.fget(objtype)
 
+
 if TYPE_CHECKING:
     import narwhals as nw
 
