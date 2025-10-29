@@ -5,6 +5,10 @@ import re
 from metaxy._testing import TempMetaxyProject
 
 
+def bad():
+    assert False
+
+
 def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
     """Test graph push records snapshot on first run."""
 
