@@ -2,6 +2,7 @@ import hashlib
 import json
 from collections.abc import Mapping
 from functools import cached_property
+from typing import Any
 
 import pydantic
 
@@ -70,6 +71,14 @@ class FeatureSpec(pydantic.BaseModel):
     )
     code_version: int = 1
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
+    metadata: dict[str, Any] | None = pydantic.Field(
+        default=None,
+        description=(
+            "User-defined metadata for documentation and tooling purposes. "
+            "This field has NO effect on feature versioning, graph topology, or any core Metaxy functionality. "
+            "Must be JSON-serializable. Use for attaching ownership, SLA, tags, descriptions, etc."
+        ),
+    )
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
@@ -101,6 +110,32 @@ class FeatureSpec(pydantic.BaseModel):
             raise ValueError(
                 "id_columns must be non-empty if specified. Use None for default."
             )
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def validate_metadata_json_serializable(self) -> "FeatureSpec":
+        """Validate that metadata is JSON-serializable.
+
+        This ensures that metadata can be safely serialized for storage,
+        transmission, and graph snapshots.
+
+        Note: Metadata is kept as a mutable dict for Pydantic serialization compatibility,
+        but users should treat it as immutable. The frozen FeatureSpec model prevents
+        reassignment of the metadata field itself.
+
+        Raises:
+            ValueError: If metadata contains non-JSON-serializable types
+        """
+        if self.metadata is not None:
+            try:
+                # Attempt to serialize and deserialize to validate
+                json.dumps(self.metadata)
+            except (TypeError, ValueError) as e:
+                raise ValueError(
+                    f"metadata must be JSON-serializable. "
+                    f"Found non-serializable value: {e}"
+                ) from e
+
         return self
 
     @property

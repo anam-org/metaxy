@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'd556d5517ddeebd90af74908d3f2d8a3b201e6cc86141d5d0bf0beb11f0c4185'
+  'bc9333bf07c03fcc1c61d8a9132c38be5666a723420d3b3fcb29d2938a2ad623'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '887a915861bbd8b4d1733ae7b44334b124b37e0bc252e1b19bfdd4ed0b9c3af3'
+  '9875e278d1f0bc25055dba0b0d3d26a34882533acca04790cf0a66f370311711'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': 'a8c39929a72fee029e1455dba09a39083610a118c6f2c43fc7c49a254746c846',
+    'feature_spec_version': 'c7aaa45cd7572ede2de8fce48174cd809e6b653d089f125119fe615f62df35d0',
     'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -35,14 +35,15 @@
         'snapshot',
         'test',
       ]),
+      'metadata': None,
     }),
-    'feature_spec_version': '6597e5c49ec3e425db78176681ef993b6d1882e585045d660bc38f9f4af5b9f6',
+    'feature_spec_version': '311135ad0e9748a8cae4beaa792488ac44a8b008aba3e694ec5e74dd4fa36662',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '4cb711ca35b36eb16ca944654e1c5295377d3bf11c0f93bbc81fd6aee23e8b67'
+  '8533fc5fef2cba54ae276be96da97123d69a148de5790b17c1dd763d6ae49097'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'e17b203afe9da338774713b0b999bb293d7d4d47ed014e77307f5987abe3321b'
+  'a78c3b5b59d2e940b795fb46f07a7752332c7466a7463eaa6569a362fae94435'
 # ---
