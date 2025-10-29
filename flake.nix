@@ -11,20 +11,24 @@
         system = "x86_64-linux";
       };
       lib = pkgs.lib;
-    in {
-      default = pkgs.mkShell {
+
+      # Common packages for all shells
+      commonPackages = with pkgs; [
+        stdenv.cc
+        uv
+        clickhouse
+        graphviz
+        inputs.mermaid-ascii.outputs.packages.x86_64-linux.default
+      ];
+
+      # Function to create a dev shell for a specific Python version
+      mkPythonShell = python: pkgs.mkShell {
         buildInputs = [
           pkgs.stdenv.cc.cc.lib
           pkgs.gcc-unwrapped.lib
           pkgs.glibc
         ];
-        packages = with pkgs; [
-          stdenv.cc
-          uv
-          clickhouse
-          graphviz
-          inputs.mermaid-ascii.outputs.packages.x86_64-linux.default
-        ];
+        packages = commonPackages ++ [python];
         LD_LIBRARY_PATH = lib.makeLibraryPath [
           pkgs.stdenv.cc.cc.lib
           pkgs.gcc-unwrapped.lib
@@ -32,8 +36,18 @@
           pkgs.glib
           pkgs.clickhouse
           pkgs.graphviz
+          python
         ];
       };
+    in {
+      # Default shell with Python 3.10
+      default = mkPythonShell pkgs.python310;
+
+      # Individual shells for each Python version
+      python310 = mkPythonShell pkgs.python310;
+      python311 = mkPythonShell pkgs.python311;
+      python312 = mkPythonShell pkgs.python312;
+      python313 = mkPythonShell pkgs.python313;
     };
   };
 }
