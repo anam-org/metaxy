@@ -808,6 +808,57 @@ class BaseFeature(
         return cls.spec().table_name()
 
     @classmethod
+    def code_version(cls) -> str:
+        """Get hash of this feature's field code versions only.
+
+        Returns a hash representing ONLY the code versions of this feature's fields,
+        independent of any dependencies. This is useful for tracking when a feature's
+        own logic changes vs when its dependencies change.
+
+        Unlike feature_version() which includes dependencies, code_version() only
+        considers:
+        - Field code versions for this feature's fields
+
+        This hash changes when you modify:
+        - Any field's code_version
+
+        This hash does NOT change when you modify:
+        - Dependencies (feature-level or field-level)
+        - Upstream features' code versions
+
+        Returns:
+            SHA256 hex digest (like git short hashes)
+
+        Example:
+            >>> class ParentFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["parent"]),
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ... )):
+            ...     pass
+            >>> class ChildFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["child"]),
+            ...     deps=[FeatureDep(key=FeatureKey(["parent"]))],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ... )):
+            ...     pass
+            >>> # code_version only depends on ChildFeature's fields
+            >>> ChildFeature.code_version()
+            'abc123...'
+            >>> # Changing ParentFeature won't affect ChildFeature.code_version()
+        """
+        hasher = hashlib.sha256()
+
+        # Sort fields by key for deterministic ordering
+        sorted_fields = sorted(cls.spec.fields, key=lambda f: f.key.to_string())
+
+        # Hash each field's code_version
+        for field in sorted_fields:
+            hasher.update(field.key.to_string().encode())
+            hasher.update(str(field.code_version).encode())
+
+        return truncate_hash(hasher.hexdigest())
+
+    @classmethod
     def feature_version(cls) -> str:
         """Get hash of feature specification.
 
