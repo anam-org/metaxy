@@ -35,7 +35,7 @@ from metaxy.metadata_store.system_tables import (
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
-from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
 
 if TYPE_CHECKING:
     pass
@@ -541,7 +541,7 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
 
-    def record_feature_graph_snapshot(self) -> tuple[str, bool]:
+    def record_feature_graph_snapshot(self) -> SnapshotPushResult:
         """Record all features in graph with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
@@ -554,8 +554,17 @@ class MetadataStore(ABC):
         in the graph, making it idempotent - calling multiple times with the
         same feature definitions produces the same snapshot_version.
 
+        This method detects three scenarios:
+        1. New snapshot (computational changes): No existing rows with this snapshot_version
+        2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
+        3. No changes: Snapshot exists with identical feature_spec_versions for all features
+
         Returns:
-            A tuple containing the generated snapshot_version (deterministic hash) and a boolean indicating if the snapshot was recorded or already exists.
+            SnapshotPushResult containing:
+            - snapshot_version: The deterministic hash of the graph snapshot
+            - already_recorded: True if computational changes were already recorded
+            - metadata_changed: True if metadata-only changes were detected
+            - features_with_spec_changes: List of feature keys with spec version changes
         """
 
         from metaxy.models.feature import FeatureGraph
@@ -583,49 +592,120 @@ class MetadataStore(ABC):
 
         # Check if this exact snapshot already exists
         snapshot_already_exists = False
+        existing_spec_versions: dict[str, str] = {}
+
         if existing_versions is not None:
-            snapshot_already_exists = (
-                existing_versions.filter(
-                    pl.col("snapshot_version") == snapshot_version
-                ).height
-                > 0
+            snapshot_rows = existing_versions.filter(
+                pl.col("snapshot_version") == snapshot_version
+            )
+            snapshot_already_exists = snapshot_rows.height > 0
+
+            if snapshot_already_exists:
+                # Check if feature_spec_version column exists (backward compatibility)
+                # Old records (before issue #77) won't have this column
+                has_spec_version = "feature_spec_version" in snapshot_rows.columns
+
+                if has_spec_version:
+                    # Build dict of existing feature_key -> feature_spec_version
+                    for row in snapshot_rows.iter_rows(named=True):
+                        existing_spec_versions[row["feature_key"]] = row[
+                            "feature_spec_version"
+                        ]
+                # If no spec_version column, existing_spec_versions remains empty
+                # This means we'll treat it as "no metadata changes" (conservative approach)
+
+        # Scenario 1: New snapshot (no existing rows)
+        if not snapshot_already_exists:
+            # Build records from snapshot_dict
+            records = []
+            for feature_key_str in sorted(snapshot_dict.keys()):
+                feature_data = snapshot_dict[feature_key_str]
+
+                # Serialize complete FeatureSpec
+                feature_spec_json = json.dumps(feature_data["feature_spec"])
+
+                # Always record all features for this snapshot (don't skip based on feature_version alone)
+                # Each snapshot must be complete to support migration detection
+                records.append(
+                    {
+                        "feature_key": feature_key_str,
+                        "feature_version": feature_data["feature_version"],
+                        "feature_spec_version": feature_data["feature_spec_version"],
+                        "recorded_at": datetime.now(timezone.utc),
+                        "feature_spec": feature_spec_json,
+                        "feature_class_path": feature_data["feature_class_path"],
+                        "snapshot_version": snapshot_version,
+                    }
+                )
+
+            # Bulk write all new records at once
+            if records:
+                version_records = pl.DataFrame(
+                    records,
+                    schema=FEATURE_VERSIONS_SCHEMA,
+                )
+                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+
+            return SnapshotPushResult(
+                snapshot_version=snapshot_version,
+                already_recorded=False,
+                metadata_changed=False,
+                features_with_spec_changes=[],
             )
 
-        # If snapshot already exists, we're done (idempotent)
-        if snapshot_already_exists:
-            return snapshot_version, True
+        # Scenario 2 & 3: Snapshot exists - check for metadata changes
+        features_with_spec_changes = []
 
-        # Build records from snapshot_dict
-        records = []
-        for feature_key_str in sorted(snapshot_dict.keys()):
-            feature_data = snapshot_dict[feature_key_str]
+        for feature_key_str, feature_data in snapshot_dict.items():
+            current_spec_version = feature_data["feature_spec_version"]
+            existing_spec_version = existing_spec_versions.get(feature_key_str)
 
-            # Serialize complete FeatureSpec
-            feature_spec_json = json.dumps(feature_data["feature_spec"])
+            if existing_spec_version != current_spec_version:
+                features_with_spec_changes.append(feature_key_str)
 
-            # Always record all features for this snapshot (don't skip based on feature_version alone)
-            # Each snapshot must be complete to support migration detection
-            records.append(
-                {
-                    "feature_key": feature_key_str,
-                    "feature_version": feature_data["feature_version"],
-                    "feature_spec_version": feature_data["feature_spec_version"],
-                    "recorded_at": datetime.now(timezone.utc),
-                    "feature_spec": feature_spec_json,
-                    "feature_class_path": feature_data["feature_class_path"],
-                    "snapshot_version": snapshot_version,
-                }
+        # If metadata changed, append new rows for affected features
+        if features_with_spec_changes:
+            records = []
+            for feature_key_str in features_with_spec_changes:
+                feature_data = snapshot_dict[feature_key_str]
+
+                # Serialize complete FeatureSpec
+                feature_spec_json = json.dumps(feature_data["feature_spec"])
+
+                records.append(
+                    {
+                        "feature_key": feature_key_str,
+                        "feature_version": feature_data["feature_version"],
+                        "feature_spec_version": feature_data["feature_spec_version"],
+                        "recorded_at": datetime.now(timezone.utc),
+                        "feature_spec": feature_spec_json,
+                        "feature_class_path": feature_data["feature_class_path"],
+                        "snapshot_version": snapshot_version,
+                    }
+                )
+
+            # Bulk write updated records (append-only)
+            if records:
+                version_records = pl.DataFrame(
+                    records,
+                    schema=FEATURE_VERSIONS_SCHEMA,
+                )
+                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+
+            return SnapshotPushResult(
+                snapshot_version=snapshot_version,
+                already_recorded=True,
+                metadata_changed=True,
+                features_with_spec_changes=features_with_spec_changes,
             )
 
-        # Bulk write all new records at once
-        if records:
-            version_records = pl.DataFrame(
-                records,
-                schema=FEATURE_VERSIONS_SCHEMA,
-            )
-            self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
-
-        return snapshot_version, False
+        # Scenario 3: No changes at all
+        return SnapshotPushResult(
+            snapshot_version=snapshot_version,
+            already_recorded=True,
+            metadata_changed=False,
+            features_with_spec_changes=[],
+        )
 
     @abstractmethod
     def _read_metadata_native(
