@@ -61,7 +61,7 @@ You are also expected to install system dependencies such as `clickhouse` and ot
 
 ```shell
 nix develop  # enters a shell with the lowest supported Python version
-nix develop .#python311  # enters a shell with Python 3.11
+nix develop '.#"python3.11"'  # enters a shell with Python 3.11
 ```
 
 ## Examples
