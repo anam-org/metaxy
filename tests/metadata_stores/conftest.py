@@ -213,8 +213,8 @@ def test_graph():
         key=FeatureKey(["test_stores", "upstream_a"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version=1),
-            FieldSpec(key=FieldKey(["audio"]), code_version=1),
+            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+            FieldSpec(key=FieldKey(["audio"]), code_version="1"),
         ],
     )
 
@@ -222,7 +222,7 @@ def test_graph():
         key=FeatureKey(["test_stores", "upstream_b"]),
         deps=None,
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
@@ -234,7 +234,7 @@ def test_graph():
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=FeatureKey(["test_stores", "upstream_a"]),
@@ -331,7 +331,7 @@ class StoreCases:
 
     def case_duckdb_ducklake(
         self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """DuckDB store configured with DuckLake attachment."""
 
         db_path = tmp_path / "test_ducklake.duckdb"

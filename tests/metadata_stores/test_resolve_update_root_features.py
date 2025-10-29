@@ -29,7 +29,7 @@ class VideoEmbeddingsFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["embedding"]),
-                code_version=1,
+                code_version="1",
             ),
         ],
     ),

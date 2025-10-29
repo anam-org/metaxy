@@ -47,7 +47,7 @@ def test_metadata_does_not_affect_feature_version() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["metadata_version_test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"owner": "team-a"},
             ),
         ):
@@ -60,7 +60,7 @@ def test_metadata_does_not_affect_feature_version() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["metadata_version_test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"owner": "team-b"},  # Different metadata!
             ),
         ):
@@ -82,7 +82,7 @@ def test_metadata_does_not_affect_code_version() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["metadata_code_test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"tag": "v1"},
             ),
         ):
@@ -97,7 +97,7 @@ def test_metadata_does_not_affect_code_version() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["metadata_code_test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"tag": "v2"},  # Different metadata!
             ),
         ):
@@ -263,7 +263,7 @@ def test_metadata_with_feature_usage_example() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["example", "parent"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -274,8 +274,8 @@ def test_metadata_with_feature_usage_example() -> None:
             key=FeatureKey(["example", "customer"]),
             deps=[FeatureDep(key=FeatureKey(["example", "parent"]))],
             fields=[
-                FieldSpec(key=FieldKey(["age"]), code_version=1),
-                FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
+                FieldSpec(key=FieldKey(["age"]), code_version="1"),
+                FieldSpec(key=FieldKey(["lifetime_value"]), code_version="1"),
             ],
             metadata={
                 "owner": "data-team",
@@ -336,7 +336,7 @@ def test_property_metadata_does_not_affect_feature_version(
             spec=FeatureSpec(
                 key=FeatureKey(["property", "test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"owner": owner, "sla": sla},
             ),
         ):
@@ -351,7 +351,7 @@ def test_property_metadata_does_not_affect_feature_version(
             spec=FeatureSpec(
                 key=FeatureKey(["property", "test"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 metadata={"owner": "different", "sla": "different"},
             ),
         ):

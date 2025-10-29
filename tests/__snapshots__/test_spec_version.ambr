@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'bc9333bf07c03fcc1c61d8a9132c38be5666a723420d3b3fcb29d2938a2ad623'
+  '85e0991c2639b230e83ead5ea0d09d95450a7d58c5a8269d9b5c708dd68f100d'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '9875e278d1f0bc25055dba0b0d3d26a34882533acca04790cf0a66f370311711'
+  '10c023f1b8357ba328236bf72b3f4996632f8888aeb15ae932540606fb587d6f'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': 'c7aaa45cd7572ede2de8fce48174cd809e6b653d089f125119fe615f62df35d0',
+    'feature_spec_version': '3f6b01640c0288956b34879e711718a445336ebf2c6dc14efc59537ed80b5b21',
     'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -17,11 +17,11 @@
   dict({
     'feature_class_path': 'tests.test_spec_version.SnapshotFeature',
     'feature_spec': dict({
-      'code_version': 2,
+      'code_version': '2',
       'deps': None,
       'fields': list([
         dict({
-          'code_version': 1,
+          'code_version': '1',
           'deps': '__METAXY_ALL_DEP__',
           'key': list([
             'data',
@@ -37,13 +37,13 @@
       ]),
       'metadata': None,
     }),
-    'feature_spec_version': '311135ad0e9748a8cae4beaa792488ac44a8b008aba3e694ec5e74dd4fa36662',
+    'feature_spec_version': '04ddf0d0801856289519ec1de3e448489d90c521086e2e24c013737fa91eadfa',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '8533fc5fef2cba54ae276be96da97123d69a148de5790b17c1dd763d6ae49097'
+  '43f800bb50c9d80807ba0b3293e08687ca499aea17a3c54bffb1b39daca18942'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'a78c3b5b59d2e940b795fb46f07a7752332c7466a7463eaa6569a362fae94435'
+  '2b3b939483e741d32dbb67765f1258a5ea1dc56b43c0f49716d12d8dccd2076e'
 # ---

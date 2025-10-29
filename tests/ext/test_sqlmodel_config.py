@@ -33,7 +33,7 @@ def test_auto_table_naming_enabled_by_default():
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             # No __tablename__ specified
@@ -63,7 +63,7 @@ def test_auto_table_naming_disabled_explicit_config():
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             # No __tablename__ specified - should NOT use feature key table name
@@ -99,7 +99,7 @@ def test_auto_table_naming_still_allows_explicit():
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             __tablename__: str = "custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -140,7 +140,7 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             uid: str = Field(primary_key=True)
@@ -180,7 +180,7 @@ def test_auto_table_naming_env_var():
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     deps=None,
-                    fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
                 ),
             ):
                 uid: str = Field(primary_key=True)
@@ -231,7 +231,7 @@ def test_config_priority_init_over_env():
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     deps=None,
-                    fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
                 ),
             ):
                 uid: str = Field(primary_key=True)
@@ -281,7 +281,7 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             uid: str = Field(primary_key=True)
@@ -315,7 +315,7 @@ def test_multiple_features_with_config_change():
             spec=FeatureSpec(
                 key=FeatureKey(["feature", "one"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             uid: str = Field(primary_key=True)
@@ -337,7 +337,7 @@ def test_multiple_features_with_config_change():
             spec=FeatureSpec(
                 key=FeatureKey(["feature", "two"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             uid: str = Field(primary_key=True)

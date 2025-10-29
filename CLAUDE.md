@@ -214,6 +214,34 @@ Metadata rows have:
 }
 ```
 
+#### Code Version Fields
+Both `FeatureSpec` and `FieldSpec` have a `code_version` field to track implementation changes:
+
+- **Type**: `str` (changed from `int` for flexibility)
+- **Purpose**: Increment when the computation logic changes
+- **Format**: Any string - supports semantic versioning ("1.0.0"), git hashes ("abc123"), or simple increments ("1", "2")
+- **Default**: `"1"`
+
+Example usage:
+```python
+class MyFeature(Feature, spec=FeatureSpec(
+    key=FeatureKey(["my", "feature"]),
+    deps=None,
+    fields=[
+        FieldSpec(key=FieldKey(["result"]), code_version="1.0.0"),
+        FieldSpec(key=FieldKey(["score"]), code_version="2"),
+    ],
+    code_version="1.0.0"  # Feature-level version
+)):
+    pass
+```
+
+When to increment:
+- Field code_version: When field computation logic changes
+- Feature code_version: When overall feature logic changes (less commonly used)
+
+The `code_version` is included in version hashing, so changing it triggers migrations.
+
 #### Graph Context Management
 The active graph is managed via context variables:
 ```python
@@ -257,8 +285,8 @@ class CustomerFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["customer"]),
     deps=[FeatureDep(key=FeatureKey(["user"]))],
     fields=[
-        FieldSpec(key=FieldKey(["age"]), code_version=1),
-        FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
+        FieldSpec(key=FieldKey(["age"]), code_version="1"),
+        FieldSpec(key=FieldKey(["lifetime_value"]), code_version="1"),
     ],
     metadata={
         "owner": "data-team",
@@ -304,8 +332,8 @@ class CustomerFeature(Feature, spec=FeatureSpec(
     key=FeatureKey(["customer"]),
     deps=[FeatureDep(key=FeatureKey(["user"]))],
     fields=[
-        FieldSpec(key=FieldKey(["age"]), code_version=1),
-        FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
+        FieldSpec(key=FieldKey(["age"]), code_version="1"),
+        FieldSpec(key=FieldKey(["lifetime_value"]), code_version="1"),
     ],
 )):
     pass
@@ -325,8 +353,8 @@ class CustomerFeature(Feature, spec=FeatureSpec(
         FeatureDep(key=ParentFeature),  # Feature class coerced to FeatureKey
     ],
     fields=[
-        FieldSpec(key="age", code_version=1),  # str coerced to FieldKey
-        FieldSpec(key=["ltv", "score"], code_version=1),  # list[str] coerced
+        FieldSpec(key="age", code_version="1"),  # str coerced to FieldKey
+        FieldSpec(key=["ltv", "score"], code_version="1"),  # list[str] coerced
     ],
 )):
     pass

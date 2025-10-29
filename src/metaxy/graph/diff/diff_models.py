@@ -11,14 +11,39 @@ from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
 
 
+def _normalize_code_version(value: Any) -> str | None:
+    """Normalize code_version for backward compatibility.
+
+    Args:
+        value: Code version value (int, str, or None)
+
+    Returns:
+        Normalized code version (str or None)
+
+    Raises:
+        ValueError: If value is an empty string
+        TypeError: If value is not int, str, or None
+    """
+    if isinstance(value, int):
+        return str(value) if value != 0 else None
+    elif value is None:
+        return None
+    elif isinstance(value, str):
+        if not value:  # empty string
+            raise ValueError("code_version cannot be an empty string")
+        return value
+    else:
+        raise TypeError(f"code_version must be str, int, or None, got {type(value)}")
+
+
 class FieldChange(FrozenBaseModel):
     """Represents a change in a field between two snapshots."""
 
     field_key: FieldKey
     old_version: str | None = None  # None if field was added
     new_version: str | None = None  # None if field was removed
-    old_code_version: int | None = None
-    new_code_version: int | None = None
+    old_code_version: str | None = None
+    new_code_version: str | None = None
 
     @property
     def is_added(self) -> bool:
@@ -46,8 +71,8 @@ class NodeChange(FrozenBaseModel):
     feature_key: FeatureKey
     old_version: str | None = None  # None if node was added
     new_version: str | None = None  # None if node was removed
-    old_code_version: int | None = None
-    new_code_version: int | None = None
+    old_code_version: str | None = None
+    new_code_version: str | None = None
     added_fields: list[FieldChange] = Field(default_factory=list)
     removed_fields: list[FieldChange] = Field(default_factory=list)
     changed_fields: list[FieldChange] = Field(default_factory=list)
@@ -93,7 +118,7 @@ class AddedNode(FrozenBaseModel):
 
     feature_key: FeatureKey
     version: str
-    code_version: int | None = None
+    code_version: str | None = None
     fields: list[dict[str, Any]] = Field(
         default_factory=list
     )  # {key, version, code_version}
@@ -105,7 +130,7 @@ class RemovedNode(FrozenBaseModel):
 
     feature_key: FeatureKey
     version: str
-    code_version: int | None = None
+    code_version: str | None = None
     fields: list[dict[str, Any]] = Field(
         default_factory=list
     )  # {key, version, code_version}
@@ -145,7 +170,7 @@ class GraphDiff(FrozenBaseModel):
                         if isinstance(field["key"], str)
                         else field["key"].to_string(),
                         "version": field.get("version", ""),
-                        "code_version": field.get("code_version", 0) or 0,
+                        "code_version": field.get("code_version", "") or "",
                     }
                 )
 
@@ -153,7 +178,7 @@ class GraphDiff(FrozenBaseModel):
                 {
                     "key": node.feature_key.to_string(),
                     "version": node.version,
-                    "code_version": node.code_version or 0,
+                    "code_version": node.code_version or "",
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                 }
@@ -169,7 +194,7 @@ class GraphDiff(FrozenBaseModel):
                         if isinstance(field["key"], str)
                         else field["key"].to_string(),
                         "version": field.get("version", ""),
-                        "code_version": field.get("code_version", 0) or 0,
+                        "code_version": field.get("code_version", "") or "",
                     }
                 )
 
@@ -177,7 +202,7 @@ class GraphDiff(FrozenBaseModel):
                 {
                     "key": node.feature_key.to_string(),
                     "version": node.version,
-                    "code_version": node.code_version or 0,
+                    "code_version": node.code_version or "",
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                 }
@@ -191,7 +216,7 @@ class GraphDiff(FrozenBaseModel):
                     {
                         "key": field.field_key.to_string(),
                         "version": field.new_version or "",
-                        "code_version": field.new_code_version or 0,
+                        "code_version": field.new_code_version or "",
                     }
                 )
 
@@ -201,7 +226,7 @@ class GraphDiff(FrozenBaseModel):
                     {
                         "key": field.field_key.to_string(),
                         "version": field.old_version or "",
-                        "code_version": field.old_code_version or 0,
+                        "code_version": field.old_code_version or "",
                     }
                 )
 
@@ -212,8 +237,8 @@ class GraphDiff(FrozenBaseModel):
                         "key": field.field_key.to_string(),
                         "old_version": field.old_version or "",
                         "new_version": field.new_version or "",
-                        "old_code_version": field.old_code_version or 0,
-                        "new_code_version": field.new_code_version or 0,
+                        "old_code_version": field.old_code_version or "",
+                        "new_code_version": field.new_code_version or "",
                     }
                 )
 
@@ -222,8 +247,8 @@ class GraphDiff(FrozenBaseModel):
                     "key": node.feature_key.to_string(),
                     "old_version": node.old_version or "",
                     "new_version": node.new_version or "",
-                    "old_code_version": node.old_code_version or 0,
-                    "new_code_version": node.new_code_version or 0,
+                    "old_code_version": node.old_code_version or "",
+                    "new_code_version": node.new_code_version or "",
                     "added_fields": added_fields_list,
                     "removed_fields": removed_fields_list,
                     "changed_fields": changed_fields_list,
@@ -263,9 +288,9 @@ class GraphDiff(FrozenBaseModel):
                         "version": field_data["version"]
                         if field_data["version"]
                         else None,
-                        "code_version": field_data["code_version"]
-                        if field_data["code_version"] != 0
-                        else None,
+                        "code_version": _normalize_code_version(
+                            field_data["code_version"]
+                        ),
                     }
                 )
 
@@ -273,9 +298,7 @@ class GraphDiff(FrozenBaseModel):
                 AddedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
-                    code_version=node_data["code_version"]
-                    if node_data["code_version"] != 0
-                    else None,
+                    code_version=_normalize_code_version(node_data["code_version"]),
                     fields=fields,
                     dependencies=[
                         FeatureKey(dep.split("/"))
@@ -294,9 +317,9 @@ class GraphDiff(FrozenBaseModel):
                         "version": field_data["version"]
                         if field_data["version"]
                         else None,
-                        "code_version": field_data["code_version"]
-                        if field_data["code_version"] != 0
-                        else None,
+                        "code_version": _normalize_code_version(
+                            field_data["code_version"]
+                        ),
                     }
                 )
 
@@ -304,9 +327,7 @@ class GraphDiff(FrozenBaseModel):
                 RemovedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
-                    code_version=node_data["code_version"]
-                    if node_data["code_version"] != 0
-                    else None,
+                    code_version=_normalize_code_version(node_data["code_version"]),
                     fields=fields,
                     dependencies=[
                         FeatureKey(dep.split("/"))
@@ -327,9 +348,9 @@ class GraphDiff(FrozenBaseModel):
                         if field_data["version"]
                         else None,
                         old_code_version=None,
-                        new_code_version=field_data["code_version"]
-                        if field_data["code_version"] != 0
-                        else None,
+                        new_code_version=_normalize_code_version(
+                            field_data["code_version"]
+                        ),
                     )
                 )
 
@@ -342,9 +363,9 @@ class GraphDiff(FrozenBaseModel):
                         if field_data["version"]
                         else None,
                         new_version=None,
-                        old_code_version=field_data["code_version"]
-                        if field_data["code_version"] != 0
-                        else None,
+                        old_code_version=_normalize_code_version(
+                            field_data["code_version"]
+                        ),
                         new_code_version=None,
                     )
                 )
@@ -360,12 +381,12 @@ class GraphDiff(FrozenBaseModel):
                         new_version=field_data["new_version"]
                         if field_data["new_version"]
                         else None,
-                        old_code_version=field_data["old_code_version"]
-                        if field_data["old_code_version"] != 0
-                        else None,
-                        new_code_version=field_data["new_code_version"]
-                        if field_data["new_code_version"] != 0
-                        else None,
+                        old_code_version=_normalize_code_version(
+                            field_data["old_code_version"]
+                        ),
+                        new_code_version=_normalize_code_version(
+                            field_data["new_code_version"]
+                        ),
                     )
                 )
 
@@ -378,12 +399,12 @@ class GraphDiff(FrozenBaseModel):
                     new_version=node_data["new_version"]
                     if node_data["new_version"]
                     else None,
-                    old_code_version=node_data["old_code_version"]
-                    if node_data["old_code_version"] != 0
-                    else None,
-                    new_code_version=node_data["new_code_version"]
-                    if node_data["new_code_version"] != 0
-                    else None,
+                    old_code_version=_normalize_code_version(
+                        node_data["old_code_version"]
+                    ),
+                    new_code_version=_normalize_code_version(
+                        node_data["new_code_version"]
+                    ),
                     added_fields=added_fields,
                     removed_fields=removed_fields,
                     changed_fields=changed_fields,
