@@ -97,7 +97,7 @@ class TempFeatureModule:
             for c in fields:
                 c_parts = [
                     f"key=FieldKey({c['key']!r})",
-                    f"code_version={c['code_version']}",
+                    f"code_version={c['code_version']!r}",
                 ]
 
                 # Handle deps

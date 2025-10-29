@@ -1045,7 +1045,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
                 key=FeatureKey([f"test_v{code_version}"]),
                 deps=[FeatureDep(key=FeatureKey(["video"]))],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=code_version)
+                    FieldSpec(key=FieldKey(["default"]), code_version=str(code_version))
                 ],
             ),
         ):
