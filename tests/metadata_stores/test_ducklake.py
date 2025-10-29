@@ -14,6 +14,38 @@ from metaxy.metadata_store._ducklake_support import (
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
+@pytest.fixture(scope="session")
+def ducklake_extension():
+    """Session-scoped fixture to check/install DuckLake extension once.
+
+    Returns True if DuckLake is available, False otherwise.
+    Only attempts installation once per test session.
+    """
+    try:
+        import duckdb
+    except ImportError:
+        pytest.skip("duckdb not installed")
+        return False
+
+    conn = duckdb.connect(":memory:")
+    try:
+        # First try to load (fast if already installed)
+        try:
+            conn.execute("LOAD ducklake;")
+            return True
+        except Exception:
+            # Not loaded, try to install
+            try:
+                conn.execute("INSTALL ducklake;")
+                conn.execute("LOAD ducklake;")
+                return True
+            except Exception as e:
+                pytest.skip(f"DuckLake extension not available: {e}")
+                return False
+    finally:
+        conn.close()
+
+
 class _StubCursor:
     def __init__(self) -> None:
         self.commands: list[str] = []
@@ -187,26 +219,23 @@ def test_ducklake_store_read_write_roundtrip(
 
 
 @pytest.mark.usefixtures("test_graph")
-def test_ducklake_e2e_with_dependencies(tmp_path, test_features, monkeypatch) -> None:
-    """End-to-end test for DuckLake with DuckDB catalog, local filesystem storage, and feature dependencies.
+def test_ducklake_e2e_with_dependencies(
+    tmp_path, test_features, ducklake_extension
+) -> None:
+    """Real end-to-end integration test for DuckLake with DuckDB catalog and local filesystem storage.
+
+    This is a real integration test that actually uses the DuckLake extension (no mocking).
+    The ducklake_extension fixture (session-scoped) ensures DuckLake is installed once per test session.
 
     This test exercises the full workflow:
     1. Write metadata for upstream features
     2. Write metadata for downstream features with dependencies
     3. Read metadata back and verify data versions
     4. Test metadata updates and versioning
+    5. Verify persistence across store reopening
     """
-    recorded_commands: list[str] = []
-    original_configure = DuckLakeAttachmentManager.configure
 
-    def fake_configure(self, conn):
-        preview_conn = _PreviewConnection()
-        original_configure(self, preview_conn)
-        recorded_commands.extend(preview_conn.cursor().commands)
-
-    monkeypatch.setattr(DuckLakeAttachmentManager, "configure", fake_configure)
-
-    # Setup paths
+    # Setup paths for DuckLake catalog and storage
     db_path = tmp_path / "ducklake_e2e.duckdb"
     metadata_path = tmp_path / "ducklake_catalog.duckdb"
     storage_dir = tmp_path / "ducklake_storage"
@@ -218,7 +247,7 @@ def test_ducklake_e2e_with_dependencies(tmp_path, test_features, monkeypatch) ->
         "attach_options": {"override_data_path": True},
     }
 
-    # Create store
+    # Create store - this will actually attach DuckLake (no mocking)
     store = DuckDBMetadataStore(
         database=db_path,
         extensions=["json"],
@@ -317,22 +346,8 @@ def test_ducklake_e2e_with_dependencies(tmp_path, test_features, monkeypatch) ->
         assert len(result_updated) == 4
         assert set(result_updated["sample_id"].to_list()) == {1, 2, 3, 4}
 
-    # Verify DuckLake commands were executed
-    assert recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
-    assert any(cmd.startswith("ATTACH 'ducklake:") for cmd in recorded_commands)
-    assert recorded_commands[-1] == "USE e2e_lake;"
-
     # Test 5: Verify persistence by reopening the store
-    # Note: We use the same monkeypatch for consistency
-    recorded_commands2: list[str] = []
-
-    def fake_configure2(self, conn):
-        preview_conn = _PreviewConnection()
-        original_configure(self, preview_conn)
-        recorded_commands2.extend(preview_conn.cursor().commands)
-
-    monkeypatch.setattr(DuckLakeAttachmentManager, "configure", fake_configure2)
-
+    # Reopen store and verify data persisted through DuckLake
     store2 = DuckDBMetadataStore(
         database=db_path,
         extensions=["json"],
@@ -343,6 +358,7 @@ def test_ducklake_e2e_with_dependencies(tmp_path, test_features, monkeypatch) ->
         # Verify we can still read all features after reopening
         result_a2 = collect_to_polars(store2.read_metadata(upstream_a))
         assert len(result_a2) == 4
+        assert set(result_a2["sample_id"].to_list()) == {1, 2, 3, 4}
 
         result_b2 = collect_to_polars(store2.read_metadata(upstream_b))
         assert len(result_b2) == 3
@@ -354,6 +370,5 @@ def test_ducklake_e2e_with_dependencies(tmp_path, test_features, monkeypatch) ->
         features_list2 = store2.list_features()
         assert len(features_list2) == 3
 
-    # Verify DuckLake was attached again on second open
-    assert len(recorded_commands2) > 0
-    assert "INSTALL ducklake;" in recorded_commands2
+    # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)
+    assert metadata_path.exists(), "DuckLake catalog database should exist"
