@@ -72,6 +72,7 @@
         "python3.11" = mkPythonShell pkgs.python311;
         "python3.12" = mkPythonShell pkgs.python312;
         "python3.13" = mkPythonShell pkgs.python313;
+        "python3.14" = mkPythonShell pkgs.python314;
       });
   };
 }
