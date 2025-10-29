@@ -654,6 +654,24 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     graph: ClassVar[FeatureGraph]
     code_version: ClassVar[str]
 
+    def __init_subclass__(
+        cls,
+        *,
+        spec: FeatureSpec | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Accept spec parameter for type checking.
+
+        The actual spec handling is done by MetaxyMeta.__new__,
+        but this method signature makes type checkers understand
+        that spec is a valid keyword argument for subclasses.
+
+        Args:
+            spec: Feature specification (handled by metaclass)
+            **kwargs: Additional keyword arguments passed to parent
+        """
+        super().__init_subclass__(**kwargs)
+
     @classmethod
     def table_name(cls) -> str:
         """Get SQL-like table name for this feature.
