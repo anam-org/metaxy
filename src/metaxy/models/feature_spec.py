@@ -2,18 +2,28 @@ import hashlib
 import json
 from collections.abc import Mapping
 from functools import cached_property
+from typing import TYPE_CHECKING, Any
 
 import pydantic
+from pydantic import field_validator
 
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
+
+if TYPE_CHECKING:
+    from metaxy.models.feature import Feature  # noqa: F401
 
 
 class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection and renaming.
 
     Attributes:
-        key: The feature key to depend on
+        key: The feature key to depend on. Accepts:
+            - FeatureKey: Direct key object
+            - Feature class: Extracts key from Feature.spec.key
+            - FeatureSpec: Extracts key from spec.key
+            - str: Converted to FeatureKey([str])
+            - list[str]: Converted to FeatureKey(list)
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
             - Empty tuple (): Keep only system columns (sample_uid, data_version, etc.)
@@ -22,26 +32,28 @@ class FeatureDep(pydantic.BaseModel):
             Applied after column selection.
 
     Examples:
-        >>> # Keep all columns (default behavior)
+        >>> # From Feature class (most ergonomic)
+        >>> FeatureDep(key=UpstreamFeature)
+
+        >>> # From string (for single-part keys)
+        >>> FeatureDep(key="upstream")
+
+        >>> # From list (for multi-part keys)
+        >>> FeatureDep(key=["namespace", "upstream"])
+
+        >>> # Traditional explicit key (still supported)
         >>> FeatureDep(key=FeatureKey(["upstream"]))
 
-        >>> # Keep only specific columns
+        >>> # With column selection
         >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
+        ...     key=UpstreamFeature,
         ...     columns=("col1", "col2")
         ... )
 
-        >>> # Rename columns to avoid conflicts
+        >>> # With renaming
         >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
+        ...     key=UpstreamFeature,
         ...     rename={"old_name": "new_name"}
-        ... )
-
-        >>> # Select and rename
-        >>> FeatureDep(
-        ...     key=FeatureKey(["upstream"]),
-        ...     columns=("col1", "col2"),
-        ...     rename={"col1": "upstream_col1"}
         ... )
     """
 
@@ -50,6 +62,28 @@ class FeatureDep(pydantic.BaseModel):
         None  # None = all columns, () = only system columns
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
+
+    @field_validator("key", mode="before")
+    @classmethod
+    def _coerce_key(cls, value: Any) -> FeatureKey:
+        """Convert Feature class, FeatureSpec, str, or list[str] to FeatureKey.
+
+        This allows passing Feature classes directly instead of extracting keys manually.
+        """
+        # Already a FeatureKey
+        if isinstance(value, FeatureKey):
+            return value
+
+        # Feature class - extract spec.key
+        if hasattr(value, "spec") and hasattr(value.spec, "key"):
+            return value.spec.key
+
+        # FeatureSpec object - extract key
+        if hasattr(value, "key") and isinstance(getattr(value, "key"), FeatureKey):
+            return value.key
+
+        # str or list[str] - will be handled by FeatureKey's own validator
+        return value
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
@@ -70,6 +104,37 @@ class FeatureSpec(pydantic.BaseModel):
     )
     code_version: int = 1
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
+
+    @field_validator("deps", mode="before")
+    @classmethod
+    def _coerce_deps(cls, value: Any) -> list[FeatureDep] | None:
+        """Convert Feature classes in deps list to FeatureDep objects.
+
+        This allows passing Feature classes directly:
+        - deps=[UpstreamFeature] instead of deps=[FeatureDep(key=UpstreamFeature.spec.key)]
+        """
+        if value is None:
+            return None
+
+        if not isinstance(value, list):
+            return value
+
+        coerced = []
+        for item in value:
+            # Already a FeatureDep
+            if isinstance(item, FeatureDep):
+                coerced.append(item)
+            # Feature class - extract spec.key
+            elif hasattr(item, "spec") and hasattr(item.spec, "key"):
+                coerced.append(FeatureDep(key=item.spec.key))
+            # FeatureSpec object - extract key
+            elif hasattr(item, "key") and isinstance(getattr(item, "key"), FeatureKey):
+                coerced.append(FeatureDep(key=item.key))
+            # Other types (str, list, FeatureKey) - let FeatureDep handle it
+            else:
+                coerced.append(FeatureDep(key=item))
+
+        return coerced
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:

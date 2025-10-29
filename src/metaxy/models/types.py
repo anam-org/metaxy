@@ -70,14 +70,15 @@ class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
-        """Pydantic schema that preserves FeatureKey type."""
-        # python_schema = core_schema.is_instance_schema(cls)
-
+        """Pydantic schema that preserves FeatureKey type and accepts str | list[str]."""
+        # Accept either string or list of strings
+        str_schema = core_schema.str_schema()
         list_of_str_schema = core_schema.list_schema(core_schema.str_schema())
+        union_schema = core_schema.union_schema([str_schema, list_of_str_schema])
 
         return core_schema.no_info_wrap_validator_function(
             cls._validate,
-            list_of_str_schema,
+            union_schema,
             serialization=core_schema.plain_serializer_function_ser_schema(
                 lambda x: list(x)
             ),
@@ -85,11 +86,20 @@ class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]
 
     @classmethod
     def _validate(cls, value, handler):
-        """Validate and wrap in FeatureKey."""
+        """Validate and wrap in FeatureKey.
+
+        Accepts:
+        - FeatureKey: returned as-is
+        - str: converted to FeatureKey([str])
+        - list[str]: converted to FeatureKey(list)
+        """
         if isinstance(value, cls):
             return value
-        # Let the list schema validate first
+        # Let the union schema validate first (str or list[str])
         validated = handler(value)
+        # Convert str to list[str]
+        if isinstance(validated, str):
+            validated = [validated]
         # Wrap in FeatureKey
         return cls(validated)
 
@@ -146,14 +156,15 @@ class FieldKey(list):  # pyright: ignore[reportMissingTypeArgument]
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> core_schema.CoreSchema:
-        """Pydantic schema that preserves FieldKey type."""
-        # python_schema = core_schema.is_instance_schema(cls)
-
+        """Pydantic schema that preserves FieldKey type and accepts str | list[str]."""
+        # Accept either string or list of strings
+        str_schema = core_schema.str_schema()
         list_of_str_schema = core_schema.list_schema(core_schema.str_schema())
+        union_schema = core_schema.union_schema([str_schema, list_of_str_schema])
 
         return core_schema.no_info_wrap_validator_function(
             cls._validate,
-            list_of_str_schema,
+            union_schema,
             serialization=core_schema.plain_serializer_function_ser_schema(
                 lambda x: list(x)
             ),
@@ -161,11 +172,20 @@ class FieldKey(list):  # pyright: ignore[reportMissingTypeArgument]
 
     @classmethod
     def _validate(cls, value, handler):
-        """Validate and wrap in FieldKey."""
+        """Validate and wrap in FieldKey.
+
+        Accepts:
+        - FieldKey: returned as-is
+        - str: converted to FieldKey([str])
+        - list[str]: converted to FieldKey(list)
+        """
         if isinstance(value, cls):
             return value
-        # Let the list schema validate first
+        # Let the union schema validate first (str or list[str])
         validated = handler(value)
+        # Convert str to list[str]
+        if isinstance(validated, str):
+            validated = [validated]
         # Wrap in FieldKey
         return cls(validated)
 
