@@ -14,38 +14,6 @@ from metaxy.metadata_store._ducklake_support import (
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
-@pytest.fixture(scope="session")
-def ducklake_extension():
-    """Session-scoped fixture to check/install DuckLake extension once.
-
-    Returns True if DuckLake is available, False otherwise.
-    Only attempts installation once per test session.
-    """
-    try:
-        import duckdb
-    except ImportError:
-        pytest.skip("duckdb not installed")
-        return False
-
-    conn = duckdb.connect(":memory:")
-    try:
-        # First try to load (fast if already installed)
-        try:
-            conn.execute("LOAD ducklake;")
-            return True
-        except Exception:
-            # Not loaded, try to install
-            try:
-                conn.execute("INSTALL ducklake;")
-                conn.execute("LOAD ducklake;")
-                return True
-            except Exception as e:
-                pytest.skip(f"DuckLake extension not available: {e}")
-                return False
-    finally:
-        conn.close()
-
-
 class _StubCursor:
     def __init__(self) -> None:
         self.commands: list[str] = []
@@ -219,13 +187,10 @@ def test_ducklake_store_read_write_roundtrip(
 
 
 @pytest.mark.usefixtures("test_graph")
-def test_ducklake_e2e_with_dependencies(
-    tmp_path, test_features, ducklake_extension
-) -> None:
+def test_ducklake_e2e_with_dependencies(tmp_path, test_features) -> None:
     """Real end-to-end integration test for DuckLake with DuckDB catalog and local filesystem storage.
 
     This is a real integration test that actually uses the DuckLake extension (no mocking).
-    The ducklake_extension fixture (session-scoped) ensures DuckLake is installed once per test session.
 
     This test exercises the full workflow:
     1. Write metadata for upstream features
