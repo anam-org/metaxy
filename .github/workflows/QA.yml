@@ -6,6 +6,10 @@ concurrency:
 
 on:
   push:
+    branches:
+      - main
+      - dev
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -46,14 +50,18 @@ jobs:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v7
+      #   with:
+      #     enable-cache: true
+      - uses: nicknovitski/nix-develop@v1
         with:
-          enable-cache: true
+           # use devshell for Python 3.10
+          arguments: ".#python310"
       - name: Sync dependencies
-        run: nix develop --command uv sync --all-extras --all-groups --python 3.10
+        run: uv python pin 3.10 && uv sync --all-extras --all-groups
       - name: Run Basedpyright
-        run: nix develop --command uv run --python 3.10 basedpyright --level error
+        run: uv run basedpyright --level error
 
   test:
     runs-on: depot-ubuntu-latest
@@ -63,15 +71,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
-        include:
-          - python-version: "3.10"
-            nix-shell: "python310"
-          - python-version: "3.11"
-            nix-shell: "python311"
-          - python-version: "3.12"
-            nix-shell: "python312"
-          - python-version: "3.13"
-            nix-shell: "python313"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -81,16 +80,20 @@ jobs:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      # - name: Install uv
+      #   uses: astral-sh/setup-uv@v7
+      #   with:
+      #     enable-cache: true
+      - uses: nicknovitski/nix-develop@v1
         with:
-          enable-cache: true
+           # use devshell for Python 3.10
+          arguments: ".#python${{ matrix.python-version }}"
       - name: Sync dependencies
-        run: nix develop .#${{ matrix.nix-shell }} --command uv sync --all-extras --all-groups --python ${{ matrix.python-version }}
+        run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
-        run: nix develop .#${{ matrix.nix-shell }} --command uv run --python ${{ matrix.python-version }} pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
+        run: uv run pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
       - name: Coverage comment
-        if: matrix.python-version == '3.10'
+        if: matrix.python-version == '3.10' && github.event_name == 'pull_request'
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-xml-coverage-path: ./coverage.xml
