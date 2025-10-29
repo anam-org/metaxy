@@ -1023,7 +1023,9 @@ class TestColumnSelection:
             # Create store and push snapshot
             store = InMemoryMetadataStore()
             with store:
-                snapshot_version, _ = store.record_feature_graph_snapshot()
+                result = store.record_feature_graph_snapshot()
+
+                _ = result.already_recorded
 
                 # Read the snapshot from feature_versions table
                 versions = (

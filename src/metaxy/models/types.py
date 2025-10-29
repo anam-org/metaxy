@@ -1,10 +1,26 @@
-from typing import Any, TypeAlias
+from typing import Any, NamedTuple, TypeAlias
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
 FEATURE_KEY_SEPARATOR = "/"
 FIELD_KEY_SEPARATOR = "/"
+
+
+class SnapshotPushResult(NamedTuple):
+    """Result of recording a feature graph snapshot.
+
+    Attributes:
+        snapshot_version: The deterministic hash of the graph snapshot
+        already_recorded: True if computational changes were already recorded
+        metadata_changed: True if metadata-only changes were detected
+        features_with_spec_changes: List of feature keys with spec version changes
+    """
+
+    snapshot_version: str
+    already_recorded: bool
+    metadata_changed: bool
+    features_with_spec_changes: list[str]
 
 
 class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]

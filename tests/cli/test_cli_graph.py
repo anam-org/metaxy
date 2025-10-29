@@ -766,3 +766,331 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
 
         assert result.returncode == 0
         assert result.stdout == snapshot
+
+
+def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
+    """Test CLI output for metadata-only changes (GitHub issue #86).
+
+    When FeatureDep metadata changes (e.g., rename added) without computational
+    changes, the CLI should display a different message than computational changes.
+    """
+
+    def features_v1():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class Upstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["upstream"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["downstream"]),
+                deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # No rename yet
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class Upstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["upstream"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["downstream"]),
+                deps=[
+                    FeatureDep(
+                        key=FeatureKey(["upstream"]),
+                        rename={"value": "renamed_value"},  # Added rename
+                    )
+                ],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Push v1
+    with metaxy_project.with_features(features_v1):
+        result1 = metaxy_project.run_cli("graph", "push")
+        assert result1.returncode == 0
+        assert "Recorded feature graph" in result1.stdout
+        assert "Snapshot version:" in result1.stdout
+
+    # Push v2 (metadata-only change)
+    with metaxy_project.with_features(features_v2):
+        result2 = metaxy_project.run_cli("graph", "push")
+        assert result2.returncode == 0
+
+        # Should show metadata-only change message
+        assert "Updated feature graph metadata" in result2.stdout
+        assert "no topological changes" in result2.stdout
+
+        # Should list the changed feature
+        assert "downstream" in result2.stdout
+
+        # Should still show snapshot version
+        assert "Snapshot version:" in result2.stdout
+
+
+def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
+    """Test CLI output when nothing changed (GitHub issue #86)."""
+
+    def features():
+        from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+
+        class VideoFiles(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # First push
+        result1 = metaxy_project.run_cli("graph", "push")
+        assert "Recorded feature graph" in result1.stdout
+
+        # Second push - no changes
+        result2 = metaxy_project.run_cli("graph", "push")
+        assert result2.returncode == 0
+        assert "already recorded" in result2.stdout
+        assert "no changes" in result2.stdout
+        assert "Snapshot version:" in result2.stdout
+
+
+def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject):
+    """Test complete workflow: new → metadata change → no change (GitHub issue #86)."""
+
+    def features_v1():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class Upstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["upstream"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["downstream"]),
+                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class Upstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["upstream"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class Downstream(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["downstream"]),
+                deps=[
+                    FeatureDep(
+                        key=FeatureKey(["upstream"]),
+                        columns=("value",),  # Metadata change
+                    )
+                ],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Scenario 1: First push (new snapshot)
+    with metaxy_project.with_features(features_v1):
+        result1 = metaxy_project.run_cli("graph", "push")
+        assert result1.returncode == 0
+        assert "Recorded feature graph" in result1.stdout
+        assert "Snapshot version:" in result1.stdout
+
+    # Scenario 2: Metadata change
+    with metaxy_project.with_features(features_v2):
+        result2 = metaxy_project.run_cli("graph", "push")
+        assert result2.returncode == 0
+        assert "Updated feature graph metadata" in result2.stdout
+        assert "no topological changes" in result2.stdout
+        assert "downstream" in result2.stdout
+
+    # Scenario 3: No change
+    with metaxy_project.with_features(features_v2):
+        result3 = metaxy_project.run_cli("graph", "push")
+        assert result3.returncode == 0
+        assert "already recorded" in result3.stdout
+        assert "no changes" in result3.stdout
+
+
+def test_graph_push_multiple_features_metadata_changes(
+    metaxy_project: TempMetaxyProject,
+):
+    """Test CLI output when multiple features have metadata changes."""
+
+    def features_v1():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class FeatureA(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_a"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_b"]),
+                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class FeatureC(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_c"]),
+                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    def features_v2():
+        from metaxy import (
+            Feature,
+            FeatureDep,
+            FeatureKey,
+            FeatureSpec,
+            FieldKey,
+            FieldSpec,
+        )
+
+        class FeatureA(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_a"]),
+                deps=None,
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class FeatureB(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_b"]),
+                deps=[
+                    FeatureDep(
+                        key=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
+                    )
+                ],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+            ),
+        ):
+            pass
+
+        class FeatureC(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["feature_c"]),
+                deps=[
+                    FeatureDep(
+                        key=FeatureKey(["feature_a"]), columns=("value",)
+                    )  # Changed
+                ],
+                fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
+            ),
+        ):
+            pass
+
+    # Push v1
+    with metaxy_project.with_features(features_v1):
+        result1 = metaxy_project.run_cli("graph", "push")
+        assert "Recorded feature graph" in result1.stdout
+
+    # Push v2 - multiple metadata changes
+    with metaxy_project.with_features(features_v2):
+        result2 = metaxy_project.run_cli("graph", "push")
+        assert result2.returncode == 0
+        assert "Updated feature graph metadata" in result2.stdout
+
+        # Should list both changed features
+        assert "feature_b" in result2.stdout
+        assert "feature_c" in result2.stdout
+
+        # Should NOT list unchanged feature
+        # Note: feature_a might appear in deps, so we check it's not in the "Features with metadata changes" section
+        # For now, just verify the two changed features are listed

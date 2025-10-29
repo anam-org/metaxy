@@ -52,7 +52,11 @@ def test_load_snapshot_data_computes_proper_field_versions():
 
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            snapshot_version, _ = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            snapshot_version = result.snapshot_version
+
+            _ = result.already_recorded
 
             # Load snapshot data - will use fallback since test features can't be imported
             with pytest.warns(
@@ -97,7 +101,11 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails():
 
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            snapshot_version, _ = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            snapshot_version = result.snapshot_version
+
+            _ = result.already_recorded
 
             # Load snapshot data - should trigger fallback
             with pytest.warns(
@@ -138,7 +146,11 @@ def test_field_key_normalization():
 
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            snapshot_version, _ = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            snapshot_version = result.snapshot_version
+
+            _ = result.already_recorded
 
             # Load snapshot data (will use fallback since feature is in test scope)
             with pytest.warns(UserWarning):
