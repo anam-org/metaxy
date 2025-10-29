@@ -1,8 +1,5 @@
 name: QA
 
-env:
-  UV_PYTHON_PREFERENCE: "only-system"
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -38,6 +35,8 @@ jobs:
 
   typecheck:
     runs-on: depot-ubuntu-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,6 +57,8 @@ jobs:
 
   test:
     runs-on: depot-ubuntu-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
     strategy:
       fail-fast: false
       matrix:
