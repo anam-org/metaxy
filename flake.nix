@@ -41,6 +41,11 @@
           clickhouse
           graphviz
           python
+
+          # this allows external tools (normal ones like git) to still find their expected libraries
+          # Caution: This is a hack and may not work on all systems
+          "/usr"
+          "/usr/local"
         ]);
       };
     in {
