@@ -34,7 +34,7 @@ def _build_feature(
 def test_code_version_single_field(graph) -> None:
     feature_cls = _build_feature(
         key_suffix="single_field",
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     value = feature_cls.code_version
@@ -52,7 +52,8 @@ def test_code_version_multiple_fields_order_invariant(graph) -> None:
 
     def build_fields(items: list[tuple[FieldKey, int]]) -> list[FieldSpec]:
         return [
-            FieldSpec(key=key, code_version=code_version) for key, code_version in items
+            FieldSpec(key=key, code_version=str(code_version))
+            for key, code_version in items
         ]
 
     ordered_feature = _build_feature(
@@ -70,11 +71,11 @@ def test_code_version_multiple_fields_order_invariant(graph) -> None:
 def test_code_version_changes_when_field_changes(graph) -> None:
     feature_v1 = _build_feature(
         key_suffix="field_change_v1",
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
     feature_v2 = _build_feature(
         key_suffix="field_change_v2",
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
     )
 
     assert feature_v1.code_version != feature_v2.code_version
@@ -88,7 +89,7 @@ def test_code_version_ignores_dependency_versions(graph) -> None:
         spec=FeatureSpec(
             key=parent_key,
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -98,7 +99,7 @@ def test_code_version_ignores_dependency_versions(graph) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["code_version", "parent_v2"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
         ),
     ):
         pass
@@ -108,7 +109,7 @@ def test_code_version_ignores_dependency_versions(graph) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["code_version", "child_v1"]),
             deps=[FeatureDep(key=parent_key)],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=7)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="7")],
         ),
     ):
         pass
@@ -118,7 +119,7 @@ def test_code_version_ignores_dependency_versions(graph) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["code_version", "child_v2"]),
             deps=[FeatureDep(key=ParentV2.spec.key)],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=7)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="7")],
         ),
     ):
         pass
@@ -129,7 +130,7 @@ def test_code_version_ignores_dependency_versions(graph) -> None:
 def test_code_version_deterministic_per_class(graph) -> None:
     feature_cls = _build_feature(
         key_suffix="deterministic",
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=3)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="3")],
     )
 
     first = feature_cls.code_version
@@ -157,7 +158,7 @@ def test_code_version_consistent_across_field_order(
 
     def build_fields(items: list[tuple[FieldKey, int]]) -> list[FieldSpec]:
         return [
-            FieldSpec(key=field_key, code_version=code_version)
+            FieldSpec(key=field_key, code_version=str(code_version))
             for field_key, code_version in items
         ]
 

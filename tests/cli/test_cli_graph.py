@@ -790,7 +790,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -800,7 +800,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # No rename yet
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -820,7 +820,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -835,7 +835,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
                         rename={"value": "renamed_value"},  # Added rename
                     )
                 ],
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -874,7 +874,7 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
             spec=FeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
             ),
         ):
             pass
@@ -910,7 +910,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -920,7 +920,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(key=FeatureKey(["upstream"]))],
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -940,7 +940,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -955,7 +955,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
                         columns=("value",),  # Metadata change
                     )
                 ],
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -1003,7 +1003,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -1013,7 +1013,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=FeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -1023,7 +1023,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=FeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
-                fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
             ),
         ):
             pass
@@ -1043,7 +1043,7 @@ def test_graph_push_multiple_features_metadata_changes(
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
         ):
             pass
@@ -1057,7 +1057,7 @@ def test_graph_push_multiple_features_metadata_changes(
                         key=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
                     )
                 ],
-                fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
             ),
         ):
             pass
@@ -1071,7 +1071,7 @@ def test_graph_push_multiple_features_metadata_changes(
                         key=FeatureKey(["feature_a"]), columns=("value",)
                     )  # Changed
                 ],
-                fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
             ),
         ):
             pass
