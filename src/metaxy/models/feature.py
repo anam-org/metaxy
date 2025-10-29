@@ -12,6 +12,18 @@ from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
 from metaxy.utils.hashing import truncate_hash
 
+
+class ClassPropertyDescriptor:
+    """Descriptor to enable property-like access for class methods."""
+
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, obj, objtype=None):
+        if objtype is None:
+            objtype = type(obj)
+        return self.fget(objtype)
+
 if TYPE_CHECKING:
     import narwhals as nw
 
@@ -651,6 +663,7 @@ class MetaxyMeta(ModelMetaclass):
 class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     spec: ClassVar[FeatureSpec]
     graph: ClassVar[FeatureGraph]
+    code_version: ClassVar[ClassPropertyDescriptor]
 
     @classmethod
     def table_name(cls) -> str:
@@ -703,6 +716,51 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             ['user_id', 'session_id']  # Custom composite key
         """
         return cls.spec.id_columns
+
+    @ClassPropertyDescriptor
+    def code_version(cls) -> str:
+        """Get hash of this feature's local code only (excluding dependencies).
+
+        Returns a hash representing only this feature's field code versions:
+        - Field code_version values
+        - Field keys
+
+        This hash does NOT include:
+        - Parent/dependency versions
+        - Field dependencies
+
+        This is useful for identifying when only this feature's logic changes
+        versus when its dependencies change.
+
+        Returns:
+            64-character hex hash of the local field code versions
+
+        Example:
+            >>> class MyFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     fields=[
+            ...         FieldSpec(key=FieldKey(["field1"]), code_version=1),
+            ...         FieldSpec(key=FieldKey(["field2"]), code_version=2),
+            ...     ],
+            ... )):
+            ...     pass
+            >>> MyFeature.code_version
+            'a3f8b2c1...'  # Changes only when field code_version changes
+
+        Note:
+            Unlike `feature_version()`, this does not change when parent features change.
+            Field order does not affect the hash (fields are sorted).
+        """
+        hasher = hashlib.sha256()
+
+        # Sort fields by key for deterministic hashing
+        sorted_fields = sorted(cls.spec.fields, key=lambda f: f.key.to_string())
+
+        for field in sorted_fields:
+            hasher.update(field.key.to_string().encode())
+            hasher.update(str(field.code_version).encode())
+
+        return truncate_hash(hasher.hexdigest())
 
     @classmethod
     def feature_version(cls) -> str:
