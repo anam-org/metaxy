@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Daniel Gafni", email = "danielgafni16@gmail.com" }
 ]
+license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
     "cyclopts==4.0.0b1",
