@@ -234,6 +234,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
             duckdb_conn = self._duckdb_raw_connection()
             self._ducklake_attachment.configure(duckdb_conn)
 
+    def close(self) -> None:
+        """Close DuckDB connection.
+
+        DuckLake attachment cleanup is handled automatically by DuckDB
+        when the connection closes, so no explicit detachment is needed.
+        """
+        super().close()
+
     def preview_ducklake_sql(self) -> list[str]:
         """Return DuckLake attachment SQL if configured."""
         return self.ducklake_attachment.preview_sql()
