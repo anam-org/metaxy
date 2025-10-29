@@ -2,38 +2,38 @@
 # name: test_list_features[1]
   '''
   ---
-  examples/parent (version 
+  examples/parent (version
   0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8)
     Fields:
-      embeddings (code_version 1, version 
+      embeddings (code_version 1, version
   05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459)
   ---
-  examples/child (version 
+  examples/child (version
   440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f)
     Feature Dependencies:
       key=examples/parent columns=None rename=None
     Fields:
-      predictions (code_version 1, version 
+      predictions (code_version 1, version
   1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4)
-  
+
   '''
 # ---
 # name: test_list_features[2]
   '''
   ---
-  examples/parent (version 
+  examples/parent (version
   a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737)
     Fields:
-      embeddings (code_version 2, version 
+      embeddings (code_version 2, version
   3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add)
   ---
-  examples/child (version 
+  examples/child (version
   7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd)
     Feature Dependencies:
       key=examples/parent columns=None rename=None
     Fields:
-      predictions (code_version 1, version 
+      predictions (code_version 1, version
   bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997)
-  
+
   '''
 # ---

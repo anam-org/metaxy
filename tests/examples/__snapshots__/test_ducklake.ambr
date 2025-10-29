@@ -2,13 +2,13 @@
 # name: test_ducklake_demo_snapshot
   '''
   DuckLake store initialised. Extensions: ['ducklake', 'hashfuncs']
-
+  
   Preview of DuckLake ATTACH SQL:
      INSTALL ducklake;
      LOAD ducklake;
      CREATE OR REPLACE SECRET secret_ducklake ( TYPE DUCKLAKE, METADATA_PATH '/tmp/ducklake_meta.db', DATA_PATH '/tmp/ducklake_storage' );
      ATTACH 'ducklake:secret_ducklake' AS ducklake (API_VERSION '0.2', OVERRIDE_DATA_PATH true);
      USE ducklake;
-
+  
   '''
 # ---
