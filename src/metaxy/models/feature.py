@@ -11,18 +11,7 @@ from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
 from metaxy.utils.hashing import truncate_hash
-
-
-class ClassPropertyDescriptor:
-    """Descriptor to enable property-like access for class methods."""
-
-    def __init__(self, fget):
-        self.fget = fget
-
-    def __get__(self, obj, objtype=None):
-        if objtype is None:
-            objtype = type(obj)
-        return self.fget(objtype)
+from metaxy.utils.class_property import ClassPropertyDescriptor
 
 
 if TYPE_CHECKING:
@@ -664,7 +653,7 @@ class MetaxyMeta(ModelMetaclass):
 class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     spec: ClassVar[FeatureSpec]
     graph: ClassVar[FeatureGraph]
-    code_version: ClassVar[ClassPropertyDescriptor]
+    code_version: ClassVar[str]
 
     @classmethod
     def table_name(cls) -> str:
@@ -717,6 +706,7 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             ['user_id', 'session_id']  # Custom composite key
         """
         return cls.spec.id_columns
+
 
     @ClassPropertyDescriptor
     def code_version(cls) -> str:
