@@ -88,23 +88,26 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
 
         for ext_spec in self.extensions:
             if isinstance(ext_spec, str):
+                # Simple string form - install from community repo
                 ext_name = ext_spec
-                ext_repo = "community"
-            elif isinstance(ext_spec, Mapping):
-                ext_name = str(ext_spec.get("name", ""))
-                ext_repo = str(ext_spec.get("repository", "community"))
+                # Install and load extension from community
+                backend.raw_sql(f"INSTALL {ext_name} FROM community")
+                backend.raw_sql(f"LOAD {ext_name}")
             else:
-                ext_name = str(getattr(ext_spec, "name", ""))
-                ext_repo = getattr(ext_spec, "repository", None) or "community"
+                # Dict form with optional repository
+                ext_name = ext_spec.get("name", "")
+                ext_repo = ext_spec.get("repository", "community")
 
-            if not ext_name:
-                raise ValueError("DuckDB extension specification must include a name.")
+                if ext_repo == "community":
+                    # Install from community repository
+                    backend.raw_sql(f"INSTALL {ext_name} FROM community")
+                else:
+                    # Set custom repository and install
+                    backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
+                    backend.raw_sql(f"INSTALL {ext_name}")
 
-            if ext_repo != "community":
-                backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
-
-            backend.raw_sql(f"INSTALL {ext_name}")
-            backend.raw_sql(f"LOAD {ext_name}")
+                # Load extension
+                backend.raw_sql(f"LOAD {ext_name}")
 
     def _generate_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
         """Generate hash SQL generators for DuckDB.
@@ -139,9 +142,22 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
             if isinstance(ext, str):
                 extension_names.append(ext)
             elif isinstance(ext, Mapping):
-                extension_names.append(str(ext.get("name", "")))
+                name = ext.get("name")
+                if not name:
+                    raise ValueError(
+                        f"Extension mapping must have a non-empty 'name' key; got {ext}"
+                    )
+                extension_names.append(str(name))
             else:
-                extension_names.append(str(getattr(ext, "name", "")))
+                # Must be ExtensionSpec
+                from metaxy.metadata_store.duckdb import ExtensionSpec
+
+                if isinstance(ext, ExtensionSpec):
+                    extension_names.append(ext.name)
+                else:
+                    raise TypeError(
+                        f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
+                    )
 
         if "hashfuncs" in extension_names:
 
