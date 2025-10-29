@@ -141,6 +141,39 @@ def test_duckdb_persistence_across_instances(
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
+def test_duckdb_ducklake_integration(
+    tmp_path: Path, test_graph, test_features: dict
+) -> None:
+    """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
+
+    db_path = tmp_path / "ducklake.duckdb"
+    metadata_path = tmp_path / "ducklake_catalog.duckdb"
+    storage_dir = tmp_path / "ducklake_storage"
+
+    ducklake_config = {
+        "alias": "lake",
+        "metadata_backend": {
+            "type": "duckdb",
+            "path": str(metadata_path),
+        },
+        "storage_backend": {
+            "type": "local",
+            "path": str(storage_dir),
+        },
+    }
+
+    with DuckDBMetadataStore(
+        db_path, extensions=["json"], ducklake=ducklake_config
+    ) as store:
+        attachment_config = store.ducklake_attachment_config
+        assert attachment_config.alias == "lake"
+
+        duckdb_conn = store._duckdb_raw_connection()
+        databases = duckdb_conn.execute("PRAGMA database_list").fetchall()
+        attached_names = {row[1] for row in databases}
+        assert "lake" in attached_names
+
+
 def test_duckdb_close_idempotent(
     tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:

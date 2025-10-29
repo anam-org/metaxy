@@ -26,9 +26,9 @@ def test_record_feature_graph_snapshot_stability(
             original_snapshot_version = graph.snapshot_version
 
             # Serialize the graph for the first time
-            snapshot_version_1, was_already_recorded_1 = (
-                persistent_store.record_feature_graph_snapshot()
-            )
+            result_1 = persistent_store.record_feature_graph_snapshot()
+            snapshot_version_1 = result_1.snapshot_version
+            was_already_recorded_1 = result_1.already_recorded
 
             # Should not be recorded yet (first time)
             assert not was_already_recorded_1, (
@@ -41,9 +41,9 @@ def test_record_feature_graph_snapshot_stability(
             )
 
             # Serialize again - should be idempotent
-            snapshot_version_2, was_already_recorded_2 = (
-                persistent_store.record_feature_graph_snapshot()
-            )
+            result_2 = persistent_store.record_feature_graph_snapshot()
+            snapshot_version_2 = result_2.snapshot_version
+            was_already_recorded_2 = result_2.already_recorded
 
             # Should be marked as already recorded
             assert was_already_recorded_2, (
@@ -84,7 +84,11 @@ def test_serialize_uses_to_snapshot(
     with graph.use():
         with persistent_store:
             # Serialize to the store
-            snapshot_version, _ = persistent_store.record_feature_graph_snapshot()
+            result = persistent_store.record_feature_graph_snapshot()
+
+            snapshot_version = result.snapshot_version
+
+            _ = result.already_recorded
 
             # Read back the serialized data from the store
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY

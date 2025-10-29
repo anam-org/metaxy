@@ -179,7 +179,11 @@ class TestSnapshotResolver:
 
             with InMemoryMetadataStore() as store:
                 # Record a snapshot
-                snapshot_version, _ = store.record_feature_graph_snapshot()
+                result = store.record_feature_graph_snapshot()
+
+                snapshot_version = result.snapshot_version
+
+                _ = result.already_recorded
 
                 # Resolve latest
                 result = resolver.resolve_snapshot("latest", store, graph)
@@ -359,7 +363,11 @@ class TestGraphDiffer:
 
             with InMemoryMetadataStore() as store:
                 # Record snapshot
-                snapshot_version, _ = store.record_feature_graph_snapshot()
+                result = store.record_feature_graph_snapshot()
+
+                snapshot_version = result.snapshot_version
+
+                _ = result.already_recorded
 
                 # Load snapshot data
                 snapshot_data = differ.load_snapshot_data(store, snapshot_version)

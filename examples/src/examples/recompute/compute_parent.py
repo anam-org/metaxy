@@ -27,7 +27,11 @@ ParentFeature = get_feature_by_key(parent_key)
 # Get metadata store from metaxy.toml config
 with MetaxyConfig.load().get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
-    snapshot_version, _ = store.record_feature_graph_snapshot()
+    result = store.record_feature_graph_snapshot()
+
+    snapshot_version = result.snapshot_version
+
+    _ = result.already_recorded
 
     print(f"Graph snapshot_version: {snapshot_version}")
 

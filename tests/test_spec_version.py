@@ -381,7 +381,9 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
         with store:
             # Record the feature graph snapshot
-            snapshot_version, is_existing = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            is_existing = result.already_recorded
 
             # Should be a new snapshot
             assert not is_existing
@@ -444,14 +446,22 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
 
         with store:
             # First push
-            snapshot_v1, is_existing_1 = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            snapshot_v1 = result.snapshot_version
+
+            is_existing_1 = result.already_recorded
             assert not is_existing_1
 
             features_df_1 = store.read_features(current=True)
             feature_spec_version_1 = features_df_1.to_dicts()[0]["feature_spec_version"]
 
             # Second push (identical graph)
-            snapshot_v2, is_existing_2 = store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
+
+            snapshot_v2 = result.snapshot_version
+
+            is_existing_2 = result.already_recorded
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
