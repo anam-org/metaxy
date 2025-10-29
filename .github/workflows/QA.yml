@@ -51,7 +51,7 @@ jobs:
         with:
           enable-cache: true
       - name: Sync dependencies
-        run: nix develop --command uv sync --all-extras --all-groups
+        run: nix develop --command uv sync --all-extras --all-groups --python 3.10
       - name: Run Basedpyright
         run: nix develop --command uv run basedpyright --level error
 
@@ -86,7 +86,7 @@ jobs:
         with:
           enable-cache: true
       - name: Sync dependencies
-        run: nix develop .#${{ matrix.nix-shell }} --command uv sync --all-extras --all-groups
+        run: nix develop .#${{ matrix.nix-shell }} --command uv sync --all-extras --all-groups --python ${{ matrix.python-version }}
       - name: Run Tests
         run: nix develop .#${{ matrix.nix-shell }} --command uv run pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
       - name: Coverage comment
