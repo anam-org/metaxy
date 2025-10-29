@@ -34,6 +34,7 @@
         'snapshot',
         'test',
       ]),
+      'metadata': None,
     }),
     'feature_spec_version': '63d427712eb566d6c066c2514693714d82df604af91b48eae453634c4d684339',
     'feature_tracking_version': 'dabc7e8b54edb77992145840b2df9c81d4e384f3cdb1736bd3d5ecb83b0f422a',

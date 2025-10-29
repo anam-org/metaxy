@@ -270,6 +270,46 @@ Features can override `load_input()` for custom join logic:
 
 This is critical for migrations when upstream dependencies change.
 
+#### User-Defined Metadata
+Features can include user-defined metadata for documentation and tooling purposes:
+- **metadata parameter**: Optional dict on FeatureSpec for attaching arbitrary information
+- **No effect on versioning**: metadata does NOT affect `feature_version()` or `code_version()`
+- **Affects spec version**: metadata IS included in `feature_spec_version` for audit trail
+- **Must be JSON-serializable**: Validated at initialization
+- **Use cases**: Owner, team, SLA, description, tags, custom configuration
+
+Example:
+```python
+class CustomerFeature(Feature, spec=FeatureSpec(
+    key=FeatureKey(["customer"]),
+    deps=[FeatureDep(key=FeatureKey(["user"]))],
+    fields=[
+        FieldSpec(key=FieldKey(["age"]), code_version=1),
+        FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
+    ],
+    metadata={
+        "owner": "data-team",
+        "sla": "24h",
+        "description": "Customer profile enrichment",
+        "tags": ["customer", "profile", "enrichment"],
+        "pii": True,
+        "custom_config": {
+            "refresh_interval": "1h",
+            "alert_threshold": 0.95,
+        }
+    }
+)):
+    pass
+
+# Access metadata
+CustomerFeature.spec.metadata["owner"]  # "data-team"
+
+# Metadata doesn't affect versioning (these are the same):
+feature1 = Feature(spec=FeatureSpec(..., metadata={"owner": "team-a"}))
+feature2 = Feature(spec=FeatureSpec(..., metadata={"owner": "team-b"}))
+assert feature1.feature_version() == feature2.feature_version()
+```
+
 ## Important Constraints
 
 ### Narwhals as the Public Interface
