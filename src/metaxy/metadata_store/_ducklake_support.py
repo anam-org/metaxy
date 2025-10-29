@@ -14,8 +14,6 @@ from pydantic import (
     field_validator,
 )
 
-DuckDBConnection = DuckDBPyConnection
-
 
 @runtime_checkable
 class SupportsDuckLakeParts(Protocol):
@@ -329,7 +327,7 @@ class DuckLakeAttachmentManager:
     def __init__(self, config: DuckLakeAttachmentConfig):
         self._config = config
 
-    def configure(self, conn: DuckDBConnection | _PreviewConnection) -> None:
+    def configure(self, conn: DuckDBPyConnection | _PreviewConnection) -> None:
         cursor = conn.cursor()
         try:
             for plugin in self._config.plugins:

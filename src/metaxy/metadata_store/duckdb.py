@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store._ducklake_support import (
-    DuckDBConnection,
+    DuckDBPyConnection,
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
     DuckLakeConfigInput,
@@ -260,14 +260,14 @@ class DuckDBMetadataStore(IbisMetadataStore):
             raise RuntimeError("DuckLake attachment is not configured.")
         return self._ducklake_config
 
-    def _duckdb_raw_connection(self) -> DuckDBConnection:
+    def _duckdb_raw_connection(self) -> DuckDBPyConnection | RuntimeError:
         """Return the underlying DuckDBPyConnection from the Ibis backend."""
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")
 
         candidate = self._conn.con  # pyright: ignore[reportAttributeAccessIssue]
 
-        if not isinstance(candidate, DuckDBConnection):
+        if not isinstance(candidate, DuckDBPyConnection):
             raise TypeError(
                 f"Expected DuckDB backend 'con' to be DuckDBPyConnection, "
                 f"got {type(candidate).__name__}"
