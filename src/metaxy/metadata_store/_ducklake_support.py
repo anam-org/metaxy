@@ -405,9 +405,12 @@ def ensure_extensions_with_plugins(
         if isinstance(ext, str):
             existing_names.add(ext)
         elif isinstance(ext, Mapping):
-            name = str(ext.get("name", ""))
-            if name:
-                existing_names.add(name)
+            name = ext.get("name")
+            if not name:
+                raise ValueError(
+                    f"DuckDB extension mapping must have a non-empty 'name' key, got: {ext!r}"
+                )
+            existing_names.add(str(name))
         else:
             # Must be ExtensionSpec with 'name' attribute
             existing_names.add(ext.name)  # pyright: ignore[reportAttributeAccessIssue]
