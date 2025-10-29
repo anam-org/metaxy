@@ -17,11 +17,11 @@ class Video(
         fields=[
             FieldSpec(
                 key=FieldKey(["audio"]),
-                code_version=1,
+                code_version="1",
             ),
             FieldSpec(
                 key=FieldKey(["frames"]),
-                code_version=1,
+                code_version="1",
             ),
         ],
     ),
@@ -41,7 +41,7 @@ class Crop(
         fields=[
             FieldSpec(
                 key=FieldKey(["audio"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=Video.spec.key,
@@ -51,7 +51,7 @@ class Crop(
             ),
             FieldSpec(
                 key=FieldKey(["frames"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=Video.spec.key,
@@ -77,7 +77,7 @@ class FaceDetection(
         fields=[
             FieldSpec(
                 key=FieldKey(["faces"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=Crop.spec.key,
@@ -103,7 +103,7 @@ class SpeechToText(
         fields=[
             FieldSpec(
                 key=FieldKey(["transcription"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=Video.spec.key,

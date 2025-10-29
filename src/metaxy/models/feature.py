@@ -730,13 +730,13 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         Example:
             >>> class ParentFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["parent"]),
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ... )):
             ...     pass
             >>> class ChildFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["child"]),
             ...     deps=[FeatureDep(key=FeatureKey(["parent"]))],
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ... )):
             ...     pass
             >>> # code_version only depends on ChildFeature's fields
@@ -779,7 +779,7 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         Example:
             >>> class MyFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ... )):
             ...     pass
             >>> MyFeature.feature_version()
@@ -810,7 +810,7 @@ class Feature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         Example:
             >>> class MyFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ... )):
             ...     pass
             >>> MyFeature.feature_spec_version()

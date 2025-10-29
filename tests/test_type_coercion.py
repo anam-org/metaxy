@@ -43,14 +43,14 @@ def test_feature_key_from_feature_key() -> None:
 
 def test_field_key_from_str() -> None:
     """Test FieldKey accepts single string."""
-    field = FieldSpec(key="age", code_version=1)  # type: ignore[arg-type]
+    field = FieldSpec(key="age", code_version="1")  # type: ignore[arg-type]
     assert field.key == FieldKey(["age"])
     assert field.key.to_string() == "age"
 
 
 def test_field_key_from_list_str() -> None:
     """Test FieldKey accepts list of strings."""
-    field = FieldSpec(key=["user", "age"], code_version=1)  # type: ignore[arg-type]
+    field = FieldSpec(key=["user", "age"], code_version="1")  # type: ignore[arg-type]
     assert field.key == FieldKey(["user", "age"])
     assert field.key.to_string() == "user/age"
 
@@ -58,7 +58,7 @@ def test_field_key_from_list_str() -> None:
 def test_field_key_from_field_key() -> None:
     """Test FieldKey accepts FieldKey (no-op)."""
     key = FieldKey(["user", "age"])
-    field = FieldSpec(key=key, code_version=1)
+    field = FieldSpec(key=key, code_version="1")
     assert field.key == key
     assert field.key is key  # Should be the same object
 
@@ -187,10 +187,10 @@ def test_full_feature_spec_with_coercion() -> None:
                     FeatureDep(key=ParentFeature),  # type: ignore[arg-type]  # Feature class coercion
                 ],
                 fields=[
-                    FieldSpec(key="age", code_version=1),  # type: ignore[arg-type]  # str coercion
+                    FieldSpec(key="age", code_version="1"),  # type: ignore[arg-type]  # str coercion
                     FieldSpec(
                         key=["user", "name"],  # type: ignore[arg-type]  # list[str] coercion
-                        code_version=1,
+                        code_version="1",
                     ),
                 ],
             ),
@@ -227,11 +227,11 @@ def test_field_key_validation_errors() -> None:
     """Test FieldKey validation with invalid inputs."""
     # Forward slash not allowed
     with pytest.raises(ValueError, match="cannot contain forward slashes"):
-        FieldSpec(key="age/value", code_version=1)  # type: ignore[arg-type]
+        FieldSpec(key="age/value", code_version="1")  # type: ignore[arg-type]
 
     # Double underscore not allowed
     with pytest.raises(ValueError, match="cannot contain double underscores"):
-        FieldSpec(key="age__value", code_version=1)  # type: ignore[arg-type]
+        FieldSpec(key="age__value", code_version="1")  # type: ignore[arg-type]
 
 
 def test_backward_compatibility() -> None:
@@ -247,7 +247,7 @@ def test_backward_compatibility() -> None:
                     FeatureDep(key=FeatureKey(["parent"])),
                 ],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):

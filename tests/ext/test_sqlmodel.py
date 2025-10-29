@@ -55,7 +55,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
             deps=None,
             fields=[
                 FieldSpec(
-                    key=FieldKey(["frames"]), code_version=1
+                    key=FieldKey(["frames"]), code_version="1"
                 ),  # Logical data component
             ],
         ),
@@ -110,9 +110,9 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["multi", "field"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
-                FieldSpec(key=FieldKey(["subtitles"]), code_version=2),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
+                FieldSpec(key=FieldKey(["subtitles"]), code_version="2"),
             ],
         ),
     ):
@@ -146,7 +146,7 @@ def test_sqlmodel_custom_tablename() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["custom", "table"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["content"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
         ),
     ):
         __tablename__: str = "my_custom_table_name"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -169,7 +169,7 @@ def test_automatic_tablename() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["my", "auto", "feature"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         # No __tablename__ specified - should be auto-generated
@@ -201,8 +201,8 @@ def test_sqlmodel_field_definitions() -> None:
             key=FeatureKey(["audio"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["waveform"]), code_version=1),  # Logical data
-                FieldSpec(key=FieldKey(["spectrum"]), code_version=1),  # Logical data
+                FieldSpec(key=FieldKey(["waveform"]), code_version="1"),  # Logical data
+                FieldSpec(key=FieldKey(["spectrum"]), code_version="1"),  # Logical data
             ],
         ),
     ):
@@ -247,7 +247,7 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["versioned"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         __tablename__: str = "versioned"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -282,8 +282,8 @@ def test_data_version_method(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["data", "version"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["processed_data"]), code_version=1),
-                FieldSpec(key=FieldKey(["embeddings"]), code_version=2),
+                FieldSpec(key=FieldKey(["processed_data"]), code_version="1"),
+                FieldSpec(key=FieldKey(["embeddings"]), code_version="2"),
             ],
         ),
     ):
@@ -321,7 +321,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["parent"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
         ),
     ):
         __tablename__: str = "parent"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -334,7 +334,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(key=FeatureKey(["parent"]))],
-            fields=[FieldSpec(key=FieldKey(["child_data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["child_data"]), code_version="1")],
         ),
     ):
         __tablename__: str = "child"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -375,8 +375,8 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
         ),
     ):
@@ -394,7 +394,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             fields=[
                 FieldSpec(
                     key=FieldKey(["processed"]),
-                    code_version=1,
+                    code_version="1",
                     deps=[
                         FieldDep(
                             feature_key=FeatureKey(["upstream"]),
@@ -447,7 +447,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["versioned", "v1"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             __tablename__: str = "feature_v1"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -464,7 +464,9 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=2)],  # Changed!
+                fields=[
+                    FieldSpec(key=FieldKey(["data"]), code_version="2")
+                ],  # Changed!
             ),
         ):
             __tablename__: str = "feature_v2"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -498,7 +500,7 @@ def test_custom_graph_context() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["custom", "graph"]),
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             __tablename__: str = "custom_graph"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -525,7 +527,7 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
         spec=FeatureSpec(
             key=FeatureKey(["snapshot", "test"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
         ),
     ):
         __tablename__: str = "snapshot_test"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -566,7 +568,7 @@ def test_downstream_dependency_tracking() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["root"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         __tablename__: str = "root"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -579,7 +581,7 @@ def test_downstream_dependency_tracking() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["middle"]),
             deps=[FeatureDep(key=FeatureKey(["root"]))],
-            fields=[FieldSpec(key=FieldKey(["processed"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["processed"]), code_version="1")],
         ),
     ):
         __tablename__: str = "middle"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -592,7 +594,7 @@ def test_downstream_dependency_tracking() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(key=FeatureKey(["middle"]))],
-            fields=[FieldSpec(key=FieldKey(["final"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["final"]), code_version="1")],
         ),
     ):
         __tablename__: str = "leaf"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -630,7 +632,7 @@ def test_duplicate_key_raises() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["duplicate"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         __tablename__: str = "feature1"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -647,7 +649,7 @@ def test_duplicate_key_raises() -> None:
             spec=FeatureSpec(
                 key=FeatureKey(["duplicate"]),  # Same key!
                 deps=None,
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             __tablename__: str = "feature2"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -674,7 +676,7 @@ def test_inheritance_chain() -> None:
         spec=FeatureSpec(
             key=FeatureKey(["concrete"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         __tablename__: str = "concrete"  # pyright: ignore[reportIncompatibleVariableOverride]
@@ -712,8 +714,8 @@ def test_sqlmodel_feature_with_duckdb_store(
             key=FeatureKey(["video", "processing"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["duration"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["duration"]), code_version="1"),
             ],
         ),
     ):
@@ -785,7 +787,7 @@ def test_basic_custom_id_columns() -> None:
             id_columns=["user_id", "session_id"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["activity"]), code_version=1),
+                FieldSpec(key=FieldKey(["activity"]), code_version="1"),
             ],
         ),
     ):
@@ -828,8 +830,8 @@ def test_sqlmodel_duckdb_custom_id_columns(
             id_columns=["user_id", "session_id"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["activity_type"]), code_version=1),
-                FieldSpec(key=FieldKey(["duration"]), code_version=1),
+                FieldSpec(key=FieldKey(["activity_type"]), code_version="1"),
+                FieldSpec(key=FieldKey(["duration"]), code_version="1"),
             ],
         ),
     ):
@@ -851,7 +853,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
             fields=[
                 FieldSpec(
                     key=FieldKey(["total_duration"]),
-                    code_version=1,
+                    code_version="1",
                     deps=[
                         FieldDep(
                             feature_key=FeatureKey(["user", "activity"]),
@@ -979,8 +981,8 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
             id_columns=["user_id", "session_id", "timestamp"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["event"]), code_version=1),
-                FieldSpec(key=FieldKey(["metric"]), code_version=1),
+                FieldSpec(key=FieldKey(["event"]), code_version="1"),
+                FieldSpec(key=FieldKey(["metric"]), code_version="1"),
             ],
         ),
     ):
@@ -1028,7 +1030,7 @@ def test_parent_child_different_id_columns() -> None:
             id_columns=["user_id", "session_id", "device_id"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["detail"]), code_version=1),
+                FieldSpec(key=FieldKey(["detail"]), code_version="1"),
             ],
         ),
     ):
@@ -1046,7 +1048,7 @@ def test_parent_child_different_id_columns() -> None:
             id_columns=["user_id", "session_id"],  # Doesn't need device_id
             deps=[FeatureDep(key=FeatureKey(["detailed", "parent"]))],
             fields=[
-                FieldSpec(key=FieldKey(["summary"]), code_version=1),
+                FieldSpec(key=FieldKey(["summary"]), code_version="1"),
             ],
         ),
     ):
@@ -1090,7 +1092,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
             id_columns=["user_id", "date"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["value_a"]), code_version=1),
+                FieldSpec(key=FieldKey(["value_a"]), code_version="1"),
             ],
         ),
     ):
@@ -1107,7 +1109,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
             id_columns=["user_id", "date"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["value_b"]), code_version=1),
+                FieldSpec(key=FieldKey(["value_b"]), code_version="1"),
             ],
         ),
     ):
@@ -1130,7 +1132,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
             fields=[
                 FieldSpec(
                     key=FieldKey(["combined"]),
-                    code_version=1,
+                    code_version="1",
                     deps=[
                         FieldDep(
                             feature_key=FeatureKey(["feature", "a"]),
@@ -1238,7 +1240,7 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
                 id_columns=[],  # Empty list not allowed
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -1262,7 +1264,7 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
             id_columns=["customer_id", "order_id"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["amount"]), code_version=1),
+                FieldSpec(key=FieldKey(["amount"]), code_version="1"),
             ],
         ),
     ):
@@ -1314,7 +1316,7 @@ def test_sqlmodel_with_column_rename() -> None:
             key=FeatureKey(["upstream", "rename"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["content"]), code_version=1),
+                FieldSpec(key=FieldKey(["content"]), code_version="1"),
             ],
         ),
     ):
@@ -1338,7 +1340,7 @@ def test_sqlmodel_with_column_rename() -> None:
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["processed"]), code_version=1),
+                FieldSpec(key=FieldKey(["processed"]), code_version="1"),
             ],
         ),
     ):
@@ -1372,8 +1374,8 @@ def test_sqlmodel_with_column_selection() -> None:
             key=FeatureKey(["wide", "upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["data1"]), code_version=1),
-                FieldSpec(key=FieldKey(["data2"]), code_version=1),
+                FieldSpec(key=FieldKey(["data1"]), code_version="1"),
+                FieldSpec(key=FieldKey(["data2"]), code_version="1"),
             ],
         ),
     ):
@@ -1397,7 +1399,7 @@ def test_sqlmodel_with_column_selection() -> None:
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["summary"]), code_version=1),
+                FieldSpec(key=FieldKey(["summary"]), code_version="1"),
             ],
         ),
     ):
@@ -1431,7 +1433,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
                 key=FeatureKey(["bad", "feature"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["content"]), code_version=1),
+                    FieldSpec(key=FieldKey(["content"]), code_version="1"),
                 ],
             ),
         ):
@@ -1454,7 +1456,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             key=FeatureKey(["upstream", "status"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["content"]), code_version=1),
+                FieldSpec(key=FieldKey(["content"]), code_version="1"),
             ],
         ),
     ):
@@ -1475,7 +1477,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["processed"]), code_version=1),
+                FieldSpec(key=FieldKey(["processed"]), code_version="1"),
             ],
         ),
     ):
@@ -1504,7 +1506,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             key=FeatureKey(["complex", "upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["raw_data"]), code_version=1),
+                FieldSpec(key=FieldKey(["raw_data"]), code_version="1"),
             ],
         ),
     ):
@@ -1533,7 +1535,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["optimized"]), code_version=1),
+                FieldSpec(key=FieldKey(["optimized"]), code_version="1"),
             ],
         ),
     ):
@@ -1566,7 +1568,7 @@ def test_sqlmodel_empty_column_selection() -> None:
             key=FeatureKey(["data", "upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["values"]), code_version=1),
+                FieldSpec(key=FieldKey(["values"]), code_version="1"),
             ],
         ),
     ):
@@ -1588,7 +1590,7 @@ def test_sqlmodel_empty_column_selection() -> None:
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["computed"]), code_version=1),
+                FieldSpec(key=FieldKey(["computed"]), code_version="1"),
             ],
         ),
     ):
@@ -1620,7 +1622,7 @@ def test_sqlmodel_rename_validation_with_store(
             key=FeatureKey(["source", "feature"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["source_data"]), code_version=1),
+                FieldSpec(key=FieldKey(["source_data"]), code_version="1"),
             ],
         ),
     ):
@@ -1643,7 +1645,7 @@ def test_sqlmodel_rename_validation_with_store(
                 )
             ],
             fields=[
-                FieldSpec(key=FieldKey(["target_data"]), code_version=1),
+                FieldSpec(key=FieldKey(["target_data"]), code_version="1"),
             ],
         ),
     ):
@@ -1729,7 +1731,7 @@ def test_sqlmodel_rejects_autoincrement_primary_key_id_columns() -> None:
                 id_columns=["id"],
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -1755,7 +1757,7 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
             id_columns=["user_id", "session_id"],
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["data"]), code_version=1),
+                FieldSpec(key=FieldKey(["data"]), code_version="1"),
             ],
         ),
     ):

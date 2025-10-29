@@ -22,7 +22,7 @@ class ParentFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["embeddings"]),
-                code_version=1,  # Initial version
+                code_version="1",  # Initial version
             ),
         ],
     ),
@@ -40,7 +40,7 @@ class ChildFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["predictions"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature_key=ParentFeature.spec.key,

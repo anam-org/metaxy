@@ -22,7 +22,7 @@ def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["test", "feature"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -60,7 +60,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
                 key=FeatureKey(["versioned", "feature", "test_v1"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
@@ -74,7 +74,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
                 key=FeatureKey(["versioned", "feature", "test_v2"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+                    FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
                 ],
             ),
         ):
@@ -99,7 +99,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
             key=FeatureKey(["test_deps", "upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -111,7 +111,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
             key=FeatureKey(["test_deps", "downstream", "no_deps"]),
             deps=None,  # No dependencies
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -125,7 +125,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
                 FeatureDep(key=FeatureKey(["test_deps", "upstream"]))
             ],  # Added dependency!
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -150,9 +150,9 @@ def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["multi"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
-                FieldSpec(key=FieldKey(["metadata"]), code_version=2),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
+                FieldSpec(key=FieldKey(["metadata"]), code_version="2"),
             ],
         ),
     ):
@@ -176,8 +176,8 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["test_field_deps", "upstream"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
         ),
     ):
@@ -191,7 +191,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
             fields=[
                 FieldSpec(
                     key=FieldKey(["default"]),
-                    code_version=1,
+                    code_version="1",
                     # No field deps
                 ),
             ],
@@ -207,7 +207,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
             fields=[
                 FieldSpec(
                     key=FieldKey(["default"]),
-                    code_version=1,
+                    code_version="1",
                     deps=[
                         FieldDep(
                             feature_key=FeatureKey(["test_field_deps", "upstream"]),

@@ -24,7 +24,7 @@ class ParentFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["embeddings"]),
-                code_version=2,  # ⚠️ CHANGED: Updated embedding algorithm
+                code_version="2",  # ⚠️ CHANGED: Updated embedding algorithm
             ),
         ],
     ),
@@ -42,7 +42,7 @@ class ChildFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["predictions"]),
-                code_version=1,  # Unchanged - but will recompute due to parent change
+                code_version="1",  # Unchanged - but will recompute due to parent change
                 deps=[
                     FieldDep(
                         feature_key=ParentFeature.spec.key,

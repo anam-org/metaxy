@@ -325,7 +325,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
             deps=None,
             id_columns=["content_id"],
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
             ],
         ),
     ):
@@ -338,7 +338,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
             deps=[FeatureDep(key=FeatureKey(["video"]))],
             id_columns=["content_id"],
             fields=[
-                FieldSpec(key=FieldKey(["analysis"]), code_version=1),
+                FieldSpec(key=FieldKey(["analysis"]), code_version="1"),
             ],
         ),
     ):
@@ -603,7 +603,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
             deps=None,
             id_columns=["user_id"],
             fields=[
-                FieldSpec(key=FieldKey(["profile"]), code_version=1),
+                FieldSpec(key=FieldKey(["profile"]), code_version="1"),
             ],
         ),
     ):
@@ -616,7 +616,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
             deps=[FeatureDep(key=FeatureKey(["user"]))],
             id_columns=["user_id", "session_id"],
             fields=[
-                FieldSpec(key=FieldKey(["activity"]), code_version=1),
+                FieldSpec(key=FieldKey(["activity"]), code_version="1"),
             ],
         ),
     ):
@@ -684,7 +684,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
         spec=FeatureSpec(
             key=FeatureKey(["test1"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             # id_columns=None (default)
         ),
     ):
@@ -696,7 +696,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
         spec=FeatureSpec(
             key=FeatureKey(["test2"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             id_columns=["user_id"],  # Custom ID columns
         ),
     ):
@@ -1051,7 +1051,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
         spec=FeatureSpec(
             key=FeatureKey(["legacy"]),
             deps=None,
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             # No id_columns specified - should default to ["sample_uid"]
         ),
     ):

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import Field
 from typing_extensions import Self
 
+from metaxy.graph.diff.diff_models import _normalize_code_version
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -37,7 +38,7 @@ class FieldNode(FrozenBaseModel):
     key: FieldKey
     version: str | None = None  # None if field was removed
     old_version: str | None = None  # For diff mode
-    code_version: int | None = None
+    code_version: str | None = None
     status: NodeStatus = NodeStatus.NORMAL
 
 
@@ -58,7 +59,7 @@ class GraphNode(FrozenBaseModel):
     key: FeatureKey
     version: str | None = None  # None if feature was removed
     old_version: str | None = None  # For diff mode
-    code_version: int | None = None
+    code_version: str | None = None
     fields: list[FieldNode] = Field(default_factory=list)
     dependencies: list[FeatureKey] = Field(default_factory=list)
     status: NodeStatus = NodeStatus.NORMAL
@@ -198,18 +199,16 @@ class GraphData(FrozenBaseModel):
                         version=field_data["version"]
                         if field_data["version"]
                         else None,
-                        code_version=field_data["code_version"]
-                        if field_data["code_version"] != 0
-                        else None,
+                        code_version=_normalize_code_version(
+                            field_data["code_version"]
+                        ),
                     )
                 )
 
             node = GraphNode(
                 key=FeatureKey(node_data["key"].split("/")),
                 version=node_data["version"] if node_data["version"] else None,
-                code_version=node_data["code_version"]
-                if node_data["code_version"] != 0
-                else None,
+                code_version=_normalize_code_version(node_data["code_version"]),
                 fields=fields,
                 dependencies=[
                     FeatureKey(dep.split("/")) for dep in node_data["dependencies"]

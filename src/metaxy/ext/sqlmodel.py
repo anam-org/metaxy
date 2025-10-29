@@ -45,7 +45,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         ...         fields=[
         ...             FieldSpec(
         ...                 key=FieldKey(["data"]),
-        ...                 code_version=1,
+        ...                 code_version="1",
         ...             ),
         ...         ],
         ...     ),
@@ -185,7 +185,7 @@ class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=Non
         ...         fields=[
         ...             FieldSpec(
         ...                 key=FieldKey(["video_file"]),
-        ...                 code_version=1,
+        ...                 code_version="1",
         ...             ),
         ...         ],
         ...     ),

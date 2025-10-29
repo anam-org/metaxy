@@ -226,7 +226,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
             key=FeatureKey(["custom_id"]),
             deps=None,
             id_columns=["uuid"],
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         pass
