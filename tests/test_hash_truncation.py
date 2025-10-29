@@ -8,7 +8,7 @@ import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import Feature
+from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureSpec, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import (
@@ -263,99 +263,110 @@ class TestNarwhalsFunctions:
 class TestFeatureVersionTruncation:
     """Test hash truncation in feature versioning."""
 
-    def test_feature_version_truncation(self, graph):
+    def test_feature_version_truncation(self):
         """Test that feature versions are truncated."""
+        # Create isolated graph
+        test_graph = FeatureGraph()
 
-        # Create feature without truncation
-        class TestFeature1(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature1"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                deps=None,  # Root feature has no dependencies
-            ),
-        ):
-            pass
+        with test_graph.use():
+            # Create feature without truncation
+            class TestFeature1(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "feature1"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    deps=None,  # Root feature has no dependencies
+                ),
+            ):
+                pass
 
-        version_full = TestFeature1.feature_version()
-        assert len(version_full) == 64  # SHA256 hex digest length
+            version_full = TestFeature1.feature_version()
+            assert len(version_full) == 64  # SHA256 hex digest length
 
-        # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
+            # Enable truncation
+            config = MetaxyConfig(hash_truncation_length=16)
+            MetaxyConfig.set(config)
 
-        class TestFeature2(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature2"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                deps=None,  # Root feature has no dependencies
-            ),
-        ):
-            pass
+            class TestFeature2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "feature2"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    deps=None,  # Root feature has no dependencies
+                ),
+            ):
+                pass
 
-        version_truncated = TestFeature2.feature_version()
-        assert len(version_truncated) == 16
+            version_truncated = TestFeature2.feature_version()
+            assert len(version_truncated) == 16
 
-        # Clean up
-        MetaxyConfig.reset()
+            # Clean up
+            MetaxyConfig.reset()
 
-    def test_snapshot_version_truncation(self, graph):
+    def test_snapshot_version_truncation(self):
         """Test that snapshot versions are truncated."""
+        # Create isolated graph
+        test_graph = FeatureGraph()
 
-        class TestFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                deps=None,
-            ),
-        ):
-            pass
+        with test_graph.use():
 
-        # Get snapshot without truncation
-        snapshot_full = graph.snapshot_version
-        assert len(snapshot_full) == 64
+            class TestFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    deps=None,
+                ),
+            ):
+                pass
 
-        # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=12)
-        MetaxyConfig.set(config)
-        snapshot_truncated = graph.snapshot_version
-        assert len(snapshot_truncated) == 12
-        # Note: The truncated version is computed fresh with truncated dependencies,
-        # not just a truncation of the full version, so they may differ
+            # Get snapshot without truncation
+            snapshot_full = test_graph.snapshot_version
+            assert len(snapshot_full) == 64
 
-        # Clean up
-        MetaxyConfig.reset()
+            # Enable truncation
+            config = MetaxyConfig(hash_truncation_length=12)
+            MetaxyConfig.set(config)
+            snapshot_truncated = test_graph.snapshot_version
+            assert len(snapshot_truncated) == 12
+            # Note: The truncated version is computed fresh with truncated dependencies,
+            # not just a truncation of the full version, so they may differ
 
-    def test_field_version_truncation(self, graph):
+            # Clean up
+            MetaxyConfig.reset()
+
+    def test_field_version_truncation(self):
         """Test that field versions are truncated."""
+        # Create isolated graph
+        test_graph = FeatureGraph()
 
-        class TestFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[
-                    FieldSpec(key=FieldKey(["field1"]), code_version=1),
-                    FieldSpec(key=FieldKey(["field2"]), code_version=2),
-                ],
-                deps=None,
-            ),
-        ):
-            pass
+        with test_graph.use():
 
-        # Get field versions without truncation
-        data_version_full = TestFeature.data_version()
-        assert all(len(v) == 64 for v in data_version_full.values())
+            class TestFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "feature"]),
+                    fields=[
+                        FieldSpec(key=FieldKey(["field1"]), code_version=1),
+                        FieldSpec(key=FieldKey(["field2"]), code_version=2),
+                    ],
+                    deps=None,
+                ),
+            ):
+                pass
 
-        # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=20)
-        MetaxyConfig.set(config)
-        data_version_truncated = TestFeature.data_version()
-        assert all(len(v) == 20 for v in data_version_truncated.values())
+            # Get field versions without truncation
+            data_version_full = TestFeature.data_version()
+            assert all(len(v) == 64 for v in data_version_full.values())
 
-        # Clean up
-        MetaxyConfig.reset()
+            # Enable truncation
+            config = MetaxyConfig(hash_truncation_length=20)
+            MetaxyConfig.set(config)
+            data_version_truncated = TestFeature.data_version()
+            assert all(len(v) == 20 for v in data_version_truncated.values())
+
+            # Clean up
+            MetaxyConfig.reset()
 
 
 class TestConfigIntegration:
@@ -449,107 +460,115 @@ class TestMetadataStoreTruncation:
         ) as store:
             assert store.hash_truncation_length == 16
 
-    def test_data_version_truncation(self, graph):
+    def test_data_version_truncation(self):
         """Test that data versions are truncated in stores."""
+        # Create isolated graph
+        test_graph = FeatureGraph()
 
-        # Create feature
-        class TestFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                deps=None,
-            ),
-        ):
-            pass
-
-        # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
-
-        # Store should use truncated data versions
-        with InMemoryMetadataStore() as store:
-            # Write some dummy metadata with data_version
-            metadata = pl.DataFrame(
-                {
-                    "sample_uid": ["s1", "s2"],
-                    "data_version": [
-                        {"field1": "a" * 16},  # Already truncated
-                        {"field1": "b" * 16},  # Already truncated
-                    ],
-                }
-            )
-            store.write_metadata(TestFeature, metadata)
-
-            # Read back and verify
-            result = store.read_metadata(TestFeature).collect()
-            result_pl = result.to_polars()
-            assert result_pl.height == 2
-
-            # Data version should be truncated
-            for row in result_pl.iter_rows(named=True):
-                data_version = row["data_version"]
-                assert len(data_version["field1"]) == 16
-
-        # Clean up
-        MetaxyConfig.reset()
-
-
-class TestMigrationCompatibility:
-    """Test migration detection with hash truncation."""
-
-    def test_migration_with_truncation(self, graph):
-        """Test that migration detection works with truncated hashes."""
-        from metaxy.migrations.detector import detect_migration
-
-        # Enable truncation
-        config = MetaxyConfig(hash_truncation_length=12)
-        MetaxyConfig.set(config)
-
-        class TestFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                deps=None,
-            ),
-        ):
-            pass
-
-        # Record snapshot
-        with InMemoryMetadataStore() as store:
-            result = store.record_feature_graph_snapshot()
-
-            snapshot_v1 = result.snapshot_version
-
-            assert len(snapshot_v1) == 12  # Truncated
-
-            # Modify feature to trigger migration
-            graph.remove_feature(FeatureKey(["test", "feature"]))
-
-            class TestFeature(  # noqa: F811
+        with test_graph.use():
+            # Create feature
+            class TestFeature(
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[
-                        FieldSpec(key=FieldKey(["field1"]), code_version=2)
-                    ],  # Changed
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,
                 ),
             ):
                 pass
 
-            # Detect migration - should work with truncated versions
-            migration = detect_migration(
-                store,
-                ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
-            )
-            assert migration is not None
-            assert len(migration.from_snapshot_version) == 12
-            assert len(migration.to_snapshot_version) == 12
+            # Enable truncation
+            config = MetaxyConfig(hash_truncation_length=16)
+            MetaxyConfig.set(config)
 
-        # Clean up
-        MetaxyConfig.reset()
+            # Store should use truncated data versions
+            with InMemoryMetadataStore() as store:
+                # Write some dummy metadata with data_version
+                metadata = pl.DataFrame(
+                    {
+                        "sample_uid": ["s1", "s2"],
+                        "data_version": [
+                            {"field1": "a" * 16},  # Already truncated
+                            {"field1": "b" * 16},  # Already truncated
+                        ],
+                    }
+                )
+                store.write_metadata(TestFeature, metadata)
+
+                # Read back and verify
+
+                result = store.read_metadata(TestFeature).collect()
+                result_pl = result.to_polars()
+                assert result_pl.height == 2
+
+                # Data version should be truncated
+                for row in result_pl.iter_rows(named=True):
+                    data_version = row["data_version"]
+                    assert len(data_version["field1"]) == 16
+
+            # Clean up
+            MetaxyConfig.reset()
+
+
+class TestMigrationCompatibility:
+    """Test migration detection with hash truncation."""
+
+    def test_migration_with_truncation(self):
+        """Test that migration detection works with truncated hashes."""
+        from metaxy.migrations.detector import detect_migration
+
+        # Create isolated graph
+        test_graph = FeatureGraph()
+
+        with test_graph.use():
+            # Enable truncation
+            config = MetaxyConfig(hash_truncation_length=12)
+            MetaxyConfig.set(config)
+
+            class TestFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["test", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    deps=None,
+                ),
+            ):
+                pass
+
+            # Record snapshot
+            with InMemoryMetadataStore() as store:
+                result = store.record_feature_graph_snapshot()
+
+                snapshot_v1 = result.snapshot_version
+
+                assert len(snapshot_v1) == 12  # Truncated
+
+                # Modify feature to trigger migration
+                test_graph.remove_feature(FeatureKey(["test", "feature"]))
+
+                class TestFeature(  # noqa: F811
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test", "feature"]),
+                        fields=[
+                            FieldSpec(key=FieldKey(["field1"]), code_version=2)
+                        ],  # Changed
+                        deps=None,
+                    ),
+                ):
+                    pass
+
+                # Detect migration - should work with truncated versions
+                migration = detect_migration(
+                    store,
+                    ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
+                )
+                assert migration is not None
+                assert len(migration.from_snapshot_version) == 12
+                assert len(migration.to_snapshot_version) == 12
+
+            # Clean up
+            MetaxyConfig.reset()
 
     def test_hash_compatibility_in_migration(self):
         """Test hash compatibility checking in migrations."""
@@ -571,71 +590,75 @@ class TestMigrationCompatibility:
 class TestEndToEnd:
     """End-to-end tests with hash truncation."""
 
-    def test_full_workflow_with_truncation(self, graph):
+    def test_full_workflow_with_truncation(self):
         """Test complete workflow with hash truncation enabled."""
-        # Enable truncation globally
-        config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
+        # Create isolated graph
+        test_graph = FeatureGraph()
 
-        # Create features
-        class ParentFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["parent"]),
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
-                deps=None,
-            ),
-        ):
-            pass
+        with test_graph.use():
+            # Enable truncation globally
+            config = MetaxyConfig(hash_truncation_length=16)
+            MetaxyConfig.set(config)
 
-        from metaxy.models.feature_spec import FeatureDep
+            # Create features
+            class ParentFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["parent"]),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    deps=None,
+                ),
+            ):
+                pass
 
-        class ChildFeature(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["child"]),
-                fields=[FieldSpec(key=FieldKey(["derived"]), code_version=1)],
-                deps=[FeatureDep(key=FeatureKey(["parent"]))],
-            ),
-        ):
-            pass
+            from metaxy.models.feature_spec import FeatureDep
 
-        # Verify truncation
-        assert len(ParentFeature.feature_version()) == 16
-        assert len(ChildFeature.feature_version()) == 16
-        assert len(graph.snapshot_version) == 16
+            class ChildFeature(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["child"]),
+                    fields=[FieldSpec(key=FieldKey(["derived"]), code_version=1)],
+                    deps=[FeatureDep(key=FeatureKey(["parent"]))],
+                ),
+            ):
+                pass
 
-        # Store metadata
-        with InMemoryMetadataStore() as store:
-            # Record snapshot
-            result = store.record_feature_graph_snapshot()
+            # Verify truncation
+            assert len(ParentFeature.feature_version()) == 16
+            assert len(ChildFeature.feature_version()) == 16
+            assert len(test_graph.snapshot_version) == 16
 
-            snapshot_version = result.snapshot_version
+            # Store metadata
+            with InMemoryMetadataStore() as store:
+                # Record snapshot
+                result = store.record_feature_graph_snapshot()
 
-            _ = result.already_recorded
-            assert len(snapshot_version) == 16
+                snapshot_version = result.snapshot_version
 
-            # Write parent metadata
-            parent_data = pl.DataFrame(
-                {
-                    "sample_uid": ["s1", "s2"],
-                    "data_version": [
-                        {"value": "h" * 16},  # Truncated hash
-                        {"value": "i" * 16},  # Truncated hash
-                    ],
-                }
-            )
-            store.write_metadata(ParentFeature, parent_data)
+                _ = result.already_recorded
+                assert len(snapshot_version) == 16
 
-            # Verify stored versions are truncated
+                # Write parent metadata
+                parent_data = pl.DataFrame(
+                    {
+                        "sample_uid": ["s1", "s2"],
+                        "data_version": [
+                            {"value": "h" * 16},  # Truncated hash
+                            {"value": "i" * 16},  # Truncated hash
+                        ],
+                    }
+                )
+                store.write_metadata(ParentFeature, parent_data)
 
-            result = store.read_metadata(ParentFeature).collect()
-            result_pl = result.to_polars()
+                # Verify stored versions are truncated
 
-            for row in result_pl.iter_rows(named=True):
-                assert len(row["feature_version"]) == 16
-                assert len(row["snapshot_version"]) == 16
-                assert len(row["data_version"]["value"]) == 16
+                result = store.read_metadata(ParentFeature).collect()
+                result_pl = result.to_polars()
 
-        # Clean up
-        MetaxyConfig.reset()
+                for row in result_pl.iter_rows(named=True):
+                    assert len(row["feature_version"]) == 16
+                    assert len(row["snapshot_version"]) == 16
+                    assert len(row["data_version"]["value"]) == 16
+
+            # Clean up
+            MetaxyConfig.reset()
