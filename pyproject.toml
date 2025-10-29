@@ -141,6 +141,7 @@ exclude = [
     "**/node_modules",
     "**/__pycache__",
     "**/*venv/**/*",
+    "tests/test_type_coercion.py",  # Intentionally tests runtime type coercion
 ]
 
 [tool.pytest.ini_options]

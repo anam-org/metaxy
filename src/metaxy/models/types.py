@@ -85,9 +85,18 @@ class FeatureKey(list):  # pyright: ignore[reportMissingTypeArgument]
 
     @classmethod
     def _validate(cls, value, handler):
-        """Validate and wrap in FeatureKey."""
+        """Validate and wrap in FeatureKey.
+
+        Accepts:
+        - str: Converted to single-element list
+        - list[str]: Used directly
+        - FeatureKey: Returned as-is
+        """
         if isinstance(value, cls):
             return value
+        # Accept single string and convert to list
+        if isinstance(value, str):
+            return cls([value])
         # Let the list schema validate first
         validated = handler(value)
         # Wrap in FeatureKey
@@ -161,9 +170,18 @@ class FieldKey(list):  # pyright: ignore[reportMissingTypeArgument]
 
     @classmethod
     def _validate(cls, value, handler):
-        """Validate and wrap in FieldKey."""
+        """Validate and wrap in FieldKey.
+
+        Accepts:
+        - str: Converted to single-element list
+        - list[str]: Used directly
+        - FieldKey: Returned as-is
+        """
         if isinstance(value, cls):
             return value
+        # Accept single string and convert to list
+        if isinstance(value, str):
+            return cls([value])
         # Let the list schema validate first
         validated = handler(value)
         # Wrap in FieldKey

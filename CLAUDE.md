@@ -283,6 +283,57 @@ feature2 = Feature(spec=FeatureSpec(..., metadata={"owner": "team-b"}))
 assert feature1.feature_version() == feature2.feature_version()
 ```
 
+#### Type Coercion in FeatureSpec Parameters
+For convenience, FeatureSpec parameters accept multiple input types that are automatically coerced:
+
+**FeatureKey and FieldKey accept:**
+- `str` → Converted to `FeatureKey([str])` or `FieldKey([str])`
+- `list[str]` → Converted to `FeatureKey(list)` or `FieldKey(list)`
+- `FeatureKey`/`FieldKey` → Used directly
+
+**FeatureDep.key and FieldDep.feature_key accept:**
+- `str` → Converted to `FeatureKey([str])`
+- `list[str]` → Converted to `FeatureKey(list)`
+- `Feature class` → Extracts `spec.key`
+- `FeatureSpec` → Extracts `key`
+- `FeatureKey` → Used directly
+
+Example with verbose syntax (still supported):
+```python
+class CustomerFeature(Feature, spec=FeatureSpec(
+    key=FeatureKey(["customer"]),
+    deps=[FeatureDep(key=FeatureKey(["user"]))],
+    fields=[
+        FieldSpec(key=FieldKey(["age"]), code_version=1),
+        FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
+    ],
+)):
+    pass
+```
+
+Example with type coercion (more concise):
+```python
+class ParentFeature(Feature, spec=FeatureSpec(
+    key="parent",  # str coerced to FeatureKey(["parent"])
+    deps=None,
+)):
+    pass
+
+class CustomerFeature(Feature, spec=FeatureSpec(
+    key=["customer", "profile"],  # list[str] coerced to FeatureKey
+    deps=[
+        FeatureDep(key=ParentFeature),  # Feature class coerced to FeatureKey
+    ],
+    fields=[
+        FieldSpec(key="age", code_version=1),  # str coerced to FieldKey
+        FieldSpec(key=["ltv", "score"], code_version=1),  # list[str] coerced
+    ],
+)):
+    pass
+```
+
+**Note:** Static type checkers (basedpyright, mypy) will show errors for coerced types, but the code works correctly at runtime. Tests use `# type: ignore[arg-type]` comments to document this intentional mismatch.
+
 ## Important Constraints
 
 ### Narwhals as the Public Interface

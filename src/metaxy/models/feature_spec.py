@@ -14,7 +14,12 @@ class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection and renaming.
 
     Attributes:
-        key: The feature key to depend on
+        key: The feature key to depend on. Accepts:
+            - FeatureKey: Used directly
+            - str: Converted to FeatureKey([str])
+            - list[str]: Converted to FeatureKey(list)
+            - Feature class: Extracts spec.key
+            - FeatureSpec: Extracts key
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
             - Empty tuple (): Keep only system columns (sample_uid, data_version, etc.)
@@ -25,6 +30,9 @@ class FeatureDep(pydantic.BaseModel):
     Examples:
         >>> # Keep all columns (default behavior)
         >>> FeatureDep(key=FeatureKey(["upstream"]))
+        >>> # Or more concisely:
+        >>> FeatureDep(key="upstream")
+        >>> FeatureDep(key=["my", "upstream"])
 
         >>> # Keep only specific columns
         >>> FeatureDep(
@@ -51,6 +59,41 @@ class FeatureDep(pydantic.BaseModel):
         None  # None = all columns, () = only system columns
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
+
+    @pydantic.field_validator("key", mode="before")
+    @classmethod
+    def _validate_key(cls, value: Any) -> FeatureKey:
+        """Convert various types to FeatureKey.
+
+        Accepts:
+        - Feature class: Extracts spec.key
+        - FeatureSpec: Extracts key
+        - str: Converts to FeatureKey([str])
+        - list[str]: Converts to FeatureKey(list)
+        - FeatureKey: Returns as-is
+        """
+        # FeatureKey is already validated by its own validator
+        if isinstance(value, FeatureKey):
+            return value
+
+        # Accept Feature class and extract key
+        if hasattr(value, "spec") and hasattr(value.spec, "key"):
+            return value.spec.key
+
+        # Accept FeatureSpec and extract key
+        if hasattr(value, "key") and isinstance(value.key, FeatureKey):
+            return value.key
+
+        # Accept str and convert to FeatureKey
+        if isinstance(value, str):
+            return FeatureKey([value])
+
+        # Accept list[str] and convert to FeatureKey
+        if isinstance(value, list):
+            return FeatureKey(value)
+
+        # Let FeatureKey's validator handle other cases
+        return value
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
