@@ -4,7 +4,7 @@ entrypoints = ["examples.ducklake.demo"]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "ducklake_demo.db"
+database = "/tmp/ducklake_demo.db"
 
 [stores.dev.config.ducklake.attach_options]
 api_version = "0.2"
