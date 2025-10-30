@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/feature-discovery/">
+        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/feature-definitions/">
       
       
-        <link rel="prev" href="../data-versioning/">
+        <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../testing/">
+        <link rel="next" href="../data-versioning/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Feature Discovery - Metaxy</title>
+        <title>Feature Definitions - Metaxy</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#feature-discovery" class="md-skip">
+        <a href="#feature-system" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Feature Discovery
+              Feature Definitions
             
           </span>
         </div>
@@ -263,7 +263,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../feature-definitions/" class="md-tabs__link">
+        <a href="./" class="md-tabs__link">
           
   
   
@@ -420,10 +420,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../feature-definitions/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Feature Definitions
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -434,6 +456,86 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#feature-specs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Specs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Definitions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-level-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field-Level Dependencies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-note-on-type-coercion-for-metaxy-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      A Note on Type Coercion for Metaxy types
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syntactic-sugar" class="md-nav__link">
+    <span class="md-ellipsis">
+      Syntactic Sugar
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Syntactic Sugar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keys
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -466,32 +568,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Feature Discovery
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../feature-discovery/" class="md-nav__link">
         
   
   
@@ -502,110 +582,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#why-feature-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      Why Feature Discovery?
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#package-entry-points" class="md-nav__link">
-    <span class="md-ellipsis">
-      Package Entry Points
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Package Entry Points">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#creating-a-feature-plugin" class="md-nav__link">
-    <span class="md-ellipsis">
-      Creating a Feature Plugin
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#installing-and-using-plugins" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installing and Using Plugins
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#monorepo-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      Monorepo Patterns
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Monorepo Patterns">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#team-owned-feature-packages" class="md-nav__link">
-    <span class="md-ellipsis">
-      Team-Owned Feature Packages
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#config-based-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      Config-Based Discovery
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      Best Practices
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -845,37 +821,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-feature-discovery" class="md-nav__link">
+  <a href="#feature-specs" class="md-nav__link">
     <span class="md-ellipsis">
-      Why Feature Discovery?
+      Feature Specs
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#package-entry-points" class="md-nav__link">
+  <a href="#feature-definitions" class="md-nav__link">
     <span class="md-ellipsis">
-      Package Entry Points
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Package Entry Points">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#creating-a-feature-plugin" class="md-nav__link">
-    <span class="md-ellipsis">
-      Creating a Feature Plugin
+      Feature Definitions
     </span>
   </a>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#field-level-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field-Level Dependencies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-note-on-type-coercion-for-metaxy-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      A Note on Type Coercion for Metaxy types
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#syntactic-sugar" class="md-nav__link">
+    <span class="md-ellipsis">
+      Syntactic Sugar
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Syntactic Sugar">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#installing-and-using-plugins" class="md-nav__link">
+  <a href="#keys" class="md-nav__link">
     <span class="md-ellipsis">
-      Installing and Using Plugins
+      Keys
     </span>
   </a>
   
@@ -883,48 +877,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#monorepo-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      Monorepo Patterns
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Monorepo Patterns">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#team-owned-feature-packages" class="md-nav__link">
-    <span class="md-ellipsis">
-      Team-Owned Feature Packages
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#config-based-discovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      Config-Based Discovery
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      Best Practices
-    </span>
-  </a>
   
 </li>
       
@@ -947,141 +899,100 @@
   
 
 
-<h1 id="feature-discovery">Feature Discovery<a class="headerlink" href="#feature-discovery" title="Permanent link">&para;</a></h1>
-<p>Metaxy provides automatic feature discovery through Python's entrypoint system. This enables modular architecture patterns essential for scaling Metaxy projects.</p>
-<h2 id="why-feature-discovery">Why Feature Discovery?<a class="headerlink" href="#why-feature-discovery" title="Permanent link">&para;</a></h2>
-<p>Manual feature registration doesn't scale. As your system grows, you need:</p>
-<ul>
-<li><strong>Plugin architectures</strong> - Third-party teams contribute features without modifying core code</li>
-<li><strong>Feature collections</strong> - Package and distribute related features as installable units</li>
-<li><strong>Monorepo support</strong> - Discover features across multiple packages in a monorepo</li>
-<li><strong>Internal packages</strong> - Share features between projects via private package registries</li>
-</ul>
-<p>Feature discovery solves these problems through automatic registration at import time.</p>
-<h2 id="package-entry-points">Package Entry Points<a class="headerlink" href="#package-entry-points" title="Permanent link">&para;</a></h2>
-<p>The most powerful discovery mechanism uses Python's standard entry point system via <code>project.entry-points."metaxy.features"</code> in <code>pyproject.toml</code>.</p>
-<h3 id="creating-a-feature-plugin">Creating a Feature Plugin<a class="headerlink" href="#creating-a-feature-plugin" title="Permanent link">&para;</a></h3>
-<p>Structure your feature package:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>my-video-features/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── pyproject.toml
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── src/
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    └── my_video_features/
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        ├── __init__.py
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        ├── detection.py
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        └── transcription.py
-</span></code></pre></div>
-<p>Declare entry points in <code>pyproject.toml</code>:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[project]</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-video-features&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;metaxy&quot;</span><span class="p">]</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.features&quot;</span><span class="k">]</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">detection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_video_features.detection&quot;</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">transcription</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_video_features.transcription&quot;</span>
-</span></code></pre></div>
-<p>Define features in the modules:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># my_video_features/detection.py</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Feature</span><span class="p">,</span> <span class="n">FeatureSpec</span><span class="p">,</span> <span class="n">FeatureKey</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">FaceDetection</span><span class="p">(</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">Feature</span><span class="p">,</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;face_detection&quot;</span><span class="p">]),</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="c1"># ... spec details</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="p">),</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">):</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="k">pass</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="k">class</span><span class="w"> </span><span class="nc">ObjectDetection</span><span class="p">(</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">Feature</span><span class="p">,</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;object_detection&quot;</span><span class="p">]),</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>        <span class="c1"># ... spec details</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="p">),</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="p">):</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="k">pass</span>
-</span></code></pre></div>
-<h3 id="installing-and-using-plugins">Installing and Using Plugins<a class="headerlink" href="#installing-and-using-plugins" title="Permanent link">&para;</a></h3>
-<p>Install the package:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>my-video-features
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># Or in a monorepo:</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>./packages/my-video-features
-</span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">UV Package Manager: Entry Point Changes</p>
-<p>If you're using <code>uv</code> and modify entry points in <code>pyproject.toml</code>, <code>uv sync</code> will <strong>not</strong> recreate the editable package metadata. You must explicitly reinstall:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--reinstall-package<span class="w"> </span>my-video-features
-</span></code></pre></div>
+<h1 id="feature-system">Feature System<a class="headerlink" href="#feature-system" title="Permanent link">&para;</a></h1>
+<p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system. It has been inspired by Software-Defined Assets in <a href="https://dagster.io/">Dagster</a>.</p>
+<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos. But it can be just pure <strong>metadata</strong> as well.</p>
+<p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
+<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows, and will calculate <a href="../data-versioning/">sample versions</a> with strong consistency guarantees. Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify locations for samples of <strong>data</strong> (it's a good idea to include the sample version) into the <strong>data</strong> sample identifier (for example, an object store key). Metaxy is designed to be used with append-only systems that do not overwrite existing <strong>metadata</strong> or <strong>data</strong> (that's not something Metaxy can enforce, but it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
+<p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
+<div class="admonition tip">
+<p class="admonition-title">Include Sample Version In Your Data Path</p>
+<p>Include the sample version in your data path to ensure strong consistency guarantees. I mean it. Really do it!</p>
 </div>
-<p>Installed features will be automatically discovered and loaded:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_features</span>
+<p>Features live on a global <code>FeatureGraph</code> object (typically users do not need to interact with it directly). Features are bound to a specific Metaxy project, but can be moved between projects over time. Features must have unique (across all projects) <code>FeatureKey</code> associated with them.</p>
+<h2 id="feature-specs">Feature Specs<a class="headerlink" href="#feature-specs" title="Permanent link">&para;</a></h2>
+<p>Before we can define a <code>Feature</code>, we must first create a <code>FeatureSpec</code> object. But before we get to an example, it's necessary to understand the concept of ID columns. Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your <code>FeatureSpec</code>. Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class. Let's do it:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeatureSpec</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeatureSpec</span><span class="p">(</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">BaseFeatureSpec</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">):</span>  <span class="c1"># spec=None is important to tell Metaxy that this is a base class</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">id_columns</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;video_id&quot;</span><span class="p">,)</span>
+</span></code></pre></div>
+<p><code>BaseFeatureSpec</code> is a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model, so all normal Pydantic features apply.</p>
+<p>With our <code>VideoFeatureSpec</code> in place, we can proceed to defining features that would be using it.</p>
+<h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
+<p>Metaxy provides a <code>BaseFeature</code> class that can be extended to make user-defined features. It's a Pydantic model as well. User-defined <code>BaseFeature</code> classes must have fields matching ID columns of the <code>FeatureSpec</code> they are using.</p>
+<p>With respect to the same DRY principle, we can define a shared base class for features that use the <code>VideoFeatureSpec</code>.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">BaseVideoFeature</span><span class="p">(</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="kc">None</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">):</span>  <span class="c1"># spec=None is important to tell Metaxy this is a base class</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">video_id</span><span class="p">:</span> <span class="nb">str</span>
+</span></code></pre></div>
+<p>Now we are finally ready to define an actual feature.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseVideoFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">)):</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span></code></pre></div>
+<p>That's it! That's a roow feature, it doesn't have any dependencies. Easy.</p>
+<p>You may now use <code>VideoFeature.spec()</code> class method to access the original feature spec: it's bound to the class.</p>
+<p>Now let's define a child feature.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Transcript</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">BaseVideoFeature</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/processed/transcript&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">VideoFeature</span><span class="p">]),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">):</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">transcript_path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">speakers_json_path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">num_speakers</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
+<p>Hurray! You get the idea.</p>
+<h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
+<p>A core (I'be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>. These are used to define dependencies between logical fields of features.</p>
+<p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields). Fields are completely independent from them.</p>
+<p>Columns refer to <em>metadata</em> and are stored in metadata stores (such as databases) supported by Metaxy.</p>
+<p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit. Fields are supposed to represent parts of data that users care about. For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
+<p>Downstream features can depend on specific fields of upstream features. This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.</p>
+<p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the <a href="#feature-specs">example</a> above should not depend on the full video: it only needs the audio track in order to generate the transcript. Let's express that with Metaxy:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio&quot;</span><span class="p">],</span> <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;frames&quot;</span><span class="p">))</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseVideoFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">video_spec</span><span class="p">):</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">transcript_spec</span> <span class="o">=</span> <span class="n">TranscriptFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/transcript&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature_key</span><span class="o">=</span><span class="n">VideoFeature</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">])])])</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TranscriptFeature</span><span class="p">(</span><span class="n">BaseTranscriptFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">transcript_spec</span><span class="p">):</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span></code></pre></div>
+<p>Voilà!</p>
+<p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about this system.</p>
+<h2 id="a-note-on-type-coercion-for-metaxy-types">A Note on Type Coercion for Metaxy types<a class="headerlink" href="#a-note-on-type-coercion-for-metaxy-types" title="Permanent link">&para;</a></h2>
+<p>Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.</p>
+<p>To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes. Different ways to provide them are automatically coerced into canonical internal models. This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
+<p>Some examples:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureKey</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Automatically discovers and loads all features</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># from installed packages with metaxy.features entry points</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">load_features</span><span class="p">()</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Features are now available in the global graph</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureGraph</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">features_by_key</span><span class="p">)</span><span class="si">}</span><span class="s2"> features&quot;</span><span class="p">)</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix/feature&quot;</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">])</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">same_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="monorepo-patterns">Monorepo Patterns<a class="headerlink" href="#monorepo-patterns" title="Permanent link">&para;</a></h2>
-<p>In monorepos, use entry points to manage feature collections across teams:</p>
-<h3 id="team-owned-feature-packages">Team-Owned Feature Packages<a class="headerlink" href="#team-owned-feature-packages" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>monorepo/
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>├── packages/
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│   ├── core-features/
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│   │   └── pyproject.toml  # [project.entry-points.&quot;metaxy.features&quot;]
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│   ├── ml-features/
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│   │   └── pyproject.toml  # [project.entry-points.&quot;metaxy.features&quot;]
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>│   └── experimental-features/
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>│       └── pyproject.toml  # [project.entry-points.&quot;metaxy.features&quot;]
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>└── apps/
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    └── main-pipeline/
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        └── pyproject.toml  # depends on feature packages
-</span></code></pre></div>
-<p>Each team maintains their features independently:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># packages/ml-features/pyproject.toml</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.features&quot;</span><span class="k">]</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">embeddings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ml_features.embeddings&quot;</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">classifiers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ml_features.classifiers&quot;</span>
-</span></code></pre></div>
-<p>The main application discovers all features.</p>
-<h2 id="config-based-discovery">Config-Based Discovery<a class="headerlink" href="#config-based-discovery" title="Permanent link">&para;</a></h2>
-<p>For simpler use cases, load features directly from module paths specified in Metaxy configuration:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="config-based-discovery-metaxytoml" name="__tabbed_1" type="radio" /><input id="config-based-discovery-pyprojecttoml" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="config-based-discovery-metaxytoml">metaxy.toml</label><label for="config-based-discovery-pyprojecttoml">pyproject.toml</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="p">]</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">]</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_features</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Discovers features from configured entrypoints</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">load_features</span><span class="p">()</span>
-</span></code></pre></div>
-<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Use entry points for distribution</strong> - Any features intended for reuse should use entry points</li>
-<li><strong>Version your feature packages</strong> - Use semantic versioning for feature collections</li>
-<li><strong>Test in isolation</strong> - Load feature packages into test graphs to verify behavior</li>
-</ol>
-<p>The entry point system transforms feature management from a manual process to an automatic, scalable system that grows with your organization.</p>
+<p>Metaxy really loves you, the user! See <a href="#syntactic-sugar">syntactic sugar</a> for more details.</p>
+<h2 id="syntactic-sugar">Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permanent link">&para;</a></h2>
+<h3 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h3>
+<p>Both <code>FeatureKey</code> and <code>FieldKey</code> accept:</p>
+<ul>
+<li><strong>String format</strong>: <code>FeatureKey("prefix/feature")</code></li>
+<li><strong>Sequence format</strong>: <code>FeatureKey(["prefix", "feature"])</code></li>
+<li><strong>Variadic format</strong>: <code>FeatureKey("prefix", "feature")</code></li>
+<li><strong>Same type</strong>: <code>FeatureKey(another_feature_key)</code> -- for full Inception mode</li>
+</ul>
+<p>All formats produce equivalent keys, internally represented as a sequence of parts</p>
 
 
 
