@@ -83,6 +83,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Save original environment
+        run: bash .github/scripts/save-env.sh
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
@@ -97,15 +99,16 @@ jobs:
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
-        continue-on-error: true
         run: uv run pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
 
-      # without this cleanup, tools not using Nix may fail if they e.g. try to use nix-provided git
-      - name: Cleanup nix environment
+      # Restore original environment to prevent Nix tools from interfering with subsequent steps
+      - name: Restore original environment
         if: always()
-        run: bash .github/scripts/cleanup-nix-env.sh
+        run: bash .github/scripts/restore-env.sh
       - name: Coverage comment
-        if: matrix.python-version == '3.10' && github.event_name == 'pull_request'
+
+        # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
+        if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-xml-coverage-path: ./coverage.xml
@@ -113,9 +116,6 @@ jobs:
           badge-title: Coverage
           GITHUB_TOKEN: ${{ github.token }}
           MINIMUM_ORANGE: 70
-      - name: Check Tests Status
-        if: steps.pytest.outcome == 'failure'
-        run: exit 1
 
   docs:
     runs-on: depot-ubuntu-latest
@@ -124,6 +124,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Save original environment
+        run: bash .github/scripts/save-env.sh
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
@@ -136,10 +138,10 @@ jobs:
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
-      # without this cleanup, tools not using Nix may fail if they e.g. try to use nix-provided git
-      - name: Cleanup nix environment
+      # Restore original environment to prevent Nix tools from interfering with subsequent steps
+      - name: Restore original environment
         if: always()
-        run: bash .github/scripts/cleanup-nix-env.sh
+        run: bash .github/scripts/restore-env.sh
 
   check:
     if: always()
