@@ -8,9 +8,9 @@ import pytest
 from pydantic import ValidationError
 from typing_extensions import assert_type
 
+from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.types import (
     FeatureKey,
-    # FeatureKeyType,
     FieldKey,
     # FieldKeyType,
 )
@@ -622,3 +622,36 @@ class TestEdgeCases:
         key = FeatureKey([])
         assert list(key.parts) == []
         assert key.to_string() == ""
+
+
+feature_key = FeatureKey("/a/b")
+feature_spec = FeatureSpec(key=feature_key, deps=None)
+
+
+def test_feature_dep_key_overloads():
+    _ = FeatureDep(key=feature_key)
+    _ = FeatureDep(key=feature_spec)
+
+
+def test_feature_spec_key_overloads():
+    _ = FeatureSpec(key=feature_spec, deps=None)
+
+
+def test_feature_spec_deps_required():
+    """Test that FeatureSpec requires deps parameter."""
+    # These should all work - deps is provided
+    spec1 = FeatureSpec(key="test", deps=None)
+    spec2 = FeatureSpec(key=["test"], deps=None)
+    spec3 = FeatureSpec(key=FeatureKey("test"), deps=None)
+    spec4 = FeatureSpec(key=spec1, deps=None)
+
+    # Verify they were created correctly
+    assert spec1.deps is None
+    assert spec2.deps is None
+    assert spec3.deps is None
+    assert spec4.deps is None
+
+    # With actual dependencies
+    dep = FeatureDep(key="upstream")
+    spec5 = FeatureSpec(key="test", deps=[dep])
+    assert spec5.deps == [dep]

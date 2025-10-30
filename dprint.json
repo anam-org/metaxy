@@ -7,7 +7,8 @@
   },
   "excludes": [
     "**/*.lock",
-    "docs/reference/**"
+    "docs/reference/**",
+    ".basedpyright/baseline.json"
   ],
   "plugins": [
     "https://plugins.dprint.dev/markdown-0.20.0.wasm",
