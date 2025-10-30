@@ -95,27 +95,56 @@ jobs:
         with:
            # use devshell for Python 3.10
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
-      - name: Sync dependencies
+      - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
-        run: uv run pytest --verbose --cov=src/metaxy --cov-report=term-missing --cov-report=xml --durations=10
+        run: >
+          uv run pytest
+          --cov=src/metaxy
+          --cov-report=term-missing
+          --cov-report=xml
+          --durations=10
+          --junit-xml=./junit.xml
 
       # Restore original environment to prevent Nix tools from interfering with subsequent steps
-      - name: Restore original environment
+      - name: Restore Original Environment After Nix
         if: always()
         run: bash .github/scripts/restore-env.sh
-      - name: Coverage comment
 
+
+      # TODO: run this for the entire matrix. The current action doesn't support making a single comment for all matrix jobs
+      - name: Test Execution Summary
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
         if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
+        uses: pmeier/pytest-results-action@main
+        with:
+          # A list of JUnit XML files, directories containing the former, and wildcard
+          # patterns to process.
+          # See @actions/glob for supported patterns.
+          path: ./junit.xml
+          # (Optional) Add a summary of the results at the top of the report
+          summary: true
+          # (Optional) Select which results should be included in the report.
+          # Follows the same syntax as `pytest -r`
+          display-options: fEX
+          # (Optional) Fail the workflow if no JUnit XML was found.
+          fail-on-empty: true
+          # (Optional) Title of the test results section in the workflow summary
+          title: Test Results (Python ${{ matrix.python-version }})
+
+      - name: Coverage Report
+        # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
+        if: always()
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-xml-coverage-path: ./coverage.xml
-          title: Coverage Report
+          title: Coverage Report (Python ${{ matrix.python-version }}))
           badge-title: Coverage
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_ORANGE: 70
+          github-token: ${{ github.token }}
+          junitxml-path: ./junit.xml
+          xml-skip-covered: true
+          unique-id-for-comment: ${{ matrix.python-version }}
 
   docs:
     runs-on: depot-ubuntu-latest

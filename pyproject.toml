@@ -144,6 +144,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "--snapshot-details"
 env = [
     "METAXY_AUTO_CREATE_TABLES=1",
 ]
