@@ -439,6 +439,18 @@ wheels = [
 ]
 
 [[package]]
+name = "dprint-py"
+version = "0.50.2.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/2d/a43c88180a8029cf4b9a31cc96153b8b0ab93c96582d36b1108bf3e7ff54/dprint_py-0.50.2.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1d348a96acc1bbaf6d6e6191f334614b64772159c0737ebca7a0e1a580501bc3", size = 21260194, upload-time = "2025-09-14T05:02:29.053Z" },
+    { url = "https://files.pythonhosted.org/packages/31/15/42c94194d3fb9b5300c0d24ead24ba51093b2a30d7873546f0973b405af1/dprint_py-0.50.2.0-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:9ddf5090636a9785415d754ab3f77ed7188253d5b628e6ba4acdf240777b36d5", size = 22542955, upload-time = "2025-09-14T05:02:32.692Z" },
+    { url = "https://files.pythonhosted.org/packages/32/45/348e9030d6c37d4b262d02463d878273c214b6afccb902a73af41dd98797/dprint_py-0.50.2.0-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:83053177d170a648277ce67f9f39703a87529c6850a7c48bc5b723670c3efc34", size = 23944295, upload-time = "2025-09-14T05:02:35.838Z" },
+    { url = "https://files.pythonhosted.org/packages/99/2f/e2fbe538b3ff960b184d8f19cfebd88cdfc1554939a754cc124cdd610e66/dprint_py-0.50.2.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:61ca954449445a0795c31e38d56ebdbf24f67884b1f22e782e52d09bb54abfd0", size = 24559662, upload-time = "2025-09-14T05:02:38.991Z" },
+    { url = "https://files.pythonhosted.org/packages/61/7e/366c14840e8e7ea8b148cabcf07ed1e7df18664cb357709f81a79755c11d/dprint_py-0.50.2.0-py3-none-win_amd64.whl", hash = "sha256:29056d12fbf18ca302351e0e0d16567b13eccef3236c0d29fc86082a233f13b4", size = 20666005, upload-time = "2025-09-14T05:02:41.785Z" },
+]
+
+[[package]]
 name = "duckdb"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1025,6 +1037,7 @@ sqlmodel = [
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
+    { name = "dprint-py" },
     { name = "duckdb" },
     { name = "examples" },
     { name = "hypothesis" },
@@ -1078,6 +1091,7 @@ provides-extras = ["ibis", "mermaid", "graphviz", "sqlmodel"]
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = ">=1.32.1" },
+    { name = "dprint-py", specifier = ">=0.50.2.0" },
     { name = "duckdb", specifier = ">=1.4.1" },
     { name = "examples", editable = "examples" },
     { name = "hypothesis", specifier = ">=6.142.4" },

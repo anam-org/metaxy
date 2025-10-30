@@ -14,6 +14,7 @@ Docs: https://narwhals-dev.github.io/narwhals/
 Narwhals enables writing dataframe-agnostic code that works seamlessly across multiple Python dataframe libraries:
 
 **Full API Support:**
+
 - cuDF
 - Modin
 - pandas
@@ -21,6 +22,7 @@ Narwhals enables writing dataframe-agnostic code that works seamlessly across mu
 - PyArrow
 
 **Lazy-Only Support:**
+
 - Dask
 - DuckDB
 - Ibis
@@ -30,6 +32,7 @@ Narwhals enables writing dataframe-agnostic code that works seamlessly across mu
 ## Core Philosophy
 
 **Why Narwhals?**
+
 - Resolves subtle differences between libraries (e.g., pandas checking index vs Polars checking values)
 - Provides unified, simple, and predictable API
 - Handles backwards compatibility internally
@@ -62,9 +65,7 @@ df_nw = nw.from_native(df)  # Works with pandas, Polars, PyArrow, etc.
 
 # 2. Perform operations using Polars-like API
 result = df_nw.select(
-    a_sum=nw.col("a").sum(),
-    a_mean=nw.col("a").mean(),
-    b_std=nw.col("b").std()
+    a_sum=nw.col("a").sum(), a_mean=nw.col("a").mean(), b_std=nw.col("b").std()
 )
 
 # 3. Convert back to original library
@@ -78,10 +79,8 @@ Simplifies function definitions for automatic conversion:
 ```python
 @nw.narwhalify
 def my_func(df: IntoDataFrameT):
-    return df.select(
-        nw.col("a").sum(),
-        nw.col("b").mean()
-    ).filter(nw.col("a") > 0)
+    return df.select(nw.col("a").sum(), nw.col("b").mean()).filter(nw.col("a") > 0)
+
 
 # Automatically handles conversion to/from Narwhals
 result = my_func(pandas_df)  # Works!
@@ -106,10 +105,12 @@ result = my_func(polars_df)  # Also works!
 ### File I/O
 
 **Eager Loading:**
+
 - `read_csv(source, **kwargs)`: Read CSV file into DataFrame
 - `read_parquet(source, **kwargs)`: Read Parquet file into DataFrame
 
 **Lazy Loading:**
+
 - `scan_csv(source, **kwargs)`: Lazily scan CSV file
 - `scan_parquet(source, **kwargs)`: Lazily scan Parquet file
 
@@ -195,6 +196,7 @@ LazyFrame provides the same API as DataFrame but with lazy evaluation:
 ### Common Methods
 
 All DataFrame methods are available on LazyFrame:
+
 - `select()`, `filter()`, `with_columns()`, `drop()`
 - `group_by()`, `join()`, `sort()`, `unique()`
 - `head()`, `tail()`, `top_k()`
@@ -211,7 +213,7 @@ Expressions are the building blocks for column operations.
 
 ```python
 nw.col("column_name")  # Reference column
-nw.lit(42)            # Literal value
+nw.lit(42)  # Literal value
 ```
 
 ### Filtering
@@ -234,16 +236,19 @@ nw.lit(42)            # Literal value
 ### Transformations
 
 **Mathematical:**
+
 - `abs()`: Absolute value
 - `round()`, `floor()`, `ceil()`: Rounding
 - `sqrt()`, `log()`, `exp()`: Mathematical functions
 
 **Type/Value Operations:**
+
 - `cast(dtype)`: Change data type
 - `fill_null(value)`: Replace null values
 - `replace_strict(old, new)`: Replace specific values
 
 **Window Operations:**
+
 - `rolling_mean(window_size)`: Moving average
 - `rolling_sum(window_size)`: Moving sum
 - `rolling_std(window_size)`: Moving standard deviation
@@ -251,6 +256,7 @@ nw.lit(42)            # Literal value
 - `over(*by)`: Compute expression over groups
 
 **Ranking/Uniqueness:**
+
 - `rank()`: Assign ranks
 - `unique()`: Get unique values
 - `is_duplicated()`: Identify duplicates
@@ -261,21 +267,27 @@ nw.lit(42)            # Literal value
 Expressions have specialized namespaces for specific data types:
 
 **String Operations (`Expr.str`)**
+
 - String manipulation methods
 
 **DateTime Operations (`Expr.dt`)**
+
 - Date/time manipulation methods
 
 **List Operations (`Expr.list`)**
+
 - List column operations
 
 **Categorical Operations (`Expr.cat`)**
+
 - Categorical data methods
 
 **Struct Operations (`Expr.struct`)**
+
 - Struct/nested data methods
 
 **Name Operations (`Expr.name`)**
+
 - Column name operations
 
 ## Series API
@@ -283,9 +295,11 @@ Expressions have specialized namespaces for specific data types:
 Series represents a single column:
 
 ### Properties
+
 - Same as DataFrame: `shape`, `dtype`, `name`
 
 ### Methods
+
 - Similar to DataFrame but for single column operations
 - Has specialized namespaces: `str`, `dt`, `list`, `cat`, `struct`
 
@@ -330,7 +344,7 @@ FrameT module-attribute
 ```
 
 FrameT = TypeVar(
-    "FrameT", "DataFrame[Any]", "LazyFrame[Any]"
+"FrameT", "DataFrame[Any]", "LazyFrame[Any]"
 )
 TypeVar bound to Narwhals DataFrame or Narwhals LazyFrame.
 
@@ -366,7 +380,7 @@ Examples:
 IntoDataFrameT module-attribute
 
 IntoDataFrameT = TypeVar(
-    "IntoDataFrameT", bound=IntoDataFrame
+"IntoDataFrameT", bound=IntoDataFrame
 )
 TypeVar bound to object convertible to Narwhals DataFrame.
 
@@ -390,7 +404,7 @@ Examples:
 result = df.group_by("category").agg(
     count=nw.col("id").count(),
     total=nw.col("amount").sum(),
-    average=nw.col("amount").mean()
+    average=nw.col("amount").mean(),
 )
 ```
 
@@ -399,8 +413,8 @@ result = df.group_by("category").agg(
 ```python
 result = df.with_columns(
     category=nw.when(nw.col("value") > 100)
-        .then(nw.lit("high"))
-        .otherwise(nw.lit("low"))
+    .then(nw.lit("high"))
+    .otherwise(nw.lit("low"))
 )
 ```
 
@@ -410,7 +424,7 @@ result = df.with_columns(
 result = df1.join(
     df2,
     on="key_column",
-    how="left"  # inner, left, outer, cross
+    how="left",  # inner, left, outer, cross
 )
 ```
 
@@ -418,8 +432,7 @@ result = df1.join(
 
 ```python
 result = (
-    df
-    .filter(nw.col("status") == "active")
+    df.filter(nw.col("status") == "active")
     .select("user_id", "amount")
     .group_by("user_id")
     .agg(total=nw.col("amount").sum())
@@ -467,6 +480,7 @@ Checking whether a Narwhals frame is a Polars frame:
 ```py
 import polars as pl
 import narwhals as nw
+
 df_native = pl.DataFrame({"a": [1, 2, 3]})
 df = nw.from_native(df_native)
 df.implementation.is_polars()

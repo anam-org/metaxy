@@ -156,6 +156,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
+      - Feature Definitions: learn/feature-definitions.md
       - Data Versioning: learn/data-versioning.md
       - Feature Discovery: learn/feature-discovery.md
       - Testing: learn/testing.md

@@ -50,16 +50,24 @@ Define features in the modules:
 # my_video_features/detection.py
 from metaxy import Feature, FeatureSpec, FeatureKey
 
-class FaceDetection(Feature, spec=FeatureSpec(
-    key=FeatureKey(["video", "face_detection"]),
-    # ... spec details
-)):
+
+class FaceDetection(
+    Feature,
+    spec=FeatureSpec(
+        key=FeatureKey(["video", "face_detection"]),
+        # ... spec details
+    ),
+):
     pass
 
-class ObjectDetection(Feature, spec=FeatureSpec(
-    key=FeatureKey(["video", "object_detection"]),
-    # ... spec details
-)):
+
+class ObjectDetection(
+    Feature,
+    spec=FeatureSpec(
+        key=FeatureKey(["video", "object_detection"]),
+        # ... spec details
+    ),
+):
     pass
 ```
 
@@ -81,7 +89,6 @@ pip install -e ./packages/my-video-features
     uv sync --reinstall-package my-video-features
     ```
 
-
 Installed features will be automatically discovered and loaded:
 
 ```python
@@ -93,6 +100,7 @@ load_features()
 
 # Features are now available in the global graph
 from metaxy import FeatureGraph
+
 graph = FeatureGraph.get_active()
 print(f"Loaded {len(graph.features_by_key)} features")
 ```
@@ -159,7 +167,7 @@ load_features()
 ## Best Practices
 
 1. **Use entry points for distribution** - Any features intended for reuse should use entry points
-3. **Version your feature packages** - Use semantic versioning for feature collections
-5. **Test in isolation** - Load feature packages into test graphs to verify behavior
+2. **Version your feature packages** - Use semantic versioning for feature collections
+3. **Test in isolation** - Load feature packages into test graphs to verify behavior
 
 The entry point system transforms feature management from a manual process to an automatic, scalable system that grows with your organization.

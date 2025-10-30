@@ -46,10 +46,12 @@ Example: `gh issue create --title "[core] add PostgreSQL support" --body "We nee
 [1-2 sentences describing the issue]
 
 **Acceptance Criteria**:
+
 - [ ] [Specific, measurable outcome]
 - [ ] [Another outcome]
 
 **Implementation Notes**:
+
 - [Key technical consideration]
 - [Important constraint or dependency]
 ```
@@ -66,6 +68,7 @@ Example: `gh issue create --title "[core] add PostgreSQL support" --body "We nee
 ## Confirmation Protocol
 
 Before creating any issue:
+
 1. Present the complete issue draft to the user
 2. Explicitly ask: "Shall I create this GitHub issue?"
 3. Only proceed with creation after receiving clear confirmation, or if the user has pre-approved (e.g., "create an issue for X", "do not ask for confirmation")

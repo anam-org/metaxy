@@ -25,6 +25,7 @@ from metaxy.ext.sqlmodel import SQLModelFeature
 from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
 from sqlmodel import Field
 
+
 class VideoFeature(
     SQLModelFeature,
     table=True,
@@ -51,7 +52,7 @@ This class serves dual purposes:
 - **SQLModel table**: Maps to database schema with ORM functionality
 
 !!! note "Automatic Table Naming"
-    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in Metaxy's configuration.
+When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in Metaxy's configuration.
 
 ### System-Managed Columns
 
@@ -66,7 +67,7 @@ These columns need not be defined in your SQLModel class. The metadata store inj
 ### ID Columns
 
 !!! warning "ID columns must exist before database insertion"
-    ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.
+ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.
 
     Metaxy validates against autoincrement primary keys but cannot detect all server-generated patterns. Ensure your ID columns use client-provided values.
 
@@ -117,12 +118,13 @@ print(f"Tables registered: {list(SQLModel.metadata.tables.keys())}")
 ```
 
 This is particularly useful when:
+
 - Generating Alembic migrations that need to discover all tables
 - Setting up database connections that require the complete schema
 - Using SQLModel's `create_all()` for development/testing (Metaxy's `auto_create_tables` setting should be preferred over `create_all()`)
 
 !!! tip "Migration Generation"
-    After calling `load_features()`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
+After calling `load_features()`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
 
 ## Configuration
 

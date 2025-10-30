@@ -4,34 +4,34 @@ version = "0.0.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "Daniel Gafni", email = "danielgafni16@gmail.com" }
+  { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "cyclopts==4.0.0b1",
-    "narwhals>=2.9.0",
-    "polars>=1.33.1",
-    "polars-hash>=0.5.1",
-    "pydantic>=2.11.9",
-    "pydantic-settings>=2.11.0",
-    "pyyaml>=6.0.0",
-    "tomli>=2.3.0",
-    "rich>=13.0.0",
+  "cyclopts==4.0.0b1",
+  "narwhals>=2.9.0",
+  "polars>=1.33.1",
+  "polars-hash>=0.5.1",
+  "pydantic>=2.11.9",
+  "pydantic-settings>=2.11.0",
+  "pyyaml>=6.0.0",
+  "tomli>=2.3.0",
+  "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
 ibis = [
-    "pyarrow>=18.0.0",
-    "ibis-framework>=11.0.0",
+  "pyarrow>=18.0.0",
+  "ibis-framework>=11.0.0",
 ]
 mermaid = [
-    "mermaid-py>=0.8.0",
+  "mermaid-py>=0.8.0",
 ]
 graphviz = [
-    "pygraphviz>=1.14",
+  "pygraphviz>=1.14",
 ]
 sqlmodel = [
-    "sqlmodel>=0.0.27",
+  "sqlmodel>=0.0.27",
 ]
 
 [project.scripts]
@@ -43,37 +43,38 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "examples",
-    "ipython>=8.37.0",
-    "duckdb>=1.4.1",
-    "pytest>=8.4.2",
-    "pytest-cases>=3.9.1",
-    "hypothesis>=6.142.4",
-    "ruff>=0.13.1",
-    "syrupy>=5.0.0",
-    "ibis-framework[duckdb,sqlite,clickhouse]>=11.0.0",
-    "basedpyright>=1.32.1",
-    "vulture>=2.14",
-    "prek>=0.2.11",
-    "pytest-env>=1.2.0",
-    "pytest-cov>=7.0.0",
-    "hypothesis>=6.142.4",
+  "examples",
+  "ipython>=8.37.0",
+  "duckdb>=1.4.1",
+  "pytest>=8.4.2",
+  "pytest-cases>=3.9.1",
+  "hypothesis>=6.142.4",
+  "ruff>=0.13.1",
+  "syrupy>=5.0.0",
+  "ibis-framework[duckdb,sqlite,clickhouse]>=11.0.0",
+  "basedpyright>=1.32.1",
+  "vulture>=2.14",
+  "prek>=0.2.11",
+  "pytest-env>=1.2.0",
+  "pytest-cov>=7.0.0",
+  "hypothesis>=6.142.4",
+  "dprint-py>=0.50.2.0",
 ]
 
 docs = [
-    "griffe>=1.14.0",
-    "griffe-inherited-docstrings>=1.1.2",
-    "griffe-pydantic>=1.1.7",
-    "mike>=2.1.3",
-    "mkdocs>=1.6.1",
-    "mkdocs-gen-files>=0.5.0",
-    "mkdocs-github-admonitions-plugin>=0.1.1",
-    "mkdocs-literate-nav>=0.6.2",
-    "mkdocs-material>=9.6.20",
-    "mkdocs-section-index>=0.3.10",
-    "mkdocstrings-python>=1.18.2",
-    "pymdown-extensions>=10.16.1",
-    "cyclopts[mkdocs]",
+  "griffe>=1.14.0",
+  "griffe-inherited-docstrings>=1.1.2",
+  "griffe-pydantic>=1.1.7",
+  "mike>=2.1.3",
+  "mkdocs>=1.6.1",
+  "mkdocs-gen-files>=0.5.0",
+  "mkdocs-github-admonitions-plugin>=0.1.1",
+  "mkdocs-literate-nav>=0.6.2",
+  "mkdocs-material>=9.6.20",
+  "mkdocs-section-index>=0.3.10",
+  "mkdocstrings-python>=1.18.2",
+  "pymdown-extensions>=10.16.1",
+  "cyclopts[mkdocs]",
 ]
 
 [tool.ruff]
@@ -81,9 +82,9 @@ target-version = "py310"
 
 [tool.ruff.lint]
 extend-select = [
-    "I",
-    "TID252",
-    "UP"
+  "I",
+  "TID252",
+  "UP",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -93,7 +94,7 @@ banned-module-level-imports = ["ibis", "duckdb"]
 
 [tool.uv.workspace]
 members = [
-    "examples",
+  "examples",
 ]
 
 [tool.uv.sources]
@@ -102,30 +103,30 @@ cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "mkdocs
 
 [tool.vulture]
 exclude = [
-    "src/metaxy/_testing.py",
-    "src/metaxy/cli/",
-    "examples/**/feature*.py",
+  "src/metaxy/_testing.py",
+  "src/metaxy/cli/",
+  "examples/**/feature*.py",
 ]
 min_confidence = 60
 
 [tool.coverage.run]
 source = ["src/metaxy"]
 omit = [
-    "src/metaxy/_testing.py",
-    "tests/*",
-    "examples/*",
+  "src/metaxy/_testing.py",
+  "tests/*",
+  "examples/*",
 ]
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "class .*\\bProtocol\\):",
+  "@(abc\\.)?abstractmethod",
 ]
 show_missing = true
 skip_covered = false
@@ -134,22 +135,22 @@ skip_covered = false
 reportAny = "none"
 reportExplicitAny = "none"
 include = [
-    "src/metaxy",
-    "tests",
-    "examples",
+  "src/metaxy",
+  "tests",
+  "examples",
 ]
 exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/*venv/**/*",
+  "**/node_modules",
+  "**/__pycache__",
+  "**/*venv/**/*",
 ]
 
 [tool.pytest.ini_options]
 addopts = "--snapshot-details"
 env = [
-    "METAXY_AUTO_CREATE_TABLES=1",
+  "METAXY_AUTO_CREATE_TABLES=1",
 ]
 filterwarnings = [
-    "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
-    "ignore:Global Metaxy configuration not initialized:UserWarning",
+  "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
+  "ignore:Global Metaxy configuration not initialized:UserWarning",
 ]

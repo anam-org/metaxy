@@ -7,7 +7,16 @@ Metaxy computes data versions as hashes of upstream dependencies, enabling autom
 Consider a video processing pipeline with these features:
 
 ```python
-from metaxy import Feature, FeatureDep, FeatureKey, FeatureSpec, FieldDep, FieldKey, FieldSpec
+from metaxy import (
+    Feature,
+    FeatureDep,
+    FeatureKey,
+    FeatureSpec,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
+)
+
 
 class Video(
     Feature,
@@ -21,6 +30,7 @@ class Video(
     ),
 ):
     """Video metadata feature (root)."""
+
     frames: int
     duration: float
     size: int
@@ -35,12 +45,16 @@ class Crop(
             FieldSpec(
                 key=FieldKey(["audio"]),
                 code_version=1,
-                deps=[FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["audio"])])],
+                deps=[
+                    FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["audio"])])
+                ],
             ),
             FieldSpec(
                 key=FieldKey(["frames"]),
                 code_version=1,
-                deps=[FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["frames"])])],
+                deps=[
+                    FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["frames"])])
+                ],
             ),
         ],
     ),
@@ -57,7 +71,9 @@ class FaceDetection(
             FieldSpec(
                 key=FieldKey(["faces"]),
                 code_version=1,
-                deps=[FieldDep(feature_key=Crop.spec.key, fields=[FieldKey(["frames"])])],
+                deps=[
+                    FieldDep(feature_key=Crop.spec.key, fields=[FieldKey(["frames"])])
+                ],
             ),
         ],
     ),
@@ -74,7 +90,9 @@ class SpeechToText(
             FieldSpec(
                 key=FieldKey(["transcription"]),
                 code_version=1,
-                deps=[FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["audio"])])],
+                deps=[
+                    FieldDep(feature_key=Video.spec.key, fields=[FieldKey(["audio"])])
+                ],
             ),
         ],
     ),
