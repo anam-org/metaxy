@@ -1,8 +1,8 @@
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import Annotated, Any
+from typing import Annotated, Any, overload
 
 import pydantic
 from pydantic import BeforeValidator
@@ -65,6 +65,39 @@ class FeatureDep(pydantic.BaseModel):
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
 
+    @overload
+    def __init__(
+        self,
+        *,
+        key: str,
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize from string key."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        *,
+        key: Sequence[str],
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize from sequence of parts."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        *,
+        key: FeatureKey,
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize from FeatureKey instance."""
+        ...
+
     def __init__(
         self,
         *,
@@ -99,6 +132,45 @@ class FeatureSpec(pydantic.BaseModel):
     )
     code_version: int = 1
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
+
+    @overload
+    def __init__(
+        self,
+        key: str,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+        code_version: int = 1,
+        id_columns: list[str] | None = None,
+    ) -> None:
+        """Initialize from string key."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: Sequence[str],
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+        code_version: int = 1,
+        id_columns: list[str] | None = None,
+    ) -> None:
+        """Initialize from sequence of parts."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: FeatureKey,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+        code_version: int = 1,
+        id_columns: list[str] | None = None,
+    ) -> None:
+        """Initialize from FeatureKey instance."""
+        ...
 
     def __init__(self, key: CoercibleToFeatureKey, **kwargs):
         super().__init__(key=FeatureKeyAdapter.validate_python(key), **kwargs)

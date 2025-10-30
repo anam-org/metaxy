@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 from pydantic import BaseModel, TypeAdapter
 from pydantic import Field as PydanticField
@@ -21,6 +22,36 @@ class SpecialFieldDep(Enum):
 class FieldDep(BaseModel):
     feature_key: FeatureKey
     fields: list[FieldKey] | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL
+
+    @overload
+    def __init__(
+        self,
+        feature_key: str,
+        fields: list[CoercibleToFieldKey]
+        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from string feature key."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        feature_key: Sequence[str],
+        fields: list[CoercibleToFieldKey]
+        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from sequence of parts."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        feature_key: FeatureKey,
+        fields: list[CoercibleToFieldKey]
+        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from FeatureKey instance."""
+        ...
 
     def __init__(
         self,
@@ -51,9 +82,49 @@ class FieldSpec(BaseModel):
     # - a list of FieldDep to depend on particular fields of specific features
     deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL
 
+    @overload
     def __init__(
         self,
-        key: CoercibleToFieldKey,
+        key: str,
+        code_version: int = 1,
+        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from string key."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: Sequence[str],
+        code_version: int = 1,
+        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from sequence of parts."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: FieldKey,
+        code_version: int = 1,
+        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from FieldKey instance."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: None,
+        code_version: int = 1,
+        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize with None key (uses default)."""
+        ...
+
+    def __init__(
+        self,
+        key: CoercibleToFieldKey | None,
         code_version: int = 1,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
         *args,
