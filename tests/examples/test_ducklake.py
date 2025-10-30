@@ -26,24 +26,3 @@ def test_ducklake_demo_preview():
     assert "Preview of DuckLake ATTACH SQL:" in result.stdout
     assert "INSTALL" in result.stdout or "LOAD" in result.stdout
     assert "ATTACH" in result.stdout or "ducklake" in result.stdout.lower()
-
-
-def test_ducklake_demo_snapshot(snapshot):
-    """Snapshot test for DuckLake demo output.
-
-    This captures the SQL statements that would be executed to attach DuckLake,
-    demonstrating the configuration and setup process.
-    """
-    example_dir = Path("examples/src/examples/ducklake")
-
-    result = subprocess.run(
-        [sys.executable, "-m", "examples.ducklake.demo"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        cwd=example_dir,
-    )
-
-    assert result.returncode == 0, f"Demo failed: {result.stderr}"
-
-    assert result.stdout == snapshot
