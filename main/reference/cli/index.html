@@ -52,6 +52,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/code_select.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1421,7 +1423,7 @@ Root features (features with no dependencies)</p>
 <h4 id="metaxy-graph-render"><code>metaxy graph render</code><a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h4>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats: - terminal: Terminal rendering with two types:</p>
-<div class="language-text highlight"><pre><span></span><code>graph (default): Hierarchical tree view  cards: Panel/card-based view with dependency edges
+<div class="language-python highlight"><pre><span></span><code><span class="n">graph</span> <span class="p">(</span><span class="n">default</span><span class="p">):</span> <span class="n">Hierarchical</span> <span class="n">tree</span> <span class="n">view</span>  <span class="n">cards</span><span class="p">:</span> <span class="n">Panel</span><span class="o">/</span><span class="n">card</span><span class="o">-</span><span class="n">based</span> <span class="n">view</span> <span class="k">with</span> <span class="n">dependency</span> <span class="n">edges</span>
 </code></pre></div>
 <p>• mermaid: Mermaid flowchart markup
  • graphviz: Graphviz DOT format</p>

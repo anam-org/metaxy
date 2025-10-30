@@ -52,6 +52,8 @@
     
       <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../../css/code_select.css">
+    
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1112,7 +1114,7 @@
 <p class="admonition-title">ID columns must exist before database insertion</p>
 </div>
 <p>ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.</p>
-<div class="language-text highlight"><pre><span></span><code>Metaxy validates against autoincrement primary keys but cannot detect all server-generated patterns. Ensure your ID columns use client-provided values.
+<div class="language-python highlight"><pre><span></span><code><span class="n">Metaxy</span> <span class="n">validates</span> <span class="n">against</span> <span class="n">autoincrement</span> <span class="n">primary</span> <span class="n">keys</span> <span class="n">but</span> <span class="n">cannot</span> <span class="n">detect</span> <span class="nb">all</span> <span class="n">server</span><span class="o">-</span><span class="n">generated</span> <span class="n">patterns</span><span class="o">.</span> <span class="n">Ensure</span> <span class="n">your</span> <span class="n">ID</span> <span class="n">columns</span> <span class="n">use</span> <span class="n">client</span><span class="o">-</span><span class="n">provided</span> <span class="n">values</span><span class="o">.</span>
 </code></pre></div>
 <p>Example:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># ✅ Good: Client-generated ID columns</span>

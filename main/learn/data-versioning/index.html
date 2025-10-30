@@ -52,6 +52,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/code_select.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -78,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#data-versioning" class="md-skip">
+        <a href="#versioning" class="md-skip">
           Skip to content
         </a>
       
@@ -496,9 +498,81 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#versioning_1" class="md-nav__link">
     <span class="md-ellipsis">
-      How It Works
+      Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#definitions-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Definitions Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Definitions Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field Level Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Level Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Level Versioning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graph-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph Level Versioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Versioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Practical Example
     </span>
   </a>
   
@@ -526,15 +600,6 @@
   <a href="#incremental-computation" class="md-nav__link">
     <span class="md-ellipsis">
       Incremental Computation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#version-vs-data-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      Version vs Data Version
     </span>
   </a>
   
@@ -806,9 +871,81 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#versioning_1" class="md-nav__link">
     <span class="md-ellipsis">
-      How It Works
+      Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#definitions-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Definitions Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Definitions Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Field Level Versioning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Level Versioning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Level Versioning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#graph-level-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph Level Versioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-versioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sample Versioning
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Practical Example
     </span>
   </a>
   
@@ -841,15 +978,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#version-vs-data-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      Version vs Data Version
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -869,9 +997,76 @@
   
 
 
-<h1 id="data-versioning">Data Versioning<a class="headerlink" href="#data-versioning" title="Permanent link">&para;</a></h1>
-<p>Metaxy computes data versions as hashes of upstream dependencies, enabling automatic change detection and incremental computation.</p>
-<h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<h1 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h1>
+<p>Metaxy calculates a few types of versions at <a href="../feature-definitions/">feature</a>, <a href="../feature-definitions/">field</a>, and sample levels.</p>
+<p>Metaxy's versioning system is declarative, static, deterministic and idempotent.</p>
+<h2 id="versioning_1">Versioning<a class="headerlink" href="#versioning_1" title="Permanent link">&para;</a></h2>
+<p>Feature and field versions are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.</p>
+<p>All versions are computed ahead of time: feature and field versions can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.</p>
+<p>Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash <a href="../../reference/configuration/#hash_truncation_length">length</a> can be configured.</p>
+<p>Here is how these versions are calculated, from bottom to top.</p>
+<h3 id="definitions-versioning">Definitions Versioning<a class="headerlink" href="#definitions-versioning" title="Permanent link">&para;</a></h3>
+<p>These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.</p>
+<h4 id="field-level-versioning">Field Level Versioning<a class="headerlink" href="#field-level-versioning" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Field Code Version</strong> is defined on the field and must be provided by the user (defaults to <code>"0"</code>).</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Code Version Value</p>
+<p>The value can be arbitrary, but in the future we might implement something around semantic versioning.</p>
+</div>
+<ul>
+<li><strong>Field Version</strong> is computed from the code version of this field, the <a href="../feature-definitions/#fully-qualified-field-key">fully qualified field path</a> and from the field versions of its <a href="../feature-definitions/#field-level-dependencies">parent fields</a> (if any exist, for example, fields on root features do not have dependencies).</li>
+</ul>
+<h5 id="feature-level-versioning">Feature Level Versioning<a class="headerlink" href="#feature-level-versioning" title="Permanent link">&para;</a></h5>
+<ul>
+<li><strong>Feature Version</strong>: is computed from the <strong>Field Versions</strong> of all fields defined on the feature and the key of the feature.</li>
+<li><strong>Feature Code Version</strong> is computed from the <strong>Field Code Versions</strong> of all fields defined on the feature. Unlike <em>Feature Version</em>, this version does not change when dependencies change. The value of this version is determined entirely by user input.</li>
+</ul>
+<h5 id="graph-level-versioning">Graph Level Versioning<a class="headerlink" href="#graph-level-versioning" title="Permanent link">&para;</a></h5>
+<ul>
+<li><strong>Snapshot Version</strong>: is computed from the <strong>Feature Versions</strong> of all features defined on the graph.</li>
+</ul>
+<blockquote>
+<p>[!info] Why Do We Need Snapshot Version?
+This version is used to uniquely identify versioned graph topology in historical snapshots.</p>
+</blockquote>
+<h3 id="sample-versioning">Sample Versioning<a class="headerlink" href="#sample-versioning" title="Permanent link">&para;</a></h3>
+<p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
+<ul>
+<li><strong>Sample Version By Field</strong> is computed from the upstream <strong>Sample Version By Fields</strong> (with respect to defined <a href="../feature-definitions/#field-level-dependencies">field-level dependencies</a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>sample_uid</th>
+<th>metaxy_sample_version_by_field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>video_001</td>
+<td><code>{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}</code></td>
+</tr>
+<tr>
+<td>video_002</td>
+<td><code>{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}</code></td>
+</tr>
+<tr>
+<td>video_003</td>
+<td><code>{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}</code></td>
+</tr>
+<tr>
+<td>video_004</td>
+<td><code>{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Sample Version</strong> is derived from the <strong>Sample Version By Field</strong> by simply hashing it.</li>
+</ul>
+<p>This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.</p>
+<h2 id="practical-example">Practical Example<a class="headerlink" href="#practical-example" title="Permanent link">&para;</a></h2>
 <p>Consider a video processing pipeline with these features:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">Feature</span><span class="p">,</span>
@@ -1060,11 +1255,6 @@ color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="c1"># Process only changed samples</span>
 </span></code></pre></div>
 <p>This approach avoids expensive recomputation when nothing changed, while ensuring correctness when dependencies update.</p>
-<h2 id="version-vs-data-version">Version vs Data Version<a class="headerlink" href="#version-vs-data-version" title="Permanent link">&para;</a></h2>
-<p><strong>Feature version</strong>: Hash of feature definition (code, deps, fields). Static, deterministic from code.</p>
-<p><strong>Data version</strong>: Hash of upstream data versions for a specific sample. Depends on actual data.</p>
-<p><strong>Snapshot version</strong>: Hash of all feature versions in the graph. Represents entire graph state.</p>
-<p>A feature version change doesn't necessarily mean all samples need recomputation. Metaxy compares data versions to identify only the affected samples.</p>
 
 
 

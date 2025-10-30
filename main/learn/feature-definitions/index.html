@@ -52,6 +52,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../css/code_select.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -497,6 +499,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Field-Level Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fully-qualified-field-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fully Qualified Field Key
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -845,6 +862,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Field-Level Dependencies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fully-qualified-field-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fully Qualified Field Key
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -903,7 +935,7 @@
 <p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system. It has been inspired by Software-Defined Assets in <a href="https://dagster.io/">Dagster</a>.</p>
 <p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos. But it can be just pure <strong>metadata</strong> as well.</p>
 <p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
-<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows, and will calculate <a href="../data-versioning/">sample versions</a> with strong consistency guarantees. Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify locations for samples of <strong>data</strong> (it's a good idea to include the sample version) into the <strong>data</strong> sample identifier (for example, an object store key). Metaxy is designed to be used with append-only systems that do not overwrite existing <strong>metadata</strong> or <strong>data</strong> (that's not something Metaxy can enforce, but it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
+<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them. Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier). Metaxy is designed to be used with systems that do not overwrite existing <strong>metadata</strong> (Metaxy only appends <strong>metadata</strong>) and therefore <strong>data</strong> as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
 <p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
 <div class="admonition tip">
 <p class="admonition-title">Include Sample Version In Your Data Path</p>
@@ -971,6 +1003,8 @@
 </span></code></pre></div>
 <p>Voilà!</p>
 <p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about this system.</p>
+<h3 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h3>
+<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph. It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
 <h2 id="a-note-on-type-coercion-for-metaxy-types">A Note on Type Coercion for Metaxy types<a class="headerlink" href="#a-note-on-type-coercion-for-metaxy-types" title="Permanent link">&para;</a></h2>
 <p>Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.</p>
 <p>To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes. Different ways to provide them are automatically coerced into canonical internal models. This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
