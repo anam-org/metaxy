@@ -9,56 +9,64 @@ Metaxy is:
 
 - **🧩 composable** --- bring your own everything!
 
-    - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
-    - supports **lakehouse storage** formats such as DeltaLake or DuckLake
-    - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
-    - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
+  - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
+  - supports **lakehouse storage** formats such as DeltaLake or DuckLake
+  - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
+  - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
 
 - **🪨 rock solid** where it matters:
 
-    - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
-    - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
-    - unique **field-level dependency system** prevents unnecessary recomputations for features that depend on partial data
-    - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
+  - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+  - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
+  - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
+  - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
 
 - **🤸 flexible** to work around restrictions consciously:
 
-    - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
+  - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
+  - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
 
 - **📈 scalable**:
 
-    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
-    - is built with **performance** in mind: all operations default to **run in the DB**, Metaxy does not stand in the way of metadata flow
+  - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
+  - is built with **performance** in mind: all operations default to **run in the DB**, Metaxy does not stand in the way of metadata flow
 
 - **🧑‍💻 dev friendly**:
 
-    - clean, **intuitive Python API** that stays out of your way when you don't need it
-    - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
-    - comprehensive **type hints** and Pydantic integration for excellent IDE support
-    - first-class support for **local development, testing, preview environments, CI/CD**
-    - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
-    - integrations with popular tools such as [SQLModel](./learn/integrations/sqlmodel.md), Dagster, and Ray.
-    - [testing helpers](./learn/testing.md) that you're going to appreciate
+  - clean, [intuitive Python API](./learn/feature-definitions.md#syntactic-sugar) that stays out of your way when you don't need it
+  - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
+  - comprehensive **type hints** and Pydantic integration for excellent IDE support
+  - first-class support for **local development, testing, preview environments, CI/CD**
+  - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
+  - integrations with popular tools such as [SQLModel](./learn/integrations/sqlmodel.md), Dagster, and Ray.
+  - [testing helpers](./learn/testing.md) that you're going to appreciate
 
 ## Feature Dependencies
 
 Features form a DAG where each feature declares its upstream dependencies. Consider an video processing pipeline:
 
 ```python
-class Video(Feature, spec=FeatureSpec(
-    key="video",
-    fields=[
-        FieldSpec(name="frames", code_version=1),
-        FieldSpec(name="audio", code_version=1),
-    ],
-)):
+class Video(
+    Feature,
+    spec=FeatureSpec(
+        key="video",
+        fields=[
+            FieldSpec(name="frames", code_version=1),
+            FieldSpec(name="audio", code_version=1),
+        ],
+    ),
+):
     path: str = Field(description="Path to the video file")
     duration: float = Field(description="Duration of the video in seconds")
 
-class VoiceDetection(Feature, spec=FeatureSpec(
-    key="voice_detection",
-    deps=[FeatureDep(key=Video.spec.key)],
-)):
+
+class VoiceDetection(
+    Feature,
+    spec=FeatureSpec(
+        key="voice_detection",
+        deps=[FeatureDep(key=Video.spec.key)],
+    ),
+):
     path: str = Field(description="Path to the voice detection json file")
 ```
 
@@ -70,9 +78,9 @@ When `Video` changes, Metaxy automatically identifies that `VoiceDetection` requ
 
 ## Versioned Change Propagation
 
-Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions. When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream. This is done on multiple levels: `Feature` (class) level, field (class attribute) level, and of course on row level: each *sample* in the metadata store tracks the version of *each field* and the overall (class-level) feature version.
+Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions. When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream. This is done on multiple levels: `Feature` (class) level, field (class attribute) level, and of course on row level: each _sample_ in the metadata store tracks the version of _each field_ and the overall (class-level) feature version.
 
-This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature *does not* require recomputation, even if one of its parents has been changed (but only irrelevant fields did). This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
+This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did). This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
 
 Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation. This enables patterns such as **computation preview** and **computation cost prediction**.
 
@@ -92,7 +100,9 @@ from metaxy import load_features
 # discover and load Metaxy features
 load_features()
 
-store = ...  # can be DuckDBMetadataStore locally and ClickHouseMetadataStore in production
+store = (
+    ...
+)  # can be DuckDBMetadataStore locally and ClickHouseMetadataStore in production
 diff = store.resolve_update(VoiceDetection)
 ```
 
@@ -106,11 +116,10 @@ if (len(diff.added) + len(diff.changed)) > 0:
     results = run_voice_detection(diff, ...)
 ```
 
-
 4. Record metadata for computed samples, this can be done in a distributed manner as well
 
 ```py
-    store.write_metadata(VoiceDetection, results)
+store.write_metadata(VoiceDetection, results)
 ```
 
 We have successfully recorded the metadata for the computed samples.

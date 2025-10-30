@@ -5,8 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "metaxy",
-    "duckdb>=1.4.1",
+  "metaxy",
+  "duckdb>=1.4.1",
 ]
 
 [tool.uv.sources]

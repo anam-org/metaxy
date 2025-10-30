@@ -14,8 +14,10 @@ Always use isolated graphs in tests:
 def test_my_feature():
     test_graph = FeatureGraph()
     with test_graph.use():
+
         class MyFeature(Feature, spec=...):
             pass
+
         # Test operations here
 ```
 
@@ -54,11 +56,13 @@ Stores must be used as context managers to ensure proper resource cleanup:
 def test_metadata_operations():
     with InMemoryMetadataStore() as store:
         # Create test data
-        df = pl.DataFrame({
-            "sample_uid": [1, 2, 3],
-            "data_version": {...},
-            "feature_version": "abc123"
-        })
+        df = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "data_version": {...},
+                "feature_version": "abc123",
+            }
+        )
 
         # Write metadata
         store.write_metadata(MyFeature, df)
@@ -75,11 +79,15 @@ Use parametrized tests to verify behavior across backends:
 ```python
 import pytest
 
-@pytest.mark.parametrize("store_cls", [
-    InMemoryMetadataStore,
-    DuckDBMetadataStore,
-    SQLiteMetadataStore,
-])
+
+@pytest.mark.parametrize(
+    "store_cls",
+    [
+        InMemoryMetadataStore,
+        DuckDBMetadataStore,
+        SQLiteMetadataStore,
+    ],
+)
 def test_store_behavior(store_cls, tmp_path):
     # Use tmp_path for file-based stores
     store_kwargs = {}
@@ -101,10 +109,10 @@ To suppress these warnings in your test suite, use pytest's `filterwarnings` con
 # pyproject.toml
 [tool.pytest.ini_options]
 env = [
-    "METAXY_AUTO_CREATE_TABLES=1",  # Enable auto-creation in tests
+  "METAXY_AUTO_CREATE_TABLES=1", # Enable auto-creation in tests
 ]
 filterwarnings = [
-    "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",  # Suppress the warning
+  "ignore:AUTO_CREATE_TABLES is enabled:UserWarning", # Suppress the warning
 ]
 ```
 
@@ -117,10 +125,10 @@ If you need to verify that the warning is actually emitted, use `pytest.warns()`
 ```python
 import pytest
 
+
 def test_auto_create_tables_warning():
     with pytest.warns(
-        UserWarning,
-        match=r"AUTO_CREATE_TABLES is enabled.*do not use in production"
+        UserWarning, match=r"AUTO_CREATE_TABLES is enabled.*do not use in production"
     ):
         with DuckDBMetadataStore(":memory:", auto_create_tables=True) as store:
             pass  # Warning is emitted and captured
@@ -135,16 +143,10 @@ If your feature overrides `load_input()` for custom alignment, test it thoroughl
 ```python
 def test_custom_alignment():
     # Prepare test data
-    current = pl.DataFrame({
-        "sample_uid": [1, 2, 3],
-        "custom_field": ["a", "b", "c"]
-    })
+    current = pl.DataFrame({"sample_uid": [1, 2, 3], "custom_field": ["a", "b", "c"]})
 
     upstream = {
-        "video_feature": pl.DataFrame({
-            "sample_uid": [2, 3, 4],
-            "data_version": {...}
-        })
+        "video_feature": pl.DataFrame({"sample_uid": [2, 3, 4], "data_version": {...}})
     }
 
     # Test alignment logic
@@ -165,27 +167,35 @@ def test_feature_dependencies():
 
     with test_graph.use():
         # Define upstream feature
-        class UpstreamFeature(Feature, spec=FeatureSpec(
-            key=FeatureKey(["upstream"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)]
-        )):
+        class UpstreamFeature(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["upstream"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            ),
+        ):
             pass
 
         # Define downstream feature with dependency
-        class DownstreamFeature(Feature, spec=FeatureSpec(
-            key=FeatureKey(["downstream"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
-            fields=[
-                FieldSpec(
-                    key=FieldKey(["processed"]),
-                    code_version=1,
-                    deps=[FieldDep(
-                        feature_key=FeatureKey(["upstream"]),
-                        fields=[FieldKey(["data"])]
-                    )]
-                )
-            ]
-        )):
+        class DownstreamFeature(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["downstream"]),
+                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["processed"]),
+                        code_version=1,
+                        deps=[
+                            FieldDep(
+                                feature_key=FeatureKey(["upstream"]),
+                                fields=[FieldKey(["data"])],
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ):
             pass
 
         # Verify graph structure
@@ -204,10 +214,14 @@ def test_migration_scenario():
     # Initial version
     graph_v1 = FeatureGraph()
     with graph_v1.use():
-        class MyFeatureV1(Feature, spec=FeatureSpec(
-            key=FeatureKey(["my_feature"]),
-            fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)]
-        )):
+
+        class MyFeatureV1(
+            Feature,
+            spec=FeatureSpec(
+                key=FeatureKey(["my_feature"]),
+                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+            ),
+        ):
             pass
 
     # Record initial state
@@ -217,10 +231,14 @@ def test_migration_scenario():
         # Modified version
         graph_v2 = FeatureGraph()
         with graph_v2.use():
-            class MyFeatureV2(Feature, spec=FeatureSpec(
-                key=FeatureKey(["my_feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=2)]
-            )):
+
+            class MyFeatureV2(
+                Feature,
+                spec=FeatureSpec(
+                    key=FeatureKey(["my_feature"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=2)],
+                ),
+            ):
                 pass
 
         # Verify version change detected

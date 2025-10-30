@@ -10,13 +10,14 @@ Features live on a global `FeatureGraph` object (typically users do not need to 
 
 Before we can define a `Feature`, we must first create a `FeatureSpec` object. But before we get to an example, it's necessary to understand the concept of ID columns. Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`. Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class. Let's do it:
 
-
 ```py
-
 from metaxy import BaseFeatureSpec
 
-class VideoFeatureSpec(BaseFeatureSpec):  # spec=None is important to tell Metaxy that this is a base class
-    id_columns: tuple[str] = ('video_id',)
+
+class VideoFeatureSpec(
+    BaseFeatureSpec
+):  # spec=None is important to tell Metaxy that this is a base class
+    id_columns: tuple[str] = ("video_id",)
 ```
 
 `BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
@@ -30,10 +31,12 @@ Metaxy provides a `BaseFeature` class that can be extended to make user-defined 
 With respect to the same DRY principle, we can define a shared base class for features that use the `VideoFeatureSpec`.
 
 ```py
-
 from metaxy import BaseFeature
 
-class BaseVideoFeature(BaseFeature, spec=None):  # spec=None is important to tell Metaxy this is a base class
+
+class BaseVideoFeature(
+    BaseFeature, spec=None
+):  # spec=None is important to tell Metaxy this is a base class
     video_id: str
 ```
 
@@ -51,7 +54,10 @@ You may now use `VideoFeature.spec()` class method to access the original featur
 Now let's define a child feature.
 
 ```py
-class Transcript(BaseVideoFeature, spec=VideoFeatureSpec(key="/processed/transcript", deps=[VideoFeature])):
+class Transcript(
+    BaseVideoFeature,
+    spec=VideoFeatureSpec(key="/processed/transcript", deps=[VideoFeature]),
+):
     transcript_path: str
     speakers_json_path: str
     num_speakers: int
@@ -63,11 +69,11 @@ Hurray! You get the idea.
 
 A core (I'be straight: a killer) feature of Metaxy is the concept of **field-level dependencies**. These are used to define dependencies between logical fields of features.
 
-A **field** is not to be confused with metadata *column* (Pydantic fields). Fields are completely independent from them.
+A **field** is not to be confused with metadata _column_ (Pydantic fields). Fields are completely independent from them.
 
-Columns refer to *metadata* and are stored in metadata stores (such as databases) supported by Metaxy.
+Columns refer to _metadata_ and are stored in metadata stores (such as databases) supported by Metaxy.
 
-Fields refer to *data* and are logical -- users are free to define them as they see fit. Fields are supposed to represent parts of data that users care about. For example, a `Video` feature -- an `.mp4` file -- may have `frames` and `audio` fields.
+Fields refer to _data_ and are logical -- users are free to define them as they see fit. Fields are supposed to represent parts of data that users care about. For example, a `Video` feature -- an `.mp4` file -- may have `frames` and `audio` fields.
 
 Downstream features can depend on specific fields of upstream features. This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.
 
@@ -86,18 +92,17 @@ transcript_spec = TranscriptFeatureSpec(key="/raw/transcript", fields=[FieldSpec
 
 class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
     path: str
-
 ```
 
 Voilà!
 
-The [Data Versioning](#data-versioning) docs explain more about this system.
+The [Data Versioning](data-versioning.md) docs explain more about this system.
 
 ## A Note on Type Coercion for Metaxy types
 
 Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.
 
-To avoid boilerplate, Metaxy also has syntaxtic sugar for construction of these classes. Different ways to provide them are automatically coerced into canonical internal models. This is fully typed and only affects **constructor arguments**, so accessing **attributes** on Metaxy models will always return only the canonical types.
+To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes. Different ways to provide them are automatically coerced into canonical internal models. This is fully typed and only affects **constructor arguments**, so accessing **attributes** on Metaxy models will always return only the canonical types.
 
 Some examples:
 
@@ -110,9 +115,9 @@ key = FeatureKey("prefix", "feature")
 same_key = FeatureKey(key)
 ```
 
-Metaxy really loves you, the user! See [syntaxic sugar](#syntaxic-sugar) for more details.
+Metaxy really loves you, the user! See [syntactic sugar](#syntactic-sugar) for more details.
 
-## Syntaxic Sugar
+## Syntactic Sugar
 
 ### Keys
 
@@ -121,6 +126,6 @@ Both `FeatureKey` and `FieldKey` accept:
 - **String format**: `FeatureKey("prefix/feature")`
 - **Sequence format**: `FeatureKey(["prefix", "feature"])`
 - **Variadic format**: `FeatureKey("prefix", "feature")`
-- **Same type**: `FeatureKey(another_feature_key)`  -- for full Inception mode
+- **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts

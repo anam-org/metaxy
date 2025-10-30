@@ -1,6 +1,5 @@
 # Recompute Example
 
-
 ```mermaid
 ---
 title: Feature Graph

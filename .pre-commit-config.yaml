@@ -15,9 +15,9 @@ repos:
       entry: uv run ruff check --fix
       language: system
       pass_filenames: false
-    - id: ruff-format
-      name: Ruff Format
-      entry: uv run ruff format
+    - id: format
+      name: Dprint Format
+      entry: uv run dprint fmt
       language: system
       pass_filenames: false
     - id: basedpyright
