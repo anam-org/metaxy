@@ -25,4 +25,6 @@ docs-serve:
     uv run --group docs mkdocs serve
 
 docs-publish version:
+    git branch -D gh-pages
+    git fetch origin gh-pages
     uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}

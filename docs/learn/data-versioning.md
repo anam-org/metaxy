@@ -1,8 +1,62 @@
-# Data Versioning
+# Versioning
 
-Metaxy computes data versions as hashes of upstream dependencies, enabling automatic change detection and incremental computation.
+Metaxy calculates a few types of versions at [feature](feature-definitions.md), [field](feature-definitions.md), and sample levels.
 
-## How It Works
+Metaxy's versioning system is declarative, static, deterministic and idempotent.
+
+## Versioning
+
+Feature and field versions are defined by the feature graph topology and the user-provided code versions of fields. Sample versions are defined by upstream sample versions and the code versions of the fields defined on the sample's feature.
+
+All versions are computed ahead of time: feature and field versions can be immediately derived from code (and we keep historical graph snapshots for them), and calculating sample versions requires access to the metadata store.
+
+Metaxy uses hashing algorithms to compute all versions. The algorithm and the hash [length](../reference/configuration.md#hash_truncation_length) can be configured.
+
+Here is how these versions are calculated, from bottom to top.
+
+### Definitions Versioning
+
+These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.
+
+#### Field Level Versioning
+
+- **Field Code Version** is defined on the field and must be provided by the user (defaults to `"0"`).
+
+> [!note] Code Version Value
+> The value can be arbitrary, but in the future we might implement something around semantic versioning.
+
+- **Field Version** is computed from the code version of this field, the [fully qualified field path](feature-definitions.md#fully-qualified-field-key) and from the field versions of its [parent fields](feature-definitions.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
+
+##### Feature Level Versioning
+
+- **Feature Version**: is computed from the **Field Versions** of all fields defined on the feature and the key of the feature.
+- **Feature Code Version** is computed from the **Field Code Versions** of all fields defined on the feature. Unlike _Feature Version_, this version does not change when dependencies change. The value of this version is determined entirely by user input.
+
+##### Graph Level Versioning
+
+- **Snapshot Version**: is computed from the **Feature Versions** of all features defined on the graph.
+
+> [!info] Why Do We Need Snapshot Version?
+> This version is used to uniquely identify versioned graph topology in historical snapshots.
+
+### Sample Versioning
+
+These versions are sample-level and require access to the metadata store in order to compute them.
+
+- **Sample Version By Field** is computed from the upstream **Sample Version By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+
+| sample_uid | metaxy_sample_version_by_field                |
+| ---------- | --------------------------------------------- |
+| video_001  | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
+| video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
+| video_003  | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
+| video_004  | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
+
+- **Sample Version** is derived from the **Sample Version By Field** by simply hashing it.
+
+This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
+
+## Practical Example
 
 Consider a video processing pipeline with these features:
 
@@ -218,13 +272,3 @@ with store:  # MetadataStore
 ```
 
 This approach avoids expensive recomputation when nothing changed, while ensuring correctness when dependencies update.
-
-## Version vs Data Version
-
-**Feature version**: Hash of feature definition (code, deps, fields). Static, deterministic from code.
-
-**Data version**: Hash of upstream data versions for a specific sample. Depends on actual data.
-
-**Snapshot version**: Hash of all feature versions in the graph. Represents entire graph state.
-
-A feature version change doesn't necessarily mean all samples need recomputation. Metaxy compares data versions to identify only the affected samples.

@@ -6,7 +6,7 @@ Features represent tabular **metadata**, typically containing references to exte
 
 I will highlight **data** and **metadata** with bold so it really stands out.
 
-Metaxy is responsible for providing correct **metadata** to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted **metadata** rows, and will calculate [sample versions](data-versioning.md) with strong consistency guarantees. Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify locations for samples of **data** (it's a good idea to include the sample version) into the **data** sample identifier (for example, an object store key). Metaxy is designed to be used with append-only systems that do not overwrite existing **metadata** or **data** (that's not something Metaxy can enforce, but it's easily achievable by **including the sample version into the data sample identifier**).
+Metaxy is responsible for providing correct **metadata** to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted **metadata** rows and calculate the right [sample versions](data-versioning.md) for them. Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier). Metaxy is designed to be used with systems that do not overwrite existing **metadata** (Metaxy only appends **metadata**) and therefore **data** as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by **including the sample version into the data sample identifier**).
 
 I hope we can stop using bold for **data** and **metadata** from now on, hopefully we've made our point.
 
@@ -106,6 +106,10 @@ class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
 Voilà!
 
 The [Data Versioning](data-versioning.md) docs explain more about this system.
+
+### Fully Qualified Field Key
+
+A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph. It consists of the **feature key** and the **field key**, separated by a colon, for example: `/raw/video:frames`, `/raw/video:audio/english`.
 
 ## A Note on Type Coercion for Metaxy types
 

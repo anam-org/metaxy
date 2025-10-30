@@ -14,17 +14,17 @@ Metaxy is:
   - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
   - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
 
-- **🪨 rock solid** where it matters:
+- **🤸 flexible** to work around restrictions consciously:
+
+  - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
+  - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
+
+- **🪨 rock solid** when it matters:
 
   - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
   - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
   - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
   - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
-
-- **🤸 flexible** to work around restrictions consciously:
-
-  - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
-  - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
 
 - **📈 scalable**:
 
