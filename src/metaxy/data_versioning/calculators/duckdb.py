@@ -82,32 +82,36 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
         # Type narrowing: we know this is a DuckDB backend
         from typing import cast
 
+        from metaxy.metadata_store.duckdb import ExtensionSpec
+
         backend = cast(
             Any, self._backend
         )  # DuckDB backend has raw_sql but not in ibis.BaseBackend stubs
 
         for ext_spec in self.extensions:
+            # Extract name and repository from any extension format
             if isinstance(ext_spec, str):
-                # Simple string form - install from community repo
                 ext_name = ext_spec
-                # Install and load extension from community
-                backend.raw_sql(f"INSTALL {ext_name} FROM community")
-                backend.raw_sql(f"LOAD {ext_name}")
-            else:
-                # Dict form with optional repository
+                ext_repo = "community"
+            elif isinstance(ext_spec, Mapping):
                 ext_name = ext_spec.get("name", "")
                 ext_repo = ext_spec.get("repository", "community")
+            elif isinstance(ext_spec, ExtensionSpec):
+                ext_name = ext_spec.name
+                ext_repo = ext_spec.repository or "community"
+            else:
+                raise TypeError(
+                    f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext_spec)}"
+                )
 
-                if ext_repo == "community":
-                    # Install from community repository
-                    backend.raw_sql(f"INSTALL {ext_name} FROM community")
-                else:
-                    # Set custom repository and install
-                    backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
-                    backend.raw_sql(f"INSTALL {ext_name}")
+            # Install and load the extension
+            if ext_repo == "community":
+                backend.raw_sql(f"INSTALL {ext_name} FROM community")
+            else:
+                backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
+                backend.raw_sql(f"INSTALL {ext_name}")
 
-                # Load extension
-                backend.raw_sql(f"LOAD {ext_name}")
+            backend.raw_sql(f"LOAD {ext_name}")
 
     def _generate_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
         """Generate hash SQL generators for DuckDB.

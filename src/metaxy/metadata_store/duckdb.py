@@ -257,7 +257,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
             raise RuntimeError("DuckLake attachment is not configured.")
         return self._ducklake_config
 
-    def _duckdb_raw_connection(self) -> DuckDBPyConnection | RuntimeError:
+    def _duckdb_raw_connection(self) -> DuckDBPyConnection:
         """Return the underlying DuckDBPyConnection from the Ibis backend."""
         if self._conn is None:
             raise RuntimeError("DuckDB connection is not open.")

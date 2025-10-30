@@ -331,7 +331,7 @@ class StoreCases:
 
     def case_duckdb_ducklake(
         self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict]:
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
         """DuckDB store configured with DuckLake attachment."""
 
         db_path = tmp_path / "test_ducklake.duckdb"
