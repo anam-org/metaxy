@@ -160,7 +160,6 @@ class RootA(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "root_a"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
@@ -175,7 +174,6 @@ class MultiFieldRoot(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "multi_root"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["train"]), code_version=1),
             FieldSpec(key=FieldKey(["test"]), code_version=1),
@@ -192,14 +190,14 @@ class BranchB(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "branch_b"]),
-        deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "root_a"]),
+                        feature=FeatureKey(["resolve", "root_a"]),
                         fields=[FieldKey(["default"])],
                     )
                 ],
@@ -216,14 +214,14 @@ class BranchC(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "branch_c"]),
-        deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "root_a"]),
+                        feature=FeatureKey(["resolve", "root_a"]),
                         fields=[FieldKey(["default"])],
                     )
                 ],
@@ -241,14 +239,14 @@ class LeafSimple(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_simple"]),
-        deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "root_a"]),
+                        feature=FeatureKey(["resolve", "root_a"]),
                         fields=[FieldKey(["default"])],
                     )
                 ],
@@ -266,8 +264,8 @@ class LeafDiamond(
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_diamond"]),
         deps=[
-            FeatureDep(key=FeatureKey(["resolve", "branch_b"]), columns=()),
-            FeatureDep(key=FeatureKey(["resolve", "branch_c"]), columns=()),
+            FeatureDep(feature=FeatureKey(["resolve", "branch_b"]), columns=()),
+            FeatureDep(feature=FeatureKey(["resolve", "branch_c"]), columns=()),
         ],
         fields=[
             FieldSpec(
@@ -275,11 +273,11 @@ class LeafDiamond(
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "branch_b"]),
+                        feature=FeatureKey(["resolve", "branch_b"]),
                         fields=[FieldKey(["default"])],
                     ),
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "branch_c"]),
+                        feature=FeatureKey(["resolve", "branch_c"]),
                         fields=[FieldKey(["default"])],
                     ),
                 ],
@@ -296,14 +294,14 @@ class LeafMultiField(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_multi"]),
-        deps=[FeatureDep(key=FeatureKey(["resolve", "multi_root"]))],
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "multi_root"]))],
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["resolve", "multi_root"]),
+                        feature=FeatureKey(["resolve", "multi_root"]),
                         fields=[
                             FieldKey(["train"]),
                             FieldKey(["test"]),

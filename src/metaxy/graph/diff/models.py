@@ -285,7 +285,7 @@ class GraphData(FrozenBaseModel):
             # Extract dependencies
             dependencies: list[FeatureKey] = []
             if spec.deps:
-                dependencies = [dep.key for dep in spec.deps]
+                dependencies = [dep.feature for dep in spec.deps]
 
             # Get project from feature class
             feature_project = feature_cls.project  # type: ignore[attr-defined]

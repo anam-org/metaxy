@@ -31,15 +31,17 @@ def features():
         ):
             continue
         console.print("---")
-        console.print(
-            f"{feature_key} (version {graph.get_feature_version(feature_key)})"
-        )
+        version = graph.get_feature_version(feature_key)
+        console.print(f"{feature_key} (version\n{version})")
         if feature_spec.deps:
             console.print("  Feature Dependencies:")
             for dep in feature_spec.deps:
                 console.print(f"    {dep}")
         console.print("  Fields:")
         for field_key, field_spec in feature_spec.fields_by_key.items():
+            field_version = graph.get_field_version(
+                FQFieldKey(feature=feature_key, field=field_key)
+            )
             console.print(
-                f"    {field_spec.key.to_string()} (code_version {field_spec.code_version}, version {graph.get_field_version(FQFieldKey(feature=feature_key, field=field_key))})"
+                f"    {field_spec.key.to_string()} (code_version {field_spec.code_version}, version\n{field_version})"
             )

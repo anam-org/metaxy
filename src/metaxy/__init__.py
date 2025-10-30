@@ -33,6 +33,7 @@ from metaxy.models.feature import (
 )
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
+    BaseFeatureSpecWithIDColumns,
     FeatureDep,
     FeatureSpec,
     TestingFeatureSpec,
@@ -74,6 +75,7 @@ __all__ = [
     "FeatureDep",
     "FeatureDepMetadata",
     "BaseFeatureSpec",
+    "BaseFeatureSpecWithIDColumns",
     "FieldDep",
     "FieldSpec",
     "SpecialFieldDep",
@@ -82,7 +84,6 @@ __all__ = [
     "MetadataStore",
     "InMemoryMetadataStore",
     "load_features",
-    "load_config_entrypoints",
     "load_module_entrypoint",
     "load_package_entrypoints",
     "Migration",

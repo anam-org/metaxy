@@ -13,6 +13,7 @@ declarative_attr which the type checker doesn't fully understand.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import narwhals as nw
@@ -22,30 +23,31 @@ from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
+    BaseFeatureSpec,
     FeatureDep,
     FeatureKey,
     FieldDep,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
 )
 from metaxy._utils import collect_to_polars
-from metaxy.ext.sqlmodel import SQLModelFeature as BaseSQLModelFeature
+from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Basic Creation and Registration Tests
 
 
+class FeatureSpec(BaseFeatureSpec[Sequence[str]]):
+    id_columns: Sequence[str] = ["sample_id"]
+
+
 class SQLModelFeature(BaseSQLModelFeature):
-    # System-managed metadata fields - these are optional and populated by Metaxy
-    # The metadata store will populate these when reading/writing data
-    # Users can override these definitions in subclasses if they need different constraints
-    sample_uid: str | None = Field(default=None, nullable=True)
+    sample_id: str
 
 
 def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
-    """Test creating a basic SQLModelFeature with spec and table parameters.
+    """Test creating a basic BaseSQLModelFeature with spec and table parameters.
 
     Verifies that:
     - Class can be created with both spec (Metaxy) and table=True (SQLModel)
@@ -57,9 +59,8 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["video"]),
-            deps=None,
             fields=[
                 FieldSpec(
                     key=FieldKey(["frames"]), code_version=1
@@ -113,9 +114,8 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
     class MultiFieldFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["multi", "field"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version=1),
                 FieldSpec(key=FieldKey(["audio"]), code_version=1),
@@ -150,9 +150,8 @@ def test_sqlmodel_custom_tablename() -> None:
     class CustomTableFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["custom", "table"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["content"]), code_version=1)],
         ),
     ):
@@ -173,9 +172,8 @@ def test_automatic_tablename() -> None:
     class AutoTableFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["my", "auto", "feature"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),
     ):
@@ -204,9 +202,8 @@ def test_sqlmodel_field_definitions() -> None:
     class AudioFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["audio"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["waveform"]), code_version=1),  # Logical data
                 FieldSpec(key=FieldKey(["spectrum"]), code_version=1),  # Logical data
@@ -251,9 +248,8 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     class VersionedFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["versioned"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),
     ):
@@ -285,9 +281,8 @@ def test_data_version_method(snapshot: SnapshotAssertion) -> None:
     class DataVersionFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["data", "version"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["processed_data"]), code_version=1),
                 FieldSpec(key=FieldKey(["embeddings"]), code_version=2),
@@ -325,9 +320,8 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ParentFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["parent"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version=1)],
         ),
     ):
@@ -338,9 +332,9 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ChildFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["child"]),
-            deps=[FeatureDep(key=FeatureKey(["parent"]))],
+            deps=[FeatureDep(feature=FeatureKey(["parent"]))],
             fields=[FieldSpec(key=FieldKey(["child_data"]), code_version=1)],
         ),
     ):
@@ -357,7 +351,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     deps = ChildFeature.spec().deps
     assert deps is not None
     assert len(deps) == 1
-    assert deps[0].key == FeatureKey(["parent"])
+    assert deps[0].feature == FeatureKey(["parent"])
 
     # Feature versions differ
     parent_version = ParentFeature.feature_version()
@@ -379,9 +373,8 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version=1),
                 FieldSpec(key=FieldKey(["audio"]), code_version=1),
@@ -396,16 +389,16 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["downstream"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             fields=[
                 FieldSpec(
                     key=FieldKey(["processed"]),
                     code_version=1,
                     deps=[
                         FieldDep(
-                            feature_key=FeatureKey(["upstream"]),
+                            feature=FeatureKey(["upstream"]),
                             fields=[
                                 FieldKey(["frames"]),
                                 FieldKey(["audio"]),
@@ -427,7 +420,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     assert len(deps) == 1
 
     field_dep = deps[0]
-    assert field_dep.feature_key == FeatureKey(["upstream"])
+    assert field_dep.feature == FeatureKey(["upstream"])
     # field_dep.fields can be SpecialFieldDep or list, check it's a list here
     assert isinstance(field_dep.fields, list)
     assert len(field_dep.fields) == 2
@@ -452,9 +445,8 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV1(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["versioned", "v1"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -469,9 +461,8 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV2(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=2)],  # Changed!
             ),
         ):
@@ -503,9 +494,8 @@ def test_custom_graph_context() -> None:
         class CustomGraphFeature(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["custom", "graph"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -530,9 +520,8 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["snapshot", "test"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
         ),
     ):
@@ -571,9 +560,8 @@ def test_downstream_dependency_tracking() -> None:
     class RootFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["root"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),
     ):
@@ -584,9 +572,9 @@ def test_downstream_dependency_tracking() -> None:
     class MiddleFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["middle"]),
-            deps=[FeatureDep(key=FeatureKey(["root"]))],
+            deps=[FeatureDep(feature=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version=1)],
         ),
     ):
@@ -597,9 +585,9 @@ def test_downstream_dependency_tracking() -> None:
     class LeafFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["leaf"]),
-            deps=[FeatureDep(key=FeatureKey(["middle"]))],
+            deps=[FeatureDep(feature=FeatureKey(["middle"]))],
             fields=[FieldSpec(key=FieldKey(["final"]), code_version=1)],
         ),
     ):
@@ -635,9 +623,8 @@ def test_duplicate_key_raises() -> None:
     class Feature1(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["duplicate"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     ):
@@ -652,9 +639,8 @@ def test_duplicate_key_raises() -> None:
         class Feature2(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["duplicate"]),  # Same key!
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -679,9 +665,8 @@ def test_inheritance_chain() -> None:
     class ConcreteFeature(
         BaseFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["concrete"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),
     ):
@@ -716,9 +701,8 @@ def test_sqlmodel_feature_with_duckdb_store(
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["video", "processing"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version=1),
                 FieldSpec(key=FieldKey(["duration"]), code_version=1),
@@ -788,10 +772,9 @@ def test_basic_custom_id_columns() -> None:
     class UserSessionFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["user", "session"]),
             id_columns=["user_id", "session_id"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["activity"]), code_version=1),
             ],
@@ -831,10 +814,9 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserActivityFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["user", "activity"]),
             id_columns=["user_id", "session_id"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["activity_type"]), code_version=1),
                 FieldSpec(key=FieldKey(["duration"]), code_version=1),
@@ -852,17 +834,17 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserSummaryFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["user", "summary"]),
             id_columns=["user_id", "session_id"],
-            deps=[FeatureDep(key=FeatureKey(["user", "activity"]))],
+            deps=[FeatureDep(feature=FeatureKey(["user", "activity"]))],
             fields=[
                 FieldSpec(
                     key=FieldKey(["total_duration"]),
                     code_version=1,
                     deps=[
                         FieldDep(
-                            feature_key=FeatureKey(["user", "activity"]),
+                            feature=FeatureKey(["user", "activity"]),
                             fields=[FieldKey(["duration"])],
                         )
                     ],
@@ -982,10 +964,9 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     class MultiKeyFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["multi", "key"]),
             id_columns=["user_id", "session_id", "timestamp"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["event"]), code_version=1),
                 FieldSpec(key=FieldKey(["metric"]), code_version=1),
@@ -1031,10 +1012,9 @@ def test_parent_child_different_id_columns() -> None:
     class DetailedParentFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["detailed", "parent"]),
             id_columns=["user_id", "session_id", "device_id"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["detail"]), code_version=1),
             ],
@@ -1049,10 +1029,10 @@ def test_parent_child_different_id_columns() -> None:
     class AggregatedChildFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["aggregated", "child"]),
             id_columns=["user_id", "session_id"],  # Doesn't need device_id
-            deps=[FeatureDep(key=FeatureKey(["detailed", "parent"]))],
+            deps=[FeatureDep(feature=FeatureKey(["detailed", "parent"]))],
             fields=[
                 FieldSpec(key=FieldKey(["summary"]), code_version=1),
             ],
@@ -1073,10 +1053,10 @@ def test_parent_child_different_id_columns() -> None:
     assert FeatureKey(["aggregated", "child"]) in graph.features_by_key
 
     # Child should have parent as dependency
-    child_deps = AggregatedChildFeature.spec().deps
-    assert child_deps is not None
-    assert len(child_deps) == 1
-    assert child_deps[0].key == FeatureKey(["detailed", "parent"])
+    deps = AggregatedChildFeature.spec().deps
+    assert deps is not None
+    assert len(deps) == 1
+    assert deps[0].feature == FeatureKey(["detailed", "parent"])
 
 
 def test_sqlmodel_feature_id_columns_with_joins(
@@ -1094,10 +1074,9 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureA(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["feature", "a"]),
             id_columns=["user_id", "date"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["value_a"]), code_version=1),
             ],
@@ -1111,10 +1090,9 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureB(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["feature", "b"]),
             id_columns=["user_id", "date"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["value_b"]), code_version=1),
             ],
@@ -1129,12 +1107,12 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureC(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["feature", "c"]),
             id_columns=["user_id", "date"],
             deps=[
-                FeatureDep(key=FeatureKey(["feature", "a"])),
-                FeatureDep(key=FeatureKey(["feature", "b"])),
+                FeatureDep(feature=FeatureKey(["feature", "a"])),
+                FeatureDep(feature=FeatureKey(["feature", "b"])),
             ],
             fields=[
                 FieldSpec(
@@ -1142,11 +1120,11 @@ def test_sqlmodel_feature_id_columns_with_joins(
                     code_version=1,
                     deps=[
                         FieldDep(
-                            feature_key=FeatureKey(["feature", "a"]),
+                            feature=FeatureKey(["feature", "a"]),
                             fields=[FieldKey(["value_a"])],
                         ),
                         FieldDep(
-                            feature_key=FeatureKey(["feature", "b"]),
+                            feature=FeatureKey(["feature", "b"]),
                             fields=[FieldKey(["value_b"])],
                         ),
                     ],
@@ -1242,10 +1220,9 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
         class InvalidFeature(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["invalid"]),
                 id_columns=[],  # Empty list not allowed
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version=1),
                 ],
@@ -1266,10 +1243,9 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["snapshot", "ids"]),
             id_columns=["customer_id", "order_id"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["amount"]), code_version=1),
             ],
@@ -1319,9 +1295,8 @@ def test_sqlmodel_with_column_rename() -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["upstream", "rename"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["content"]), code_version=1),
             ],
@@ -1335,11 +1310,11 @@ def test_sqlmodel_with_column_rename() -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["downstream", "rename"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["upstream", "rename"]),
+                    feature=FeatureKey(["upstream", "rename"]),
                     rename={
                         "status": "upstream_status",
                         "priority": "upstream_priority",
@@ -1357,10 +1332,10 @@ def test_sqlmodel_with_column_rename() -> None:
         result: str
 
     # Check that deps have rename configured
-    downstream_deps = DownstreamFeature.spec().deps
-    assert downstream_deps is not None
-    assert len(downstream_deps) == 1
-    dep = downstream_deps[0]
+    deps = DownstreamFeature.spec().deps
+    assert deps is not None
+    assert len(deps) == 1
+    dep = deps[0]
     assert dep.rename is not None
     assert dep.rename["status"] == "upstream_status"
     assert dep.rename["priority"] == "upstream_priority"
@@ -1378,9 +1353,8 @@ def test_sqlmodel_with_column_selection() -> None:
     class WideUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["wide", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["data1"]), code_version=1),
                 FieldSpec(key=FieldKey(["data2"]), code_version=1),
@@ -1398,11 +1372,11 @@ def test_sqlmodel_with_column_selection() -> None:
     class SelectiveDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["selective", "downstream"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["wide", "upstream"]),
+                    feature=FeatureKey(["wide", "upstream"]),
                     columns=("col1", "col3"),  # Only select these columns
                 )
             ],
@@ -1416,9 +1390,9 @@ def test_sqlmodel_with_column_selection() -> None:
         summary: str
 
     # Check column selection configured
-    selective_deps = SelectiveDownstreamFeature.spec().deps
-    assert selective_deps is not None
-    dep = selective_deps[0]
+    deps = SelectiveDownstreamFeature.spec().deps
+    assert deps is not None
+    dep = deps[0]
     assert dep.columns == ("col1", "col3")
 
 
@@ -1438,9 +1412,8 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
         class BadFeature(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["bad", "feature"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["content"]), code_version=1),
                 ],
@@ -1461,9 +1434,8 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class UpstreamWithStatus(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["upstream", "status"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["content"]), code_version=1),
             ],
@@ -1477,11 +1449,11 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class DownstreamWithOwnStatus(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["downstream", "status"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["upstream", "status"]),
+                    feature=FeatureKey(["upstream", "status"]),
                     rename={"status": "upstream_status"},  # Avoid conflict
                 )
             ],
@@ -1495,9 +1467,9 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
         status: str  # Own status - no conflict thanks to rename
 
     # Verify rename is configured
-    own_status_deps = DownstreamWithOwnStatus.spec().deps
-    assert own_status_deps is not None
-    dep = own_status_deps[0]
+    deps = DownstreamWithOwnStatus.spec().deps
+    assert deps is not None
+    dep = deps[0]
     assert dep.rename == {"status": "upstream_status"}
 
 
@@ -1512,9 +1484,8 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class ComplexUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["complex", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["raw_data"]), code_version=1),
             ],
@@ -1531,11 +1502,11 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class OptimizedDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["optimized", "downstream"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["complex", "upstream"]),
+                    feature=FeatureKey(["complex", "upstream"]),
                     columns=("important1", "important2", "status"),  # Select only these
                     rename={
                         "important1": "upstream_imp1",
@@ -1555,9 +1526,9 @@ def test_sqlmodel_select_and_rename_combination() -> None:
         result: str
 
     # Check both selection and rename are configured
-    optimized_deps = OptimizedDownstreamFeature.spec().deps
-    assert optimized_deps is not None
-    dep = optimized_deps[0]
+    deps = OptimizedDownstreamFeature.spec().deps
+    assert deps is not None
+    dep = deps[0]
     assert dep.columns == ("important1", "important2", "status")
     assert dep.rename is not None
     assert len(dep.rename) == 3
@@ -1575,9 +1546,8 @@ def test_sqlmodel_empty_column_selection() -> None:
     class DataUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["data", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["values"]), code_version=1),
             ],
@@ -1592,11 +1562,11 @@ def test_sqlmodel_empty_column_selection() -> None:
     class MinimalDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["minimal", "downstream"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["data", "upstream"]),
+                    feature=FeatureKey(["data", "upstream"]),
                     columns=(),  # Empty tuple - only keep system columns
                 )
             ],
@@ -1610,9 +1580,9 @@ def test_sqlmodel_empty_column_selection() -> None:
         computed: float
 
     # Check empty column selection
-    minimal_deps = MinimalDownstreamFeature.spec().deps
-    assert minimal_deps is not None
-    dep = minimal_deps[0]
+    deps = MinimalDownstreamFeature.spec().deps
+    assert deps is not None
+    dep = deps[0]
     assert dep.columns == ()  # Empty tuple, not None
 
 
@@ -1630,9 +1600,8 @@ def test_sqlmodel_rename_validation_with_store(
     class SourceFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["source", "feature"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["source_data"]), code_version=1),
             ],
@@ -1647,11 +1616,11 @@ def test_sqlmodel_rename_validation_with_store(
     class TargetFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["target", "feature"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["source", "feature"]),
+                    feature=FeatureKey(["source", "feature"]),
                     columns=("status", "priority"),  # Select only these
                     rename={"status": "source_status", "priority": "source_priority"},
                 )
@@ -1705,16 +1674,16 @@ def test_sqlmodel_rename_validation_with_store(
         # The exact behavior depends on the load_input implementation
 
         # For now, let's just verify the specs are configured correctly
-        target_deps = TargetFeature.spec().deps
-        assert target_deps is not None
-        assert len(target_deps) == 1
-        dep = target_deps[0]
+        deps = TargetFeature.spec().deps
+        assert deps is not None
+        assert len(deps) == 1
+        dep = deps[0]
         assert dep.rename == {"status": "source_status", "priority": "source_priority"}
         assert dep.columns == ("status", "priority")
 
         # Snapshot the configuration
         assert {
-            "dep_key": dep.key.to_string(),
+            "dep_key": dep.feature.to_string(),
             "dep_columns": dep.columns,
             "dep_rename": dep.rename,
         } == snapshot
@@ -1739,10 +1708,9 @@ def test_sqlmodel_rejects_autoincrement_primary_key_id_columns() -> None:
         class BadAutoIncrementFeature(
             SQLModelFeature,
             table=True,
-            spec=TestingFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["bad", "autoincrement"]),
                 id_columns=["id"],
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version=1),
                 ],
@@ -1765,10 +1733,9 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
     class GoodClientIdFeature(
         SQLModelFeature,
         table=True,
-        spec=TestingFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["good", "client_id"]),
             id_columns=["user_id", "session_id"],
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version=1),
             ],

@@ -18,7 +18,6 @@ def test_feature_spec_id_columns_default():
     """Test that id_columns defaults to None and is interpreted as ["sample_uid"]."""
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
     assert spec.id_columns == ["sample_uid"]
 
@@ -27,7 +26,6 @@ def test_feature_spec_id_columns_custom():
     """Test that custom id_columns can be specified."""
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["user_id", "session_id"],
     )
     assert spec.id_columns == ["user_id", "session_id"]
@@ -38,7 +36,6 @@ def test_feature_spec_id_columns_validation():
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
         TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             id_columns=[],  # Empty list should raise error
         )
 
@@ -51,7 +48,6 @@ def test_feature_id_columns_classmethod(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["default"]),
-            deps=None,
         ),
     ):
         pass
@@ -63,7 +59,6 @@ def test_feature_id_columns_classmethod(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["custom"]),
-            deps=None,
             id_columns=["user_id", "session_id"],
         ),
     ):
@@ -81,7 +76,6 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
-            deps=None,
         ),
     ):
         pass
@@ -90,7 +84,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
         ),
     ):
         pass
@@ -135,7 +129,6 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
-            deps=None,
             id_columns=["user_id"],
         ),
     ):
@@ -145,7 +138,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["user_id"],
         ),
     ):
@@ -192,7 +185,6 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream1"]),
-            deps=None,
             id_columns=["user_id", "session_id"],
         ),
     ):
@@ -202,7 +194,6 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream2"]),
-            deps=None,
             id_columns=["user_id", "session_id"],
         ),
     ):
@@ -213,8 +204,8 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[
-                FeatureDep(key=FeatureKey(["upstream1"])),
-                FeatureDep(key=FeatureKey(["upstream2"])),
+                FeatureDep(feature=FeatureKey(["upstream1"])),
+                FeatureDep(feature=FeatureKey(["upstream2"])),
             ],
             id_columns=["user_id", "session_id"],
         ),
@@ -290,7 +281,6 @@ def test_narwhals_joiner_empty_upstream_custom_id(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["source"]),
-            deps=None,
             id_columns=["entity_id", "timestamp"],
         ),
     ):
@@ -322,7 +312,6 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
-            deps=None,
             id_columns=["content_id"],
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version=1),
@@ -335,7 +324,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["processed"]),
-            deps=[FeatureDep(key=FeatureKey(["video"]))],
+            deps=[FeatureDep(feature=FeatureKey(["video"]))],
             id_columns=["content_id"],
             fields=[
                 FieldSpec(key=FieldKey(["analysis"]), code_version=1),
@@ -423,13 +412,11 @@ def test_feature_spec_version_includes_id_columns():
     # Create two specs with same everything except id_columns
     spec1 = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         # Uses default id_columns (None)
     )
 
     spec2 = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["user_id"],  # Custom id_columns
     )
 
@@ -440,7 +427,6 @@ def test_feature_spec_version_includes_id_columns():
     # But if we create another spec with same id_columns, versions should match
     spec3 = TestingFeatureSpec(
         key=FeatureKey(["test"]),  # Same key
-        deps=None,
         id_columns=["user_id"],  # Same id_columns as spec2
     )
 
@@ -460,7 +446,6 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
-            deps=None,
             id_columns=["user_id"],  # Upstream declares user_id
         ),
     ):
@@ -471,7 +456,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["user_id", "session_id"],  # Target needs both columns
         ),
     ):
@@ -537,7 +522,6 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream2"]),
-            deps=None,
             id_columns=["user_id"],
         ),
     ):
@@ -548,8 +532,8 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=[
-                FeatureDep(key=FeatureKey(["upstream"])),
-                FeatureDep(key=FeatureKey(["upstream2"])),
+                FeatureDep(feature=FeatureKey(["upstream"])),
+                FeatureDep(feature=FeatureKey(["upstream2"])),
             ],
             id_columns=["user_id", "session_id"],  # Needs both
         ),
@@ -600,7 +584,6 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["user"]),
-            deps=None,
             id_columns=["user_id"],
             fields=[
                 FieldSpec(key=FieldKey(["profile"]), code_version=1),
@@ -613,7 +596,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["session"]),
-            deps=[FeatureDep(key=FeatureKey(["user"]))],
+            deps=[FeatureDep(feature=FeatureKey(["user"]))],
             id_columns=["user_id", "session_id"],
             fields=[
                 FieldSpec(key=FieldKey(["activity"]), code_version=1),
@@ -683,7 +666,6 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["test1"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             # id_columns=None (default)
         ),
@@ -695,7 +677,6 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["test2"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             id_columns=["user_id"],  # Custom ID columns
         ),
@@ -786,17 +767,14 @@ def test_snapshot_stability_with_id_columns(snapshot):
     specs = {
         "default": TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             # id_columns=None (default)
         ),
         "single_custom": TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             id_columns=["user_id"],
         ),
         "composite": TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             id_columns=["user_id", "session_id"],
         ),
     }
@@ -815,7 +793,6 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["triple"]),
-            deps=None,
             id_columns=["tenant_id", "user_id", "event_id"],
         ),
     ):
@@ -851,7 +828,6 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream_extra"]),
-            deps=None,
             id_columns=["user_id", "session_id", "extra_id"],
         ),
     ):
@@ -861,7 +837,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target_fewer"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream_extra"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream_extra"]))],
             id_columns=["user_id", "session_id"],  # Doesn't require extra_id
         ),
     ):
@@ -900,7 +876,6 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["source"]),
-            deps=None,
             id_columns=["entity_id"],
         ),
     ):
@@ -923,7 +898,6 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["up1"]),
-            deps=None,
             id_columns=["user_id"],  # Missing session_id
         ),
     ):
@@ -933,7 +907,6 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["up2"]),
-            deps=None,
             id_columns=["session_id"],  # Missing user_id
         ),
     ):
@@ -944,8 +917,8 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["target_both"]),
             deps=[
-                FeatureDep(key=FeatureKey(["up1"])),
-                FeatureDep(key=FeatureKey(["up2"])),
+                FeatureDep(feature=FeatureKey(["up1"])),
+                FeatureDep(feature=FeatureKey(["up2"])),
             ],
             id_columns=["user_id", "session_id"],
         ),
@@ -997,7 +970,6 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["single"]),
-            deps=None,
             id_columns=["id1"],
         ),
     ):
@@ -1007,7 +979,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target_multi"]),
-            deps=[FeatureDep(key=FeatureKey(["single"]))],
+            deps=[FeatureDep(feature=FeatureKey(["single"]))],
             id_columns=["id1", "id2", "id3"],  # Multiple required
         ),
     ):
@@ -1050,7 +1022,6 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["legacy"]),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             # No id_columns specified - should default to ["sample_uid"]
         ),

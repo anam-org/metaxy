@@ -363,7 +363,9 @@ class TestFeatureSpecProperties:
     @settings(max_examples=50)
     def test_feature_spec_with_deps(self, key_data: Any, dep_keys: list[Any]):
         """Test FeatureSpec with dependencies using coercible keys."""
-        deps = [FeatureDep(key=dep_key) for dep_key in dep_keys] if dep_keys else None
+        deps = (
+            [FeatureDep(feature=dep_key) for dep_key in dep_keys] if dep_keys else None
+        )
 
         spec = FeatureSpec(key=key_data, deps=deps)
 
@@ -371,7 +373,7 @@ class TestFeatureSpecProperties:
         if deps:
             assert spec.deps is not None
             for dep in spec.deps:
-                assert isinstance(dep.key, FeatureKey)
+                assert isinstance(dep.feature, FeatureKey)
 
     @given(
         key_data=coercible_to_feature_key(),
@@ -397,7 +399,7 @@ class TestFeatureSpecProperties:
                 FieldSpec(key=field_key, code_version=1, deps=SpecialFieldDep.ALL)
             )
 
-        spec = FeatureSpec(key=key_data, deps=None, fields=fields)
+        spec = FeatureSpec(key=key_data, fields=fields)
 
         assert isinstance(spec.key, FeatureKey)
         assert len(spec.fields) == len(fields)
@@ -433,10 +435,10 @@ class TestFeatureDepProperties:
     @settings(max_examples=100)
     def test_feature_dep_accepts_coercible_key(self, key_data: Any):
         """Test that FeatureDep accepts all coercible key formats."""
-        dep = FeatureDep(key=key_data)
+        dep = FeatureDep(feature=key_data)
 
-        assert isinstance(dep.key, FeatureKey)
-        assert isinstance(dep.key.parts, tuple)
+        assert isinstance(dep.feature, FeatureKey)
+        assert isinstance(dep.feature.parts, tuple)
 
     @given(
         key_data=coercible_to_feature_key(),
@@ -459,9 +461,9 @@ class TestFeatureDepProperties:
         self, key_data: Any, columns: tuple[str, ...] | None
     ):
         """Test FeatureDep with column selection."""
-        dep = FeatureDep(key=key_data, columns=columns)
+        dep = FeatureDep(feature=key_data, columns=columns)
 
-        assert isinstance(dep.key, FeatureKey)
+        assert isinstance(dep.feature, FeatureKey)
         assert dep.columns == columns
 
     @given(
@@ -481,9 +483,9 @@ class TestFeatureDepProperties:
         """Test FeatureDep with column renaming."""
         rename = dict(rename_pairs) if rename_pairs else None
 
-        dep = FeatureDep(key=key_data, rename=rename)
+        dep = FeatureDep(feature=key_data, rename=rename)
 
-        assert isinstance(dep.key, FeatureKey)
+        assert isinstance(dep.feature, FeatureKey)
         assert dep.rename == rename
 
     @given(key_data=coercible_to_feature_key())
@@ -491,20 +493,20 @@ class TestFeatureDepProperties:
     def test_feature_dep_json_serialization(self, key_data: Any):
         """Test FeatureDep JSON serialization."""
         dep = FeatureDep(
-            key=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"}
+            feature=key_data, columns=("col1", "col2"), rename={"col1": "new_col1"}
         )
 
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")
 
         # Key should be serialized as a list
-        assert isinstance(json_data["key"], list)
+        assert isinstance(json_data["feature"], list)
         assert json_data["columns"] == ["col1", "col2"]  # Tuple becomes list in JSON
         assert json_data["rename"] == {"col1": "new_col1"}
 
         # Should be able to reconstruct
         dep_restored = FeatureDep(**json_data)
-        assert dep_restored.key == dep.key
+        assert dep_restored.feature == dep.feature
         assert dep_restored.columns == ("col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
 
@@ -579,7 +581,7 @@ class TestComplexIntegration:
         deps = (
             [
                 FeatureDep(
-                    key=dep_key,
+                    feature=dep_key,
                     columns=("col1",) if i % 2 == 0 else None,
                     rename={"col1": f"dep{i}_col1"} if i % 3 == 0 else None,
                 )
@@ -614,7 +616,7 @@ class TestComplexIntegration:
         if deps:
             assert spec.deps is not None
             for dep in spec.deps:
-                assert isinstance(dep.key, FeatureKey)
+                assert isinstance(dep.feature, FeatureKey)
         for field in spec.fields:
             assert isinstance(field.key, FieldKey)
 

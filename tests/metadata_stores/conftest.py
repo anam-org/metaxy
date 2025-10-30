@@ -210,7 +210,6 @@ def test_graph():
     # Define specs
     upstream_a_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_a"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version=1),
             FieldSpec(key=FieldKey(["audio"]), code_version=1),
@@ -219,7 +218,6 @@ def test_graph():
 
     upstream_b_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_b"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
@@ -228,7 +226,7 @@ def test_graph():
     downstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "downstream"]),
         deps=[
-            FeatureDep(key=FeatureKey(["test_stores", "upstream_a"])),
+            FeatureDep(feature=FeatureKey(["test_stores", "upstream_a"])),
         ],
         fields=[
             FieldSpec(
@@ -236,7 +234,7 @@ def test_graph():
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["test_stores", "upstream_a"]),
+                        feature=FeatureKey(["test_stores", "upstream_a"]),
                         fields=[
                             FieldKey(["frames"]),
                             FieldKey(["audio"]),

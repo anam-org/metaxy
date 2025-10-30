@@ -37,7 +37,7 @@ docs-build:
     uv run --group docs mkdocs build --clean --strict
 
 docs-serve:
-    uv run --group docs mkdocs serve
+    uv run --group docs mkdocs serve --livereload
 
 docs-publish version:
     git branch -D gh-pages

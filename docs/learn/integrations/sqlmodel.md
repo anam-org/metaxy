@@ -1,12 +1,10 @@
 # SQLModel Integration
 
-The SQLModel integration enables Metaxy features to function as both metadata-tracked features and SQLAlchemy ORM models. This integration combines Metaxy's versioning and dependency tracking with SQLModel's database mapping and query capabilities.
+The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to function as both metadata-tracked features and SQLAlchemy ORM models.
 
-## Problem Statement
+This integration combines Metaxy's versioning and dependency tracking with SQLModel's database mapping and query capabilities.
 
-Multimodal ML pipelines often require persistent storage of metadata alongside versioned feature definitions. While Metaxy tracks feature versions and data lineage, SQLModel provides ORM functionality for database interactions. The integration eliminates the need to maintain separate classes for feature definitions and database models, ensuring consistency between logical feature structure and physical storage schema.
-
-Additionally, users can benefit from migration systems such as [Alembic](https://alembic.sqlalchemy.org/).
+It is the primary way to use Metaxy with database-backed [metadata stores](../../learn/metadata-stores.md). The benefits of using SQLModel are mostly in the ability to use migration systems such as [Alembic](https://alembic.sqlalchemy.org/) that can ensure schema consistency with Metaxy features, and provide the tools for schema evolution as the features change over time.
 
 ## Installation
 
@@ -18,30 +16,67 @@ pip install metaxy[sqlmodel]
 
 ## Basic Usage
 
-Define a feature class that inherits from `SQLModelFeature` and specify both Metaxy's `spec` parameter and SQLModel's `table=True` parameter:
+The integration has to be enabled in the configuration file:
+
+=== "metaxy.toml"
+
+    ```toml
+    [ext.sqlmodel]
+    enable = true
+    ```
+
+=== "pyproject.toml"
+
+    ```toml
+    [tool.metaxy.ext.sqlmodel]
+    enable = true
+    ```
+
+=== "Environment Variable"
+
+    ```bash
+    export METAXY_EXT_SQLMODEL_ENABLE=true
+    ```
+
+This will expose Metaxy's system tables to SQLAlchemy.
+
+First, as always with Metaxy features, we would have to define our ID columns:
 
 ```python
-from metaxy.ext.sqlmodel import SQLModelFeature
-from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import BaseFeatureSpec
+from metaxy.ext.sqlmodel import BaseSQLModelFeature
+
+
+class SampleFeatureSpec(BaseFeatureSpec):
+    id_columns: tuple[str] = "sample_id"
+
+
+class SampleFeature(BaseSQLModelFeature, table=False, spec=None):
+    sample_id: str
+```
+
+Note that ID columns **cannot be server-generated**, so the cannot include a Primary Key.
+
+Now we can define feature class that inherits from `SampleFeature` and specify both Metaxy's `spec` parameter and SQLModel's `table=True` parameter:
+
+```python
+from metaxy import FeatureKey, FieldSpec, FieldKey
 from sqlmodel import Field
 
 
 class VideoFeature(
-    SQLModelFeature,
+    SampleFeature,
     table=True,
-    spec=FeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["video"]),
-        deps=None,  # Root feature with no dependencies
+        # Root feature with no dependencies
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version=1),
             FieldSpec(key=FieldKey(["duration"]), code_version=1),
         ],
     ),
 ):
-    # Primary key
-    uid: str = Field(primary_key=True)
-
-    # Metadata columns
+    # User-defined metadata columns
     path: str
     duration: float
 ```
@@ -134,6 +169,7 @@ Configure automatic table naming behavior:
 
     ```toml
     [ext.sqlmodel]
+    enable = true
     infer_db_table_names = true  # Default
     ```
 
@@ -141,6 +177,7 @@ Configure automatic table naming behavior:
 
     ```toml
     [tool.metaxy.ext.sqlmodel]
+    enable = true
     infer_db_table_names = true  # Default
     ```
 

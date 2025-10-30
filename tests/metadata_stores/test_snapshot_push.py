@@ -60,7 +60,6 @@ def test_record_snapshot_first_time():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
             ),
         ):
@@ -107,7 +106,6 @@ def test_record_snapshot_metadata_only_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -117,7 +115,7 @@ def test_record_snapshot_metadata_only_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # No rename yet
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],  # No rename yet
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -148,7 +146,6 @@ def test_record_snapshot_metadata_only_changes():
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
-                        deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
                     ),
                 ):
@@ -160,7 +157,7 @@ def test_record_snapshot_metadata_only_changes():
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["upstream"]),
+                                feature=FeatureKey(["upstream"]),
                                 rename={"value": "renamed_value"},  # Added rename
                             )
                         ],
@@ -224,7 +221,6 @@ def test_record_snapshot_no_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
             ),
         ):
@@ -268,7 +264,6 @@ def test_record_snapshot_partial_metadata_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -278,7 +273,7 @@ def test_record_snapshot_partial_metadata_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -288,7 +283,7 @@ def test_record_snapshot_partial_metadata_changes():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_c"]),
-                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
             ),
         ):
@@ -306,7 +301,6 @@ def test_record_snapshot_partial_metadata_changes():
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["feature_a"]),
-                        deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
                     ),
                 ):
@@ -318,7 +312,7 @@ def test_record_snapshot_partial_metadata_changes():
                         key=FeatureKey(["feature_b"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["feature_a"]),
+                                feature=FeatureKey(["feature_a"]),
                                 rename={"value": "renamed_b"},  # Changed
                             )
                         ],
@@ -333,7 +327,7 @@ def test_record_snapshot_partial_metadata_changes():
                         key=FeatureKey(["feature_c"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["feature_a"]),
+                                feature=FeatureKey(["feature_a"]),
                                 columns=("value",),  # Changed
                             )
                         ],
@@ -372,7 +366,6 @@ def test_record_snapshot_append_only_behavior():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -382,7 +375,7 @@ def test_record_snapshot_append_only_behavior():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -415,7 +408,6 @@ def test_record_snapshot_append_only_behavior():
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
-                        deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
                     ),
                 ):
@@ -427,7 +419,7 @@ def test_record_snapshot_append_only_behavior():
                         key=FeatureKey(["my_feature"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["upstream"]),
+                                feature=FeatureKey(["upstream"]),
                                 rename={"value": "new_name"},  # Metadata change
                             )
                         ],
@@ -492,7 +484,6 @@ def test_record_snapshot_computational_change():
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -512,7 +503,6 @@ def test_record_snapshot_computational_change():
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["my_feature"]),
-                        deps=None,
                         fields=[
                             FieldSpec(key=FieldKey(["value"]), code_version=2)
                         ],  # Changed
@@ -550,7 +540,6 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -560,7 +549,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -596,7 +585,6 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
-                        deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
                     ),
                 ):
@@ -608,7 +596,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["upstream"]),
+                                feature=FeatureKey(["upstream"]),
                                 rename={"value": "renamed"},
                             )
                         ],

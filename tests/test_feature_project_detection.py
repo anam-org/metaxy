@@ -33,7 +33,6 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -61,7 +60,6 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -79,7 +77,6 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -240,7 +237,6 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature1"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -250,7 +246,6 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature2"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -282,7 +277,6 @@ def test_feature_project_persists_across_graph_operations(
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["snapshot", "test", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):

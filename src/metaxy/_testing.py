@@ -97,7 +97,9 @@ class TempFeatureModule:
         if deps is None:
             parts.append("deps=None")
         else:
-            deps_repr = [f"FeatureDep(key=FeatureKey({d['key']!r}))" for d in deps]
+            deps_repr = [
+                f"FeatureDep(feature=FeatureKey({d['feature']!r}))" for d in deps
+            ]
             parts.append(f"deps=[{', '.join(deps_repr)}]")
 
         # fields
@@ -121,13 +123,13 @@ class TempFeatureModule:
                         fields_val = cd.get("fields")
                         if fields_val == "__METAXY_ALL_DEP__":
                             cdeps.append(  # type: ignore[arg-type]
-                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=SpecialFieldDep.ALL)"
+                                f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=SpecialFieldDep.ALL)"
                             )
                         else:
                             # Build list of FieldKey objects
                             field_keys = [f"FieldKey({k!r})" for k in fields_val]
                             cdeps.append(
-                                f"FieldDep(feature_key=FeatureKey({cd['feature_key']!r}), fields=[{', '.join(field_keys)}])"
+                                f"FieldDep(feature=FeatureKey({cd['feature']!r}), fields=[{', '.join(field_keys)}])"
                             )
                     c_parts.append(f"deps=[{', '.join(cdeps)}]")
 
@@ -344,7 +346,7 @@ class TempMetaxyProject(MetaxyProject):
         ...
         ...     class MyFeature(Feature, spec=BaseFeatureSpec(
         ...         key=FeatureKey(["my_feature"]),
-        ...         deps=None,
+        ...
         ...         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
         ...     )):
         ...         pass

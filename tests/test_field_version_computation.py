@@ -29,7 +29,6 @@ def test_load_snapshot_data_computes_proper_field_versions():
             TestingFeature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["parent"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["field1"]), code_version=1),
                     FieldSpec(key=FieldKey(["field2"]), code_version=2),
@@ -92,7 +91,6 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails():
             TestingFeature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["field1"]), code_version=1),
                     FieldSpec(key=FieldKey(["field2"]), code_version=2),
@@ -140,7 +138,6 @@ def test_field_key_normalization():
             TestingFeature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["nested", "field"]), code_version=1),
                 ],

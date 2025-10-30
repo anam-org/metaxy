@@ -41,7 +41,6 @@ class UpstreamFeatureA(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["upstream", "a"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version=1),
             FieldSpec(key=FieldKey(["audio"]), code_version=1),
@@ -55,7 +54,6 @@ class UpstreamFeatureB(
     Feature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["upstream", "b"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
@@ -69,7 +67,7 @@ class DownstreamFeature(
     spec=TestingFeatureSpec(
         key=FeatureKey(["downstream"]),
         deps=[
-            FeatureDep(key=FeatureKey(["upstream", "a"])),
+            FeatureDep(feature=FeatureKey(["upstream", "a"])),
         ],
         fields=[
             FieldSpec(
@@ -77,7 +75,7 @@ class DownstreamFeature(
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=FeatureKey(["upstream", "a"]),
+                        feature=FeatureKey(["upstream", "a"]),
                         fields=[FieldKey(["frames"]), FieldKey(["audio"])],
                     )
                 ],

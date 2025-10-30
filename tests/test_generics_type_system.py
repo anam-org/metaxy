@@ -34,7 +34,6 @@ def test_base_feature_spec_generic_parameter():
 
     spec = CustomSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
 
     # Verify the id_columns are preserved
@@ -55,7 +54,6 @@ def test_base_feature_generic_parameter():
             BaseFeature[list[str]],
             spec=CustomSpec(
                 key=FeatureKey(["custom"]),
-                deps=None,
             ),
         ):
             pass
@@ -68,7 +66,6 @@ def test_testing_feature_spec_default_id_columns():
     """Test that TestingFeatureSpec has correct default id_columns."""
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
 
     # TestingFeatureSpec should default to ["sample_uid"]
@@ -79,7 +76,6 @@ def test_feature_spec_default_id_columns():
     """Test that FeatureSpec (production) has correct default id_columns."""
     spec = FeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
 
     # FeatureSpec should default to ("sample_uid",) - a tuple
@@ -99,7 +95,6 @@ def test_custom_literal_type_id_columns():
 
     spec = StrictSpec(
         key=FeatureKey(["strict"]),
-        deps=None,
     )
 
     # Verify the literal values are preserved
@@ -124,12 +119,10 @@ def test_spec_version_stability_across_generic_types():
 
     spec1 = Spec1(
         key=FeatureKey(["test"]),
-        deps=None,
     )
 
     spec2 = Spec2(
         key=FeatureKey(["test"]),
-        deps=None,
     )
 
     # Pydantic's JSON serialization normalizes list and tuple to the same format,
@@ -146,7 +139,6 @@ def test_classmethod_spec_returns_correct_type():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
-                deps=None,
                 id_columns=["custom_id"],
             ),
         ):
@@ -167,7 +159,6 @@ def test_classmethod_id_columns_returns_correct_value():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
-                deps=None,
                 id_columns=["x", "y", "z"],
             ),
         ):
@@ -186,7 +177,6 @@ def test_multiple_features_with_different_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature1"]),
-                deps=None,
                 id_columns=["sample_uid"],
             ),
         ):
@@ -196,7 +186,6 @@ def test_multiple_features_with_different_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature2"]),
-                deps=None,
                 id_columns=["user_id", "session_id"],
             ),
         ):
@@ -206,7 +195,6 @@ def test_multiple_features_with_different_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature3"]),
-                deps=None,
                 id_columns=["entity_id"],
             ),
         ):
@@ -227,7 +215,6 @@ def test_feature_with_deps_preserves_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 id_columns=["user_id"],
             ),
         ):
@@ -237,7 +224,7 @@ def test_feature_with_deps_preserves_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 id_columns=["user_id", "session_id"],  # Different from upstream
             ),
         ):
@@ -254,7 +241,6 @@ def test_empty_id_columns_validation():
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
         TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             id_columns=[],  # Empty list should raise error
         )
 
@@ -265,7 +251,6 @@ def test_none_id_columns_uses_subclass_default():
     # TestingFeatureSpec has default=["sample_uid"]
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         # No id_columns specified
     )
 
@@ -295,7 +280,6 @@ def test_feature_with_custom_spec_class():
             BaseFeature[list[str]],
             spec=VideoSpec(
                 key=FeatureKey(["video"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["frames"]), code_version=1),
                 ],
@@ -317,14 +301,12 @@ def test_base_feature_spec_without_default_requires_id_columns():
     # This should work because TestingFeatureSpec provides a default
     spec1 = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
     assert spec1.id_columns == ["sample_uid"]
 
     # This should also work - explicit value
     spec2 = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["custom"],
     )
     assert spec2.id_columns == ["custom"]
@@ -335,7 +317,6 @@ def test_feature_spec_model_dump_includes_id_columns():
 
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["user_id", "session_id"],
     )
 
@@ -351,7 +332,6 @@ def test_feature_spec_serialization_roundtrip():
 
     original = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["entity_id", "timestamp"],
         fields=[
             FieldSpec(key=FieldKey(["data"]), code_version=1),
@@ -384,7 +364,6 @@ def test_backward_compatibility_with_existing_features():
             ],  # Using default list[str] for backward compatibility
             spec=TestingFeatureSpec(
                 key=FeatureKey(["legacy"]),
-                deps=None,
                 # Uses default id_columns from TestingFeatureSpec
             ),
         ):
@@ -399,13 +378,11 @@ def test_multiple_spec_instances_are_independent():
 
     spec1 = TestingFeatureSpec(
         key=FeatureKey(["test1"]),
-        deps=None,
         id_columns=["id1"],
     )
 
     spec2 = TestingFeatureSpec(
         key=FeatureKey(["test2"]),
-        deps=None,
         id_columns=["id2", "id3"],
     )
 
@@ -425,7 +402,6 @@ def test_feature_graph_tracks_features_with_different_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["f1"]),
-                deps=None,
                 id_columns=["sample_uid"],
             ),
         ):
@@ -435,7 +411,6 @@ def test_feature_graph_tracks_features_with_different_id_columns():
             BaseFeature[list[str]],
             spec=TestingFeatureSpec(
                 key=FeatureKey(["f2"]),
-                deps=None,
                 id_columns=["user_id"],
             ),
         ):

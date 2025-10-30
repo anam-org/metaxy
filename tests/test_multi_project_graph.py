@@ -29,7 +29,6 @@ def test_graph_contains_features_from_multiple_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["project_a", "feature1"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -39,7 +38,6 @@ def test_graph_contains_features_from_multiple_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["project_a", "feature2"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -55,7 +53,6 @@ def test_graph_contains_features_from_multiple_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["project_b", "feature1"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -65,7 +62,6 @@ def test_graph_contains_features_from_multiple_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["project_b", "feature2"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -104,7 +100,6 @@ def test_graph_snapshot_includes_all_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -120,7 +115,6 @@ def test_graph_snapshot_includes_all_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -156,7 +150,6 @@ def test_graph_snapshot_version_includes_all_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -171,7 +164,6 @@ def test_graph_snapshot_version_includes_all_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -194,7 +186,6 @@ def test_graph_snapshot_version_includes_all_projects(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -222,7 +213,6 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["restore", "feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -237,7 +227,6 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["restore", "feature_b"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -286,7 +275,6 @@ def test_multi_project_dependency_graph(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -302,7 +290,7 @@ def test_multi_project_dependency_graph(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -319,7 +307,7 @@ def test_multi_project_dependency_graph(snapshot: SnapshotAssertion) -> None:
     downstream_spec = graph.feature_specs_by_key[FeatureKey(["downstream"])]
     assert len(downstream_spec.deps or []) == 1
     assert downstream_spec.deps is not None  # Type assertion for basedpyright
-    assert downstream_spec.deps[0].key == FeatureKey(["upstream"])
+    assert downstream_spec.deps[0].feature == FeatureKey(["upstream"])
 
     # Snapshot the structure
     assert {
@@ -345,7 +333,6 @@ def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion) ->
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["root"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -361,7 +348,7 @@ def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion) ->
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["mid"]),
-                deps=[FeatureDep(key=FeatureKey(["root"]))],
+                deps=[FeatureDep(feature=FeatureKey(["root"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -377,7 +364,7 @@ def test_get_downstream_features_across_projects(snapshot: SnapshotAssertion) ->
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["leaf"]),
-                deps=[FeatureDep(key=FeatureKey(["mid"]))],
+                deps=[FeatureDep(feature=FeatureKey(["mid"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -423,7 +410,6 @@ def test_graph_with_same_feature_key_different_projects() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["common", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -440,7 +426,6 @@ def test_graph_with_same_feature_key_different_projects() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["common", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
