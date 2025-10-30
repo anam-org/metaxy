@@ -408,7 +408,7 @@ class TestFeatureSpecProperties:
     @settings(max_examples=50)
     def test_feature_spec_json_serialization(self, key_data: Any):
         """Test FeatureSpec JSON serialization with coercible keys."""
-        spec = FeatureSpec(key=key_data, deps=None, code_version=42)
+        spec = FeatureSpec(key=key_data, deps=None)
 
         # Serialize to JSON
         json_data = spec.model_dump(mode="json")
@@ -419,7 +419,6 @@ class TestFeatureSpecProperties:
         # Should be able to reconstruct
         spec_restored = FeatureSpec(**json_data)
         assert spec_restored.key == spec.key
-        assert spec_restored.code_version == spec.code_version
 
 
 # ============================================================================
@@ -608,7 +607,7 @@ class TestComplexIntegration:
             )
 
         # Create the spec
-        spec = FeatureSpec(key=main_key, deps=deps, fields=fields, code_version=100)
+        spec = FeatureSpec(key=main_key, deps=deps, fields=fields)
 
         # Verify structure
         assert isinstance(spec.key, FeatureKey)
@@ -625,7 +624,6 @@ class TestComplexIntegration:
         spec_restored = FeatureSpec(**json_data)
 
         assert spec_restored.key == spec.key
-        assert spec_restored.code_version == spec.code_version
         assert len(spec_restored.fields) == len(spec.fields)
 
     @given(data=st.data())

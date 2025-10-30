@@ -277,7 +277,6 @@ class GraphData(FrozenBaseModel):
                     field_node = FieldNode(
                         key=field_spec.key,
                         version=field_version,
-                        code_version=field_spec.code_version,
                         status=NodeStatus.NORMAL,
                     )
                     field_nodes.append(field_node)
@@ -294,7 +293,6 @@ class GraphData(FrozenBaseModel):
             node = GraphNode(
                 key=feature_key,
                 version=feature_version,
-                code_version=spec.code_version,
                 fields=field_nodes,
                 dependencies=dependencies,
                 status=NodeStatus.NORMAL,
