@@ -12,10 +12,12 @@ sync:
 claude-resolve number prompt="":
     #!/usr/bin/env bash
     set -euxo pipefail
-    git worktree add ../worktrees/metaxy-gh-{{number}} -b gh-number origin/main
+    git worktree add ../worktrees/metaxy-gh-{{number}} origin/main
     cd ../worktrees/metaxy-gh-{{number}}
     direnv allow
     eval "$(direnv export bash)"
+    git checkout -b gt-{{number}}
+    gt track gt-{{number}}
     claude --dangerously-skip-permissions "Resolve GitHub issue #{{number}} (do not create commits). {{prompt}}"
 
 docs-build:
