@@ -1,8 +1,17 @@
 # Feature System
 
-Metaxy has a declarative (defined statically on class level), expressive, flexible feature system. It has been inspired by Software-Defined Assets in [Dagster](https://dagster.io/).
+Metaxy has a declarative (defined statically at class level), expressive, flexible feature system. It has been inspired by Software-Defined Assets in [Dagster](https://dagster.io/).
 
-Features represent tabular **metadata**, typically containing references to multi-modal data such as files, images, or videos. But it can be pure metadata well.
+Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos. But it can be just pure **metadata** as well.
+
+I will highlight **data** and **metadata** with bold so it really stands out.
+
+Metaxy is responsible for providing correct **metadata** to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted **metadata** rows, and will calculate [sample versions](data-versioning.md) with strong consistency guarantees. Metaxy does not interact with **data** directly, the user is responsible for writing it, typically using **metadata** to identify locations for samples of **data** (it's a good idea to include the sample version) into the **data** sample identifier (for example, an object store key). Metaxy is designed to be used with append-only systems that do not overwrite existing **metadata** or **data** (that's not something Metaxy can enforce, but it's easily achievable by **including the sample version into the data sample identifier**).
+
+I hope we can stop using bold for **data** and **metadata** from now on, hopefully we've made our point.
+
+> [!tip] Include Sample Version In Your Data Path
+> Include the sample version in your data path to ensure strong consistency guarantees. I mean it. Really do it!
 
 Features live on a global `FeatureGraph` object (typically users do not need to interact with it directly). Features are bound to a specific Metaxy project, but can be moved between projects over time. Features must have unique (across all projects) `FeatureKey` associated with them.
 
