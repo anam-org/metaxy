@@ -14,7 +14,7 @@
       
       
       
-        <link rel="next" href="learn/feature-definitions/">
+        <link rel="next" href="learn/metadata-stores/">
       
       
       <link rel="icon" href="assets/images/favicon.png">
@@ -263,7 +263,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="learn/feature-definitions/" class="md-tabs__link">
+        <a href="learn/metadata-stores/" class="md-tabs__link">
           
   
   
@@ -498,6 +498,29 @@
   
   
     <li class="md-nav__item">
+      <a href="learn/metadata-stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Metadata Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="learn/feature-definitions/" class="md-nav__link">
         
   
@@ -526,7 +549,7 @@
   
   
   <span class="md-ellipsis">
-    Data Versioning
+    Versioning
     
   </span>
   
@@ -605,10 +628,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_6" >
         
           
-          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
             
   
   
@@ -621,8 +644,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -950,10 +973,10 @@ See <a href="https://github.com/anam-org/metaxy/issues/70">issue #70</a> for det
 <ol>
 <li>Use <code>metaxy.MetadataStore.resolve_update</code> to identify samples requiring recomputation:</li>
 </ol>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_features</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># discover and load Metaxy features</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">load_features</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">init_metaxy</span><span class="p">()</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">store</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="o">...</span>

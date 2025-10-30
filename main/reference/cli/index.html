@@ -263,7 +263,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../learn/feature-definitions/" class="md-tabs__link">
+        <a href="../../learn/metadata-stores/" class="md-tabs__link">
           
   
   
@@ -422,6 +422,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../learn/metadata-stores/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Metadata Stores
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../learn/feature-definitions/" class="md-nav__link">
         
   
@@ -450,7 +473,7 @@
   
   
   <span class="md-ellipsis">
-    Data Versioning
+    Versioning
     
   </span>
   
@@ -529,10 +552,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_6" >
         
           
-          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
             
   
   
@@ -545,8 +568,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -1282,6 +1305,12 @@
 <div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: --no-all-projects]</em></li>
+</ul>
 <p><strong>Commands</strong>:</p>
 <ul>
 <li><code>graph</code>: Manage feature graphs</li>
@@ -1307,7 +1336,7 @@
 <li><code>describe</code>: Show verbose description of migration(s).</li>
 <li><code>explain</code>: Show detailed diff for a migration.</li>
 <li><code>generate</code>: Generate migration from detected feature changes.</li>
-<li><code>list</code>: List all migrations in chain order.</li>
+<li><code>list</code>: List all migrations in chain order as defined in code.</li>
 <li><code>status</code>: Show migration chain and execution status.</li>
 </ul>
 <h4 id="metaxy-migrations-generate"><code>metaxy migrations generate</code><a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h4>
@@ -1337,6 +1366,7 @@ Tracks execution state in database (events).</p>
 <p><strong>Options</strong>:</p>
 <ul>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to apply (applies all unapplied if not specified)</li>
+<li><code>STORE, --store</code>: Metadata store to use.</li>
 <li><code>--dry-run, --no-dry-run</code>: Preview changes without executing  <em>[default: --no-dry-run]</em></li>
 </ul>
 <h4 id="metaxy-migrations-status"><code>metaxy migrations status</code><a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h4>
@@ -1347,7 +1377,7 @@ chain in order.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>status
 </span></code></pre></div>
 <h4 id="metaxy-migrations-list"><code>metaxy migrations list</code><a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h4>
-<p>List all migrations in chain order.</p>
+<p>List all migrations in chain order as defined in code.</p>
 <p>Displays a simple table showing migration ID, creation time, and operations.</p>
 <p><strong>Usage</strong>:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>list
@@ -1372,6 +1402,7 @@ timestamp) - Operations to execute - Affected features with row counts - Executi
 <p><strong>Options</strong>:</p>
 <ul>
 <li><code>MIGRATION-IDS, --migration-ids, --empty-migration-ids</code>: Migration IDs to describe (default: all migrations in order)  <em>[default: []]</em></li>
+<li><code>STORE, --store</code>: Metadata store to use.</li>
 </ul>
 <h4 id="graph"><code>graph</code><a class="headerlink" href="#graph" title="Permanent link">&para;</a></h4>
 <p>Manage feature graphs</p>
@@ -1410,8 +1441,9 @@ feature counts.</p>
 </ul>
 <h4 id="metaxy-graph-describe"><code>metaxy graph describe</code><a class="headerlink" href="#metaxy-graph-describe" title="Permanent link">&para;</a></h4>
 <p>Describe a graph snapshot.</p>
-<p>Shows detailed information about a graph snapshot including: - Feature count - Graph depth (longest dependency chain) - 
-Root features (features with no dependencies)</p>
+<p>Shows detailed information about a graph snapshot including: - Feature count (optionally filtered by project) - Graph 
+depth (longest dependency chain) - Root features (features with no dependencies) - Leaf features (features with no 
+dependents) - Project breakdown (if multi-project)</p>
 <p><strong>Usage</strong>:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
@@ -1442,6 +1474,8 @@ Root features (features with no dependencies)</p>
 <li><code>FEATURE, --feature</code>: Render configuration</li>
 <li><code>UP, --up</code>: Render configuration</li>
 <li><code>DOWN, --down</code>: Render configuration</li>
+<li><code>PROJECT, --project</code>: Render configuration</li>
+<li><code>SHOW-PROJECTS, --show-projects, --no-show-projects</code>: Render configuration  <em>[default: --show-projects]</em></li>
 <li><code>-f, --format</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
 <li><code>-t, --type</code>: Terminal rendering type: graph or cards (only for --format terminal)  <em>[choices: graph, cards]</em>  <em>[default: graph]</em></li>
 <li><code>-o, --output</code>: Output file path (default: stdout)</li>
@@ -1489,6 +1523,8 @@ diagram - graphviz: Graphviz DOT format</p>
 <li><code>FEATURE, --feature</code>: Render configuration</li>
 <li><code>UP, --up</code>: Render configuration</li>
 <li><code>DOWN, --down</code>: Render configuration</li>
+<li><code>PROJECT, --project</code>: Render configuration</li>
+<li><code>SHOW-PROJECTS, --show-projects, --no-show-projects</code>: Render configuration  <em>[default: --show-projects]</em></li>
 <li><code>MINIMAL, --minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
 <li><code>VERBOSE, --verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
 </ul>
@@ -1499,10 +1535,10 @@ diagram - graphviz: Graphviz DOT format</p>
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
-<li><code>features</code>: List Metaxy features</li>
+<li><code>features</code>: List Metaxy features.</li>
 </ul>
 <h4 id="metaxy-list-features"><code>metaxy list features</code><a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h4>
-<p>List Metaxy features</p>
+<p>List Metaxy features.</p>
 <p><strong>Usage</strong>:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features
 </span></code></pre></div>
