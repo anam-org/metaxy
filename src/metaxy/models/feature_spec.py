@@ -18,6 +18,7 @@ from typing import (
 )
 
 import pydantic
+from frozendict import frozendict
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
@@ -197,6 +198,19 @@ class FeatureDep(pydantic.BaseModel):
         """Get SQL-like table name for this feature spec."""
         return self.feature.table_name
 
+    
+def _freeze_metadata(value: Any) -> Any:
+    """Recursively freeze metadata containers to enforce immutability."""
+    if isinstance(value, frozendict):
+        return value
+    if isinstance(value, Mapping):
+        return frozendict({k: _freeze_metadata(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_metadata(v) for v in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_metadata(v) for v in value)
+    return value
+
 
 IDColumns: TypeAlias = Sequence[
     str
@@ -231,6 +245,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -243,6 +258,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -255,6 +271,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -350,6 +367,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
                     f"metadata must be JSON-serializable. "
                     f"Found non-serializable value: {e}"
                 ) from e
+            object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
 
         return self
 

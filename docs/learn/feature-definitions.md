@@ -36,6 +36,8 @@ class VideoFeatureSpec(BaseFeatureSpec[VideoIds]):
 
 `BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
 
+Feature specs now support an optional `metadata` dictionary for attaching ownership, documentation, or tooling context to a feature. This metadata **never** influences graph topology or version hashes, must be JSON-serializable, and is stored as an immutable [`frozendict`](https://pypi.org/project/frozendict/) once the spec is created (list values are frozen as tuples to guarantee immutability). It is ideal for values such as owners, SLAs, runbooks, or tags that external systems may want to inspect.
+
 With our `VideoFeatureSpec` in place, we can proceed to defining features that would be using it.
 
 ## Feature Definitions
