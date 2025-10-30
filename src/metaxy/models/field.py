@@ -1,18 +1,29 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from pydantic import BaseModel, TypeAdapter
 from pydantic import Field as PydanticField
 
 from metaxy.models.types import (
-    CoercibleToFeatureKey,
     CoercibleToFieldKey,
     FeatureKey,
     FeatureKeyAdapter,
     FieldKey,
     FieldKeyAdapter,
 )
+
+if TYPE_CHECKING:
+    # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
+    # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
+    # and it would be very smart to force the user to restructure their project instead
+    # context: https://github.com/microsoft/pyright/issues/1825
+    # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
+    # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
+    from metaxy.models.feature_spec import (
+        CoercibleToFeatureKey,
+        FeatureSpec,
+    )
 
 
 class SpecialFieldDep(Enum):
@@ -53,15 +64,32 @@ class FieldDep(BaseModel):
         """Initialize from FeatureKey instance."""
         ...
 
+    @overload
     def __init__(
         self,
-        feature_key: CoercibleToFeatureKey,
+        feature_key: "FeatureSpec",
+        fields: list[CoercibleToFieldKey]
+        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+    ) -> None:
+        """Initialize from FeatureSpec instance."""
+        ...
+
+    def __init__(
+        self,
+        feature_key: "CoercibleToFeatureKey | FeatureSpec",
         fields: list[CoercibleToFieldKey]
         | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
         *args,
         **kwargs,
     ):
-        feature_key = FeatureKeyAdapter.validate_python(feature_key)
+        from metaxy.models.feature_spec import FeatureSpec
+
+        if isinstance(feature_key, FeatureSpec):
+            feature_key = feature_key.key
+        else:
+            feature_key = FeatureKeyAdapter.validate_python(feature_key)
+
+        assert isinstance(feature_key, FeatureKey)
 
         if isinstance(fields, list):
             validated_fields: Any = TypeAdapter(list[FieldKey]).validate_python(fields)

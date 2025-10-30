@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
@@ -6,6 +8,7 @@ from typing import Annotated, Any, overload
 
 import pydantic
 from pydantic import BeforeValidator
+from typing_extensions import Self
 
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import (
@@ -98,16 +101,34 @@ class FeatureDep(pydantic.BaseModel):
         """Initialize from FeatureKey instance."""
         ...
 
+    @overload
     def __init__(
         self,
         *,
-        key: CoercibleToFeatureKey,
+        key: FeatureSpec,
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize from FeatureSpec instance."""
+        ...
+
+    def __init__(
+        self,
+        *,
+        key: CoercibleToFeatureKey | FeatureSpec,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
+        if isinstance(key, FeatureSpec):
+            key = key.key
+        else:
+            key = FeatureKeyAdapter.validate_python(key)
+
+        assert isinstance(key, FeatureKey)
+
         super().__init__(
-            key=FeatureKeyAdapter.validate_python(key),
+            key=key,
             columns=columns,
             rename=rename,
             **kwargs,
@@ -120,7 +141,7 @@ class FeatureDep(pydantic.BaseModel):
 
 class FeatureSpec(pydantic.BaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
-    deps: list[FeatureDep] | None
+    deps: list[FeatureDep] | None = None
     fields: list[FieldSpec] = pydantic.Field(
         default_factory=lambda: [
             FieldSpec(
@@ -172,8 +193,28 @@ class FeatureSpec(pydantic.BaseModel):
         """Initialize from FeatureKey instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey, **kwargs):
-        super().__init__(key=FeatureKeyAdapter.validate_python(key), **kwargs)
+    @overload
+    def __init__(
+        self,
+        key: Self,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+        code_version: int = 1,
+        id_columns: list[str] | None = None,
+    ) -> None:
+        """Initialize from FeatureSpec instance."""
+        ...
+
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+        if isinstance(key, type(self)):
+            key = key.key
+        else:
+            key = FeatureKeyAdapter.validate_python(key)
+
+        assert isinstance(key, FeatureKey)
+
+        super().__init__(key=key, **kwargs)
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
@@ -184,7 +225,7 @@ class FeatureSpec(pydantic.BaseModel):
         return self.key.table_name
 
     @pydantic.model_validator(mode="after")
-    def validate_unique_field_keys(self) -> "FeatureSpec":
+    def validate_unique_field_keys(self) -> FeatureSpec:
         """Validate that all fields have unique keys."""
         seen_keys: set[tuple[str, ...]] = set()
         for field in self.fields:
@@ -199,7 +240,7 @@ class FeatureSpec(pydantic.BaseModel):
         return self
 
     @pydantic.model_validator(mode="after")
-    def validate_id_columns(self) -> "FeatureSpec":
+    def validate_id_columns(self) -> FeatureSpec:
         """Validate that id_columns is non-empty if specified."""
         if self.id_columns is not None and len(self.id_columns) == 0:
             raise ValueError(
