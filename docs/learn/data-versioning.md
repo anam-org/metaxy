@@ -14,32 +14,32 @@ Metaxy uses hashing algorithms to compute all versions. The algorithm and the ha
 
 Here is how these versions are calculated, from bottom to top.
 
-### Definitions Versioning
+### Definitions
 
 These versions can be computed from Metaxy definitions (e.g. Python code or historical snapshots of the feature graph). We don't need to access the metadata store in order to calculate them.
 
-#### Field Level Versioning
+#### Field Level
 
 - **Field Code Version** is defined on the field and must be provided by the user (defaults to `"0"`).
 
-> [!note] Code Version Value
+> [!NOTE] Code Version Value
 > The value can be arbitrary, but in the future we might implement something around semantic versioning.
 
 - **Field Version** is computed from the code version of this field, the [fully qualified field path](feature-definitions.md#fully-qualified-field-key) and from the field versions of its [parent fields](feature-definitions.md#field-level-dependencies) (if any exist, for example, fields on root features do not have dependencies).
 
-##### Feature Level Versioning
+#### Feature Level
 
 - **Feature Version**: is computed from the **Field Versions** of all fields defined on the feature and the key of the feature.
 - **Feature Code Version** is computed from the **Field Code Versions** of all fields defined on the feature. Unlike _Feature Version_, this version does not change when dependencies change. The value of this version is determined entirely by user input.
 
-##### Graph Level Versioning
+#### Graph Level
 
 - **Snapshot Version**: is computed from the **Feature Versions** of all features defined on the graph.
 
-> [!info] Why Do We Need Snapshot Version?
-> This version is used to uniquely identify versioned graph topology in historical snapshots.
+> [!NOTE] Why Do We Need Snapshot Version?
+> This value is used to uniquely encode versioned feature graph topology in historical snapshots.
 
-### Sample Versioning
+### Samples
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
@@ -176,7 +176,7 @@ color="#999">---</font><br/>• transcription <small>(v: ac412b3c)</small></div>
         example_video --> example_stt
 ```
 
-## Tracking Changes
+## Tracking Definitions Changes
 
 Imagine the `audio` field of the `Video` feature changes (perhaps denoising was applied):
 
@@ -227,41 +227,18 @@ Notice:
 - Audio field versions changed throughout the graph
 - Frame field versions stayed the same
 
-Metaxy's static graph analysis identifies features out of sync after topology changes or code version bumps. Beyond feature and field-level versions, Metaxy computes sample-level versions ahead of computation through the entire graph, enabling processing cost prediction and automatic migrations.
-
-## Sample-Level Versioning
-
-For each sample (row) in your dataset, Metaxy computes a data version by hashing upstream dependency versions. This happens before the actual computation.
-
-Example metadata row:
-
-```python
-{
-    "sample_uid": "video_001",
-    "data_version": {
-        "audio": "a2ha72a",
-        "frames": "ja812hp",
-    },
-    "feature_version": "nasdh1a",
-    "snapshot_version": "def456",
-    # User columns
-    "path": "/data/video_001.mp4",
-    "duration": 120.5,
-}
-```
-
-When upstream dependencies change, Metaxy recalculates data versions and identifies which samples need recomputation by comparing old versus new versions.
-
 ## Incremental Computation
 
 The metadata store's `calculate_and_write_data_versions()` method:
 
 1. Joins upstream feature metadata
-2. Computes data version hashes for each sample
+2. Computes sample versions
 3. Compares against existing metadata
 4. Returns diff: added, changed, removed samples
 
-Your pipeline processes only the samples that changed:
+Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.
+
+The Python pipeline then processes only the delta
 
 ```python
 with store:  # MetadataStore
@@ -270,5 +247,7 @@ with store:  # MetadataStore
 
     # Process only changed samples
 ```
+
+The `diff` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.
 
 This approach avoids expensive recomputation when nothing changed, while ensuring correctness when dependencies update.
