@@ -14,19 +14,22 @@ app = cyclopts.App(
 
 @app.command()
 def features():
-    """List Metaxy features"""
-    from metaxy.cli.context import set_config
-    from metaxy.config import MetaxyConfig
-    from metaxy.entrypoints import load_features
+    """
+    List Metaxy features.
+    """
+    from metaxy import get_feature_by_key
+    from metaxy.cli.context import AppContext
     from metaxy.models.plan import FQFieldKey
 
-    metaxy_config = MetaxyConfig.load(search_parents=True)
-
-    set_config(metaxy_config)
-
-    graph = load_features()
+    context = AppContext.get()
+    graph = context.graph
 
     for feature_key, feature_spec in graph.feature_specs_by_key.items():
+        if (
+            context.project
+            and get_feature_by_key(feature_key).project != context.project
+        ):
+            continue
         console.print("---")
         console.print(
             f"{feature_key} (version {graph.get_feature_version(feature_key)})"

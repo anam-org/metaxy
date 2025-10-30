@@ -95,14 +95,11 @@ def copy(
         # Non-incremental copy (faster, but may create duplicates)
         $ metaxy metadata copy --from dev --to staging --all-features --no-incremental
     """
-    import logging
 
-    from metaxy.cli.context import get_config
+    from metaxy.cli.context import AppContext
 
-    # Enable logging to show progress
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-    config = get_config()
+    context = AppContext.get()
+    config = context.config
 
     # Validate arguments
     if not all_features and not features:
@@ -209,7 +206,10 @@ def drop(
         # Drop all features from specific store
         $ metaxy metadata drop --store dev --all-features --confirm
     """
-    from metaxy.cli.context import get_store
+    from metaxy.cli.context import AppContext
+
+    context = AppContext.get()
+    context.raise_command_cannot_override_project()
 
     # Validate arguments
     if not all_features and not features:
@@ -243,7 +243,7 @@ def drop(
                 feature_keys.append(FeatureKey([feature_str]))
 
     # Get store
-    metadata_store = get_store(store)
+    metadata_store = context.get_store(store)
 
     with metadata_store:
         # If all_features, get all feature keys from store

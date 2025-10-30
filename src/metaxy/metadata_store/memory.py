@@ -96,9 +96,35 @@ class InMemoryMetadataStore(MetadataStore):
 
         # Append or create
         if storage_key in self._storage:
-            # Append to existing
+            existing_df = self._storage[storage_key]
+
+            # Handle schema evolution: ensure both DataFrames have matching columns
+            # Add missing columns as null to the existing DataFrame
+            for col_name in df.columns:
+                if col_name not in existing_df.columns:
+                    # Get the data type from the new DataFrame
+                    col_dtype = df.schema[col_name]
+                    # Add column with null values of the appropriate type
+                    existing_df = existing_df.with_columns(
+                        pl.lit(None).cast(col_dtype).alias(col_name)
+                    )
+
+            # Add missing columns to the new DataFrame (for backward compatibility)
+            for col_name in existing_df.columns:
+                if col_name not in df.columns:
+                    # Get the data type from the existing DataFrame
+                    col_dtype = existing_df.schema[col_name]
+                    # Add column with null values of the appropriate type
+                    df = df.with_columns(pl.lit(None).cast(col_dtype).alias(col_name))
+
+            # Ensure column order matches by selecting columns in consistent order
+            all_columns = sorted(set(existing_df.columns) | set(df.columns))
+            existing_df = existing_df.select(all_columns)
+            df = df.select(all_columns)
+
+            # Now we can safely concat
             self._storage[storage_key] = pl.concat(
-                [self._storage[storage_key], df],
+                [existing_df, df],
                 how="vertical",
             )
         else:

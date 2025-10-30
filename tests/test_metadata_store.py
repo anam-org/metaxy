@@ -112,7 +112,8 @@ def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
                 ],
             }
         )
-        store.write_metadata(UpstreamFeatureA, upstream_a_data)
+        with store.allow_cross_project_writes():
+            store.write_metadata(UpstreamFeatureA, upstream_a_data)
 
     yield store
 
@@ -138,7 +139,8 @@ def multi_env_stores(
                 ],
             }
         )
-        prod.write_metadata(UpstreamFeatureA, upstream_data)
+        with prod.allow_cross_project_writes():
+            prod.write_metadata(UpstreamFeatureA, upstream_data)
 
     yield {"prod": prod, "staging": staging, "dev": dev}
 
@@ -160,7 +162,8 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
             }
         )
 
-        empty_store.write_metadata(UpstreamFeatureA, metadata)
+        with empty_store.allow_cross_project_writes():
+            empty_store.write_metadata(UpstreamFeatureA, metadata)
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
 
         assert len(result) == 3
@@ -179,7 +182,8 @@ def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
         )
 
         with pytest.raises(MetadataSchemaError, match="data_version"):
-            empty_store.write_metadata(UpstreamFeatureA, invalid_df)
+            with empty_store.allow_cross_project_writes():
+                empty_store.write_metadata(UpstreamFeatureA, invalid_df)
 
 
 def test_write_append(empty_store: InMemoryMetadataStore) -> None:
@@ -205,8 +209,9 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
             }
         )
 
-        empty_store.write_metadata(UpstreamFeatureA, df1)
-        empty_store.write_metadata(UpstreamFeatureA, df2)
+        with empty_store.allow_cross_project_writes():
+            empty_store.write_metadata(UpstreamFeatureA, df1)
+            empty_store.write_metadata(UpstreamFeatureA, df2)
 
         result = collect_to_polars(empty_store.read_metadata(UpstreamFeatureA))
         assert len(result) == 4
@@ -339,7 +344,8 @@ def test_write_to_dev_not_prod(
             }
         )
 
-        dev.write_metadata(UpstreamFeatureB, new_data)
+        with dev.allow_cross_project_writes():
+            dev.write_metadata(UpstreamFeatureB, new_data)
 
         # Should be in dev
         assert dev.has_feature(UpstreamFeatureB, check_fallback=False)

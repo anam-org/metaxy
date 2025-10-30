@@ -725,7 +725,7 @@ def test_sqlmodel_feature_with_duckdb_store(
     # Create DuckDB store
     db_path = tmp_path / "test.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         # Create metadata DataFrame with data_version column (required by metadata store)
         metadata_df = pl.DataFrame(
             {
@@ -871,7 +871,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     # Create DuckDB store
     db_path = tmp_path / "test_custom_ids.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         # Create parent metadata with composite key
         parent_df = pl.DataFrame(
             {
@@ -1152,7 +1152,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
 
     db_path = tmp_path / "test_joins.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         # Write metadata for FeatureA
         df_a = pl.DataFrame(
             {
@@ -1654,7 +1654,7 @@ def test_sqlmodel_rename_validation_with_store(
 
     db_path = tmp_path / "rename_test.duckdb"
 
-    with DuckDBMetadataStore(db_path) as store:
+    with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
         # Write source metadata
         source_df = pl.DataFrame(
             {

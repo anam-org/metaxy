@@ -113,15 +113,12 @@ def render(
         # Everything
         $ metaxy graph-diff render latest current --verbose
     """
-    from metaxy.cli.context import get_store
-    from metaxy.entrypoints import load_features
     from metaxy.graph import (
         CardsRenderer,
         GraphData,
         GraphvizRenderer,
     )
     from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
-    from metaxy.models.feature import FeatureGraph
 
     # Validate format
     valid_formats = ["terminal", "cards", "mermaid", "graphviz", "json", "yaml"]
@@ -163,11 +160,12 @@ def render(
         )
         raise SystemExit(1)
 
-    # Load features from entrypoints (needed for "current" literal)
-    load_features()
-    graph = FeatureGraph.get_active()
+    from metaxy.cli.context import AppContext
 
-    metadata_store = get_store(store)
+    context = AppContext.get()
+    metadata_store = context.get_store(store)
+    graph = context.graph
+    project = context.get_required_project()  # This command needs a specific project
 
     with metadata_store:
         # Resolve snapshot versions
@@ -187,10 +185,10 @@ def render(
         differ = GraphDiffer()
         try:
             from_snapshot_data = differ.load_snapshot_data(
-                metadata_store, from_snapshot_version
+                metadata_store, from_snapshot_version, project
             )
             to_snapshot_data = differ.load_snapshot_data(
-                metadata_store, to_snapshot_version
+                metadata_store, to_snapshot_version, project
             )
         except ValueError as e:
             console.print(f"[red]Error:[/red] {e}")

@@ -64,6 +64,10 @@ class TerminalRenderer(BaseRenderer):
             f"[{status_color}]{self._format_feature_key(node.key)}[/{status_color}]"
         ]
 
+        # Show project if configured
+        if self.config.show_projects and node.project:
+            label_parts.append(f"[dim](project: {node.project})[/dim]")
+
         # Show version info
         if self.config.show_feature_versions:
             if node.status == NodeStatus.CHANGED and node.old_version is not None:

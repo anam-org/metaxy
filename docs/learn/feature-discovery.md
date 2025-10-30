@@ -92,11 +92,11 @@ pip install -e ./packages/my-video-features
 Installed features will be automatically discovered and loaded:
 
 ```python
-from metaxy import load_features
+from metaxy import init_metaxy
 
 # Automatically discovers and loads all features
 # from installed packages with metaxy.features entry points
-load_features()
+init_metaxy()
 
 # Features are now available in the global graph
 from metaxy import FeatureGraph
@@ -158,10 +158,10 @@ For simpler use cases, load features directly from module paths specified in Met
     ```
 
 ```python
-from metaxy import load_features
+from metaxy import init_metaxy
 
 # Discovers features from configured entrypoints
-load_features()
+init_metaxy()
 ```
 
 ## Best Practices

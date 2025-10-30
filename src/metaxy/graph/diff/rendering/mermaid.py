@@ -208,6 +208,12 @@ class MermaidRenderer(BaseRenderer):
         feature_name = self._format_feature_key(node.key)
         lines.append(f"<b>{feature_name}</b>")
 
+        # Add project info if configured
+        if self.config.show_projects and node.project:
+            lines.append(
+                f'<small><font color="#666">Project: {node.project}</font></small>'
+            )
+
         # Add status badge for diff mode
         if node.status != NodeStatus.NORMAL:
             badge = self._get_status_badge_html(node.status)

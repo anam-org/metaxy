@@ -95,10 +95,10 @@ metaxy graph push
 2. Use `metaxy.MetadataStore.resolve_update` to identify samples requiring recomputation:
 
 ```py
-from metaxy import load_features
+from metaxy import init_metaxy
 
 # discover and load Metaxy features
-load_features()
+init_metaxy()
 
 store = (
     ...

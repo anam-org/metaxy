@@ -370,7 +370,9 @@ class TestGraphDiffer:
                 _ = result.already_recorded
 
                 # Load snapshot data
-                snapshot_data = differ.load_snapshot_data(store, snapshot_version)
+                snapshot_data = differ.load_snapshot_data(
+                    store, snapshot_version, project="default"
+                )
 
                 assert "test/feature" in snapshot_data
                 feature_data = snapshot_data["test/feature"]
@@ -383,7 +385,7 @@ class TestGraphDiffer:
 
         with InMemoryMetadataStore() as store:
             with pytest.raises(ValueError, match="Failed to load snapshot"):
-                differ.load_snapshot_data(store, "nonexistent")
+                differ.load_snapshot_data(store, "nonexistent", project="default")
 
 
 class TestDiffFormatter:

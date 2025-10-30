@@ -34,7 +34,8 @@ class FeatureVersionsTable(SQLModel, table=True):
 
     __tablename__: str = f"{SYSTEM_NAMESPACE}__feature_versions"  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Composite primary key: feature_key + snapshot_version
+    # Composite primary key: project + feature_key + snapshot_version
+    project: str = Field(primary_key=True, index=True)
     feature_key: str = Field(primary_key=True)
     snapshot_version: str = Field(primary_key=True)
 
@@ -49,7 +50,9 @@ class FeatureVersionsTable(SQLModel, table=True):
 
     # Additional indexes for common queries
     __table_args__ = (
-        Index("idx_feature_versions_lookup", "feature_key", "feature_version"),
+        Index(
+            "idx_feature_versions_lookup", "project", "feature_key", "feature_version"
+        ),
     )
 
 
@@ -66,6 +69,7 @@ class MigrationEventsTable(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
 
     # Event fields
+    project: str = Field(index=True)
     migration_id: str = Field(index=True)
     event_type: str = (
         Field()
@@ -77,7 +81,7 @@ class MigrationEventsTable(SQLModel, table=True):
 
     # Additional indexes for common queries
     __table_args__ = (
-        Index("idx_migration_events_lookup", "migration_id", "event_type"),
+        Index("idx_migration_events_lookup", "project", "migration_id", "event_type"),
     )
 
 

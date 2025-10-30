@@ -37,7 +37,9 @@
       ]),
     }),
     'feature_spec_version': '6597e5c49ec3e425db78176681ef993b6d1882e585045d660bc38f9f4af5b9f6',
+    'feature_tracking_version': '421cd82e366007737e267cac5bca2efd5a336471a71dca049a843354f31dfb2c',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+    'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename

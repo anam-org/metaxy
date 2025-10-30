@@ -1,7 +1,9 @@
+project = "examples"
 entrypoints = ["examples.migration.__entrypoint__"]
+auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "/tmp/example_recompute.db"
+database = "/tmp/example_migration.db"

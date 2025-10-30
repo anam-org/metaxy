@@ -364,7 +364,8 @@ class TempMetaxyProject(MetaxyProject):
             # Default DuckDB store configuration
             dev_db_path = self.project_dir / "metadata.duckdb"
             staging_db_path = self.project_dir / "metadata_staging.duckdb"
-            config_content = f'''store = "dev"
+            config_content = f'''project = "test"
+store = "dev"
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"

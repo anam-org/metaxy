@@ -134,7 +134,7 @@ def test_full_graph_migration():
     from metaxy import InMemoryMetadataStore
 
     with InMemoryMetadataStore() as store:
-        assert migration.get_affected_features(store) == []
+        assert migration.get_affected_features(store, "default") == []
 
 
 def test_custom_migration():
@@ -143,7 +143,7 @@ def test_custom_migration():
     class TestCustomMigration(CustomMigration):
         custom_field: str
 
-        def execute(self, store, *, dry_run=False):
+        def execute(self, store, project, *, dry_run=False):
             return MigrationResult(
                 migration_id=self.migration_id,
                 status="completed",
@@ -168,7 +168,9 @@ def test_custom_migration():
     from metaxy import InMemoryMetadataStore
 
     with InMemoryMetadataStore() as store:
-        assert migration.get_affected_features(store) == []  # Default implementation
+        assert (
+            migration.get_affected_features(store, "default") == []
+        )  # Default implementation
 
 
 def test_custom_migration_roundtrip():
@@ -178,7 +180,7 @@ def test_custom_migration_roundtrip():
     class MyCustomMigration(CustomMigration):
         s3_bucket: str
 
-        def execute(self, store, *, dry_run=False):
+        def execute(self, store, project, *, dry_run=False):
             return MigrationResult(
                 migration_id=self.migration_id,
                 status="completed",

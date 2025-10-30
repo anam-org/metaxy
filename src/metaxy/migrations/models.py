@@ -45,6 +45,7 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
     def execute(
         self,
         store: "MetadataStore",
+        project: str,
         *,
         dry_run: bool = False,
     ) -> "MigrationResult":
@@ -52,6 +53,7 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
 
         Args:
             store: Metadata store to operate on
+            project: Project name for event tracking
             dry_run: If True, only validate without executing
 
         Returns:
@@ -63,11 +65,14 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
         pass
 
     @abstractmethod
-    def get_affected_features(self, store: "MetadataStore") -> list[str]:
+    def get_affected_features(
+        self, store: "MetadataStore", project: str | None
+    ) -> list[str]:
         """Get list of affected feature keys in topological order.
 
         Args:
             store: Metadata store for computing affected features
+            project: Project name for filtering snapshots
 
         Returns:
             List of feature key strings
@@ -194,17 +199,20 @@ class DiffMigration(Migration):
         """Get migration type."""
         return "metaxy.migrations.models.DiffMigration"
 
-    def _get_graph_diff(self, store: "MetadataStore") -> "GraphDiff":
+    def _get_graph_diff(
+        self, store: "MetadataStore", project: str | None
+    ) -> "GraphDiff":
         """Get or compute graph diff (cached).
 
         Args:
             store: Metadata store containing snapshots
+            project: Project name for filtering snapshots
 
         Returns:
             GraphDiff between snapshots
         """
         if self._graph_diff_cache is None:
-            self._graph_diff_cache = self.compute_graph_diff(store)
+            self._graph_diff_cache = self.compute_graph_diff(store, project)
         return self._graph_diff_cache
 
     @property
@@ -255,16 +263,17 @@ class DiffMigration(Migration):
         # This is used internally - callers should use get_description(store)
         return "Migration: snapshot reconciliation"
 
-    def get_description(self, store: "MetadataStore") -> str:
+    def get_description(self, store: "MetadataStore", project: str | None) -> str:
         """Get description for migration.
 
         Args:
             store: Metadata store for computing affected features
+            project: Project name for filtering snapshots
 
         Returns:
             Description string
         """
-        affected = self.get_affected_features(store)
+        affected = self.get_affected_features(store, project)
         num_features = len(affected)
         if num_features == 0:
             return "No features affected"
@@ -273,17 +282,20 @@ class DiffMigration(Migration):
         else:
             return f"Migration: {num_features} features affected"
 
-    def get_affected_features(self, store: "MetadataStore") -> list[str]:
+    def get_affected_features(
+        self, store: "MetadataStore", project: str | None
+    ) -> list[str]:
         """Get affected features in topological order (computed on-demand).
 
         Args:
             store: Metadata store containing snapshots (required for computation)
+            project: Project name for filtering snapshots
 
         Returns:
             List of feature key strings in topological order
         """
 
-        graph_diff = self._get_graph_diff(store)
+        graph_diff = self._get_graph_diff(store, project)
 
         # Get changed feature keys (root changes)
         changed_keys = {
@@ -350,11 +362,14 @@ class DiffMigration(Migration):
 
         return [node.key.to_string() for node in sorted_nodes]
 
-    def compute_graph_diff(self, store: "MetadataStore") -> "GraphDiff":
+    def compute_graph_diff(
+        self, store: "MetadataStore", project: str | None
+    ) -> "GraphDiff":
         """Compute GraphDiff on-demand from snapshot versions.
 
         Args:
             store: Metadata store containing snapshots
+            project: Project name for filtering snapshots
 
         Returns:
             GraphDiff between from_snapshot_version and to_snapshot_version
@@ -398,6 +413,7 @@ class DiffMigration(Migration):
     def execute(
         self,
         store: "MetadataStore",
+        project: str,
         *,
         dry_run: bool = False,
     ) -> "MigrationResult":
@@ -413,6 +429,7 @@ class DiffMigration(Migration):
 
         Args:
             store: Metadata store
+            project: Project name for event tracking
             dry_run: If True, only validate
 
         Returns:
@@ -425,7 +442,7 @@ class DiffMigration(Migration):
 
         if not dry_run:
             # Write started event
-            storage.write_event(self.migration_id, "started")
+            storage.write_event(self.migration_id, "started", project)
 
         affected_features_list = []
         errors = {}
@@ -435,7 +452,7 @@ class DiffMigration(Migration):
         from metaxy.migrations.ops import DataVersionReconciliation
 
         # Get affected features (computed on-demand)
-        affected_features_to_process = self.get_affected_features(store)
+        affected_features_to_process = self.get_affected_features(store, project)
 
         if len(self.operations) == 1 and isinstance(
             self.operations[0], DataVersionReconciliation
@@ -446,7 +463,7 @@ class DiffMigration(Migration):
             for feature_key_str in affected_features_to_process:
                 # Check if already completed (resume support)
                 if not dry_run and storage.is_feature_completed(
-                    self.migration_id, feature_key_str
+                    self.migration_id, feature_key_str, project
                 ):
                     affected_features_list.append(feature_key_str)
                     continue
@@ -456,6 +473,7 @@ class DiffMigration(Migration):
                     storage.write_event(
                         self.migration_id,
                         "feature_started",
+                        project,
                         feature_key=feature_key_str,
                     )
 
@@ -474,6 +492,7 @@ class DiffMigration(Migration):
                         storage.write_event(
                             self.migration_id,
                             "feature_completed",
+                            project,
                             feature_key=feature_key_str,
                             rows_affected=rows_affected,
                         )
@@ -490,6 +509,7 @@ class DiffMigration(Migration):
                         storage.write_event(
                             self.migration_id,
                             "feature_completed",
+                            project,
                             feature_key=feature_key_str,
                             error_message=error_msg,
                         )
@@ -507,11 +527,11 @@ class DiffMigration(Migration):
         elif len(errors) == 0:
             status = "completed"
             if not dry_run:
-                storage.write_event(self.migration_id, "completed")
+                storage.write_event(self.migration_id, "completed", project)
         else:
             status = "failed"
             if not dry_run:
-                storage.write_event(self.migration_id, "failed")
+                storage.write_event(self.migration_id, "failed", project)
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -572,11 +592,14 @@ class FullGraphMigration(Migration):
         """Get migration type."""
         return "metaxy.migrations.models.FullGraphMigration"
 
-    def get_affected_features(self, store: "MetadataStore") -> list[str]:
+    def get_affected_features(
+        self, store: "MetadataStore", project: str | None
+    ) -> list[str]:
         """Get affected features.
 
         Args:
             store: Metadata store (not used for FullGraphMigration)
+            project: Project name (not used for FullGraphMigration)
 
         Returns:
             List of feature key strings
@@ -586,6 +609,7 @@ class FullGraphMigration(Migration):
     def execute(
         self,
         store: "MetadataStore",
+        project: str,
         *,
         dry_run: bool = False,
     ) -> "MigrationResult":
@@ -595,6 +619,7 @@ class FullGraphMigration(Migration):
 
         Args:
             store: Metadata store
+            project: Project name for event tracking
             dry_run: If True, only validate
 
         Returns:
@@ -641,11 +666,14 @@ class CustomMigration(Migration):
         """
         return f"{self.__class__.__module__}.{self.__class__.__name__}"
 
-    def get_affected_features(self, store: "MetadataStore") -> list[str]:
+    def get_affected_features(
+        self, store: "MetadataStore", project: str | None
+    ) -> list[str]:
         """Get affected features.
 
         Args:
             store: Metadata store (not used for CustomMigration base class)
+            project: Project name (not used for CustomMigration base class)
 
         Returns:
             Empty list (subclasses should override)
@@ -655,6 +683,7 @@ class CustomMigration(Migration):
     def execute(
         self,
         store: "MetadataStore",
+        project: str,
         *,
         dry_run: bool = False,
     ) -> "MigrationResult":
@@ -664,6 +693,7 @@ class CustomMigration(Migration):
 
         Args:
             store: Metadata store
+            project: Project name for event tracking
             dry_run: If True, only validate
 
         Returns:

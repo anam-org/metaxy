@@ -148,6 +148,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         # Detect migration (compares latest snapshot vs current graph)
         migration = detect_migration(
             store_v2,
+            project="test",  # Changed to match test config
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -157,7 +158,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         assert migration.from_snapshot_version == graph_v1.snapshot_version
         assert migration.to_snapshot_version == graph_v2.snapshot_version
 
-        affected_features = migration.get_affected_features(store_v2)
+        affected_features = migration.get_affected_features(store_v2, "test")
         assert affected_features == snapshot
 
     temp_v1.cleanup()
@@ -221,6 +222,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     with graph.use(), store:
         migration = detect_migration(
             store,
+            project="test",  # Changed to match test config
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )

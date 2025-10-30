@@ -19,9 +19,19 @@ from metaxy import (
 )
 from metaxy._testing import TempFeatureModule
 from metaxy._utils import collect_to_polars
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system_tables import SystemTableStorage
 from metaxy.migrations import MigrationExecutor, detect_migration
 from metaxy.models.feature import FeatureGraph
+
+
+@pytest.fixture(autouse=True)
+def setup_default_config():
+    """Set up default MetaxyConfig for all tests so features use project='default'."""
+    config = MetaxyConfig(project="default", stores={})
+    MetaxyConfig.set(config)
+    yield
+    MetaxyConfig.reset()
 
 
 def migrate_store_to_graph(
@@ -191,6 +201,7 @@ def test_basic_migration_flow(
         # This compares latest snapshot in store (v1) with active graph (v2)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -200,10 +211,10 @@ def test_basic_migration_flow(
         assert migration.to_snapshot_version == simple_graph_v2.snapshot_version
 
         # Snapshot migration structure
-        affected_features = migration.get_affected_features(store_v2)
+        affected_features = migration.get_affected_features(store_v2, "default")
         migration_summary = {
             "description": migration.get_description(
-                store_v2
+                store_v2, "default"
             ),  # Use get_description() for auto-generation
             "affected_features_count": len(affected_features),
             "affected_features": sorted(affected_features),
@@ -218,7 +229,7 @@ def test_basic_migration_flow(
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
 
-        result = executor.execute(migration, store_v2, dry_run=False)
+        result = executor.execute(migration, store_v2, project="default", dry_run=False)
 
         # Root feature should fail (cannot be auto-reconciled)
         assert result.status == "failed"
@@ -293,11 +304,15 @@ def test_upstream_downstream_migration(
     UpstreamV2 = upstream_downstream_v2.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
+    upstream_downstream_v2.features_by_key[
+        FeatureKey(["test_integration", "downstream"])
+    ]
 
     with upstream_downstream_v2.use(), store_v2:
         # Step 3: Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -305,7 +320,7 @@ def test_upstream_downstream_migration(
         assert migration is not None
 
         # Both features should be affected (upstream changed → downstream affected)
-        affected_features = migration.get_affected_features(store_v2)
+        affected_features = migration.get_affected_features(store_v2, "default")
         migration_summary = {
             "affected_features_count": len(affected_features),
             "affected_features": sorted(affected_features),
@@ -333,7 +348,7 @@ def test_upstream_downstream_migration(
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
 
-        result = executor.execute(migration, store_v2, dry_run=False)
+        result = executor.execute(migration, store_v2, project="default", dry_run=False)
 
         # Upstream will fail (root feature), downstream should succeed
         assert result.status == "failed"  # Because upstream is root
@@ -388,6 +403,9 @@ def test_migration_idempotency(
     UpstreamV2 = upstream_downstream_v2.features_by_key[
         FeatureKey(["test_integration", "upstream"])
     ]
+    upstream_downstream_v2.features_by_key[
+        FeatureKey(["test_integration", "downstream"])
+    ]
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream manually
@@ -402,6 +420,7 @@ def test_migration_idempotency(
         # Create downstream-only migration (detect before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -415,13 +434,17 @@ def test_migration_idempotency(
         executor = MigrationExecutor(storage)
 
         # Execute first time - will fail on upstream (root feature) but succeed on downstream
-        result1 = executor.execute(migration, store_v2, dry_run=False)
+        result1 = executor.execute(
+            migration, store_v2, project="default", dry_run=False
+        )
         assert result1.status == "failed"  # Upstream will fail
         assert result1.features_completed == 1  # Downstream should complete
         assert result1.features_failed == 1  # Upstream should fail
 
         # Execute second time (should skip already-completed downstream)
-        result2 = executor.execute(migration, store_v2, dry_run=False)
+        result2 = executor.execute(
+            migration, store_v2, project="default", dry_run=False
+        )
         assert result2.status == "failed"  # Still fails on upstream
         assert result2.features_completed == 1  # Downstream was skipped (already done)
         assert result2.features_failed == 1  # Upstream still fails
@@ -485,6 +508,7 @@ def test_migration_dry_run(
         # Detect and execute with dry_run=True (detect before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -497,7 +521,7 @@ def test_migration_dry_run(
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
 
-        result = executor.execute(migration, store_v2, dry_run=True)
+        result = executor.execute(migration, store_v2, project="default", dry_run=True)
 
         assert result.status == "skipped"
         assert result.rows_affected > 0  # Would affect rows for downstream, but skipped
@@ -600,19 +624,21 @@ def test_field_dependency_change(tmp_path):
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    graph_v2.features_by_key[FeatureKey(["test", "upstream"])]
     graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
 
         assert migration is not None
         # Downstream should be detected (field deps changed)
-        affected_features = migration.get_affected_features(store_v2)
+        affected_features = migration.get_affected_features(store_v2, "default")
         assert "test/downstream" in affected_features
 
     temp_v1.cleanup()
@@ -700,6 +726,7 @@ def test_feature_dependency_swap(tmp_path):
     store_v1 = InMemoryMetadataStore()
     upstream_a_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_a"])]
     upstream_b_v1 = graph_v1.features_by_key[FeatureKey(["test", "upstream_b"])]
+    graph_v1.features_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v1.use(), store_v1:
         # Write both upstreams
@@ -722,18 +749,22 @@ def test_feature_dependency_swap(tmp_path):
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
+    graph_v2.features_by_key[FeatureKey(["test", "upstream_a"])]
+    graph_v2.features_by_key[FeatureKey(["test", "upstream_b"])]
+    graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
 
         assert migration is not None
         # Downstream should be affected (dependency changed)
-        affected_features = migration.get_affected_features(store_v2)
+        affected_features = migration.get_affected_features(store_v2, "default")
         assert "test/downstream" in affected_features
 
     temp_v1.cleanup()
@@ -761,6 +792,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
         # Try to detect migration (same graph)
         migration = detect_migration(
             store,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -811,8 +843,10 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         store_v2.record_feature_graph_snapshot()
 
         # Detect migration
+        # Use the project from one of the features in the graph
         migration = detect_migration(
             store_v2,
+            project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
             migrations_dir=tmp_path / "migrations",
         )
@@ -820,7 +854,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         # Should be None or not include the new feature
         # (new features have no existing data to migrate)
         if migration is not None:
-            affected_features = migration.get_affected_features(store_v2)
+            affected_features = migration.get_affected_features(store_v2, "default")
             assert "test_integration/new" not in affected_features
 
     temp_v2.cleanup()

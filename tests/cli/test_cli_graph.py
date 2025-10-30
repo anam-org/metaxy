@@ -159,7 +159,7 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
         assert result.returncode == 0
         assert "Describing current graph from code" in result.stdout
         assert "Graph Snapshot:" in result.stdout
-        assert "Feature Count" in result.stdout
+        assert "Total Features" in result.stdout
         assert "Graph Depth" in result.stdout
         assert "Root Features" in result.stdout
         assert "1" in result.stdout  # 1 feature
@@ -220,7 +220,7 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             result = metaxy_project.run_cli("graph", "describe")
 
             assert result.returncode == 0
-            assert "Feature Count" in result.stdout
+            assert "Total Features" in result.stdout
             assert "2" in result.stdout  # 2 features
             assert "Graph Depth" in result.stdout
             # Depth should be 2 (root -> dependent)
@@ -269,7 +269,7 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
         assert "Describing snapshot" in result.stdout
         assert snapshot_version in result.stdout
         assert "Graph Snapshot:" in result.stdout
-        assert "Feature Count" in result.stdout
+        assert "Total Features" in result.stdout
 
 
 def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
@@ -342,7 +342,7 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
 
         # Step 3: Describe should show current graph
         describe_result = metaxy_project.run_cli("graph", "describe")
-        assert "Feature Count" in describe_result.stdout
+        assert "Total Features" in describe_result.stdout
         assert "2" in describe_result.stdout
 
         # Step 4: Describe historical snapshot

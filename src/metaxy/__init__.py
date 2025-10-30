@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.entrypoints import (
     load_features,
@@ -25,6 +27,28 @@ from metaxy.models.feature import Feature, FeatureGraph, get_feature_by_key, gra
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
+
+
+def init_metaxy(
+    config_file: Path | None = None, search_parents: bool = True
+) -> MetaxyConfig:
+    """Main user-facing initialization function for Metaxy. It loads the configuration and features.
+
+    Args:
+        config_file (Path | None, optional): Path to the configuration file. Defaults to None.
+        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.
+
+    Returns:
+        MetaxyConfig: The initialized Metaxy configuration.
+    """
+    cfg = MetaxyConfig.load(
+        config_file=config_file,
+        search_parents=search_parents,
+    )
+    load_features(cfg.entrypoints)
+    MetaxyConfig.set(cfg)
+    return cfg
+
 
 __all__ = [
     "Feature",
@@ -58,4 +82,5 @@ __all__ = [
     "detect_migration",
     "MetaxyConfig",
     "StoreConfig",
+    "init_metaxy",
 ]
