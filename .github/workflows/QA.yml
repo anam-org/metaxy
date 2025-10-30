@@ -162,7 +162,7 @@ jobs:
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-xml-coverage-path: ./coverage.xml
-          title: Coverage Report (Python ${{ matrix.python-version }}))
+          title: Coverage Report (Python ${{ matrix.python-version }})
           badge-title: Coverage
           github-token: ${{ github.token }}
           junitxml-path: ./junit.xml

@@ -75,6 +75,8 @@ docs = [
   "mkdocstrings-python>=1.18.2",
   "pymdown-extensions>=10.16.1",
   "cyclopts[mkdocs]",
+  "mkdocs-autoapi>=0.4.1",
+  "mkdocs-api-autonav>=0.4.0",
 ]
 
 [tool.ruff]

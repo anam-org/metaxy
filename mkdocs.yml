@@ -58,6 +58,11 @@ plugins:
   - autorefs
   - section-index
   - gh-admonitions
+
+  # in the futurem, we could move navigation to a separate file
+  # - literate-nav:
+  #     nav_file: nagiration.md
+
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -125,9 +130,11 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
       emoji_index: !!python/name:material.extensions.emoji.twemoji
   - pymdownx.highlight:
+      default_lang: python
+      use_pygments: true
+      pygments_lang_class: true
       anchor_linenums: true
       line_spans: __span
-      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.magiclink:
@@ -178,6 +185,10 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+extra_css:
+- css/code_select.css
+
 
 watch:
   - src
