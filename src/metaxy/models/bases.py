@@ -2,5 +2,5 @@ import pydantic
 
 
 class FrozenBaseModel(pydantic.BaseModel):
-    class Config:
-        frozen = True
+    # config class is deprecated
+    model_config = pydantic.ConfigDict(frozen=True)
