@@ -30,10 +30,12 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
     ):
         pass
 
-    code_ver = SingleFieldFeature.code_version()
+    feature_instance = SingleFieldFeature()
+    code_ver = SingleFieldFeature.code_version
 
     # Should be deterministic
-    assert code_ver == SingleFieldFeature.code_version()
+    assert code_ver == SingleFieldFeature.code_version
+    assert code_ver == feature_instance.code_version
 
     # Should be 64 characters (SHA256 hex)
     assert len(code_ver) == 64
@@ -43,6 +45,10 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
 
     # Snapshot the hash
     assert code_ver == snapshot
+
+    # Should be cached on the spec for efficient reuse
+    assert "field_code_version_hash" in SingleFieldFeature.spec.__dict__
+    assert SingleFieldFeature.spec.__dict__["field_code_version_hash"] == code_ver
 
 
 def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
@@ -62,7 +68,8 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
     ):
         pass
 
-    code_ver = MultiFieldFeature.code_version()
+    feature_instance = MultiFieldFeature()
+    code_ver = MultiFieldFeature.code_version
 
     # Should be 64 characters
     assert len(code_ver) == 64
@@ -72,6 +79,7 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
     # Snapshot the hash
     assert code_ver == snapshot
+    assert feature_instance.code_version == code_ver
 
 
 def test_code_version_changes_with_field_code_version() -> None:
@@ -107,8 +115,8 @@ def test_code_version_changes_with_field_code_version() -> None:
         ):
             pass
 
-    code_v1 = FeatureV1.code_version()
-    code_v2 = FeatureV2.code_version()
+    code_v1 = FeatureV1.code_version
+    code_v2 = FeatureV2.code_version
 
     # Should be different
     assert code_v1 != code_v2
@@ -175,8 +183,8 @@ def test_code_version_independence_from_dependencies() -> None:
         ):
             pass
 
-    child_code_v1 = ChildV1.code_version()
-    child_code_v2 = ChildV2.code_version()
+    child_code_v1 = ChildV1.code_version
+    child_code_v2 = ChildV2.code_version
 
     # code_version should be the SAME (child's fields didn't change)
     assert child_code_v1 == child_code_v2
@@ -202,9 +210,9 @@ def test_code_version_determinism() -> None:
         pass
 
     # Call multiple times
-    version1 = TestFeature.code_version()
-    version2 = TestFeature.code_version()
-    version3 = TestFeature.code_version()
+    version1 = TestFeature.code_version
+    version2 = TestFeature.code_version
+    version3 = TestFeature.code_version
 
     # Should all be identical
     assert version1 == version2
@@ -251,7 +259,7 @@ def test_code_version_field_order_invariance() -> None:
             pass
 
     # Should have the same code_version (internal sorting makes it deterministic)
-    assert Feature1.code_version() == Feature2.code_version()
+    assert Feature1.code_version == Feature2.code_version
 
 
 def test_code_version_vs_feature_version_difference() -> None:
@@ -285,11 +293,11 @@ def test_code_version_vs_feature_version_difference() -> None:
             pass
 
     # For feature with no deps, code_version should produce a valid hash
-    parent_code = Parent.code_version()
+    parent_code = Parent.code_version
 
     # For feature with deps, code_version and feature_version should differ
     # because feature_version includes parent dependencies
-    child_code = Child.code_version()
+    child_code = Child.code_version
     child_feature = Child.feature_version()
 
     # code_version should be consistent
@@ -313,7 +321,7 @@ def test_code_version_no_dependencies_no_fields_edge_case() -> None:
     ):
         pass
 
-    code_ver = MinimalFeature.code_version()
+    code_ver = MinimalFeature.code_version
 
     # Should still produce a valid hash
     assert len(code_ver) == 64
@@ -363,9 +371,9 @@ def test_code_version_complex_dependency_chain() -> None:
             pass
 
     # Each should have a different code_version (different field code_versions)
-    code_a = A.code_version()
-    code_b = B.code_version()
-    code_c = C.code_version()
+    code_a = A.code_version
+    code_b = B.code_version
+    code_c = C.code_version
 
     assert code_a != code_b
     assert code_b != code_c
@@ -407,8 +415,8 @@ def test_property_code_version_deterministic(code_version: int) -> None:
             pass
 
         # Call multiple times
-        v1 = TestFeature.code_version()
-        v2 = TestFeature.code_version()
+        v1 = TestFeature.code_version
+        v2 = TestFeature.code_version
 
     # Should be deterministic
     assert v1 == v2
@@ -453,8 +461,8 @@ def test_property_code_version_changes_with_code(
         ):
             pass
 
-    cv1 = Feature1.code_version()
-    cv2 = Feature2.code_version()
+    cv1 = Feature1.code_version
+    cv2 = Feature2.code_version
 
     # If code versions are the same, hashes should be the same
     # If code versions are different, hashes should be different
@@ -489,14 +497,14 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
         ):
             pass
 
-        code_ver = TestFeature.code_version()
+        code_ver = TestFeature.code_version
 
     # Should produce a valid hash
     assert len(code_ver) == 64
     assert all(c in "0123456789abcdef" for c in code_ver)
 
     # Should be deterministic
-    assert code_ver == TestFeature.code_version()
+    assert code_ver == TestFeature.code_version
 
 
 @given(
@@ -552,7 +560,7 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
             pass
 
     # Should have the same code_version (internal sorting)
-    assert Feature1.code_version() == Feature2.code_version()
+    assert Feature1.code_version == Feature2.code_version
 
 
 @given(
@@ -596,7 +604,7 @@ def test_property_code_version_independent_of_parent(
             pass
 
         # Record child's code_version
-        child_cv1 = Child.code_version()
+        child_cv1 = Child.code_version
 
     # Create another graph with different parent code_version but same child code_version
     graph2 = FeatureGraph()
@@ -634,7 +642,7 @@ def test_property_code_version_independent_of_parent(
         ):
             pass
 
-        child_cv2 = Child2.code_version()
+        child_cv2 = Child2.code_version
 
     # Child's code_version should be the same (independent of parent)
     assert child_cv1 == child_cv2

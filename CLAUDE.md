@@ -224,32 +224,40 @@ All metadata writes are append-only. When migrations update metadata:
 5. Old rows remain for historical queries and audit trail
 
 #### Feature Version vs Code Version vs Data Version
-- **Code version** (`.code_version()`): Hash of ONLY this feature's field code_versions, independent of dependencies. Changes when the feature's own logic changes. Useful for tracking "my code changed" vs "my dependencies changed".
+
+- **Code version** (`.code_version`): Hash of ONLY this feature's field code_versions, independent of dependencies. Changes when the feature's own logic changes. Useful for tracking "my code changed" vs "my dependencies changed".
 - **Feature version** (`.feature_version()`): Hash of feature definition (code, deps, fields). Deterministic from code alone. Changes when the feature OR its dependencies change.
 - **Data version**: Hash of upstream data versions for a specific sample. Depends on actual data.
 - **Snapshot version**: Hash of all feature versions in graph. Represents entire graph state.
 
 Key differences:
-- `code_version()`: Local only (this feature's fields) → tracks when YOUR code changes
+
+- `code_version`: Local only (this feature's fields) → tracks when YOUR code changes
 - `feature_version()`: Includes dependencies → triggers migrations when dependencies change
 - `data_version`: Sample-level hash → identifies which samples need recomputation
 
 Example:
+
 ```python
 class Parent(Feature, spec=FeatureSpec(..., fields=[FieldSpec(code_version=1)])):
     pass
 
-class Child(Feature, spec=FeatureSpec(deps=[FeatureDep(Parent)], fields=[FieldSpec(code_version=2)])):
+
+class Child(
+    Feature,
+    spec=FeatureSpec(deps=[FeatureDep(Parent)], fields=[FieldSpec(code_version=2)]),
+):
     pass
 
+
 # code_version: only depends on Child's fields (code_version=2)
-Child.code_version()  # "abc123..."
+Child.code_version  # "abc123..."
 
 # feature_version: includes Parent's feature_version + Child's fields
 Child.feature_version()  # "def456..." (different from code_version)
 
 # If Parent.code_version changes:
-# - Child.code_version() stays the same (Child's code didn't change)
+# - Child.code_version stays the same (Child's code didn't change)
 # - Child.feature_version() changes (Parent is a dependency)
 ```
 
