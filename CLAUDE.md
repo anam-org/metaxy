@@ -304,10 +304,24 @@ class CustomerFeature(Feature, spec=FeatureSpec(
 # Access metadata
 CustomerFeature.spec.metadata["owner"]  # "data-team"
 
-# Metadata doesn't affect versioning (these are the same):
-feature1 = Feature(spec=FeatureSpec(..., metadata={"owner": "team-a"}))
-feature2 = Feature(spec=FeatureSpec(..., metadata={"owner": "team-b"}))
-assert feature1.feature_version() == feature2.feature_version()
+# Metadata doesn't affect versioning (these produce the same feature_version):
+class Feature1(Feature, spec=FeatureSpec(
+    key=FeatureKey(["example"]),
+    deps=[],
+    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+    metadata={"owner": "team-a"}
+)):
+    pass
+
+class Feature2(Feature, spec=FeatureSpec(
+    key=FeatureKey(["example"]),
+    deps=[],
+    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+    metadata={"owner": "team-b"}
+)):
+    pass
+
+assert Feature1.feature_version() == Feature2.feature_version()
 ```
 
 ## Important Constraints
