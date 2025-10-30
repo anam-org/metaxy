@@ -142,7 +142,7 @@ def test_duckdb_persistence_across_instances(
 
 
 def test_duckdb_ducklake_integration(
-    tmp_path: Path, test_graph, test_features: dict
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Attach DuckLake using local DuckDB storage and DuckDB metadata."""
 
@@ -242,9 +242,15 @@ def test_duckdb_config_with_extensions() -> None:
     assert isinstance(store, DuckDBMetadataStore)
 
     # hashfuncs is auto-added, so we should have at least hashfuncs
-    assert "hashfuncs" in [
-        ext if isinstance(ext, str) else ext.get("name", "") for ext in store.extensions
-    ]
+    from metaxy.metadata_store.duckdb import ExtensionSpec
+
+    extension_names = []
+    for ext in store.extensions:
+        if isinstance(ext, str):
+            extension_names.append(ext)
+        elif isinstance(ext, ExtensionSpec):
+            extension_names.append(ext.name)
+    assert "hashfuncs" in extension_names
 
     with store:
         assert store._is_open

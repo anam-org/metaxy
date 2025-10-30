@@ -14,6 +14,7 @@ from metaxy.metadata_store._ducklake_support import (
     DuckLakeAttachmentConfig,
     DuckLakeAttachmentManager,
     _PreviewConnection,
+    _PreviewCursor,
     format_attach_options,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -54,21 +55,19 @@ def metadata_dataframe_strategy(draw, fields=None, size=None):
     return df
 
 
-class _StubCursor:
+class _StubCursor(_PreviewCursor):
     def __init__(self) -> None:
-        self.commands: list[str] = []
+        super().__init__()
         self.closed = False
-
-    def execute(self, command: str) -> None:
-        # Keep the command as executed for snapshot-style assertions.
-        self.commands.append(command.strip())
 
     def close(self) -> None:
         self.closed = True
+        super().close()
 
 
-class _StubConnection:
+class _StubConnection(_PreviewConnection):
     def __init__(self) -> None:
+        super().__init__()
         self._cursor = _StubCursor()
 
     def cursor(self) -> _StubCursor:
@@ -92,7 +91,7 @@ def test_ducklake_attachment_sequence() -> None:
             "aws_secret_access_key": "secret",
         },
         alias="lake",
-        plugins=["ducklake"],
+        plugins=("ducklake",),
         attach_options={"api_version": "0.2", "override_data_path": True},
     )
 
@@ -171,6 +170,10 @@ def test_duckdb_store_preview_via_config_manager() -> None:
     assert preview[-1] == "USE ducklake;"
 
 
+# Module-level state for tracking recorded commands in tests
+_test_recorded_commands: list[str] = []
+
+
 @settings(
     max_examples=3,
     deadline=None,
@@ -183,23 +186,22 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
     Uses hypothesis to generate test payloads with varying sizes and data.
     Uses tempfile to avoid data persistence across hypothesis examples.
     """
-    # Use a shared mutable list to capture commands
-    # This persists across hypothesis examples since monkeypatch is function-scoped
-    if not hasattr(test_ducklake_store_read_write_roundtrip, "_recorded_commands"):
-        test_ducklake_store_read_write_roundtrip._recorded_commands = []
+    # Use module-level list to capture commands
+    global _test_recorded_commands
+
+    # Set up monkeypatch once per test function
+    if not _test_recorded_commands:
         original_configure = DuckLakeAttachmentManager.configure
 
         def fake_configure(self, conn):
             preview_conn = _PreviewConnection()
             original_configure(self, preview_conn)
-            test_ducklake_store_read_write_roundtrip._recorded_commands.extend(
-                preview_conn.cursor().commands
-            )
+            _test_recorded_commands.extend(preview_conn.cursor().commands)
 
         monkeypatch.setattr(DuckLakeAttachmentManager, "configure", fake_configure)
 
     # Clear commands from previous hypothesis example
-    test_ducklake_store_read_write_roundtrip._recorded_commands.clear()
+    _test_recorded_commands.clear()
 
     # Use tempfile to get fresh directory for each hypothesis example
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -242,10 +244,11 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         expected = payload.sort("sample_id")
         assert_frame_equal(actual, expected)
 
-        recorded_commands = test_ducklake_store_read_write_roundtrip._recorded_commands
-        assert recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
-        assert any(cmd.startswith("ATTACH 'ducklake:") for cmd in recorded_commands)
-        assert recorded_commands[-1] == "USE lake;"
+        assert _test_recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
+        assert any(
+            cmd.startswith("ATTACH 'ducklake:") for cmd in _test_recorded_commands
+        )
+        assert _test_recorded_commands[-1] == "USE lake;"
 
 
 @settings(
