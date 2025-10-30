@@ -106,6 +106,10 @@ When `Video` changes, Metaxy automatically identifies that `VoiceDetection` requ
 
 Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions. When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream. This is done on multiple levels: `Feature` (class) level, field (class attribute) level, and of course on row level: each _sample_ in the metadata store tracks the version of _each field_ and the overall (class-level) feature version.
 
+### Code vs Feature Versions
+
+`Feature.code_version` only looks at a feature's own fields. It hashes their keys and `code_version` values (in sorted order) and ignores the dependency graph entirely. Use it to answer _"did my feature's logic change?"_. In contrast, `Feature.feature_version()` includes both the local fields and every dependency, so it changes whenever parent features evolve. Checking both hashes lets you distinguish between local code updates and upstream changes.
+
 This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did). This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
 
 Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation. This enables patterns such as **computation preview** and **computation cost prediction**.
