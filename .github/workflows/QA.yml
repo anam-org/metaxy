@@ -158,7 +158,8 @@ jobs:
 
       - name: Coverage Report
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
-        if: always()
+        # Only run on pull requests since this action creates comments
+        if: ${{ always() && github.event_name == 'pull_request' }}
         uses: MishaKav/pytest-coverage-comment@main
         with:
           pytest-xml-coverage-path: ./coverage.xml
