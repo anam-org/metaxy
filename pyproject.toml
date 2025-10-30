@@ -57,6 +57,7 @@ dev = [
     "prek>=0.2.11",
     "pytest-env>=1.2.0",
     "pytest-cov>=7.0.0",
+    "hypothesis>=6.142.4",
 ]
 
 docs = [
