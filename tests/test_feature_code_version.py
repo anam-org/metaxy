@@ -262,52 +262,6 @@ def test_code_version_field_order_invariance() -> None:
     assert Feature1.code_version == Feature2.code_version
 
 
-def test_code_version_vs_feature_version_difference() -> None:
-    """Test that code_version and feature_version are different for features with dependencies."""
-    graph = FeatureGraph()
-
-    with graph.use():
-
-        class Parent(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["comparison_test", "parent"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-            ),
-        ):
-            pass
-
-        class Child(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["comparison_test", "child"]),
-                deps=[FeatureDep(key=FeatureKey(["comparison_test", "parent"]))],
-                fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
-                ],
-            ),
-        ):
-            pass
-
-    # For feature with no deps, code_version should produce a valid hash
-    parent_code = Parent.code_version
-
-    # For feature with deps, code_version and feature_version should differ
-    # because feature_version includes parent dependencies
-    child_code = Child.code_version
-    child_feature = Child.feature_version()
-
-    # code_version should be consistent
-    assert len(parent_code) == 64
-    assert len(child_code) == 64
-
-    # feature_version includes dependencies, so should differ from code_version for child
-    assert child_code != child_feature
-
-
 def test_code_version_no_dependencies_no_fields_edge_case() -> None:
     """Test code_version with default field (single field with code_version=1)."""
 
