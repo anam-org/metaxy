@@ -270,7 +270,7 @@ Features can override `load_input()` for custom join logic:
 
 This is critical for migrations when upstream dependencies change.
 
-#### User-Defined Metadata
+#### Attaching Metadata to Features
 
 Features can include user-defined metadata for documentation and tooling purposes:
 
