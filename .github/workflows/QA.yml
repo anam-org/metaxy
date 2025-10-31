@@ -188,6 +188,8 @@ jobs:
       - uses: nicknovitski/nix-develop@v1
       - name: Sync dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
+      - name: Ensure Slides dependencies are loaded
+        run: cd docs/slides && bun install
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
