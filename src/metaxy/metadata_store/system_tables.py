@@ -57,10 +57,10 @@ FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
     "feature_version": pl.String,  # TODO: Use METAXY_FEATURE_VERSION_COL
-    "feature_spec_version": pl.String,  # Hash of complete FeatureSpec (all properties)
+    "feature_spec_version": pl.String,  # Hash of complete BaseFeatureSpec (all properties)
     "feature_tracking_version": pl.String,  # Hash of feature_spec_version + project (for migration detection)
     "recorded_at": pl.Datetime("us"),
-    "feature_spec": pl.String,  # Full serialized FeatureSpec
+    "feature_spec": pl.String,  # Full serialized BaseFeatureSpec
     "feature_class_path": pl.String,
     "snapshot_version": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
 }

@@ -11,7 +11,8 @@ from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.models.feature import Feature
+from metaxy.models.feature import BaseFeature
+from metaxy.models.feature_spec import IDColumns
 from metaxy.models.types import FeatureKey
 
 
@@ -145,7 +146,7 @@ class InMemoryMetadataStore(MetadataStore):
 
     def _read_metadata_native(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,

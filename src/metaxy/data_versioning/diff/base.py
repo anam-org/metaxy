@@ -1,6 +1,7 @@
 """Abstract base class for metadata diff resolvers."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 import narwhals as nw
@@ -117,7 +118,7 @@ class MetadataDiffResolver(ABC):
         self,
         target_versions: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
-        id_columns: list[str],
+        id_columns: Sequence[str],
     ) -> LazyDiffResult:
         """Find all changes between target and current metadata.
 

@@ -10,10 +10,10 @@ from pytest_cases import fixture, parametrize_with_cases
 from metaxy import (
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, TempFeatureModule
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
@@ -208,7 +208,7 @@ def test_graph():
     temp_module = TempFeatureModule("test_stores_features")
 
     # Define specs
-    upstream_a_spec = FeatureSpec(
+    upstream_a_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_a"]),
         deps=None,
         fields=[
@@ -217,7 +217,7 @@ def test_graph():
         ],
     )
 
-    upstream_b_spec = FeatureSpec(
+    upstream_b_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_b"]),
         deps=None,
         fields=[
@@ -225,7 +225,7 @@ def test_graph():
         ],
     )
 
-    downstream_spec = FeatureSpec(
+    downstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_stores", "downstream"]),
         deps=[
             FeatureDep(key=FeatureKey(["test_stores", "upstream_a"])),

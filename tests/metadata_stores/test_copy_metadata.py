@@ -6,7 +6,7 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 from metaxy.models.feature import FeatureGraph
@@ -22,7 +22,7 @@ def sample_features() -> Iterator[tuple[type[Feature], type[Feature]]]:
 
         class FeatureA(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature_a"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey("field_a"), code_version=1)],
@@ -34,7 +34,7 @@ def sample_features() -> Iterator[tuple[type[Feature], type[Feature]]]:
 
         class FeatureB(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature_b"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey("field_b"), code_version=1)],
@@ -159,7 +159,7 @@ def test_copy_metadata_specific_features(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key],
+            features=[FeatureA.spec().key],
             from_snapshot=snapshot_version,
         )
 
@@ -233,7 +233,7 @@ def test_copy_metadata_with_snapshot_filter(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key],
+            features=[FeatureA.spec().key],
             from_snapshot=snapshot_2,
         )
 
@@ -297,7 +297,7 @@ def test_copy_metadata_missing_feature(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key, FeatureB.spec.key],
+            features=[FeatureA.spec().key, FeatureB.spec().key],
             from_snapshot=snapshot_version,
         )
 
@@ -339,7 +339,7 @@ def test_copy_metadata_preserves_feature_version(
     with dest_store:
         dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key],
+            features=[FeatureA.spec().key],
             from_snapshot=snapshot_version,
         )
 
@@ -392,7 +392,7 @@ def test_copy_metadata_preserves_snapshot_version(
     with dest_store:
         dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key],
+            features=[FeatureA.spec().key],
             from_snapshot=original_snapshot,
         )
 
@@ -427,7 +427,7 @@ def test_copy_metadata_no_rows_for_snapshot(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key],
+            features=[FeatureA.spec().key],
             from_snapshot="nonexistent_snapshot",
         )
 
@@ -560,7 +560,7 @@ def test_copy_metadata_with_per_feature_filters(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key, FeatureB.spec.key],
+            features=[FeatureA.spec().key, FeatureB.spec().key],
             from_snapshot=snapshot_version,
             filters={
                 "test/feature_a": [
@@ -642,7 +642,7 @@ def test_copy_metadata_with_mixed_filters(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key, FeatureB.spec.key],
+            features=[FeatureA.spec().key, FeatureB.spec().key],
             from_snapshot=snapshot_version,
             filters={
                 "test/feature_a": [
@@ -713,7 +713,7 @@ def test_copy_metadata_with_mixed_feature_types(
     with dest_store:
         stats = dest_store.copy_metadata(
             from_store=source_store,
-            features=[FeatureA.spec.key, FeatureB.spec.key],
+            features=[FeatureA.spec().key, FeatureB.spec().key],
             from_snapshot=snapshot_version,
             filters={
                 "test/feature_a": [nw.col("field_a") > 1],

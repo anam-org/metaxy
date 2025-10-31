@@ -11,11 +11,11 @@ from syrupy.assertion import SnapshotAssertion
 from metaxy import (
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
+    TestingFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
 from metaxy._utils import collect_to_polars
@@ -55,7 +55,7 @@ def simple_graph_v1():
     """Simple graph with one feature."""
     temp_module = TempFeatureModule("test_integration_simple_v1")
 
-    spec_v1 = FeatureSpec(
+    spec_v1 = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         deps=None,
         fields=[
@@ -73,7 +73,7 @@ def simple_graph_v2():
     """Simple graph with code_version changed."""
     temp_module = TempFeatureModule("test_integration_simple_v2")
 
-    spec_v2 = FeatureSpec(
+    spec_v2 = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         deps=None,
         fields=[
@@ -91,7 +91,7 @@ def upstream_downstream_v1():
     """Graph with upstream and downstream features."""
     temp_module = TempFeatureModule("test_integration_chain_v1")
 
-    upstream_spec = FeatureSpec(
+    upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         deps=None,
         fields=[
@@ -99,7 +99,7 @@ def upstream_downstream_v1():
         ],
     )
 
-    downstream_spec = FeatureSpec(
+    downstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test_integration", "upstream"]))],
         fields=[
@@ -128,7 +128,7 @@ def upstream_downstream_v2():
     """Graph with upstream code_version changed."""
     temp_module = TempFeatureModule("test_integration_chain_v2")
 
-    upstream_spec = FeatureSpec(
+    upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         deps=None,
         fields=[
@@ -136,7 +136,7 @@ def upstream_downstream_v2():
         ],
     )
 
-    downstream_spec = FeatureSpec(
+    downstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test_integration", "upstream"]))],
         fields=[
@@ -543,7 +543,7 @@ def test_field_dependency_change(tmp_path):
     # Create v1: Downstream depends on both upstream fields
     temp_v1 = TempFeatureModule("test_field_change_v1")
 
-    upstream_spec = FeatureSpec(
+    upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream"]),
         deps=None,
         fields=[
@@ -552,7 +552,7 @@ def test_field_dependency_change(tmp_path):
         ],
     )
 
-    downstream_v1_spec = FeatureSpec(
+    downstream_v1_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
         fields=[
@@ -577,7 +577,7 @@ def test_field_dependency_change(tmp_path):
     # Create v2: Downstream only depends on frames
     temp_v2 = TempFeatureModule("test_field_change_v2")
 
-    downstream_v2_spec = FeatureSpec(
+    downstream_v2_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
         fields=[
@@ -650,19 +650,19 @@ def test_feature_dependency_swap(tmp_path):
     # Create v1: Downstream depends on UpstreamA
     temp_v1 = TempFeatureModule("test_dep_swap_v1")
 
-    upstream_a_spec = FeatureSpec(
+    upstream_a_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream_a"]),
         deps=None,
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
-    upstream_b_spec = FeatureSpec(
+    upstream_b_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream_b"]),
         deps=None,
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
     )
 
-    downstream_v1_spec = FeatureSpec(
+    downstream_v1_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream_a"]))],  # Depends on A
         fields=[
@@ -691,7 +691,7 @@ def test_feature_dependency_swap(tmp_path):
     # Create v2: Downstream now depends on UpstreamB
     temp_v2 = TempFeatureModule("test_dep_swap_v2")
 
-    downstream_v2_spec = FeatureSpec(
+    downstream_v2_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["test", "upstream_b"]))],  # Changed to B!
         fields=[
@@ -821,13 +821,13 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     # Create v2 with additional feature
     temp_v2 = TempFeatureModule("test_new_feature_v2")
 
-    simple_spec = FeatureSpec(
+    simple_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         deps=None,
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],  # Unchanged
     )
 
-    new_spec = FeatureSpec(
+    new_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "new"]),
         deps=None,
         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],

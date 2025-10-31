@@ -8,7 +8,7 @@ import narwhals as nw
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import FeatureSpec
+    from metaxy.models.feature_spec import BaseFeatureSpec, IDColumns
     from metaxy.models.plan import FeaturePlan
 
 
@@ -62,7 +62,7 @@ class DataVersionCalculator(ABC):
     def calculate_data_versions(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "FeatureSpec",
+        feature_spec: "BaseFeatureSpec[IDColumns]",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

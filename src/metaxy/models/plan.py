@@ -2,7 +2,10 @@ from collections.abc import Mapping
 from functools import cached_property
 
 from metaxy.models.bases import FrozenBaseModel
-from metaxy.models.feature_spec import FeatureKey, FeatureSpec
+from metaxy.models.feature_spec import (
+    BaseFeatureSpecWithIDColumns,
+    FeatureKey,
+)
 from metaxy.models.field import (
     FieldDep,
     FieldKey,
@@ -41,11 +44,13 @@ class FQFieldKey(FrozenBaseModel):
 class FeaturePlan(FrozenBaseModel):
     """Slice of the feature graph that includes a given feature and its parents"""
 
-    feature: FeatureSpec
-    deps: list[FeatureSpec] | None
+    feature: BaseFeatureSpecWithIDColumns
+    deps: list[BaseFeatureSpecWithIDColumns] | None
 
     @cached_property
-    def parent_features_by_key(self) -> Mapping[FeatureKey, FeatureSpec]:
+    def parent_features_by_key(
+        self,
+    ) -> Mapping[FeatureKey, BaseFeatureSpecWithIDColumns]:
         return {feature.key: feature for feature in self.deps or []}
 
     @cached_property

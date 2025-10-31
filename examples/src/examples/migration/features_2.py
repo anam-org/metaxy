@@ -37,14 +37,14 @@ class ChildFeature(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["examples", "child"]),
-        deps=[FeatureDep(key=ParentFeature.spec.key)],
+        deps=[FeatureDep(key=ParentFeature.spec().key)],
         fields=[
             FieldSpec(
                 key=FieldKey(["predictions"]),
-                code_version=2,  # ⚠️ CHANGED: Code refactor (same output)
+                code_version=2,
                 deps=[
                     FieldDep(
-                        feature_key=ParentFeature.spec.key,
+                        feature_key=ParentFeature.spec().key,
                         fields=[FieldKey(["embeddings"])],
                     )
                 ],

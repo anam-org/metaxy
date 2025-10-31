@@ -1,5 +1,5 @@
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -8,7 +8,8 @@ def test_single_feature_data_version(snapshot, graph: FeatureGraph):
     """Test feature with no dependencies."""
 
     class MyFeature(
-        Feature, spec=FeatureSpec(key=FeatureKey(["my_feature"]), deps=None)
+        TestingFeature,
+        spec=TestingFeatureSpec(key=FeatureKey(["my_feature"]), deps=None),
     ):
         pass
 
@@ -19,8 +20,8 @@ def test_feature_with_multiple_fields(snapshot, graph: FeatureGraph):
     """Test feature with multiple fields, each with different code versions."""
 
     class VideoFeature(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
             deps=None,
             fields=[
@@ -39,8 +40,8 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
     """Test A -> B -> C linear dependency chain."""
 
     class FeatureA(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["a"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["raw"]), code_version=1)],
@@ -49,8 +50,8 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         pass
 
     class FeatureB(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["b"]),
             deps=[FeatureDep(key=FeatureKey(["a"]))],
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version=2)],
@@ -59,8 +60,8 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         pass
 
     class FeatureC(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["c"]),
             deps=[FeatureDep(key=FeatureKey(["b"]))],
             fields=[FieldSpec(key=FieldKey(["final"]), code_version=3)],
@@ -81,8 +82,8 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
     """Test diamond dependency: A -> B, A -> C, B -> D, C -> D."""
 
     class Root(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["root"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -91,8 +92,8 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         pass
 
     class BranchLeft(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["branch_left"]),
             deps=[FeatureDep(key=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["left_processed"]), code_version=2)],
@@ -101,8 +102,8 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         pass
 
     class BranchRight(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["branch_right"]),
             deps=[FeatureDep(key=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["right_processed"]), code_version=3)],
@@ -111,8 +112,8 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         pass
 
     class Merged(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["merged"]),
             deps=[
                 FeatureDep(key=FeatureKey(["branch_left"])),
@@ -137,8 +138,8 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
     """Test feature with specific field-level dependencies."""
 
     class MultiField(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=None,
             fields=[
@@ -151,8 +152,8 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
         pass
 
     class Selective(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["selective"]),
             deps=[FeatureDep(key=FeatureKey(["multi"]))],
             fields=[
@@ -210,8 +211,8 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
 
     # Level 0: Two root features
     class RawVideoData(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["raw_video"]),
             deps=None,
             fields=[
@@ -223,8 +224,8 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
         pass
 
     class RawMetadata(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["raw_metadata"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["info"]), code_version=1)],
@@ -234,8 +235,8 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
 
     # Level 1: Process video
     class ProcessedVideo(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["processed_video"]),
             deps=[FeatureDep(key=FeatureKey(["raw_video"]))],
             fields=[
@@ -266,8 +267,8 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
 
     # Level 2: Analysis combining multiple sources
     class Analysis(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["analysis"]),
             deps=[
                 FeatureDep(key=FeatureKey(["processed_video"])),
@@ -314,8 +315,8 @@ def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
     """Test that changing code version in upstream affects downstream."""
 
     class Base(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["base"]),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=100)],
@@ -324,8 +325,8 @@ def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
         pass
 
     class Derived(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["derived"]),
             deps=[FeatureDep(key=FeatureKey(["base"]))],
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version=1)],
@@ -345,8 +346,8 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
     """Test feature where different fields have completely different dependency sets."""
 
     class FeatureX(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["x"]),
             deps=None,
             fields=[
@@ -358,8 +359,8 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
         pass
 
     class FeatureY(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["y"]),
             deps=None,
             fields=[
@@ -371,8 +372,8 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
         pass
 
     class FeatureZ(
-        Feature,
-        spec=FeatureSpec(
+        TestingFeature,
+        spec=TestingFeatureSpec(
             key=FeatureKey(["z"]),
             deps=[
                 FeatureDep(key=FeatureKey(["x"])),

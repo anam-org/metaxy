@@ -102,7 +102,7 @@ class FieldDep(BaseModel):
         if isinstance(feature_key, FeatureSpec):
             feature_key = feature_key.key
         elif isinstance(feature_key, type) and issubclass(feature_key, Feature):
-            feature_key = feature_key.spec.key
+            feature_key = feature_key.spec().key
         else:
             feature_key = FeatureKeyAdapter.validate_python(feature_key)
 
