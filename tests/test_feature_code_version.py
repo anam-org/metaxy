@@ -47,8 +47,8 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
     assert code_ver == snapshot
 
     # Should be cached on the spec for efficient reuse
-    assert "field_code_version_hash" in SingleFieldFeature.spec.__dict__
-    assert SingleFieldFeature.spec.__dict__["field_code_version_hash"] == code_ver
+    assert "code_version" in SingleFieldFeature.spec.__dict__
+    assert SingleFieldFeature.spec.__dict__["code_version"] == code_ver
 
 
 def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
