@@ -59,17 +59,6 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
     return graph.get_feature_by_key(key)
 
 
-class _CodeVersionDescriptor:
-    """Descriptor that returns field-only code version hashes."""
-
-    def __get__(self, instance: "Feature | None", owner: type["Feature"]) -> str:
-        if owner.spec is None:
-            raise ValueError(
-                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
-            )
-        return owner.spec.field_code_version_hash
-
-
 class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[BaseFeature[Any]]] = {}
