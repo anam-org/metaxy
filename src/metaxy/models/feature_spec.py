@@ -287,7 +287,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
 
     @cached_property
     def code_version(self) -> str:
-        """Hash based solely on this feature's field code versions."""
+        """Hash of this feature's field code_versions only (no dependencies)."""
         hasher = hashlib.sha256()
 
         # Sort fields by key for deterministic ordering
