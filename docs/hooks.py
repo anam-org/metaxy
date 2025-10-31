@@ -78,9 +78,7 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
         "./",
     ]
 
-    prefer_npx = os.environ.get(
-        "METAXY_SLIDES_RUNNER", ""
-    ).lower() == "npx" or os.environ.get("CI")
+    prefer_npx = os.environ.get("METAXY_SLIDES_RUNNER", "").lower() == "npx"
 
     if prefer_npx and npx_path:
         log.info("Using npx to build Slidev slides (runner=%s).", npx_path)
@@ -126,6 +124,13 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
         return
 
     try:
+        log.info(
+            "Slidev build environment: CI=%s, bun=%s, npx=%s, npm=%s",
+            os.environ.get("CI"),
+            bun,
+            npx,
+            npm,
+        )
         _ensure_dependencies(bun_path=bun, npm_path=npm)
 
         output_dir = SLIDES_DIR / SLIDES_OUTPUT
