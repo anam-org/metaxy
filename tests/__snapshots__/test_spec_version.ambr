@@ -1,14 +1,18 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'd58f485df70cf7afb2e0fc7e54eebf52234a1be0c22015ccd3239739077aae52'
+  'b0741037ecd180b5948761b9d73b4dd78efa9cf7224240d3e3b718bae26e5852'
 # ---
 # name: test_feature_spec_version_includes_all_properties
+<<<<<<< HEAD
   '9421fb545f2ace1ffb1e07c2d14cc62427d0d261a3b509c8a1473f574efc8cce'
+=======
+  '57050f5f60b0044e84c6b2e82c12dc3fa1bbe03e2db4230255356268a6a50edc'
+>>>>>>> 768008a (chore: savepoint)
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': '1103e6a29e9cc569cde596388b9da0961f2e308ae7d492013dce6bbf9566994c',
+    'feature_spec_version': '39bcce7c7d9bc23f78982655717dc56879265b87304a96f371c7935df5c59d54',
     'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -36,15 +40,22 @@
       ]),
       'metadata': None,
     }),
-    'feature_spec_version': '63d427712eb566d6c066c2514693714d82df604af91b48eae453634c4d684339',
-    'feature_tracking_version': 'dabc7e8b54edb77992145840b2df9c81d4e384f3cdb1736bd3d5ecb83b0f422a',
+    'feature_spec_version': 'ceaebb2a96f45752b2ca7daf8326b893d029cc56b366d7ee67bd4a3667008a03',
+    'feature_tracking_version': '7dac08b916cbef01ec6971f5dd00a1c520c31ed6c09d1fd2223e82ed418546fb',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
+<<<<<<< HEAD
   '9bdc3eb37440620d259db2709010b3d920a7c3147ba30d370494cb3fecc787fc'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
   '3a24675ffa9a6a053dd6738cfe1706470cabc458ec5702d5837138a205bdf4fc'
+=======
+  '00612bc7d53f750ed1c293f7fa7af30156957d643dd4a737501bf1ed7fbb30fe'
+# ---
+# name: test_feature_spec_version_with_multiple_complex_deps
+  '1ed84211824fea4af008270ecec7fe3307473a0b19a48f29fd9014b680568882'
+>>>>>>> 768008a (chore: savepoint)
 # ---
