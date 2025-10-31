@@ -285,9 +285,8 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
         return {c.key: c for c in self.fields}
 
-    @cached_property
-    def code_version(self) -> str:
-        """Hash of this feature's field code_versions only (no dependencies)."""
+    def _compute_field_code_version_hash(self) -> str:
+        """Compute a stable hash based solely on field code versions."""
         hasher = hashlib.sha256()
 
         # Sort fields by key for deterministic ordering
@@ -298,6 +297,16 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             hasher.update(str(field.code_version).encode("utf-8"))
 
         return truncate_hash(hasher.hexdigest())
+
+    @cached_property
+    def field_code_version_hash(self) -> str:
+        """Hash of this feature's field code_versions only (no dependencies)."""
+        return self._compute_field_code_version_hash()
+
+    @cached_property
+    def code_version(self) -> str:
+        """Backward-compatible alias for the field-only code version hash."""
+        return self.field_code_version_hash
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
