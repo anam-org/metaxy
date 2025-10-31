@@ -71,7 +71,7 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
-          #install_url: https://install.determinate.systems/nix
+          install_url: https://install.determinate.systems/nix
           #install_options: '--no-confirm'
           extra_nix_config: |
             extra-experimental-features = nix-command flakes
