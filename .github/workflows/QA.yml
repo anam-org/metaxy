@@ -81,7 +81,7 @@ jobs:
 
       - name: Run Typecheck in Nix Shell
         run: |
-          nix develop '.#python3.10' -c bash <<'EOF'
+          nix develop . -c bash <<'EOF'
             # These commands run inside the temporary Nix shell
             echo "--- Pinning Python and syncing dependencies ---"
             uv python pin 3.10
