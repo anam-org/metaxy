@@ -98,6 +98,7 @@ class FieldDep(BaseModel):
         *args,
         **kwargs,
     ):
+        from metaxy.models.feature import Feature
         from metaxy.models.feature_spec import FeatureSpec
 
         if isinstance(feature, FeatureSpec):
@@ -121,17 +122,22 @@ class FieldSpec(BaseModel):
     key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
     code_version: str = DEFAULT_CODE_VERSION
 
-    # field-level dependencies can be one of the following:
-    # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
-    # - a list of FieldDep to depend on particular fields of specific features
-    deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL
+    # Field-level explicit dependencies
+    # - SpecialFieldDep.ALL: explicitly depend on all upstream features and all their fields
+    # - list[FieldDep]: depend on particular fields of specific features
+    deps: SpecialFieldDep | list[FieldDep] = PydanticField(default_factory=list)
+
+    @overload
+    def __init__(self, key: CoercibleToFieldKey, **kwargs) -> None:
+        """Initialize from key and no other arguments."""
+        ...
 
     @overload
     def __init__(
         self,
         key: str,
         code_version: str,
-        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+        deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -141,7 +147,7 @@ class FieldSpec(BaseModel):
         self,
         key: Sequence[str],
         code_version: str,
-        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+        deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -151,41 +157,29 @@ class FieldSpec(BaseModel):
         self,
         key: FieldKey,
         code_version: str,
-        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+        deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from FieldKey instance."""
         ...
 
-    @overload
     def __init__(
         self,
-        key: None,
-        code_version: str,
-        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
-    ) -> None:
-        """Initialize with None key (uses default)."""
-        ...
-
-    def __init__(
-        self,
-        key: CoercibleToFieldKey | None,
+        key: CoercibleToFieldKey,
         code_version: str = DEFAULT_CODE_VERSION,
-        deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
+        deps: SpecialFieldDep | list[FieldDep] | None = None,
         *args,
         **kwargs: Any,
     ) -> None:
-        if key is None:
-            super().__init__(
-                key=FieldKey(["default"]),
-                code_version=code_version,
-                deps=deps,
-                **kwargs,
-            )
-        else:
-            super().__init__(
-                key=FieldKeyAdapter.validate_python(key),
-                code_version=code_version,
-                deps=deps,
-                *args,
-                **kwargs,
-            )
+        validated_key = FieldKeyAdapter.validate_python(key)
+
+        # Handle None deps - use empty list as default
+        if deps is None:
+            deps = []
+
+        super().__init__(
+            key=validated_key,
+            code_version=code_version,
+            deps=deps,
+            *args,
+            **kwargs,
+        )

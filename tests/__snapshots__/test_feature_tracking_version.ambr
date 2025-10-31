@@ -1,10 +1,4 @@
 # serializer version: 1
-# name: test_provenance_by_field_unchanged_by_project
-  dict({
-    'field1': '9cb9f5bd9b380278e273033d16f07feabda7bdf5b813e9941b0f29e63b20efdb',
-    'field2': '0b485f68befbb7abb029b43a698161745c63259b8ad0bc00260b7da4b9830243',
-  })
-# ---
 # name: test_feature_tracking_version_includes_project
   dict({
     'feature_version_a': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
@@ -12,8 +6,8 @@
     'feature_versions_same': True,
     'project_a': 'project_a',
     'project_b': 'project_b',
-    'tracking_version_a': '8656b5e5187bca8fc46909f736ac8958e60ea90b86bc7a0a3cd360647420d0bb',
-    'tracking_version_b': '97a3c65bff35f71c84d07b087b280f9ee8e05063047179ffaa82fa2a3087533d',
+    'tracking_version_a': 'b39ec2794ba7a734d9c75b92623ff6eb4f44c225891a1826e3f006555ce43b2b',
+    'tracking_version_b': 'abca64dcf3063fda7712f43e371da79b0d4493a00360f0fc15e51de5da3f9497',
     'tracking_versions_differ': True,
   })
 # ---
@@ -42,6 +36,12 @@
     ]),
   })
 # ---
+# name: test_provenance_by_field_unchanged_by_project
+  dict({
+    'field1': '9cb9f5bd9b380278e273033d16f07feabda7bdf5b813e9941b0f29e63b20efdb',
+    'field2': '0b485f68befbb7abb029b43a698161745c63259b8ad0bc00260b7da4b9830243',
+  })
+# ---
 # name: test_tracking_version_deterministic
-  '8ef407e1e203fb40eb2101935b76138f794607fdabd81e5211b91508f5abb222'
+  '5b5f6eb2940ab3cceb11fb370a5582a8269387c3845b61c9dc6a8fe114cb97cf'
 # ---

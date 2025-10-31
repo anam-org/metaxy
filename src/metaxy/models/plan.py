@@ -4,6 +4,7 @@ from functools import cached_property
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpecWithIDColumns,
+    FeatureDep,
     FeatureKey,
 )
 from metaxy.models.field import (
@@ -12,6 +13,10 @@ from metaxy.models.field import (
     FieldSpec,
     SpecialFieldDep,
 )
+from metaxy.models.fields_mapping import FieldsMappingResolutionContext
+
+# Rebuild the model now that BaseFeatureSpec is available
+FieldsMappingResolutionContext.model_rebuild()
 
 
 class FQFieldKey(FrozenBaseModel):
@@ -46,6 +51,9 @@ class FeaturePlan(FrozenBaseModel):
 
     feature: BaseFeatureSpecWithIDColumns
     deps: list[BaseFeatureSpecWithIDColumns] | None
+    feature_deps: list[FeatureDep] | None = (
+        None  # The actual dependency specifications with field mappings
+    )
 
     @cached_property
     def parent_features_by_key(
@@ -72,6 +80,16 @@ class FeaturePlan(FrozenBaseModel):
 
         return res
 
+    @cached_property
+    def parent_fields_by_feature_key(self) -> Mapping[FeatureKey, set[FieldKey]]:
+        res: dict[FeatureKey, set[FieldKey]] = {}
+
+        if self.deps:
+            for feature in self.deps:
+                res[feature.key] = set([f.key for f in feature.fields])
+
+        return res
+
     def get_parent_fields_for_field(
         self, key: FieldKey
     ) -> Mapping[FQFieldKey, FieldSpec]:
@@ -79,39 +97,87 @@ class FeaturePlan(FrozenBaseModel):
 
         field = self.feature.fields_by_key[key]
 
-        if field.deps == SpecialFieldDep.ALL:
-            # we depend on all upstream features and their fields
-            for feature in self.deps or []:
-                for field in feature.fields:
-                    res[FQFieldKey(field=field.key, feature=feature.key)] = field
-        elif isinstance(field.deps, list):
-            for field_dep in field.deps:
-                if field_dep.fields == SpecialFieldDep.ALL:
-                    # we depend on all fields of the corresponding upstream feature
-                    for parent_field in self.parent_features_by_key[
-                        field_dep.feature
-                    ].fields:
-                        res[
-                            FQFieldKey(
-                                field=parent_field.key,
-                                feature=field_dep.feature,
-                            )
-                        ] = parent_field
+        # Get resolved dependencies (combining automatic mapping and explicit deps)
+        resolved_deps = self._resolve_field_deps(field)
 
-                elif isinstance(field_dep, FieldDep):
-                    #
-                    for field_key in field_dep.fields:
-                        fq_key = FQFieldKey(
-                            field=field_key,
+        for field_dep in resolved_deps:
+            if field_dep.fields == SpecialFieldDep.ALL:
+                # we depend on all fields of the corresponding upstream feature
+                for parent_field in self.parent_features_by_key[
+                    field_dep.feature
+                ].fields:
+                    res[
+                        FQFieldKey(
+                            field=parent_field.key,
                             feature=field_dep.feature,
                         )
-                        res[fq_key] = self.all_parent_fields_by_key[fq_key]
-                else:
-                    raise ValueError(f"Unsupported dependency type: {type(field_dep)}")
-        else:
-            raise TypeError(f"Unsupported dependencies type: {type(field.deps)}")
+                    ] = parent_field
+
+            elif isinstance(field_dep, FieldDep):
+                #
+                for field_key in field_dep.fields:
+                    fq_key = FQFieldKey(
+                        field=field_key,
+                        feature=field_dep.feature,
+                    )
+                    res[fq_key] = self.all_parent_fields_by_key[fq_key]
+            else:
+                raise ValueError(f"Unsupported dependency type: {type(field_dep)}")
 
         return res
+
+    def _resolve_field_deps(self, field: FieldSpec) -> list[FieldDep]:
+        """Resolve field dependencies by combining explicit deps and automatic mapping.
+
+        Apply field mappings from the FeatureDep and add explicit deps.
+        """
+
+        if not self.feature_deps:
+            return []
+
+        # Check if field has explicit deps
+        if field.deps and field.deps != []:  # Check for non-empty list
+            if isinstance(field.deps, SpecialFieldDep):
+                # If it's SpecialFieldDep.ALL, return ALL for all upstream features
+                return [
+                    FieldDep(feature=dep.key, fields=SpecialFieldDep.ALL)
+                    for dep in (self.deps or [])
+                ]
+            else:
+                # Use only the explicit deps, no automatic mapping
+                return field.deps
+
+        # No explicit deps - use automatic mapping
+        field_deps = []
+
+        for feature_dep in self.feature_deps:
+            # Resolve field mapping for this specific upstream feature
+            # Get the upstream feature spec
+            upstream_feature = self.parent_features_by_key.get(feature_dep.feature)
+            if not upstream_feature:
+                continue
+
+            # Create resolution context
+            context = FieldsMappingResolutionContext(
+                field_key=field.key, upstream_feature=upstream_feature
+            )
+
+            mapped_deps = feature_dep.fields_mapping.resolve_field_deps(context)
+
+            if mapped_deps:
+                # Add a single FieldDep with all mapped fields
+                field_deps.append(
+                    FieldDep(feature=feature_dep.feature, fields=list(mapped_deps))
+                )
+            # Note: If mapped_deps is empty (e.g., feature excluded),
+            # we don't add any dependency for this feature
+
+        if field_deps:
+            return field_deps
+        else:
+            raise RuntimeError(
+                f"No upstream fields found for field {field} of feature {self.feature}. Please either specify explicit dependencies on it's FieldSpec or ensure that at least one FeatureDep on the FeatureSpec has a valid field mapping."
+            )
 
     @cached_property
     def field_dependencies(
@@ -134,26 +200,22 @@ class FeaturePlan(FrozenBaseModel):
         for field in self.feature.fields:
             field_deps: dict[FeatureKey, list[FieldKey]] = {}
 
-            if field.deps == SpecialFieldDep.ALL:
-                # Depend on all upstream features and all their fields
-                for upstream_feature in self.deps or []:
-                    field_deps[upstream_feature.key] = [
-                        c.key for c in upstream_feature.fields
-                    ]
-            elif isinstance(field.deps, list):
-                # Specific dependencies defined
-                for field_dep in field.deps:
-                    feature_key = field_dep.feature
+            # Get resolved dependencies (combining automatic mapping and explicit deps)
+            resolved_deps = self._resolve_field_deps(field)
 
-                    if field_dep.fields == SpecialFieldDep.ALL:
-                        # All fields from this upstream feature
-                        upstream_feature_spec = self.parent_features_by_key[feature_key]
-                        field_deps[feature_key] = [
-                            c.key for c in upstream_feature_spec.fields
-                        ]
-                    elif isinstance(field_dep.fields, list):
-                        # Specific fields
-                        field_deps[feature_key] = field_dep.fields
+            # Specific dependencies defined
+            for field_dep in resolved_deps:
+                feature_key = field_dep.feature
+
+                if field_dep.fields == SpecialFieldDep.ALL:
+                    # All fields from this upstream feature
+                    upstream_feature_spec = self.parent_features_by_key[feature_key]
+                    field_deps[feature_key] = [
+                        c.key for c in upstream_feature_spec.fields
+                    ]
+                elif isinstance(field_dep.fields, list):
+                    # Specific fields
+                    field_deps[feature_key] = field_dep.fields
 
             result[field.key] = field_deps
 

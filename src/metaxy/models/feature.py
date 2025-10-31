@@ -283,6 +283,7 @@ class FeatureGraph:
             feature=feature,
             deps=[self.feature_specs_by_key[dep.feature] for dep in feature.deps or []]
             or None,
+            feature_deps=feature.deps,  # Pass the actual FeatureDep objects with field mappings
         )
 
     def get_field_version(self, key: "FQFieldKey") -> str:

@@ -1,0 +1,333 @@
+"""Field mapping system for automatic field dependency resolution.
+
+This module provides a flexible system for defining how fields map to upstream
+dependencies, supporting both automatic mapping patterns and explicit configurations.
+"""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import TYPE_CHECKING, Literal
+
+from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import Field as PydanticField
+from typing_extensions import Self
+
+from metaxy.models.types import FeatureKey, FieldKey
+
+if TYPE_CHECKING:
+    from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
+
+
+class FieldsMappingType(str, Enum):
+    """Type of fields mapping between a field key and the upstream field keys."""
+
+    DEFAULT = "default"
+    SPECIFIC = "specific"
+    ALL = "all"
+    NONE = "none"
+
+
+class FieldsMappingResolutionContext(BaseModel):
+    """Context for resolving field mappings.
+
+    This contains all the information needed to resolve field dependencies
+    including the upstream feature being mapped against.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    field_key: FieldKey
+    """The downstream field key being resolved."""
+
+    upstream_feature: BaseFeatureSpecWithIDColumns
+    """The upstream feature spec being resolved against."""
+
+    @property
+    def upstream_feature_key(self) -> FeatureKey:
+        """Get the upstream feature key."""
+        return self.upstream_feature.key
+
+    @property
+    def upstream_feature_fields(self) -> set[FieldKey]:
+        """Get the set of field keys from the upstream feature."""
+        return {field.key for field in self.upstream_feature.fields}
+
+
+class BaseFieldsMapping(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+    """Base class for field mapping configurations.
+
+    Field mappings define how a field automatically resolves its dependencies
+    based on upstream feature fields.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    @abstractmethod
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        """Resolve automatic field mapping to explicit FieldDep list.
+
+        This method should be overridden by concrete implementations.
+
+        Args:
+            context: The resolution context containing field key and upstream feature.
+
+        Returns:
+            Set of [FieldKey][metaxy.models.types.FieldKey] instances for matching fields
+        """
+        raise NotImplementedError
+
+
+class SpecificFieldsMapping(BaseFieldsMapping):
+    """Field mapping that explicitly depends on specific upstream fields.
+
+    Arguments:
+        type: Always "SPECIFIC" for discriminated union serialization
+        mapping: Mapping of downstream field keys to their corresponding upstream field keys.
+
+    Examples:
+        >>> # Explicitly depend on specific upstream fields
+        >>> SpecificFieldsMapping({""downstream": {"upstream_1", "upstream_2"}})
+
+        >>> # Or use the classmethod
+        >>> FieldsMapping.specific({"field1", "field2"})
+    """
+
+    type: Literal[FieldsMappingType.SPECIFIC] = FieldsMappingType.SPECIFIC
+    mapping: dict[FieldKey, set[FieldKey]]
+
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        desired_upstream_fields = self.mapping.get(context.field_key, set())
+        return desired_upstream_fields & context.upstream_feature_fields
+
+
+class AllFieldsMapping(BaseFieldsMapping):
+    """Field mapping that explicitly depends on all upstream features and all their fields.
+
+    Examples:
+        >>> # Explicitly depend on all upstream fields
+        >>> AllFieldsMapping()
+
+        >>> # Or use the classmethod
+        >>> FieldsMapping.all()
+    """
+
+    type: Literal[FieldsMappingType.ALL] = FieldsMappingType.ALL
+
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        return context.upstream_feature_fields
+
+
+class NoneFieldsMapping(BaseFieldsMapping):
+    """Field mapping that never matches any upstream fields."""
+
+    type: Literal[FieldsMappingType.NONE] = FieldsMappingType.NONE
+
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        return set()
+
+
+class DefaultFieldsMapping(BaseFieldsMapping):
+    """Default automatic field mapping configuration.
+
+    When used, automatically maps fields to matching upstream fields based on field keys.
+
+    Attributes:
+        type: Always "DEFAULT" for discriminated union serialization
+        match_suffix: If True, allows suffix matching (e.g., "french" matches "audio/french")
+        exclude_features: List of feature keys to exclude from auto-mapping
+        exclude_fields: List of field keys to exclude from auto-mapping
+
+    Examples:
+        >>> # Exact match only (default)
+        >>> DefaultFieldsMapping()
+
+        >>> # Enable suffix matching
+        >>> DefaultFieldsMapping(match_suffix=True)
+
+        >>> # Exclude specific upstream features
+        >>> DefaultFieldsMapping(exclude_features=[FeatureKey(["some", "feature"])])
+
+        >>> # Exclude specific fields from being auto-mapped
+        >>> DefaultFieldsMapping(exclude_fields=[FieldKey(["metadata"])])
+    """
+
+    type: Literal[FieldsMappingType.DEFAULT] = FieldsMappingType.DEFAULT
+    match_suffix: bool = False
+    exclude_features: list[FeatureKey] = PydanticField(default_factory=list)
+    exclude_fields: list[FieldKey] = PydanticField(default_factory=list)
+
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        # Check if this feature is excluded
+        if context.upstream_feature_key in self.exclude_features:
+            return set()
+
+        res = set()
+
+        for upstream_field_key in context.upstream_feature_fields:
+            # Skip excluded fields
+            if upstream_field_key in self.exclude_fields:
+                continue
+
+            # Check for exact match
+            if upstream_field_key == context.field_key:
+                res.add(upstream_field_key)
+            # Check for suffix match if enabled
+            elif self.match_suffix and self._is_suffix_match(
+                context.field_key, upstream_field_key
+            ):
+                res.add(upstream_field_key)
+
+        # If no fields matched, return ALL fields from this upstream feature
+        # (excluding any explicitly excluded fields)
+        if not res:
+            for upstream_field_key in context.upstream_feature_fields:
+                if upstream_field_key not in self.exclude_fields:
+                    res.add(upstream_field_key)
+
+        return res
+
+    def _is_suffix_match(
+        self, field_key: FieldKey, upstream_field_key: FieldKey
+    ) -> bool:
+        """Check if field_key is a suffix of upstream_field_key.
+
+        For hierarchical keys like "audio/french", this checks if "french"
+        matches the suffix.
+
+        Args:
+            field_key: The field key for which to resolve dependencies.
+            upstream_fields_by_feature_key: Mapping of upstream feature keys to their fields.
+
+        Returns:
+            True if field_key is a suffix of upstream_field_key
+        """
+        # For single-part keys, check if it's the last part of a multi-part key
+        if len(field_key.parts) == 1 and len(upstream_field_key.parts) > 1:
+            return field_key.parts[0] == upstream_field_key.parts[-1]
+
+        # For multi-part keys, check if all parts match as suffix
+        if len(field_key.parts) <= len(upstream_field_key.parts):
+            return upstream_field_key.parts[-len(field_key.parts) :] == field_key.parts
+
+        return False
+
+
+class FieldsMapping(BaseModel):
+    """Base class for field mapping configurations.
+
+    Field mappings define how a field automatically resolves its dependencies
+    based on upstream feature fields. This is separate from explicit field
+    dependencies which are defined directly.
+    """
+
+    model_config = ConfigDict(frozen=True)
+    # mapping: BaseFieldsMapping
+    mapping: (
+        AllFieldsMapping
+        | SpecificFieldsMapping
+        | NoneFieldsMapping
+        | DefaultFieldsMapping
+    ) = PydanticField(..., discriminator="type")
+
+    def resolve_field_deps(
+        self,
+        context: FieldsMappingResolutionContext,
+    ) -> set[FieldKey]:
+        """Resolve field dependencies based on upstream feature fields.
+
+        Invokes the provided mapping to resolve dependencies.
+
+        Args:
+            context: The resolution context containing field key and upstream feature.
+
+        Returns:
+            Set of [FieldKey][metaxy.models.types.FieldKey] instances for matching fields
+        """
+        return self.mapping.resolve_field_deps(context)
+
+    @classmethod
+    def default(
+        cls,
+        *,
+        match_suffix: bool = False,
+        exclude_features: list[FeatureKey] | None = None,
+        exclude_fields: list[FieldKey] | None = None,
+    ) -> Self:
+        """Create a default field mapping configuration.
+
+        Args:
+            match_suffix: If True, allows suffix matching (e.g., "french" matches "audio/french")
+            exclude_features: List of feature keys to exclude from auto-mapping
+            exclude_fields: List of field keys to exclude from auto-mapping
+
+        Returns:
+            Configured FieldsMapping instance.
+        """
+        return cls(
+            mapping=DefaultFieldsMapping(
+                match_suffix=match_suffix,
+                exclude_features=exclude_features or [],
+                exclude_fields=exclude_fields or [],
+            )
+        )
+
+    @classmethod
+    def specific(cls, mapping: dict[FieldKey, set[FieldKey]]) -> Self:
+        """Create a field mapping that maps downstream field keys into specific upstream field keys.
+
+        Args:
+            mapping: Mapping of downstream field keys to sets of upstream field keys
+
+        Returns:
+            Configured FieldsMapping instance.
+        """
+        return cls(mapping=SpecificFieldsMapping(mapping=mapping))
+
+    @classmethod
+    def all(cls) -> Self:
+        """Create a field mapping that explicitly depends on all upstream fields.
+
+        Returns:
+            Configured FieldsMapping instance.
+
+        Examples:
+            >>> # Use in field specifications
+            >>> FieldSpec(
+            ...     key="combined",
+            ...     fields_mapping=FieldsMapping.all()
+            ... )
+        """
+        return cls(mapping=AllFieldsMapping())
+
+    @classmethod
+    def none(cls) -> Self:
+        """Create a field mapping that explicitly depends on no upstream fields.
+
+        This is typically useful when explicitly defining [FieldSpec.deps][metaxy.models.field.FieldSpec.deps] instead.
+
+        Returns:
+            Configured FieldsMapping instance.
+        """
+        return cls(mapping=NoneFieldsMapping())
+
+
+FieldsMappingAdapter = TypeAdapter(
+    AllFieldsMapping | SpecificFieldsMapping | NoneFieldsMapping | DefaultFieldsMapping
+)
