@@ -194,6 +194,8 @@ jobs:
   check:
     if: always()
     runs-on: depot-ubuntu-latest
+    permissions:
+      contents: read
     needs:
       - test
       - lint
