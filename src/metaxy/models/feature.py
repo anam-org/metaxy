@@ -18,8 +18,8 @@ from metaxy.models.feature_spec import (
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
+from metaxy.utils.code_version_descriptor import _CodeVersionDescriptor
 from metaxy.utils.hashing import truncate_hash
-from metaxy.utils.typing import _CodeVersionDescriptor
 
 if TYPE_CHECKING:
     import narwhals as nw
