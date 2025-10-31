@@ -869,7 +869,7 @@
 
 
 <h1 id="metaxy">Metaxy 🌌<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h1>
-<p>Metaxy is a feature metadata management system for ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.</p>
+<p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.</p>
 <div class="admonition warning">
 <p class="admonition-title">Giga Alpha</p>
 <p>This project is as raw as a steak still saying ‘moo.’</p>
@@ -878,56 +878,48 @@
 <ul>
 <li>
 <p><strong>🧩 composable</strong> --- bring your own everything!</p>
-</li>
-<li>
-<p>supports DuckDB, ClickHouse, and <strong>20+ databases</strong> via <a href="https://ibis-project.org/">Ibis</a></p>
-</li>
+<ul>
+<li>supports DuckDB, ClickHouse, and <strong>20+ databases</strong> via <a href="https://ibis-project.org/">Ibis</a></li>
 <li>supports <strong>lakehouse storage</strong> formats such as DeltaLake or DuckLake</li>
 <li>is <strong>agnostic to tabular compute engines</strong>: Polars, Spark, Pandas, and databases thanks to <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a></li>
-<li>
-<p>we totally don't care how is the multi-modal <strong>data</strong> produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata</p>
+<li>we totally don't care how is the multi-modal <strong>data</strong> produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata</li>
+</ul>
 </li>
 <li>
 <p><strong>🤸 flexible</strong> to work around restrictions consciously:</p>
-</li>
-<li>
-<p><a href="learn/feature-definitions/">features</a> are defined as <a href="https://docs.pydantic.dev/latest/">Pydantic</a> models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY</p>
-</li>
-<li>
-<p>has a <strong>migrations system</strong> to compensate for reconciling data versions and metadata when computations are not desired</p>
+<ul>
+<li><a href="learn/feature-definitions/">features</a> are defined as <a href="https://docs.pydantic.dev/latest/">Pydantic</a> models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY</li>
+<li>has a <strong>migrations system</strong> to compensate for reconciling data versions and metadata when computations are not desired</li>
+</ul>
 </li>
 <li>
 <p><strong>🪨 rock solid</strong> when it matters:</p>
-</li>
-<li>
-<p><a href="learn/data-versioning/">data versioning</a> is guaranteed to be <strong>consistent across DBs or in-memory</strong> compute engines. We really have tested this very well!</p>
-</li>
+<ul>
+<li><a href="learn/data-versioning/">data versioning</a> is guaranteed to be <strong>consistent across DBs or in-memory</strong> compute engines. We really have tested this very well!</li>
 <li>changes to topology, feature versioning, or individual samples <strong>ruthlessly propagate downstream</strong></li>
 <li>unique <a href="learn/feature-definitions/#field-level-dependencies">field-level dependency system</a> prevents unnecessary recomputations for features that depend on partial data</li>
-<li>
-<p>metadata is <strong>append-only</strong> to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).</p>
+<li>metadata is <strong>append-only</strong> to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).</li>
+</ul>
 </li>
 <li>
 <p><strong>📈 scalable</strong>:</p>
-</li>
-<li>
-<p>supports <strong>feature organization and discovery</strong> patterns such as packaging entry points. This enables collaboration across teams and projects.</p>
-</li>
-<li>
-<p>is built with <strong>performance</strong> in mind: all operations default to <strong>run in the DB</strong>, Metaxy does not stand in the way of metadata flow</p>
+<ul>
+<li>supports <strong>feature organization and discovery</strong> patterns such as packaging entry points. This enables collaboration across teams and projects.</li>
+<li>is built with <strong>performance</strong> in mind: all operations default to <strong>run in the DB</strong>, Metaxy does not stand in the way of metadata flow</li>
+</ul>
 </li>
 <li>
 <p><strong>🧑‍💻 dev friendly</strong>:</p>
-</li>
-<li>
-<p>clean, <a href="learn/feature-definitions/#syntactic-sugar">intuitive Python API</a> that stays out of your way when you don't need it</p>
-</li>
+<ul>
+<li>clean, <a href="learn/feature-definitions/#syntactic-sugar">intuitive Python API</a> that stays out of your way when you don't need it</li>
 <li><a href="learn/feature-discovery/">feature discovery</a> system for effortless dependency management</li>
 <li>comprehensive <strong>type hints</strong> and Pydantic integration for excellent IDE support</li>
 <li>first-class support for <strong>local development, testing, preview environments, CI/CD</strong></li>
 <li><a href="reference/cli/">CLI</a> tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats</li>
 <li>integrations with popular tools such as <a href="learn/integrations/sqlmodel/">SQLModel</a>, Dagster, and Ray.</li>
 <li><a href="learn/testing/">testing helpers</a> that you're going to appreciate</li>
+</ul>
+</li>
 </ul>
 <h2 id="feature-dependencies">Feature Dependencies<a class="headerlink" href="#feature-dependencies" title="Permanent link">&para;</a></h2>
 <p>Features form a DAG where each feature declares its upstream dependencies. Consider an video processing pipeline:</p>
@@ -949,7 +941,7 @@
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">Feature</span><span class="p">,</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="n">key</span><span class="o">=</span><span class="s2">&quot;voice_detection&quot;</span><span class="p">,</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FeatureDep</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">Video</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">key</span><span class="p">)],</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FeatureDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">Video</span><span class="p">)],</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>    <span class="p">),</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="p">):</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to the voice detection json file&quot;</span><span class="p">)</span>
