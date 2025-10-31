@@ -1,6 +1,4 @@
 import json
-from collections.abc import Sequence
-from types import MappingProxyType
 
 import pytest
 

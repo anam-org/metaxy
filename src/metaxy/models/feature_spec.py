@@ -4,7 +4,6 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -281,18 +280,16 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         if "metadata" in values and values["metadata"] is None:
             values.pop("metadata", None)
         elif "metadata" in values:
+            metadata_value = values["metadata"]
+            if not isinstance(metadata_value, Mapping):
+                raise ValueError("metadata must be a mapping")
             try:
-                json.dumps(_thaw_metadata(values["metadata"]))
+                json.dumps(metadata_value)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     "metadata must be JSON-serializable. Found non-serializable value"
                 ) from exc
         return values
-
-    @pydantic.model_validator(mode="after")
-    def _freeze_metadata_field(self) -> BaseFeatureSpec[IDColumnsT]:
-        object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
-        return self
 
     @overload
     def __init__(
