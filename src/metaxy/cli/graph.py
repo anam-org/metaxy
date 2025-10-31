@@ -3,19 +3,17 @@
 from typing import Annotated, Literal
 
 import cyclopts
-from rich.console import Console
 from rich.table import Table
 
+from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
-
-# Rich console for formatted output
-console = Console()
 
 # Graph subcommand app
 app = cyclopts.App(
     name="graph",  # pyrefly: ignore[unexpected-keyword]
     help="Manage feature graphs",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 
@@ -82,6 +80,9 @@ def push(
         else:
             console.print("[blue]ℹ[/blue] Snapshot already recorded (no changes)")
             console.print(f"  Snapshot version: {result.snapshot_version}")
+
+        # Always output the snapshot version to stdout (for scripting)
+        data_console.print(result.snapshot_version)
 
 
 @app.command()
@@ -601,10 +602,6 @@ def render(
             console.print(f"[red]✗[/red] Failed to write to file: {e}")
             raise SystemExit(1)
     else:
-        # Print to stdout
-        # For terminal/dag formats, the output already contains ANSI codes from Rich
-        # so we print directly to avoid double-escaping
-        if format in ("terminal", "dag"):
-            print(rendered)
-        else:
-            console.print(rendered)
+        # Print to stdout using data_console
+        # Rendered graph output is data that users might pipe/redirect
+        data_console.print(rendered)
