@@ -35,7 +35,7 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
         calculator = DuckDBProvenanceByFieldCalculator(
             backend=backend,
             extensions=["hashfuncs"]
-            )
+        )
         # Extensions are now loaded and xxHash64 is available
         ```
     """
@@ -43,7 +43,7 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
     def __init__(
         self,
         backend: "ibis.BaseBackend",
-        extensions: "Sequence[ExtensionInput] | None" = None,
+        extensions: Sequence["ExtensionInput"] | None = None,
     ):
         """Initialize DuckDB calculator and load extensions.
 
@@ -60,7 +60,7 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
             ```
         """
         self._backend = backend
-        self.extensions = list(extensions or [])
+        self.extensions = extensions or []
 
         # Load extensions immediately (lazy at calculator creation time)
         self._load_extensions()

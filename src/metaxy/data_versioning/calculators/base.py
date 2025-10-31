@@ -47,7 +47,6 @@ class ProvenanceByFieldCalculator(ABC):
             # True
             ```
         """
-        pass
 
     @property
     @abstractmethod
