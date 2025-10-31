@@ -4,15 +4,18 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy.config import MetaxyConfig
-from metaxy.models.feature import Feature, MetaxyMeta
-from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.feature import BaseFeature, MetaxyMeta
+from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns, IDColumns
+
+if TYPE_CHECKING:
+    pass
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -33,13 +36,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
     Example:
         >>> from metaxy.integrations.sqlmodel import SQLModelFeature
-        >>> from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
+        >>> from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
         >>> from sqlmodel import Field
         >>>
         >>> class MyFeature(
         ...     SQLModelFeature,
         ...     table=True,
-        ...     spec=FeatureSpec(
+        ...     spec=BaseFeatureSpec(
         ...         key=FeatureKey(["my", "feature"]),
         ...         deps=None,
         ...         fields=[
@@ -62,7 +65,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
-        spec: FeatureSpec | None = None,
+        spec: BaseFeatureSpecWithIDColumns | None = None,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Feature class.
@@ -71,7 +74,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             cls_name: Name of the class being created
             bases: Base classes
             namespace: Class namespace (attributes and methods)
-            spec: Metaxy FeatureSpec (required for concrete features)
+            spec: Metaxy BaseFeatureSpec (required for concrete features)
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -103,7 +106,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     @staticmethod
     def _validate_id_columns_not_server_defined(
         new_class: type[Any],
-        spec: FeatureSpec,
+        spec: BaseFeatureSpecWithIDColumns,
     ) -> None:
         """Validate that primary key id_columns are not autoincrement.
 
@@ -112,7 +115,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         Args:
             new_class: The newly created SQLModel class
-            spec: The FeatureSpec containing id_columns definition
+            spec: The BaseFeatureSpec containing id_columns definition
 
         Raises:
             ValueError: If any id_column is an autoincrement primary key
@@ -153,8 +156,9 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 )
 
 
-# pyright: reportIncompatibleMethodOverride=false, reportIncompatibleVariableOverride=false
-class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=None):  # type: ignore[misc]
+class SQLModelFeature(  # pyright: ignore[reportUnsafeMultipleInheritance, reportIncompatibleMethodOverride]
+    SQLModel, BaseFeature[IDColumns], metaclass=SQLModelFeatureMeta, spec=None
+):  # type: ignore[misc]
     """Base class for features that are also SQLModel tables.
 
     Use this as a base class when you want to create Metaxy features
@@ -173,13 +177,13 @@ class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=Non
 
     Example:
         >>> from metaxy.integrations.sqlmodel import SQLModelFeature
-        >>> from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
+        >>> from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
         >>> from sqlmodel import Field
         >>>
         >>> class VideoFeature(
         ...     SQLModelFeature,
         ...     table=True,
-        ...     spec=FeatureSpec(
+        ...     spec=BaseFeatureSpec(
         ...         key=FeatureKey(["video"]),
         ...         deps=None,  # Root feature
         ...         fields=[
@@ -204,11 +208,6 @@ class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=Non
     # SQLModel instances need to be mutable for ORM operations
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
 
-    # System-managed metadata fields - these are optional and populated by Metaxy
-    # The metadata store will populate these when reading/writing data
-    # Users can override these definitions in subclasses if they need different constraints
-    sample_uid: str | None = Field(default=None, nullable=True)
-
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
     metaxy_data_version: str | None = Field(
         default=None,
@@ -230,7 +229,7 @@ class SQLModelFeature(SQLModel, Feature, metaclass=SQLModelFeatureMeta, spec=Non
     )
 
     # All Feature class methods and attributes are inherited from Feature base class:
-    # - spec: ClassVar[FeatureSpec]
+    # - spec: ClassVar[BaseFeatureSpec]
     # - graph: ClassVar[FeatureGraph]
     # - feature_version() -> str
     # - data_version() -> dict[str, str]

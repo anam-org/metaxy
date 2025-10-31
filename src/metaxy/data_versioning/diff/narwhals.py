@@ -3,6 +3,7 @@
 Unified diff resolver that works with any backend (Polars, Ibis/SQL) through Narwhals.
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -36,7 +37,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         self,
         target_versions: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
-        id_columns: list[str],
+        id_columns: Sequence[str],
     ) -> LazyDiffResult:
         """Find all changes between target and current.
 
@@ -49,6 +50,8 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         Returns:
             LazyDiffResult with three lazy Narwhals frames (caller materializes if needed)
         """
+        id_columns = list(id_columns)
+
         # id_columns must be explicitly provided from the feature spec
         if not id_columns:
             raise ValueError(

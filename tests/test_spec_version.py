@@ -1,4 +1,4 @@
-"""Tests for FeatureSpec.feature_spec_version property."""
+"""Tests for TestingFeatureSpec.feature_spec_version property."""
 
 import hashlib
 import json
@@ -8,15 +8,15 @@ from syrupy.assertion import SnapshotAssertion
 from metaxy import (
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 
 
 def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None:
     """Test that feature_spec_version is deterministic."""
-    spec = FeatureSpec(
+    spec = TestingFeatureSpec(
         key=FeatureKey(["test", "feature"]),
         deps=None,
         fields=[
@@ -45,7 +45,7 @@ def test_feature_spec_version_includes_all_properties(
 ) -> None:
     """Test that feature_spec_version includes all specification properties."""
     # Create a complex spec with all properties
-    spec = FeatureSpec(
+    spec = TestingFeatureSpec(
         key=FeatureKey(["complex", "feature"]),
         deps=[
             FeatureDep(
@@ -75,10 +75,63 @@ def test_feature_spec_version_includes_all_properties(
     assert version == snapshot
 
 
+def test_feature_spec_version_changes_with_any_property() -> None:
+    """Test that feature_spec_version changes when any property changes."""
+    base_spec = TestingFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deps=None,
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
+        ],
+    )
+    base_version = base_spec.feature_spec_version
+
+    # Change key
+    spec_key_changed = TestingFeatureSpec(
+        key=FeatureKey(["changed", "feature"]),  # Changed!
+        deps=None,
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
+        ],
+    )
+    assert spec_key_changed.feature_spec_version != base_version
+
+    # Add deps
+    spec_deps_added = TestingFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # Added!
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
+        ],
+    )
+    assert spec_deps_added.feature_spec_version != base_version
+
+    # Change field code_version
+    spec_field_changed = TestingFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deps=None,
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+        ],
+    )
+    assert spec_field_changed.feature_spec_version != base_version
+
+    # Add field
+    spec_field_added = TestingFeatureSpec(
+        key=FeatureKey(["base", "feature"]),
+        deps=None,
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["new_field"]), code_version=1),  # Added!
+        ],
+    )
+    assert spec_field_added.feature_spec_version != base_version
+
+
 def test_feature_spec_version_consistent_ordering() -> None:
     """Test that feature_spec_version is consistent regardless of field order."""
     # Create specs with fields in different order
-    spec1 = FeatureSpec(
+    spec1 = TestingFeatureSpec(
         key=FeatureKey(["test", "ordering"]),
         deps=None,
         fields=[
@@ -87,7 +140,7 @@ def test_feature_spec_version_consistent_ordering() -> None:
         ],
     )
 
-    spec2 = FeatureSpec(
+    spec2 = TestingFeatureSpec(
         key=FeatureKey(["test", "ordering"]),
         deps=None,
         fields=[
@@ -101,7 +154,7 @@ def test_feature_spec_version_consistent_ordering() -> None:
     assert spec1.feature_spec_version != spec2.feature_spec_version
 
     # But creating the same spec multiple times should be deterministic
-    spec3 = FeatureSpec(
+    spec3 = TestingFeatureSpec(
         key=FeatureKey(["test", "ordering"]),
         deps=None,
         fields=[
@@ -114,7 +167,7 @@ def test_feature_spec_version_consistent_ordering() -> None:
 
 def test_feature_spec_version_manual_verification() -> None:
     """Manually verify the feature_spec_version computation."""
-    spec = FeatureSpec(
+    spec = TestingFeatureSpec(
         key=FeatureKey(["manual", "test"]),
         deps=None,
         fields=[
@@ -138,7 +191,7 @@ def test_feature_spec_version_with_column_selection_and_rename(
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test feature_spec_version with column selection and renaming in deps."""
-    spec = FeatureSpec(
+    spec = TestingFeatureSpec(
         key=FeatureKey(["test", "columns"]),
         deps=[
             FeatureDep(
@@ -162,7 +215,7 @@ def test_feature_spec_version_with_column_selection_and_rename(
     assert version == snapshot
 
     # Changing column selection should change the hash
-    spec_different_columns = FeatureSpec(
+    spec_different_columns = TestingFeatureSpec(
         key=FeatureKey(["test", "columns"]),
         deps=[
             FeatureDep(
@@ -178,7 +231,7 @@ def test_feature_spec_version_with_column_selection_and_rename(
     assert spec_different_columns.feature_spec_version != version
 
     # Changing rename mapping should change the hash
-    spec_different_rename = FeatureSpec(
+    spec_different_rename = TestingFeatureSpec(
         key=FeatureKey(["test", "columns"]),
         deps=[
             FeatureDep(
@@ -204,7 +257,7 @@ def test_feature_feature_spec_version_classmethod() -> None:
 
         class TestFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "classmethod"]),
                 deps=None,
                 fields=[
@@ -218,7 +271,7 @@ def test_feature_feature_spec_version_classmethod() -> None:
         classmethod_version = TestFeature.feature_spec_version()
 
         # Get feature_spec_version directly from spec
-        direct_version = TestFeature.spec.feature_spec_version
+        direct_version = TestFeature.spec().feature_spec_version
 
         # They should be identical
         assert classmethod_version == direct_version
@@ -238,7 +291,7 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
 
         class SnapshotFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["snapshot", "test"]),
                 deps=None,
                 fields=[
@@ -262,7 +315,7 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
         # feature_spec_version should match the Feature's feature_spec_version
         assert (
             feature_data["feature_spec_version"]
-            == SnapshotFeature.spec.feature_spec_version
+            == SnapshotFeature.spec().feature_spec_version
         )
 
         # feature_spec_version should be different from feature_version
@@ -286,7 +339,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
         class RecordedFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["recorded", "feature"]),
                 deps=None,
                 fields=[
@@ -324,7 +377,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
             # feature_spec_version should match the Feature's feature_spec_version
             assert (
                 feature_row["feature_spec_version"]
-                == RecordedFeature.spec.feature_spec_version
+                == RecordedFeature.spec().feature_spec_version
             )
 
             # feature_spec_version should be different from feature_version
@@ -350,7 +403,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
 
         class IdempotentFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["idempotent", "test"]),
                 deps=None,
                 fields=[
@@ -394,7 +447,7 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
     """Test that feature_spec_version is always different from feature_version.
 
     These two hashes serve different purposes and use different computation methods:
-    - feature_spec_version: Direct JSON serialization of FeatureSpec (all properties)
+    - feature_spec_version: Direct JSON serialization of TestingFeatureSpec (all properties)
     - feature_version: Graph-based computation including dependency chains
     """
     from metaxy import Feature, FeatureGraph
@@ -405,7 +458,7 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
         # Test with root feature (no deps)
         class RootFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["root"]),
                 deps=None,
                 fields=[
@@ -418,7 +471,7 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
         # Test with downstream feature (with deps)
         class DownstreamFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(key=FeatureKey(["root"]))],
                 fields=[
@@ -450,7 +503,7 @@ def test_feature_spec_version_with_multiple_complex_deps(
     snapshot: SnapshotAssertion,
 ) -> None:
     """Test feature_spec_version with multiple complex dependencies."""
-    spec = FeatureSpec(
+    spec = TestingFeatureSpec(
         key=FeatureKey(["complex", "multi", "dep"]),
         deps=[
             FeatureDep(
@@ -486,7 +539,7 @@ def test_feature_spec_version_with_multiple_complex_deps(
     assert version == snapshot
 
     # Verify the spec is deterministic
-    spec_copy = FeatureSpec(
+    spec_copy = TestingFeatureSpec(
         key=FeatureKey(["complex", "multi", "dep"]),
         deps=[
             FeatureDep(

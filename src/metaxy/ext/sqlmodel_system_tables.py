@@ -41,7 +41,7 @@ class FeatureVersionsTable(SQLModel, table=True):
 
     # Version and timestamp
     feature_version: str = Field(index=True)
-    feature_spec_version: str = Field(index=True)  # Hash of complete FeatureSpec
+    feature_spec_version: str = Field(index=True)  # Hash of complete BaseFeatureSpec
     recorded_at: datetime = Field(index=True)
 
     # Serialized feature specification and class path

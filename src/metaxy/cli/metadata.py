@@ -8,7 +8,8 @@ from rich.console import Console
 from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
-    from metaxy.models.feature import Feature
+    from metaxy.models.feature import BaseFeature
+    from metaxy.models.feature_spec import IDColumns
 
 # Rich console for formatted output
 console = Console()
@@ -115,7 +116,7 @@ def copy(
         raise SystemExit(1)
 
     # Parse feature keys
-    feature_keys: list[FeatureKey | type[Feature]] | None = None
+    feature_keys: list[FeatureKey | type[BaseFeature[IDColumns]]] | None = None
     if features:
         feature_keys = []
         for feature_str in features:

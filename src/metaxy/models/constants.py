@@ -1,7 +1,7 @@
 """Shared constants for system column names."""
 
 # Essential system columns that must always be preserved for joining/versioning
-# Note: ID columns are defined by FeatureSpec.id_columns (default: ["sample_uid"])
+# Note: ID columns are defined by BaseFeatureSpec.id_columns() (default: ["sample_uid"])
 # data_version is always required for versioning
 ESSENTIAL_SYSTEM_COLUMNS = frozenset(
     {

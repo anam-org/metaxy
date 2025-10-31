@@ -5,6 +5,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: '\.ambr$'  # Exclude syrupy snapshot files
       - id: end-of-file-fixer
         exclude: ^.basedpyright/baseline\.json$
       - id: check-yaml

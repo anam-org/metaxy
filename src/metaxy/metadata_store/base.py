@@ -33,7 +33,8 @@ from metaxy.metadata_store.system_tables import (
     _suppress_feature_version_warning,
     allow_feature_version_override,
 )
-from metaxy.models.feature import Feature, FeatureGraph
+from metaxy.models.feature import BaseFeature, FeatureGraph
+from metaxy.models.feature_spec import IDColumns
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
@@ -348,21 +349,25 @@ class MetadataStore(ABC):
         """Check if feature key is a system table."""
         return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
 
-    def _resolve_feature_key(self, feature: FeatureKey | type[Feature]) -> FeatureKey:
+    def _resolve_feature_key(
+        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+    ) -> FeatureKey:
         """Resolve a Feature class or FeatureKey to FeatureKey."""
         if isinstance(feature, FeatureKey):
             return feature
         else:
-            return feature.spec.key
+            return feature.spec().key
 
-    def _resolve_feature_plan(self, feature: FeatureKey | type[Feature]) -> FeaturePlan:
+    def _resolve_feature_plan(
+        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+    ) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
         if isinstance(feature, FeatureKey):
             # When given a FeatureKey, get the graph from the active context
             return FeatureGraph.get_active().get_feature_plan(feature)
         else:
             # When given a Feature class, use its bound graph
-            return feature.graph.get_feature_plan(feature.spec.key)
+            return feature.graph.get_feature_plan(feature.spec().key)
 
     # ========== Core CRUD Operations ==========
 
@@ -389,7 +394,9 @@ class MetadataStore(ABC):
         finally:
             self._allow_cross_project_writes = previous_value
 
-    def _validate_project_write(self, feature: FeatureKey | type[Feature]) -> None:
+    def _validate_project_write(
+        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+    ) -> None:
         """Validate that writing to a feature matches the expected project from config.
 
         Args:
@@ -450,7 +457,7 @@ class MetadataStore(ABC):
 
     def write_metadata(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         df: nw.DataFrame[Any] | pl.DataFrame,
     ) -> None:
         """
@@ -522,7 +529,7 @@ class MetadataStore(ABC):
                 )
         else:
             # Get current feature version and snapshot_version from code and add them
-            if isinstance(feature, type) and issubclass(feature, Feature):
+            if isinstance(feature, type) and issubclass(feature, BaseFeature):
                 current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
             else:
                 from metaxy.models.feature import FeatureGraph
@@ -597,7 +604,9 @@ class MetadataStore(ABC):
         """
         pass
 
-    def drop_feature_metadata(self, feature: FeatureKey | type[Feature]) -> None:
+    def drop_feature_metadata(
+        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+    ) -> None:
         """Drop all metadata for a feature.
 
         This removes all stored metadata for the specified feature from the store.
@@ -711,7 +720,7 @@ class MetadataStore(ABC):
             for feature_key_str in sorted(snapshot_dict.keys()):
                 feature_data = snapshot_dict[feature_key_str]
 
-                # Serialize complete FeatureSpec
+                # Serialize complete BaseFeatureSpec
                 feature_spec_json = json.dumps(feature_data["feature_spec"])
 
                 # Always record all features for this snapshot (don't skip based on feature_version alone)
@@ -763,7 +772,7 @@ class MetadataStore(ABC):
             for feature_key_str in features_with_spec_changes:
                 feature_data = snapshot_dict[feature_key_str]
 
-                # Serialize complete FeatureSpec
+                # Serialize complete BaseFeatureSpec
                 feature_spec_json = json.dumps(feature_data["feature_spec"])
 
                 records.append(
@@ -808,7 +817,7 @@ class MetadataStore(ABC):
     @abstractmethod
     def _read_metadata_native(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -830,7 +839,7 @@ class MetadataStore(ABC):
 
     def read_metadata(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -872,7 +881,7 @@ class MetadataStore(ABC):
         feature_version_filter = feature_version
         if current_only and not is_system_table:
             # Get current feature_version
-            if isinstance(feature, type) and issubclass(feature, Feature):
+            if isinstance(feature, type) and issubclass(feature, BaseFeature):
                 feature_version_filter = feature.feature_version()  # type: ignore[attr-defined]
             else:
                 from metaxy.models.feature import FeatureGraph
@@ -925,7 +934,7 @@ class MetadataStore(ABC):
 
     def has_feature(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
         check_fallback: bool = False,
     ) -> bool:
@@ -1133,7 +1142,7 @@ class MetadataStore(ABC):
     def copy_metadata(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[Feature]] | None = None,
+        features: list[FeatureKey | type[BaseFeature[IDColumns]]] | None = None,
         *,
         from_snapshot: str | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1234,7 +1243,7 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[Feature]] | None,
+        features: list[FeatureKey | type[BaseFeature[IDColumns]]] | None,
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
@@ -1257,7 +1266,7 @@ class MetadataStore(ABC):
                     features_to_copy.append(item)
                 else:
                     # Must be Feature class
-                    features_to_copy.append(item.spec.key)
+                    features_to_copy.append(item.spec().key)
             logger.info(f"Copying {len(features_to_copy)} specified features")
 
         # Determine from_snapshot
@@ -1440,7 +1449,7 @@ class MetadataStore(ABC):
 
     def read_upstream_metadata(
         self,
-        feature: FeatureKey | type[Feature],
+        feature: FeatureKey | type[BaseFeature[IDColumns]],
         field: FieldKey | None = None,
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1557,7 +1566,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[Feature],
+        feature: type[BaseFeature[IDColumns]],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1568,7 +1577,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[Feature],
+        feature: type[BaseFeature[IDColumns]],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1578,7 +1587,7 @@ class MetadataStore(ABC):
 
     def resolve_update(
         self,
-        feature: type[Feature],
+        feature: type[BaseFeature[IDColumns]],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1651,7 +1660,7 @@ class MetadataStore(ABC):
         """
         import narwhals as nw
 
-        plan = feature.graph.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec().key)
 
         # Escape hatch: if samples provided, use them directly (skip join/calculation)
         if samples is not None:
@@ -1676,7 +1685,7 @@ class MetadataStore(ABC):
                 # User provided Polars samples but store uses native (SQL) backend
                 # Need to materialize current metadata to Polars for compatibility
                 logger.warning(
-                    f"Feature {feature.spec.key}: samples parameter is Polars-backed but store uses native SQL backend. "
+                    f"Feature {feature.spec().key}: samples parameter is Polars-backed but store uses native SQL backend. "
                     f"Materializing current metadata to Polars for diff comparison. "
                     f"For better performance, consider using samples with backend matching the store's backend."
                 )
@@ -1713,7 +1722,7 @@ class MetadataStore(ABC):
         # Root features without samples: error (samples required)
         if not plan.deps:
             raise ValueError(
-                f"Feature {feature.spec.key} has no upstream dependencies (root feature). "
+                f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
                 f"Must provide 'samples' parameter with sample_uid and data_version columns. "
                 f"Root features require manual data_version computation."
             )
@@ -1729,14 +1738,14 @@ class MetadataStore(ABC):
             # Some upstream in fallback stores - use Polars components
             return self._resolve_update_polars(feature, filters=filters, lazy=lazy)
 
-    def _check_upstream_location(self, feature: type[Feature]) -> str:
+    def _check_upstream_location(self, feature: type[BaseFeature[IDColumns]]) -> str:
         """Check if all upstream is in this store or in fallback stores.
 
         Returns:
             "all_local" if all upstream features are in this store
             "has_fallback" if any upstream is in fallback stores
         """
-        plan = feature.graph.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec().key)
 
         if not plan.deps:
             return "all_local"  # No dependencies
@@ -1749,7 +1758,7 @@ class MetadataStore(ABC):
 
     def _resolve_update_native(
         self,
-        feature: type[Feature],
+        feature: type[BaseFeature[IDColumns]],
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
@@ -1769,13 +1778,13 @@ class MetadataStore(ABC):
         import logging
 
         logger = logging.getLogger(__name__)
-        plan = feature.graph.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec().key)
 
         # Root features should be handled in resolve_update() with samples parameter
         # This method should only be called for features with upstream
         if not plan.deps:
             raise RuntimeError(
-                f"Internal error: _resolve_update_native called for root feature {feature.spec.key}. "
+                f"Internal error: _resolve_update_native called for root feature {feature.spec().key}. "
                 f"Root features should be handled in resolve_update() with samples parameter."
             )
 
@@ -1784,7 +1793,7 @@ class MetadataStore(ABC):
         if self._supports_native_components():
             joiner, calculator, diff_resolver = self._create_native_components()
             logger.debug(
-                f"Using native calculator for {feature.spec.key}: {calculator.__class__.__name__}"
+                f"Using native calculator for {feature.spec().key}: {calculator.__class__.__name__}"
             )
         else:
             # Store doesn't support native data version calculations - use Polars
@@ -1798,7 +1807,7 @@ class MetadataStore(ABC):
             calculator = PolarsDataVersionCalculator()
             diff_resolver = NarwhalsDiffResolver()
             logger.debug(
-                f"Using Polars components for {feature.spec.key} (native not supported)"
+                f"Using Polars components for {feature.spec().key} (native not supported)"
             )
 
         # Load upstream as Narwhals LazyFrames (stays lazy in SQL for native stores)
@@ -1832,7 +1841,7 @@ class MetadataStore(ABC):
         # For PolarsDataVersionCalculator: materializes to compute hashes in memory
         target_versions_nw = calculator.calculate_data_versions(
             joined_upstream=joined,
-            feature_spec=feature.spec,
+            feature_spec=feature.spec(),
             feature_plan=plan,
             upstream_column_mapping=mapping,
             hash_algorithm=self.hash_algorithm,
@@ -1852,7 +1861,7 @@ class MetadataStore(ABC):
 
     def _resolve_update_polars(
         self,
-        feature: type[Feature],
+        feature: type[BaseFeature[IDColumns]],
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
@@ -1879,7 +1888,7 @@ class MetadataStore(ABC):
         # Warn if native components are available and preferred but can't be used due to cross-store scenario
         if self._prefer_native and self._supports_native_components():
             logger.warning(
-                f"Feature {feature.spec.key} has upstream dependencies in fallback stores. "
+                f"Feature {feature.spec().key} has upstream dependencies in fallback stores. "
                 f"Falling back to in-memory Polars processing instead of native SQL execution. "
                 f"For better performance, ensure all upstream features are in the same store."
             )
@@ -1897,7 +1906,7 @@ class MetadataStore(ABC):
         narwhals_diff = NarwhalsDiffResolver()
 
         # Step 1: Join upstream using Narwhals
-        plan = feature.graph.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec().key)
         joined, mapping = feature.load_input(
             joiner=narwhals_joiner,
             upstream_refs=upstream_refs,
@@ -1921,7 +1930,7 @@ class MetadataStore(ABC):
 
         target_versions_nw = polars_calculator.calculate_data_versions(
             joined_upstream=joined_nw,
-            feature_spec=feature.spec,
+            feature_spec=feature.spec(),
             feature_plan=plan,
             upstream_column_mapping=mapping,
             hash_algorithm=self.hash_algorithm,

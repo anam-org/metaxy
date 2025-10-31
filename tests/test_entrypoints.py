@@ -11,9 +11,9 @@ from metaxy import (
     Feature,
     FeatureGraph,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy.entrypoints import (
     EntrypointLoadError,
@@ -51,7 +51,7 @@ def create_test_feature(name: str, key: list[str]) -> type[Feature]:
         name,
         (Feature,),
         {},
-        spec=FeatureSpec(
+        spec=TestingFeatureSpec(
             key=FeatureKey(key),
             deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -71,9 +71,9 @@ def test_load_module_entrypoint_basic(graph: FeatureGraph, tmp_path: Path):
 
     feature_module = module_dir / "feature1.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class TestFeature1(Feature, spec=FeatureSpec(
+class TestFeature1(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["test", "feature1"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -132,9 +132,9 @@ def test_load_module_entrypoint_uses_active_graph(tmp_path: Path):
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class ActiveRegistryFeature(Feature, spec=FeatureSpec(
+class ActiveRegistryFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["active", "test"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -169,9 +169,9 @@ def test_load_config_entrypoints_multiple_modules(graph: FeatureGraph, tmp_path:
     for i in range(3):
         feature_module = module_dir / f"feature{i}.py"
         feature_module.write_text(f"""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class Feature{i}(Feature, spec=FeatureSpec(
+class Feature{i}(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["multi", "feature{i}"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -230,7 +230,7 @@ def test_load_package_entrypoints_discovers_and_loads(graph: FeatureGraph):
 
             class PluginFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["plugin", "feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -280,7 +280,7 @@ def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
 
             class CustomFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["custom", "feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -332,9 +332,9 @@ def test_load_features_both_sources(graph: FeatureGraph, tmp_path: Path):
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class ConfigFeature(Feature, spec=FeatureSpec(
+class ConfigFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["config", "feature"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -355,7 +355,7 @@ class ConfigFeature(Feature, spec=FeatureSpec(
 
                 class PackageFeature(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["package", "feature"]),
                         deps=None,
                         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -395,9 +395,9 @@ def test_load_features_config_only(graph: FeatureGraph, tmp_path: Path):
 
     feature_module = module_dir / "feature.py"
     feature_module.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class ConfigOnlyFeature(Feature, spec=FeatureSpec(
+class ConfigOnlyFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["config_only", "feature"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -434,7 +434,7 @@ def test_load_features_packages_only(graph: FeatureGraph):
 
             class PackageOnlyFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["package_only", "feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
@@ -498,9 +498,9 @@ def test_duplicate_feature_key_raises_error(graph: FeatureGraph, tmp_path: Path)
 
     module1 = module_dir / "module1.py"
     module1.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class Feature1(Feature, spec=FeatureSpec(
+class Feature1(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -510,9 +510,9 @@ class Feature1(Feature, spec=FeatureSpec(
 
     module2 = module_dir / "module2.py"
     module2.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class Feature2(Feature, spec=FeatureSpec(
+class Feature2(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),  # Same key!
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -543,9 +543,9 @@ def test_entrypoints_with_dependencies(graph: FeatureGraph, tmp_path: Path):
     # Upstream feature
     upstream = module_dir / "upstream.py"
     upstream.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-class UpstreamFeature(Feature, spec=FeatureSpec(
+class UpstreamFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["deps", "upstream"]),
     deps=None,
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -556,9 +556,9 @@ class UpstreamFeature(Feature, spec=FeatureSpec(
     # Downstream feature
     downstream = module_dir / "downstream.py"
     downstream.write_text("""
-from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey, FeatureDep
+from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey, FeatureDep
 
-class DownstreamFeature(Feature, spec=FeatureSpec(
+class DownstreamFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["deps", "downstream"]),
     deps=[FeatureDep(key=FeatureKey(["deps", "upstream"]))],
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]

@@ -4,8 +4,8 @@ import pytest
 
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature_spec import TestingFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
@@ -26,8 +26,8 @@ def test_load_snapshot_data_computes_proper_field_versions():
     with graph.use():
         # Create parent feature with two fields with different code versions
         class ParentFeature(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["parent"]),
                 deps=None,
                 fields=[
@@ -89,8 +89,8 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails():
     with graph.use():
         # Create a feature defined in test scope (will not be importable)
         class TestFeature(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[
@@ -137,8 +137,8 @@ def test_field_key_normalization():
     with graph.use():
 
         class TestFeature(
-            Feature,
-            spec=FeatureSpec(
+            TestingFeature,
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test"]),
                 deps=None,
                 fields=[

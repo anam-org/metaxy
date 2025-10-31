@@ -5,9 +5,9 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 
 
@@ -23,7 +23,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
 
         class TestFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "comparison"]),
                 deps=None,
                 fields=[
@@ -34,7 +34,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
             pass
 
         # Get both versions
-        feature_spec_version = TestFeature.spec.feature_spec_version
+        feature_spec_version = TestFeature.spec().feature_spec_version
         feature_version = TestFeature.feature_version()
 
         # Both should be valid SHA256 hashes
@@ -53,10 +53,10 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     """Test that feature_spec_version will capture future metadata/tags when added.
 
     This test demonstrates that feature_spec_version automatically includes
-    any new fields added to FeatureSpec in the future.
+    any new fields added to TestingFeatureSpec in the future.
     """
     # Create two identical specs
-    spec1 = FeatureSpec(
+    spec1 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         deps=None,
         fields=[
@@ -64,7 +64,7 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
         ],
     )
 
-    spec2 = FeatureSpec(
+    spec2 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         deps=None,
         fields=[
@@ -76,7 +76,7 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     assert spec1.feature_spec_version == spec2.feature_spec_version
 
     # The feature_spec_version uses model_dump(mode="json") which will automatically
-    # include any future fields added to the FeatureSpec model
+    # include any future fields added to the TestingFeatureSpec model
     spec_dict = spec1.model_dump(mode="json")
 
     # Verify all current fields are included
@@ -96,7 +96,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         # Create upstream features
         class Upstream1(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "one"]),
                 deps=None,
                 fields=[
@@ -108,7 +108,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
         class Upstream2(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "two"]),
                 deps=None,
                 fields=[
@@ -121,7 +121,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         # Create downstream with complex deps
         class Downstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[
                     FeatureDep(
@@ -143,10 +143,10 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             pass
 
         # Get feature_spec_version
-        feature_spec_version = Downstream.spec.feature_spec_version
+        feature_spec_version = Downstream.spec().feature_spec_version
 
         # It should include all the complex dependency configuration
-        spec_dict = Downstream.spec.model_dump(mode="json")
+        spec_dict = Downstream.spec().model_dump(mode="json")
 
         # Verify deps are fully captured
         assert len(spec_dict["deps"]) == 2
@@ -156,11 +156,11 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         assert spec_dict["deps"][1]["rename"] is None
 
         # The feature_spec_version should be deterministic
-        assert feature_spec_version == Downstream.spec.feature_spec_version
+        assert feature_spec_version == Downstream.spec().feature_spec_version
 
         # Create an identical spec directly (not as a Feature class)
         # to verify determinism without registering another feature
-        identical_spec = FeatureSpec(
+        identical_spec = TestingFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
                 FeatureDep(

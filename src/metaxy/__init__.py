@@ -23,8 +23,20 @@ from metaxy.migrations import (
     SystemTableStorage,
     detect_migration,
 )
-from metaxy.models.feature import Feature, FeatureGraph, get_feature_by_key, graph
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.feature import (
+    BaseFeature,
+    Feature,
+    FeatureGraph,
+    TestingFeature,
+    get_feature_by_key,
+    graph,
+)
+from metaxy.models.feature_spec import (
+    BaseFeatureSpec,
+    FeatureDep,
+    FeatureSpec,
+    TestingFeatureSpec,
+)
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 
@@ -51,13 +63,17 @@ def init_metaxy(
 
 
 __all__ = [
-    "Feature",
+    "BaseFeature",
     "FeatureGraph",
+    "Feature",
+    "TestingFeature",
     "graph",
+    "FeatureSpec",
+    "TestingFeatureSpec",
     "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
-    "FeatureSpec",
+    "BaseFeatureSpec",
     "FieldDep",
     "FieldSpec",
     "SpecialFieldDep",

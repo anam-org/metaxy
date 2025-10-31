@@ -37,14 +37,14 @@ class Crop(
     Feature,
     spec=FeatureSpec(
         key=FeatureKey(["example", "crop"]),
-        deps=[FeatureDep(key=Video.spec.key)],
+        deps=[FeatureDep(key=Video.spec().key)],
         fields=[
             FieldSpec(
                 key=FieldKey(["audio"]),
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec.key,
+                        feature_key=Video.spec().key,
                         fields=[FieldKey(["audio"])],
                     )
                 ],
@@ -54,7 +54,7 @@ class Crop(
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec.key,
+                        feature_key=Video.spec().key,
                         fields=[FieldKey(["frames"])],
                     )
                 ],
@@ -71,7 +71,7 @@ class FaceDetection(
         key=FeatureKey(["example", "face_detection"]),
         deps=[
             FeatureDep(
-                key=Crop.spec.key,
+                key=Crop.spec().key,
             )
         ],
         fields=[
@@ -80,7 +80,7 @@ class FaceDetection(
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Crop.spec.key,
+                        feature_key=Crop.spec().key,
                         fields=[FieldKey(["frames"])],
                     )
                 ],
@@ -97,7 +97,7 @@ class SpeechToText(
         key=FeatureKey(["example", "stt"]),
         deps=[
             FeatureDep(
-                key=Video.spec.key,
+                key=Video.spec().key,
             )
         ],
         fields=[
@@ -106,7 +106,7 @@ class SpeechToText(
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec.key,
+                        feature_key=Video.spec().key,
                         fields=[FieldKey(["audio"])],
                     )
                 ],

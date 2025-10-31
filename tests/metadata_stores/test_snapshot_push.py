@@ -14,9 +14,9 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import FeatureGraph
@@ -58,7 +58,7 @@ def test_record_snapshot_first_time():
 
         class VideoFiles(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
@@ -105,7 +105,7 @@ def test_record_snapshot_metadata_only_changes():
 
         class Upstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -115,7 +115,7 @@ def test_record_snapshot_metadata_only_changes():
 
         class Downstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # No rename yet
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
@@ -146,7 +146,7 @@ def test_record_snapshot_metadata_only_changes():
 
                 class Upstream2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -156,7 +156,7 @@ def test_record_snapshot_metadata_only_changes():
 
                 class Downstream2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(
@@ -222,7 +222,7 @@ def test_record_snapshot_no_changes():
 
         class VideoFiles(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
@@ -266,7 +266,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureA(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -276,7 +276,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureB(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
@@ -286,7 +286,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureC(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
@@ -304,7 +304,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureA2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["feature_a"]),
                         deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -314,7 +314,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureB2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["feature_b"]),
                         deps=[
                             FeatureDep(
@@ -329,7 +329,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureC2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["feature_c"]),
                         deps=[
                             FeatureDep(
@@ -370,7 +370,7 @@ def test_record_snapshot_append_only_behavior():
 
         class Upstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -380,7 +380,7 @@ def test_record_snapshot_append_only_behavior():
 
         class MyFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 deps=[FeatureDep(key=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
@@ -413,7 +413,7 @@ def test_record_snapshot_append_only_behavior():
 
                 class Upstream2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -423,7 +423,7 @@ def test_record_snapshot_append_only_behavior():
 
                 class MyFeature2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         deps=[
                             FeatureDep(
@@ -490,7 +490,7 @@ def test_record_snapshot_computational_change():
 
         class MyFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -510,7 +510,7 @@ def test_record_snapshot_computational_change():
 
                 class MyFeature2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         deps=None,
                         fields=[
@@ -548,7 +548,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
         class Upstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -558,7 +558,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
         class Downstream(
             Feature,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(key=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
@@ -594,7 +594,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
                 class Upstream2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         deps=None,
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
@@ -604,7 +604,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
                 class Downstream2(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(

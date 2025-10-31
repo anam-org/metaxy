@@ -11,10 +11,10 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
@@ -39,7 +39,7 @@ def graph() -> Iterator[FeatureGraph]:
 
 class UpstreamFeatureA(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["upstream", "a"]),
         deps=None,
         fields=[
@@ -53,7 +53,7 @@ class UpstreamFeatureA(
 
 class UpstreamFeatureB(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["upstream", "b"]),
         deps=None,
         fields=[
@@ -66,7 +66,7 @@ class UpstreamFeatureB(
 
 class DownstreamFeature(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["downstream"]),
         deps=[
             FeatureDep(key=FeatureKey(["upstream", "a"])),

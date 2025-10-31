@@ -451,7 +451,7 @@ def test_graph_with_same_feature_key_different_projects() -> None:
     assert len(graph_y.features_by_key) == 1
 
     # Both should have the same feature key
-    assert FeatureInX.spec.key == FeatureInY.spec.key
+    assert FeatureInX.spec().key == FeatureInY.spec().key
 
     # But different projects
     assert FeatureInX.project == "project_x"

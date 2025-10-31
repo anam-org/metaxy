@@ -5,13 +5,13 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
-from metaxy import (
-    FeatureSpec,
-)
 from metaxy.config import MetaxyConfig
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import (
+    BaseFeatureSpecWithIDColumns,
+)
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 
@@ -32,15 +32,15 @@ class TempFeatureModule:
         # Add to sys.path so module can be imported
         sys.path.insert(0, self.temp_dir)
 
-    def write_features(self, feature_specs: dict[str, FeatureSpec]):
+    def write_features(self, feature_specs: dict[str, BaseFeatureSpecWithIDColumns]):
         """Write feature classes to the module file.
 
         Args:
-            feature_specs: Dict mapping class names to FeatureSpec objects
+            feature_specs: Dict mapping class names to BaseFeatureSpec objects
         """
         code_lines = [
             "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy import Feature, BaseFeatureSpec, TestingFeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
             "from metaxy.models.feature import FeatureGraph",
             "",
             "# Use a dedicated graph for this temp module",
@@ -51,7 +51,10 @@ class TempFeatureModule:
         for class_name, spec in feature_specs.items():
             # Generate the spec definition
             spec_dict = spec.model_dump(mode="python")
-            spec_repr = self._generate_spec_repr(spec_dict)
+            spec_class_name = spec.__class__.__name__
+            spec_repr = self._generate_spec_repr(
+                spec_dict, spec_class_name=spec_class_name
+            )
 
             code_lines.extend(
                 [
@@ -73,8 +76,15 @@ class TempFeatureModule:
         if self.module_name in sys.modules:
             importlib.reload(sys.modules[self.module_name])
 
-    def _generate_spec_repr(self, spec_dict: dict[str, Any]) -> str:
-        """Generate FeatureSpec constructor call from dict."""
+    def _generate_spec_repr(
+        self, spec_dict: dict[str, Any], spec_class_name: str = "BaseFeatureSpec"
+    ) -> str:
+        """Generate FeatureSpec constructor call from dict.
+
+        Args:
+            spec_dict: Dictionary representation of the spec
+            spec_class_name: Name of the spec class to use (e.g., "TestingFeatureSpec", "BaseFeatureSpec")
+        """
         # This is a simple representation - could be made more robust
         parts = []
 
@@ -125,7 +135,10 @@ class TempFeatureModule:
 
             parts.append(f"fields=[{', '.join(field_reprs)}]")
 
-        return f"FeatureSpec({', '.join(parts)})"
+        # Note: id_columns is handled by the concrete spec class (TestingFeatureSpec has default)
+        # so we don't need to include it here explicitly
+
+        return f"{spec_class_name}({', '.join(parts)})"
 
     @property
     def graph(self) -> FeatureGraph:
@@ -327,9 +340,9 @@ class TempMetaxyProject(MetaxyProject):
         >>> project = TempMetaxyProject(tmp_path)
         >>>
         >>> def features():
-        ...     from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+        ...     from metaxy import Feature, BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
         ...
-        ...     class MyFeature(Feature, spec=FeatureSpec(
+        ...     class MyFeature(Feature, spec=BaseFeatureSpec(
         ...         key=FeatureKey(["my_feature"]),
         ...         deps=None,
         ...         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
@@ -399,7 +412,7 @@ database = "{staging_db_path}"
 
         Example:
             >>> def my_features():
-            ...     from metaxy import Feature, FeatureSpec, FeatureKey
+            ...     from metaxy import Feature, BaseFeatureSpec, FeatureKey
             ...
             ...     class MyFeature(Feature, spec=...):
             ...         pass

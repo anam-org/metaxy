@@ -36,7 +36,7 @@ with MetaxyConfig.load().get_store() as store:
     print(f"Graph snapshot_version: {snapshot_version}")
 
     # Compute child feature (e.g., generate predictions from embeddings)
-    print(f"\n📊 Computing {ChildFeature.spec.key.to_string()}...")
+    print(f"\n📊 Computing {ChildFeature.spec().key.to_string()}...")
     print(f"  feature_version: {ChildFeature.feature_version()}")
 
     ids_lazy = store.read_metadata(ParentFeature, columns=["sample_uid"])

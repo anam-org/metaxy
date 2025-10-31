@@ -4,7 +4,18 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import TYPE_CHECKING, Annotated, Any, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Generic,
+    Literal,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    overload,
+    runtime_checkable,
+)
 
 import pydantic
 from pydantic import BeforeValidator
@@ -26,7 +37,25 @@ if TYPE_CHECKING:
     # context: https://github.com/microsoft/pyright/issues/1825
     # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
     # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
-    from metaxy.models.feature import Feature
+    from metaxy.models.feature import BaseFeature
+
+
+# Runtime-checkable protocols for type checking without circular imports
+@runtime_checkable
+class FeatureSpecProtocol(Protocol):
+    """Protocol for BaseFeatureSpec instances."""
+
+    key: FeatureKey
+    deps: list[Any] | None
+    fields: list[FieldSpec]
+
+
+@runtime_checkable
+class FeatureClassProtocol(Protocol):
+    """Protocol for BaseFeature classes."""
+
+    @classmethod
+    def spec(cls) -> FeatureSpecProtocol: ...
 
 
 class FeatureDep(pydantic.BaseModel):
@@ -115,45 +144,50 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: FeatureSpec,
+        key: BaseFeatureSpec[Any],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
-        """Initialize from FeatureSpec instance."""
+        """Initialize from BaseFeatureSpec instance."""
         ...
 
     @overload
     def __init__(
         self,
         *,
-        key: type[Feature],
+        key: type[BaseFeature[Any]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
-        """Initialize from FeatureSpec instance."""
+        """Initialize from Feature class."""
         ...
 
     def __init__(
         self,
         *,
-        key: CoercibleToFeatureKey | FeatureSpec | type[Feature],
+        key: CoercibleToFeatureKey | BaseFeatureSpec[Any] | type[BaseFeature[Any]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
-        from metaxy.models.feature import Feature
+        # Handle different key types with proper type checking
+        resolved_key: FeatureKey
 
-        if isinstance(key, FeatureSpec):
-            key = key.key
-        elif isinstance(key, type) and issubclass(key, Feature):
-            key = key.spec.key
+        # Check if it's a BaseFeatureSpec instance (using Protocol)
+        if isinstance(key, FeatureSpecProtocol):
+            resolved_key = key.key
+        # Check if it's a Feature class (using Protocol for runtime check)
+        elif isinstance(key, type) and isinstance(key, FeatureClassProtocol):
+            resolved_key = key.spec().key
+        # Check if it's already a FeatureKey
+        elif isinstance(key, FeatureKey):
+            resolved_key = key
         else:
-            key = FeatureKeyAdapter.validate_python(key)
-
-        assert isinstance(key, FeatureKey)
+            # Must be a CoercibleToFeatureKey (str or list of str)
+            resolved_key = FeatureKeyAdapter.validate_python(key)
 
         super().__init__(
-            key=key,
+            key=resolved_key,
             columns=columns,
             rename=rename,
             **kwargs,
@@ -164,18 +198,15 @@ class FeatureDep(pydantic.BaseModel):
         return self.key.table_name
 
 
-class _CodeVersionDescriptor:
-    """Descriptor that returns field-only code version hashes."""
-
-    def __get__(self, instance, owner) -> str:
-        if owner.spec is None:
-            raise ValueError(
-                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
-            )
-        return owner.spec.field_code_version_hash
+IDColumns: TypeAlias = Sequence[
+    str
+]  # non-bound, should be used for feature specs with arbitrary id columns
+IDColumnsT = TypeVar(
+    "IDColumnsT", bound=IDColumns, covariant=True
+)  # bound, should be used for generic
 
 
-class FeatureSpec(pydantic.BaseModel):
+class _BaseFeatureSpec(pydantic.BaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
     fields: list[FieldSpec] = pydantic.Field(
@@ -187,7 +218,10 @@ class FeatureSpec(pydantic.BaseModel):
             )
         ]
     )
-    id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
+
+
+class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
+    id_columns: pydantic.SkipValidation[IDColumnsT]
 
     @overload
     def __init__(
@@ -232,10 +266,9 @@ class FeatureSpec(pydantic.BaseModel):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
-        code_version: int = 1,
         id_columns: list[str] | None = None,
     ) -> None:
-        """Initialize from FeatureSpec instance."""
+        """Initialize from BaseFeatureSpec instance."""
         ...
 
     def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
@@ -271,7 +304,7 @@ class FeatureSpec(pydantic.BaseModel):
         return self.key.table_name
 
     @pydantic.model_validator(mode="after")
-    def validate_unique_field_keys(self) -> FeatureSpec:
+    def validate_unique_field_keys(self) -> BaseFeatureSpec[IDColumnsT]:
         """Validate that all fields have unique keys."""
         seen_keys: set[tuple[str, ...]] = set()
         for field in self.fields:
@@ -286,7 +319,7 @@ class FeatureSpec(pydantic.BaseModel):
         return self
 
     @pydantic.model_validator(mode="after")
-    def validate_id_columns(self) -> FeatureSpec:
+    def validate_id_columns(self) -> BaseFeatureSpec[IDColumnsT]:
         """Validate that id_columns is non-empty if specified."""
         if self.id_columns is not None and len(self.id_columns) == 0:
             raise ValueError(
@@ -310,7 +343,7 @@ class FeatureSpec(pydantic.BaseModel):
             SHA256 hex digest of the specification
 
         Example:
-            >>> spec = FeatureSpec(
+            >>> spec = BaseFeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
             ...     deps=None,
             ...     fields=[FieldSpec(key=FieldKey(["default"]))],
@@ -330,3 +363,86 @@ class FeatureSpec(pydantic.BaseModel):
         hasher.update(spec_json.encode("utf-8"))
 
         return hasher.hexdigest()
+
+
+BaseFeatureSpecWithIDColumns: TypeAlias = BaseFeatureSpec[IDColumns]
+
+
+DefaultFeatureCols: TypeAlias = tuple[Literal["sample_uid"],]
+
+
+class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
+    """A default concrete implementation of BaseBaseFeatureSpec that has a `sample_uid` ID column."""
+
+    id_columns: DefaultFeatureCols = pydantic.Field(
+        default=("sample_uid",),
+        description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
+    )
+
+    @overload
+    def __init__(
+        self,
+        key: str,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+    ) -> None:
+        """Initialize from string key."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: Sequence[str],
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+    ) -> None:
+        """Initialize from sequence of parts."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: FeatureKey,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+    ) -> None:
+        """Initialize from FeatureKey instance."""
+        ...
+
+    @overload
+    def __init__(
+        self,
+        key: Self,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: list[FieldSpec] | None = None,
+    ) -> None:
+        """Initialize from FeatureSpec instance."""
+        ...
+
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+        if isinstance(key, type(self)):
+            key = key.key
+        else:
+            key = FeatureKeyAdapter.validate_python(key)
+
+        super().__init__(key=key, **kwargs)
+
+
+########################################## THIS IS FOR TESTING ONLY
+
+
+TestingUIDCols: TypeAlias = list[str]
+
+
+# TODO: move this to tests, stop using it in docs and examples. It exists for historical reasons.
+class TestingFeatureSpec(BaseFeatureSpec[TestingUIDCols]):
+    """A testing concrete implementation of BaseBaseFeatureSpec that has a `sample_uid` ID column."""
+
+    id_columns: TestingUIDCols = pydantic.Field(
+        default=["sample_uid"],
+        description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
+    )

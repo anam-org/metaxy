@@ -223,23 +223,18 @@ All metadata writes are append-only. When migrations update metadata:
 4. Write new rows with new `feature_version` and `snapshot_version`
 5. Old rows remain for historical queries and audit trail
 
-#### Feature Version vs Data Version
+#### Feature Version vs Code Version vs Data Version
 
-- **Feature version**: Hash of feature definition (code, deps, fields). Deterministic from code alone.
-- **Data version**: Hash of upstream data versions for a specific sample. Depends on actual data.
-- **Snapshot version**: Hash of all feature versions in graph. Represents entire graph state.
+We document the relationship between these version identifiers in detail at
+`docs/learn/data-versioning.md`. Use that reference when you need the exact
+semantics or lifecycle of:
 
-Metadata rows have:
+- `code_version` – tracks changes to a feature's own implementation,
+- `feature_version()` – incorporates dependencies and drives migrations, and
+- `data_version` – hashes upstream materialized inputs per sample.
 
-```python
-{
-    "sample_uid": 123,
-    "data_version": {"field1": "hash1", "field2": "hash2"},  # Struct column
-    "feature_version": "abc123",  # From feature definition
-    "snapshot_version": "def456",      # From graph snapshot
-    ...user columns...
-}
-```
+The public docs stay canonical; keep this file concise and defer to them for
+examples and diagrams.
 
 #### Graph Context Management
 

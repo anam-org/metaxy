@@ -19,7 +19,7 @@ upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
 # Get metadata store
 config = MetaxyConfig.load(search_parents=True)
 with config.get_store() as store:
-    print(f"📊 Computing {ParentFeature.spec.key.to_string()}...")
+    print(f"📊 Computing {ParentFeature.spec().key.to_string()}...")
     print(f"  feature_version: {ParentFeature.feature_version()[:16]}...")
 
     # Simulate computing embeddings - same computation in both versions

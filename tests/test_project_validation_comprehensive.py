@@ -249,7 +249,7 @@ class TestProjectValidationComprehensive:
                 spec=FeatureSpec(
                     key=FeatureKey(["child_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version=1)],
-                    deps=[FeatureDep(key=RootFeature.spec.key)],
+                    deps=[FeatureDep(key=RootFeature.spec().key)],
                 ),
             ):
                 pass
@@ -309,7 +309,7 @@ class TestProjectValidationComprehensive:
                     fields=[
                         FieldSpec(key=FieldKey(["field2"]), code_version=2)
                     ],  # Changed version
-                    deps=[FeatureDep(key=RootFeatureV2.spec.key)],
+                    deps=[FeatureDep(key=RootFeatureV2.spec().key)],
                 ),
             ):
                 pass

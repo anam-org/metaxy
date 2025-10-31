@@ -13,7 +13,7 @@ from metaxy.models.constants import (
 )
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import FeatureSpec
+    from metaxy.models.feature_spec import BaseFeatureSpec, IDColumns
     from metaxy.models.plan import FeaturePlan
 
 
@@ -40,7 +40,7 @@ class NarwhalsJoiner(UpstreamJoiner):
     def join_upstream(
         self,
         upstream_refs: dict[str, nw.LazyFrame[Any]],
-        feature_spec: "FeatureSpec",
+        feature_spec: "BaseFeatureSpec[IDColumns]",
         feature_plan: "FeaturePlan",
         upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
         upstream_renames: dict[str, dict[str, str] | None] | None = None,
@@ -251,7 +251,7 @@ class NarwhalsJoiner(UpstreamJoiner):
             # Join with existing data on all ID columns
             joined = joined.join(
                 upstream_renamed,
-                on=id_columns,  # Use configured ID columns (may be composite key)
+                on=list(id_columns),  # Use configured ID columns (may be composite key)
                 how="inner",  # Only rows present in ALL upstream with matching ID columns
             )
 

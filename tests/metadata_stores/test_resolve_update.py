@@ -19,10 +19,10 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -158,7 +158,7 @@ def create_store(
 # Root features (no dependencies)
 class RootA(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "root_a"]),
         deps=None,
         fields=[
@@ -173,7 +173,7 @@ class RootA(
 
 class MultiFieldRoot(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "multi_root"]),
         deps=None,
         fields=[
@@ -190,7 +190,7 @@ class MultiFieldRoot(
 # Intermediate features (depend on roots)
 class BranchB(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "branch_b"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -214,7 +214,7 @@ class BranchB(
 
 class BranchC(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "branch_c"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -239,7 +239,7 @@ class BranchC(
 # Leaf features (converge multiple branches)
 class LeafSimple(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_simple"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -263,7 +263,7 @@ class LeafSimple(
 
 class LeafDiamond(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_diamond"]),
         deps=[
             FeatureDep(key=FeatureKey(["resolve", "branch_b"]), columns=()),
@@ -294,7 +294,7 @@ class LeafDiamond(
 
 class LeafMultiField(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["resolve", "leaf_multi"]),
         deps=[FeatureDep(key=FeatureKey(["resolve", "multi_root"]))],
         fields=[
@@ -446,7 +446,7 @@ def test_resolve_update_no_upstream(
                     assert isinstance(store, IbisMetadataStore), (
                         "Native stores must be Ibis-based"
                     )
-                    temp_table_name = f"_test_samples_{root_feature.spec.key[-1]}"
+                    temp_table_name = f"_test_samples_{root_feature.spec().key[-1]}"
                     store.conn.create_table(
                         temp_table_name, source_samples.to_arrow(), overwrite=True
                     )
@@ -562,7 +562,7 @@ def test_resolve_update_with_upstream(
 
     # Helper to create data_version dicts for a feature's fields
     def make_data_versions(feature: type[Feature], prefix: str) -> list[dict[str, Any]]:
-        fields = [c.key for c in feature.spec.fields]
+        fields = [c.key for c in feature.spec().fields]
         if len(fields) == 1:
             field_name = "_".join(fields[0])
             return [{field_name: f"{prefix}_{i}"} for i in [1, 2, 3]]
@@ -679,7 +679,7 @@ def test_resolve_update_with_upstream(
         assert reference["removed"] == 0
         assert all(isinstance(v, dict) for v in reference["versions"])
         # Verify versions contain expected field keys
-        downstream_fields = [c.key for c in downstream_feature.spec.fields]
+        downstream_fields = [c.key for c in downstream_feature.spec().fields]
         for version_dict in reference["versions"]:
             for field_key in downstream_fields:
                 field_name = "_".join(field_key)
@@ -707,7 +707,7 @@ def test_resolve_update_detects_changes(
     downstream_feature = features[-1]
 
     # Determine which fields to use
-    root_fields = [c.key for c in root_feature.spec.fields]
+    root_fields = [c.key for c in root_feature.spec().fields]
 
     # Create data version dicts for fields
     def make_data_versions(
@@ -942,8 +942,8 @@ def test_resolve_update_feature_version_change_idempotency(
         pytest.skip("Test requires simple chain graph")
 
     # Identify root and leaf features
-    root_keys = [k for k, v in graph.features_by_key.items() if not v.spec.deps]
-    leaf_keys = [k for k, v in graph.features_by_key.items() if v.spec.deps]
+    root_keys = [k for k, v in graph.features_by_key.items() if not v.spec().deps]
+    leaf_keys = [k for k, v in graph.features_by_key.items() if v.spec().deps]
 
     if len(root_keys) != 1 or len(leaf_keys) != 1:
         pytest.skip("Test requires exactly 1 root and 1 leaf")
@@ -982,7 +982,7 @@ def test_resolve_update_feature_version_change_idempotency(
                     # === PHASE 1: Write root metadata (upstream) ===
                     # Write root metadata - handle multiple fields
                     root_field_names = {
-                        field.key[0] for field in RootFeature.spec.fields
+                        field.key[0] for field in RootFeature.spec().fields
                     }
                     root_data_version_dicts = []
                     for i in range(1, 4):

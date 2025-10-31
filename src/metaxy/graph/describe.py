@@ -65,11 +65,11 @@ def describe_graph(
         visited.add(feature_key)
 
         feature_cls = graph.features_by_key.get(feature_key)
-        if feature_cls is None or not feature_cls.spec.deps:
+        if feature_cls is None or not feature_cls.spec().deps:
             return 1
 
         max_dep_depth = 0
-        for dep in feature_cls.spec.deps:
+        for dep in feature_cls.spec().deps or []:
             dep_depth = get_feature_depth(dep.key, visited.copy())
             max_dep_depth = max(max_dep_depth, dep_depth)
 
@@ -83,7 +83,7 @@ def describe_graph(
 
     # Find root features (no dependencies) in filtered set
     root_features = [
-        key.to_string() for key, cls in filtered_features.items() if not cls.spec.deps
+        key.to_string() for key, cls in filtered_features.items() if not cls.spec().deps
     ]
 
     # Find leaf features (no dependents) in filtered set
@@ -92,8 +92,8 @@ def describe_graph(
         is_leaf = True
         # Check if any other filtered feature depends on this one
         for other_key, other_cls in filtered_features.items():
-            if other_key != feature_key and other_cls.spec.deps:
-                for dep in other_cls.spec.deps:
+            if other_key != feature_key and other_cls.spec().deps:
+                for dep in other_cls.spec().deps or []:
                     if dep.key == feature_key:
                         is_leaf = False
                         break
@@ -154,8 +154,8 @@ def get_feature_dependencies(
 
     # Get direct dependencies
     direct_deps = []
-    if feature_cls.spec.deps:
-        direct_deps = [dep.key.to_string() for dep in feature_cls.spec.deps]
+    if feature_cls.spec().deps:
+        direct_deps = [dep.key.to_string() for dep in feature_cls.spec().deps or []]
 
     result: dict[str, Any] = {
         "direct_dependencies": direct_deps,
@@ -180,11 +180,11 @@ def get_feature_dependencies(
             visited.add(key)
 
             cls = graph.features_by_key.get(key)
-            if cls is None or not cls.spec.deps:
+            if cls is None or not cls.spec().deps:
                 return {"key": key.to_string(), "dependencies": []}
 
             deps = []
-            for dep in cls.spec.deps:
+            for dep in cls.spec().deps or []:
                 dep_tree = build_dep_tree(
                     dep.key,
                     current_depth + 1,
@@ -242,8 +242,8 @@ def get_feature_dependents(
     # Find direct dependents
     direct_dependents = []
     for other_key, other_cls in graph.features_by_key.items():
-        if other_cls.spec.deps:
-            for dep in other_cls.spec.deps:
+        if other_cls.spec().deps:
+            for dep in other_cls.spec().deps or []:
                 if dep.key == feature_key:
                     direct_dependents.append(other_key.to_string())
                     break
@@ -273,8 +273,8 @@ def get_feature_dependents(
             # Find features that depend on this one
             dependents = []
             for other_key, other_cls in graph.features_by_key.items():
-                if other_cls.spec.deps:
-                    for dep in other_cls.spec.deps:
+                if other_cls.spec().deps:
+                    for dep in other_cls.spec().deps or []:
                         if dep.key == key:
                             dep_tree = build_dependent_tree(
                                 other_key,

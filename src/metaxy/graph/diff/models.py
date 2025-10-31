@@ -261,7 +261,7 @@ class GraphData(FrozenBaseModel):
         # Convert each feature to a GraphNode
         for feature_key, feature_cls in graph.features_by_key.items():
             feature_key_str = feature_key.to_string()
-            spec = feature_cls.spec
+            spec = feature_cls.spec()
 
             # Get feature version
             feature_version = graph.get_feature_version(feature_key)

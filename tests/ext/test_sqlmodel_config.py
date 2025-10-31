@@ -11,7 +11,7 @@ import os
 
 from sqlmodel import Field
 
-from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
+from metaxy import FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
 from metaxy._testing import TempMetaxyProject
 from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
 from metaxy.ext.sqlmodel import SQLModelFeature
@@ -30,7 +30,7 @@ def test_auto_table_naming_enabled_by_default():
         class TestFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -60,7 +60,7 @@ def test_auto_table_naming_disabled_explicit_config():
         class DisabledAutoNaming(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -96,7 +96,7 @@ def test_auto_table_naming_still_allows_explicit():
         class ExplicitTableName(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -137,7 +137,7 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
         class TomlConfigFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -177,7 +177,7 @@ def test_auto_table_naming_env_var():
             class EnvVarFeature(
                 SQLModelFeature,
                 table=True,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -228,7 +228,7 @@ def test_config_priority_init_over_env():
             class PriorityFeature(
                 SQLModelFeature,
                 table=True,
-                spec=FeatureSpec(
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     deps=None,
                     fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -278,7 +278,7 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
         class PyProjectFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -312,7 +312,7 @@ def test_multiple_features_with_config_change():
         class Feature1(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["feature", "one"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
@@ -334,7 +334,7 @@ def test_multiple_features_with_config_change():
         class Feature2(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=TestingFeatureSpec(
                 key=FeatureKey(["feature", "two"]),
                 deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],

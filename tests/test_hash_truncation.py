@@ -8,8 +8,8 @@ import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureSpec, FieldSpec
+from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature_spec import FieldSpec, TestingFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import (
     MIN_TRUNCATION_LENGTH,
@@ -271,8 +271,8 @@ class TestFeatureVersionTruncation:
         with test_graph.use():
             # Create feature without truncation
             class TestFeature1(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature1"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,  # Root feature has no dependencies
@@ -288,8 +288,8 @@ class TestFeatureVersionTruncation:
             MetaxyConfig.set(config)
 
             class TestFeature2(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,  # Root feature has no dependencies
@@ -311,8 +311,8 @@ class TestFeatureVersionTruncation:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,
@@ -343,8 +343,8 @@ class TestFeatureVersionTruncation:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[
                         FieldSpec(key=FieldKey(["field1"]), code_version=1),
@@ -468,8 +468,8 @@ class TestMetadataStoreTruncation:
         with test_graph.use():
             # Create feature
             class TestFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,
@@ -526,8 +526,8 @@ class TestMigrationCompatibility:
             MetaxyConfig.set(config)
 
             class TestFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
                     deps=None,
@@ -547,8 +547,8 @@ class TestMigrationCompatibility:
                 test_graph.remove_feature(FeatureKey(["test", "feature"]))
 
                 class TestFeature(  # noqa: F811
-                    Feature,
-                    spec=FeatureSpec(
+                    TestingFeature,
+                    spec=TestingFeatureSpec(
                         key=FeatureKey(["test", "feature"]),
                         fields=[
                             FieldSpec(key=FieldKey(["field1"]), code_version=2)
@@ -603,8 +603,8 @@ class TestEndToEnd:
 
             # Create features
             class ParentFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["parent"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
                     deps=None,
@@ -615,8 +615,8 @@ class TestEndToEnd:
             from metaxy.models.feature_spec import FeatureDep
 
             class ChildFeature(
-                Feature,
-                spec=FeatureSpec(
+                TestingFeature,
+                spec=TestingFeatureSpec(
                     key=FeatureKey(["child"]),
                     fields=[FieldSpec(key=FieldKey(["derived"]), code_version=1)],
                     deps=[FeatureDep(key=FeatureKey(["parent"]))],

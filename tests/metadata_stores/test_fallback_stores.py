@@ -16,10 +16,10 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldDep,
     FieldKey,
     FieldSpec,
+    TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -89,7 +89,7 @@ def create_store_for_fallback(
 
 class RootFeature(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["fallback_test", "root"]),
         deps=None,
         fields=[
@@ -104,7 +104,7 @@ class RootFeature(
 
 class DownstreamFeature(
     Feature,
-    spec=FeatureSpec(
+    spec=TestingFeatureSpec(
         key=FeatureKey(["fallback_test", "downstream"]),
         deps=[FeatureDep(key=FeatureKey(["fallback_test", "root"]))],
         fields=[

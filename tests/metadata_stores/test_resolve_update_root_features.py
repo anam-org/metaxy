@@ -13,8 +13,8 @@ import pytest
 from pytest_cases import parametrize_with_cases
 
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature_spec import TestingFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from tests.metadata_stores.conftest import StoreCases  # pyrefly: ignore[import-error]
@@ -22,8 +22,8 @@ from tests.metadata_stores.conftest import StoreCases  # pyrefly: ignore[import-
 
 # Define a root feature (no upstream dependencies)
 class VideoEmbeddingsFeature(
-    Feature,
-    spec=FeatureSpec(
+    TestingFeature,
+    spec=TestingFeatureSpec(
         key=FeatureKey(["test_root", "video_embeddings"]),
         deps=None,  # No upstream dependencies
         fields=[
