@@ -186,18 +186,22 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
-      - name: Sync dependencies
+      - name: Sync Python dependencies
         run: uv python pin 3.10 && uv sync --all-extras --all-groups
-      - uses: oven-sh/setup-bun@v2
+      - name: Restore original environment
+        run: bash .github/scripts/restore-env.sh
+      - name: Setup bun (outside Nix environment)
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.1
-      - name: Install
-        run: cd docs/slides bun install --frozen-lockfile
+      - name: Install Slidev dependencies
+        run: cd docs/slides && bun install --frozen-lockfile
+      - name: Pre-build Slidev bundle
+        run: cd docs/slides && bun run build -- slides-introduction.md --out dist --base ./
       - name: Build Docs
         id: docs
-        run: uv run mkdocs build --strict
-      # Restore original environment to prevent Nix tools from interfering with subsequent steps
-      - name: Restore original environment
+        run: METAXY_SKIP_SLIDEV=1 uv run mkdocs build --strict
+      - name: Cleanup on failure
         if: always()
         run: bash .github/scripts/restore-env.sh
 

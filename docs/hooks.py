@@ -85,11 +85,15 @@ def _select_runner(bun_path: str | None, npx_path: str | None) -> list[str]:
         return [npx_path, *slidev_args]
 
     if bun_path:
-        log.info("Using bun to build Slidev slides (runner=%s).", bun_path)
+        log.info(
+            "Using bun to build Slidev slides via package script (runner=%s).", bun_path
+        )
         return [
             bun_path,
-            "x",
-            *slidev_args,
+            "run",
+            "build",
+            "--",
+            *slidev_args[2:],  # pass through slide-specific arguments
         ]
 
     if npx_path:
@@ -109,6 +113,19 @@ def on_pre_build(config) -> None:  # pragma: no cover - executed by MkDocs
     entry_path = SLIDES_DIR / SLIDES_ENTRY
     if not entry_path.exists():
         log.debug("Slidev entry %s not found, skipping Slidev build.", entry_path)
+        _hide_node_modules()
+        return
+
+    if os.environ.get("METAXY_SKIP_SLIDEV"):
+        log.info(
+            "METAXY_SKIP_SLIDEV detected; skipping Slidev build and preserving existing artifacts."
+        )
+        dist_index = SLIDES_DIR / SLIDES_OUTPUT / "index.html"
+        if not dist_index.exists():
+            log.warning(
+                "Slidev dist output missing at %s; ensure slides are built before skipping.",
+                dist_index,
+            )
         _hide_node_modules()
         return
 
