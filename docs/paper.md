@@ -10,15 +10,17 @@ tags:
 authors:
   - name: Daniel Gafni
     orcid: 0000-0000-0000-0000
-    affiliation: "2"
+    affiliation: "1"
   - name: Georg Heiler
     orcid: 0000-0002-8684-1163
-    affiliation: "1, 2"
+    affiliation: "2, 3"
 affiliations:
   - name: Complexity Science Hub Vienna (CSH)
-    index: 1
-  - name: Austrian Supply Chain Intelligence Institute (ASCII)
     index: 2
+  - name: Austrian Supply Chain Intelligence Institute (ASCII)
+    index: 3
+  - name:  Anam.ai
+    index: 1
 date: 2025-10-31
 bibliography: paper.bib
 
@@ -104,6 +106,7 @@ Future work will improve ergonomics and deepen resource awareness.
 Planned extensions include richer scheduling hints for workload managers and tighter integrations with GPU cluster telemetry.
 
 We are actively looking for issues, PRs and other contributions https://github.com/anam-org/metaxy.
+Check out the documentation at https://docs.metaxy.io for more details.
 
 # Acknowledgements
 
