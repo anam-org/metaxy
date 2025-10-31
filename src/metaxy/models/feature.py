@@ -827,6 +827,12 @@ class BaseFeature(
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
     code_version: ClassVar[str] = _CodeVersionDescriptor()  # pyright: ignore[reportAssignmentType]
+    """Hash of this feature's field code versions only (excludes dependencies).
+
+    Useful for detecting when the feature's own logic changes while remaining stable
+    if only upstream dependencies mutate; contrast with feature_version(), which
+    includes dependency hashes.
+    """
 
     # once ClassVar supports it
     # this should be replaced by
