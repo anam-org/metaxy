@@ -13,7 +13,6 @@ from typing import (
     Protocol,
     TypeAlias,
     TypeVar,
-    cast,
     overload,
     runtime_checkable,
 )
@@ -209,26 +208,6 @@ IDColumnsT = TypeVar(
 )  # bound, should be used for generic
 
 
-def _coerce_metadata(value: Any) -> dict[str, JsonValue] | None:
-    if value is None:
-        return None
-    if not isinstance(value, Mapping):
-        raise ValueError("metadata must be a mapping")
-    try:
-        serialized = json.dumps(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            "metadata must be JSON-serializable. Found non-serializable value"
-        ) from exc
-    return cast(dict[str, JsonValue], json.loads(serialized))
-
-
-MetadataField = Annotated[
-    dict[str, JsonValue] | None,
-    BeforeValidator(_coerce_metadata),
-]
-
-
 class _BaseFeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
@@ -241,8 +220,8 @@ class _BaseFeatureSpec(FrozenBaseModel):
             )
         ]
     )
-    metadata: MetadataField = pydantic.Field(
-        default=None,
+    metadata: dict[str, JsonValue] = pydantic.Field(
+        default_factory=dict,
         description="Metadata attached to this feature.",
     )
 
@@ -258,7 +237,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Mapping[str, Any] | JsonValue | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -271,7 +250,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Mapping[str, Any] | JsonValue | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -284,7 +263,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Mapping[str, Any] | JsonValue | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -297,11 +276,12 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from BaseFeatureSpec instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
         if isinstance(key, type(self)):
             key = key.key
         else:
@@ -384,8 +364,6 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")
-        if spec_dict.get("metadata") == {}:
-            spec_dict.pop("metadata", None)
 
         # Sort keys to ensure deterministic ordering
         spec_json = json.dumps(spec_dict, sort_keys=True)
@@ -422,6 +400,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -434,6 +413,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -446,6 +426,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -458,11 +439,12 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureSpec instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
         # id_columns is always set for FeatureSpec
         super().__init__(key=key, **kwargs)
 

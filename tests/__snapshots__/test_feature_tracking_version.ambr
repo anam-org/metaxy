@@ -12,8 +12,8 @@
     'feature_versions_same': True,
     'project_a': 'project_a',
     'project_b': 'project_b',
-    'tracking_version_a': '7da02a89202f8eb9f19782512fadf988b815df8255e52a1f35dec9da76e18b12',
-    'tracking_version_b': '5908b5019bdc1acd103482f1d144338f407f50d9d1aa09ca3808fe376f5ffd98',
+    'tracking_version_a': '51105d501a6e001dcbb7c3edb9e4ce93b12a26dc1d0b445cca1de9e986edd3a1',
+    'tracking_version_b': 'e0246e418b8079fd6568fe80959809d0c4161b3c8e4ce70a0e4ecb0adeee0d1b',
     'tracking_versions_differ': True,
   })
 # ---
@@ -43,5 +43,5 @@
   })
 # ---
 # name: test_tracking_version_deterministic
-  '139c7982886b761076245c878e6ad545f4afb9ffabab9238d7af883aff161b9b'
+  '93c7499560ffbab47bb760edd62a6c6be19c7d3ac6977b0286ab5eea4716c23a'
 # ---
