@@ -174,7 +174,6 @@ jobs:
     runs-on: depot-ubuntu-latest
     env:
       UV_PYTHON_PREFERENCE: only-system
-      METAXY_SLIDES_RUNNER: npx
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -189,8 +188,11 @@ jobs:
       - uses: nicknovitski/nix-develop@v1
       - name: Sync dependencies
         run: uv python pin 3.10 && uv sync --all-extras --all-groups
-      - name: Ensure Slides dependencies are loaded
-        run: cd docs/slides && npm install
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+      - name: Install
+        run: cd docs/slides bun install --frozen-lockfile
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict
