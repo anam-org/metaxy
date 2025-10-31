@@ -69,14 +69,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
-          nix_path: nixpkgs=channel:nixpkgs-unstable
+          install_url: https://install.determinate.systems/nix
+          extra_nix_config: |
+            extra-experimental-features = nix-command flakes
+          #nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
-        with:
-          use-gha-cache: false
-      #- uses: nicknovitski/nix-develop@v1
+
       - name: Run Typecheck in Nix Shell
         run: |
           nix develop '.#python3.10' -c bash <<'EOF'
@@ -110,7 +111,7 @@ jobs:
       - name: Save original environment
         run: bash .github/scripts/save-env.sh
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
@@ -181,7 +182,7 @@ jobs:
       - name: Save original environment
         run: bash .github/scripts/save-env.sh
       - name: Install Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
