@@ -175,7 +175,7 @@ nav:
       - CLI: reference/cli.md
       - Configuration: reference/configuration.md
   - Slides:
-      - Introduction: slides/dist/index.html
+      - Introduction: slides/intro.md
 
 extra:
   social:
