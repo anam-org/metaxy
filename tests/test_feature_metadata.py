@@ -1,6 +1,4 @@
 import json
-from collections.abc import Sequence
-from types import MappingProxyType
 
 import pytest
 
@@ -61,9 +59,9 @@ def test_metadata_json_serializable() -> None:
         metadata=valid_metadata,
     )
     assert spec.metadata is not None
-    assert isinstance(spec.metadata, MappingProxyType)
-    assert isinstance(spec.metadata["list"], tuple)
-    assert json.dumps(_thaw(spec.metadata)) is not None
+    assert isinstance(spec.metadata, dict)
+    assert isinstance(spec.metadata["list"], list)
+    assert json.dumps(spec.metadata) is not None
 
     with pytest.raises(ValueError):
         FeatureSpec(
@@ -82,15 +80,5 @@ def test_metadata_immutable() -> None:
     )
     assert spec.metadata is not None
 
-    with pytest.raises(TypeError):
-        spec.metadata["key"] = "new_value"  # type: ignore[index]
-
-
-def _thaw(value):
-    if isinstance(value, MappingProxyType):
-        return {k: _thaw(v) for k, v in value.items()}
-    if isinstance(value, tuple):
-        return [_thaw(v) for v in value]
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return [_thaw(v) for v in value]
-    return value
+    with pytest.raises(Exception):
+        spec.metadata = {"key": "new_value"}  # type: ignore[assignment]

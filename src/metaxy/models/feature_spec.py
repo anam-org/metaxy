@@ -4,7 +4,6 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -19,9 +18,11 @@ from typing import (
 )
 
 import pydantic
-from pydantic import BeforeValidator, Json
+from pydantic import BeforeValidator
+from pydantic.types import JsonValue
 from typing_extensions import Self
 
+from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -207,29 +208,7 @@ IDColumnsT = TypeVar(
 )  # bound, should be used for generic
 
 
-def _freeze_metadata(value: Any) -> Any:
-    """Recursively convert metadata to immutable containers."""
-    if isinstance(value, Mapping):
-        frozen_dict = {k: _freeze_metadata(v) for k, v in value.items()}
-        return MappingProxyType(frozen_dict)
-    if isinstance(value, list):
-        return tuple(_freeze_metadata(v) for v in value)
-    if isinstance(value, tuple):
-        return tuple(_freeze_metadata(v) for v in value)
-    return value
-
-
-def _thaw_metadata(value: Any) -> Any:
-    if isinstance(value, MappingProxyType):
-        return {k: _thaw_metadata(v) for k, v in value.items()}
-    if isinstance(value, tuple):
-        return [_thaw_metadata(v) for v in value]
-    if isinstance(value, list):
-        return [_thaw_metadata(v) for v in value]
-    return value
-
-
-class _BaseFeatureSpec(pydantic.BaseModel):
+class _BaseFeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
     fields: list[FieldSpec] = pydantic.Field(
@@ -241,11 +220,10 @@ class _BaseFeatureSpec(pydantic.BaseModel):
             )
         ]
     )
-    metadata: Json[dict[str, Any]] = pydantic.Field(
+    metadata: JsonValue = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
     )
-    metadata: dict[str, Any] | None = None
 
 
 class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
@@ -258,18 +236,16 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         if "metadata" in values and values["metadata"] is None:
             values.pop("metadata", None)
         elif "metadata" in values:
+            metadata_value = values["metadata"]
+            if not isinstance(metadata_value, Mapping):
+                raise ValueError("metadata must be a mapping")
             try:
-                json.dumps(_thaw_metadata(values["metadata"]))
+                json.dumps(metadata_value)
             except (TypeError, ValueError) as exc:
                 raise ValueError(
                     "metadata must be JSON-serializable. Found non-serializable value"
                 ) from exc
         return values
-
-    @pydantic.model_validator(mode="after")
-    def _freeze_metadata_field(self) -> BaseFeatureSpec[IDColumnsT]:
-        object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
-        return self
 
     @overload
     def __init__(
@@ -279,7 +255,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Json[dict[str, Any]] | dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | JsonValue | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -292,7 +268,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Json[dict[str, Any]] | dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | JsonValue | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -305,7 +281,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
-        metadata: Json[dict[str, Any]] | dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | JsonValue | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
