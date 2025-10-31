@@ -21,14 +21,14 @@ jobs:
     name: Paper Draft
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: TeX and PDF
         uses: docker://openjournals/paperdraft:latest
         with:
           journal: joss
           args: '-k ./docs/paper.md'
       - name: Upload PDF to Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: generated-paper
           path: ./docs/paper.pdf

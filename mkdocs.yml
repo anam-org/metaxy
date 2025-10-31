@@ -61,11 +61,9 @@ plugins:
   - autorefs
   - section-index
   - gh-admonitions
-
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
   #     nav_file: nagiration.md
-
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -110,6 +108,9 @@ plugins:
             - https://docs.pydantic.dev/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
+
+hooks:
+  - docs/hooks.py
 
 markdown_extensions:
   # Core extensions

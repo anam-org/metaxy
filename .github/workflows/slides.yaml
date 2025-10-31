@@ -1,0 +1,78 @@
+name: slides and pdf render
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'slides/**'
+  # pull_request:
+  #   types: [opened, synchronize, reopened]
+  #   branches: [ main ]
+  #   paths:
+  #     - 'docs/slides/**'
+  workflow_dispatch:
+    inputs:
+      slides_json:
+        description: 'JSON-Liste, z. B. ["slides-introduction.md"]'
+        required: false
+        default: '["slides-introduction.md"]'
+
+concurrency:
+  group: slides-main-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build slides and render PDF
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_SLIDES: '["slides.md","slides-vde-2025-10.md"]'
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJSON(github.event.inputs.slides_json || '["slides-introduction.md"]') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Export ${{ matrix.file }}
+        run: cd docs/slides && bun run export --  "${{ matrix.file }}"
+
+      - name: Compute safe artifact name
+        id: safename
+        shell: bash
+        run: |
+          f='${{ matrix.file }}'
+          safe="${f//\//__}"
+          safe="${safe%.md}"
+          echo "safe=$safe" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slides-${{ steps.safename.outputs.safe }}
+          path: slides/*-export.pdf
+          if-no-files-found: warn
+          retention-days: 5
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/upload-artifact/merge@v4
+        with:
+          name: slide-pdfs
+          pattern: slides-*
+          retention-days: 5
