@@ -4,7 +4,6 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy._testing import DEFAULT_ID_COLUMNS
 from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
@@ -38,33 +37,6 @@ def test_feature_spec_id_columns_validation():
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
         )
-
-
-def test_feature_id_columns_classmethod(graph: FeatureGraph):
-    """Test Feature.id_columns() classmethod returns correct values."""
-
-    # Default case
-    class DefaultFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["default"]),
-        ),
-    ):
-        pass
-
-    assert DefaultFeature.id_columns() == DEFAULT_ID_COLUMNS
-
-    # Custom ID columns
-    class CustomFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["custom"]),
-            id_columns=["user_id", "session_id"],
-        ),
-    ):
-        pass
-
-    assert CustomFeature.id_columns() == ["user_id", "session_id"]
 
 
 def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
@@ -386,7 +358,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
     diff_result = diff_resolver.find_changes(
         target_versions=with_versions,
         current_metadata=current,
-        id_columns=ProcessedFeature.id_columns(),  # Pass ID columns explicitly
+        id_columns=ProcessedFeature.spec().id_columns,  # Pass ID columns explicitly
     )
 
     # Check results
@@ -1028,8 +1000,8 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     ):
         pass
 
-    # Verify id_columns() returns default
-    assert LegacyFeature.id_columns() == ["sample_uid"]
+    # Verify id_columns returns default
+    assert LegacyFeature.spec().id_columns == ["sample_uid"]
 
     # Test with metadata store
     with InMemoryMetadataStore() as store:

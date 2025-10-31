@@ -765,7 +765,7 @@ def test_basic_custom_id_columns() -> None:
 
     Verifies that:
     - SQLModelFeature can be created with custom id_columns
-    - id_columns are accessible via Feature.id_columns() method
+    - id_columns are accessible via Feature.spec().id_columns property
     - Feature is registered correctly in the graph
     """
 
@@ -787,7 +787,7 @@ def test_basic_custom_id_columns() -> None:
         timestamp: int
 
     # Verify id_columns are set correctly
-    assert UserSessionFeature.id_columns() == ["user_id", "session_id"]
+    assert UserSessionFeature.spec().id_columns == ["user_id", "session_id"]
 
     # Verify feature is registered
     graph = FeatureGraph.get_active()
@@ -981,7 +981,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
         metric: float
 
     # Verify 3-column composite key
-    assert MultiKeyFeature.id_columns() == ["user_id", "session_id", "timestamp"]
+    assert MultiKeyFeature.spec().id_columns == ["user_id", "session_id", "timestamp"]
 
     # Verify feature version is deterministic
     version = MultiKeyFeature.feature_version()
@@ -996,7 +996,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     assert {
         "feature_version": version,
         "data_version": data_version,
-        "id_columns": MultiKeyFeature.id_columns(),
+        "id_columns": MultiKeyFeature.spec().id_columns,
     } == snapshot
 
 
@@ -1044,8 +1044,12 @@ def test_parent_child_different_id_columns() -> None:
         summary: str
 
     # Verify different ID columns
-    assert DetailedParentFeature.id_columns() == ["user_id", "session_id", "device_id"]
-    assert AggregatedChildFeature.id_columns() == ["user_id", "session_id"]
+    assert DetailedParentFeature.spec().id_columns == [
+        "user_id",
+        "session_id",
+        "device_id",
+    ]
+    assert AggregatedChildFeature.spec().id_columns == ["user_id", "session_id"]
 
     # Both should be registered
     graph = FeatureGraph.get_active()
@@ -1750,7 +1754,7 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
         created_at: str = Field(sa_column_kwargs={"server_default": "NOW()"})
 
     # Should be created successfully
-    assert GoodClientIdFeature.id_columns() == ["user_id", "session_id"]
+    assert GoodClientIdFeature.spec().id_columns == ["user_id", "session_id"]
 
     # Verify it's registered
     graph = FeatureGraph.get_active()

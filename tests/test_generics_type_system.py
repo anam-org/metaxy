@@ -58,8 +58,8 @@ def test_base_feature_generic_parameter():
         ):
             pass
 
-        # Verify id_columns classmethod returns correct value
-        assert CustomFeature.id_columns() == ["entity_id", "version_id"]
+        # Verify id_columns property returns correct value
+        assert CustomFeature.spec().id_columns == ["entity_id", "version_id"]
 
 
 def test_testing_feature_spec_default_id_columns():
@@ -150,24 +150,6 @@ def test_classmethod_spec_returns_correct_type():
         assert spec.id_columns == ["custom_id"]
 
 
-def test_classmethod_id_columns_returns_correct_value():
-    """Test that the .id_columns() classmethod returns the correct value."""
-
-    with FeatureGraph().use():
-
-        class MyFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["my_feature"]),
-                id_columns=["x", "y", "z"],
-            ),
-        ):
-            pass
-
-        # Verify .id_columns() returns the value from spec
-        assert MyFeature.id_columns() == ["x", "y", "z"]
-
-
 def test_multiple_features_with_different_id_columns():
     """Test creating multiple features with different ID column configurations."""
 
@@ -201,9 +183,9 @@ def test_multiple_features_with_different_id_columns():
             pass
 
         # Each feature should have its own ID columns
-        assert Feature1.id_columns() == ["sample_uid"]
-        assert Feature2.id_columns() == ["user_id", "session_id"]
-        assert Feature3.id_columns() == ["entity_id"]
+        assert Feature1.spec().id_columns == ["sample_uid"]
+        assert Feature2.spec().id_columns == ["user_id", "session_id"]
+        assert Feature3.spec().id_columns == ["entity_id"]
 
 
 def test_feature_with_deps_preserves_id_columns():
@@ -231,8 +213,8 @@ def test_feature_with_deps_preserves_id_columns():
             pass
 
         # Each feature maintains its own ID columns
-        assert UpstreamFeature.id_columns() == ["user_id"]
-        assert DownstreamFeature.id_columns() == ["user_id", "session_id"]
+        assert UpstreamFeature.spec().id_columns == ["user_id"]
+        assert DownstreamFeature.spec().id_columns == ["user_id", "session_id"]
 
 
 def test_empty_id_columns_validation():
@@ -288,7 +270,7 @@ def test_feature_with_custom_spec_class():
             pass
 
         # Verify custom spec is used
-        assert VideoFeature.id_columns() == ["video_id", "frame_number"]
+        assert VideoFeature.spec().id_columns == ["video_id", "frame_number"]
         assert isinstance(VideoFeature.spec(), VideoSpec)
 
 
@@ -370,7 +352,7 @@ def test_backward_compatibility_with_existing_features():
             pass
 
         # Should still work with default sample_uid
-        assert LegacyFeature.id_columns() == ["sample_uid"]
+        assert LegacyFeature.spec().id_columns == ["sample_uid"]
 
 
 def test_multiple_spec_instances_are_independent():
@@ -424,5 +406,5 @@ def test_feature_graph_tracks_features_with_different_id_columns():
     f1 = graph.features_by_key[FeatureKey(["f1"])]
     f2 = graph.features_by_key[FeatureKey(["f2"])]
 
-    assert f1.id_columns() == ["sample_uid"]
-    assert f2.id_columns() == ["user_id"]
+    assert f1.spec().id_columns == ["sample_uid"]
+    assert f2.spec().id_columns == ["user_id"]

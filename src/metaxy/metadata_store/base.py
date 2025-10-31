@@ -1714,7 +1714,7 @@ class MetadataStore(ABC):
             lazy_result = diff_resolver.find_changes(
                 target_versions=samples_lazy,
                 current_metadata=current_lazy,
-                id_columns=feature.id_columns(),  # Get ID columns from feature spec
+                id_columns=feature.spec().id_columns,  # Get ID columns from feature spec
             )
 
             return lazy_result if lazy else lazy_result.collect()
