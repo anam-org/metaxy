@@ -60,8 +60,7 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
         ParentFeature = get_feature_by_key(parent_key)
         ```
     """
-    graph = FeatureGraph.get_active()
-    return graph.get_feature_by_key(key)
+    return FeatureGraph.get_active().get_feature_by_key(key)
 
 
 class SerializedFeature(TypedDict):
@@ -475,9 +474,9 @@ class FeatureGraph:
             # [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
             ```
         """
-        source_set = set(sources)
         visited = set()
-        post_order = []  # Reverse topological order
+        post_order = []
+        source_set = set(sources)
 
         def visit(key: FeatureKey):
             """DFS traversal."""
@@ -796,7 +795,10 @@ class FeatureGraph:
                 reg = FeatureGraph.get_active()  # Returns my_graph
             ```
         """
-        return _active_graph.get() or graph
+        active = _active_graph.get()
+        if active is not None:
+            return active
+        return graph  # Return the default global graph
 
     @classmethod
     def set_active(cls, reg: "FeatureGraph") -> None:
@@ -989,13 +991,48 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             # 'video__processing'
             ```
         """
-        return cls.spec().table_name()
+        return "__".join(cls.spec().key.parts)
+
+    @classmethod
+    def id_columns(cls) -> list[str]:
+        """Get the ID columns used for joining metadata.
+
+        Returns the ID columns from the feature spec, or the default ["sample_uid"]
+        if not specified. These columns are used as join keys when combining
+        upstream features.
+
+        Returns:
+            List of ID column names
+
+        Example:
+            ```py
+            class DefaultFeature(Feature, spec=FeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+                deps=None,
+            )):
+                pass
+            DefaultFeature.id_columns()
+            # Output: ['sample_uid']  # Default
+            ```
+
+            ```py
+            class CustomIDFeature(Feature, spec=FeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+                id_columns=["user_id", "session_id"],
+                deps=None,
+            )):
+                pass
+            CustomIDFeature.id_columns()
+            # Output: ['user_id', 'session_id']  # Custom composite key
+            ```
+        """
+        return list(cls.spec().id_columns)
 
     @classmethod
     def feature_version(cls) -> str:
         """Get hash of feature specification.
 
-        Returns a hash representing the feature's complete configuration:
+        Returns a hash representing the complete feature configuration:
         - Feature key
         - Field definitions and code versions
         - Dependencies (feature-level and field-level)
@@ -1183,7 +1220,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
                     return result  # Return modified Increment
             ```
         """
-        # Diff resolver always returns LazyIncrement - materialize if needed
+        # Get the diff result using the diff resolver
         lazy_result = diff_resolver.find_changes(
             target_provenance=target_provenance,
             current_metadata=current_metadata,
