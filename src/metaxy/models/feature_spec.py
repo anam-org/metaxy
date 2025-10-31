@@ -4,6 +4,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -19,7 +20,6 @@ from typing import (
 )
 
 import pydantic
-from frozendict import frozendict
 from pydantic import BeforeValidator
 from pydantic.types import JsonValue
 from typing_extensions import Self
@@ -399,7 +399,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         return self
 
     @pydantic.model_validator(mode="after")
-    def validate_metadata_json_serializable(self) -> "FeatureSpec":
+    def validate_metadata_json_serializable(self) -> Self:
         """Validate that metadata is JSON-serializable.
 
         This ensures that metadata can be safely serialized for storage,

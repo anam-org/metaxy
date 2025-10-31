@@ -79,18 +79,18 @@ jobs:
         with:
           use-gha-cache: false
       - uses: nicknovitski/nix-develop@v1
-        with:
-           # use devshell for Python 3.10
-          arguments: "'.#\"python3.10\"'"
-      - name: Sync dependencies
-        run: uv python pin 3.10 && uv sync --all-extras --all-groups
-      - name: Restore original environment
-        run: bash .github/scripts/restore-env.sh
-      - name: Run Basedpyright
-        run: uv run basedpyright --level error
-      - name: Cleanup nix environment
-        if: always()
-        run: bash .github/scripts/cleanup-nix-env.sh
+      - name: Run Typecheck in Nix Shell
+        run: |
+          nix develop '.#python3.10' -c bash <<'EOF'
+            # These commands run inside the temporary Nix shell
+            echo "--- Pinning Python and syncing dependencies ---"
+            uv python pin 3.10
+            uv sync --all-extras --all-groups
+
+            echo "--- Running Basedpyright ---"
+            uv run basedpyright --level error
+          EOF
+
 
   test:
     needs: filter
