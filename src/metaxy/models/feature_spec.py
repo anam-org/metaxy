@@ -345,7 +345,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         return self
 
     @pydantic.model_validator(mode="after")
-    def validate_metadata_json_serializable(self) -> "FeatureSpec":
+    def validate_metadata_json_serializable(self) -> FeatureSpec:
         """Validate that metadata is JSON-serializable.
 
         This ensures that metadata can be safely serialized for storage,
