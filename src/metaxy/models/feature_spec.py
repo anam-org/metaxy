@@ -13,6 +13,7 @@ from typing import (
     Protocol,
     TypeAlias,
     TypeVar,
+    cast,
     overload,
     runtime_checkable,
 )
@@ -208,6 +209,26 @@ IDColumnsT = TypeVar(
 )  # bound, should be used for generic
 
 
+def _coerce_metadata(value: Any) -> dict[str, JsonValue] | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ValueError("metadata must be a mapping")
+    try:
+        serialized = json.dumps(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "metadata must be JSON-serializable. Found non-serializable value"
+        ) from exc
+    return cast(dict[str, JsonValue], json.loads(serialized))
+
+
+MetadataField = Annotated[
+    dict[str, JsonValue] | None,
+    BeforeValidator(_coerce_metadata),
+]
+
+
 class _BaseFeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
@@ -220,32 +241,14 @@ class _BaseFeatureSpec(FrozenBaseModel):
             )
         ]
     )
-    metadata: JsonValue = pydantic.Field(
-        default_factory=dict,
+    metadata: MetadataField = pydantic.Field(
+        default=None,
         description="Metadata attached to this feature.",
     )
 
 
 class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
     id_columns: pydantic.SkipValidation[IDColumnsT]
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def _default_metadata(cls, values: dict[str, Any]) -> dict[str, Any]:
-        # Allow callers to omit metadata or pass None while keeping the field non-optional.
-        if "metadata" in values and values["metadata"] is None:
-            values.pop("metadata", None)
-        elif "metadata" in values:
-            metadata_value = values["metadata"]
-            if not isinstance(metadata_value, Mapping):
-                raise ValueError("metadata must be a mapping")
-            try:
-                json.dumps(metadata_value)
-            except (TypeError, ValueError) as exc:
-                raise ValueError(
-                    "metadata must be JSON-serializable. Found non-serializable value"
-                ) from exc
-        return values
 
     @overload
     def __init__(
@@ -381,6 +384,8 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")
+        if spec_dict.get("metadata") == {}:
+            spec_dict.pop("metadata", None)
 
         # Sort keys to ensure deterministic ordering
         spec_json = json.dumps(spec_dict, sort_keys=True)
