@@ -1,6 +1,32 @@
 # Metaxy 🌌
 
-Metaxy is a feature metadata management system for ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
+Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs.
+
+Metaxy builds *versioned graphs* from feature definitions and tracks dependency changes:
+
+```mermaid
+---
+title: Feature Graph
+---
+flowchart TB
+    %% Snapshot version: f3f57b8e
+        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/>---<br/>• audio <small>(v:
+22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
+        overview_sst["<div style="text-align:left"><b>overview/sst</b><br/><small>(v: bc3cae5c)</small><br/>---<br/>• transcription <small>(v:
+99b97ac1)</small></div>"]
+        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/>---<br/>• audio <small>(v:
+76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
+        overview_embeddings["<div style="text-align:left"><b>overview/embeddings</b><br/><small>(v: 944318e4)</small><br/>---<br/>• embedding
+<small>(v: b3f81f9e)</small></div>"]
+        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: fbe130cc)</small><br/>---<br/>•
+detections <small>(v: ab065369)</small></div>"]
+        example_video --> example_crop
+        example_crop --> example_face_detection
+        example_video --> overview_sst
+        example_crop --> overview_embeddings
+```
+
+Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
 
 > [!WARNING] Giga Alpha
 > This project is as raw as a steak still saying ‘moo.’
@@ -9,37 +35,37 @@ Metaxy is:
 
 - **🧩 composable** --- bring your own everything!
 
-  - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
-  - supports **lakehouse storage** formats such as DeltaLake or DuckLake
-  - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
-  - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
+    - supports DuckDB, ClickHouse, and **20+ databases** via [Ibis](https://ibis-project.org/)
+    - supports **lakehouse storage** formats such as DeltaLake or DuckLake
+    - is **agnostic to tabular compute engines**: Polars, Spark, Pandas, and databases thanks to [Narwhals](https://narwhals-dev.github.io/narwhals/)
+    - we totally don't care how is the multi-modal **data** produced or where is it stored: Metaxy is responsible for yielding input metadata and writing output metadata
 
 - **🤸 flexible** to work around restrictions consciously:
 
-  - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
-  - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
+    - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
+    - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
 
 - **🪨 rock solid** when it matters:
 
-  - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
-  - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
-  - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
-  - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
+    - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+    - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
+    - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
+    - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
 
 - **📈 scalable**:
 
-  - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
-  - is built with **performance** in mind: all operations default to **run in the DB**, Metaxy does not stand in the way of metadata flow
+    - supports **feature organization and discovery** patterns such as packaging entry points. This enables collaboration across teams and projects.
+    - is built with **performance** in mind: all operations default to **run in the DB**, Metaxy does not stand in the way of metadata flow
 
 - **🧑‍💻 dev friendly**:
 
-  - clean, [intuitive Python API](./learn/feature-definitions.md#syntactic-sugar) that stays out of your way when you don't need it
-  - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
-  - comprehensive **type hints** and Pydantic integration for excellent IDE support
-  - first-class support for **local development, testing, preview environments, CI/CD**
-  - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
-  - integrations with popular tools such as [SQLModel](./learn/integrations/sqlmodel.md), Dagster, and Ray.
-  - [testing helpers](./learn/testing.md) that you're going to appreciate
+    - clean, [intuitive Python API](./learn/feature-definitions.md#syntactic-sugar) that stays out of your way when you don't need it
+    - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
+    - comprehensive **type hints** and Pydantic integration for excellent IDE support
+    - first-class support for **local development, testing, preview environments, CI/CD**
+    - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
+    - integrations with popular tools such as [SQLModel](./learn/integrations/sqlmodel.md), Dagster, and Ray.
+    - [testing helpers](./learn/testing.md) that you're going to appreciate
 
 ## Feature Dependencies
 
@@ -64,7 +90,7 @@ class VoiceDetection(
     Feature,
     spec=FeatureSpec(
         key="voice_detection",
-        deps=[FeatureDep(key=Video.spec.key)],
+        deps=[FeatureDep(feature=Video)],
     ),
 ):
     path: str = Field(description="Path to the voice detection json file")

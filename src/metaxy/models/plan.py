@@ -89,12 +89,12 @@ class FeaturePlan(FrozenBaseModel):
                 if field_dep.fields == SpecialFieldDep.ALL:
                     # we depend on all fields of the corresponding upstream feature
                     for parent_field in self.parent_features_by_key[
-                        field_dep.feature_key
+                        field_dep.feature
                     ].fields:
                         res[
                             FQFieldKey(
                                 field=parent_field.key,
-                                feature=field_dep.feature_key,
+                                feature=field_dep.feature,
                             )
                         ] = parent_field
 
@@ -103,7 +103,7 @@ class FeaturePlan(FrozenBaseModel):
                     for field_key in field_dep.fields:
                         fq_key = FQFieldKey(
                             field=field_key,
-                            feature=field_dep.feature_key,
+                            feature=field_dep.feature,
                         )
                         res[fq_key] = self.all_parent_fields_by_key[fq_key]
                 else:
@@ -143,7 +143,7 @@ class FeaturePlan(FrozenBaseModel):
             elif isinstance(field.deps, list):
                 # Specific dependencies defined
                 for field_dep in field.deps:
-                    feature_key = field_dep.feature_key
+                    feature_key = field_dep.feature
 
                     if field_dep.fields == SpecialFieldDep.ALL:
                         # All fields from this upstream feature

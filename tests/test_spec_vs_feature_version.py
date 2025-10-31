@@ -25,7 +25,6 @@ def test_feature_spec_version_vs_feature_version() -> None:
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "comparison"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
@@ -58,7 +57,6 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     # Create two identical specs
     spec1 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
@@ -66,7 +64,6 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
 
     spec2 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
-        deps=None,
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
@@ -98,7 +95,6 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "one"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version=1),
                 ],
@@ -110,7 +106,6 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "two"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version=1),
                 ],
@@ -125,12 +120,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
                 key=FeatureKey(["downstream"]),
                 deps=[
                     FeatureDep(
-                        key=FeatureKey(["upstream", "one"]),
+                        feature=FeatureKey(["upstream", "one"]),
                         columns=("col1", "col2"),
                         rename={"col1": "one_col1"},
                     ),
                     FeatureDep(
-                        key=FeatureKey(["upstream", "two"]),
+                        feature=FeatureKey(["upstream", "two"]),
                         columns=None,  # All columns
                         rename=None,
                     ),
@@ -164,12 +159,12 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             key=FeatureKey(["downstream"]),
             deps=[
                 FeatureDep(
-                    key=FeatureKey(["upstream", "one"]),
+                    feature=FeatureKey(["upstream", "one"]),
                     columns=("col1", "col2"),
                     rename={"col1": "one_col1"},
                 ),
                 FeatureDep(
-                    key=FeatureKey(["upstream", "two"]),
+                    feature=FeatureKey(["upstream", "two"]),
                     columns=None,
                     rename=None,
                 ),

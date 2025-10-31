@@ -46,9 +46,8 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
     # Snapshot the hash
     assert code_ver == snapshot
 
-    # Should be cached on the spec for efficient reuse
-    assert "code_version" in SingleFieldFeature.spec.__dict__
-    assert SingleFieldFeature.spec.__dict__["code_version"] == code_ver
+    # The code_version should be accessible from spec as well
+    assert SingleFieldFeature.spec().code_version == code_ver
 
 
 def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
@@ -146,7 +145,9 @@ def test_code_version_independence_from_dependencies() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "child_v1"]),
-                deps=[FeatureDep(key=FeatureKey(["independence_test", "parent_v1"]))],
+                deps=[
+                    FeatureDep(feature=FeatureKey(["independence_test", "parent_v1"]))
+                ],
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
@@ -173,7 +174,9 @@ def test_code_version_independence_from_dependencies() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "child_v2"]),
-                deps=[FeatureDep(key=FeatureKey(["independence_test", "parent_v2"]))],
+                deps=[
+                    FeatureDep(feature=FeatureKey(["independence_test", "parent_v2"]))
+                ],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]), code_version=1
@@ -304,7 +307,7 @@ def test_code_version_complex_dependency_chain() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["chain", "b"]),
-                deps=[FeatureDep(key=FeatureKey(["chain", "a"]))],
+                deps=[FeatureDep(feature=FeatureKey(["chain", "a"]))],
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=2),
                 ],
@@ -316,7 +319,7 @@ def test_code_version_complex_dependency_chain() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["chain", "c"]),
-                deps=[FeatureDep(key=FeatureKey(["chain", "b"]))],
+                deps=[FeatureDep(feature=FeatureKey(["chain", "b"]))],
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=3),
                 ],
@@ -547,7 +550,7 @@ def test_property_code_version_independent_of_parent(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["property_test", "child"]),
-                deps=[FeatureDep(key=FeatureKey(["property_test", "parent"]))],
+                deps=[FeatureDep(feature=FeatureKey(["property_test", "parent"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]), code_version=child_code_version
@@ -585,7 +588,7 @@ def test_property_code_version_independent_of_parent(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["property_test", "child2"]),
-                deps=[FeatureDep(key=FeatureKey(["property_test", "parent2"]))],
+                deps=[FeatureDep(feature=FeatureKey(["property_test", "parent2"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]),

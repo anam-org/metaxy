@@ -44,7 +44,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         ...     table=True,
         ...     spec=BaseFeatureSpec(
         ...         key=FeatureKey(["my", "feature"]),
-        ...         deps=None,
+        ...
         ...         fields=[
         ...             FieldSpec(
         ...                 key=FieldKey(["data"]),
@@ -156,7 +156,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 )
 
 
-class SQLModelFeature(  # pyright: ignore[reportUnsafeMultipleInheritance, reportIncompatibleMethodOverride]
+class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     SQLModel, BaseFeature[IDColumns], metaclass=SQLModelFeatureMeta, spec=None
 ):  # type: ignore[misc]
     """Base class for features that are also SQLModel tables.
@@ -185,7 +185,7 @@ class SQLModelFeature(  # pyright: ignore[reportUnsafeMultipleInheritance, repor
         ...     table=True,
         ...     spec=BaseFeatureSpec(
         ...         key=FeatureKey(["video"]),
-        ...         deps=None,  # Root feature
+        ...           # Root feature
         ...         fields=[
         ...             FieldSpec(
         ...                 key=FieldKey(["video_file"]),
@@ -227,11 +227,3 @@ class SQLModelFeature(  # pyright: ignore[reportUnsafeMultipleInheritance, repor
     metaxy_snapshot_version: str | None = Field(
         default=None, sa_column_kwargs={"name": "snapshot_version", "nullable": True}
     )
-
-    # All Feature class methods and attributes are inherited from Feature base class:
-    # - spec: ClassVar[BaseFeatureSpec]
-    # - graph: ClassVar[FeatureGraph]
-    # - feature_version() -> str
-    # - data_version() -> dict[str, str]
-    # - load_input(...)
-    # - resolve_data_version_diff(...)

@@ -53,7 +53,6 @@ def create_test_feature(name: str, key: list[str]) -> type[Feature]:
         {},
         spec=TestingFeatureSpec(
             key=FeatureKey(key),
-            deps=None,
             fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
         ),
     )
@@ -75,7 +74,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class TestFeature1(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["test", "feature1"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -136,7 +135,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ActiveRegistryFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["active", "test"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -173,7 +172,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature{i}(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["multi", "feature{i}"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -232,7 +231,6 @@ def test_load_package_entrypoints_discovers_and_loads(graph: FeatureGraph):
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["plugin", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
@@ -282,7 +280,6 @@ def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["custom", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
@@ -336,7 +333,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ConfigFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["config", "feature"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -357,7 +354,6 @@ class ConfigFeature(Feature, spec=TestingFeatureSpec(
                     Feature,
                     spec=TestingFeatureSpec(
                         key=FeatureKey(["package", "feature"]),
-                        deps=None,
                         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                     ),
                 ):
@@ -399,7 +395,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class ConfigOnlyFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["config_only", "feature"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -436,7 +432,6 @@ def test_load_features_packages_only(graph: FeatureGraph):
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["package_only", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
@@ -502,7 +497,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature1(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -514,7 +509,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class Feature2(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["duplicate", "key"]),  # Same key!
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -547,7 +542,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
 class UpstreamFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["deps", "upstream"]),
-    deps=None,
+
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -560,7 +555,7 @@ from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey,
 
 class DownstreamFeature(Feature, spec=TestingFeatureSpec(
     key=FeatureKey(["deps", "downstream"]),
-    deps=[FeatureDep(key=FeatureKey(["deps", "upstream"]))],
+    deps=[FeatureDep(feature=FeatureKey(["deps", "upstream"]))],
     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
 )):
     pass
@@ -580,6 +575,6 @@ class DownstreamFeature(Feature, spec=TestingFeatureSpec(
         downstream_spec = graph.feature_specs_by_key[FeatureKey(["deps", "downstream"])]
         assert downstream_spec.deps is not None
         assert len(downstream_spec.deps) == 1
-        assert downstream_spec.deps[0].key == FeatureKey(["deps", "upstream"])
+        assert downstream_spec.deps[0].feature == FeatureKey(["deps", "upstream"])
     finally:
         sys.path.remove(str(tmp_path))

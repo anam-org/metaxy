@@ -1542,11 +1542,11 @@ class MetadataStore(ABC):
                 if isinstance(dep, FieldDep):
                     if dep.fields == SpecialFieldDep.ALL:
                         # All fields of this feature
-                        upstream_feature = plan.parent_features_by_key[dep.feature_key]
+                        upstream_feature = plan.parent_features_by_key[dep.feature]
                         for upstream_field in upstream_feature.fields:
                             upstream.add(
                                 FQFieldKey(
-                                    feature=dep.feature_key,
+                                    feature=dep.feature,
                                     field=upstream_field.key,
                                 )
                             )
@@ -1554,7 +1554,7 @@ class MetadataStore(ABC):
                         # Specific fields
                         for field_key in dep.fields:
                             upstream.add(
-                                FQFieldKey(feature=dep.feature_key, field=field_key)
+                                FQFieldKey(feature=dep.feature, field=field_key)
                             )
 
         return upstream

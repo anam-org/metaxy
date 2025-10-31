@@ -3,14 +3,15 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Generic
 
-import pydantic
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
+from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     BaseFeatureSpecWithIDColumns,
     DefaultFeatureCols,
+    FeatureSpec,
     IDColumns,
     IDColumnsT,
     TestingUIDCols,
@@ -83,10 +84,10 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
 
 class FeatureGraph:
     def __init__(self):
-        self.features_by_key: dict[FeatureKey, type[BaseFeature[IDColumns]]] = {}
+        self.features_by_key: dict[FeatureKey, type[BaseFeature[Any]]] = {}
         self.feature_specs_by_key: dict[FeatureKey, BaseFeatureSpecWithIDColumns] = {}
 
-    def add_feature(self, feature: type["BaseFeature[IDColumns]"]) -> None:
+    def add_feature(self, feature: type["BaseFeature[Any]"]) -> None:
         """Add a feature to the graph.
 
         Args:
@@ -140,7 +141,7 @@ class FeatureGraph:
 
             if dep.rename:
                 # Get the upstream feature's spec to check its ID columns
-                upstream_spec = self.feature_specs_by_key.get(dep.key)
+                upstream_spec = self.feature_specs_by_key.get(dep.feature)
                 upstream_id_columns = upstream_spec.id_columns if upstream_spec else []
 
                 # Check for renaming to system columns or upstream's ID columns
@@ -148,7 +149,7 @@ class FeatureGraph:
                     if new_name in ALL_SYSTEM_COLUMNS:
                         raise ValueError(
                             f"Cannot rename column '{old_name}' to system column name '{new_name}' "
-                            f"in dependency '{dep.key.to_string()}'. "
+                            f"in dependency '{dep.feature.to_string()}'. "
                             f"System columns: {sorted(ALL_SYSTEM_COLUMNS)}"
                         )
 
@@ -156,8 +157,8 @@ class FeatureGraph:
                     if new_name in upstream_id_columns:
                         raise ValueError(
                             f"Cannot rename column '{old_name}' to ID column '{new_name}' "
-                            f"from upstream feature '{dep.key.to_string()}'. "
-                            f"ID columns for '{dep.key.to_string()}': {upstream_id_columns}"
+                            f"from upstream feature '{dep.feature.to_string()}'. "
+                            f"ID columns for '{dep.feature.to_string()}': {upstream_id_columns}"
                         )
 
                 # Check for duplicate column names within this dependency
@@ -171,7 +172,7 @@ class FeatureGraph:
                             duplicates.add(name)
                         seen.add(name)
                     raise ValueError(
-                        f"Duplicate column names after renaming in dependency '{dep.key.to_string()}': "
+                        f"Duplicate column names after renaming in dependency '{dep.feature.to_string()}': "
                         f"{sorted(duplicates)}. Cannot rename multiple columns to the same name within a single dependency."
                     )
 
@@ -183,10 +184,10 @@ class FeatureGraph:
             if not isinstance(dep, FeatureDep):
                 continue
 
-            dep_key_str = dep.key.to_string()
+            dep_key_str = dep.feature.to_string()
 
             # Get the upstream feature spec if available
-            upstream_spec = self.feature_specs_by_key.get(dep.key)
+            upstream_spec = self.feature_specs_by_key.get(dep.feature)
             if not upstream_spec:
                 # If upstream feature isn't registered yet, skip validation
                 # This can happen during circular imports or when features are defined in different modules
@@ -269,7 +270,7 @@ class FeatureGraph:
         del self.features_by_key[key]
         del self.feature_specs_by_key[key]
 
-    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[IDColumns]"]:
+    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[Any]"]:
         """Get a feature class by its key.
 
         Args:
@@ -298,7 +299,7 @@ class FeatureGraph:
 
         return FeaturePlan(
             feature=feature,
-            deps=[self.feature_specs_by_key[dep.key] for dep in feature.deps or []]
+            deps=[self.feature_specs_by_key[dep.feature] for dep in feature.deps or []]
             or None,
         )
 
@@ -379,7 +380,7 @@ class FeatureGraph:
             for feature_key, feature_spec in self.feature_specs_by_key.items():
                 if feature_spec.deps:
                     for dep in feature_spec.deps:
-                        if dep.key == key:
+                        if dep.feature == key:
                             # This feature depends on 'key', so visit it
                             visit(feature_key)
 
@@ -505,8 +506,6 @@ class FeatureGraph:
         import importlib
         import sys
 
-        from metaxy.models.feature_spec import BaseFeatureSpec
-
         graph = cls()
         class_path_overrides = class_path_overrides or {}
 
@@ -527,9 +526,9 @@ class FeatureGraph:
         # This ensures imported Feature classes register to the new graph, not the current one
         with graph.use():
             for feature_key_str, feature_data in snapshot_data.items():
-                # Parse BaseFeatureSpec for validation
+                # Parse FeatureSpec for validation
                 feature_spec_dict = feature_data["feature_spec"]
-                BaseFeatureSpec.model_validate(feature_spec_dict)
+                FeatureSpec.model_validate(feature_spec_dict)
 
                 # Get class path (check overrides first)
                 if feature_key_str in class_path_overrides:
@@ -560,7 +559,7 @@ class FeatureGraph:
                                 )
                                 if fcp and fcp.rsplit(".", 1)[0] == module_path:
                                     fspec_dict = fd["feature_spec"]
-                                    fspec = BaseFeatureSpec.model_validate(fspec_dict)
+                                    fspec = FeatureSpec.model_validate(fspec_dict)
                                     if fspec.key in graph.features_by_key:
                                         graph.remove_feature(fspec.key)
 
@@ -680,12 +679,13 @@ class MetaxyMeta(ModelMetaclass):
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph
-            new_cls._spec = spec
+            new_cls.graph = active_graph  # type: ignore[attr-defined]
+            new_cls._spec = spec  # type: ignore[attr-defined]
 
             # Determine project for this feature using intelligent detection
             project = cls._detect_project(new_cls)
             new_cls.project = project  # type: ignore[attr-defined]
+
             active_graph.add_feature(new_cls)
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
@@ -790,24 +790,52 @@ class MetaxyMeta(ModelMetaclass):
         return config.project
 
 
+class _CodeVersionDescriptor:
+    """Descriptor that returns field-only code version hashes."""
+
+    def __get__(self, instance, owner) -> str:
+        if not hasattr(owner, "spec"):
+            raise AttributeError(
+                f"Feature class '{owner.__name__}' is missing a spec definition."
+            )
+        spec = owner.spec()
+        if spec is None:
+            raise ValueError(
+                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
+            )
+        return spec.code_version
+
+
+class _FeatureSpecDescriptor:
+    """Descriptor that returns the feature spec of the feature."""
+
+    def __get__(self, instance, owner) -> str:
+        if owner.spec is None:
+            raise ValueError(
+                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
+            )
+        return owner.spec
+
+
 class BaseFeature(
-    pydantic.BaseModel,
-    Generic[IDColumnsT],
-    metaclass=MetaxyMeta,
-    spec=None,
+    FrozenBaseModel, Generic[IDColumnsT], metaclass=MetaxyMeta, spec=None
 ):
-    _spec: ClassVar[Any]
+    # once ClassVar supports it
+    # this should be changed to spec: BaseFeatureSpec[IDColumnsT]
+    _spec: ClassVar[BaseFeatureSpec[IDColumns]]
+
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
     code_version: ClassVar[str] = _CodeVersionDescriptor()  # pyright: ignore[reportAssignmentType]
 
+    # once ClassVar supports it
+    # this should be replaced by
+    # spec: BaseFeatureSpec[IDColumnsT]
     @classmethod
-    def spec(cls) -> BaseFeatureSpec[IDColumnsT]:
-        return cls._spec  # always set by metaclass
-
-    @classmethod
-    def id_columns(cls) -> IDColumnsT:
-        return cls.spec().id_columns
+    def spec(cls) -> BaseFeatureSpec[IDColumns]:  # type: ignore[override]
+        # Note: Return type should be BaseFeatureSpec[IDColumnsT] but ClassVar
+        # doesn't support generics. Using IDColumns for now until Python improves.
+        return cls._spec
 
     @classmethod
     def table_name(cls) -> str:
@@ -820,7 +848,7 @@ class BaseFeature(
             Table name string (e.g., "my_namespace__my_feature")
 
         Example:
-            >>> class VideoFeature(Feature, spec=BaseFeatureSpec(
+            >>> class VideoFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["video", "processing"]),
             ...     ...
             ... )):
@@ -829,6 +857,35 @@ class BaseFeature(
             'video__processing'
         """
         return cls.spec().table_name()
+
+    @classmethod
+    def id_columns(cls) -> IDColumns:
+        """Get the ID columns used for joining metadata.
+
+        Returns the ID columns from the feature spec, or the default ["sample_uid"]
+        if not specified. These columns are used as join keys when combining
+        upstream features.
+
+        Returns:
+            List of ID column names
+
+        Example:
+            >>> class DefaultFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ... )):
+            ...     pass
+            >>> DefaultFeature.id_columns()
+            ['sample_uid']  # Default
+
+            >>> class CustomIDFeature(Feature, spec=FeatureSpec(
+            ...     key=FeatureKey(["my", "feature"]),
+            ...     id_columns=["user_id", "session_id"],
+            ... )):
+            ...     pass
+            >>> CustomIDFeature.id_columns()
+            ['user_id', 'session_id']  # Custom composite key
+        """
+        return cls.spec().id_columns
 
     @classmethod
     def feature_version(cls) -> str:
@@ -851,7 +908,7 @@ class BaseFeature(
             SHA256 hex digest (like git short hashes)
 
         Example:
-            >>> class MyFeature(Feature, spec=BaseFeatureSpec(
+            >>> class MyFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
             ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ... )):
@@ -882,7 +939,7 @@ class BaseFeature(
             SHA256 hex digest of the complete specification
 
         Example:
-            >>> class MyFeature(Feature, spec=BaseFeatureSpec(
+            >>> class MyFeature(Feature, spec=FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
             ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ... )):
@@ -955,21 +1012,17 @@ class BaseFeature(
         upstream_columns: dict[str, tuple[str, ...] | None] = {}
         upstream_renames: dict[str, dict[str, str] | None] = {}
 
-        for dep in cls.spec().deps or []:
-            if isinstance(dep, FeatureDep):
-                dep_key_str = dep.key.to_string()
-                upstream_columns[dep_key_str] = dep.columns
-                upstream_renames[dep_key_str] = dep.rename
-
-        # Type cast needed due to TypeVar invariance - IDColumnsT is bound to IDColumns
-        # so this is safe at runtime
-        from typing import cast
-
-        feature_spec = cast("BaseFeatureSpec[IDColumns]", cls.spec())
+        deps = cls.spec().deps
+        if deps:
+            for dep in deps:
+                if isinstance(dep, FeatureDep):
+                    dep_key_str = dep.feature.to_string()
+                    upstream_columns[dep_key_str] = dep.columns
+                    upstream_renames[dep_key_str] = dep.rename
 
         return joiner.join_upstream(
             upstream_refs=upstream_refs,
-            feature_spec=feature_spec,
+            feature_spec=cls.spec(),
             feature_plan=cls.graph.get_feature_plan(cls.spec().key),
             upstream_columns=upstream_columns,
             upstream_renames=upstream_renames,
@@ -1007,7 +1060,7 @@ class BaseFeature(
             ...     @classmethod
             ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
             ...         # Get standard diff
-            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.id_columns()())
+            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.id_columns())
             ...
             ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
             ...         # Users can filter/modify the diff result here
@@ -1034,14 +1087,13 @@ class BaseFeature(
         return lazy_result
 
 
-# TODO: move this to tests, stop using it in docs and examples
 class Feature(BaseFeature[DefaultFeatureCols], spec=None):
-    sample_uid: str | None = None
+    """
+    A default specialization of BaseFeature that uses a `sample_uid` ID column.
+    """
+
+    # spec: ClassVar[FeatureSpec]
 
 
-############## testing ######################
-
-
-# TODO: move this to tests, stop using it in docs and examples
 class TestingFeature(BaseFeature[TestingUIDCols], spec=None):
     sample_uid: str | None = None

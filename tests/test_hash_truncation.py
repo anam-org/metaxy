@@ -275,7 +275,7 @@ class TestFeatureVersionTruncation:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature1"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                    deps=None,  # Root feature has no dependencies
+                    # Root feature has no dependencies
                 ),
             ):
                 pass
@@ -292,7 +292,7 @@ class TestFeatureVersionTruncation:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                    deps=None,  # Root feature has no dependencies
+                    # Root feature has no dependencies
                 ),
             ):
                 pass
@@ -315,7 +315,6 @@ class TestFeatureVersionTruncation:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                    deps=None,
                 ),
             ):
                 pass
@@ -350,7 +349,6 @@ class TestFeatureVersionTruncation:
                         FieldSpec(key=FieldKey(["field1"]), code_version=1),
                         FieldSpec(key=FieldKey(["field2"]), code_version=2),
                     ],
-                    deps=None,
                 ),
             ):
                 pass
@@ -472,7 +470,6 @@ class TestMetadataStoreTruncation:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                    deps=None,
                 ),
             ):
                 pass
@@ -530,7 +527,6 @@ class TestMigrationCompatibility:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
-                    deps=None,
                 ),
             ):
                 pass
@@ -553,7 +549,6 @@ class TestMigrationCompatibility:
                         fields=[
                             FieldSpec(key=FieldKey(["field1"]), code_version=2)
                         ],  # Changed
-                        deps=None,
                     ),
                 ):
                     pass
@@ -607,7 +602,6 @@ class TestEndToEnd:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["parent"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
-                    deps=None,
                 ),
             ):
                 pass
@@ -619,7 +613,7 @@ class TestEndToEnd:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["child"]),
                     fields=[FieldSpec(key=FieldKey(["derived"]), code_version=1)],
-                    deps=[FeatureDep(key=FeatureKey(["parent"]))],
+                    deps=[FeatureDep(feature=FeatureKey(["parent"]))],
                 ),
             ):
                 pass

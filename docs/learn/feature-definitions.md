@@ -17,16 +17,21 @@ Features live on a global `FeatureGraph` object (typically users do not need to 
 
 ## Feature Specs
 
-Before we can define a `Feature`, we must first create a `FeatureSpec` object. But before we get to an example, it's necessary to understand the concept of ID columns. Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`. Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class. Let's do it:
+Before we can define a `Feature`, we must first create a `FeatureSpec` object. But before we get to an example, it's necessary to understand the concept of ID columns. Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`. Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class.
+
+Some boilerplate with typing is involved (this is typically a good thing):
 
 ```py
+from typing import TypeAlias
+
 from metaxy import BaseFeatureSpec
 
 
-class VideoFeatureSpec(
-    BaseFeatureSpec
-):  # spec=None is important to tell Metaxy that this is a base class
-    id_columns: tuple[str] = ("video_id",)
+VideoIds: TypeAlias = tuple[str]
+
+
+class VideoFeatureSpec(BaseFeatureSpec[VideoIds]):
+    id_columns: VideoIds = ("video_id",)
 ```
 
 `BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
@@ -97,7 +102,7 @@ class VideoFeature(BaseVideoFeature, spec=video_spec):
     path: str
 
 
-transcript_spec = TranscriptFeatureSpec(key="/raw/transcript", fields=[FieldSpec(key="text", deps=[FieldDep(feature_key=VideoFeature.spec.key, fields=["audio"])])])
+transcript_spec = TranscriptFeatureSpec(key="/raw/transcript", fields=[FieldSpec(key="text", deps=[FieldDep(feature=VideoFeature.spec().key, fields=["audio"])])])
 
 class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
     path: str

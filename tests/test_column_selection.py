@@ -27,7 +27,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -37,7 +36,7 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
-                    deps=[FeatureDep(key=FeatureKey(["test", "upstream"]))],
+                    deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
                 ),
             ):
                 pass
@@ -83,7 +82,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -95,7 +93,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=("custom_col1",),
                         )
                     ],
@@ -142,7 +140,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -154,7 +151,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=(),  # Only system columns
                         )
                     ],
@@ -205,7 +202,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -217,7 +213,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             rename={
                                 "custom_col1": "upstream_col1",
                                 "custom_col2": "upstream_col2",
@@ -269,7 +265,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -281,7 +276,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=("custom_col1", "custom_col2"),
                             rename={"custom_col1": "renamed_col1"},
                         )
@@ -328,7 +323,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -337,7 +331,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -348,8 +341,8 @@ class TestColumnSelection:
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
-                        FeatureDep(key=FeatureKey(["test", "upstream1"])),
-                        FeatureDep(key=FeatureKey(["test", "upstream2"])),
+                        FeatureDep(feature=FeatureKey(["test", "upstream1"])),
+                        FeatureDep(feature=FeatureKey(["test", "upstream2"])),
                     ],
                 ),
             ):
@@ -403,7 +396,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -412,7 +404,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -424,11 +415,11 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream1"]),
+                            feature=FeatureKey(["test", "upstream1"]),
                             rename={"conflict_col": "upstream1_col"},
                         ),
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream2"]),
+                            feature=FeatureKey(["test", "upstream2"]),
                             rename={"conflict_col": "upstream2_col"},
                         ),
                     ],
@@ -489,7 +480,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -501,7 +491,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=(
                                 "custom_col",
                             ),  # Don't explicitly list system columns
@@ -555,7 +545,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -572,7 +561,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad1"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={"old_col": "data_version"},  # Not allowed
                             )
                         ],
@@ -592,7 +581,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad2"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={"old_col": "feature_version"},  # Not allowed
                             )
                         ],
@@ -612,7 +601,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad3"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "old_col": "sample_uid"
                                 },  # Not allowed - it's upstream's ID column
@@ -632,7 +621,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                     id_columns=[
                         "user_id",
                         "session_id",
@@ -648,7 +636,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             rename={
                                 "some_col": "sample_uid"  # Allowed - sample_uid is not upstream's ID column
                             },
@@ -677,7 +665,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                     id_columns=["user_id", "session_id"],
                 ),
             ):
@@ -690,7 +677,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             rename={
                                 "some_col": "user_id_renamed"
                             },  # Allowed - not renaming to actual ID column name
@@ -733,21 +720,21 @@ class TestColumnSelection:
     def test_pydantic_serialization(self):
         """Test that FeatureDep with columns and rename serializes correctly."""
         dep = FeatureDep(
-            key=FeatureKey(["test", "upstream"]),
+            feature=FeatureKey(["test", "upstream"]),
             columns=("col1", "col2"),
             rename={"col1": "new_col1"},
         )
 
         # Serialize to dict
         dep_dict = dep.model_dump()
-        assert dep_dict["key"] == ["test", "upstream"]
+        assert dep_dict["feature"] == ["test", "upstream"]
         assert dep_dict["columns"] == ("col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
 
         # Round-trip through JSON
         dep_json = dep.model_dump_json()
         dep_restored = FeatureDep.model_validate_json(dep_json)
-        assert dep_restored.key == FeatureKey(["test", "upstream"])
+        assert dep_restored.feature == FeatureKey(["test", "upstream"])
         assert dep_restored.columns == ("col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
 
@@ -761,7 +748,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -770,7 +756,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -779,7 +764,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream3"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -791,15 +775,15 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         # Keep all columns from upstream1 (default)
-                        FeatureDep(key=FeatureKey(["test", "upstream1"])),
+                        FeatureDep(feature=FeatureKey(["test", "upstream1"])),
                         # Select specific columns from upstream2
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream2"]),
+                            feature=FeatureKey(["test", "upstream2"]),
                             columns=("important_col",),
                         ),
                         # Rename columns from upstream3
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream3"]),
+                            feature=FeatureKey(["test", "upstream3"]),
                             columns=("shared_col", "unique_col"),
                             rename={"shared_col": "upstream3_shared"},
                         ),
@@ -902,7 +886,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -914,7 +897,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "custom_filter"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=("value", "category"),
                             rename={"value": "upstream_value"},
                         )
@@ -1001,7 +984,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1012,7 +994,7 @@ class TestColumnSelection:
                     key=FeatureKey(["test", "downstream"]),
                     deps=[
                         FeatureDep(
-                            key=FeatureKey(["test", "upstream"]),
+                            feature=FeatureKey(["test", "upstream"]),
                             columns=("col1", "col2"),
                             rename={"col1": "renamed_col1"},
                         )
@@ -1051,7 +1033,7 @@ class TestColumnSelection:
 
                 # Verify columns and rename are serialized
                 dep = feature_spec_dict["deps"][0]
-                assert dep["key"] == ["test", "upstream"]
+                assert dep["feature"] == ["test", "upstream"]
                 assert dep["columns"] == [
                     "col1",
                     "col2",
@@ -1066,7 +1048,7 @@ class TestColumnSelection:
                 downstream_spec_dict = downstream_snapshot["feature_spec"]
                 assert "deps" in downstream_spec_dict
                 dep_dict = downstream_spec_dict["deps"][0]
-                assert dep_dict["key"] == ["test", "upstream"]
+                assert dep_dict["feature"] == ["test", "upstream"]
                 assert dep_dict["columns"] == ["col1", "col2"]
                 assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
@@ -1089,7 +1071,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1105,7 +1086,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "col1": "same_name",
                                     "col2": "same_name",
@@ -1126,7 +1107,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1135,7 +1115,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1150,12 +1129,12 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad_downstream"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream1"]),
+                                feature=FeatureKey(["test", "upstream1"]),
                                 columns=("col1",),
                                 rename={"col1": "duplicate_col"},
                             ),
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream2"]),
+                                feature=FeatureKey(["test", "upstream2"]),
                                 columns=("col2",),
                                 rename={"col2": "duplicate_col"},
                             ),
@@ -1174,7 +1153,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream1"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1183,7 +1161,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream2"]),
-                    deps=None,
                 ),
             ):
                 pass
@@ -1197,11 +1174,11 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad_downstream"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream1"]),
+                                feature=FeatureKey(["test", "upstream1"]),
                                 columns=("shared_col", "col1"),  # Selects shared_col
                             ),
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream2"]),
+                                feature=FeatureKey(["test", "upstream2"]),
                                 columns=(
                                     "shared_col",
                                     "col2",
@@ -1222,7 +1199,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                     id_columns=["user_id", "session_id"],
                 ),
             ):
@@ -1239,7 +1215,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad1"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "some_col": "user_id",  # Not allowed - upstream's ID column
                                 },
@@ -1261,7 +1237,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "bad2"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "some_col": "session_id",  # Not allowed - upstream's ID column
                                 },
@@ -1282,7 +1258,6 @@ class TestColumnSelection:
                 Feature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "upstream"]),
-                    deps=None,
                     # Default ID columns: ["sample_uid"]
                 ),
             ):
@@ -1300,7 +1275,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "downstream1"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "old_version": "data_version",  # Not allowed - system column
                                 },
@@ -1321,7 +1296,7 @@ class TestColumnSelection:
                         key=FeatureKey(["test", "downstream2"]),
                         deps=[
                             FeatureDep(
-                                key=FeatureKey(["test", "upstream"]),
+                                feature=FeatureKey(["test", "upstream"]),
                                 rename={
                                     "old_sample": "sample_uid",  # Not allowed - upstream's ID column
                                 },

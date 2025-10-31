@@ -1,10 +1,8 @@
 from metaxy import (
     Feature,
     FeatureDep,
-    FeatureKey,
     FeatureSpec,
     FieldDep,
-    FieldKey,
     FieldSpec,
 )
 
@@ -12,15 +10,14 @@ from metaxy import (
 class Video(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["example", "video"]),
-        deps=None,  # Root feature
+        key="example/video",
         fields=[
             FieldSpec(
-                key=FieldKey(["audio"]),
+                key="audio",
                 code_version=1,
             ),
             FieldSpec(
-                key=FieldKey(["frames"]),
+                key="frames",
                 code_version=1,
             ),
         ],
@@ -36,26 +33,26 @@ class Video(
 class Crop(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["example", "crop"]),
-        deps=[FeatureDep(key=Video.spec().key)],
+        key="example/crop",
+        deps=[FeatureDep(feature=Video)],
         fields=[
             FieldSpec(
-                key=FieldKey(["audio"]),
+                key="audio",
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec().key,
-                        fields=[FieldKey(["audio"])],
+                        feature=Video,
+                        fields=["audio"],
                     )
                 ],
             ),
             FieldSpec(
-                key=FieldKey(["frames"]),
+                key="frames",
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec().key,
-                        fields=[FieldKey(["frames"])],
+                        feature=Video,
+                        fields=["frames"],
                     )
                 ],
             ),
@@ -68,20 +65,20 @@ class Crop(
 class FaceDetection(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["example", "face_detection"]),
+        key="example/face_detection",
         deps=[
             FeatureDep(
-                key=Crop.spec().key,
+                feature=Crop,
             )
         ],
         fields=[
             FieldSpec(
-                key=FieldKey(["faces"]),
+                key="faces",
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Crop.spec().key,
-                        fields=[FieldKey(["frames"])],
+                        feature=Crop,
+                        fields=["frames"],
                     )
                 ],
             ),
@@ -94,20 +91,20 @@ class FaceDetection(
 class SpeechToText(
     Feature,
     spec=FeatureSpec(
-        key=FeatureKey(["example", "stt"]),
+        key="example/stt",
         deps=[
             FeatureDep(
-                key=Video.spec().key,
+                feature=Video,
             )
         ],
         fields=[
             FieldSpec(
-                key=FieldKey(["transcription"]),
+                key="transcription",
                 code_version=1,
                 deps=[
                     FieldDep(
-                        feature_key=Video.spec().key,
-                        fields=[FieldKey(["audio"])],
+                        feature=Video,
+                        fields=["audio"],
                     )
                 ],
             ),

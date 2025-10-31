@@ -8,14 +8,23 @@ can be controlled through various methods:
 """
 
 import os
+from collections.abc import Sequence
 
 from sqlmodel import Field
 
-from metaxy import FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+from metaxy import BaseFeatureSpec, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
 from metaxy._testing import TempMetaxyProject
 from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
-from metaxy.ext.sqlmodel import SQLModelFeature
+from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.models.feature import FeatureGraph
+
+
+class FeatureSpec(BaseFeatureSpec[Sequence[str]]):
+    id_columns: Sequence[str] = ["sample_id"]
+
+
+class SQLModelFeature(BaseSQLModelFeature):
+    sample_id: str
 
 
 def test_auto_table_naming_enabled_by_default():
@@ -32,7 +41,6 @@ def test_auto_table_naming_enabled_by_default():
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -62,7 +70,6 @@ def test_auto_table_naming_disabled_explicit_config():
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -98,7 +105,6 @@ def test_auto_table_naming_still_allows_explicit():
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -139,7 +145,6 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -179,7 +184,6 @@ def test_auto_table_naming_env_var():
                 table=True,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
                 ),
             ):
@@ -230,7 +234,6 @@ def test_config_priority_init_over_env():
                 table=True,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
                 ),
             ):
@@ -280,7 +283,6 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -314,7 +316,6 @@ def test_multiple_features_with_config_change():
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature", "one"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):
@@ -336,7 +337,6 @@ def test_multiple_features_with_config_change():
             table=True,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature", "two"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
             ),
         ):

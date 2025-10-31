@@ -32,13 +32,13 @@ class SpecialFieldDep(Enum):
 
 
 class FieldDep(BaseModel):
-    feature_key: FeatureKey
+    feature: FeatureKey
     fields: list[FieldKey] | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL
 
     @overload
     def __init__(
         self,
-        feature_key: str,
+        feature: str,
         **kwargs: Any,
     ) -> None:
         """Initialize from string feature key."""
@@ -47,7 +47,7 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
-        feature_key: Sequence[str],
+        feature: Sequence[str],
         **kwargs: Any,
     ) -> None:
         """Initialize from sequence of parts."""
@@ -56,7 +56,7 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
-        feature_key: FeatureKey,
+        feature: FeatureKey,
         **kwargs: Any,
     ) -> None:
         """Initialize from FeatureKey instance."""
@@ -65,7 +65,7 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
-        feature_key: "CoercibleToFeatureKey",
+        feature: "CoercibleToFeatureKey",
         **kwargs: Any,
     ) -> None:
         """Initialize from CoercibleToFeatureKey types."""
@@ -74,7 +74,7 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
-        feature_key: "FeatureSpec",
+        feature: "FeatureSpec",
         **kwargs: Any,
     ) -> None:
         """Initialize from FeatureSpec instance."""
@@ -83,7 +83,7 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
-        feature_key: type["Feature"],
+        feature: type["Feature"],
         **kwargs: Any,
     ) -> None:
         """Initialize from Feature instance."""
@@ -91,7 +91,7 @@ class FieldDep(BaseModel):
 
     def __init__(
         self,
-        feature_key: "CoercibleToFeatureKey | FeatureSpec | type[Feature]",
+        feature: "CoercibleToFeatureKey | FeatureSpec | type[Feature]",
         fields: list[CoercibleToFieldKey]
         | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
         *args,
@@ -99,12 +99,12 @@ class FieldDep(BaseModel):
     ):
         from metaxy.models.feature_spec import FeatureSpec
 
-        if isinstance(feature_key, FeatureSpec):
-            feature_key = feature_key.key
-        elif isinstance(feature_key, type) and issubclass(feature_key, Feature):
-            feature_key = feature_key.spec().key
+        if isinstance(feature, FeatureSpec):
+            feature_key = feature.key
+        elif isinstance(feature, type) and issubclass(feature, Feature):
+            feature_key = feature.spec().key
         else:
-            feature_key = FeatureKeyAdapter.validate_python(feature_key)
+            feature_key = FeatureKeyAdapter.validate_python(feature)
 
         assert isinstance(feature_key, FeatureKey)
 
@@ -113,9 +113,7 @@ class FieldDep(BaseModel):
         else:
             validated_fields = fields  # Keep the enum value as-is
 
-        super().__init__(
-            feature_key=feature_key, fields=validated_fields, *args, **kwargs
-        )
+        super().__init__(feature=feature_key, fields=validated_fields, *args, **kwargs)
 
 
 class FieldSpec(BaseModel):

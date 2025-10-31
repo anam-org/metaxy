@@ -25,7 +25,7 @@ class VideoEmbeddingsFeature(
     TestingFeature,
     spec=TestingFeatureSpec(
         key=FeatureKey(["test_root", "video_embeddings"]),
-        deps=None,  # No upstream dependencies
+        # No upstream dependencies
         fields=[
             FieldSpec(
                 key=FieldKey(["embedding"]),

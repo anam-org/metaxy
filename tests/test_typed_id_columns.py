@@ -16,7 +16,6 @@ def test_feature_spec_id_columns_list_only():
     # List of columns (only supported format now)
     spec = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["user_id", "timestamp"],
     )
     assert spec.id_columns == ["user_id", "timestamp"]
@@ -28,7 +27,6 @@ def test_feature_spec_id_columns_backward_compat():
     # List format
     spec_list = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
         id_columns=["user_id", "session_id"],
     )
     assert spec_list.id_columns == ["user_id", "session_id"]
@@ -37,7 +35,6 @@ def test_feature_spec_id_columns_backward_compat():
     # None (default) - should use sample_uid
     spec_none = TestingFeatureSpec(
         key=FeatureKey(["test"]),
-        deps=None,
     )
     assert spec_none.id_columns == ["sample_uid"]
 
@@ -47,7 +44,6 @@ def test_feature_spec_empty_list_validation():
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
         TestingFeatureSpec(
             key=FeatureKey(["test"]),
-            deps=None,
             id_columns=[],  # Empty list should raise error
         )
 
@@ -61,7 +57,6 @@ def test_narwhals_joiner_empty_upstream(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["source"]),
-            deps=None,
             id_columns=["user_uuid", "event_time", "score"],
         ),
     ):
@@ -96,7 +91,6 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["test1"]),
-            deps=None,
             id_columns=["entity_id"],
         ),
     ):
@@ -107,7 +101,6 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["test2"]),
-            deps=None,
             id_columns=["user_id", "session_id"],
         ),
     ):
@@ -126,7 +119,6 @@ def test_composite_key(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["composite"]),
-            deps=None,
             id_columns=["tenant_id", "user_id", "timestamp", "is_active"],
         ),
     ):
@@ -159,7 +151,6 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
-            deps=None,
             id_columns=["content_id"],
         ),
     ):
@@ -170,7 +161,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
-            deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["content_id"],
         ),
     ):
@@ -224,7 +215,6 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["custom_id"]),
-            deps=None,
             id_columns=["uuid"],
             fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
         ),

@@ -15,7 +15,6 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -39,7 +38,6 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -66,7 +64,6 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -89,7 +86,6 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -120,7 +116,6 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -147,7 +142,6 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -176,7 +170,6 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -197,14 +190,14 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "processing"]),
-                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                deps=[FeatureDep(feature=FeatureKey(["video", "files"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["frames"]),
                         code_version=1,
                         deps=[
                             FieldDep(
-                                feature_key=FeatureKey(["video", "files"]),
+                                feature=FeatureKey(["video", "files"]),
                                 fields=[FieldKey(["default"])],
                             )
                         ],
@@ -239,7 +232,6 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -282,7 +274,6 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -306,7 +297,6 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -316,7 +306,6 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -364,7 +353,6 @@ def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -390,7 +378,6 @@ def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -415,7 +402,6 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -436,14 +422,14 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "processing"]),
-                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                deps=[FeatureDep(feature=FeatureKey(["video", "files"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["frames"]),
                         code_version=1,
                         deps=[
                             FieldDep(
-                                feature_key=FeatureKey(["video", "files"]),
+                                feature=FeatureKey(["video", "files"]),
                                 fields=[FieldKey(["default"])],
                             )
                         ],
@@ -480,7 +466,6 @@ def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -505,7 +490,6 @@ def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -530,7 +514,6 @@ def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -557,7 +540,6 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -577,7 +559,7 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "processing"]),
-                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                deps=[FeatureDep(feature=FeatureKey(["video", "files"]))],
                 fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
             ),
         ):
@@ -610,7 +592,6 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -647,7 +628,6 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
             ),
         ):
@@ -668,14 +648,14 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "processing"]),
-                deps=[FeatureDep(key=FeatureKey(["video", "files"]))],
+                deps=[FeatureDep(feature=FeatureKey(["video", "files"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["frames"]),
                         code_version=1,
                         deps=[
                             FieldDep(
-                                feature_key=FeatureKey(["video", "files"]),
+                                feature=FeatureKey(["video", "files"]),
                                 fields=[FieldKey(["path"])],
                             )
                         ],
@@ -710,7 +690,6 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -745,7 +724,6 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["examples", "parent"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["embeddings"]), code_version=1)],
             ),
         ):
@@ -755,7 +733,7 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["examples", "child"]),
-                deps=[FeatureDep(key=FeatureKey(["examples", "parent"]))],
+                deps=[FeatureDep(feature=FeatureKey(["examples", "parent"]))],
                 fields=[FieldSpec(key=FieldKey(["predictions"]), code_version=1)],
             ),
         ):
@@ -789,7 +767,6 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -799,7 +776,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # No rename yet
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],  # No rename yet
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -819,7 +796,6 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -831,7 +807,7 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
                 key=FeatureKey(["downstream"]),
                 deps=[
                     FeatureDep(
-                        key=FeatureKey(["upstream"]),
+                        feature=FeatureKey(["upstream"]),
                         rename={"value": "renamed_value"},  # Added rename
                     )
                 ],
@@ -873,7 +849,6 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
             ),
         ):
@@ -909,7 +884,6 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -919,7 +893,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -939,7 +913,6 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -951,7 +924,7 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
                 key=FeatureKey(["downstream"]),
                 deps=[
                     FeatureDep(
-                        key=FeatureKey(["upstream"]),
+                        feature=FeatureKey(["upstream"]),
                         columns=("value",),  # Metadata change
                     )
                 ],
@@ -1002,7 +975,6 @@ def test_graph_push_multiple_features_metadata_changes(
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -1012,7 +984,7 @@ def test_graph_push_multiple_features_metadata_changes(
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
             ),
         ):
@@ -1022,7 +994,7 @@ def test_graph_push_multiple_features_metadata_changes(
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_c"]),
-                deps=[FeatureDep(key=FeatureKey(["feature_a"]))],
+                deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],
             ),
         ):
@@ -1042,7 +1014,6 @@ def test_graph_push_multiple_features_metadata_changes(
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
             ),
         ):
@@ -1054,7 +1025,7 @@ def test_graph_push_multiple_features_metadata_changes(
                 key=FeatureKey(["feature_b"]),
                 deps=[
                     FeatureDep(
-                        key=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
+                        feature=FeatureKey(["feature_a"]), rename={"value": "renamed_b"}
                     )
                 ],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version=1)],
@@ -1068,7 +1039,7 @@ def test_graph_push_multiple_features_metadata_changes(
                 key=FeatureKey(["feature_c"]),
                 deps=[
                     FeatureDep(
-                        key=FeatureKey(["feature_a"]), columns=("value",)
+                        feature=FeatureKey(["feature_a"]), columns=("value",)
                     )  # Changed
                 ],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version=1)],

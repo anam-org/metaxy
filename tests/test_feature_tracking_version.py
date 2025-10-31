@@ -34,7 +34,6 @@ def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) 
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -52,7 +51,6 @@ def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) 
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -106,7 +104,6 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["data", "feature"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["frames"]), code_version=1),
                     FieldSpec(key=FieldKey(["audio"]), code_version=2),
@@ -124,7 +121,6 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["data", "feature"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["frames"]), code_version=1),
                     FieldSpec(key=FieldKey(["audio"]), code_version=2),
@@ -157,7 +153,6 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "deterministic"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -189,7 +184,6 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -199,7 +193,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -217,7 +211,6 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
-                deps=None,
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -227,7 +220,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
             ),
         ):
@@ -272,7 +265,6 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature1"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
@@ -282,7 +274,6 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature2"]),
-                    deps=None,
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
                 ),
             ):
@@ -329,7 +320,6 @@ def test_data_version_by_field_unchanged_by_project(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["multi", "field"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["field1"]), code_version=1),
                     FieldSpec(key=FieldKey(["field2"]), code_version=2),
@@ -347,7 +337,6 @@ def test_data_version_by_field_unchanged_by_project(
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["multi", "field"]),
-                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["field1"]), code_version=1),
                     FieldSpec(key=FieldKey(["field2"]), code_version=2),

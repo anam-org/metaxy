@@ -73,13 +73,13 @@ class FeatureDep(pydantic.BaseModel):
 
     Examples:
         >>> # Keep all columns (string key format)
-        >>> FeatureDep(key="upstream")
+        >>> FeatureDep(feature="upstream")
 
         >>> # Keep all columns (list format)
-        >>> FeatureDep(key=["upstream"])
+        >>> FeatureDep(feature=["upstream"])
 
         >>> # Keep all columns (FeatureKey instance)
-        >>> FeatureDep(key=FeatureKey(["upstream"]))
+        >>> FeatureDep(feature=FeatureKey(["upstream"]))
 
         >>> # Keep only specific columns
         >>> FeatureDep(
@@ -101,7 +101,7 @@ class FeatureDep(pydantic.BaseModel):
         ... )
     """
 
-    key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
+    feature: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     columns: tuple[str, ...] | None = (
         None  # None = all columns, () = only system columns
     )
@@ -111,7 +111,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: str,
+        feature: str,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
@@ -122,7 +122,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: Sequence[str],
+        feature: Sequence[str],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
@@ -133,7 +133,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: FeatureKey,
+        feature: FeatureKey,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
@@ -144,7 +144,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: BaseFeatureSpec[Any],
+        feature: FeatureSpecProtocol,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
@@ -155,17 +155,17 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        key: type[BaseFeature[Any]],
+        feature: type[BaseFeature[Any]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
-        """Initialize from Feature class."""
+        """Initialize from BaseFeature class."""
         ...
 
     def __init__(
         self,
         *,
-        key: CoercibleToFeatureKey | BaseFeatureSpec[Any] | type[BaseFeature[Any]],
+        feature: CoercibleToFeatureKey | FeatureSpecProtocol | type[BaseFeature[Any]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         **kwargs: Any,
@@ -174,20 +174,20 @@ class FeatureDep(pydantic.BaseModel):
         resolved_key: FeatureKey
 
         # Check if it's a BaseFeatureSpec instance (using Protocol)
-        if isinstance(key, FeatureSpecProtocol):
-            resolved_key = key.key
+        if isinstance(feature, FeatureSpecProtocol):
+            resolved_key = feature.key
         # Check if it's a Feature class (using Protocol for runtime check)
-        elif isinstance(key, type) and isinstance(key, FeatureClassProtocol):
-            resolved_key = key.spec().key
+        elif isinstance(feature, type) and hasattr(feature, "spec"):
+            resolved_key = feature.spec().key
         # Check if it's already a FeatureKey
-        elif isinstance(key, FeatureKey):
-            resolved_key = key
+        elif isinstance(feature, FeatureKey):
+            resolved_key = feature
         else:
             # Must be a CoercibleToFeatureKey (str or list of str)
-            resolved_key = FeatureKeyAdapter.validate_python(key)
+            resolved_key = FeatureKeyAdapter.validate_python(feature)
 
         super().__init__(
-            key=resolved_key,
+            feature=resolved_key,
             columns=columns,
             rename=rename,
             **kwargs,
@@ -195,7 +195,7 @@ class FeatureDep(pydantic.BaseModel):
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
-        return self.key.table_name
+        return self.feature.table_name
 
 
 IDColumns: TypeAlias = Sequence[
@@ -343,9 +343,9 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             SHA256 hex digest of the specification
 
         Example:
-            >>> spec = BaseFeatureSpec(
+            >>> spec = FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
-            ...     deps=None,
+            ...
             ...     fields=[FieldSpec(key=FieldKey(["default"]))],
             ... )
             >>> spec.feature_spec_version
@@ -371,8 +371,11 @@ BaseFeatureSpecWithIDColumns: TypeAlias = BaseFeatureSpec[IDColumns]
 DefaultFeatureCols: TypeAlias = tuple[Literal["sample_uid"],]
 
 
+TestingUIDCols: TypeAlias = list[str]
+
+
 class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
-    """A default concrete implementation of BaseBaseFeatureSpec that has a `sample_uid` ID column."""
+    """A default concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
 
     id_columns: DefaultFeatureCols = pydantic.Field(
         default=("sample_uid",),
@@ -386,6 +389,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
+        id_columns: Sequence[str] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -397,6 +401,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
+        id_columns: Sequence[str] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -408,6 +413,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
+        id_columns: Sequence[str] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -419,28 +425,18 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
+        id_columns: Sequence[str] | None = None,
     ) -> None:
         """Initialize from FeatureSpec instance."""
         ...
 
     def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
-        if isinstance(key, type(self)):
-            key = key.key
-        else:
-            key = FeatureKeyAdapter.validate_python(key)
-
+        # id_columns is always set for FeatureSpec
         super().__init__(key=key, **kwargs)
 
 
-########################################## THIS IS FOR TESTING ONLY
-
-
-TestingUIDCols: TypeAlias = list[str]
-
-
-# TODO: move this to tests, stop using it in docs and examples. It exists for historical reasons.
 class TestingFeatureSpec(BaseFeatureSpec[TestingUIDCols]):
-    """A testing concrete implementation of BaseBaseFeatureSpec that has a `sample_uid` ID column."""
+    """A testing concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
 
     id_columns: TestingUIDCols = pydantic.Field(
         default=["sample_uid"],

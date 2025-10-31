@@ -180,14 +180,14 @@ def test_feature_dependencies():
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["downstream"]),
-                deps=[FeatureDep(key=FeatureKey(["upstream"]))],
+                deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[
                     FieldSpec(
                         key=FieldKey(["processed"]),
                         code_version=1,
                         deps=[
                             FieldDep(
-                                feature_key=FeatureKey(["upstream"]),
+                                feature=FeatureKey(["upstream"]),
                                 fields=[FieldKey(["data"])],
                             )
                         ],

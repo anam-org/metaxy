@@ -529,28 +529,28 @@ class TestFeatureSpecIntegration:
         """Test FeatureDep accepts key as string."""
         from metaxy.models.feature_spec import FeatureDep
 
-        dep = FeatureDep(key="upstream/feature")
+        dep = FeatureDep(feature="upstream/feature")
 
-        assert isinstance(dep.key, FeatureKey)
-        assert dep.key.to_string() == "upstream/feature"
+        assert isinstance(dep.feature, FeatureKey)
+        assert dep.feature.to_string() == "upstream/feature"
 
     def test_feature_dep_with_list_key(self):
         """Test FeatureDep accepts key as list."""
         from metaxy.models.feature_spec import FeatureDep
 
-        dep = FeatureDep(key=["upstream", "feature"])
+        dep = FeatureDep(feature=["upstream", "feature"])
 
-        assert isinstance(dep.key, FeatureKey)
-        assert dep.key.to_string() == "upstream/feature"
+        assert isinstance(dep.feature, FeatureKey)
+        assert dep.feature.to_string() == "upstream/feature"
 
     def test_feature_dep_with_feature_key_variadic(self):
         """Test FeatureDep accepts FeatureKey created with variadic args."""
         from metaxy.models.feature_spec import FeatureDep
 
-        dep = FeatureDep(key=FeatureKey("upstream", "feature"))
+        dep = FeatureDep(feature=FeatureKey("upstream", "feature"))
 
-        assert isinstance(dep.key, FeatureKey)
-        assert dep.key.to_string() == "upstream/feature"
+        assert isinstance(dep.feature, FeatureKey)
+        assert dep.feature.to_string() == "upstream/feature"
 
     def test_field_spec_with_string_key(self):
         """Test FieldSpec accepts FieldKey as string."""
@@ -587,8 +587,8 @@ class TestFeatureSpecIntegration:
         spec = FeatureSpec(
             key=FeatureKey("my", "complete", "feature"),
             deps=[
-                FeatureDep(key=FeatureKey("upstream", "one")),
-                FeatureDep(key=FeatureKey("upstream", "two")),
+                FeatureDep(feature=FeatureKey("upstream", "one")),
+                FeatureDep(feature=FeatureKey("upstream", "two")),
             ],
             fields=[
                 FieldSpec(key=FieldKey("field", "one"), code_version=1),
@@ -599,8 +599,8 @@ class TestFeatureSpecIntegration:
         # Verify all keys are properly constructed
         assert spec.key.to_string() == "my/complete/feature"
         assert spec.deps is not None
-        assert spec.deps[0].key.to_string() == "upstream/one"
-        assert spec.deps[1].key.to_string() == "upstream/two"
+        assert spec.deps[0].feature.to_string() == "upstream/one"
+        assert spec.deps[1].feature.to_string() == "upstream/two"
         assert spec.fields[0].key.to_string() == "field/one"
         assert spec.fields[1].key.to_string() == "field/two"
 
@@ -608,8 +608,8 @@ class TestFeatureSpecIntegration:
         json_data = spec.model_dump(mode="json")
         assert json_data["key"] == ["my", "complete", "feature"]
         assert json_data["deps"] is not None  # Type narrowing for type checker
-        assert json_data["deps"][0]["key"] == ["upstream", "one"]
-        assert json_data["deps"][1]["key"] == ["upstream", "two"]
+        assert json_data["deps"][0]["feature"] == ["upstream", "one"]
+        assert json_data["deps"][1]["feature"] == ["upstream", "two"]
         assert json_data["fields"][0]["key"] == ["field", "one"]
         assert json_data["fields"][1]["key"] == ["field", "two"]
 
@@ -629,12 +629,12 @@ feature_spec = FeatureSpec(key=feature_key, deps=None)
 
 
 def test_feature_dep_key_overloads():
-    _ = FeatureDep(key=feature_key)
-    _ = FeatureDep(key=feature_spec)
+    _ = FeatureDep(feature=feature_key)
+    _ = FeatureDep(feature=feature_spec)
 
     class TestFeature(Feature, spec=feature_spec): ...
 
-    _ = FeatureDep(key=TestFeature)
+    _ = FeatureDep(feature=TestFeature)
 
 
 def test_feature_spec_key_overloads():
@@ -656,6 +656,6 @@ def test_feature_spec_deps_required():
     assert spec4.deps is None
 
     # With actual dependencies
-    dep = FeatureDep(key="upstream")
+    dep = FeatureDep(feature="upstream")
     spec5 = FeatureSpec(key="test", deps=[dep])
     assert spec5.deps == [dep]

@@ -138,7 +138,8 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    dep_key = dep.get("key", [])
+                    # Check for 'feature' field (new format) or 'key' field (old format)
+                    dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
                     else:
@@ -183,7 +184,8 @@ class GraphDiffer:
             deps = []
             if feature_spec.get("deps"):
                 for dep in feature_spec["deps"]:
-                    dep_key = dep.get("key", [])
+                    # Check for 'feature' field (new format) or 'key' field (old format)
+                    dep_key = dep.get("feature") or dep.get("key", [])
                     if isinstance(dep_key, list):
                         deps.append(FeatureKey(dep_key))
                     else:
@@ -438,8 +440,8 @@ class GraphDiffer:
 
         dep_keys = []
         for dep in deps:
-            # dep is a dict with 'key' field
-            dep_key = dep.get("key", [])
+            # Check for 'feature' field (new format) or 'key' field (old format)
+            dep_key = dep.get("feature") or dep.get("key", [])
             if isinstance(dep_key, list):
                 dep_keys.append("/".join(dep_key))
             else:
