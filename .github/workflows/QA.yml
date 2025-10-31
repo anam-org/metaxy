@@ -62,6 +62,8 @@ jobs:
     runs-on: depot-ubuntu-latest
     env:
       UV_PYTHON_PREFERENCE: only-system
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
