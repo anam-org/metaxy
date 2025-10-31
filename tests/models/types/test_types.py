@@ -8,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 from typing_extensions import assert_type
 
+from metaxy.models.feature import Feature
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.types import (
     FeatureKey,
@@ -631,6 +632,10 @@ feature_spec = FeatureSpec(key=feature_key, deps=None)
 def test_feature_dep_key_overloads():
     _ = FeatureDep(key=feature_key)
     _ = FeatureDep(key=feature_spec)
+
+    class TestFeature(Feature, spec=feature_spec): ...
+
+    _ = FeatureDep(key=TestFeature)
 
 
 def test_feature_spec_key_overloads():

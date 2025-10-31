@@ -2054,6 +2054,24 @@
                 }
             }
         ],
+        "./src/metaxy/data_versioning/joiners/__init__.py": [
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            }
+        ],
         "./src/metaxy/data_versioning/joiners/narwhals.py": [
             {
                 "code": "reportImplicitOverride",
@@ -8548,13 +8566,45 @@
             {
                 "code": "reportUnannotatedClassAttribute",
                 "range": {
-                    "startColumn": 8,
-                    "endColumn": 14,
+                    "startColumn": 4,
+                    "endColumn": 10,
                     "lineCount": 1
                 }
             }
         ],
         "./src/metaxy/models/feature.py": [
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            },
+            {
+                "code": "reportImportCycles",
+                "range": {
+                    "startColumn": 0,
+                    "endColumn": 0,
+                    "lineCount": 1
+                }
+            },
             {
                 "code": "reportImplicitStringConcatenation",
                 "range": {
@@ -8904,16 +8954,16 @@
             {
                 "code": "reportUnknownParameterType",
                 "range": {
-                    "startColumn": 78,
-                    "endColumn": 84,
+                    "startColumn": 60,
+                    "endColumn": 66,
                     "lineCount": 1
                 }
             },
             {
                 "code": "reportMissingParameterType",
                 "range": {
-                    "startColumn": 78,
-                    "endColumn": 84,
+                    "startColumn": 60,
+                    "endColumn": 66,
                     "lineCount": 1
                 }
             },
@@ -8935,6 +8985,14 @@
             }
         ],
         "./src/metaxy/models/field.py": [
+            {
+                "code": "reportPrivateLocalImportUsage",
+                "range": {
+                    "startColumn": 8,
+                    "endColumn": 29,
+                    "lineCount": 1
+                }
+            },
             {
                 "code": "reportUnknownParameterType",
                 "range": {

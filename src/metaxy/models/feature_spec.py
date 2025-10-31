@@ -4,7 +4,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import Annotated, Any, overload
+from typing import TYPE_CHECKING, Annotated, Any, overload
 
 import pydantic
 from pydantic import BeforeValidator
@@ -17,6 +17,15 @@ from metaxy.models.types import (
     FeatureKeyAdapter,
     FieldKey,
 )
+
+if TYPE_CHECKING:
+    # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
+    # neither pyright not basedpyright allow ignoring `reportImportCycles` because they think it's a bad practice
+    # and it would be very smart to force the user to restructure their project instead
+    # context: https://github.com/microsoft/pyright/issues/1825
+    # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
+    # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
+    from metaxy.models.feature import Feature
 
 
 class FeatureDep(pydantic.BaseModel):
@@ -112,16 +121,31 @@ class FeatureDep(pydantic.BaseModel):
         """Initialize from FeatureSpec instance."""
         ...
 
+    @overload
     def __init__(
         self,
         *,
-        key: CoercibleToFeatureKey | FeatureSpec,
+        key: type[Feature],
+        columns: tuple[str, ...] | None = None,
+        rename: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize from FeatureSpec instance."""
+        ...
+
+    def __init__(
+        self,
+        *,
+        key: CoercibleToFeatureKey | FeatureSpec | type[Feature],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
+        from metaxy.models.feature import Feature
+
         if isinstance(key, FeatureSpec):
             key = key.key
+        elif isinstance(key, type) and issubclass(key, Feature):
+            key = key.spec.key
         else:
             key = FeatureKeyAdapter.validate_python(key)
 

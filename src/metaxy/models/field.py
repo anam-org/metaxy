@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     # context: https://github.com/microsoft/pyright/issues/1825
     # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
     # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
+    from metaxy.models.feature import Feature
     from metaxy.models.feature_spec import (
         CoercibleToFeatureKey,
         FeatureSpec,
@@ -38,8 +39,7 @@ class FieldDep(BaseModel):
     def __init__(
         self,
         feature_key: str,
-        fields: list[CoercibleToFieldKey]
-        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+        **kwargs: Any,
     ) -> None:
         """Initialize from string feature key."""
         ...
@@ -48,8 +48,7 @@ class FieldDep(BaseModel):
     def __init__(
         self,
         feature_key: Sequence[str],
-        fields: list[CoercibleToFieldKey]
-        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+        **kwargs: Any,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -58,8 +57,7 @@ class FieldDep(BaseModel):
     def __init__(
         self,
         feature_key: FeatureKey,
-        fields: list[CoercibleToFieldKey]
-        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+        **kwargs: Any,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -67,16 +65,33 @@ class FieldDep(BaseModel):
     @overload
     def __init__(
         self,
+        feature_key: "CoercibleToFeatureKey",
+        **kwargs: Any,
+    ) -> None:
+        """Initialize from CoercibleToFeatureKey types."""
+        ...
+
+    @overload
+    def __init__(
+        self,
         feature_key: "FeatureSpec",
-        fields: list[CoercibleToFieldKey]
-        | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
+        **kwargs: Any,
     ) -> None:
         """Initialize from FeatureSpec instance."""
         ...
 
+    @overload
     def __init__(
         self,
-        feature_key: "CoercibleToFeatureKey | FeatureSpec",
+        feature_key: type["Feature"],
+        **kwargs: Any,
+    ) -> None:
+        """Initialize from Feature instance."""
+        ...
+
+    def __init__(
+        self,
+        feature_key: "CoercibleToFeatureKey | FeatureSpec | type[Feature]",
         fields: list[CoercibleToFieldKey]
         | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
         *args,
@@ -86,6 +101,8 @@ class FieldDep(BaseModel):
 
         if isinstance(feature_key, FeatureSpec):
             feature_key = feature_key.key
+        elif isinstance(feature_key, type) and issubclass(feature_key, Feature):
+            feature_key = feature_key.spec.key
         else:
             feature_key = FeatureKeyAdapter.validate_python(feature_key)
 
