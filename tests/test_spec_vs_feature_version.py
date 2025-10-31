@@ -29,7 +29,6 @@ def test_feature_spec_version_vs_feature_version() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -63,7 +62,6 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
 
     spec2 = FeatureSpec(
@@ -72,7 +70,6 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
 
     # Their feature_spec_versions should be identical
@@ -86,7 +83,6 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     assert "key" in spec_dict
     assert "deps" in spec_dict
     assert "fields" in spec_dict
-    assert "code_version" in spec_dict
 
     # When metadata/tags are added in the future, they will automatically
     # be included in spec_dict and thus in feature_spec_version hash
@@ -142,7 +138,6 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["merged"]), code_version=1),
                 ],
-                code_version=2,
             ),
         ):
             pass
@@ -182,7 +177,6 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             fields=[
                 FieldSpec(key=FieldKey(["merged"]), code_version=1),
             ],
-            code_version=2,
         )
 
         # Should have same feature_spec_version

@@ -22,7 +22,6 @@ def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
 
     version1 = spec.feature_spec_version
@@ -64,7 +63,6 @@ def test_feature_spec_version_includes_all_properties(
             FieldSpec(key=FieldKey(["field1"]), code_version=1),
             FieldSpec(key=FieldKey(["field2"]), code_version=2),
         ],
-        code_version=3,
     )
 
     version = spec.feature_spec_version
@@ -77,75 +75,6 @@ def test_feature_spec_version_includes_all_properties(
     assert version == snapshot
 
 
-def test_feature_spec_version_changes_with_any_property() -> None:
-    """Test that feature_spec_version changes when any property changes."""
-    base_spec = FeatureSpec(
-        key=FeatureKey(["base", "feature"]),
-        deps=None,
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
-        ],
-        code_version=1,
-    )
-    base_version = base_spec.feature_spec_version
-
-    # Change key
-    spec_key_changed = FeatureSpec(
-        key=FeatureKey(["changed", "feature"]),  # Changed!
-        deps=None,
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
-        ],
-        code_version=1,
-    )
-    assert spec_key_changed.feature_spec_version != base_version
-
-    # Change code_version
-    spec_code_version_changed = FeatureSpec(
-        key=FeatureKey(["base", "feature"]),
-        deps=None,
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
-        ],
-        code_version=2,  # Changed!
-    )
-    assert spec_code_version_changed.feature_spec_version != base_version
-
-    # Add deps
-    spec_deps_added = FeatureSpec(
-        key=FeatureKey(["base", "feature"]),
-        deps=[FeatureDep(key=FeatureKey(["upstream"]))],  # Added!
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
-        ],
-        code_version=1,
-    )
-    assert spec_deps_added.feature_spec_version != base_version
-
-    # Change field code_version
-    spec_field_changed = FeatureSpec(
-        key=FeatureKey(["base", "feature"]),
-        deps=None,
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
-        ],
-        code_version=1,
-    )
-    assert spec_field_changed.feature_spec_version != base_version
-
-    # Add field
-    spec_field_added = FeatureSpec(
-        key=FeatureKey(["base", "feature"]),
-        deps=None,
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
-            FieldSpec(key=FieldKey(["new_field"]), code_version=1),  # Added!
-        ],
-        code_version=1,
-    )
-    assert spec_field_added.feature_spec_version != base_version
-
-
 def test_feature_spec_version_consistent_ordering() -> None:
     """Test that feature_spec_version is consistent regardless of field order."""
     # Create specs with fields in different order
@@ -156,7 +85,6 @@ def test_feature_spec_version_consistent_ordering() -> None:
             FieldSpec(key=FieldKey(["field_a"]), code_version=1),
             FieldSpec(key=FieldKey(["field_b"]), code_version=2),
         ],
-        code_version=1,
     )
 
     spec2 = FeatureSpec(
@@ -166,7 +94,6 @@ def test_feature_spec_version_consistent_ordering() -> None:
             FieldSpec(key=FieldKey(["field_b"]), code_version=2),  # Reordered
             FieldSpec(key=FieldKey(["field_a"]), code_version=1),
         ],
-        code_version=1,
     )
 
     # The order of fields in the list matters for the spec
@@ -181,7 +108,6 @@ def test_feature_spec_version_consistent_ordering() -> None:
             FieldSpec(key=FieldKey(["field_a"]), code_version=1),
             FieldSpec(key=FieldKey(["field_b"]), code_version=2),
         ],
-        code_version=1,
     )
     assert spec1.feature_spec_version == spec3.feature_spec_version
 
@@ -194,7 +120,6 @@ def test_feature_spec_version_manual_verification() -> None:
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
 
     # Get the spec version
@@ -225,7 +150,6 @@ def test_feature_spec_version_with_column_selection_and_rename(
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
 
     version = spec.feature_spec_version
@@ -250,7 +174,6 @@ def test_feature_spec_version_with_column_selection_and_rename(
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
     assert spec_different_columns.feature_spec_version != version
 
@@ -267,7 +190,6 @@ def test_feature_spec_version_with_column_selection_and_rename(
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version=1),
         ],
-        code_version=1,
     )
     assert spec_different_rename.feature_spec_version != version
 
@@ -288,7 +210,6 @@ def test_feature_feature_spec_version_classmethod() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -323,7 +244,6 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version=1),
                 ],
-                code_version=2,
             ),
         ):
             pass
@@ -372,7 +292,6 @@ def test_feature_spec_version_recorded_in_metadata_store(
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -437,7 +356,6 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -493,7 +411,6 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -507,7 +424,6 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=1),
                 ],
-                code_version=1,
             ),
         ):
             pass
@@ -558,7 +474,6 @@ def test_feature_spec_version_with_multiple_complex_deps(
             FieldSpec(key=FieldKey(["field2"]), code_version=2),
             FieldSpec(key=FieldKey(["field3"]), code_version=3),
         ],
-        code_version=5,
     )
 
     version = spec.feature_spec_version
@@ -595,7 +510,6 @@ def test_feature_spec_version_with_multiple_complex_deps(
             FieldSpec(key=FieldKey(["field2"]), code_version=2),
             FieldSpec(key=FieldKey(["field3"]), code_version=3),
         ],
-        code_version=5,
     )
 
     assert spec_copy.feature_spec_version == version

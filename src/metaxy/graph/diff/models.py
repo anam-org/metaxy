@@ -294,7 +294,6 @@ class GraphData(FrozenBaseModel):
             node = GraphNode(
                 key=feature_key,
                 version=feature_version,
-                code_version=spec.code_version,
                 fields=field_nodes,
                 dependencies=dependencies,
                 status=NodeStatus.NORMAL,

@@ -29,19 +29,19 @@
     'versions': list([
       dict({
         'feature_key': 'downstream',
-        'feature_spec_version': '228dd080d75097da6f0efa44adc12a992329d940d26f0ebaa89f4fe0cbad9794',
+        'feature_spec_version': '30d1a7539aef157854f2fae9f104dcf94c0479808dcc9add17507c1d3f4e3cc3',
         'feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),
       dict({
         'feature_key': 'upstream',
-        'feature_spec_version': 'a9eabe8347cc263d491ef3fbc0cb95892ca3221e283301afb5f4d5468b9d5b04',
+        'feature_spec_version': '66c1d90d5ff75442180f421208a4bfdf551d99b1814dbebddeed0a4a8b07423a',
         'feature_version': '8a2ffeab8da447095c5ee7a77e5635a1e16e7f3605021732f50f7002fa258398',
         'snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),
       dict({
         'feature_key': 'downstream',
-        'feature_spec_version': 'd768546ecb679cdbe9b9677e52aca816a9b0c6c3ed48dc7f5f145192e57bd350',
+        'feature_spec_version': '546c9ca32405db2088b8aa528c26e94e3677c1aca37ca81c844b83524bf408aa',
         'feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),

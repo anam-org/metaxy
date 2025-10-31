@@ -17,6 +17,7 @@ from metaxy.models.types import (
     FeatureKeyAdapter,
     FieldKey,
 )
+from metaxy.utils.hashing import truncate_hash
 
 if TYPE_CHECKING:
     # yes, these are circular imports, the TYPE_CHECKING block hides them at runtime.
@@ -163,6 +164,17 @@ class FeatureDep(pydantic.BaseModel):
         return self.key.table_name
 
 
+class _CodeVersionDescriptor:
+    """Descriptor that returns field-only code version hashes."""
+
+    def __get__(self, instance, owner) -> str:
+        if owner.spec is None:
+            raise ValueError(
+                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
+            )
+        return owner.spec.field_code_version_hash
+
+
 class FeatureSpec(pydantic.BaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
@@ -175,7 +187,6 @@ class FeatureSpec(pydantic.BaseModel):
             )
         ]
     )
-    code_version: int = 1
     id_columns: list[str] = pydantic.Field(default_factory=lambda: ["sample_uid"])
 
     @overload
@@ -185,7 +196,6 @@ class FeatureSpec(pydantic.BaseModel):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
-        code_version: int = 1,
         id_columns: list[str] | None = None,
     ) -> None:
         """Initialize from string key."""
@@ -198,7 +208,6 @@ class FeatureSpec(pydantic.BaseModel):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
-        code_version: int = 1,
         id_columns: list[str] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
@@ -211,7 +220,6 @@ class FeatureSpec(pydantic.BaseModel):
         *,
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
-        code_version: int = 1,
         id_columns: list[str] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
@@ -243,6 +251,20 @@ class FeatureSpec(pydantic.BaseModel):
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
         return {c.key: c for c in self.fields}
+
+    @cached_property
+    def code_version(self) -> str:
+        """Hash of this feature's field code_versions only (no dependencies)."""
+        hasher = hashlib.sha256()
+
+        # Sort fields by key for deterministic ordering
+        sorted_fields = sorted(self.fields, key=lambda field: field.key.to_string())
+
+        for field in sorted_fields:
+            hasher.update(field.key.to_string().encode("utf-8"))
+            hasher.update(str(field.code_version).encode("utf-8"))
+
+        return truncate_hash(hasher.hexdigest())
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
@@ -277,7 +299,7 @@ class FeatureSpec(pydantic.BaseModel):
         """Compute SHA256 hash of the complete feature specification.
 
         This property provides a deterministic hash of ALL specification properties,
-        including key, deps, fields, code_version, and any metadata/tags.
+        including key, deps, fields, and any metadata/tags.
         Used for audit trail and tracking specification changes.
 
         Unlike feature_version which only hashes computational properties
@@ -291,8 +313,7 @@ class FeatureSpec(pydantic.BaseModel):
             >>> spec = FeatureSpec(
             ...     key=FeatureKey(["my", "feature"]),
             ...     deps=None,
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
-            ...     code_version=1
+            ...     fields=[FieldSpec(key=FieldKey(["default"]))],
             ... )
             >>> spec.feature_spec_version
             'abc123...'  # 64-character hex string

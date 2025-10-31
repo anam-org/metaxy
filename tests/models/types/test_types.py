@@ -594,7 +594,6 @@ class TestFeatureSpecIntegration:
                 FieldSpec(key=FieldKey("field", "one"), code_version=1),
                 FieldSpec(key=FieldKey("field", "two"), code_version=1),
             ],
-            code_version=1,
         )
 
         # Verify all keys are properly constructed
