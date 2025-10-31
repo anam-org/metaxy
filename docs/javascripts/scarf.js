@@ -14,7 +14,7 @@
     pixel.src =
       "https://static.scarf.sh/a.png?x-pxid=" +
       token +
-      "=" +
+      "&page=" +
       encodeURIComponent(pageIdentifier);
     pixel.alt = "";
     pixel.width = 1;
