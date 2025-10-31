@@ -30,3 +30,7 @@ docs-publish version:
     git branch -D gh-pages
     git fetch origin gh-pages
     uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}
+
+
+slides-serve:
+    cd docs/slides && bun dev slides-introduction
