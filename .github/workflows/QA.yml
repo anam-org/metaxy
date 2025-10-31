@@ -71,10 +71,9 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
-          #install_url: https://install.determinate.systems/nix
-          install_url: https://install.determinate.systems/nix?extra_conf=nix-command flakes&no-confirm
-          #install_options: --no-confirm
+          install_url: https://install.determinate.systems/nix
           extra_nix_config: |
+            auto-accept = true
             extra-experimental-features = nix-command flakes
           #nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
