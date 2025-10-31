@@ -198,7 +198,7 @@ class FeatureDep(pydantic.BaseModel):
         """Get SQL-like table name for this feature spec."""
         return self.feature.table_name
 
-    
+
 def _freeze_metadata(value: Any) -> Any:
     """Recursively freeze metadata containers to enforce immutability."""
     if isinstance(value, frozendict):

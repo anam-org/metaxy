@@ -1,5 +1,10 @@
 class _CodeVersionDescriptor:
-    """Descriptor that returns field-only code version hashes."""
+    """Descriptor returning this feature's field-only code version hash.
+
+    The hash is cached on the feature spec (`FeatureSpec.field_code_version_hash`)
+    and excludes any dependency information, allowing callers to distinguish
+    between "my code changed" and "one of my dependencies changed".
+    """
 
     def __get__(self, instance, owner) -> str:
         if owner.spec is None:
