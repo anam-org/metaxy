@@ -275,66 +275,6 @@ This is critical for migrations when upstream dependencies change.
 Additional metadata (JSON) can be attached to features via the `metadata` parameter on `FeatureSpec`.
 Usecases may be for data governance such as ownership, SLAs, PII flags, ... etc.
 
-Example:
-
-```python
-class CustomerFeature(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["customer"]),
-        deps=[FeatureDep(key=FeatureKey(["user"]))],
-        fields=[
-            FieldSpec(key=FieldKey(["age"]), code_version=1),
-            FieldSpec(key=FieldKey(["lifetime_value"]), code_version=1),
-        ],
-        metadata={
-            "owner": "data-team",
-            "sla": "24h",
-            "description": "Customer profile enrichment",
-            "tags": ["customer", "profile", "enrichment"],
-            "pii": True,
-            "custom_config": {
-                "refresh_interval": "1h",
-                "alert_threshold": 0.95,
-            },
-        },
-    ),
-):
-    pass
-
-
-# Access metadata
-CustomerFeature.spec.metadata["owner"]  # "data-team"
-
-
-# Metadata doesn't affect versioning (these produce the same feature_version):
-class Feature1(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["example"]),
-        deps=[],
-        fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
-        metadata={"owner": "team-a"},
-    ),
-):
-    pass
-
-
-class Feature2(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["example"]),
-        deps=[],
-        fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
-        metadata={"owner": "team-b"},
-    ),
-):
-    pass
-
-
-assert Feature1.feature_version() == Feature2.feature_version()
-```
-
 ## Important Constraints
 
 ### Narwhals as the Public Interface
