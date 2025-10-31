@@ -4,6 +4,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -202,12 +203,19 @@ class FeatureDep(pydantic.BaseModel):
         return self.feature.table_name
 
 
+IDColumns: TypeAlias = Sequence[
+    str
+]  # non-bound, should be used for feature specs with arbitrary id columns
+IDColumnsT = TypeVar(
+    "IDColumnsT", bound=IDColumns, covariant=True
+)  # bound, should be used for generic
+
+
 def _freeze_metadata(value: Any) -> Any:
-    """Recursively freeze metadata containers to enforce immutability."""
-    if isinstance(value, frozendict):
-        return value
+    """Recursively convert metadata to immutable containers."""
     if isinstance(value, Mapping):
-        return frozendict({k: _freeze_metadata(v) for k, v in value.items()})
+        frozen_dict = {k: _freeze_metadata(v) for k, v in value.items()}
+        return MappingProxyType(frozen_dict)
     if isinstance(value, list):
         return tuple(_freeze_metadata(v) for v in value)
     if isinstance(value, tuple):
@@ -215,12 +223,14 @@ def _freeze_metadata(value: Any) -> Any:
     return value
 
 
-IDColumns: TypeAlias = Sequence[
-    str
-]  # non-bound, should be used for feature specs with arbitrary id columns
-IDColumnsT = TypeVar(
-    "IDColumnsT", bound=IDColumns, covariant=True
-)  # bound, should be used for generic
+def _thaw_metadata(value: Any) -> Any:
+    if isinstance(value, MappingProxyType):
+        return {k: _thaw_metadata(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_metadata(v) for v in value]
+    if isinstance(value, list):
+        return [_thaw_metadata(v) for v in value]
+    return value
 
 
 def _coerce_metadata(value: Any) -> dict[str, JsonValue] | None:
@@ -263,6 +273,26 @@ class _BaseFeatureSpec(FrozenBaseModel):
 
 class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
     id_columns: pydantic.SkipValidation[IDColumnsT]
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _default_metadata(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # Allow callers to omit metadata or pass None while keeping the field non-optional.
+        if "metadata" in values and values["metadata"] is None:
+            values.pop("metadata", None)
+        elif "metadata" in values:
+            try:
+                json.dumps(_thaw_metadata(values["metadata"]))
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "metadata must be JSON-serializable. Found non-serializable value"
+                ) from exc
+        return values
+
+    @pydantic.model_validator(mode="after")
+    def _freeze_metadata_field(self) -> BaseFeatureSpec[IDColumnsT]:
+        object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
+        return self
 
     @overload
     def __init__(
