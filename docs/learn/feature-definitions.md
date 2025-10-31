@@ -3,7 +3,8 @@
 Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
 It has been inspired by Software-Defined Assets in [Dagster](https://dagster.io/).
 
-Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos. But it can be just pure **metadata** as well.
+Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
+But it can be just pure **metadata** as well.
 
 I will highlight **data** and **metadata** with bold so it really stands out.
 
@@ -14,8 +15,10 @@ Metaxy is designed to be used with systems that do not overwrite existing **meta
 
 I hope we can stop using bold for **data** and **metadata** from now on, hopefully we've made our point.
 
-> [!tip] Include Sample Version In Your Data Path
-> Include the sample version in your data path to ensure strong consistency guarantees. I mean it. Really do it!
+> [!tip] Include sample version in your data path
+> Include the sample version in your data path to ensure strong consistency guarantees.
+> I mean it.
+> Really do it!
 
 Features live on a global `FeatureGraph` object (typically users do not need to interact with it directly).
 Features are bound to a specific Metaxy project, but can be moved between projects over time.
@@ -25,7 +28,7 @@ Features must have unique (across all projects) `FeatureKey` associated with the
 
 Before we can define a `Feature`, we must first create a `FeatureSpec` object.
 But before we get to an example, it's necessary to understand the concept of ID columns.
-Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`. 
+Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`.
 Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class.
 
 Some boilerplate with typing is involved (this is typically a good thing):
