@@ -272,13 +272,8 @@ This is critical for migrations when upstream dependencies change.
 
 #### Attaching Metadata to Features
 
-Features can include user-defined metadata for documentation and tooling purposes:
-
-- **metadata parameter**: Optional dict on FeatureSpec for attaching arbitrary information
-- **No effect on versioning**: metadata does NOT affect `feature_version()` or `code_version()`
-- **Affects spec version**: metadata IS included in `feature_spec_version` for audit trail
-- **Must be JSON-serializable**: Validated at initialization
-- **Use cases**: Owner, team, SLA, description, tags, custom configuration
+Additional metadata (JSON) can be attached to features via the `metadata` parameter on `FeatureSpec`.
+Usecases may be for data governance such as ownership, SLAs, PII flags, ... etc.
 
 Example:
 
