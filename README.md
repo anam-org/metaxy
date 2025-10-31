@@ -9,7 +9,7 @@ Metaxy supports incremental computations, sample-level versioning, field-level v
 
 Read the [few docs we have](https://anam-org.github.io/metaxy) to learn more.
 
-<img referrerpolicy="no-referrer" src="https://static.scarf.sh/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e=README.md" />
+<img referrerpolicy="no-referrer" src="https://static.scarf.sh/a.png?x-pxid=22cb75dc-201e-4a72-9fb2-c3a53ce9207e&page=README.md" />
 
 ## Development
 
