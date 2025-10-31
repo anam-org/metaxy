@@ -46,8 +46,8 @@ def test_single_id_column_vs_multiple():
         ):
             pass
 
-        assert len(SingleIDFeature.id_columns()) == 1
-        assert len(MultiIDFeature.id_columns()) == 3
+        assert len(SingleIDFeature.spec().id_columns) == 1
+        assert len(MultiIDFeature.spec().id_columns) == 3
 
 
 def test_id_column_names_with_special_characters():
@@ -65,7 +65,7 @@ def test_id_column_names_with_special_characters():
         ):
             pass
 
-        assert SpecialCharsFeature.id_columns() == [
+        assert SpecialCharsFeature.spec().id_columns == [
             "user_id_123",
             "session_2024",
             "_internal_id",
@@ -89,8 +89,8 @@ def test_very_long_id_column_list():
         ):
             pass
 
-        assert ManyColumnsFeature.id_columns() == many_columns
-        assert len(ManyColumnsFeature.id_columns()) == 10
+        assert ManyColumnsFeature.spec().id_columns == many_columns
+        assert len(ManyColumnsFeature.spec().id_columns) == 10
 
 
 def test_duplicate_id_columns_allowed_but_unusual():
@@ -329,7 +329,7 @@ def test_feature_with_zero_upstream_deps_and_custom_id():
             pass
 
         # Source features should still have ID columns defined
-        assert SourceFeature.id_columns() == ["entity_id", "event_time"]
+        assert SourceFeature.spec().id_columns == ["entity_id", "event_time"]
 
 
 def test_deeply_nested_feature_dependency_chain():
@@ -377,10 +377,10 @@ def test_deeply_nested_feature_dependency_chain():
             pass
 
         # All features in the chain should have consistent ID columns
-        assert F1.id_columns() == ["id"]
-        assert F2.id_columns() == ["id"]
-        assert F3.id_columns() == ["id"]
-        assert F4.id_columns() == ["id"]
+        assert F1.spec().id_columns == ["id"]
+        assert F2.spec().id_columns == ["id"]
+        assert F3.spec().id_columns == ["id"]
+        assert F4.spec().id_columns == ["id"]
 
 
 def test_feature_diamond_dependency_with_id_columns():
@@ -439,7 +439,7 @@ def test_feature_diamond_dependency_with_id_columns():
 
         # All features should have consistent ID columns
         for feature_cls in [F1, F2, F3, F4]:
-            assert feature_cls.id_columns() == ["user_id"]
+            assert feature_cls.spec().id_columns == ["user_id"]
 
 
 def test_id_column_case_sensitivity_in_validation():
@@ -544,9 +544,9 @@ def test_concurrent_features_with_different_id_columns_in_same_graph():
     assert len(graph.features_by_key) == 3
 
     # Each should maintain its own ID columns
-    assert graph.features_by_key[FeatureKey(["a"])].id_columns() == ["sample_uid"]
-    assert graph.features_by_key[FeatureKey(["b"])].id_columns() == ["user_id"]
-    assert graph.features_by_key[FeatureKey(["c"])].id_columns() == [
+    assert graph.features_by_key[FeatureKey(["a"])].spec().id_columns == ["sample_uid"]
+    assert graph.features_by_key[FeatureKey(["b"])].spec().id_columns == ["user_id"]
+    assert graph.features_by_key[FeatureKey(["c"])].spec().id_columns == [
         "entity_id",
         "timestamp",
     ]
