@@ -13,7 +13,6 @@ from metaxy.metadata_store.base import (
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec, FieldSpec
@@ -23,9 +22,7 @@ from metaxy.models.types import FeatureKey, FieldKey
 class TestProjectValidationComprehensive:
     """Comprehensive tests for project validation across all components."""
 
-    @pytest.fixture(
-        params=[InMemoryMetadataStore, DuckDBMetadataStore, SQLiteMetadataStore]
-    )
+    @pytest.fixture(params=[InMemoryMetadataStore, DuckDBMetadataStore])
     def store_cls(self, request) -> type[MetadataStore]:
         """Test with different store backends."""
         return request.param

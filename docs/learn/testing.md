@@ -85,7 +85,6 @@ import pytest
     [
         InMemoryMetadataStore,
         DuckDBMetadataStore,
-        SQLiteMetadataStore,
     ],
 )
 def test_store_behavior(store_cls, tmp_path):

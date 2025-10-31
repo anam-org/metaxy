@@ -19,7 +19,6 @@ from metaxy._testing import HashAlgorithmCases, TempFeatureModule
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
@@ -350,14 +349,6 @@ class StoreCases:
             "extensions": ["json"],
         }
         return (DuckDBMetadataStore, config)
-
-    def case_sqlite(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """SQLite store case."""
-        db_path = tmp_path / "test.sqlite"
-        # Registry is accessed globally via FeatureGraph.get_active()
-        return (SQLiteMetadataStore, {"database": db_path})
 
     def case_clickhouse(
         self, clickhouse_db: str, test_graph: FeatureGraph

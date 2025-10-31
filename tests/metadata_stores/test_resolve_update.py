@@ -33,7 +33,6 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # ============= STORE CONFIGURATION =============
@@ -67,11 +66,11 @@ def create_store(
     """Create a store instance for testing.
 
     Args:
-        store_type: "inmemory", "duckdb", "sqlite", or "clickhouse"
+        store_type: "inmemory", "duckdb", or "clickhouse"
         prefer_native: Whether to prefer native data version calculations
         hash_algorithm: Hash algorithm to use
         params: Store-specific parameters dict containing:
-            - tmp_path: Temporary directory for file-based stores (duckdb, sqlite)
+            - tmp_path: Temporary directory for file-based stores (duckdb)
             - clickhouse_db: Connection string for ClickHouse (optional)
 
     Returns:
@@ -131,17 +130,6 @@ def create_store(
             extensions=extensions_ducklake,  # pyright: ignore[reportArgumentType]
             prefer_native=prefer_native,
             ducklake=ducklake_config,
-        )
-    elif store_type == "sqlite":
-        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-        db_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.sqlite"
-        )
-        return SQLiteMetadataStore(
-            db_path,
-            hash_algorithm=hash_algorithm,
-            prefer_native=prefer_native,
         )
     elif store_type == "clickhouse":
         clickhouse_db = params.get("clickhouse_db")
@@ -613,7 +601,7 @@ def test_resolve_update_with_upstream(
             try:
                 with store, graph.use():
                     # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
-                    # since they share the same database (unlike DuckDB/SQLite which use separate files)
+                    # since they share the same database (unlike DuckDB which uses separate files)
                     if store_type == "clickhouse":
                         for feature in features:
                             store.drop_feature_metadata(feature)

@@ -143,14 +143,13 @@ Abstract base class for metadata storage backends:
 - **Narwhals interface**: Public API uses Narwhals DataFrames/LazyFrames for cross-backend compatibility
 - **Native vs Polars components**: Stores choose components based on capabilities:
   - **native data version calculations** (e.g., Ibis-based for DuckDB/ClickHouse): Execute all operations (joins, hashing, diffs) directly in the database, only pulling out final results. This minimizes data transfer and leverages database query optimization.
-  - **Polars components**: Pull data into memory when fallback stores are used or store lacks compute support (InMemory, SQLite, DeltaLake)
+  - **Polars components**: Pull data into memory when fallback stores are used or store lacks compute support (InMemory, DeltaLake)
 
 Implementations:
 
 - `InMemoryMetadataStore` (memory.py): Polars DataFrames in memory
 - `IbisMetadataStore` (ibis.py): Abstract for SQL databases
 - `DuckDBMetadataStore` (duckdb.py): DuckDB backend
-- `SQLiteMetadataStore` (sqlite.py): SQLite backend
 - `ClickHouseMetadataStore` (clickhouse.py): ClickHouse backend
 
 Key system tables (stored with prefix `metaxy-system`):
@@ -175,7 +174,7 @@ Three-component architecture for calculating and comparing data versions:
 - Supports multiple hash algorithms (xxhash, sha256, etc.)
 - Creates nested struct column: `data_version: {field1: hash, field2: hash}`
 - **Native approach**: All computations stay in the database, only final data versions are pulled out
-- **Polars approach**: Used when fallback stores are needed, or when the store doesn't support native compute (InMemory, SQLite, DeltaLake)
+- **Polars approach**: Used when fallback stores are needed, or when the store doesn't support native compute (InMemory, DeltaLake)
 
 **MetadataDiffResolver** (`diff/`): Compares target vs current versions
 
@@ -300,7 +299,7 @@ The store automatically selects the optimal component strategy:
 Used in specific cases:
 
 1. **Fallback store scenarios**: When upstream metadata needs to be pulled from fallback stores (cross-store operations require in-memory processing)
-2. **Non-compute stores**: Stores without native compute/hashing support (InMemory, SQLite, DeltaLake)
+2. **Non-compute stores**: Stores without native compute/hashing support (InMemory, DeltaLake)
 3. **User preference**: Can be forced via `prefer_native=False` parameter
 
 ### Module-Level Import Restrictions
