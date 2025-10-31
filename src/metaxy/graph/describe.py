@@ -42,7 +42,7 @@ def describe_graph(
         print(f"Graph has {info['filtered_features']} features from my_project")
         ```
     """
-    # Get all features, optionally filtered by project
+    # Filter features by project if specified
     if project is not None:
         filtered_features = {
             key: cls
