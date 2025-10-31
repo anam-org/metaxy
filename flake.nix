@@ -34,7 +34,6 @@
           clickhouse
           graphviz
           nodejs_22  # so basedpyright runs against it
-          bun
           (mermaid-ascii.packages.${system}.default or null)
         ];
 
