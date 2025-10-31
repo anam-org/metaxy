@@ -1,7 +1,7 @@
 """Ibis-based metadata store for SQL databases.
 
 Supports any SQL database that Ibis supports:
-- DuckDB, PostgreSQL, MySQL, SQLite (local/embedded)
+- DuckDB, PostgreSQL, MySQL (local/embedded)
 - ClickHouse, Snowflake, BigQuery (cloud analytical)
 - And 20+ other backends
 """
@@ -28,13 +28,15 @@ class IbisMetadataStore(MetadataStore):
     """
     Generic SQL metadata store using Ibis.
 
-    Supports any Ibis backend including:
+    Supports any Ibis backend that supports struct types:
     - DuckDB: Fast local analytical database
     - PostgreSQL: Production-grade RDBMS
     - MySQL: Popular RDBMS
     - ClickHouse: High-performance analytical database
-    - SQLite: Embedded database
-    - And 20+ other backends
+    - And other backends with struct support
+
+    Note: Backends without native struct support (e.g., SQLite) are NOT supported.
+    The data_version field requires struct type support for proper storage.
 
     Storage layout:
     - Each feature gets its own table: {namespace}__{feature_name}
@@ -58,18 +60,6 @@ class IbisMetadataStore(MetadataStore):
         >>> with store:
         ...     store.write_metadata(MyFeature, df)
     """
-
-    @classmethod
-    def supports_structs(cls) -> bool:
-        """Check if backend supports struct types natively.
-
-        Subclasses should override this for backends that don't support structs.
-        Default implementation returns True (most SQL databases support structs).
-
-        Returns:
-            True if backend supports structs, False if needs JSON serialization
-        """
-        return True
 
     def __init__(
         self,
@@ -293,34 +283,6 @@ class IbisMetadataStore(MetadataStore):
         """Convert table name back to feature key."""
         return FeatureKey(table_name.split("__"))
 
-    def _serialize_for_storage(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Serialize DataFrame for storage (e.g., convert structs to JSON).
-
-        Base implementation does nothing - backends that don't support structs
-        should override this method.
-
-        Args:
-            df: DataFrame to serialize
-
-        Returns:
-            Serialized DataFrame
-        """
-        return df
-
-    def _deserialize_from_storage(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Deserialize DataFrame from storage (e.g., convert JSON back to structs).
-
-        Base implementation does nothing - backends that don't support structs
-        should override this method.
-
-        Args:
-            df: DataFrame to deserialize
-
-        Returns:
-            Deserialized DataFrame
-        """
-        return df
-
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
@@ -337,9 +299,6 @@ class IbisMetadataStore(MetadataStore):
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
         table_name = feature_key.table_name
-
-        # Serialize for storage (e.g., convert structs to JSON for SQLite)
-        df = self._serialize_for_storage(df)
 
         # Check if table exists
         existing_tables = self.conn.list_tables()
@@ -427,28 +386,6 @@ class IbisMetadataStore(MetadataStore):
         # Select columns (stays in SQL)
         if columns is not None:
             nw_lazy = nw_lazy.select(columns)
-
-        # For backends that don't support structs (e.g., SQLite),
-        # we need to deserialize JSON strings to structs
-        if not self.supports_structs():
-            # Convert to Polars, deserialize, then wrap back as Narwhals lazy
-            table_native = nw_lazy.to_native()
-            if hasattr(table_native, "to_polars"):
-                # Ibis table
-                df_polars = table_native.to_polars()
-            else:
-                # Already Polars
-                df_polars = (
-                    table_native
-                    if isinstance(table_native, pl.DataFrame)
-                    else table_native.collect()
-                )
-
-            # Deserialize JSON → structs
-            df_polars = self._deserialize_from_storage(df_polars)
-
-            # Make lazy and wrap in Narwhals
-            return nw.from_native(df_polars.lazy())
 
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy

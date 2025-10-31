@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 import mkdocs_gen_files
-from metaxy_mkdocs.config_generator import (
+from metaxy_mkdocs.config_generator import (  # pyright: ignore
     extract_field_info,
     generate_individual_field_doc,
     generate_toml_example,
@@ -72,7 +72,7 @@ def generate_configuration_docs():
     # Generate individual field documentation
     # Group fields by section
     top_level_fields = [f for f in fields if len(f["path"]) == 1 and not f["is_nested"]]
-    nested_sections: dict[str, list[dict]] = {}
+    nested_sections: dict[str, list[dict]] = {}  # pyright: ignore
 
     for field in fields:
         if len(field["path"]) > 1 and not field["is_nested"]:
@@ -187,7 +187,6 @@ def generate_configuration_docs():
             "| Store Type | Import Path | Description |",
             "|------------|-------------|-------------|",
             "| DuckDB | `metaxy.metadata_store.duckdb.DuckDBMetadataStore` | File-based or in-memory DuckDB backend |",
-            "| SQLite | `metaxy.metadata_store.sqlite.SQLiteMetadataStore` | File-based SQLite backend |",
             "| ClickHouse | `metaxy.metadata_store.clickhouse.ClickHouseMetadataStore` | ClickHouse database backend |",
             "| In-Memory | `metaxy.metadata_store.memory.InMemoryMetadataStore` | In-memory backend for testing |",
             "",

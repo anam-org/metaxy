@@ -29,7 +29,6 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.sqlite import SQLiteMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # ============= HELPERS =============
@@ -42,9 +41,6 @@ def get_available_store_types_for_fallback() -> list[str]:
     1. Supports native components (IbisDataVersionCalculator)
     2. Can be easily instantiated with separate databases
     3. Supports multiple hash algorithms
-
-    SQLite is excluded because it doesn't support native components -
-    it always uses Polars, so there's no "fallback" behavior to test.
     """
     return ["duckdb"]
 
@@ -60,7 +56,7 @@ def create_store_for_fallback(
     """Create a store instance for fallback testing.
 
     Args:
-        store_type: "duckdb" or "sqlite"
+        store_type: "duckdb"
         prefer_native: Whether to prefer native components
         hash_algorithm: Hash algorithm to use
         params: Store-specific parameters
@@ -81,14 +77,6 @@ def create_store_for_fallback(
             db_path,
             hash_algorithm=hash_algorithm,
             extensions=extensions,  # pyright: ignore[reportArgumentType]
-            prefer_native=prefer_native,
-            fallback_stores=fallback_stores,
-        )
-    elif store_type == "sqlite":
-        db_path = tmp_path / f"fallback_test_{suffix}_{hash_algorithm.value}.sqlite"
-        return SQLiteMetadataStore(
-            db_path,
-            hash_algorithm=hash_algorithm,
             prefer_native=prefer_native,
             fallback_stores=fallback_stores,
         )
@@ -523,71 +511,6 @@ def test_prefer_native_false_no_warning_even_without_fallback(
             warnings = [r for r in caplog.records]
             assert len(warnings) == 0, (
                 f"Unexpected warnings with prefer_native=False: {[r.message for r in warnings]}"
-            )
-
-            # Verify results are correct
-            assert len(result.added) == 3
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
-
-
-@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-def test_sqlite_no_warning_with_fallback_since_no_native(
-    store_params: dict[str, Any],
-    hash_algorithm: HashAlgorithm,
-    caplog,
-):
-    """Test that SQLite doesn't warn about fallback since it has no native components.
-
-    SQLite always uses Polars components (no native support), so using fallback
-    stores doesn't change the component strategy. No warning should be issued.
-    """
-    graph = FeatureGraph()
-    graph.add_feature(RootFeature)
-    graph.add_feature(DownstreamFeature)
-
-    tmp_path = store_params.get("tmp_path")
-    assert tmp_path is not None
-
-    # Create fallback store (any type works)
-    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
-
-    # Create SQLite primary store with fallback
-    primary_store = SQLiteMetadataStore(
-        tmp_path / f"sqlite_fallback_{hash_algorithm.value}.sqlite",
-        hash_algorithm=hash_algorithm,
-        prefer_native=True,  # Even with prefer_native=True, SQLite uses Polars
-        fallback_stores=[fallback_store],
-    )
-
-    try:
-        # Write root feature to fallback store
-        with fallback_store, graph.use():
-            root_data = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 3],
-                    "data_version": [
-                        {"default": "hash1"},
-                        {"default": "hash2"},
-                        {"default": "hash3"},
-                    ],
-                }
-            )
-            fallback_store.write_metadata(RootFeature, root_data)
-
-        # Resolve downstream with SQLite primary + in-memory fallback
-        with primary_store, fallback_store, graph.use():
-            import logging
-
-            caplog.clear()
-            with caplog.at_level(logging.WARNING):
-                result = primary_store.resolve_update(DownstreamFeature)
-
-            # Should be NO warnings - SQLite always uses Polars anyway
-            warnings = [r for r in caplog.records]
-            assert len(warnings) == 0, (
-                f"Unexpected warnings for SQLite with fallback: {[r.message for r in warnings]}"
             )
 
             # Verify results are correct
