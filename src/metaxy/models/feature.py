@@ -30,6 +30,28 @@ if TYPE_CHECKING:
     from metaxy.data_versioning.joiners import UpstreamJoiner
 
 
+class _CodeVersionDescriptor:
+    """Descriptor that returns field-only code version hashes."""
+
+    def __get__(self, instance, owner) -> str:
+        if not hasattr(owner, "spec"):
+            raise AttributeError(
+                f"Feature class '{owner.__name__}' is missing a spec definition."
+            )
+        spec = owner.spec()
+        if spec is None:
+            raise ValueError(
+                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
+            )
+        value = spec.code_version
+        try:
+            owner.spec.__dict__["code_version"] = value  # type: ignore[attr-defined]
+        except AttributeError:
+            # If spec is not a plain function (unlikely), skip caching on method
+            pass
+        return value
+
+
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
     "_active_graph", default=None
@@ -777,6 +799,7 @@ class BaseFeature(
     _spec: ClassVar[Any]
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+    code_version: ClassVar[str] = _CodeVersionDescriptor()  # pyright: ignore[reportAssignmentType]
 
     @classmethod
     def spec(cls) -> BaseFeatureSpec[IDColumnsT]:
