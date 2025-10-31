@@ -58,36 +58,31 @@ jobs:
         with:
           dprint-version: 0.50.2
 
-  # typecheck:
-  #   runs-on: depot-ubuntu-latest
-  #   env:
-  #     UV_PYTHON_PREFERENCE: only-system
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #     - name: Install Nix
-  #       uses: cachix/install-nix-action@v27
-  #       with:
-  #         nix_path: nixpkgs=channel:nixpkgs-unstable
-  #     - name: Setup Magic Nix Cache
-  #       uses: DeterminateSystems/magic-nix-cache-action@v8
-  #     - uses: nicknovitski/nix-develop@v1
-  #     - name: Sync dependencies
-  #       run: uv python pin 3.10 && uv sync --all-extras --all-groups
-  #     - name: Replace bundled Node.js with Nix Node.js
-  #       run: |
-  #         # Find the bundled node binary and replace it with Nix's node
-  #         BUNDLED_NODE=$(find .venv/lib/python3.10/site-packages/nodejs_wheel/bin -name "node" -type f 2>/dev/null || true)
-  #         if [ -n "$BUNDLED_NODE" ]; then
-  #           rm -f "$BUNDLED_NODE"
-  #           ln -s "$(which node)" "$BUNDLED_NODE"
-  #           echo "Replaced bundled node with Nix node: $(which node)"
-  #         fi
-  #     - name: Run Basedpyright
-  #       run: uv run basedpyright --level error
-  #     - name: Cleanup nix environment
-  #       if: always()
-  #       run: bash .github/scripts/cleanup-nix-env.sh
+  typecheck:
+    runs-on: depot-ubuntu-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Save original environment
+        run: bash .github/scripts/save-env.sh
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: nicknovitski/nix-develop@v1
+      - name: Sync dependencies
+        run: uv python pin 3.10 && uv sync --all-extras --all-groups
+      - name: Restore original environment
+        run: bash .github/scripts/restore-env.sh
+      - name: Run Basedpyright
+        run: uv run basedpyright --level error
+      - name: Cleanup nix environment
+        if: always()
+        run: bash .github/scripts/cleanup-nix-env.sh
 
   test:
     needs: filter
