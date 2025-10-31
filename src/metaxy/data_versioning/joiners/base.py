@@ -39,7 +39,7 @@ class UpstreamJoiner(ABC):
     ) -> tuple[nw.LazyFrame[Any], dict[str, str]]:
         """Join all upstream features together with optional column selection/renaming.
 
-        Joins upstream feature metadata on configured ID columns (from feature_spec.id_columns(),
+        Joins upstream feature metadata on configured ID columns (from feature_spec.id_columns,
         default: ["sample_uid"]) to create a unified reference containing all upstream
         data_version columns needed for hash calculation, plus any additional user-specified columns.
 
@@ -64,7 +64,7 @@ class UpstreamJoiner(ABC):
         Note:
             - Uses INNER join by default - only rows with matching ID columns in ALL upstream
               features are included. This ensures we can compute valid data_versions.
-            - ID columns come from feature_spec.id_columns() (default: ["sample_uid"])
+            - ID columns come from feature_spec.id_columns (default: ["sample_uid"])
             - Supports composite keys (multiple ID columns) for complex join scenarios
             - System columns (ID columns, data_version) are always preserved
             - User columns are preserved based on columns parameter (default: all)

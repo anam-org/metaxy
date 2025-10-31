@@ -768,7 +768,7 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
             lazy_result = diff_resolver.find_changes(
                 target_versions,
                 current_metadata,
-                id_columns=cls.id_columns(),  # Pass ID columns from feature spec
+                id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
             )
             # Could filter/modify result here
 

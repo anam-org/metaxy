@@ -30,29 +30,6 @@ if TYPE_CHECKING:
     )
     from metaxy.data_versioning.joiners import UpstreamJoiner
 
-
-class _CodeVersionDescriptor:
-    """Descriptor that returns field-only code version hashes."""
-
-    def __get__(self, instance, owner) -> str:
-        if not hasattr(owner, "spec"):
-            raise AttributeError(
-                f"Feature class '{owner.__name__}' is missing a spec definition."
-            )
-        spec = owner.spec()
-        if spec is None:
-            raise ValueError(
-                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
-            )
-        value = spec.code_version
-        try:
-            owner.spec.__dict__["code_version"] = value  # type: ignore[attr-defined]
-        except AttributeError:
-            # If spec is not a plain function (unlikely), skip caching on method
-            pass
-        return value
-
-
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
     "_active_graph", default=None
@@ -859,35 +836,6 @@ class BaseFeature(
         return cls.spec().table_name()
 
     @classmethod
-    def id_columns(cls) -> IDColumns:
-        """Get the ID columns used for joining metadata.
-
-        Returns the ID columns from the feature spec, or the default ["sample_uid"]
-        if not specified. These columns are used as join keys when combining
-        upstream features.
-
-        Returns:
-            List of ID column names
-
-        Example:
-            >>> class DefaultFeature(Feature, spec=FeatureSpec(
-            ...     key=FeatureKey(["my", "feature"]),
-            ... )):
-            ...     pass
-            >>> DefaultFeature.id_columns()
-            ['sample_uid']  # Default
-
-            >>> class CustomIDFeature(Feature, spec=FeatureSpec(
-            ...     key=FeatureKey(["my", "feature"]),
-            ...     id_columns=["user_id", "session_id"],
-            ... )):
-            ...     pass
-            >>> CustomIDFeature.id_columns()
-            ['user_id', 'session_id']  # Custom composite key
-        """
-        return cls.spec().id_columns
-
-    @classmethod
     def feature_version(cls) -> str:
         """Get hash of feature specification.
 
@@ -1060,7 +1008,7 @@ class BaseFeature(
             ...     @classmethod
             ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
             ...         # Get standard diff
-            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.id_columns())
+            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)
             ...
             ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
             ...         # Users can filter/modify the diff result here
@@ -1071,7 +1019,7 @@ class BaseFeature(
         lazy_result = diff_resolver.find_changes(
             target_versions=target_versions,
             current_metadata=current_metadata,
-            id_columns=cls.id_columns(),  # Pass ID columns from feature spec
+            id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
         )
 
         # Materialize to DiffResult if lazy=False
