@@ -4,6 +4,7 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
+from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -209,6 +210,28 @@ IDColumnsT = TypeVar(
 )  # bound, should be used for generic
 
 
+def _freeze_metadata(value: Any) -> Any:
+    """Recursively convert metadata to immutable containers."""
+    if isinstance(value, Mapping):
+        frozen_dict = {k: _freeze_metadata(v) for k, v in value.items()}
+        return MappingProxyType(frozen_dict)
+    if isinstance(value, list):
+        return tuple(_freeze_metadata(v) for v in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_metadata(v) for v in value)
+    return value
+
+
+def _thaw_metadata(value: Any) -> Any:
+    if isinstance(value, MappingProxyType):
+        return {k: _thaw_metadata(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_metadata(v) for v in value]
+    if isinstance(value, list):
+        return [_thaw_metadata(v) for v in value]
+    return value
+
+
 def _coerce_metadata(value: Any) -> dict[str, JsonValue] | None:
     if value is None:
         return None
@@ -249,6 +272,24 @@ class _BaseFeatureSpec(FrozenBaseModel):
 
 class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
     id_columns: pydantic.SkipValidation[IDColumnsT]
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _default_metadata(cls, values: dict[str, Any]) -> dict[str, Any]:
+        # Allow callers to omit metadata or pass None while keeping the field non-optional.
+        if "metadata" in values and values["metadata"] is None:
+            values.pop("metadata", None)
+        elif "metadata" in values:
+            metadata_value = values["metadata"]
+            if not isinstance(metadata_value, Mapping):
+                raise ValueError("metadata must be a mapping")
+            try:
+                json.dumps(metadata_value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "metadata must be JSON-serializable. Found non-serializable value"
+                ) from exc
+        return values
 
     @overload
     def __init__(
@@ -355,6 +396,33 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             raise ValueError(
                 "id_columns must be non-empty if specified. Use None for default."
             )
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def validate_metadata_json_serializable(self) -> Self:
+        """Validate that metadata is JSON-serializable.
+
+        This ensures that metadata can be safely serialized for storage,
+        transmission, and graph snapshots.
+
+        Note: Metadata is kept as a mutable dict for Pydantic serialization compatibility,
+        but users should treat it as immutable. The frozen FeatureSpec model prevents
+        reassignment of the metadata field itself.
+
+        Raises:
+            ValueError: If metadata contains non-JSON-serializable types
+        """
+        if self.metadata is not None:
+            try:
+                # Attempt to serialize and deserialize to validate
+                json.dumps(self.metadata)
+            except (TypeError, ValueError) as e:
+                raise ValueError(
+                    f"metadata must be JSON-serializable. "
+                    f"Found non-serializable value: {e}"
+                ) from e
+            object.__setattr__(self, "metadata", _freeze_metadata(self.metadata))
+
         return self
 
     @property
