@@ -68,8 +68,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Save original environment
-        run: bash .github/scripts/save-env.sh
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
@@ -78,7 +76,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v8
         with:
           use-gha-cache: false
-      - uses: nicknovitski/nix-develop@v1
+      #- uses: nicknovitski/nix-develop@v1
       - name: Run Typecheck in Nix Shell
         run: |
           nix develop '.#python3.10' -c bash <<'EOF'
