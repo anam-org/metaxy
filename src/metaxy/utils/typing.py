@@ -6,4 +6,4 @@ class _CodeVersionDescriptor:
             raise ValueError(
                 f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
             )
-        return owner.spec.field_code_version_hash
+        return owner.spec.code_version
