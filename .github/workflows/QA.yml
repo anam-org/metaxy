@@ -115,8 +115,6 @@ jobs:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
-        with:
-          use-gha-cache: false
       - uses: nicknovitski/nix-develop@v1
         with:
            # use devshell for Python 3.10
