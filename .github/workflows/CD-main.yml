@@ -57,7 +57,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy documentation with Mike
-        run: uv run mike deploy --push --ignore-remote-status --update-aliases ${{ github.ref_name }} ${{ github.ref_name }}
+        run: uv run mike deploy --push --ignore-remote-status ${{ github.ref_name }}
 
       # Restore original environment to prevent Nix tools from interfering
       - name: Restore original environment
