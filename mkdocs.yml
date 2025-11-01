@@ -215,7 +215,7 @@ validation:
   anchors: warn
 
 extra_javascript:
-- javascripts/scarf.js
+- javascripts/telemetry.js
 
 extra_css:
 - css/code_select.css
