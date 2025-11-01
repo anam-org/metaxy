@@ -30,12 +30,14 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     native data version calculations are actually needed (not on store open).
 
     Example:
-        >>> backend = ibis.duckdb.connect("metadata.db")
-        >>> calculator = DuckDBDataVersionCalculator(
-        ...     backend=backend,
-        ...     extensions=["hashfuncs"]
-        ... )
-        >>> # Extensions are now loaded and xxHash64 is available
+        ```py
+        backend = ibis.duckdb.connect("metadata.db")
+        calculator = DuckDBDataVersionCalculator(
+            backend=backend,
+            extensions=["hashfuncs"]
+            )
+        # Extensions are now loaded and xxHash64 is available
+        ```
     """
 
     def __init__(
@@ -52,8 +54,10 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
                 'name' and optional 'repository' keys.
 
         Example:
-            >>> extensions = ["hashfuncs"]  # Simple form
-            >>> extensions = [{"name": "spatial", "repository": "core_nightly"}]
+            ```py
+            extensions = ["hashfuncs"]  # Simple form
+            extensions = [{"name": "spatial", "repository": "core_nightly"}]
+            ```
         """
         self._backend = backend
         self.extensions = list(extensions or [])

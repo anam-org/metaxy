@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
@@ -67,24 +67,11 @@ class MetadataStore(ABC):
     Abstract base class for metadata storage backends.
 
     Supports:
-    - Immutable metadata storage (append-only)
-    - Composable fallback store chains (for branch deployments)
-    - Automatic data version calculation using three-component architecture
+    - Append-only metadata storage patterns
+
+    - Composable fallback store chains for development and testing purposes
+
     - Backend-specific computation optimizations
-
-    All stores use Narwhals LazyFrames as their universal interface,
-    regardless of the underlying backend (Polars, Ibis/SQL, etc.).
-
-    Components:
-        Components are created on-demand in resolve_update() based on:
-        - User preference (prefer_native flag)
-        - Whether all upstream data is local (or needs fallback stores)
-        - Store capabilities (whether it supports native data version calculations)
-
-        If prefer_native=True and all conditions met: use native (Ibis, DuckDB, etc.)
-        Otherwise: use Polars components
-
-        Subclasses declare what native data version calculations they support via abstract methods.
 
     Context Manager:
         Stores must be used as context managers for resource management.
@@ -372,20 +359,22 @@ class MetadataStore(ABC):
     # ========== Core CRUD Operations ==========
 
     @contextmanager
-    def allow_cross_project_writes(self):
+    def allow_cross_project_writes(self) -> Iterator[None]:
         """Context manager to temporarily allow cross-project writes.
 
         This is an escape hatch for legitimate cross-project operations like migrations,
         where metadata needs to be written to features from different projects.
 
         Example:
-            >>> # During migration, allow writing to features from different projects
-            >>> with store.allow_cross_project_writes():
-            ...     store.write_metadata(feature_from_project_a, metadata_a)
-            ...     store.write_metadata(feature_from_project_b, metadata_b)
+            ```py
+            # During migration, allow writing to features from different projects
+            with store.allow_cross_project_writes():
+                store.write_metadata(feature_from_project_a, metadata_a)
+                store.write_metadata(feature_from_project_b, metadata_b)
+            ```
 
         Yields:
-            None - the context manager temporarily disables project validation
+            None: The context manager temporarily disables project validation
         """
         previous_value = self._allow_cross_project_writes
         try:
@@ -612,12 +601,17 @@ class MetadataStore(ABC):
         This removes all stored metadata for the specified feature from the store.
         Useful for cleanup in tests or when re-computing feature metadata from scratch.
 
+        Warning:
+            This operation is irreversible and will **permanently delete all metadata** for the specified feature.
+
         Args:
             feature: Feature class or key to drop metadata for
 
         Example:
-            >>> store.drop_feature_metadata(MyFeature)
-            >>> assert not store.has_feature(MyFeature)
+            ```py
+            store.drop_feature_metadata(MyFeature)
+            assert not store.has_feature(MyFeature)
+            ```
         """
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
@@ -641,12 +635,7 @@ class MetadataStore(ABC):
         2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
         3. No changes: Snapshot exists with identical feature_spec_versions for all features
 
-        Returns:
-            SnapshotPushResult containing:
-            - snapshot_version: The deterministic hash of the graph snapshot
-            - already_recorded: True if computational changes were already recorded
-            - metadata_changed: True if metadata-only changes were detected
-            - features_with_spec_changes: List of feature keys with spec version changes
+        Returns: SnapshotPushResult
         """
 
         from metaxy.models.feature import FeatureGraph
@@ -1026,14 +1015,16 @@ class MetadataStore(ABC):
             StoreNotOpenError: If store is not open
 
         Example:
-            >>> with store:
-            ...     # Get snapshots for a specific project
-            ...     snapshots = store.read_graph_snapshots(project="my_project")
-            ...     latest_snapshot = snapshots["snapshot_version"][0]
-            ...     print(f"Latest snapshot: {latest_snapshot}")
-            ...
-            ...     # Get snapshots across all projects
-            ...     all_snapshots = store.read_graph_snapshots()
+            ```py
+            with store:
+                # Get snapshots for a specific project
+                snapshots = store.read_graph_snapshots(project="my_project")
+                latest_snapshot = snapshots["snapshot_version"][0]
+                print(f"Latest snapshot: {latest_snapshot}")
+
+                # Get snapshots across all projects
+                all_snapshots = store.read_graph_snapshots()
+            ```
         """
         self._check_open()
 
@@ -1102,16 +1093,20 @@ class MetadataStore(ABC):
             ValueError: If current=False but no snapshot_version provided
 
         Examples:
-            >>> # Get features from current code
-            >>> with store:
-            ...     features = store.read_features(current=True)
-            ...     print(f"Current graph has {len(features)} features")
+            ```py
+            # Get features from current code
+            with store:
+                features = store.read_features(current=True)
+                print(f"Current graph has {len(features)} features")
+            ```
 
-            >>> # Get features from a specific snapshot
-            >>> with store:
-            ...     features = store.read_features(current=False, snapshot_version="abc123")
-            ...     for row in features.iter_rows(named=True):
-            ...         print(f"{row['feature_key']}: {row['feature_version']}")
+            ```py
+            # Get features from a specific snapshot
+            with store:
+                features = store.read_features(current=False, snapshot_version="abc123")
+                for row in features.iter_rows(named=True):
+                    print(f"{row['feature_key']}: {row['feature_version']}")
+            ```
         """
         self._check_open()
 
@@ -1185,34 +1180,42 @@ class MetadataStore(ABC):
             FeatureNotFoundError: If a specified feature doesn't exist in source store
 
         Examples:
-            >>> # Simple: copy all features from latest snapshot
-            >>> stats = dest_store.copy_metadata(from_store=source_store)
+            ```py
+            # Simple: copy all features from latest snapshot
+            stats = dest_store.copy_metadata(from_store=source_store)
+            ```
 
-            >>> # Copy specific features from a specific snapshot
-            >>> stats = dest_store.copy_metadata(
-            ...     from_store=source_store,
-            ...     features=[FeatureKey(["my_feature"])],
-            ...     from_snapshot="abc123",
-            ... )
+            ```py
+            # Copy specific features from a specific snapshot
+            stats = dest_store.copy_metadata(
+                from_store=source_store,
+                features=[FeatureKey(["my_feature"])],
+                from_snapshot="abc123",
+            )
+            ```
 
-            >>> # Copy with filters
-            >>> stats = dest_store.copy_metadata(
-            ...     from_store=source_store,
-            ...     filters={"my/feature": [nw.col("sample_uid").is_in(["s1", "s2"])]},
-            ... )
+            ```py
+            # Copy with filters
+            stats = dest_store.copy_metadata(
+                from_store=source_store,
+                filters={"my/feature": [nw.col("sample_uid").is_in(["s1", "s2"])]},
+            )
+            ```
 
-            >>> # Copy specific features with filters
-            >>> stats = dest_store.copy_metadata(
-            ...     from_store=source_store,
-            ...     features=[
-            ...         FeatureKey(["feature_a"]),
-            ...         FeatureKey(["feature_b"]),
-            ...     ],
-            ...     filters={
-            ...         "feature_a": [nw.col("field_a") > 10, nw.col("sample_uid").is_in(["s1", "s2"])],
-            ...         "feature_b": [nw.col("field_b") < 30],
-            ...     },
-            ... )
+            ```py
+            # Copy specific features with filters
+            stats = dest_store.copy_metadata(
+                from_store=source_store,
+                features=[
+                    FeatureKey(["feature_a"]),
+                    FeatureKey(["feature_b"]),
+                ],
+                filters={
+                    "feature_a": [nw.col("field_a") > 10, nw.col("sample_uid").is_in(["s1", "s2"])],
+                    "feature_b": [nw.col("field_b") < 30],
+                },
+            )
+            ```
         """
         import logging
 
@@ -1571,7 +1574,7 @@ class MetadataStore(ABC):
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> DiffResult: ...
 
     @overload
@@ -1582,7 +1585,7 @@ class MetadataStore(ABC):
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
-        **kwargs,
+        **kwargs: Any,
     ) -> LazyDiffResult: ...
 
     def resolve_update(
@@ -1592,68 +1595,63 @@ class MetadataStore(ABC):
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> DiffResult | LazyDiffResult:
-        """Resolve what needs updating for a feature.
-
-        Primary user-facing method. Automatically chooses optimal strategy:
-        1. Root features without samples → Raise error (samples required)
-        2. All upstream local → Use native data version calculations (stay in DB)
-        3. Some upstream in fallback stores → Pull to memory (Polars)
-        4. samples provided → Use as pre-calculated target versions (escape hatch)
+        """Calculate an incremental update for a feature.
 
         Args:
             feature: Feature class to resolve updates for
-            samples: **Escape hatch parameter**. Pre-computed DataFrame with sample_uid
-                and data_version columns. When provided, skips upstream loading, joining,
-                and data version calculation - goes straight to diff.
+            samples: Pre-computed DataFrame with ID columns
+                and `"data_version"` column. When provided, `MetadataStore` skips upstream loading, joining,
+                and data version calculation.
 
                 **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate data_version from, so users
-                must provide samples with manually computed data_version.
+                Root features don't have upstream to calculate `"data_version"` from, so users
+                must provide samples with manually computed `"data_version"` column.
 
-                **Optional for non-root features** as an escape hatch. Use this when you
+                For non-root features, use this when you
                 want to bypass the automatic upstream loading and data version calculation.
+
                 Examples:
+
                 - Loading upstream from custom sources
+
                 - Pre-computing data versions with custom logic
+
                 - Testing specific scenarios
 
-                **Normal usage**: Don't provide this parameter. The system will automatically
-                load upstream features and calculate data versions.
+                Setting this parameter during normal operations is not required.
 
             filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
                 Applied when reading upstream metadata to filter samples at the source.
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If True, return LazyDiffResult with lazy Narwhals LazyFrames.
-                If False, return DiffResult with eager Narwhals DataFrames (default).
-            **kwargs: Backend-specific parameters (reserved for future use)
-
-        Returns:
-            DiffResult (eager, default) or LazyDiffResult (lazy) with:
-            - added: New samples not in current metadata
-            - changed: Existing samples with different data_versions
-            - removed: Samples in current but not in upstream
-
-            Each frame has columns: [sample_uid, data_version, ...user columns...]
+            lazy: If `True`, return [metaxy.data_versioning.diff.LazyDiffResult][] with lazy Narwhals LazyFrames.
+                If `False`, return [metaxy.data_versioning.diff.DiffResult][] with eager Narwhals DataFrames.
+            **kwargs: Backend-specific parameters
 
         Raises:
-            ValueError: If samples not provided for root features (no upstream)
+            ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
 
         Examples:
-            >>> # Root feature - samples required
-            >>> samples = pl.DataFrame({
-            ...     "sample_uid": [1, 2, 3],
-            ...     "data_version": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
-            ... })
-            >>> result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
+            ```py
+            # Root feature - samples required
+            samples = pl.DataFrame({
+                "sample_uid": [1, 2, 3],
+                "data_version": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+            })
+            result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
+            ```
 
-            >>> # Non-root feature - automatic (normal usage)
-            >>> result = store.resolve_update(DownstreamFeature)
+            ```py
+            # Non-root feature - automatic (normal usage)
+            result = store.resolve_update(DownstreamFeature)
+            ```
 
-            >>> # Non-root feature - with escape hatch (advanced)
-            >>> custom_samples = compute_custom_data_versions(...)
-            >>> result = store.resolve_update(DownstreamFeature, samples=custom_samples)
+            ```py
+            # Non-root feature - with escape hatch (advanced)
+            custom_samples = compute_custom_data_versions(...)
+            result = store.resolve_update(DownstreamFeature, samples=custom_samples)
+            ```
 
         Note:
             Users can then process only added/changed and call write_metadata().

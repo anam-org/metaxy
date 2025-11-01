@@ -1,4 +1,5 @@
 import hashlib
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Generic
@@ -51,9 +52,11 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
         KeyError: If no feature with the given key is registered
 
     Example:
-        >>> from metaxy import get_feature_by_key, FeatureKey
-        >>> parent_key = FeatureKey(["examples", "parent"])
-        >>> ParentFeature = get_feature_by_key(parent_key)
+        ```py
+        from metaxy import get_feature_by_key, FeatureKey
+        parent_key = FeatureKey(["examples", "parent"])
+        ParentFeature = get_feature_by_key(parent_key)
+        ```
     """
     graph = FeatureGraph.get_active()
     return graph.get_feature_by_key(key)
@@ -61,10 +64,10 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
 
 class FeatureGraph:
     def __init__(self):
-        self.features_by_key: dict[FeatureKey, type[BaseFeature[Any]]] = {}
+        self.features_by_key: dict[FeatureKey, type[BaseFeature[IDColumns]]] = {}
         self.feature_specs_by_key: dict[FeatureKey, BaseFeatureSpecWithIDColumns] = {}
 
-    def add_feature(self, feature: type["BaseFeature[Any]"]) -> None:
+    def add_feature(self, feature: type["BaseFeature[IDColumns]"]) -> None:
         """Add a feature to the graph.
 
         Args:
@@ -247,7 +250,7 @@ class FeatureGraph:
         del self.features_by_key[key]
         del self.feature_specs_by_key[key]
 
-    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[Any]"]:
+    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[IDColumns]"]:
         """Get a feature class by its key.
 
         Args:
@@ -260,9 +263,11 @@ class FeatureGraph:
             KeyError: If no feature with the given key is registered
 
         Example:
-            >>> graph = FeatureGraph.get_active()
-            >>> parent_key = FeatureKey(["examples", "parent"])
-            >>> ParentFeature = graph.get_feature_by_key(parent_key)
+            ```py
+            graph = FeatureGraph.get_active()
+            parent_key = FeatureKey(["examples", "parent"])
+            ParentFeature = graph.get_feature_by_key(parent_key)
+            ```
         """
         if key not in self.features_by_key:
             raise KeyError(
@@ -338,10 +343,12 @@ class FeatureGraph:
             Does not include the source features themselves.
 
         Example:
-            >>> # DAG: A -> B -> D
-            >>> #      A -> C -> D
-            >>> graph.get_downstream_features([FeatureKey(["A"])])
-            [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
+            ```py
+            # DAG: A -> B -> D
+            #      A -> C -> D
+            graph.get_downstream_features([FeatureKey(["A"])])
+            # [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
+            ```
         """
         source_set = set(sources)
         visited = set()
@@ -400,17 +407,19 @@ class FeatureGraph:
             }
 
         Example:
-            >>> snapshot = graph.to_snapshot()
-            >>> snapshot["video_processing"]["feature_version"]
-            'abc12345'
-            >>> snapshot["video_processing"]["feature_spec_version"]
-            'def67890'
-            >>> snapshot["video_processing"]["feature_tracking_version"]
-            'xyz98765'
-            >>> snapshot["video_processing"]["feature_class_path"]
-            'myapp.features.video.VideoProcessing'
-            >>> snapshot["video_processing"]["project"]
-            'myapp'
+            ```py
+            snapshot = graph.to_snapshot()
+            snapshot["video_processing"]["feature_version"]
+            # 'abc12345'
+            snapshot["video_processing"]["feature_spec_version"]
+            # 'def67890'
+            snapshot["video_processing"]["feature_tracking_version"]
+            # 'xyz98765'
+            snapshot["video_processing"]["feature_class_path"]
+            # 'myapp.features.video.VideoProcessing'
+            snapshot["video_processing"]["project"]
+            # 'myapp'
+            ```
         """
         snapshot = {}
 
@@ -453,11 +462,9 @@ class FeatureGraph:
         the new location.
 
         Args:
-            snapshot_data: Dict of feature_key -> {
-                feature_spec: dict,
-                feature_class_path: str,
-                ...
-            } (as returned by to_snapshot() or loaded from DB)
+            snapshot_data: Dict of feature_key -> dict containing
+                feature_spec (dict), feature_class_path (str), and other fields
+                as returned by to_snapshot() or loaded from DB
             class_path_overrides: Optional dict mapping feature_key to new class path
                                  for features that have been moved/renamed
             force_reload: If True, reload modules from disk to get current code state.
@@ -469,16 +476,18 @@ class FeatureGraph:
             ImportError: If feature class cannot be imported at recorded path
 
         Example:
-            >>> # Load snapshot from metadata store
-            >>> historical_graph = FeatureGraph.from_snapshot(snapshot_data)
-            >>>
-            >>> # With override for moved feature
-            >>> historical_graph = FeatureGraph.from_snapshot(
-            ...     snapshot_data,
-            ...     class_path_overrides={
-            ...         "video_processing": "myapp.features_v2.VideoProcessing"
-            ...     }
-            ... )
+            ```py
+            # Load snapshot from metadata store
+            historical_graph = FeatureGraph.from_snapshot(snapshot_data)
+
+            # With override for moved feature
+            historical_graph = FeatureGraph.from_snapshot(
+                snapshot_data,
+                class_path_overrides={
+                    "video_processing": "myapp.features_v2.VideoProcessing"
+                }
+            )
+            ```
         """
         import importlib
         import sys
@@ -581,12 +590,14 @@ class FeatureGraph:
             Active FeatureGraph instance
 
         Example:
-            >>> # Normal usage - returns default graph
-            >>> reg = FeatureGraph.get_active()
-            >>>
-            >>> # With custom graph in context
-            >>> with my_graph.use():
-            ...     reg = FeatureGraph.get_active()  # Returns my_graph
+            ```py
+            # Normal usage - returns default graph
+            reg = FeatureGraph.get_active()
+
+            # With custom graph in context
+            with my_graph.use():
+                reg = FeatureGraph.get_active()  # Returns my_graph
+            ```
         """
         return _active_graph.get() or graph
 
@@ -601,34 +612,38 @@ class FeatureGraph:
             reg: FeatureGraph to activate
 
         Example:
-            >>> # In application setup
-            >>> my_graph = FeatureGraph()
-            >>> FeatureGraph.set_active(my_graph)
-            >>>
-            >>> # Now all operations use my_graph
-            >>> FeatureGraph.get_active()  # Returns my_graph
+            ```py
+            # In application setup
+            my_graph = FeatureGraph()
+            FeatureGraph.set_active(my_graph)
+
+            # Now all operations use my_graph
+            FeatureGraph.get_active()  # Returns my_graph
+            ```
         """
         _active_graph.set(reg)
 
     @contextmanager
-    def use(self):
+    def use(self) -> Iterator[Self]:
         """Context manager to temporarily use this graph as active.
 
         This is the recommended way to use custom registries, especially in tests.
         The graph is automatically restored when the context exits.
 
         Yields:
-            This graph instance
+            FeatureGraph: This graph instance
 
         Example:
-            >>> test_graph = FeatureGraph()
-            >>>
-            >>> with test_graph.use():
-            ...     # All operations use test_graph
-            ...     class TestFeature(Feature, spec=...):
-            ...         pass
-            ...
-            >>> # Outside context, back to previous graph
+            ```py
+            test_graph = FeatureGraph()
+
+            with test_graph.use():
+                # All operations use test_graph
+                class TestFeature(Feature, spec=...):
+                    pass
+
+            # Outside context, back to previous graph
+            ```
         """
         token = _active_graph.set(self)
         try:
@@ -825,13 +840,15 @@ class BaseFeature(
             Table name string (e.g., "my_namespace__my_feature")
 
         Example:
-            >>> class VideoFeature(Feature, spec=FeatureSpec(
-            ...     key=FeatureKey(["video", "processing"]),
-            ...     ...
-            ... )):
-            ...     pass
-            >>> VideoFeature.table_name()
-            'video__processing'
+            ```py
+            class VideoFeature(Feature, spec=FeatureSpec(
+                key=FeatureKey(["video", "processing"]),
+                ...
+            )):
+                pass
+            VideoFeature.table_name()
+            # 'video__processing'
+            ```
         """
         return cls.spec().table_name()
 
@@ -856,13 +873,15 @@ class BaseFeature(
             SHA256 hex digest (like git short hashes)
 
         Example:
-            >>> class MyFeature(Feature, spec=FeatureSpec(
-            ...     key=FeatureKey(["my", "feature"]),
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
-            ... )):
-            ...     pass
-            >>> MyFeature.feature_version()
-            'a3f8b2c1...'
+            ```py
+            class MyFeature(Feature, spec=FeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            )):
+                pass
+            MyFeature.feature_version()
+            # 'a3f8b2c1...'
+            ```
         """
         return cls.graph.get_feature_version(cls.spec().key)
 
@@ -887,13 +906,15 @@ class BaseFeature(
             SHA256 hex digest of the complete specification
 
         Example:
-            >>> class MyFeature(Feature, spec=FeatureSpec(
-            ...     key=FeatureKey(["my", "feature"]),
-            ...     fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
-            ... )):
-            ...     pass
-            >>> MyFeature.feature_spec_version()
-            'def456...'  # Different from feature_version
+            ```py
+            class MyFeature(Feature, spec=FeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            )):
+                pass
+            MyFeature.feature_spec_version()
+            # 'def456...'  # Different from feature_version
+            ```
         """
         return cls.spec().feature_spec_version
 
@@ -913,10 +934,12 @@ class BaseFeature(
             SHA256 hex digest of feature_spec_version + project
 
         Example:
-            >>> class MyFeature(Feature, spec=FeatureSpec(...)):
-            ...     pass
-            >>> MyFeature.feature_tracking_version()  # Combines spec + project
-            'abc789...'
+            ```py
+            class MyFeature(Feature, spec=FeatureSpec(...)):
+                pass
+            MyFeature.feature_tracking_version()  # Combines spec + project
+            # 'abc789...'
+            ```
         """
         hasher = hashlib.sha256()
         hasher.update(cls.feature_spec_version().encode())
@@ -1000,20 +1023,24 @@ class BaseFeature(
             DiffResult (eager) or LazyDiffResult (lazy) with added, changed, removed
 
         Example (default):
-            >>> class MyFeature(Feature, spec=...):
-            ...     pass  # Uses diff resolver's default implementation
+            ```py
+            class MyFeature(Feature, spec=...):
+                pass  # Uses diff resolver's default implementation
+            ```
 
         Example (ignore certain field changes):
-            >>> class MyFeature(Feature, spec=...):
-            ...     @classmethod
-            ...     def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
-            ...         # Get standard diff
-            ...         result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)
-            ...
-            ...         # Custom: Only consider 'frames' field changes, ignore 'audio'
-            ...         # Users can filter/modify the diff result here
-            ...
-            ...         return result  # Return modified DiffResult
+            ```py
+            class MyFeature(Feature, spec=...):
+                @classmethod
+                def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
+                    # Get standard diff
+                    result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)
+
+                    # Custom: Only consider 'frames' field changes, ignore 'audio'
+                    # Users can filter/modify the diff result here
+
+                    return result  # Return modified DiffResult
+            ```
         """
         # Diff resolver always returns LazyDiffResult - materialize if needed
         lazy_result = diff_resolver.find_changes(

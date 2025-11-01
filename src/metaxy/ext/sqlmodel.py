@@ -35,28 +35,30 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         This ensures consistency with Metaxy's metadata store table naming conventions.
 
     Example:
-        >>> from metaxy.integrations.sqlmodel import SQLModelFeature
-        >>> from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
-        >>> from sqlmodel import Field
-        >>>
-        >>> class MyFeature(
-        ...     SQLModelFeature,
-        ...     table=True,
-        ...     spec=BaseFeatureSpec(
-        ...         key=FeatureKey(["my", "feature"]),
-        ...
-        ...         fields=[
-        ...             FieldSpec(
-        ...                 key=FieldKey(["data"]),
-        ...                 code_version=1,
-        ...             ),
-        ...         ],
-        ...     ),
-        ... ):
-        ...     __tablename__ = "my_feature"
-        ...
-        ...     uid: str = Field(primary_key=True)
-        ...     data: str
+        ```py
+        from metaxy.integrations.sqlmodel import SQLModelFeature
+        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from sqlmodel import Field
+
+        class MyFeature(
+            SQLModelFeature,
+            table=True,
+            spec=BaseFeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["data"]),
+                        code_version=1,
+                    ),
+                ],
+            ),
+        ):
+            __tablename__ = "my_feature"
+
+            uid: str = Field(primary_key=True)
+            data: str
+        ```
     """
 
     def __new__(
@@ -176,32 +178,34 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     by the metadata store when reading/writing data.
 
     Example:
-        >>> from metaxy.integrations.sqlmodel import SQLModelFeature
-        >>> from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
-        >>> from sqlmodel import Field
-        >>>
-        >>> class VideoFeature(
-        ...     SQLModelFeature,
-        ...     table=True,
-        ...     spec=BaseFeatureSpec(
-        ...         key=FeatureKey(["video"]),
-        ...           # Root feature
-        ...         fields=[
-        ...             FieldSpec(
-        ...                 key=FieldKey(["video_file"]),
-        ...                 code_version=1,
-        ...             ),
-        ...         ],
-        ...     ),
-        ... ):
-        ...
-        ...     uid: str = Field(primary_key=True)
-        ...     path: str
-        ...     duration: float
-        ...
-        ...     # Now you can use both Metaxy and SQLModel features:
-        ...     # - VideoFeature.feature_version() -> Metaxy versioning
-        ...     # - session.exec(select(VideoFeature)) -> SQLModel queries
+        ```py
+        from metaxy.integrations.sqlmodel import SQLModelFeature
+        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from sqlmodel import Field
+
+        class VideoFeature(
+            SQLModelFeature,
+            table=True,
+            spec=BaseFeatureSpec(
+                key=FeatureKey(["video"]),
+                  # Root feature
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["video_file"]),
+                        code_version=1,
+                    ),
+                ],
+            ),
+        ):
+
+            uid: str = Field(primary_key=True)
+            path: str
+            duration: float
+
+            # Now you can use both Metaxy and SQLModel features:
+            # - VideoFeature.feature_version() -> Metaxy versioning
+            # - session.exec(select(VideoFeature)) -> SQLModel queries
+        ```
     """
 
     # Override the frozen config from Feature's FrozenBaseModel

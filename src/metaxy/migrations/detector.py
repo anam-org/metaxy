@@ -38,17 +38,19 @@ def detect_migration(
         DiffMigration if changes detected and written, None otherwise
 
     Example:
-        >>> # Compare latest snapshot in store vs current graph
-        >>> with store:
-        ...     migration = detect_migration(store, project="my_project")
-        ...     if migration:
-        ...         print(f"Migration written to {migration.yaml_path}")
+        ```py
+        # Compare latest snapshot in store vs current graph
+        with store:
+            migration = detect_migration(store, project="my_project")
+            if migration:
+            print(f"Migration written to {migration.yaml_path}")
 
-        >>> # Use custom operation
-        >>> migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
+        # Use custom operation
+        migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
 
-        >>> # Use custom name
-        >>> migration = detect_migration(store, project="my_project", name="example_migration")
+        # Use custom name
+        migration = detect_migration(store, project="my_project", name="example_migration")
+        ```
     """
     from metaxy.migrations.models import DiffMigration
 

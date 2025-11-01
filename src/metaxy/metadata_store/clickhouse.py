@@ -12,42 +12,22 @@ from metaxy.metadata_store.ibis import IbisMetadataStore
 
 class ClickHouseMetadataStore(IbisMetadataStore):
     """
-    ClickHouse metadata store using Ibis backend.
+    [ClickHouse](https://clickhouse.com/) metadata storeusing [Ibis](https://ibis-project.org/) backend.
 
-    Convenience wrapper that configures IbisMetadataStore for ClickHouse.
-
-    Hash algorithm support:
-    - MD5: Always available (built-in)
-    - XXHASH32, XXHASH64: Available via ClickHouse's xxHash32/xxHash64 functions
-
-    Components:
-        - joiner: NarwhalsJoiner (works with any backend)
-        - calculator: IbisDataVersionCalculator (native SQL hash computation with xxHash64/xxHash32/MD5)
-        - diff_resolver: NarwhalsDiffResolver
-
-    Examples:
-        >>> # Local ClickHouse instance
-        >>> with ClickHouseMetadataStore("clickhouse://localhost:9000/default") as store:
-        ...     store.write_metadata(MyFeature, df)
-
-        >>> # With authentication
-        >>> with ClickHouseMetadataStore("clickhouse://user:pass@host:9000/db") as store:
-        ...     store.write_metadata(MyFeature, df)
-
-        >>> # Using connection params
-        >>> store = ClickHouseMetadataStore(
-        ...     backend="clickhouse",
-        ...     connection_params={
-        ...         "host": "localhost",
-        ...         "port": 9000,
-        ...         "database": "default",
-        ...         "user": "default",
-        ...         "password": ""
-        ...     },
-        ...     hash_algorithm=HashAlgorithm.XXHASH64
-        ... )
-        >>> with store:
-        ...     store.write_metadata(MyFeature, df)
+    Example: Connection Parameters
+        ```py
+        store = ClickHouseMetadataStore(
+            backend="clickhouse",
+            connection_params={
+                "host": "localhost",
+                "port": 9000,
+                "database": "default",
+                "user": "default",
+                "password": ""
+            },
+            hash_algorithm=HashAlgorithm.XXHASH64
+        )
+        ```
     """
 
     def __init__(
@@ -56,27 +36,40 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         *,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
-        Initialize ClickHouse metadata store.
+        Initialize [ClickHouse](https://clickhouse.com/) metadata store.
 
         Args:
             connection_string: ClickHouse connection string.
-                Format: "clickhouse://[user[:password]@]host[:port]/database[?param=value]"
+
+                Format: `clickhouse://[user[:password]@]host[:port]/database[?param=value]`
+
                 Examples:
+                    ```
                     - "clickhouse://localhost:9000/default"
                     - "clickhouse://user:pass@host:9000/db"
                     - "clickhouse://host:9000/db?secure=true"
+                    ```
+
             connection_params: Alternative to connection_string, specify params as dict:
-                - host: Server host (default: "localhost")
-                - port: Server port (default: 9000)
-                - database: Database name (default: "default")
-                - user: Username (default: "default")
-                - password: Password (default: "")
-                - secure: Use secure connection (default: False)
+
+                - host: Server host
+
+                - port: Server port (default: `9000`)
+
+                - database: Database name
+
+                - user: Username
+
+                - password: Password
+
+                - secure: Use secure connection (default: `False`)
+
             fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
+
+            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
 
         Raises:
             ImportError: If ibis-clickhouse not installed

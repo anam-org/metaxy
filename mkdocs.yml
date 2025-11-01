@@ -22,6 +22,7 @@ theme:
     - navigation.expand
     - navigation.path
     - navigation.top
+    - navigation.indexes
     # Search features
     - search.suggest
     - search.highlight
@@ -170,9 +171,24 @@ nav:
       - Testing: learn/testing.md
       - Integrations:
           - SQLModel: learn/integrations/sqlmodel.md
-  - Reference:
-      - CLI: reference/cli.md
-      - Configuration: reference/configuration.md
+  - CLI: reference/cli.md
+  - API:
+    - Metaxy: reference/api/metaxy.md
+    - Definitions:
+      - Feature: reference/api/definitions/feature.md
+      - Feature Spec: reference/api/definitions/feature-spec.md
+      - Field: reference/api/definitions/field.md
+    - Metadata Stores:
+      - Base Class: reference/api/metadata-stores/base.md
+      - Databases:
+        - Ibis: reference/api/metadata-stores/ibis/ibis.md
+        - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
+        - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
+      - Memory: reference/api/metadata-stores/memory.md
+    - Config: reference/api/config.md
+    - Graph: reference/api/definitions/graph.md
+    - Types: reference/api/types.md
+  - Configuration: reference/configuration.md
 
 extra:
   social:

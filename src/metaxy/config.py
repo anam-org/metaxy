@@ -84,14 +84,16 @@ class StoreConfig(BaseSettings):
     """Configuration for a single metadata store.
 
     Example:
-        >>> config = StoreConfig(
-        ...     type="metaxy_delta.DeltaMetadataStore",
-        ...     config={
-        ...         "table_uri": "s3://bucket/metadata",
-        ...         "region": "us-west-2",
-        ...         "fallback_stores": ["prod"],
-        ...     }
-        ... )
+        ```py
+        config = StoreConfig(
+            type="metaxy_delta.DeltaMetadataStore",
+            config={
+                "table_uri": "s3://bucket/metadata",
+                "region": "us-west-2",
+                "fallback_stores": ["prod"],
+            }
+        )
+        ```
     """
 
     model_config = SettingsConfigDict(
@@ -164,24 +166,27 @@ _metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
 class MetaxyConfig(BaseSettings):
     """Main Metaxy configuration.
 
-    Loads from:
-    1. TOML file (metaxy.toml or pyproject.toml [tool.metaxy])
+    Loads from (in order of precedence):
+
+    1. Init arguments
+
     2. Environment variables (METAXY_*)
-    3. Init arguments
 
-    Priority: init > env vars > TOML
+    3. Config file (`metaxy.toml` or `[tool.metaxy]` in `pyproject.toml` )
 
-    Example:
-        >>> # Auto-discover config
-        >>> config = MetaxyConfig.load()
-        >>>
-        >>> # Get store instance
-        >>> store = config.get_store("prod")
-        >>>
-        >>> # Override via env var
-        >>> # METAXY_STORE=staging METAXY_REGISTRY=myapp.features:my_graph
-        >>> config = MetaxyConfig.load()
-        >>> store = config.get_store()  # Uses staging with custom graph
+
+    Example: Accessing current configuration
+        ```py
+        config = MetaxyConfig.load()
+        ```
+
+
+    Example: Getting a configured metadata store
+        ```py
+        store = config.get_store("prod")
+        ```
+
+    The default store is `"dev"`; `METAXY_STORE` can be used to override it.
     """
 
     model_config = SettingsConfigDict(
@@ -341,14 +346,16 @@ class MetaxyConfig(BaseSettings):
             Loaded config (TOML + env vars merged)
 
         Example:
-            >>> # Auto-discover with parent search
-            >>> config = MetaxyConfig.load()
-            >>>
-            >>> # Explicit file
-            >>> config = MetaxyConfig.load("custom.toml")
+            ```py
+            # Auto-discover with parent search
+            config = MetaxyConfig.load()
 
-            >>> # Auto-discover without parent search
-            >>> config = MetaxyConfig.load(search_parents=False)
+            # Explicit file
+            config = MetaxyConfig.load("custom.toml")
+
+            # Auto-discover without parent search
+            config = MetaxyConfig.load(search_parents=False)
+            ```
         """
         # Search for config file if not explicitly provided
         if config_file is None and search_parents:
@@ -443,11 +450,13 @@ class MetaxyConfig(BaseSettings):
             ImportError: If store class cannot be imported
 
         Example:
-            >>> config = MetaxyConfig.load()
-            >>> store = config.get_store("prod")
-            >>>
-            >>> # Use default store
-            >>> store = config.get_store()
+            ```py
+            config = MetaxyConfig.load()
+            store = config.get_store("prod")
+
+            # Use default store
+            store = config.get_store()
+            ```
         """
         from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 

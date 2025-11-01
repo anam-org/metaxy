@@ -36,9 +36,11 @@ def describe_graph(
         }
 
     Example:
-        >>> graph = FeatureGraph.get_active()
-        >>> info = describe_graph(graph, project="my_project")
-        >>> print(f"Graph has {info['filtered_features']} features from my_project")
+        ```py
+        graph = FeatureGraph.get_active()
+        info = describe_graph(graph, project="my_project")
+        print(f"Graph has {info['filtered_features']} features from my_project")
+        ```
     """
     # Get all features, optionally filtered by project
     if project is not None:

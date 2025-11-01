@@ -25,14 +25,16 @@ def get_metaxy_metadata() -> MetaData:
         ImportError: If SQLModel is not installed
 
     Example:
-        >>> # In your alembic/env.py:
-        >>> from metaxy.ext.alembic import get_metaxy_metadata
-        >>> from sqlalchemy import MetaData
-        >>>
-        >>> # Combine your app metadata with metaxy metadata
-        >>> target_metadata = MetaData()
-        >>> target_metadata.reflect(get_metaxy_metadata())
-        >>> target_metadata.reflect(my_app.metadata)
+        ```py
+        # In your alembic/env.py:
+        from metaxy.ext.alembic import get_metaxy_metadata
+        from sqlalchemy import MetaData
+
+        # Combine your app metadata with metaxy metadata
+        target_metadata = MetaData()
+        target_metadata.reflect(get_metaxy_metadata())
+        target_metadata.reflect(my_app.metadata)
+        ```
     """
     from metaxy.ext.sqlmodel_system_tables import get_system_metadata
 
@@ -52,12 +54,14 @@ def include_metaxy_tables(target_metadata: MetaData) -> MetaData:
         The same metadata object with metaxy tables added
 
     Example:
-        >>> # In your alembic/env.py:
-        >>> from metaxy.ext.alembic import include_metaxy_tables
-        >>> from myapp.models import metadata
-        >>>
-        >>> # Add metaxy tables to your metadata
-        >>> target_metadata = include_metaxy_tables(metadata)
+        ```py
+        # In your alembic/env.py:
+        from metaxy.ext.alembic import include_metaxy_tables
+        from myapp.models import metadata
+
+        # Add metaxy tables to your metadata
+        target_metadata = include_metaxy_tables(metadata)
+        ```
     """
     metaxy_metadata = get_metaxy_metadata()
 
@@ -77,10 +81,12 @@ def check_sqlmodel_enabled() -> bool:
         True if SQLModel integration is enabled, False otherwise
 
     Example:
-        >>> from metaxy.ext.alembic import check_sqlmodel_enabled
-        >>> if check_sqlmodel_enabled():
-        ...     # SQLModel is enabled, include metaxy tables
-        ...     include_metaxy_tables(metadata)
+        ```py
+        from metaxy.ext.alembic import check_sqlmodel_enabled
+        if check_sqlmodel_enabled():
+            # SQLModel is enabled, include metaxy tables
+            include_metaxy_tables(metadata)
+        ```
     """
     try:
         from metaxy.config import MetaxyConfig

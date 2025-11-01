@@ -263,8 +263,10 @@ class MetaxyProject:
             subprocess.CalledProcessError: If check=True and command fails
 
         Example:
-            >>> result = project.run_cli("graph", "history", "--limit", "5")
-            >>> print(result.stdout)
+            ```py
+            result = project.run_cli("graph", "history", "--limit", "5")
+            print(result.stdout)
+            ```
         """
         import os
         import subprocess
@@ -313,9 +315,11 @@ class ExternalMetaxyProject(MetaxyProject):
     running CLI commands and accessing their configuration.
 
     Example:
-        >>> project = ExternalMetaxyProject(Path("examples/src/examples/migration"))
-        >>> result = project.run_cli("graph", "push", env={"STAGE": "1"})
-        >>> assert result.returncode == 0
+        ```py
+        project = ExternalMetaxyProject(Path("examples/src/examples/migration"))
+        result = project.run_cli("graph", "push", env={"STAGE": "1"})
+        assert result.returncode == 0
+        ```
     """
 
     def __init__(self, project_dir: Path):
@@ -339,21 +343,23 @@ class TempMetaxyProject(MetaxyProject):
     and running CLI commands with proper entrypoint configuration.
 
     Example:
-        >>> project = TempMetaxyProject(tmp_path)
-        >>>
-        >>> def features():
-        ...     from metaxy import Feature, BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
-        ...
-        ...     class MyFeature(Feature, spec=BaseFeatureSpec(
-        ...         key=FeatureKey(["my_feature"]),
-        ...
-        ...         fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
-        ...     )):
-        ...         pass
-        >>>
-        >>> with project.with_features(features):
-        ...     result = project.run_cli("graph", "push")
-        ...     assert result.returncode == 0
+        ```py
+        project = TempMetaxyProject(tmp_path)
+
+        def features():
+            from metaxy import Feature, BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+
+            class MyFeature(Feature, spec=BaseFeatureSpec(
+            key=FeatureKey(["my_feature"]),
+
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
+            )):
+            pass
+
+        with project.with_features(features):
+            result = project.run_cli("graph", "push")
+            assert result.returncode == 0
+        ```
     """
 
     def __init__(self, tmp_path: Path, config_content: str | None = None):
@@ -413,15 +419,17 @@ database = "{staging_db_path}"
             str: The module name that was created
 
         Example:
-            >>> def my_features():
-            ...     from metaxy import Feature, BaseFeatureSpec, FeatureKey
-            ...
-            ...     class MyFeature(Feature, spec=...):
-            ...         pass
-            >>>
-            >>> with project.with_features(my_features) as module:
-            ...     print(module)  # "features_0"
-            ...     result = project.run_cli("graph", "push")
+            ```py
+            def my_features():
+                from metaxy import Feature, BaseFeatureSpec, FeatureKey
+
+                class MyFeature(Feature, spec=...):
+                pass
+
+            with project.with_features(my_features) as module:
+                print(module)  # "features_0"
+                result = project.run_cli("graph", "push")
+            ```
         """
         import inspect
         import textwrap
@@ -486,8 +494,10 @@ database = "{staging_db_path}"
             subprocess.CalledProcessError: If check=True and command fails
 
         Example:
-            >>> result = project.run_cli("graph", "history", "--limit", "5")
-            >>> print(result.stdout)
+            ```py
+            result = project.run_cli("graph", "history", "--limit", "5")
+            print(result.stdout)
+            ```
         """
         import os
         import subprocess
