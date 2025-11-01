@@ -1,18 +1,47 @@
 # Metaxy 🌌
 
-Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs.
+Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
+
+It's [agnostic](#about-metaxy) to everything: compute engines, data storage, [metadata storage](learn/metadata-stores.md).
+
+It has no strict infrastructure requirements and can use external databases for computations or run locally.
+
+It can scale to handle large amounts of **big metadata**.
+
+> [!WARNING] Giga Alpha
+> This project is as raw as a steak still saying ‘moo.’
 
 ## What problem exactly does Metaxy solve?
 
-Data, ML and AI pipelines working with multi-modal data such as images, videos, audio or text can be very expensive to process and store. Unlike in traditional data engineering, re-running the whole thing is not an option.
+Data, ML and AI workloads processing **large amounts** of images, videos, audios, texts, or any other kind of data can be very expensive to run.
+In contrast to traditional data engineering, re-running the whole pipeline on changes is no longer an option.
+Therefore, it becomes crucially important to correctly implement incremental processing and sample-level versioning.
 
-Tracking and propagating changes (e.g. on upstream data update, code update, bug fixes) to (1) only the right subset of all samples and (2) the right subset of features can become incredibly complicated, especially when data changes *partially* (e.g. only a video file has only its audio changed).
+Typically, a **feature** has to be re-computed in one of the following scenarios:
 
-As of time of writing, this remains an unsolved problem. But not anymore!
+- upstream data changes
+
+- bug fixes or algorithmic changes
+
+But correctly distinguishing these scenarios from cases where the feature **should not** be re-computed is a surprisingly challenging. Here are some of the cases where it would be undesirable:
+
+- merging two consecutive steps into one (refactoring the graph topology)
+
+- **partial data updates**, e.g. changing only the audio track inside a video file
+
+- backfilling metadata from another source
+
+Tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated.
+Until now, a general solution for this problem did not exist, but this is not the case anymore.
 
 ## Metaxy to the rescue
 
-Metaxy builds a *versioned graphs* from feature definitions and tracks version changes:
+Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second with a **migrations** system.
+
+Metaxy builds a *versioned graphs* from feature definitions and tracks version changes.
+This graph can be snapshotted and saved at any point of time, typically during pipeline deployment.
+Here is an example of a graph diff produced by a **code_version** update on the `audio` field of the `example/video` feature:
+
 ```mermaid
 ---
 title: Propagation Of Changes
@@ -40,10 +69,9 @@ color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
     example_video --> example_stt
 ```
 
-Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
+The key observation here is that `example/face_detection`'s `faces` field **did not receive a new version**, because it does not depend on the `audio` field that has been updated upstream.
 
-> [!WARNING] Giga Alpha
-> This project is as raw as a steak still saying ‘moo.’
+## About Metaxy
 
 Metaxy is:
 
@@ -104,7 +132,7 @@ class VoiceDetection(
     Feature,
     spec=FeatureSpec(
         key="voice_detection",
-        deps=[FeatureDep(feature=Video)],
+        deps=[Video],
     ),
 ):
     path: str = Field(description="Path to the voice detection json file")
@@ -118,21 +146,31 @@ When `Video` changes, Metaxy automatically identifies that `VoiceDetection` requ
 
 ## Versioned Change Propagation
 
-Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions. When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream. This is done on multiple levels: `Feature` (class) level, field (class attribute) level, and of course on row level: each _sample_ in the metadata store tracks the version of _each field_ and the overall (class-level) feature version.
+Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions.
+When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream.
+This is done on multiple levels: `Feature` level, field level, and of course on sample level: each _row_ in the metadata store tracks the version of _each field_ and the feature-level version.
 
-This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did). This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
+This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did).
+This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
 
-Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation. This enables patterns such as **computation preview** and **computation cost prediction**.
+Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation.
+This enables patterns such as **computation preview** and **computation cost prediction**.
 
 ## Typical User Workflow
 
-1. Record Metaxy feature graph in CI/CD (not necessary in non-production environments)
+### 1. Record Metaxy feature graph in CI/CD
+
+Invoke the `metaxy` CLI:
 
 ```bash
 metaxy graph push
 ```
 
-2. Use `metaxy.MetadataStore.resolve_update` to identify samples requiring recomputation:
+This can be skipped in non-production environments.
+
+### 2. Get a resolved metadata increment from Metaxy
+
+Use `metaxy.MetadataStore.resolve_update` to identify samples requiring recomputation:
 
 ```py
 from metaxy import init_metaxy
@@ -146,9 +184,12 @@ store = (
 diff = store.resolve_update(VoiceDetection)
 ```
 
-`metaxy.MetadataStore.resolve_update` runs in the database unless it doesn't support the required hash functions, otherwise it fallbacks to in-memory Polars computation (results are guaranteed to be consistent). The returned object provides Narwhals (backend-agnostic) DataFrames with all the data versions already computed.
+`metaxy.MetadataStore.resolve_update` runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
+The returned object provides [Narwhals](https://narwhals-dev.github.io/narwhals/) lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the data versions already computed.
 
-3. Handle the computation, this is entirely user-defined, Metaxy is not involved in this step.
+### 3. Run user-defined computation over the metadata increment
+
+Metaxy is not involved in this step at all.
 
 ```py
 if (len(diff.added) + len(diff.changed)) > 0:
@@ -156,16 +197,20 @@ if (len(diff.added) + len(diff.changed)) > 0:
     results = run_voice_detection(diff, ...)
 ```
 
-4. Record metadata for computed samples, this can be done in a distributed manner as well
+### 4. Record metadata for computed samples
+
+This can be done in a distributed manner as well, and the recommended pattern is to write metadata as soon as it becomes available to avoid losing progress in case of interruptions or failures.
 
 ```py
 store.write_metadata(VoiceDetection, results)
 ```
 
-We have successfully recorded the metadata for the computed samples.
+We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs.
 
 > [!WARNING] No Uniqueness Checks!
-> Metaxy doesn't attempt to perform any deduplication or uniqueness checks for performance reasons. While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store. Configuring deduplication or uniqueness checks in the store (database) is a good idea.
+> Metaxy doesn't attempt to perform any deduplication or uniqueness checks for performance reasons.
+While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store.
+Configuring deduplication or uniqueness checks in the store (database) is a good idea.
 
 ## What's Next?
 
