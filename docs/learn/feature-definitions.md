@@ -48,9 +48,8 @@ class VideoFeatureSpec(BaseFeatureSpec[VideoIds]):
 
 `BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
 
-Feature specs now support an optional `metadata` dictionary for attaching ownership, documentation, or tooling context to a feature.
-This metadata **never** influences graph topology or version hashes, must be JSON-serializable, and is immutable once the spec is created.
-It is ideal for values such as owners, SLAs, runbooks, or tags that external systems may want to inspect.
+Users can attach arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
+This metadata does not influence graph topology or the versioning system.
 
 With our `VideoFeatureSpec` in place, we can proceed to defining features that would be using it.
 
@@ -80,7 +79,7 @@ class VideoFeature(BaseVideoFeature, spec=VideoFeatureSpec(key="/raw/video")):
 ```
 
 That's it!
-That's a raw single feature, it doesn't have any dependencies.
+That's a root feature, it doesn't have any dependencies.
 Easy.
 
 You may now use `VideoFeature.spec()` class method to access the original feature spec: it's bound to the class.
@@ -101,7 +100,7 @@ Hurray! You get the idea.
 
 ## Field-Level Dependencies
 
-A core (I'be straight: a killer) feature of Metaxy is the concept of **field-level dependencies**.
+A core (I'll be straight: a killer) feature of Metaxy is the concept of **field-level dependencies**.
 These are used to define dependencies between logical fields of features.
 
 A **field** is not to be confused with metadata _column_ (Pydantic fields).

@@ -52,8 +52,8 @@ def test_metadata_json_serializable() -> None:
         "float": 3.14,
         "bool": True,
         "null": None,
-        "list": cast(JsonValue, [1, 2, 3]),
-        "nested": cast(JsonValue, {"key": "value"}),
+        "list": [1, 2, 3],
+        "nested": {"key": "value"},
     }
 
     spec = FeatureSpec(
