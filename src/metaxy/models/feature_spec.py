@@ -19,8 +19,10 @@ from typing import (
 
 import pydantic
 from pydantic import BeforeValidator
+from pydantic.types import JsonValue
 from typing_extensions import Self
 
+from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -206,7 +208,7 @@ IDColumnsT = TypeVar(
 )  # bound, should be used for generic
 
 
-class _BaseFeatureSpec(pydantic.BaseModel):
+class _BaseFeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
     fields: list[FieldSpec] = pydantic.Field(
@@ -217,6 +219,10 @@ class _BaseFeatureSpec(pydantic.BaseModel):
                 deps=SpecialFieldDep.ALL,
             )
         ]
+    )
+    metadata: dict[str, JsonValue] = pydantic.Field(
+        default_factory=dict,
+        description="Metadata attached to this feature.",
     )
 
 
@@ -231,6 +237,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -243,6 +250,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -255,6 +263,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -267,11 +276,12 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: list[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from BaseFeatureSpec instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
         if isinstance(key, type(self)):
             key = key.key
         else:
@@ -390,6 +400,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -402,6 +413,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -414,6 +426,7 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -426,11 +439,12 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         deps: list[FeatureDep] | None = None,
         fields: list[FieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureSpec instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs):
+    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
         # id_columns is always set for FeatureSpec
         super().__init__(key=key, **kwargs)
 

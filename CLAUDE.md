@@ -270,6 +270,11 @@ Features can override `load_input()` for custom join logic:
 
 This is critical for migrations when upstream dependencies change.
 
+#### Attaching Metadata to Features
+
+Additional metadata (JSON) can be attached to features via the `metadata` parameter on `FeatureSpec`.
+Usecases may be for data governance such as ownership, SLAs, PII flags, ... etc.
+
 ## Important Constraints
 
 ### Narwhals as the Public Interface
