@@ -3,22 +3,20 @@
 from typing import TYPE_CHECKING, Annotated
 
 import cyclopts
-from rich.console import Console
 
+from metaxy.cli.console import console, error_console
 from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_spec import IDColumns
 
-# Rich console for formatted output
-console = Console()
-
 # Metadata subcommand app
 app = cyclopts.App(
     name="metadata",  # pyrefly: ignore[unexpected-keyword]
     help="Manage Metaxy metadata",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 

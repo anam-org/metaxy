@@ -1,14 +1,13 @@
 import cyclopts
-from rich.console import Console
 
-# Rich console for formatted output
-console = Console()
+from metaxy.cli.console import console, error_console
 
-# Migrations subcommand app
+# List subcommand app
 app = cyclopts.App(
     name="list",  # pyrefly: ignore[unexpected-keyword]
     help="List Metaxy entities",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 

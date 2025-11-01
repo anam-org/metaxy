@@ -23,7 +23,7 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list")
 
         assert result.returncode == 0
-        assert "No migrations found" in result.stdout
+        assert "No migrations found" in result.stderr
 
 
 def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
@@ -70,13 +70,13 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         # Check for table contents
-        assert "test_migration_001" in result.stdout
-        assert "2025-01-27 12:00" in result.stdout
-        assert "DataVersionReconciliation" in result.stdout
+        assert "test_migration_001" in result.stderr
+        assert "2025-01-27 12:00" in result.stderr
+        assert "DataVersionReconciliation" in result.stderr
         # Check table headers
-        assert "ID" in result.stdout
-        assert "Created" in result.stdout
-        assert "Operations" in result.stdout
+        assert "ID" in result.stderr
+        assert "Created" in result.stderr
+        assert "Operations" in result.stderr
 
 
 def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
@@ -139,13 +139,13 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         # Check both migrations are listed
-        assert "migration_001" in result.stdout
-        assert "migration_002" in result.stdout
-        assert "2025-01-27 10:00" in result.stdout
-        assert "2025-01-27 12:00" in result.stdout
+        assert "migration_001" in result.stderr
+        assert "migration_002" in result.stderr
+        assert "2025-01-27 10:00" in result.stderr
+        assert "2025-01-27 12:00" in result.stderr
         # Check they appear in chain order (migration_001 before migration_002)
-        pos_001 = result.stdout.index("migration_001")
-        pos_002 = result.stdout.index("migration_002")
+        pos_001 = result.stderr.index("migration_001")
+        pos_002 = result.stderr.index("migration_002")
         assert pos_001 < pos_002
 
 
@@ -195,13 +195,13 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list")
 
         assert result.returncode == 0
-        assert "multi_op_migration" in result.stdout
+        assert "multi_op_migration" in result.stderr
         # Check both operation names appear (shortened)
-        assert "DataVersionReconciliation" in result.stdout
-        assert "CustomBackfill" in result.stdout
+        assert "DataVersionReconciliation" in result.stderr
+        assert "CustomBackfill" in result.stderr
         # Check they're comma-separated (may wrap across lines in table)
         # Remove whitespace to handle line wrapping
-        output_normalized = "".join(result.stdout.split())
+        output_normalized = "".join(result.stderr.split())
         assert "DataVersionReconciliation,CustomBackfill" in output_normalized
 
 
@@ -264,5 +264,5 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list", check=False)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
-        assert "Invalid migration chain" in result.stdout
-        assert "Multiple migration heads" in result.stdout
+        assert "Invalid migration chain" in result.stderr
+        assert "Multiple migration heads" in result.stderr
