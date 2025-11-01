@@ -187,6 +187,9 @@ validation:
   unrecognized_links: warn
   anchors: warn
 
+extra_javascript:
+- javascripts/scarf.js
+
 extra_css:
 - css/code_select.css
 
