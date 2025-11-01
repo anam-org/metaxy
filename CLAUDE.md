@@ -33,6 +33,8 @@ Metaxy is a feature metadata management system for multimodal ML pipelines that 
 
 Never create git commits unless asked for explicitly by the user.
 
+You can check GitHub Actions for your PR to see if tests pass.
+
 ### Environment Setup
 
 ```bash

@@ -21,7 +21,7 @@ import pydantic
 from pydantic import BeforeValidator
 from typing_extensions import Self
 
-from metaxy.models.field import FieldSpec, SpecialFieldDep
+from metaxy.models.field import FieldSpec
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     FeatureKey,
@@ -214,7 +214,7 @@ class _BaseFeatureSpec(pydantic.BaseModel):
             FieldSpec(
                 key=FieldKey(["default"]),
                 code_version=1,
-                deps=SpecialFieldDep.ALL,
+                # deps will use the default (DefaultFieldsMapping)
             )
         ]
     )
@@ -278,6 +278,47 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             key = FeatureKeyAdapter.validate_python(key)
 
         assert isinstance(key, FeatureKey)
+
+        # Process fields to resolve any DefaultFieldsMapping
+        fields = kwargs.get("fields")
+        if fields:
+            from metaxy.models.field import DefaultFieldsMapping, FieldSpec
+
+            resolved_fields = []
+            deps = kwargs.get("deps")
+
+            # Convert deps dicts to FeatureDep objects if needed
+            if deps:
+                converted_deps = []
+                for dep in deps:
+                    if isinstance(dep, dict):
+                        converted_deps.append(FeatureDep(**dep))
+                    else:
+                        converted_deps.append(dep)
+                deps = converted_deps
+
+            for field in fields:
+                # Convert dict to FieldSpec if needed
+                if isinstance(field, dict):
+                    field = FieldSpec(**field)
+
+                # Check if this field has DefaultFieldsMapping for deps
+                if isinstance(field, FieldSpec) and isinstance(
+                    field.deps, DefaultFieldsMapping
+                ):
+                    # Resolve the auto-mapping to explicit deps
+                    resolved_deps = field.deps.resolve_field_deps(field.key, deps)
+                    # Create a new FieldSpec with resolved deps
+                    resolved_field = FieldSpec(
+                        key=field.key,
+                        code_version=field.code_version,
+                        deps=resolved_deps,
+                    )
+                    resolved_fields.append(resolved_field)
+                else:
+                    resolved_fields.append(field)
+
+            kwargs["fields"] = resolved_fields
 
         super().__init__(key=key, **kwargs)
 
@@ -351,6 +392,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             >>> spec.feature_spec_version
             'abc123...'  # 64-character hex string
         """
+
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")
