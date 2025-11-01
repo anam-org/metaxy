@@ -7,7 +7,7 @@ Metaxy's goal is to provide a pluggable instrument for any kind of multi-modal (
 > [!WARNING]
 > This project is as raw as a steak still saying ‘moo.’
 
-Read the [few docs we have](https://anam-org.github.io/metaxy) to learn more.
+Read the [few docs we have](https://docs.metaxy.io) to learn more.
 
 ## Contributing
 
