@@ -955,18 +955,30 @@
 
 
 <h1 id="feature-system">Feature System<a class="headerlink" href="#feature-system" title="Permanent link">&para;</a></h1>
-<p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system. It has been inspired by Software-Defined Assets in <a href="https://dagster.io/">Dagster</a>.</p>
-<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos. But it can be just pure <strong>metadata</strong> as well.</p>
+<p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
+It has been inspired by Software-Defined Assets in <a href="https://dagster.io/">Dagster</a>.</p>
+<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.
+But it can be just pure <strong>metadata</strong> as well.</p>
 <p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
-<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users. During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them. Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier). Metaxy is designed to be used with systems that do not overwrite existing <strong>metadata</strong> (Metaxy only appends <strong>metadata</strong>) and therefore <strong>data</strong> as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
+<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.
+During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them.
+Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier).
+Metaxy is designed to be used with systems that do not overwrite existing <strong>metadata</strong> (Metaxy only appends <strong>metadata</strong>) and therefore <strong>data</strong> as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
 <p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
 <div class="admonition tip">
-<p class="admonition-title">Include Sample Version In Your Data Path</p>
-<p>Include the sample version in your data path to ensure strong consistency guarantees. I mean it. Really do it!</p>
+<p class="admonition-title">Include sample version in your data path</p>
+<p>Include the sample version in your data path to ensure strong consistency guarantees.
+I mean it.
+Really do it!</p>
 </div>
-<p>Features live on a global <code>FeatureGraph</code> object (typically users do not need to interact with it directly). Features are bound to a specific Metaxy project, but can be moved between projects over time. Features must have unique (across all projects) <code>FeatureKey</code> associated with them.</p>
+<p>Features live on a global <code>FeatureGraph</code> object (typically users do not need to interact with it directly).
+Features are bound to a specific Metaxy project, but can be moved between projects over time.
+Features must have unique (across all projects) <code>FeatureKey</code> associated with them.</p>
 <h2 id="feature-specs">Feature Specs<a class="headerlink" href="#feature-specs" title="Permanent link">&para;</a></h2>
-<p>Before we can define a <code>Feature</code>, we must first create a <code>FeatureSpec</code> object. But before we get to an example, it's necessary to understand the concept of ID columns. Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your <code>FeatureSpec</code>. Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class.</p>
+<p>Before we can define a <code>Feature</code>, we must first create a <code>FeatureSpec</code> object.
+But before we get to an example, it's necessary to understand the concept of ID columns.
+Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your <code>FeatureSpec</code>.
+Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class.</p>
 <p>Some boilerplate with typing is involved (this is typically a good thing):</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeAlias</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -980,9 +992,13 @@
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">id_columns</span><span class="p">:</span> <span class="n">VideoIds</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;video_id&quot;</span><span class="p">,)</span>
 </span></code></pre></div>
 <p><code>BaseFeatureSpec</code> is a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model, so all normal Pydantic features apply.</p>
+<p>Users can attach arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
+This metadata does not influence graph topology or the versioning system.</p>
 <p>With our <code>VideoFeatureSpec</code> in place, we can proceed to defining features that would be using it.</p>
 <h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
-<p>Metaxy provides a <code>BaseFeature</code> class that can be extended to make user-defined features. It's a Pydantic model as well. User-defined <code>BaseFeature</code> classes must have fields matching ID columns of the <code>FeatureSpec</code> they are using.</p>
+<p>Metaxy provides a <code>BaseFeature</code> class that can be extended to make user-defined features.
+It's a Pydantic model as well.
+User-defined <code>BaseFeature</code> classes must have fields matching ID columns of the <code>FeatureSpec</code> they are using.</p>
 <p>With respect to the same DRY principle, we can define a shared base class for features that use the <code>VideoFeatureSpec</code>.</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -996,7 +1012,9 @@
 <div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseVideoFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">)):</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span></code></pre></div>
-<p>That's it! That's a roow feature, it doesn't have any dependencies. Easy.</p>
+<p>That's it!
+That's a root feature, it doesn't have any dependencies.
+Easy.</p>
 <p>You may now use <code>VideoFeature.spec()</code> class method to access the original feature spec: it's bound to the class.</p>
 <p>Now let's define a child feature.</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Transcript</span><span class="p">(</span>
@@ -1009,12 +1027,18 @@
 </span></code></pre></div>
 <p>Hurray! You get the idea.</p>
 <h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
-<p>A core (I'be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>. These are used to define dependencies between logical fields of features.</p>
-<p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields). Fields are completely independent from them.</p>
+<p>A core (I'll be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
+These are used to define dependencies between logical fields of features.</p>
+<p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields).
+Fields are completely independent from them.</p>
 <p>Columns refer to <em>metadata</em> and are stored in metadata stores (such as databases) supported by Metaxy.</p>
-<p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit. Fields are supposed to represent parts of data that users care about. For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
-<p>Downstream features can depend on specific fields of upstream features. This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.</p>
-<p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the <a href="#feature-specs">example</a> above should not depend on the full video: it only needs the audio track in order to generate the transcript. Let's express that with Metaxy:</p>
+<p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit.
+Fields are supposed to represent parts of data that users care about.
+For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
+<p>Downstream features can depend on specific fields of upstream features.
+This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.</p>
+<p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the <a href="#feature-specs">example</a> above should not depend on the full video: it only needs the audio track in order to generate the transcript.
+Let's express that with Metaxy:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio&quot;</span><span class="p">],</span> <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;frames&quot;</span><span class="p">))</span>
@@ -1031,10 +1055,13 @@
 <p>Voilà!</p>
 <p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about this system.</p>
 <h3 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h3>
-<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph. It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
+<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
+It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
 <h2 id="a-note-on-type-coercion-for-metaxy-types">A Note on Type Coercion for Metaxy types<a class="headerlink" href="#a-note-on-type-coercion-for-metaxy-types" title="Permanent link">&para;</a></h2>
 <p>Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.</p>
-<p>To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes. Different ways to provide them are automatically coerced into canonical internal models. This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
+<p>To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes.
+Different ways to provide them are automatically coerced into canonical internal models.
+This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
 <p>Some examples:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureKey</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -1043,7 +1070,8 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">)</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">same_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Metaxy really loves you, the user! See <a href="#syntactic-sugar">syntactic sugar</a> for more details.</p>
+<p>Metaxy really loves you, the user!
+See <a href="#syntactic-sugar">syntactic sugar</a> for more details.</p>
 <h2 id="syntactic-sugar">Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permanent link">&para;</a></h2>
 <h3 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h3>
 <p>Both <code>FeatureKey</code> and <code>FieldKey</code> accept:</p>
