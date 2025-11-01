@@ -56,6 +56,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Fetch and pull gh-pages branch
+        run: |
+          # Fetch the gh-pages branch to ensure we have the latest remote state
+          git fetch origin gh-pages:gh-pages || true
+          # If gh-pages exists remotely, ensure our local copy is up to date
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git checkout gh-pages
+            git pull origin gh-pages --rebase
+            git checkout -
+          fi
+
       - name: Deploy documentation with Mike
         run: uv run mike deploy --push --ignore-remote-status ${{ github.ref_name }}
 
