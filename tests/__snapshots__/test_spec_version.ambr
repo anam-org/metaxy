@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'd58f485df70cf7afb2e0fc7e54eebf52234a1be0c22015ccd3239739077aae52'
+  '90179e7bd99745bd2494f695fa18c15937353a3788c9b5c4650a81a071c1f591'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '9421fb545f2ace1ffb1e07c2d14cc62427d0d261a3b509c8a1473f574efc8cce'
+  'e7c76b7981649ad1e0d9c8f373043eb42ef75feb7f1a5e222236afb632f12e97'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': '1103e6a29e9cc569cde596388b9da0961f2e308ae7d492013dce6bbf9566994c',
+    'feature_spec_version': 'd64c6d4dcd782fda8988b6f789367a2c10aed2732e350eb3e2a285051c73d493',
     'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -34,16 +34,18 @@
         'snapshot',
         'test',
       ]),
+      'metadata': dict({
+      }),
     }),
-    'feature_spec_version': '63d427712eb566d6c066c2514693714d82df604af91b48eae453634c4d684339',
-    'feature_tracking_version': 'dabc7e8b54edb77992145840b2df9c81d4e384f3cdb1736bd3d5ecb83b0f422a',
+    'feature_spec_version': '6dc07209be338e7e86bb47dc3f376f3e7447efe35510cac9119ee0878c8c20a2',
+    'feature_tracking_version': 'af52f7692de124d551c0753a169b2a0b4a57003818ed08474c6d9c17480b7e20',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '9bdc3eb37440620d259db2709010b3d920a7c3147ba30d370494cb3fecc787fc'
+  'cf22f9791d5b83dc084c493e52914a21c6fe27d261e78ec03fe22e033f750b4a'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  '3a24675ffa9a6a053dd6738cfe1706470cabc458ec5702d5837138a205bdf4fc'
+  '20703ec5548c00dbc3f0d634a6791f284d6b1cec4701d014fe5ccaec4deef74b'
 # ---
