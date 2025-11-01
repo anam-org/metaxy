@@ -403,6 +403,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-problem-exactly-does-metaxy-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      What problem exactly does Metaxy solve?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy-to-the-rescue" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metaxy to the rescue
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#feature-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       Feature Dependencies
@@ -814,6 +832,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#what-problem-exactly-does-metaxy-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      What problem exactly does Metaxy solve?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metaxy-to-the-rescue" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metaxy to the rescue
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#feature-dependencies" class="md-nav__link">
     <span class="md-ellipsis">
       Feature Dependencies
@@ -870,26 +906,36 @@
 
 <h1 id="metaxy">Metaxy 🌌<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h1>
 <p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs.</p>
-<p>Metaxy builds <em>versioned graphs</em> from feature definitions and tracks dependency changes:</p>
+<h2 id="what-problem-exactly-does-metaxy-solve">What problem exactly does Metaxy solve?<a class="headerlink" href="#what-problem-exactly-does-metaxy-solve" title="Permanent link">&para;</a></h2>
+<p>Data, ML and AI pipelines working with multi-modal data such as images, videos, audio or text can be very expensive to process and store. Unlike in traditional data engineering, re-running the whole thing is not an option.</p>
+<p>Tracking and propagating changes (e.g. on upstream data update, code update, bug fixes) to (1) only the right subset of all samples and (2) the right subset of features can become incredibly complicated, especially when data changes <em>partially</em> (e.g. only a video file has only its audio changed).</p>
+<p>As of time of writing, this remains an unsolved problem. But not anymore!</p>
+<h2 id="metaxy-to-the-rescue">Metaxy to the rescue<a class="headerlink" href="#metaxy-to-the-rescue" title="Permanent link">&para;</a></h2>
+<p>Metaxy builds a <em>versioned graphs</em> from feature definitions and tracks version changes:
 <pre class="mermaid"><code>---
-title: Feature Graph
+title: Propagation Of Changes
 ---
 flowchart TB
-    %% Snapshot version: f3f57b8e
-        example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: bc9ca835)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• audio &lt;small&gt;(v:
-22742381)&lt;/small&gt;&lt;br/&gt;• frames &lt;small&gt;(v: 794116a9)&lt;/small&gt;&lt;/div&gt;"]
-        overview_sst["&lt;div style="text-align:left"&gt;&lt;b&gt;overview/sst&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: bc3cae5c)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• transcription &lt;small&gt;(v:
-99b97ac1)&lt;/small&gt;&lt;/div&gt;"]
-        example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: 3ac04df8)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• audio &lt;small&gt;(v:
-76c8bdc9)&lt;/small&gt;&lt;br/&gt;• frames &lt;small&gt;(v: abc79017)&lt;/small&gt;&lt;/div&gt;"]
-        overview_embeddings["&lt;div style="text-align:left"&gt;&lt;b&gt;overview/embeddings&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: 944318e4)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• embedding
-&lt;small&gt;(v: b3f81f9e)&lt;/small&gt;&lt;/div&gt;"]
-        example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: fbe130cc)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;•
-detections &lt;small&gt;(v: ab065369)&lt;/small&gt;&lt;/div&gt;"]
-        example_video --&gt; example_crop
-        example_crop --&gt; example_face_detection
-        example_video --&gt; overview_sst
-        example_crop --&gt; overview_embeddings</code></pre>
+    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+
+    example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;font color="#CC0000"&gt;bc9ca8&lt;/font&gt; → &lt;font
+color="#00AA00"&gt;6db302&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font
+color="#CC0000"&gt;227423&lt;/font&gt; → &lt;font color="#00AA00"&gt;09c839&lt;/font&gt;)&lt;br/&gt;- frames (794116)&lt;/div&gt;"]
+    style example_video stroke:#FFA500,stroke-width:3px
+    example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;font color="#CC0000"&gt;3ac04d&lt;/font&gt; → &lt;font
+color="#00AA00"&gt;54dc7f&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;audio&lt;/font&gt; (&lt;font
+color="#CC0000"&gt;76c8bd&lt;/font&gt; → &lt;font color="#00AA00"&gt;f3130c&lt;/font&gt;)&lt;br/&gt;- frames (abc790)&lt;/div&gt;"]
+    style example_crop stroke:#FFA500,stroke-width:3px
+    example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;1ac83b&lt;br/&gt;&lt;font
+color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- faces (2d75f0)&lt;/div&gt;"]
+    example_stt["&lt;div style="text-align:left"&gt;&lt;b&gt;example/stt&lt;/b&gt;&lt;br/&gt;&lt;font color="#CC0000"&gt;c83a75&lt;/font&gt; → &lt;font
+color="#00AA00"&gt;066d34&lt;/font&gt;&lt;br/&gt;&lt;font color="#999"&gt;---&lt;/font&gt;&lt;br/&gt;- &lt;font color="#FFAA00"&gt;transcription&lt;/font&gt; (&lt;font
+color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt;/font&gt;)&lt;/div&gt;"]
+    style example_stt stroke:#FFA500,stroke-width:3px
+
+    example_video --&gt; example_crop
+    example_crop --&gt; example_face_detection
+    example_video --&gt; example_stt</code></pre></p>
 <p>Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.</p>
 <div class="admonition warning">
 <p class="admonition-title">Giga Alpha</p>
