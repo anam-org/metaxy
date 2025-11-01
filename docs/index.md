@@ -2,28 +2,42 @@
 
 Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs.
 
-Metaxy builds *versioned graphs* from feature definitions and tracks dependency changes:
+## What problem exactly does Metaxy solve?
 
+Data, ML and AI pipelines working with multi-modal data such as images, videos, audio or text can be very expensive to process and store. Unlike in traditional data engineering, re-running the whole thing is not an option.
+
+Tracking and propagating changes (e.g. on upstream data update, code update, bug fixes) to (1) only the right subset of all samples and (2) the right subset of features can become incredibly complicated, especially when data changes *partially* (e.g. only a video file has only its audio changed).
+
+As of time of writing, this remains an unsolved problem. But not anymore!
+
+## Metaxy to the rescue
+
+Metaxy builds a *versioned graphs* from feature definitions and tracks version changes:
 ```mermaid
 ---
-title: Feature Graph
+title: Propagation Of Changes
 ---
 flowchart TB
-    %% Snapshot version: f3f57b8e
-        example_video["<div style="text-align:left"><b>example/video</b><br/><small>(v: bc9ca835)</small><br/>---<br/>• audio <small>(v:
-22742381)</small><br/>• frames <small>(v: 794116a9)</small></div>"]
-        overview_sst["<div style="text-align:left"><b>overview/sst</b><br/><small>(v: bc3cae5c)</small><br/>---<br/>• transcription <small>(v:
-99b97ac1)</small></div>"]
-        example_crop["<div style="text-align:left"><b>example/crop</b><br/><small>(v: 3ac04df8)</small><br/>---<br/>• audio <small>(v:
-76c8bdc9)</small><br/>• frames <small>(v: abc79017)</small></div>"]
-        overview_embeddings["<div style="text-align:left"><b>overview/embeddings</b><br/><small>(v: 944318e4)</small><br/>---<br/>• embedding
-<small>(v: b3f81f9e)</small></div>"]
-        example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/><small>(v: fbe130cc)</small><br/>---<br/>•
-detections <small>(v: ab065369)</small></div>"]
-        example_video --> example_crop
-        example_crop --> example_face_detection
-        example_video --> overview_sst
-        example_crop --> overview_embeddings
+    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+
+    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font
+color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
+color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
+    style example_video stroke:#FFA500,stroke-width:3px
+    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font
+color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
+color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
+    style example_crop stroke:#FFA500,stroke-width:3px
+    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>1ac83b<br/><font
+color="#999">---</font><br/>- faces (2d75f0)</div>"]
+    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font
+color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font
+color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
+    style example_stt stroke:#FFA500,stroke-width:3px
+
+    example_video --> example_crop
+    example_crop --> example_face_detection
+    example_video --> example_stt
 ```
 
 Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.
