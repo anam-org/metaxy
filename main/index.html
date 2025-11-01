@@ -869,7 +869,28 @@
 
 
 <h1 id="metaxy">Metaxy 🌌<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h1>
-<p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs. Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.</p>
+<p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that tracks feature versions, dependencies, and data lineage across complex computation graphs.</p>
+<p>Metaxy builds <em>versioned graphs</em> from feature definitions and tracks dependency changes:</p>
+<pre class="mermaid"><code>---
+title: Feature Graph
+---
+flowchart TB
+    %% Snapshot version: f3f57b8e
+        example_video["&lt;div style="text-align:left"&gt;&lt;b&gt;example/video&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: bc9ca835)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• audio &lt;small&gt;(v:
+22742381)&lt;/small&gt;&lt;br/&gt;• frames &lt;small&gt;(v: 794116a9)&lt;/small&gt;&lt;/div&gt;"]
+        overview_sst["&lt;div style="text-align:left"&gt;&lt;b&gt;overview/sst&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: bc3cae5c)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• transcription &lt;small&gt;(v:
+99b97ac1)&lt;/small&gt;&lt;/div&gt;"]
+        example_crop["&lt;div style="text-align:left"&gt;&lt;b&gt;example/crop&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: 3ac04df8)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• audio &lt;small&gt;(v:
+76c8bdc9)&lt;/small&gt;&lt;br/&gt;• frames &lt;small&gt;(v: abc79017)&lt;/small&gt;&lt;/div&gt;"]
+        overview_embeddings["&lt;div style="text-align:left"&gt;&lt;b&gt;overview/embeddings&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: 944318e4)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;• embedding
+&lt;small&gt;(v: b3f81f9e)&lt;/small&gt;&lt;/div&gt;"]
+        example_face_detection["&lt;div style="text-align:left"&gt;&lt;b&gt;example/face_detection&lt;/b&gt;&lt;br/&gt;&lt;small&gt;(v: fbe130cc)&lt;/small&gt;&lt;br/&gt;---&lt;br/&gt;•
+detections &lt;small&gt;(v: ab065369)&lt;/small&gt;&lt;/div&gt;"]
+        example_video --&gt; example_crop
+        example_crop --&gt; example_face_detection
+        example_video --&gt; overview_sst
+        example_crop --&gt; overview_embeddings</code></pre>
+<p>Metaxy supports incremental computations, sample-level versioning, field-level versioning, and more.</p>
 <div class="admonition warning">
 <p class="admonition-title">Giga Alpha</p>
 <p>This project is as raw as a steak still saying ‘moo.’</p>
@@ -1074,6 +1095,8 @@ See <a href="https://github.com/anam-org/metaxy/issues/70">issue #70</a> for det
     
     
       <script src="assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="javascripts/scarf.js"></script>
       
     
   </body>
