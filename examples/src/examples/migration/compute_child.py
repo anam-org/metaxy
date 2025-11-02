@@ -23,8 +23,8 @@ with config.get_store() as store:
     print(f"  feature_version: {ChildFeature.feature_version()[:16]}...")
 
     # Use resolve_update to calculate what needs computing
-    child_samples = upstream_data.select("sample_uid")
-    diff_result = store.resolve_update(ChildFeature, sample_df=child_samples)
+    # Don't pass samples - let system auto-load upstream and calculate provenance_by_field
+    diff_result = store.resolve_update(ChildFeature)
 
     print(
         f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new provenance_by_field"

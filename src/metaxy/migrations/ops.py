@@ -255,10 +255,11 @@ class DataVersionReconciliation(pydantic.BaseModel):
         sample_metadata = existing_metadata_df.select(user_columns)
 
         # 5. Use resolve_update to calculate field_provenance based on current upstream
+        # Don't pass samples - let resolve_update auto-load upstream and calculate provenance_by_field
+        diff_result = store.resolve_update(feature_cls)
+
         # Convert to Polars for the join to avoid cross-backend issues
         sample_metadata_pl = nw.from_native(sample_metadata.to_native()).to_polars()
-
-        diff_result = store.resolve_update(feature_cls, samples=sample_metadata_pl)
 
         # Use 'changed' for reconciliation (field_provenance changed due to upstream)
         # Use 'added' for new feature materialization

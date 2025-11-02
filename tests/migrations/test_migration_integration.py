@@ -4,7 +4,6 @@ These tests use TempFeatureModule to create realistic graph evolution scenarios
 and test the full migration workflow: detect → execute → verify.
 """
 
-import narwhals as nw
 import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -288,8 +287,8 @@ def test_upstream_downstream_migration(
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
-        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2, 3]}))
-        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
+        # Don't provide samples - let system auto-load upstream and calculate provenance_by_field
+        diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -388,8 +387,8 @@ def test_migration_idempotency(
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2]}))
-        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
+        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -471,8 +470,8 @@ def test_migration_dry_run(
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2]}))
-        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
+        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -611,8 +610,8 @@ def test_field_dependency_change(tmp_path):
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream
-        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
-        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
+        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -738,8 +737,8 @@ def test_feature_dependency_swap(tmp_path):
         )
 
         # Write downstream (depends on A in v1)
-        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
-        diff = store_v1.resolve_update(down_v1, samples=downstream_samples)
+        # Let system auto-load upstream and calculate provenance_by_field
+        diff = store_v1.resolve_update(down_v1)
         if len(diff.added) > 0:
             store_v1.write_metadata(down_v1, diff.added)
 
