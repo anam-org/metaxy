@@ -68,7 +68,7 @@ class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMul
 
 
 class DataVersionReconciliation(pydantic.BaseModel):
-    """Reconcile data versions when feature definition changes BUT computation is unchanged.
+    """Reconcile field provenance when feature definition changes BUT computation is unchanged.
 
     This operation applies to ALL affected features in the migration.
     Feature keys are deducible from snapshot changes, so they're not specified here.
@@ -76,8 +76,8 @@ class DataVersionReconciliation(pydantic.BaseModel):
     This operation:
     1. For each affected feature, derives old/new feature_versions from snapshots
     2. Finds rows with old feature_version
-    3. Recalculates data_versions based on new feature definition
-    4. Writes new rows with updated feature_version and data_version
+    3. Recalculates field_provenance based on new feature definition
+    4. Writes new rows with updated feature_version and provenance_by_field
     5. Preserves all user metadata columns (immutable)
 
     Use ONLY when code changed but computation results would be identical:
@@ -111,18 +111,18 @@ class DataVersionReconciliation(pydantic.BaseModel):
         to_snapshot_version: str,
         dry_run: bool = False,
     ) -> int:
-        """Execute data version reconciliation for a single feature.
+        """Execute field provenance reconciliation for a single feature.
 
         Only works for features with upstream dependencies. For root features
-        (no upstream), data_versions are user-defined and cannot be automatically
+        (no upstream), field_provenance are user-defined and cannot be automatically
         reconciled - user must re-run their computation pipeline.
 
         Process:
         1. Verify feature has upstream dependencies
         2. Query old and new feature_versions from snapshot metadata
         3. Load existing metadata with old feature_version
-        4. Use resolve_update() to calculate expected data_versions based on current upstream
-        5. Join existing user metadata with new data_versions
+        4. Use resolve_update() to calculate expected field_provenance based on current upstream
+        5. Join existing user metadata with new field_provenance
         6. Write with new feature_version and snapshot_version
 
         Args:
@@ -160,7 +160,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
         if not has_upstream:
             raise ValueError(
                 f"DataVersionReconciliation cannot be used for root feature {feature_key_str}. "
-                f"Root features have user-defined data_versions that cannot be automatically reconciled. "
+                f"Root features have user-defined field_provenance that cannot be automatically reconciled. "
                 f"User must re-run their computation pipeline to generate new data."
             )
 
@@ -250,24 +250,24 @@ class DataVersionReconciliation(pydantic.BaseModel):
         user_columns = [
             c
             for c in existing_metadata_df.columns
-            if c not in ["data_version", "feature_version", "snapshot_version"]
+            if c not in ["provenance_by_field", "feature_version", "snapshot_version"]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
-        # 5. Use resolve_update to calculate data_versions based on current upstream
+        # 5. Use resolve_update to calculate field_provenance based on current upstream
         # Convert to Polars for the join to avoid cross-backend issues
         sample_metadata_pl = nw.from_native(sample_metadata.to_native()).to_polars()
 
-        diff_result = store.resolve_update(feature_cls, sample_df=sample_metadata_pl)
+        diff_result = store.resolve_update(feature_cls, samples=sample_metadata_pl)
 
-        # Use 'changed' for reconciliation (data_versions changed due to upstream)
+        # Use 'changed' for reconciliation (field_provenance changed due to upstream)
         # Use 'added' for new feature materialization
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_data_versions = changed_pl.select(["sample_uid", "data_version"])
+            new_provenance = changed_pl.select(["sample_uid", "provenance_by_field"])
             df_to_write = sample_metadata_pl.join(
-                new_data_versions, on="sample_uid", how="inner"
+                new_provenance, on="sample_uid", how="inner"
             )
         elif len(diff_result.added) > 0:
             df_to_write = nw.from_native(diff_result.added.to_native()).to_polars()
@@ -299,7 +299,7 @@ class MetadataBackfill(BaseOperation, ABC):
     The user implements execute() and can:
     - Load metadata from any external source (S3, database, API, etc.)
     - Perform custom transformations and filtering
-    - Join with Metaxy's calculated data_versions however they want
+    - Join with Metaxy's calculated field_provenance however they want
     - Write results to the store
 
     Example Subclass:
@@ -336,14 +336,14 @@ class MetadataBackfill(BaseOperation, ABC):
                 if dry_run:
                     return len(external_df)
 
-                # Get data versions from Metaxy
+                # Get field provenance from Metaxy
                 feature_cls = graph.features_by_key[FeatureKey(self.feature_key)]
                 diff = store.resolve_update(
                     feature_cls,
-                    sample_df=external_df.select(["sample_uid"])
+                    samples=external_df.select(["sample_uid"])
                 )
 
-                # Join external metadata with calculated data_versions
+                # Join external metadata with calculated field_provenance
                 to_write = external_df.join(diff.added, on="sample_uid", how="inner")
 
                 # Write
@@ -377,7 +377,7 @@ class MetadataBackfill(BaseOperation, ABC):
         User has complete control over:
         - Loading external metadata (S3, database, API, files, etc.)
         - Transforming and filtering data
-        - Joining with Metaxy's data_versions
+        - Joining with Metaxy's field_provenance
         - Writing to store
 
         Args:

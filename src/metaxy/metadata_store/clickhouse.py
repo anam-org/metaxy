@@ -98,7 +98,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         return HashAlgorithm.XXHASH64
 
     def _supports_native_components(self) -> bool:
-        """ClickHouse stores support native data version calculations when connection is open."""
+        """ClickHouse stores support native field provenance calculations when connection is open."""
         return self._conn is not None
 
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:

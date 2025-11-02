@@ -270,11 +270,11 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     assert version == snapshot
 
 
-def test_data_version_method(snapshot: SnapshotAssertion) -> None:
-    """Test that SQLModelFeature.data_version() works correctly.
+def test_provenance_method(snapshot: SnapshotAssertion) -> None:
+    """Test that SQLModelFeature.provenance_by_field() works correctly.
 
     Verifies that:
-    - data_version() returns dict mapping field keys to hashes
+    - provenance_by_field() returns dict mapping field keys to hashes
     - Each hash is 64 characters
     """
 
@@ -289,23 +289,23 @@ def test_data_version_method(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "data_version"  # pyright: ignore[reportIncompatibleVariableOverride]
+        __tablename__: str = "provenance_by_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         source_path: str  # Metadata column
         timestamp: int  # Metadata column
 
-    data_version = DataVersionFeature.data_version()
+    provenance_by_field = DataVersionFeature.provenance_by_field()
 
     # Should return dict mapping field keys to hashes
-    assert isinstance(data_version, dict)
-    assert "processed_data" in data_version
-    assert "embeddings" in data_version
+    assert isinstance(provenance_by_field, dict)
+    assert "processed_data" in provenance_by_field
+    assert "embeddings" in provenance_by_field
 
     # Each hash should be 64 characters
-    assert all(len(v) == 64 for v in data_version.values())
+    assert all(len(v) == 64 for v in provenance_by_field.values())
 
     # Snapshot
-    assert data_version == snapshot
+    assert provenance_by_field == snapshot
 
 
 def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
@@ -697,7 +697,7 @@ def test_sqlmodel_feature_with_duckdb_store(
     - SQLModelFeature can be used with DuckDB store
     - Metadata can be written and read
     - Feature versioning works correctly
-    - Data versioning is calculated correctly
+    - Field provenance is calculated correctly
     """
 
     class VideoFeature(
@@ -720,13 +720,13 @@ def test_sqlmodel_feature_with_duckdb_store(
     db_path = tmp_path / "test.duckdb"
 
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
-        # Create metadata DataFrame with data_version column (required by metadata store)
+        # Create metadata DataFrame with provenance_by_field column (required by metadata store)
         metadata_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/videos/v1.mp4", "/videos/v2.mp4", "/videos/v3.mp4"],
                 "duration": [120.5, 90.0, 150.3],
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": "hash1", "duration": "hash1"},
                     {"frames": "hash2", "duration": "hash2"},
                     {"frames": "hash3", "duration": "hash3"},
@@ -745,8 +745,8 @@ def test_sqlmodel_feature_with_duckdb_store(
         assert len(result_df) == 3
         assert set(result_df["sample_uid"].to_list()) == {1, 2, 3}
 
-        # Check that data_version column was added
-        assert "data_version" in result_df.columns
+        # Check that provenance_by_field column was added
+        assert "provenance_by_field" in result_df.columns
 
         # Check feature_version column
         assert "feature_version" in result_df.columns
@@ -809,7 +809,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     - Parent and child SQLModelFeatures work with custom id_columns
     - Metadata operations (write/read) respect custom ID columns
     - Joins work correctly with custom ID columns
-    - Data versioning works with custom ID columns
+    - Field provenance works with custom ID columns
     """
 
     # Create parent feature with custom ID columns
@@ -872,7 +872,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
                 "activity_type": ["read", "write", "read", "read", "write"],
                 "duration": [30.5, 45.0, 15.0, 60.0, 25.5],
                 "timestamp": [1000, 1100, 1200, 1300, 1400],
-                "data_version": [
+                "provenance_by_field": [
                     {"activity_type": "hash_a1", "duration": "hash_d1"},
                     {"activity_type": "hash_a2", "duration": "hash_d2"},
                     {"activity_type": "hash_a3", "duration": "hash_d3"},
@@ -919,7 +919,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
                     "User 2 Session 10",
                     "User 2 Session 30",
                 ],
-                "data_version": [
+                "provenance_by_field": [
                     {"total_duration": "hash_t1"},
                     {"total_duration": "hash_t2"},
                     {"total_duration": "hash_t3"},
@@ -960,7 +960,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     Verifies that:
     - Features can have composite keys with 3+ columns
     - Feature versioning works with composite keys
-    - Data versioning produces correct struct with composite keys
+    - Field provenance produces correct struct with composite keys
     """
 
     class MultiKeyFeature(
@@ -989,15 +989,15 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     version = MultiKeyFeature.feature_version()
     assert len(version) == 64
 
-    # Verify data version structure
-    data_version = MultiKeyFeature.data_version()
-    assert "event" in data_version
-    assert "metric" in data_version
+    # Verify field provenance structure
+    provenance_by_field = MultiKeyFeature.provenance_by_field()
+    assert "event" in provenance_by_field
+    assert "metric" in provenance_by_field
 
     # Snapshot versions
     assert {
         "feature_version": version,
-        "data_version": data_version,
+        "provenance_by_field": provenance_by_field,
         "id_columns": MultiKeyFeature.spec().id_columns,
     } == snapshot
 
@@ -1073,7 +1073,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     Verifies that:
     - Upstream features are joined on custom ID columns
     - Inner join behavior works as expected
-    - Data versions are calculated correctly after joins
+    - Field provenances are calculated correctly after joins
     """
 
     # Create two upstream features with composite keys
@@ -1158,7 +1158,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
                     "2024-01-01",
                 ],
                 "value_a": [10.0, 20.0, 30.0, 40.0, 50.0],
-                "data_version": [
+                "provenance_by_field": [
                     {"value_a": "hash_a1"},
                     {"value_a": "hash_a2"},
                     {"value_a": "hash_a3"},
@@ -1175,7 +1175,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
                 "user_id": [1, 1, 2, 3],  # Missing (2, 2024-01-02)
                 "date": ["2024-01-01", "2024-01-02", "2024-01-01", "2024-01-01"],
                 "value_b": [100.0, 200.0, 300.0, 500.0],
-                "data_version": [
+                "provenance_by_field": [
                     {"value_b": "hash_b1"},
                     {"value_b": "hash_b2"},
                     {"value_b": "hash_b3"},
@@ -1651,7 +1651,7 @@ def test_sqlmodel_rename_validation_with_store(
                 "status": ["pending", "active", "done"],
                 "priority": [1, 2, 3],
                 "description": ["desc1", "desc2", "desc3"],
-                "data_version": [
+                "provenance_by_field": [
                     {"source_data": "hash1"},
                     {"source_data": "hash2"},
                     {"source_data": "hash3"},
@@ -1666,7 +1666,7 @@ def test_sqlmodel_rename_validation_with_store(
                 "sample_uid": [1, 2, 3],
                 "status": ["processed", "processing", "queued"],
                 "result": ["result1", "result2", "result3"],
-                "data_version": [
+                "provenance_by_field": [
                     {"target_data": "thash1"},
                     {"target_data": "thash2"},
                     {"target_data": "thash3"},

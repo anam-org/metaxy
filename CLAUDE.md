@@ -138,11 +138,11 @@ Abstract base class for metadata storage backends:
 
 - **Immutable storage**: Append-only writes with copy-on-write semantics
 - **Fallback store chains**: Composable read-through cache for branch deployments
-- **Three-component architecture**: UpstreamJoiner, DataVersionCalculator, MetadataDiffResolver
+- **Three-component architecture**: UpstreamJoiner, ProvenanceByFieldCalculator, MetadataDiffResolver
 - **Backend-agnostic**: Generic type `TRef` allows different backend table references
 - **Narwhals interface**: Public API uses Narwhals DataFrames/LazyFrames for cross-backend compatibility
 - **Native vs Polars components**: Stores choose components based on capabilities:
-  - **native data version calculations** (e.g., Ibis-based for DuckDB/ClickHouse): Execute all operations (joins, hashing, diffs) directly in the database, only pulling out final results. This minimizes data transfer and leverages database query optimization.
+  - **native field provenance calculations** (e.g., Ibis-based for DuckDB/ClickHouse): Execute all operations (joins, hashing, diffs) directly in the database, only pulling out final results. This minimizes data transfer and leverages database query optimization.
   - **Polars components**: Pull data into memory when fallback stores are used or store lacks compute support (InMemory, DeltaLake)
 
 Implementations:
@@ -159,7 +159,7 @@ Key system tables (stored with prefix `metaxy-system`):
 
 #### 3. Data Versioning (`src/metaxy/data_versioning/`)
 
-Three-component architecture for calculating and comparing data versions:
+Three-component architecture for calculating and comparing field provenance entries:
 
 **UpstreamJoiner** (`joiners/`): Joins upstream feature metadata
 
@@ -167,13 +167,13 @@ Three-component architecture for calculating and comparing data versions:
 - Default: Inner join on `sample_uid`
 - Native implementations execute joins directly in the database
 
-**DataVersionCalculator** (`calculators/`): Computes data version hashes
+**ProvenanceByFieldCalculator** (`calculators/`): Computes field provenance hashes
 
-- `PolarsDataVersionCalculator`: Uses `polars_hash` plugin for fast hashing (used when data is in memory)
+- `PolarsProvenanceByFieldCalculator`: Uses `polars_hash` plugin for fast hashing (used when data is in memory)
 - Native implementations (e.g., Ibis-based): Execute hash calculations directly in the database using SQL/native functions
 - Supports multiple hash algorithms (xxhash, sha256, etc.)
-- Creates nested struct column: `data_version: {field1: hash, field2: hash}`
-- **Native approach**: All computations stay in the database, only final data versions are pulled out
+- Creates nested struct column: `provenance_by_field: {field1: hash, field2: hash}`
+- **Native approach**: All computations stay in the database, only final field provenance entries are pulled out
 - **Polars approach**: Used when fallback stores are needed, or when the store doesn't support native compute (InMemory, DeltaLake)
 
 **MetadataDiffResolver** (`diff/`): Compares target vs current versions
@@ -219,7 +219,7 @@ All metadata writes are append-only. When migrations update metadata:
 
 1. Query rows with old `feature_version`
 2. Copy all user columns (preserving custom metadata)
-3. Recalculate `data_version` based on new feature definition
+3. Recalculate `provenance_by_field` based on new feature definition
 4. Write new rows with new `feature_version` and `snapshot_version`
 5. Old rows remain for historical queries and audit trail
 
@@ -231,7 +231,7 @@ semantics or lifecycle of:
 
 - `code_version` – tracks changes to a feature's own implementation,
 - `feature_version()` – incorporates dependencies and drives migrations, and
-- `data_version` – hashes upstream materialized inputs per sample.
+- `provenance_by_field` – hashes upstream materialized inputs per sample.
 
 The public docs stay canonical; keep this file concise and defer to them for
 examples and diagrams.
@@ -288,7 +288,7 @@ Usecases may be for data governance such as ownership, SLAs, PII flags, ... etc.
 **Native vs Polars Components**:
 The store automatically selects the optimal component strategy:
 
-**native data version calculations** (preferred when available):
+**native field provenance calculations** (preferred when available):
 
 - Execute all operations (joins, hashing, diffs) directly in the database
 - Only pull final results into memory (e.g., list of samples that need updating)
@@ -370,7 +370,7 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 ### Adding New Hash Algorithm Support
 
 1. Add to `HashAlgorithm` enum in `data_versioning/hash_algorithms.py`
-2. Update `PolarsDataVersionCalculator.supported_algorithms`
+2. Update `PolarsProvenanceByFieldCalculator.supported_algorithms`
 3. Add hash expression in calculator's `_get_hash_expr()` method
 4. Add tests for new algorithm
 
@@ -399,7 +399,7 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 
 ### Data Versioning
 
-- `data_versioning/calculators/base.py`: DataVersionCalculator interface
+- `data_versioning/calculators/base.py`: ProvenanceByFieldCalculator interface
 - `data_versioning/joiners/base.py`: UpstreamJoiner interface
 - `data_versioning/diff/base.py`: MetadataDiffResolver interface
 - `data_versioning/hash_algorithms.py`: HashAlgorithm enum

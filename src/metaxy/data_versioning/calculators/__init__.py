@@ -1,13 +1,13 @@
-"""Data version calculators for computing hash from upstream data."""
+"""Field provenance calculators for computing hash from upstream data."""
 
-from metaxy.data_versioning.calculators.base import DataVersionCalculator
-from metaxy.data_versioning.calculators.duckdb import DuckDBDataVersionCalculator
-from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
-from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
+from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.duckdb import DuckDBProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.ibis import IbisProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.polars import PolarsProvenanceByFieldCalculator
 
 __all__ = [
-    "DataVersionCalculator",
-    "DuckDBDataVersionCalculator",
-    "IbisDataVersionCalculator",
-    "PolarsDataVersionCalculator",
+    "ProvenanceByFieldCalculator",
+    "DuckDBProvenanceByFieldCalculator",
+    "IbisProvenanceByFieldCalculator",
+    "PolarsProvenanceByFieldCalculator",
 ]

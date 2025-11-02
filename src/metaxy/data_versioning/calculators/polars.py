@@ -1,4 +1,4 @@
-"""Polars implementation of data version calculator."""
+"""Polars implementation of field provenance calculator."""
 
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
@@ -7,7 +7,7 @@ import narwhals as nw
 import polars as pl
 import polars_hash as plh
 
-from metaxy.data_versioning.calculators.base import DataVersionCalculator
+from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.utils.hashing import truncate_struct_column
 
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from metaxy.models.plan import FeaturePlan
 
 
-class PolarsDataVersionCalculator(DataVersionCalculator):
-    """Calculates data versions using polars-hash.
+class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
+    """Calculates provenance_by_field values using polars-hash.
 
     Accepts Narwhals LazyFrames and converts internally to Polars for hashing.
     Supports all hash functions available in polars-hash plugin.
@@ -43,7 +43,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
         """xxHash64 - fast and cross-database compatible."""
         return HashAlgorithm.XXHASH64
 
-    def calculate_data_versions(
+    def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
         feature_spec: "BaseFeatureSpec[IDColumns]",
@@ -51,7 +51,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
     ) -> nw.LazyFrame[Any]:
-        """Calculate data_version using polars-hash.
+        """Calculate provenance_by_field using polars-hash.
 
         Args:
             joined_upstream: Narwhals LazyFrame with upstream data joined
@@ -61,13 +61,13 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
             hash_algorithm: Hash to use (default: xxHash64)
 
         Returns:
-            Narwhals LazyFrame with data_version column added
+            Narwhals LazyFrame with provenance_by_field column added
         """
         algo = hash_algorithm or self.default_algorithm
 
         if algo not in self.supported_algorithms:
             raise ValueError(
-                f"Hash algorithm {algo} not supported by PolarsDataVersionCalculator. "
+                f"Hash algorithm {algo} not supported by PolarsProvenanceByFieldCalculator. "
                 f"Supported: {self.supported_algorithms}"
             )
 
@@ -95,7 +95,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
                 pl.lit(str(field.code_version)),
             ]
 
-            # Add upstream data versions in deterministic order
+            # Add upstream provenance values in deterministic order
             for upstream_feature_key in sorted(field_deps.keys()):
                 upstream_fields = field_deps[upstream_feature_key]
                 upstream_key_str = (
@@ -104,8 +104,8 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
                     else "_".join(upstream_feature_key)
                 )
 
-                data_version_col_name = upstream_column_mapping.get(
-                    upstream_key_str, "data_version"
+                provenance_col_name = upstream_column_mapping.get(
+                    upstream_key_str, "provenance_by_field"
                 )
 
                 for upstream_field in sorted(upstream_fields):
@@ -119,7 +119,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
                         pl.lit(f"{upstream_key_str}/{upstream_field_str}")
                     )
                     components.append(
-                        pl.col(data_version_col_name).struct.field(upstream_field_str)
+                        pl.col(provenance_col_name).struct.field(upstream_field_str)
                     )
 
             # Concatenate and hash
@@ -128,10 +128,10 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
 
             field_exprs[field_key_str] = hashed
 
-        # Create data_version struct
-        data_version_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
+        # Create provenance_by_field struct
+        provenance_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
 
-        result_pl = pl_lazy.with_columns(data_version_expr.alias("data_version"))
+        result_pl = pl_lazy.with_columns(provenance_expr.alias("provenance_by_field"))
 
         # Convert back to Narwhals LazyFrame and apply truncation
         result_nw = nw.from_native(result_pl, eager_only=False)
@@ -139,7 +139,7 @@ class PolarsDataVersionCalculator(DataVersionCalculator):
         # Use truncate_struct_column to apply hash truncation if configured
         # This needs to be eager for the truncation function
         result_eager = result_nw.collect()
-        result_truncated = truncate_struct_column(result_eager, "data_version")
+        result_truncated = truncate_struct_column(result_eager, "provenance_by_field")
 
         # Convert back to lazy
         return nw.from_native(result_truncated.to_native().lazy(), eager_only=False)

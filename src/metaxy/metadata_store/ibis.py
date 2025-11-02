@@ -37,7 +37,7 @@ class IbisMetadataStore(MetadataStore):
     - And other backends with struct support
 
     Note: Backends without native struct support (e.g., SQLite) are NOT supported.
-    The data_version field requires struct type support for proper storage.
+    The provenance_by_field field requires struct type support for proper storage.
 
     Storage layout:
     - Each feature gets its own table: {namespace}__{feature_name}
@@ -139,20 +139,22 @@ class IbisMetadataStore(MetadataStore):
 
     def _create_native_components(self):
         """Create components for native SQL execution via Ibis."""
-        from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
+        from metaxy.data_versioning.calculators.ibis import (
+            IbisProvenanceByFieldCalculator,
+        )
         from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
         from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create native data version calculations: store is not open. "
+                "Cannot create native field provenance calculations: store is not open. "
                 "Ensure store is used as context manager."
             )
 
         # All components accept/return Narwhals LazyFrames
-        # IbisDataVersionCalculator converts to Ibis internally for SQL hash generation
+        # IbisProvenanceByFieldCalculator converts to Ibis internally for SQL hash generation
         joiner = NarwhalsJoiner()
-        calculator = IbisDataVersionCalculator(
+        calculator = IbisProvenanceByFieldCalculator(
             backend=self._conn,
             hash_sql_generators=self._get_hash_sql_generators(),
         )
@@ -421,13 +423,13 @@ class IbisMetadataStore(MetadataStore):
 
     def _can_compute_native(self) -> bool:
         """
-        Ibis backends support native data version calculations (Narwhals-based).
+        Ibis backends support native field provenance calculations (Narwhals-based).
 
         Returns:
             True (use Narwhals components with Ibis-backed tables)
 
         Note: All Ibis stores now use Narwhals-based components (NarwhalsJoiner,
-        PolarsDataVersionCalculator, NarwhalsDiffResolver) which work efficiently
+        PolarsProvenanceByFieldCalculator, NarwhalsDiffResolver) which work efficiently
         with Ibis-backed tables.
         """
         return True

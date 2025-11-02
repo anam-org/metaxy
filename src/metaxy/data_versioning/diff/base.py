@@ -23,13 +23,13 @@ class LazyDiffResult(NamedTuple):
     Attributes:
         added: New samples that appear upstream and haven't been processed yet.
 
-            Columns: `[*user_defined_columns, "data_version"]`
-        changed: Samples with new data versions that should be re-processed.
+            Columns: `[*user_defined_columns, "provenance_by_field"]`
+        changed: Samples with new field provenance that should be re-processed.
 
-            Columns: `[*user_defined_columns, "data_version"]`
+            Columns: `[*user_defined_columns, "provenance_by_field"]`
         removed: Samples that have been previously processed but have been removed from upstream since that.
 
-            Columns: `[*id_columns, "data_version"]`
+            Columns: `[*id_columns, "provenance_by_field"]`
 
     Note:
         `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
@@ -63,13 +63,13 @@ class DiffResult(NamedTuple):
     Attributes:
         added: New samples that appear upstream and haven't been processed yet.
 
-            Columns: `[*user_defined_columns, "data_version"]`
-        changed: Samples with new data versions that should be re-processed.
+            Columns: `[*user_defined_columns, "provenance_by_field"]`
+        changed: Samples with new field provenance that should be re-processed.
 
-            Columns: `[*user_defined_columns, "data_version"]`
+            Columns: `[*user_defined_columns, "provenance_by_field"]`
         removed: Samples that have been previously processed but have been removed from upstream since that.
 
-            Columns: `[*id_columns, "data_version"]`
+            Columns: `[*id_columns, "provenance_by_field"]`
 
     Note:
         `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
@@ -81,14 +81,14 @@ class DiffResult(NamedTuple):
 
 
 class MetadataDiffResolver(ABC):
-    """Identifies rows with changed data_versions by comparing target with current.
+    """Identifies rows with changed field_provenance by comparing target with current.
 
-    The diff resolver compares newly calculated data_versions (target) with
+    The diff resolver compares newly calculated field_provenance (target) with
     existing metadata (current) to identify what needs to be written.
 
-    This is Step 3 in the data versioning process:
+    This is Step 3 in the data provenance process:
     1. Join upstream features → unified upstream view
-    2. Calculate data_version from upstream → target versions
+    2. Calculate provenance_by_field from upstream → target versions
     3. Diff with current metadata → identify changes ← THIS STEP
 
     All component boundaries use Narwhals LazyFrames for backend-agnostic processing.
@@ -112,20 +112,20 @@ class MetadataDiffResolver(ABC):
     @abstractmethod
     def find_changes(
         self,
-        target_versions: nw.LazyFrame[Any],
+        target_provenance: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
         id_columns: Sequence[str],
     ) -> LazyDiffResult:
         """Find all changes between target and current metadata.
 
-        Compares target data_versions (newly calculated) with current metadata
+        Compares target field_provenance (newly calculated) with current metadata
         and categorizes all differences.
 
         Args:
-            target_versions: Narwhals LazyFrame with newly calculated data_versions
-                Shape: [ID columns, data_version (calculated), upstream columns...]
+            target_provenance: Narwhals LazyFrame with newly calculated field_provenance
+                Shape: [ID columns, provenance_by_field (calculated), upstream columns...]
             current_metadata: Narwhals LazyFrame with current metadata, or None
-                Shape: [ID columns, data_version (existing), feature_version, custom columns...]
+                Shape: [ID columns, provenance_by_field (existing), feature_version, custom columns...]
                 Should be pre-filtered by feature_version at the caller level if needed.
             id_columns: List of ID columns to use for comparison (required - from feature spec)
 

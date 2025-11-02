@@ -4,6 +4,7 @@ These tests use TempFeatureModule to create realistic graph evolution scenarios
 and test the full migration workflow: detect → execute → verify.
 """
 
+import narwhals as nw
 import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -174,7 +175,7 @@ def test_basic_migration_flow(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -233,7 +234,7 @@ def test_basic_migration_flow(
         assert result.features_failed == 1
         assert "test_integration/simple" in result.errors
         assert (
-            "Root features have user-defined data_versions"
+            "Root features have user-defined field_provenance"
             in result.errors["test_integration/simple"]
         )
 
@@ -277,7 +278,7 @@ def test_upstream_downstream_migration(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -287,8 +288,8 @@ def test_upstream_downstream_migration(
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
-        downstream_samples = pl.DataFrame({"sample_uid": [1, 2, 3]})
-        diff = store_v1.resolve_update(DownstreamV1, sample_df=downstream_samples)
+        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2, 3]}))
+        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -331,7 +332,7 @@ def test_upstream_downstream_migration(
         new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "new_h1"},
                     {"default": "new_h2"},
                     {"default": "new_h3"},
@@ -350,7 +351,7 @@ def test_upstream_downstream_migration(
         assert result.status == "failed"  # Because upstream is root
         assert "test_integration/upstream" in result.errors
         assert (
-            "Root features have user-defined data_versions"
+            "Root features have user-defined field_provenance"
             in result.errors["test_integration/upstream"]
         )
 
@@ -382,13 +383,13 @@ def test_migration_idempotency(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "h1"}, {"default": "h2"}],
+                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_samples = pl.DataFrame({"sample_uid": [1, 2]})
-        diff = store_v1.resolve_update(DownstreamV1, sample_df=downstream_samples)
+        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2]}))
+        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -408,7 +409,7 @@ def test_migration_idempotency(
         new_upstream = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
             }
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
@@ -465,13 +466,13 @@ def test_migration_dry_run(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "h1"}, {"default": "h2"}],
+                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        downstream_samples = pl.DataFrame({"sample_uid": [1, 2]})
-        diff = store_v1.resolve_update(DownstreamV1, sample_df=downstream_samples)
+        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1, 2]}))
+        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -496,7 +497,7 @@ def test_migration_dry_run(
         new_upstream = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
             }
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
@@ -528,9 +529,9 @@ def test_migration_dry_run(
         )
 
         assert len(final_data) == len(initial_data)
-        # Compare data_versions (dict types can't be in sets, so compare directly)
-        final_dvs = final_data["data_version"].to_list()
-        initial_dvs = initial_data["data_version"].to_list()
+        # Compare field_provenance (dict types can't be in sets, so compare directly)
+        final_dvs = final_data["provenance_by_field"].to_list()
+        initial_dvs = initial_data["provenance_by_field"].to_list()
         assert final_dvs == initial_dvs
 
 
@@ -604,14 +605,14 @@ def test_field_dependency_change(tmp_path):
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "data_version": [{"frames": "hf", "audio": "ha"}],
+                "provenance_by_field": [{"frames": "hf", "audio": "ha"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream
-        downstream_samples = pl.DataFrame({"sample_uid": [1]})
-        diff = store_v1.resolve_update(DownstreamV1, sample_df=downstream_samples)
+        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
+        diff = store_v1.resolve_update(DownstreamV1, samples=downstream_samples)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
@@ -725,16 +726,20 @@ def test_feature_dependency_swap(tmp_path):
         # Write both upstreams
         store_v1.write_metadata(
             upstream_a_v1,
-            pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "ha"}]}),
+            pl.DataFrame(
+                {"sample_uid": [1], "provenance_by_field": [{"default": "ha"}]}
+            ),
         )
         store_v1.write_metadata(
             upstream_b_v1,
-            pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "hb"}]}),
+            pl.DataFrame(
+                {"sample_uid": [1], "provenance_by_field": [{"default": "hb"}]}
+            ),
         )
 
         # Write downstream (depends on A in v1)
-        downstream_samples = pl.DataFrame({"sample_uid": [1]})
-        diff = store_v1.resolve_update(down_v1, sample_df=downstream_samples)
+        downstream_samples = nw.from_native(pl.DataFrame({"sample_uid": [1]}))
+        diff = store_v1.resolve_update(down_v1, samples=downstream_samples)
         if len(diff.added) > 0:
             store_v1.write_metadata(down_v1, diff.added)
 
@@ -776,7 +781,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "h1"}, {"default": "h2"}],
+                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store.write_metadata(SimpleV1, data)
@@ -805,7 +810,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "data_version": [{"default": "h1"}],
+                "provenance_by_field": [{"default": "h1"}],
             }
         )
         store_v1.write_metadata(SimpleV1, data)

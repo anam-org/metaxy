@@ -1,15 +1,15 @@
-"""Hash algorithms supported for data versioning."""
+"""Hash algorithms supported for field provenance calculation."""
 
 from enum import Enum
 
 
 class HashAlgorithm(Enum):
-    """Supported hash algorithms for data versioning.
+    """Supported hash algorithms for field provenance calculation.
 
     These algorithms are chosen for:
     - Speed (non-cryptographic hashes preferred)
     - Cross-database availability
-    - Good collision resistance for data versioning
+    - Good collision resistance for field provenance calculation
     """
 
     XXHASH64 = "xxhash64"  # Fast, available in DuckDB, ClickHouse, Polars

@@ -16,12 +16,3 @@
     'status': 'failed',
   })
 # ---
-# name: test_upstream_downstream_migration[affected_features]
-  dict({
-    'affected_features': list([
-      'test_integration/downstream',
-      'test_integration/upstream',
-    ]),
-    'affected_features_count': 2,
-  })
-# ---

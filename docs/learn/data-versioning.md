@@ -43,16 +43,16 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Sample Version By Field** is computed from the upstream **Sample Version By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+- **Provenance By Field** is computed from the upstream **Provenance By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
-| sample_uid | metaxy_sample_version_by_field                |
+| sample_uid | provenance_by_field                           |
 | ---------- | --------------------------------------------- |
 | video_001  | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
 | video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
 | video_003  | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
 | video_004  | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
 
-- **Sample Version** is derived from the **Sample Version By Field** by simply hashing it.
+- **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
 
 This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
 
@@ -251,7 +251,7 @@ Notice:
 
 ## Incremental Computation
 
-The metadata store's `calculate_and_write_data_versions()` method:
+The metadata store's `calculate_provenance_by_field()` method:
 
 1. Joins upstream feature metadata
 2. Computes sample versions
@@ -264,7 +264,7 @@ The Python pipeline then processes only the delta
 
 ```python
 with store:  # MetadataStore
-    # Metaxy computes data_version and identifies changes
+    # Metaxy computes provenance_by_field and identifies changes
     diff = store.resolve_update(MyFeature)
 
     # Process only changed samples

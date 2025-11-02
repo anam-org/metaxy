@@ -2,10 +2,10 @@
 
 # Essential system columns that must always be preserved for joining/versioning
 # Note: ID columns are defined by BaseFeatureSpec.id_columns (default: ["sample_uid"])
-# data_version is always required for versioning
+# provenance_by_field is always required for versioning
 ESSENTIAL_SYSTEM_COLUMNS = frozenset(
     {
-        "data_version",  # Always required for versioning
+        "provenance_by_field",  # Always required for versioning
     }
 )
 
@@ -17,7 +17,7 @@ DROPPABLE_SYSTEM_COLUMNS = frozenset(
         "snapshot_version",
         "metaxy_feature_version",
         "metaxy_snapshot_version",
-        "metaxy_data_version",
+        "metaxy_provenance_by_field",
     }
 )
 

@@ -191,31 +191,31 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return HashAlgorithm.XXHASH64
 
     def _supports_native_components(self) -> bool:
-        """DuckDB stores support native data version calculations when connection is open."""
+        """DuckDB stores support native field provenance calculations when connection is open."""
         return self._conn is not None
 
     def _create_native_components(self):
         """Create components for native SQL execution with DuckDB.
 
-        Uses DuckDBDataVersionCalculator which handles extension loading lazily.
+        Uses DuckDBProvenanceByFieldCalculator which handles extension loading lazily.
         Extensions are loaded when the calculator is created (on-demand), not on store open.
         """
         from metaxy.data_versioning.calculators.duckdb import (
-            DuckDBDataVersionCalculator,
+            DuckDBProvenanceByFieldCalculator,
         )
         from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
         from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create native data version calculations: store is not open. "
+                "Cannot create native field provenance calculations: store is not open. "
                 "Ensure store is used as context manager."
             )
 
         # All components accept/return Narwhals LazyFrames
-        # DuckDBDataVersionCalculator loads extensions and generates SQL for hashing
+        # DuckDBProvenanceByFieldCalculator loads extensions and generates SQL for hashing
         joiner = NarwhalsJoiner()
-        calculator = DuckDBDataVersionCalculator(
+        calculator = DuckDBProvenanceByFieldCalculator(
             backend=self._conn,
             extensions=self.extensions,
         )

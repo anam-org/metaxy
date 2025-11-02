@@ -6,7 +6,7 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.calculators.base import DataVersionCalculator
+from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
 from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
@@ -73,12 +73,12 @@ class InMemoryMetadataStore(MetadataStore):
         self,
     ) -> tuple[
         UpstreamJoiner,
-        DataVersionCalculator,
+        ProvenanceByFieldCalculator,
         MetadataDiffResolver,
     ]:
         """Not supported - in-memory store only uses Polars components."""
         raise NotImplementedError(
-            "InMemoryMetadataStore does not support native data version calculations"
+            "InMemoryMetadataStore does not support native field provenance calculations"
         )
 
     def _write_metadata_impl(

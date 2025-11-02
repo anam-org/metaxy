@@ -1,8 +1,8 @@
-"""Data versioning module for sample-level data version calculation."""
+"""Data provenance module for sample-level field provenance calculation."""
 
 from metaxy.data_versioning.calculators import (
-    DataVersionCalculator,
-    PolarsDataVersionCalculator,
+    PolarsProvenanceByFieldCalculator,
+    ProvenanceByFieldCalculator,
 )
 from metaxy.data_versioning.diff import (
     DiffResult,
@@ -16,8 +16,8 @@ __all__ = [
     "HashAlgorithm",
     "UpstreamJoiner",
     "NarwhalsJoiner",
-    "DataVersionCalculator",
-    "PolarsDataVersionCalculator",
+    "ProvenanceByFieldCalculator",
+    "PolarsProvenanceByFieldCalculator",
     "DiffResult",
     "MetadataDiffResolver",
     "NarwhalsDiffResolver",

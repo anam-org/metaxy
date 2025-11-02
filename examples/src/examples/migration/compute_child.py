@@ -27,7 +27,7 @@ with config.get_store() as store:
     diff_result = store.resolve_update(ChildFeature, sample_df=child_samples)
 
     print(
-        f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new data_version"
+        f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new provenance_by_field"
     )
 
     if len(diff_result.added) > 0:
@@ -44,7 +44,7 @@ with config.get_store() as store:
 
     child_result = store.read_metadata(ChildFeature, current_only=True)
     child_eager = nw.from_native(child_result.collect())
-    print("\n📋 Child data_versions:")
+    print("\n📋 Child provenance_by_field:")
     for row in child_eager.iter_rows(named=True):
-        dv = row["data_version"]["predictions"]
+        dv = row["provenance_by_field"]["predictions"]
         print(f"  sample_uid={row['sample_uid']}: {dv[:16]}...")

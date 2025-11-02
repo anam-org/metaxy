@@ -300,12 +300,12 @@ class FeatureGraph:
         return truncate_hash(hasher.hexdigest())
 
     def get_feature_version_by_field(self, key: FeatureKey) -> dict[str, str]:
-        """Computes the feature data version.
+        """Computes the field provenance map for a feature.
 
-        Hash together field data versions versions with the feature code version.
+        Hash together field provenance entries with the feature code version.
 
         Returns:
-            dict[str, str]: The data version for each field in the feature plan.
+            dict[str, str]: The provenance hash for each field in the feature plan.
                 Keys are field names as strings.
         """
         res = {}
@@ -322,10 +322,10 @@ class FeatureGraph:
     def get_feature_version(self, key: FeatureKey) -> str:
         """Computes the feature version as a single string"""
         hasher = hashlib.sha256()
-        data_version = self.get_feature_version_by_field(key)
-        for field_key in sorted(data_version):
+        provenance_by_field = self.get_feature_version_by_field(key)
+        for field_key in sorted(provenance_by_field):
             hasher.update(field_key.encode())
-            hasher.update(data_version[field_key].encode())
+            hasher.update(provenance_by_field[field_key].encode())
 
         return truncate_hash(hasher.hexdigest())
 
@@ -866,7 +866,7 @@ class BaseFeature(
         - Dependencies
         - Field definitions
 
-        Used to distinguish current vs historical metadata versions.
+        Used to distinguish current vs historical metafield provenance hashes.
         Stored in the 'feature_version' column of metadata DataFrames.
 
         Returns:
@@ -947,14 +947,14 @@ class BaseFeature(
         return truncate_hash(hasher.hexdigest())
 
     @classmethod
-    def data_version(cls) -> dict[str, str]:
-        """Get the code-level data version for this feature.
+    def provenance_by_field(cls) -> dict[str, str]:
+        """Get the code-level field provenance for this feature.
 
         This returns a static hash based on code versions and dependencies,
-        not sample-level data versions.
+        not sample-level field provenance computed from upstream data.
 
         Returns:
-            Dictionary mapping field keys to their data version hashes.
+            Dictionary mapping field keys to their provenance hashes.
         """
         return cls.graph.get_feature_version_by_field(cls.spec().key)
 
@@ -1003,18 +1003,18 @@ class BaseFeature(
     def resolve_data_version_diff(
         cls,
         diff_resolver: "MetadataDiffResolver",
-        target_versions: "nw.LazyFrame[Any]",
+        target_provenance: "nw.LazyFrame[Any]",
         current_metadata: "nw.LazyFrame[Any] | None",
         *,
         lazy: bool = False,
     ) -> "DiffResult | LazyDiffResult":
-        """Resolve differences between target and current data versions.
+        """Resolve differences between target and current field provenance.
 
         Override for custom diff logic (ignore certain fields, custom rules, etc.).
 
         Args:
             diff_resolver: MetadataDiffResolver from MetadataStore
-            target_versions: Calculated target data_versions (Narwhals LazyFrame)
+            target_provenance: Calculated target field provenance (Narwhals LazyFrame)
             current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
                 Should be pre-filtered by feature_version at the store level.
             lazy: If True, return LazyDiffResult. If False, return DiffResult.
@@ -1032,9 +1032,9 @@ class BaseFeature(
             ```py
             class MyFeature(Feature, spec=...):
                 @classmethod
-                def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):
+                def resolve_data_version_diff(cls, diff_resolver, target_provenance, current_metadata, **kwargs):
                     # Get standard diff
-                    result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)
+                    result = diff_resolver.find_changes(target_provenance, current_metadata, cls.spec().id_columns)
 
                     # Custom: Only consider 'frames' field changes, ignore 'audio'
                     # Users can filter/modify the diff result here
@@ -1044,7 +1044,7 @@ class BaseFeature(
         """
         # Diff resolver always returns LazyDiffResult - materialize if needed
         lazy_result = diff_resolver.find_changes(
-            target_versions=target_versions,
+            target_provenance=target_provenance,
             current_metadata=current_metadata,
             id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
         )

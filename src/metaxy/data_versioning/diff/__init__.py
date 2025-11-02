@@ -1,4 +1,4 @@
-"""Metadata diff resolvers for identifying changed data versions."""
+"""Metadata diff resolvers for identifying changed field provenance entries."""
 
 from metaxy.data_versioning.diff.base import (
     DiffResult,

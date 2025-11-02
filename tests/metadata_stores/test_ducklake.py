@@ -27,7 +27,7 @@ def metadata_dataframe_strategy(draw, fields=None, size=None):
 
     Args:
         draw: Hypothesis draw function
-        fields: List of field names for the data_version struct (default: ["default"])
+        fields: List of field names for the provenance_by_field struct (default: ["default"])
         size: Number of rows (default: between 1-10)
     """
     if fields is None:
@@ -35,14 +35,14 @@ def metadata_dataframe_strategy(draw, fields=None, size=None):
     if size is None:
         size = draw(st.integers(min_value=1, max_value=10))
 
-    # Define struct type for data_version
-    data_version_dtype = pl.Struct({field: pl.String for field in fields})
+    # Define struct type for provenance_by_field
+    provenance_dtype = pl.Struct({field: pl.String for field in fields})
 
-    # Generate dataframe with sample_id and data_version columns
+    # Generate dataframe with sample_id and provenance_by_field columns
     df_strategy = dataframes(
         [
             column("sample_id", dtype=pl.Int64),
-            column("data_version", dtype=data_version_dtype),
+            column("provenance_by_field", dtype=provenance_dtype),
         ],
         size=size,
     )
@@ -223,7 +223,7 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         payload = pl.DataFrame(
             {
                 "sample_id": sample_ids,
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
                     for i in sample_ids
                 ],
@@ -240,7 +240,7 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
             store.write_metadata(feature, payload)
             result = collect_to_polars(store.read_metadata(feature))
 
-        actual = result.sort("sample_id").select(["sample_id", "data_version"])
+        actual = result.sort("sample_id").select(["sample_id", "provenance_by_field"])
         expected = payload.sort("sample_id")
         assert_frame_equal(actual, expected)
 
@@ -268,7 +268,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
     This test exercises the full workflow:
     1. Write metadata for upstream features
     2. Write metadata for downstream features with dependencies
-    3. Read metadata back and verify data versions
+    3. Read metadata back and verify field provenances
     4. Test metadata updates and versioning
     5. Verify persistence across store reopening
     """
@@ -307,7 +307,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
         upstream_a_data = pl.DataFrame(
             {
                 "sample_id": sample_ids,
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
                     for i in sample_ids
                 ],
@@ -317,7 +317,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
         upstream_b_data = pl.DataFrame(
             {
                 "sample_id": sample_ids,
-                "data_version": [{"default": f"hash_b_{i}"} for i in sample_ids],
+                "provenance_by_field": [{"default": f"hash_b_{i}"} for i in sample_ids],
             }
         )
 
@@ -331,11 +331,11 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
             result_b = collect_to_polars(store.read_metadata(upstream_b))
 
             assert_frame_equal(
-                result_a.sort("sample_id").select(["sample_id", "data_version"]),
+                result_a.sort("sample_id").select(["sample_id", "provenance_by_field"]),
                 upstream_a_data.sort("sample_id"),
             )
             assert_frame_equal(
-                result_b.sort("sample_id").select(["sample_id", "data_version"]),
+                result_b.sort("sample_id").select(["sample_id", "provenance_by_field"]),
                 upstream_b_data.sort("sample_id"),
             )
 
@@ -343,7 +343,9 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
             downstream_data = pl.DataFrame(
                 {
                     "sample_id": sample_ids,
-                    "data_version": [{"default": f"hash_d_{i}"} for i in sample_ids],
+                    "provenance_by_field": [
+                        {"default": f"hash_d_{i}"} for i in sample_ids
+                    ],
                 }
             )
 
@@ -352,7 +354,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
             # Verify downstream feature can be read back
             result_d = collect_to_polars(store.read_metadata(downstream))
             assert_frame_equal(
-                result_d.sort("sample_id").select(["sample_id", "data_version"]),
+                result_d.sort("sample_id").select(["sample_id", "provenance_by_field"]),
                 downstream_data.sort("sample_id"),
             )
 
@@ -370,7 +372,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
             updated_upstream_a = pl.DataFrame(
                 {
                     "sample_id": [new_sample_id],  # Add just a new sample
-                    "data_version": [
+                    "provenance_by_field": [
                         {
                             "frames": f"hash_frames_{new_sample_id}",
                             "audio": f"hash_audio_{new_sample_id}",

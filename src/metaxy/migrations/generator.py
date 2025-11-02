@@ -290,9 +290,9 @@ def generate_migration(
 
         # Build informative reason
         if len(affected_by) == 1:
-            f"Reconcile data_versions due to changes in: {affected_by[0]}"
+            f"Reconcile field_provenance due to changes in: {affected_by[0]}"
         else:
-            (f"Reconcile data_versions due to changes in: {', '.join(affected_by)}")
+            (f"Reconcile field_provenance due to changes in: {', '.join(affected_by)}")
 
         # Create operation (feature versions derived from snapshots)
         # DataVersionReconciliation doesn't have id, feature_key, or reason params

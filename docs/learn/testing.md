@@ -59,7 +59,7 @@ def test_metadata_operations():
         df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": {...},
+                "provenance_by_field": {...},
                 "feature_version": "abc123",
             }
         )
@@ -145,7 +145,9 @@ def test_custom_alignment():
     current = pl.DataFrame({"sample_uid": [1, 2, 3], "custom_field": ["a", "b", "c"]})
 
     upstream = {
-        "video_feature": pl.DataFrame({"sample_uid": [2, 3, 4], "data_version": {...}})
+        "video_feature": pl.DataFrame(
+            {"sample_uid": [2, 3, 4], "provenance_by_field": {...}}
+        )
     }
 
     # Test alignment logic

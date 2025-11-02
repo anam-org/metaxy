@@ -1,10 +1,10 @@
-"""Tests for the three-component data versioning architecture."""
+"""Tests for the three-component field provenance architecture."""
 
 import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
+from metaxy.data_versioning.calculators.polars import PolarsProvenanceByFieldCalculator
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
@@ -86,7 +86,7 @@ def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: Feature
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
                     {"frames": "hash_v3", "audio": "hash_a3"},
@@ -114,15 +114,15 @@ def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: Feature
     assert "video" in mapping
     assert mapping["video"] in result.columns
 
-    # Verify data_version column was renamed
-    assert "__upstream_video__data_version" in result.columns
+    # Verify provenance_by_field column was renamed
+    assert "__upstream_video__provenance_by_field" in result.columns
 
 
 def test_polars_hash_calculator(
     features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
-    """Test PolarsDataVersionCalculator computes hashes correctly."""
-    calculator = PolarsDataVersionCalculator()
+    """Test PolarsProvenanceByFieldCalculator computes hashes correctly."""
+    calculator = PolarsProvenanceByFieldCalculator()
 
     # Verify supported algorithms
     assert HashAlgorithm.XXHASH64 in calculator.supported_algorithms
@@ -133,7 +133,7 @@ def test_polars_hash_calculator(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
                 ],
@@ -141,13 +141,13 @@ def test_polars_hash_calculator(
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__data_version"}
+    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
 
-    # Calculate data versions
+    # Calculate field provenances
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -156,15 +156,15 @@ def test_polars_hash_calculator(
 
     # Verify result
     result = with_versions.collect()
-    assert "data_version" in result.columns
+    assert "provenance_by_field" in result.columns
 
     # Convert to Polars to check schema type
     result_pl = result.to_native()
-    assert isinstance(result_pl.schema["data_version"], pl.Struct)
+    assert isinstance(result_pl.schema["provenance_by_field"], pl.Struct)
 
-    # Check data_version has 'default' field field
-    data_version_sample = result["data_version"][0]
-    assert "default" in data_version_sample
+    # Check provenance_by_field has 'default' field field
+    provenance_sample = result["provenance_by_field"][0]
+    assert "default" in provenance_sample
 
 
 def test_polars_hash_calculator_algorithms(
@@ -175,20 +175,20 @@ def test_polars_hash_calculator_algorithms(
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"}
                 ],
             }
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__data_version"}
+    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
     # Calculate with xxHash64
-    calc_xxhash = PolarsDataVersionCalculator()
-    result_xxhash = calc_xxhash.calculate_data_versions(
+    calc_xxhash = PolarsProvenanceByFieldCalculator()
+    result_xxhash = calc_xxhash.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -197,8 +197,8 @@ def test_polars_hash_calculator_algorithms(
     ).collect()
 
     # Calculate with wyhash
-    calc_wyhash = PolarsDataVersionCalculator()
-    result_wyhash = calc_wyhash.calculate_data_versions(
+    calc_wyhash = PolarsProvenanceByFieldCalculator()
+    result_wyhash = calc_wyhash.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -207,8 +207,8 @@ def test_polars_hash_calculator_algorithms(
     ).collect()
 
     # Different algorithms should produce different hashes
-    hash_xxhash = result_xxhash["data_version"][0]["default"]
-    hash_wyhash = result_wyhash["data_version"][0]["default"]
+    hash_xxhash = result_xxhash["provenance_by_field"][0]["default"]
+    hash_wyhash = result_wyhash["provenance_by_field"][0]["default"]
     assert hash_xxhash != hash_wyhash
 
 
@@ -216,11 +216,11 @@ def test_polars_diff_resolver_no_current() -> None:
     """Test diff resolver when no current metadata exists."""
     diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = nw.from_native(
+    target_provenance = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -231,7 +231,7 @@ def test_polars_diff_resolver_no_current() -> None:
 
     # No current metadata - all rows are added
     result = diff_resolver.find_changes(
-        target_versions=target_versions,
+        target_provenance=target_provenance,
         current_metadata=None,
         id_columns=["sample_uid"],  # Using default ID columns for testing
     )
@@ -246,11 +246,11 @@ def test_polars_diff_resolver_with_changes() -> None:
     """Test diff resolver identifies added, changed, and removed rows."""
     diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = nw.from_native(
+    target_provenance = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "hash1"},  # Unchanged
                     {"default": "hash2_new"},  # Changed
                     {"default": "hash3"},  # Unchanged
@@ -264,7 +264,7 @@ def test_polars_diff_resolver_with_changes() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 5],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "hash1"},  # Same
                     {"default": "hash2_old"},  # Different
                     {"default": "hash3"},  # Same
@@ -275,7 +275,7 @@ def test_polars_diff_resolver_with_changes() -> None:
     )
 
     result = diff_resolver.find_changes(
-        target_versions=target_versions,
+        target_provenance=target_provenance,
         current_metadata=current_metadata,
         id_columns=["sample_uid"],  # Using default ID columns for testing
     )
@@ -307,7 +307,7 @@ def test_full_pipeline_integration(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -325,10 +325,10 @@ def test_full_pipeline_integration(
         feature_plan=plan,
     )
 
-    # Step 2: Calculate data versions
-    calculator = PolarsDataVersionCalculator()
+    # Step 2: Calculate field provenances
+    calculator = PolarsProvenanceByFieldCalculator()
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -343,7 +343,7 @@ def test_full_pipeline_integration(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "old_hash1"},
                     {"default": "old_hash2"},
                 ],
@@ -352,7 +352,7 @@ def test_full_pipeline_integration(
     )
 
     diff_result = diff_resolver.find_changes(
-        target_versions=with_versions,
+        target_provenance=with_versions,
         current_metadata=current,
         id_columns=["sample_uid"],  # Using default ID columns for testing
     )
@@ -385,7 +385,7 @@ def test_polars_joiner_multiple_upstream(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -398,7 +398,7 @@ def test_polars_joiner_multiple_upstream(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"waveform": "w1"},
                     {"waveform": "w2"},
                     {"waveform": "w3"},
@@ -420,7 +420,7 @@ def test_polars_joiner_multiple_upstream(
 
     result = joined.collect()
 
-    # Should have both upstream data_version columns
+    # Should have both upstream provenance_by_field columns
     assert "video" in mapping
     assert "audio" in mapping
     assert mapping["video"] in result.columns
@@ -439,7 +439,11 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [{"frames": "v1"}, {"frames": "v2"}, {"frames": "v3"}],
+                "provenance_by_field": [
+                    {"frames": "v1"},
+                    {"frames": "v2"},
+                    {"frames": "v3"},
+                ],
             }
         ).lazy()
     )
@@ -449,7 +453,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
         pl.DataFrame(
             {
                 "sample_uid": [2, 3, 4],
-                "data_version": [
+                "provenance_by_field": [
                     {"waveform": "w2"},
                     {"waveform": "w3"},
                     {"waveform": "w4"},
@@ -508,17 +512,17 @@ def test_polars_calculator_multiple_fields(
     features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test calculator with multiple fields."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                 ],
-                "__upstream_audio__data_version": [
+                "__upstream_audio__provenance_by_field": [
                     {"waveform": "w1"},
                     {"waveform": "w2"},
                 ],
@@ -527,14 +531,14 @@ def test_polars_calculator_multiple_fields(
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__data_version",
-        "audio": "__upstream_audio__data_version",
+        "video": "__upstream_video__provenance_by_field",
+        "audio": "__upstream_audio__provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -543,15 +547,15 @@ def test_polars_calculator_multiple_fields(
 
     result = with_versions.collect()
 
-    # Should have data_version struct with both fields
+    # Should have provenance_by_field struct with both fields
     # Convert to Polars to access struct fields
     result_pl = result.to_native()
-    data_version_schema = result_pl.schema["data_version"]
-    field_names = {f.name for f in data_version_schema.fields}
+    provenance_schema = result_pl.schema["provenance_by_field"]
+    field_names = {f.name for f in provenance_schema.fields}
     assert field_names == {"fusion", "analysis"}
 
     # Different code versions should produce different hashes
-    sample_dv = result["data_version"][0]
+    sample_dv = result["provenance_by_field"][0]
     assert sample_dv["fusion"] != sample_dv["analysis"]
 
 
@@ -559,11 +563,14 @@ def test_polars_calculator_unsupported_algorithm(
     features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Test error when using unsupported hash algorithm."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
-            {"sample_uid": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+            {
+                "sample_uid": [1],
+                "__upstream_video__provenance_by_field": [{"frames": "v1"}],
+            }
         ).lazy()
     )
 
@@ -575,11 +582,11 @@ def test_polars_calculator_unsupported_algorithm(
         pass
 
     with pytest.raises(ValueError, match="not supported"):
-        calculator.calculate_data_versions(
+        calculator.calculate_provenance_by_field(
             joined_upstream=joined_upstream,
             feature_spec=feature.spec(),
             feature_plan=plan,
-            upstream_column_mapping={"video": "__upstream_video__data_version"},
+            upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
             hash_algorithm=FakeAlgorithm(),  # pyright: ignore[reportArgumentType]
         )
 
@@ -591,11 +598,11 @@ def test_diff_resolver_all_unchanged() -> None:
     """Test diff when all rows are unchanged."""
     diff_resolver = NarwhalsDiffResolver()
 
-    target_versions = nw.from_native(
+    target_provenance = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -604,12 +611,12 @@ def test_diff_resolver_all_unchanged() -> None:
         ).lazy()
     )
 
-    # Current has same data_versions
+    # Current has same field_provenance
     current_metadata = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -619,7 +626,7 @@ def test_diff_resolver_all_unchanged() -> None:
     )
 
     result = diff_resolver.find_changes(
-        target_versions=target_versions,
+        target_provenance=target_provenance,
         current_metadata=current_metadata,
         id_columns=["sample_uid"],  # Using default ID columns for testing
     )
@@ -638,7 +645,10 @@ def test_joiner_deterministic_order(
 
     video_metadata = nw.from_native(
         pl.DataFrame(
-            {"sample_uid": [1, 2], "data_version": [{"frames": "v1"}, {"frames": "v2"}]}
+            {
+                "sample_uid": [1, 2],
+                "provenance_by_field": [{"frames": "v1"}, {"frames": "v2"}],
+            }
         ).lazy()
     )
 
@@ -646,7 +656,7 @@ def test_joiner_deterministic_order(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"waveform": "w1"}, {"waveform": "w2"}],
+                "provenance_by_field": [{"waveform": "w1"}, {"waveform": "w2"}],
             }
         ).lazy()
     )
@@ -732,7 +742,9 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
 
     joiner = NarwhalsJoiner()
     video_metadata = nw.from_native(
-        pl.DataFrame({"sample_uid": [1], "data_version": [{"frames": "v1"}]}).lazy()
+        pl.DataFrame(
+            {"sample_uid": [1], "provenance_by_field": [{"frames": "v1"}]}
+        ).lazy()
     )
 
     # Call the overridden method
@@ -746,7 +758,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
 
 
 def test_feature_resolve_diff_override(graph: FeatureGraph):
-    """Test Feature.resolve_data_version_diff can be overridden."""
+    """Test Feature.resolve_provenance_diff can be overridden."""
 
     class CustomDiffFeature(
         TestingFeature,
@@ -756,17 +768,17 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
         ),
     ):
         @classmethod
-        def resolve_data_version_diff(
+        def resolve_provenance_diff(
             cls,
             diff_resolver,
-            target_versions,
+            target_provenance,
             current_metadata,
             *,
             lazy=False,
         ):
             # Custom: call standard diff, then could modify results
             lazy_result = diff_resolver.find_changes(
-                target_versions,
+                target_provenance,
                 current_metadata,
                 id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
             )
@@ -789,21 +801,23 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "data_version": [{"default": "new1"}, {"default": "new2"}],
+                "provenance_by_field": [{"default": "new1"}, {"default": "new2"}],
             }
         ).lazy()
     )
 
     current = nw.from_native(
-        pl.DataFrame({"sample_uid": [1], "data_version": [{"default": "old1"}]}).lazy()
+        pl.DataFrame(
+            {"sample_uid": [1], "provenance_by_field": [{"default": "old1"}]}
+        ).lazy()
     )
 
     # Call overridden method (this calls find_changes which needs current_feature_version=False)
     # The test feature class needs to pass the parameter through
     # Explicitly pass lazy=False to get DiffResult (eager) instead of LazyDiffResult
-    result = CustomDiffFeature.resolve_data_version_diff(
+    result = CustomDiffFeature.resolve_provenance_diff(
         diff_resolver=diff_resolver,
-        target_versions=target,
+        target_provenance=target,
         current_metadata=current,
         lazy=False,
     )
@@ -824,13 +838,13 @@ def test_hash_output_snapshots(
     snapshot, features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Snapshot test to detect hash algorithm changes."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "frame_hash_1", "audio": "audio_hash_1"},
                     {"frames": "frame_hash_2", "audio": "audio_hash_2"},
                     {"frames": "frame_hash_3", "audio": "audio_hash_3"},
@@ -839,11 +853,11 @@ def test_hash_output_snapshots(
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__data_version"}
+    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -852,7 +866,7 @@ def test_hash_output_snapshots(
     )
 
     result = with_versions.collect()
-    hashes = result["data_version"].struct.field("default").to_list()
+    hashes = result["provenance_by_field"].struct.field("default").to_list()
 
     # Snapshot the hashes to detect algorithm changes
     assert hashes == snapshot
@@ -862,27 +876,29 @@ def test_multi_field_hash_snapshots(
     snapshot, features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
     """Snapshot test for multi-field hash outputs."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__data_version": [{"frames": "v1", "audio": "a1"}],
-                "__upstream_audio__data_version": [{"waveform": "w1"}],
+                "__upstream_video__provenance_by_field": [
+                    {"frames": "v1", "audio": "a1"}
+                ],
+                "__upstream_audio__provenance_by_field": [{"waveform": "w1"}],
             }
         ).lazy()
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__data_version",
-        "audio": "__upstream_audio__data_version",
+        "video": "__upstream_video__provenance_by_field",
+        "audio": "__upstream_audio__provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -890,12 +906,12 @@ def test_multi_field_hash_snapshots(
     )
 
     result = with_versions.collect()
-    data_version = result["data_version"][0]
+    provenance_by_field = result["provenance_by_field"][0]
 
     # Snapshot both field hashes
     field_hashes = {
-        "fusion": data_version["fusion"],
-        "analysis": data_version["analysis"],
+        "fusion": provenance_by_field["fusion"],
+        "analysis": provenance_by_field["analysis"],
     }
 
     assert field_hashes == snapshot
@@ -920,14 +936,14 @@ def test_single_upstream_single_field_snapshots(
     graph: FeatureGraph,
     hash_algorithm,
 ):
-    """Snapshot data versions for single upstream, single field."""
-    calculator = PolarsDataVersionCalculator()
+    """Snapshot field provenances for single upstream, single field."""
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -939,16 +955,16 @@ def test_single_upstream_single_field_snapshots(
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
-        upstream_column_mapping={"video": "__upstream_video__data_version"},
+        upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
         hash_algorithm=hash_algorithm,
     )
 
     result = with_versions.collect()
-    hashes = result["data_version"].struct.field("default").to_list()
+    hashes = result["provenance_by_field"].struct.field("default").to_list()
 
     assert hashes == snapshot
 
@@ -967,18 +983,18 @@ def test_multi_upstream_multi_field_snapshots(
     graph: FeatureGraph,
     hash_algorithm,
 ):
-    """Snapshot data versions for multiple upstreams and fields."""
-    calculator = PolarsDataVersionCalculator()
+    """Snapshot field provenances for multiple upstreams and fields."""
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__data_version": [
+                "__upstream_video__provenance_by_field": [
                     {"frames": "frame1", "audio": "audio1"},
                     {"frames": "frame2", "audio": "audio2"},
                 ],
-                "__upstream_audio__data_version": [
+                "__upstream_audio__provenance_by_field": [
                     {"waveform": "wave1"},
                     {"waveform": "wave2"},
                 ],
@@ -987,14 +1003,14 @@ def test_multi_upstream_multi_field_snapshots(
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__data_version",
-        "audio": "__upstream_audio__data_version",
+        "video": "__upstream_video__provenance_by_field",
+        "audio": "__upstream_audio__provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
     plan = graph.get_feature_plan(feature.spec().key)
 
-    with_versions = calculator.calculate_data_versions(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
@@ -1005,10 +1021,10 @@ def test_multi_upstream_multi_field_snapshots(
     result = with_versions.collect()
 
     # Snapshot both field hashes for both samples
-    data_versions = []
+    field_provenance = []
     for i in range(len(result)):
-        dv = result["data_version"][i]
-        data_versions.append(
+        dv = result["provenance_by_field"][i]
+        field_provenance.append(
             {
                 "sample_uid": result["sample_uid"][i],
                 "fusion": dv["fusion"],
@@ -1016,20 +1032,23 @@ def test_multi_upstream_multi_field_snapshots(
             }
         )
 
-    assert data_versions == snapshot
+    assert field_provenance == snapshot
 
 
 def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
     """Snapshot showing code version changes produce different hashes."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     joined_upstream = nw.from_native(
         pl.DataFrame(
-            {"sample_uid": [1], "__upstream_video__data_version": [{"frames": "v1"}]}
+            {
+                "sample_uid": [1],
+                "__upstream_video__provenance_by_field": [{"frames": "v1"}],
+            }
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__data_version"}
+    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
 
     # Same feature, different code versions
     versions_by_code_version = {}
@@ -1062,7 +1081,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
 
         plan = graph.get_feature_plan(TestFeature.spec().key)
 
-        with_versions = calculator.calculate_data_versions(
+        with_versions = calculator.calculate_provenance_by_field(
             joined_upstream=joined_upstream,
             feature_spec=TestFeature.spec(),
             feature_plan=plan,
@@ -1070,7 +1089,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
         )
 
         result = with_versions.collect()
-        hash_value = result["data_version"][0]["default"]
+        hash_value = result["provenance_by_field"][0]["default"]
         versions_by_code_version[f"code_v{code_version}"] = hash_value
 
     # Different code versions should produce different hashes
@@ -1082,7 +1101,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
 
 def test_upstream_data_changes_snapshots(snapshot):
     """Snapshot showing upstream data changes produce different hashes."""
-    calculator = PolarsDataVersionCalculator()
+    calculator = PolarsProvenanceByFieldCalculator()
 
     with FeatureGraph().use() as graph:
 
@@ -1116,25 +1135,29 @@ def test_upstream_data_changes_snapshots(snapshot):
 
         hashes_by_scenario = {}
 
-        for scenario_name, data_version_list in scenarios.items():
+        for scenario_name, provenance_list in scenarios.items():
             joined_upstream = nw.from_native(
                 pl.DataFrame(
                     {
                         "sample_uid": [1],
-                        "__upstream_video__data_version": data_version_list,
+                        "__upstream_video__provenance_by_field": provenance_list,
                     }
                 ).lazy()
             )
 
-            with_versions = calculator.calculate_data_versions(
+            with_versions = calculator.calculate_provenance_by_field(
                 joined_upstream=joined_upstream,
                 feature_spec=Processed.spec(),
                 feature_plan=plan,
-                upstream_column_mapping={"video": "__upstream_video__data_version"},
+                upstream_column_mapping={
+                    "video": "__upstream_video__provenance_by_field"
+                },
             )
 
             result = with_versions.collect()
-            hashes_by_scenario[scenario_name] = result["data_version"][0]["default"]
+            hashes_by_scenario[scenario_name] = result["provenance_by_field"][0][
+                "default"
+            ]
 
         # All scenarios should produce different hashes
         unique_hashes = set(hashes_by_scenario.values())
@@ -1153,7 +1176,7 @@ def test_diff_result_snapshots(snapshot):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4, 5],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_new_hash"},
                     {"default": "unchanged_hash2"},
@@ -1168,7 +1191,7 @@ def test_diff_result_snapshots(snapshot):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 6],
-                "data_version": [
+                "provenance_by_field": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_old_hash"},
                     {"default": "unchanged_hash2"},
@@ -1179,7 +1202,7 @@ def test_diff_result_snapshots(snapshot):
     )
 
     result = diff_resolver.find_changes(
-        target_versions=target,
+        target_provenance=target,
         current_metadata=current,
         id_columns=["sample_uid"],  # Using default ID columns for testing
     )
