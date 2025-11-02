@@ -71,8 +71,8 @@ class VideoFeature(
         key=FeatureKey(["video"]),
         # Root feature with no dependencies
         fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version=1),
-            FieldSpec(key=FieldKey(["duration"]), code_version=1),
+            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+            FieldSpec(key=FieldKey(["duration"]), code_version="1"),
         ],
     ),
 ):

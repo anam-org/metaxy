@@ -18,9 +18,9 @@ def test_graphdata_to_struct():
             "feature/a": GraphNode(
                 key=FeatureKey(["feature", "a"]),
                 version="v1",
-                code_version=1,
+                code_version="1",
                 fields=[
-                    FieldNode(key=FieldKey(["field1"]), version="f1", code_version=1)
+                    FieldNode(key=FieldKey(["field1"]), version="f1", code_version="1")
                 ],
                 dependencies=[FeatureKey(["feature", "b"])],
             )
@@ -44,7 +44,7 @@ def test_graphdata_to_struct():
     node = struct["nodes"][0]
     assert node["key"] == "feature/a"
     assert node["version"] == "v1"
-    assert node["code_version"] == 1
+    assert node["code_version"] == "1"
     assert len(node["fields"]) == 1
     assert node["fields"][0]["key"] == "field1"
     assert node["fields"][0]["version"] == "f1"
@@ -63,8 +63,8 @@ def test_graphdata_from_struct():
             {
                 "key": "feature/a",
                 "version": "v1",
-                "code_version": 1,
-                "fields": [{"key": "field1", "version": "f1", "code_version": 1}],
+                "code_version": "1",
+                "fields": [{"key": "field1", "version": "f1", "code_version": "1"}],
                 "dependencies": ["feature/b"],
             }
         ],
@@ -79,7 +79,7 @@ def test_graphdata_from_struct():
     node = graph_data.nodes["feature/a"]
     assert node.key == FeatureKey(["feature", "a"])
     assert node.version == "v1"
-    assert node.code_version == 1
+    assert node.code_version == "1"
     assert len(node.fields) == 1
     assert node.fields[0].key == FieldKey(["field1"])
     assert node.fields[0].version == "f1"
@@ -97,17 +97,17 @@ def test_graphdata_roundtrip():
             "feature/a": GraphNode(
                 key=FeatureKey(["feature", "a"]),
                 version="v1",
-                code_version=1,
+                code_version="1",
                 fields=[
-                    FieldNode(key=FieldKey(["field1"]), version="f1", code_version=1),
-                    FieldNode(key=FieldKey(["field2"]), version="f2", code_version=2),
+                    FieldNode(key=FieldKey(["field1"]), version="f1", code_version="1"),
+                    FieldNode(key=FieldKey(["field2"]), version="f2", code_version="2"),
                 ],
                 dependencies=[FeatureKey(["feature", "b"])],
             ),
             "feature/b": GraphNode(
                 key=FeatureKey(["feature", "b"]),
                 version="v2",
-                code_version=2,
+                code_version="2",
                 fields=[],
                 dependencies=[],
             ),
@@ -145,8 +145,8 @@ def test_graphdiff_to_struct():
             AddedNode(
                 feature_key=FeatureKey(["feature", "a"]),
                 version="v1",
-                code_version=1,
-                fields=[{"key": "field1", "version": "f1", "code_version": 1}],
+                code_version="1",
+                fields=[{"key": "field1", "version": "f1", "code_version": "1"}],
                 dependencies=[],
             )
         ],
@@ -154,7 +154,7 @@ def test_graphdiff_to_struct():
             RemovedNode(
                 feature_key=FeatureKey(["feature", "b"]),
                 version="v2",
-                code_version=2,
+                code_version="2",
                 fields=[],
                 dependencies=[],
             )
@@ -164,13 +164,13 @@ def test_graphdiff_to_struct():
                 feature_key=FeatureKey(["feature", "c"]),
                 old_version="v1",
                 new_version="v2",
-                old_code_version=1,
-                new_code_version=2,
+                old_code_version="1",
+                new_code_version="2",
                 added_fields=[
                     FieldChange(
                         field_key=FieldKey(["field1"]),
                         new_version="f1",
-                        new_code_version=1,
+                        new_code_version="1",
                     )
                 ],
                 removed_fields=[],
@@ -212,8 +212,8 @@ def test_graphdiff_from_struct():
             {
                 "key": "feature/a",
                 "version": "v1",
-                "code_version": 1,
-                "fields": [{"key": "field1", "version": "f1", "code_version": 1}],
+                "code_version": "1",
+                "fields": [{"key": "field1", "version": "f1", "code_version": "1"}],
                 "dependencies": [],
             }
         ],
@@ -221,7 +221,7 @@ def test_graphdiff_from_struct():
             {
                 "key": "feature/b",
                 "version": "v2",
-                "code_version": 2,
+                "code_version": "2",
                 "fields": [],
                 "dependencies": [],
             }
@@ -231,13 +231,13 @@ def test_graphdiff_from_struct():
                 "key": "feature/c",
                 "old_version": "v1",
                 "new_version": "v2",
-                "old_code_version": 1,
-                "new_code_version": 2,
+                "old_code_version": "1",
+                "new_code_version": "2",
                 "added_fields": [
                     {
                         "key": "field1",
                         "version": "f1",
-                        "code_version": 1,
+                        "code_version": "1",
                     }
                 ],
                 "removed_fields": [],
@@ -280,10 +280,10 @@ def test_graphdiff_roundtrip():
             AddedNode(
                 feature_key=FeatureKey(["feature", "a"]),
                 version="v1",
-                code_version=1,
+                code_version="1",
                 fields=[
-                    {"key": "field1", "version": "f1", "code_version": 1},
-                    {"key": "field2", "version": "f2", "code_version": 2},
+                    {"key": "field1", "version": "f1", "code_version": "1"},
+                    {"key": "field2", "version": "f2", "code_version": "2"},
                 ],
                 dependencies=[FeatureKey(["feature", "x"])],
             )
@@ -292,7 +292,7 @@ def test_graphdiff_roundtrip():
             RemovedNode(
                 feature_key=FeatureKey(["feature", "b"]),
                 version="v2",
-                code_version=2,
+                code_version="2",
                 fields=[],
                 dependencies=[],
             )
@@ -302,20 +302,20 @@ def test_graphdiff_roundtrip():
                 feature_key=FeatureKey(["feature", "c"]),
                 old_version="v1",
                 new_version="v2",
-                old_code_version=1,
-                new_code_version=2,
+                old_code_version="1",
+                new_code_version="2",
                 added_fields=[
                     FieldChange(
                         field_key=FieldKey(["field1"]),
                         new_version="f1",
-                        new_code_version=1,
+                        new_code_version="1",
                     )
                 ],
                 removed_fields=[
                     FieldChange(
                         field_key=FieldKey(["field2"]),
                         old_version="f2",
-                        old_code_version=2,
+                        old_code_version="2",
                     )
                 ],
                 changed_fields=[
@@ -323,8 +323,8 @@ def test_graphdiff_roundtrip():
                         field_key=FieldKey(["field3"]),
                         old_version="f3a",
                         new_version="f3b",
-                        old_code_version=3,
-                        new_code_version=4,
+                        old_code_version="3",
+                        new_code_version="4",
                     )
                 ],
             )

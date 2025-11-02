@@ -16,7 +16,7 @@ def test_graph_diff_render_no_changes(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -47,7 +47,7 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -59,7 +59,7 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -68,7 +68,7 @@ def test_graph_diff_render_added_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -110,7 +110,7 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -119,7 +119,7 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -131,7 +131,7 @@ def test_graph_diff_render_removed_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -173,7 +173,7 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -185,7 +185,7 @@ def test_graph_diff_render_changed_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -229,7 +229,7 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["path"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
             ),
         ):
             pass
@@ -242,8 +242,8 @@ def test_graph_diff_render_version_transitions(metaxy_project: TempMetaxyProject
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[
-                    FieldSpec(key=FieldKey(["path"]), code_version=1),
-                    FieldSpec(key=FieldKey(["size"]), code_version=1),  # Added field
+                    FieldSpec(key=FieldKey(["path"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["size"]), code_version="1"),  # Added field
                 ],
             ),
         ):
@@ -290,7 +290,7 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -302,7 +302,7 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -311,7 +311,7 @@ def test_graph_diff_render_format_json(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -368,7 +368,7 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -380,7 +380,7 @@ def test_graph_diff_render_format_yaml(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -426,7 +426,7 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -438,7 +438,7 @@ def test_graph_diff_render_format_mermaid(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -483,7 +483,7 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -495,7 +495,7 @@ def test_graph_diff_render_format_cards(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -539,7 +539,7 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -551,7 +551,7 @@ def test_graph_diff_render_format_graphviz(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -594,7 +594,7 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -613,7 +613,7 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -623,7 +623,7 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "processing"]),
                 deps=[FeatureDep(feature=FeatureKey(["video", "files"]))],
-                fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
             ),
         ):
             pass
@@ -632,7 +632,7 @@ def test_graph_diff_render_with_filtering(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -685,7 +685,7 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -697,7 +697,7 @@ def test_graph_diff_render_output_to_file(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -756,7 +756,7 @@ def test_graph_diff_render_with_store_flag(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -784,7 +784,7 @@ def test_graph_diff_render_invalid_snapshot(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -808,7 +808,7 @@ def test_graph_diff_render_latest_empty_store(metaxy_project: TempMetaxyProject)
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -833,7 +833,7 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -845,7 +845,7 @@ def test_graph_diff_render_verbose_mode(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -887,7 +887,7 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -899,7 +899,7 @@ def test_graph_diff_render_minimal_mode(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -941,7 +941,7 @@ def test_graph_diff_render_default_to_current(metaxy_project: TempMetaxyProject)
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -967,7 +967,7 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["zebra"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -976,7 +976,7 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["apple"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -988,7 +988,7 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["zebra"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],
             ),
         ):
             pass
@@ -997,7 +997,7 @@ def test_graph_diff_render_deterministic_ordering(metaxy_project: TempMetaxyProj
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["apple"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass

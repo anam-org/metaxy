@@ -13,7 +13,7 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -39,7 +39,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -92,7 +92,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -162,7 +162,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -218,7 +218,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass

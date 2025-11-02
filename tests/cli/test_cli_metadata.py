@@ -60,7 +60,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -86,7 +86,7 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -114,7 +114,7 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -123,7 +123,7 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -152,7 +152,7 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -219,7 +219,7 @@ def test_metadata_copy_non_incremental_creates_duplicates(
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -283,7 +283,7 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -335,7 +335,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -344,7 +344,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -353,7 +353,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["text", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -391,7 +391,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -400,7 +400,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -434,7 +434,7 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -463,7 +463,7 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -494,7 +494,7 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass

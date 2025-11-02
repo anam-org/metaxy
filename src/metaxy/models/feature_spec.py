@@ -219,7 +219,7 @@ class _BaseFeatureSpec(FrozenBaseModel):
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=SpecialFieldDep.ALL,
             )
         ]

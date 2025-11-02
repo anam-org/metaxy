@@ -23,8 +23,8 @@ def features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
         spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
         ),
     ):
@@ -35,7 +35,7 @@ def features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
         spec=TestingFeatureSpec(
             key=FeatureKey(["audio"]),
             fields=[
-                FieldSpec(key=FieldKey(["waveform"]), code_version=1),
+                FieldSpec(key=FieldKey(["waveform"]), code_version="1"),
             ],
         ),
     ):
@@ -47,7 +47,7 @@ def features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
             key=FeatureKey(["processed"]),
             deps=[FeatureDep(feature=FeatureKey(["video"]))],
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -62,8 +62,8 @@ def features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
                 FeatureDep(feature=FeatureKey(["audio"])),
             ],
             fields=[
-                FieldSpec(key=FieldKey(["fusion"]), code_version=1),
-                FieldSpec(key=FieldKey(["analysis"]), code_version=2),
+                FieldSpec(key=FieldKey(["fusion"]), code_version="1"),
+                FieldSpec(key=FieldKey(["analysis"]), code_version="2"),
             ],
         ),
     ):
@@ -468,7 +468,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
                 FeatureDep(feature=FeatureKey(["video"])),
                 FeatureDep(feature=FeatureKey(["audio"])),
             ],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -689,7 +689,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["custom"]),
             deps=[FeatureDep(feature=FeatureKey(["video"]))],
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         @classmethod
@@ -725,7 +725,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
-            fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
         ),
     ):
         pass
@@ -752,7 +752,7 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["custom_diff"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         @classmethod
@@ -1042,7 +1042,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
                 key=FeatureKey([f"test_v{code_version}"]),
                 deps=[FeatureDep(feature=FeatureKey(["video"]))],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=code_version)
+                    FieldSpec(key=FieldKey(["default"]), code_version=str(code_version))
                 ],
             ),
         ):
@@ -1055,7 +1055,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
                 TestingFeature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["video"]),
-                    fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
                 ),
             ):
                 pass
@@ -1090,7 +1090,7 @@ def test_upstream_data_changes_snapshots(snapshot):
             TestingFeature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["video"]),
-                fields=[FieldSpec(key=FieldKey(["frames"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
             ),
         ):
             pass
@@ -1100,7 +1100,7 @@ def test_upstream_data_changes_snapshots(snapshot):
             spec=TestingFeatureSpec(
                 key=FeatureKey(["processed"]),
                 deps=[FeatureDep(feature=FeatureKey(["video"]))],
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass

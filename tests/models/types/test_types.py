@@ -556,7 +556,7 @@ class TestFeatureSpecIntegration:
         """Test FieldSpec accepts FieldKey as string."""
         from metaxy.models.field import FieldSpec
 
-        field = FieldSpec(key="my/field", code_version=1)
+        field = FieldSpec(key="my/field", code_version="1")
 
         assert isinstance(field.key, FieldKey)
         assert field.key.to_string() == "my/field"
@@ -565,7 +565,7 @@ class TestFeatureSpecIntegration:
         """Test FieldSpec accepts FieldKey as list."""
         from metaxy.models.field import FieldSpec
 
-        field = FieldSpec(key=["my", "field"], code_version=1)
+        field = FieldSpec(key=["my", "field"], code_version="1")
 
         assert isinstance(field.key, FieldKey)
         assert field.key.to_string() == "my/field"
@@ -574,7 +574,7 @@ class TestFeatureSpecIntegration:
         """Test FieldSpec accepts FieldKey created with variadic args."""
         from metaxy.models.field import FieldSpec
 
-        field = FieldSpec(key=FieldKey("my", "field"), code_version=1)
+        field = FieldSpec(key=FieldKey("my", "field"), code_version="1")
 
         assert isinstance(field.key, FieldKey)
         assert field.key.to_string() == "my/field"
@@ -591,8 +591,8 @@ class TestFeatureSpecIntegration:
                 FeatureDep(feature=FeatureKey("upstream", "two")),
             ],
             fields=[
-                FieldSpec(key=FieldKey("field", "one"), code_version=1),
-                FieldSpec(key=FieldKey("field", "two"), code_version=1),
+                FieldSpec(key=FieldKey("field", "one"), code_version="1"),
+                FieldSpec(key=FieldKey("field", "two"), code_version="1"),
             ],
         )
 

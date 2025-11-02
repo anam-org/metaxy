@@ -143,7 +143,7 @@ class TestSnapshotResolver:
                 TestingFeature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 ),
             ):
                 pass
@@ -170,7 +170,7 @@ class TestSnapshotResolver:
                 TestingFeature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 ),
             ):
                 pass
@@ -353,7 +353,7 @@ class TestGraphDiffer:
                 TestingFeature,
                 spec=TestingFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 ),
             ):
                 pass
