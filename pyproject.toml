@@ -136,7 +136,7 @@ skip_covered = false
 [tool.pyright]
 reportAny = "none"
 reportExplicitAny = "none"
-reportUnnecessaryCast = "warning"
+reportUnnecessaryCast = "error"
 include = [
   "src/metaxy",
   "tests",
