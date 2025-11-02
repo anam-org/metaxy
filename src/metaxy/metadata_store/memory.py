@@ -33,8 +33,8 @@ class InMemoryMetadataStore(MetadataStore):
     - No concurrency support across processes
     - Memory-bound (all data in RAM)
 
-    Type Parameters:
-        TRef = nw.LazyFrame (uses Narwhals LazyFrames)
+    Notes:
+        Uses Narwhals LazyFrames (nw.LazyFrame) for all operations
 
     Components:
         Components are created on-demand in resolve_update().
@@ -46,7 +46,7 @@ class InMemoryMetadataStore(MetadataStore):
     # (table creation concept doesn't apply to memory storage)
     _should_warn_auto_create_tables: bool = False
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         """
         Initialize in-memory store.
 

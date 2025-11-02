@@ -95,10 +95,12 @@ class _Key(BaseModel):
             **kwargs: Additional keyword arguments for BaseModel (e.g., parts=...)
 
         Examples:
-            >>> FeatureKey("a/b/c")  # String with separator
-            >>> FeatureKey(["a", "b", "c"])  # List
-            >>> FeatureKey("a", "b", "c")  # Variadic
-            >>> FeatureKey(parts=["a", "b", "c"])  # Keyword argument
+            ```py
+            FeatureKey("a/b/c")  # String with separator
+            FeatureKey(["a", "b", "c"])  # List
+            FeatureKey("a", "b", "c")  # Variadic
+            FeatureKey(parts=["a", "b", "c"])  # Keyword argument
+            ```
         """
         # Handle variadic or single argument construction
         if args:
@@ -278,19 +280,20 @@ class FeatureKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Args:
-        key: Feature key as string ("a/b/c"), sequence (["a", "b", "c"]), or FeatureKey instance.
-             String format is split on "/" separator.
-
     Examples:
-        >>> FeatureKey("a/b/c")  # String format
-        FeatureKey(parts=['a', 'b', 'c'])
-        >>> FeatureKey(["a", "b", "c"])  # List format
-        FeatureKey(parts=['a', 'b', 'c'])
-        >>> FeatureKey(FeatureKey(["a", "b", "c"]))  # FeatureKey copy
-        FeatureKey(parts=['a', 'b', 'c'])
-        >>> FeatureKey("a", "b", "c")  # Variadic format
-        FeatureKey(parts=['a', 'b', 'c'])
+        ```py
+        FeatureKey("a/b/c")  # String format
+        # FeatureKey(parts=['a', 'b', 'c'])
+
+        FeatureKey(["a", "b", "c"])  # List format
+        # FeatureKey(parts=['a', 'b', 'c'])
+
+        FeatureKey(FeatureKey(["a", "b", "c"]))  # FeatureKey copy
+        # FeatureKey(parts=['a', 'b', 'c'])
+
+        FeatureKey("a", "b", "c")  # Variadic format
+        # FeatureKey(parts=['a', 'b', 'c'])
+        ```
     """
 
     @overload
@@ -363,19 +366,20 @@ class FieldKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Args:
-        key: Field key as string ("a/b/c"), sequence (["a", "b", "c"]), or FieldKey instance.
-             String format is split on "/" separator.
-
     Examples:
-        >>> FieldKey("a/b/c")  # String format
-        FieldKey(parts=['a', 'b', 'c'])
-        >>> FieldKey(["a", "b", "c"])  # List format
-        FieldKey(parts=['a', 'b', 'c'])
-        >>> FieldKey(FieldKey(["a", "b", "c"]))  # FieldKey copy
-        FieldKey(parts=['a', 'b', 'c'])
-        >>> FieldKey("a", "b", "c")  # Variadic format
-        FieldKey(parts=['a', 'b', 'c'])
+        ```py
+        FieldKey("a/b/c")  # String format
+        # FieldKey(parts=['a', 'b', 'c'])
+
+        FieldKey(["a", "b", "c"])  # List format
+        # FieldKey(parts=['a', 'b', 'c'])
+
+        FieldKey(FieldKey(["a", "b", "c"]))  # FieldKey copy
+        # FieldKey(parts=['a', 'b', 'c'])
+
+        FieldKey("a", "b", "c")  # Variadic format
+        # FieldKey(parts=['a', 'b', 'c'])
+        ```
     """
 
     @overload

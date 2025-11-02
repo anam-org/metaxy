@@ -39,9 +39,11 @@ class DataVersionCalculator(ABC):
             List of supported HashAlgorithm values
 
         Example:
-            >>> calc = PolarsDataVersionCalculator()
-            >>> HashAlgorithm.XXHASH64 in calc.supported_algorithms
-            True
+            ```py
+            calc = PolarsDataVersionCalculator()
+            HashAlgorithm.XXHASH64 in calc.supported_algorithms
+            # True
+            ```
         """
         pass
 

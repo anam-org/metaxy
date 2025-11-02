@@ -62,40 +62,34 @@ def _normalise_extensions(
 
 class DuckDBMetadataStore(IbisMetadataStore):
     """
-    DuckDB metadata store using Ibis backend.
+    [DuckDB](https://duckdb.org/) metadata store using [Ibis](https://ibis-project.org/) backend.
 
-    Convenience wrapper that configures IbisMetadataStore for DuckDB.
+    Example: Local File
+        ```py
+        store = DuckDBMetadataStore("metadata.db")
+        ```
 
-    Hash algorithm support is detected dynamically based on installed extensions:
-    - MD5: Always available (built-in)
-    - XXHASH32, XXHASH64: Available when 'hashfuncs' extension is loaded
+    Example: In-memory database
+        ```py
+        # In-memory database
+        store = DuckDBMetadataStore(":memory:")
+        ```
 
-    Components:
-        - joiner: NarwhalsJoiner (works with any backend)
-        - calculator: IbisDataVersionCalculator (native SQL hash computation with xxh64/xxh32/md5)
-        - diff_resolver: NarwhalsDiffResolver
+    Example: MotherDuck
+        ```py
+        # MotherDuck
+        store = DuckDBMetadataStore("md:my_database")
+        ```
 
-    Examples:
-        >>> # Local file database
-        >>> with DuckDBMetadataStore("metadata.db") as store:
-        ...     store.write_metadata(MyFeature, df)
-
-        >>> # In-memory database
-        >>> with DuckDBMetadataStore(":memory:") as store:
-        ...     store.write_metadata(MyFeature, df)
-
-        >>> # MotherDuck
-        >>> with DuckDBMetadataStore("md:my_database") as store:
-        ...     store.write_metadata(MyFeature, df)
-
-        >>> # With extensions
-        >>> store = DuckDBMetadataStore(
-        ...     "metadata.db",
-        ...     hash_algorithm=HashAlgorithm.XXHASH64,
-        ...     extensions=["hashfuncs"]
-        ... )
-        >>> with store:
-        ...     store.write_metadata(MyFeature, df)
+    Example: With extensions
+        ```py
+        # With extensions
+        store = DuckDBMetadataStore(
+            "metadata.db",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            extensions=["hashfuncs"]
+        )
+        ```
     """
 
     def __init__(
@@ -109,35 +103,38 @@ class DuckDBMetadataStore(IbisMetadataStore):
         **kwargs,
     ):
         """
-        Initialize DuckDB metadata store.
+        Initialize [DuckDB](https://duckdb.org/) metadata store.
 
         Args:
             database: Database connection string or path.
-                - File path: "metadata.db" or Path("metadata.db")
-                - In-memory: ":memory:"
-                - MotherDuck: "md:my_database" or "md:my_database?motherduck_token=..."
-                - S3: "s3://bucket/path/database.duckdb" (read-only via ATTACH)
-                - HTTPS: "https://example.com/database.duckdb" (read-only via ATTACH)
+                - File path: `"metadata.db"` or `Path("metadata.db")`
+
+                - In-memory: `":memory:"`
+
+                - MotherDuck: `"md:my_database"` or `"md:my_database?motherduck_token=..."`
+
+                - S3: `"s3://bucket/path/database.duckdb"` (read-only via ATTACH)
+
+                - HTTPS: `"https://example.com/database.duckdb"` (read-only via ATTACH)
+
                 - Any valid DuckDB connection string
 
-                Note: Parent directories are NOT created automatically. Ensure paths exist
-                before initializing the store.
             config: Optional DuckDB configuration settings (e.g., {'threads': '4', 'memory_limit': '4GB'})
             extensions: List of DuckDB extensions to install and load on open.
                 Supports strings (community repo), mapping-like objects with
-                ``name``/``repository`` keys, or ExtensionSpec instances.
+                ``name``/``repository`` keys, or [metaxy.metadata_store.duckdb.ExtensionSpec][] instances.
 
-                Examples:
-                    extensions=['hashfuncs']  # Install hashfuncs from community
-                    extensions=[{'name': 'hashfuncs'}]  # Same as above
-                    extensions=[{'name': 'spatial', 'repository': 'core_nightly'}]
-                    extensions=[{'name': 'my_ext', 'repository': 'https://my-repo.com'}]
+        ducklake: Optional DuckLake attachment configuration. Provide either a
+            mapping with 'metadata_backend' and 'storage_backend' entries or a
+            DuckLakeAttachmentConfig instance. When supplied, the DuckDB
+            connection is configured to ATTACH the DuckLake catalog after open().
             fallback_stores: Ordered list of read-only fallback stores.
-            ducklake: Optional DuckLake attachment configuration. Provide either a
-                mapping with 'metadata_backend' and 'storage_backend' entries or a
-                DuckLakeAttachmentConfig instance. When supplied, the DuckDB
-                connection is configured to ATTACH the DuckLake catalog after open().
-            **kwargs: Passed to IbisMetadataStore (e.g., hash_algorithm, graph)
+
+            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]`
+
+        Warning:
+            Parent directories are NOT created automatically. Ensure paths exist
+            before initializing the store.
         """
         database_str = str(database)
 

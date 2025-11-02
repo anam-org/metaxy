@@ -40,9 +40,11 @@ def allow_feature_version_override() -> Iterator[None]:
     is intentional and necessary.
 
     Example:
-        >>> with allow_feature_version_override():
-        ...     # DataFrame already has feature_version column from migration
-        ...     store.write_metadata(MyFeature, df_with_feature_version)
+        ```py
+        with allow_feature_version_override():
+            # DataFrame already has feature_version column from migration
+            store.write_metadata(MyFeature, df_with_feature_version)
+        ```
     """
     token = _suppress_feature_version_warning.set(True)
     try:

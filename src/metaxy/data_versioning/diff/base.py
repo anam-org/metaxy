@@ -11,32 +11,28 @@ if TYPE_CHECKING:
 
 
 class LazyDiffResult(NamedTuple):
-    """Result of diffing with lazy Narwhals LazyFrames (opt-in via lazy=True).
-
-    Contains lazy Narwhals LazyFrames - users decide when/how to materialize.
+    """Result of resolving an incremental update with lazy Narwhals LazyFrames.
 
     Users can:
     - Keep lazy for further operations: result.added.filter(...)
+
     - Materialize to Polars: result.added.collect().to_native()
-    - Materialize to Pandas: result.added.collect().to_pandas()
-    - Materialize to PyArrow: result.added.collect().to_arrow()
+
     - Convert to DiffResult: result.collect()
 
-    Backend execution:
-    - SQL stores: All operations stay in SQL until .collect()
-    - Polars stores: Operations stay lazy until .collect()
-
     Attributes:
-        added: New samples (lazy, never None - empty LazyFrame instead)
-            Columns: [sample_uid, data_version, ...user columns...]
-        changed: Changed samples (lazy, never None)
-            Columns: [sample_uid, data_version, ...user columns...]
-        removed: Removed samples (lazy, never None)
-            Columns: [sample_uid, data_version, ...user columns...]
+        added: New samples that appear upstream and haven't been processed yet.
+
+            Columns: `[*user_defined_columns, "data_version"]`
+        changed: Samples with new data versions that should be re-processed.
+
+            Columns: `[*user_defined_columns, "data_version"]`
+        removed: Samples that have been previously processed but have been removed from upstream since that.
+
+            Columns: `[*id_columns, "data_version"]`
 
     Note:
-        May contain additional user columns beyond sample_uid and data_version,
-        depending on what was passed to resolve_update() via align_upstream_metadata.
+        `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
     """
 
     added: nw.LazyFrame[Any]
@@ -57,26 +53,26 @@ class LazyDiffResult(NamedTuple):
 
 
 class DiffResult(NamedTuple):
-    """Result of diffing with eager Narwhals DataFrames (default).
+    """Result of resolving an incremental update with eager Narwhals DataFrames.
 
-    Contains materialized Narwhals DataFrames - ready to use immediately.
+    Contains materialized Narwhals DataFrames.
 
     Users can convert to their preferred format:
     - Polars: result.added.to_native()
-    - Pandas: result.added.to_pandas()
-    - PyArrow: result.added.to_arrow()
 
     Attributes:
-        added: New samples (eager, never None - empty DataFrame instead)
-            Columns: [sample_uid, data_version, ...user columns...]
-        changed: Changed samples (eager, never None)
-            Columns: [sample_uid, data_version, ...user columns...]
-        removed: Removed samples (eager, never None)
-            Columns: [sample_uid, data_version, ...user columns...]
+        added: New samples that appear upstream and haven't been processed yet.
+
+            Columns: `[*user_defined_columns, "data_version"]`
+        changed: Samples with new data versions that should be re-processed.
+
+            Columns: `[*user_defined_columns, "data_version"]`
+        removed: Samples that have been previously processed but have been removed from upstream since that.
+
+            Columns: `[*id_columns, "data_version"]`
 
     Note:
-        May contain additional user columns beyond sample_uid and data_version,
-        depending on what was passed to resolve_update() via align_upstream_metadata.
+        `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
     """
 
     added: nw.DataFrame[Any]

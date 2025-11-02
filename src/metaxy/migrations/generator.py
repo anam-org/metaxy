@@ -86,17 +86,21 @@ def generate_migration(
         ValueError: If only one snapshot_version is provided, or snapshots not found
 
     Example (default mode):
-        >>> migration = generate_migration(store, project="my_project")
-        >>> if migration:
-        >>>     migration.to_yaml("migrations/001_update.yaml")
+        ```py
+        migration = generate_migration(store, project="my_project")
+        if migration:
+        migration.to_yaml("migrations/001_update.yaml")
 
+        ```
     Example (historical mode):
-        >>> migration = generate_migration(
-        ...     store,
-        ...     project="my_project",
-        ...     from_snapshot_version="abc123...",
-        ...     to_snapshot_version="def456...",
-        ... )
+        ```py
+        migration = generate_migration(
+            store,
+            project="my_project",
+            from_snapshot_version="abc123...",
+            to_snapshot_version="def456...",
+            )
+        ```
     """
     from metaxy.models.feature import FeatureGraph
 

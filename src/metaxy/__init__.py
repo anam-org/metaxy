@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from metaxy.config import MetaxyConfig, StoreConfig
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.entrypoints import (
     load_features,
     load_module_entrypoint,
@@ -36,6 +37,8 @@ from metaxy.models.feature_spec import (
     BaseFeatureSpecWithIDColumns,
     FeatureDep,
     FeatureSpec,
+    IDColumns,
+    IDColumnsT,
     TestingFeatureSpec,
 )
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
@@ -46,6 +49,8 @@ def init_metaxy(
     config_file: Path | None = None, search_parents: bool = True
 ) -> MetaxyConfig:
     """Main user-facing initialization function for Metaxy. It loads the configuration and features.
+
+    Features are [discovered](../../learn/feature-discovery.md) from installed Python packages metadata.
 
     Args:
         config_file (Path | None, optional): Path to the configuration file. Defaults to None.
@@ -100,4 +105,7 @@ __all__ = [
     "MetaxyConfig",
     "StoreConfig",
     "init_metaxy",
+    "IDColumns",
+    "IDColumnsT",
+    "HashAlgorithm",
 ]

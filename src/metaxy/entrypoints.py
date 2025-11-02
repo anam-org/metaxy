@@ -52,9 +52,11 @@ def load_module_entrypoint(
         EntrypointLoadError: If module import fails
 
     Example:
-        >>> from metaxy.entrypoints import load_module_entrypoint
-        >>> load_module_entrypoint("myapp.features.core")
-        >>> # Features from myapp.features.core are now registered
+        ```py
+        from metaxy.entrypoints import load_module_entrypoint
+        load_module_entrypoint("myapp.features.core")
+        # Features from myapp.features.core are now registered
+        ```
     """
     from metaxy.models.feature import FeatureGraph
 
@@ -91,12 +93,14 @@ def load_entrypoints(
         EntrypointLoadError: If any module import fails
 
     Example:
-        >>> from metaxy.entrypoints import load_config_entrypoints
-        >>> load_config_entrypoints([
-        ...     "myapp.features.video",
-        ...     "myapp.features.audio",
-        ...     "myapp.features.text"
-        ... ])
+        ```py
+        from metaxy.entrypoints import load_config_entrypoints
+        load_config_entrypoints([
+            "myapp.features.video",
+            "myapp.features.audio",
+            "myapp.features.text"
+        ])
+        ```
     """
     from metaxy.models.feature import FeatureGraph
 
@@ -131,9 +135,11 @@ def load_package_entrypoints(
         EntrypointLoadError: If any entrypoint fails to load
 
     Example:
-        >>> from metaxy.entrypoints import load_package_entrypoints
-        >>> # Discover and load all installed plugins
-        >>> load_package_entrypoints()
+        ```py
+        from metaxy.entrypoints import load_package_entrypoints
+        # Discover and load all installed plugins
+        load_package_entrypoints()
+        ```
     """
     from metaxy.models.feature import FeatureGraph
 
@@ -192,10 +198,12 @@ def load_env_entrypoints() -> None:
         EntrypointLoadError: If any entrypoint fails to load
 
     Example:
-        >>> import os
-        >>> os.environ["METAXY_ENTRYPOINT"] = "myapp.features.core"
-        >>> from metaxy.entrypoints import load_env_entrypoints
-        >>> load_env_entrypoints()
+        ```py
+        import os
+        os.environ["METAXY_ENTRYPOINT"] = "myapp.features.core"
+        from metaxy.entrypoints import load_env_entrypoints
+        load_env_entrypoints()
+        ```
     """
 
     logger.info("Discovering environment-based entrypoints (METAXY_ENTRYPOINT*)")
@@ -261,21 +269,23 @@ def load_features(
         EntrypointLoadError: If any entrypoint fails to load
 
     Example:
-        >>> from metaxy.entrypoints import load_features
-        >>>
-        >>> # Load from all sources
-        >>> graph = load_features(
-        ...     entrypoints=["myapp.features.core"],
-        ...     load_packages=True,
-        ...     load_env=True
-        ... )
-        >>>
-        >>> # Load only from config
-        >>> graph = load_features(
-        ...     entrypoints=["myapp.features.core"],
-        ...     load_packages=False,
-        ...     load_env=False
-        ... )
+        ```py
+        from metaxy.entrypoints import load_features
+
+        # Load from all sources
+        graph = load_features(
+            entrypoints=["myapp.features.core"],
+            load_packages=True,
+            load_env=True
+        )
+
+        # Load only from config
+        graph = load_features(
+            entrypoints=["myapp.features.core"],
+            load_packages=False,
+            load_env=False
+        )
+        ```
     """
     from metaxy.config import MetaxyConfig
     from metaxy.models.feature import FeatureGraph

@@ -26,13 +26,15 @@ def truncate_hash(hash_str: str) -> str:
         Truncated hash string
 
     Examples:
-        >>> # With global config set to truncation_length=12:
-        >>> truncate_hash("a" * 64)
-        'aaaaaaaaaaaa'
+        ```py
+        # With global config set to truncation_length=12:
+        truncate_hash("a" * 64)
+        # 'aaaaaaaaaaaa'
 
-        >>> # With no truncation setting:
-        >>> truncate_hash("abc123")
-        'abc123'
+        # With no truncation setting:
+        truncate_hash("abc123")
+        # 'abc123'
+        ```
     """
     # Get length from global setting
     length = get_hash_truncation_length()
@@ -56,8 +58,10 @@ def get_hash_truncation_length() -> int | None:
         Current truncation length, or None if no truncation is configured
 
     Example:
-        >>> # With MetaxyConfig.hash_truncation_length = 16
-        >>> get_hash_truncation_length()
+        ```py
+        # With MetaxyConfig.hash_truncation_length = 16
+        get_hash_truncation_length()
+        ```
         16
     """
     from metaxy.config import MetaxyConfig
@@ -84,14 +88,16 @@ def ensure_hash_compatibility(hash1: str, hash2: str) -> bool:
         True if hashes are compatible, False otherwise
 
     Examples:
-        >>> ensure_hash_compatibility("abc123", "abc123")
-        True
+        ```py
+        ensure_hash_compatibility("abc123", "abc123")
+        # True
 
-        >>> ensure_hash_compatibility("abc123456789", "abc12345")
-        True  # Second is truncation of first
+        ensure_hash_compatibility("abc123456789", "abc12345")
+        # True  # Second is truncation of first
 
-        >>> ensure_hash_compatibility("abc123", "def456")
-        False  # Different hashes
+        ensure_hash_compatibility("abc123", "def456")
+        # False  # Different hashes
+        ```
     """
     if hash1 == hash2:
         return True
@@ -118,10 +124,12 @@ def truncate_string_column(
         DataFrame with truncated hash values in the specified column
 
     Example:
-        >>> # With global config set to truncation_length=12:
-        >>> df = nw.from_native(pd.DataFrame({"hash": ["a" * 64, "b" * 64]}))
-        >>> result = truncate_string_column(df, "hash")
-        >>> # result["hash"] contains ["aaaaaaaaaaaa", "bbbbbbbbbbbb"]
+        ```py
+        # With global config set to truncation_length=12:
+        df = nw.from_native(pd.DataFrame({"hash": ["a" * 64, "b" * 64]}))
+        result = truncate_string_column(df, "hash")
+        # result["hash"] contains ["aaaaaaaaaaaa", "bbbbbbbbbbbb"]
+        ```
     """
     length = get_hash_truncation_length()
 
@@ -147,12 +155,14 @@ def truncate_struct_column(df: Any, struct_column: str) -> Any:
         DataFrame with truncated hash values within the struct
 
     Example:
-        >>> # With global config set to truncation_length=12:
-        >>> df = pl.DataFrame({
-        ...     "data_version": [{"field1": "a" * 64, "field2": "b" * 64}]
-        ... })
-        >>> result = truncate_struct_column(df, "data_version")
-        >>> # result["data_version"] contains [{"field1": "aaaaaaaaaaaa", "field2": "bbbbbbbbbbbb"}]
+        ```py
+        # With global config set to truncation_length=12:
+        df = pl.DataFrame({
+            "data_version": [{"field1": "a" * 64, "field2": "b" * 64}]
+            })
+        result = truncate_struct_column(df, "data_version")
+        # result["data_version"] contains [{"field1": "aaaaaaaaaaaa", "field2": "bbbbbbbbbbbb"}]
+        ```
     """
     length = get_hash_truncation_length()
 

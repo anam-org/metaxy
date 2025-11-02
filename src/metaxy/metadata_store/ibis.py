@@ -49,17 +49,19 @@ class IbisMetadataStore(MetadataStore):
     For other backends, override the calculator instance variable with backend-specific implementations.
 
     Example:
-        >>> # ClickHouse
-        >>> store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
-        >>>
-        >>> # PostgreSQL
-        >>> store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
-        >>>
-        >>> # DuckDB (use DuckDBMetadataStore instead for better hash support)
-        >>> store = IbisMetadataStore("duckdb:///metadata.db")
-        >>>
-        >>> with store:
-        ...     store.write_metadata(MyFeature, df)
+        ```py
+        # ClickHouse
+        store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
+
+        # PostgreSQL
+        store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
+
+        # DuckDB (use DuckDBMetadataStore instead for better hash support)
+        store = IbisMetadataStore("duckdb:///metadata.db")
+
+        with store:
+            store.write_metadata(MyFeature, df)
+        ```
     """
 
     def __init__(
@@ -68,7 +70,7 @@ class IbisMetadataStore(MetadataStore):
         *,
         backend: str | None = None,
         connection_params: dict[str, Any] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """
         Initialize Ibis metadata store.
@@ -87,14 +89,16 @@ class IbisMetadataStore(MetadataStore):
             ImportError: If Ibis or required backend driver not installed
 
         Example:
-            >>> # Using connection string
-            >>> store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
-            >>>
-            >>> # Using backend + params
-            >>> store = IbisMetadataStore(
-            ...     backend="clickhouse",
-            ...     connection_params={"host": "localhost", "port": 9000}
-            ... )
+            ```py
+            # Using connection string
+            store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
+
+            # Using backend + params
+            store = IbisMetadataStore(
+                backend="clickhouse",
+                connection_params={"host": "localhost", "port": 9000}
+                )
+            ```
         """
         try:
             import ibis

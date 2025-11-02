@@ -105,9 +105,11 @@ def get_system_metadata():
         SQLModel.metadata containing all system table definitions
 
     Example:
-        >>> from metaxy.ext.sqlmodel_system_tables import get_system_metadata
-        >>> metadata = get_system_metadata()
-        >>> # Use with Alembic target_metadata
+        ```py
+        from metaxy.ext.sqlmodel_system_tables import get_system_metadata
+        metadata = get_system_metadata()
+        # Use with Alembic target_metadata
+        ```
     """
     # All tables are automatically registered in SQLModel.metadata
     # when their classes are defined with table=True

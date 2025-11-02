@@ -74,33 +74,35 @@ class FeatureDep(pydantic.BaseModel):
             Applied after column selection.
 
     Examples:
-        >>> # Keep all columns (string key format)
-        >>> FeatureDep(feature="upstream")
+        ```py
+        # Keep all columns (string key format)
+        FeatureDep(feature="upstream")
 
-        >>> # Keep all columns (list format)
-        >>> FeatureDep(feature=["upstream"])
+        # Keep all columns (list format)
+        FeatureDep(feature=["upstream"])
 
-        >>> # Keep all columns (FeatureKey instance)
-        >>> FeatureDep(feature=FeatureKey(["upstream"]))
+        # Keep all columns (FeatureKey instance)
+        FeatureDep(feature=FeatureKey(["upstream"]))
 
-        >>> # Keep only specific columns
-        >>> FeatureDep(
-        ...     key="upstream/feature",
-        ...     columns=("col1", "col2")
-        ... )
+        # Keep only specific columns
+        FeatureDep(
+            feature="upstream/feature",
+            columns=("col1", "col2")
+        )
 
-        >>> # Rename columns to avoid conflicts
-        >>> FeatureDep(
-        ...     key="upstream/feature",
-        ...     rename={"old_name": "new_name"}
-        ... )
+        # Rename columns to avoid conflicts
+        FeatureDep(
+            feature="upstream/feature",
+            rename={"old_name": "new_name"}
+        )
 
-        >>> # Select and rename
-        >>> FeatureDep(
-        ...     key="upstream/feature",
-        ...     columns=("col1", "col2"),
-        ...     rename={"col1": "upstream_col1"}
-        ... )
+        # Select and rename
+        FeatureDep(
+            feature="upstream/feature",
+            columns=("col1", "col2"),
+            rename={"col1": "upstream_col1"}
+        )
+        ```
     """
 
     feature: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
@@ -157,7 +159,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        feature: type[BaseFeature[Any]],
+        feature: type[BaseFeature[IDColumns]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
     ) -> None:
@@ -167,7 +169,9 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        feature: CoercibleToFeatureKey | FeatureSpecProtocol | type[BaseFeature[Any]],
+        feature: CoercibleToFeatureKey
+        | FeatureSpecProtocol
+        | type[BaseFeature[IDColumns]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         **kwargs: Any,
@@ -353,13 +357,14 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             SHA256 hex digest of the specification
 
         Example:
-            >>> spec = FeatureSpec(
-            ...     key=FeatureKey(["my", "feature"]),
-            ...
-            ...     fields=[FieldSpec(key=FieldKey(["default"]))],
-            ... )
-            >>> spec.feature_spec_version
-            'abc123...'  # 64-character hex string
+            ```py
+            spec = FeatureSpec(
+                key=FeatureKey(["my", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]))],
+            )
+            spec.feature_spec_version
+            # 'abc123...'  # 64-character hex string
+            ```
         """
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
