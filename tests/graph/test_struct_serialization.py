@@ -1,5 +1,7 @@
 """Tests for GraphData and GraphDiff struct serialization."""
 
+import pytest
+
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,
@@ -9,6 +11,7 @@ from metaxy.graph.diff.diff_models import (
 )
 from metaxy.graph.diff.models import EdgeData, FieldNode, GraphData, GraphNode
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.utils.exceptions import MetaxyEmptyCodeVersionError
 
 
 def test_graphdata_to_struct():
@@ -372,11 +375,8 @@ def test_graphdata_handles_none_values():
         edges=[],
     )
 
-    struct = graph_data.to_struct()
-    restored = GraphData.from_struct(struct)
-
-    node = restored.nodes["feature/a"]
-    assert node.version is None
-    assert node.code_version is None
-    assert node.fields[0].version is None
-    assert node.fields[0].code_version is None
+    with pytest.raises(
+        MetaxyEmptyCodeVersionError,
+        match="Field field1 in feature feature/a has empty code_version",
+    ):
+        graph_data.to_struct()
