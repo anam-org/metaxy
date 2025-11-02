@@ -118,7 +118,7 @@ class FieldDep(BaseModel):
 
 class FieldSpec(BaseModel):
     key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
-    code_version: int = 1
+    code_version: str = "1"
 
     # field-level dependencies can be one of the following:
     # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
@@ -129,7 +129,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: str,
-        code_version: int = 1,
+        code_version: str = "1",
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from string key."""
@@ -139,7 +139,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: Sequence[str],
-        code_version: int = 1,
+        code_version: str = "1",
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from sequence of parts."""
@@ -149,7 +149,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: FieldKey,
-        code_version: int = 1,
+        code_version: str = "1",
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from FieldKey instance."""
@@ -159,7 +159,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: None,
-        code_version: int = 1,
+        code_version: str = "1",
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize with None key (uses default)."""
@@ -168,7 +168,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: CoercibleToFieldKey | None,
-        code_version: int = 1,
+        code_version: str = "1",
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
         *args,
         **kwargs: Any,

@@ -37,7 +37,7 @@ class FieldNode(FrozenBaseModel):
     key: FieldKey
     version: str | None = None  # None if field was removed
     old_version: str | None = None  # For diff mode
-    code_version: int | None = None
+    code_version: str | None = None
     status: NodeStatus = NodeStatus.NORMAL
 
 
@@ -59,7 +59,7 @@ class GraphNode(FrozenBaseModel):
     key: FeatureKey
     version: str | None = None  # None if feature was removed
     old_version: str | None = None  # For diff mode
-    code_version: int | None = None
+    code_version: str | None = None
     fields: list[FieldNode] = Field(default_factory=list)
     dependencies: list[FeatureKey] = Field(default_factory=list)
     status: NodeStatus = NodeStatus.NORMAL
@@ -140,7 +140,7 @@ class GraphData(FrozenBaseModel):
                         "version": field.version if field.version is not None else "",
                         "code_version": field.code_version
                         if field.code_version is not None
-                        else 0,
+                        else "",
                     }
                 )
 
@@ -150,7 +150,7 @@ class GraphData(FrozenBaseModel):
                     "version": node.version if node.version is not None else "",
                     "code_version": node.code_version
                     if node.code_version is not None
-                    else 0,
+                    else "",
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                     "project": node.project if node.project is not None else "",
@@ -202,7 +202,7 @@ class GraphData(FrozenBaseModel):
                         if field_data["version"]
                         else None,
                         code_version=field_data["code_version"]
-                        if field_data["code_version"] != 0
+                        if field_data["code_version"] != ""
                         else None,
                     )
                 )
@@ -211,7 +211,7 @@ class GraphData(FrozenBaseModel):
                 key=FeatureKey(node_data["key"].split("/")),
                 version=node_data["version"] if node_data["version"] else None,
                 code_version=node_data["code_version"]
-                if node_data["code_version"] != 0
+                if node_data["code_version"] != ""
                 else None,
                 fields=fields,
                 dependencies=[

@@ -24,9 +24,9 @@ def test_feature_with_multiple_fields(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=2),
-                FieldSpec(key=FieldKey(["metadata"]), code_version=5),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="2"),
+                FieldSpec(key=FieldKey(["metadata"]), code_version="5"),
             ],
         ),
     ):
@@ -42,7 +42,7 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["a"]),
-            fields=[FieldSpec(key=FieldKey(["raw"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["raw"]), code_version="1")],
         ),
     ):
         pass
@@ -52,7 +52,7 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["b"]),
             deps=[FeatureDep(feature=FeatureKey(["a"]))],
-            fields=[FieldSpec(key=FieldKey(["processed"]), code_version=2)],
+            fields=[FieldSpec(key=FieldKey(["processed"]), code_version="2")],
         ),
     ):
         pass
@@ -62,7 +62,7 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["c"]),
             deps=[FeatureDep(feature=FeatureKey(["b"]))],
-            fields=[FieldSpec(key=FieldKey(["final"]), code_version=3)],
+            fields=[FieldSpec(key=FieldKey(["final"]), code_version="3")],
         ),
     ):
         pass
@@ -83,7 +83,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["root"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         pass
@@ -93,7 +93,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["branch_left"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
-            fields=[FieldSpec(key=FieldKey(["left_processed"]), code_version=2)],
+            fields=[FieldSpec(key=FieldKey(["left_processed"]), code_version="2")],
         ),
     ):
         pass
@@ -103,7 +103,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["branch_right"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
-            fields=[FieldSpec(key=FieldKey(["right_processed"]), code_version=3)],
+            fields=[FieldSpec(key=FieldKey(["right_processed"]), code_version="3")],
         ),
     ):
         pass
@@ -116,7 +116,7 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
                 FeatureDep(feature=FeatureKey(["branch_left"])),
                 FeatureDep(feature=FeatureKey(["branch_right"])),
             ],
-            fields=[FieldSpec(key=FieldKey(["fusion"]), code_version=4)],
+            fields=[FieldSpec(key=FieldKey(["fusion"]), code_version="4")],
         ),
     ):
         pass
@@ -139,9 +139,9 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=2),
-                FieldSpec(key=FieldKey(["text"]), code_version=3),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="2"),
+                FieldSpec(key=FieldKey(["text"]), code_version="3"),
             ],
         ),
     ):
@@ -156,7 +156,7 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
                 # Only depends on frames
                 FieldSpec(
                     key=FieldKey(["visual"]),
-                    code_version=10,
+                    code_version="10",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["multi"]),
@@ -167,7 +167,7 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
                 # Only depends on audio
                 FieldSpec(
                     key=FieldKey(["audio_only"]),
-                    code_version=11,
+                    code_version="11",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["multi"]),
@@ -178,7 +178,7 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
                 # Depends on frames and text
                 FieldSpec(
                     key=FieldKey(["mixed"]),
-                    code_version=12,
+                    code_version="12",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["multi"]),
@@ -211,8 +211,8 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["raw_video"]),
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=1),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
         ),
     ):
@@ -222,7 +222,7 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["raw_metadata"]),
-            fields=[FieldSpec(key=FieldKey(["info"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["info"]), code_version="1")],
         ),
     ):
         pass
@@ -236,7 +236,7 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
             fields=[
                 FieldSpec(
                     key=FieldKey(["enhanced_frames"]),
-                    code_version=5,
+                    code_version="5",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["raw_video"]),
@@ -246,7 +246,7 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
                 ),
                 FieldSpec(
                     key=FieldKey(["normalized_audio"]),
-                    code_version=3,
+                    code_version="3",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["raw_video"]),
@@ -272,13 +272,13 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
                 # Depends on all upstream
                 FieldSpec(
                     key=FieldKey(["full_analysis"]),
-                    code_version=10,
+                    code_version="10",
                     deps=SpecialFieldDep.ALL,
                 ),
                 # Depends only on enhanced frames and metadata
                 FieldSpec(
                     key=FieldKey(["visual_metadata"]),
-                    code_version=7,
+                    code_version="7",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["processed_video"]),
@@ -312,7 +312,7 @@ def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
         TestingFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["base"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=100)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="100")],
         ),
     ):
         pass
@@ -322,7 +322,7 @@ def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["derived"]),
             deps=[FeatureDep(feature=FeatureKey(["base"]))],
-            fields=[FieldSpec(key=FieldKey(["processed"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["processed"]), code_version="1")],
         ),
     ):
         pass
@@ -343,8 +343,8 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["x"]),
             fields=[
-                FieldSpec(key=FieldKey(["x1"]), code_version=1),
-                FieldSpec(key=FieldKey(["x2"]), code_version=2),
+                FieldSpec(key=FieldKey(["x1"]), code_version="1"),
+                FieldSpec(key=FieldKey(["x2"]), code_version="2"),
             ],
         ),
     ):
@@ -355,8 +355,8 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["y"]),
             fields=[
-                FieldSpec(key=FieldKey(["y1"]), code_version=3),
-                FieldSpec(key=FieldKey(["y2"]), code_version=4),
+                FieldSpec(key=FieldKey(["y1"]), code_version="3"),
+                FieldSpec(key=FieldKey(["y2"]), code_version="4"),
             ],
         ),
     ):
@@ -374,7 +374,7 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
                 # First field only depends on FeatureX
                 FieldSpec(
                     key=FieldKey(["z1"]),
-                    code_version=20,
+                    code_version="20",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["x"]),
@@ -385,7 +385,7 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
                 # Second field only depends on FeatureY
                 FieldSpec(
                     key=FieldKey(["z2"]),
-                    code_version=21,
+                    code_version="21",
                     deps=[
                         FieldDep(
                             feature=FeatureKey(["y"]),
@@ -396,7 +396,7 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
                 # Third field depends on both
                 FieldSpec(
                     key=FieldKey(["z3"]),
-                    code_version=22,
+                    code_version="22",
                     deps=SpecialFieldDep.ALL,
                 ),
             ],

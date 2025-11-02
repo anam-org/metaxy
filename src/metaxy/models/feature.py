@@ -876,7 +876,7 @@ class BaseFeature(
             ```py
             class MyFeature(Feature, spec=FeatureSpec(
                 key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             )):
                 pass
             MyFeature.feature_version()
@@ -909,7 +909,7 @@ class BaseFeature(
             ```py
             class MyFeature(Feature, spec=FeatureSpec(
                 key=FeatureKey(["my", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             )):
                 pass
             MyFeature.feature_spec_version()

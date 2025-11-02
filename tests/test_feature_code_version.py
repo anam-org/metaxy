@@ -24,7 +24,7 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["test", "single_field"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["default"]), code_version=1),
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
         ),
     ):
@@ -59,9 +59,9 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
             key=FeatureKey(["test", "multi_field"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=2),
-                FieldSpec(key=FieldKey(["metadata"]), code_version=3),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="2"),
+                FieldSpec(key=FieldKey(["metadata"]), code_version="3"),
             ],
         ),
     ):
@@ -94,7 +94,7 @@ def test_code_version_changes_with_field_code_version() -> None:
                 key=FeatureKey(["versioned", "test_v1"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
@@ -108,7 +108,7 @@ def test_code_version_changes_with_field_code_version() -> None:
                 key=FeatureKey(["versioned", "test_v2"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+                    FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
                 ],
             ),
         ):
@@ -126,7 +126,7 @@ def test_code_version_independence_from_dependencies() -> None:
     graph1 = FeatureGraph()
     graph2 = FeatureGraph()
 
-    # Graph 1: Parent with code_version=1, child depends on parent
+    # Graph 1: Parent with code_version="1", child depends on parent
     with graph1.use():
 
         class ParentV1(
@@ -135,7 +135,7 @@ def test_code_version_independence_from_dependencies() -> None:
                 key=FeatureKey(["independence_test", "parent_v1"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
@@ -149,13 +149,13 @@ def test_code_version_independence_from_dependencies() -> None:
                     FeatureDep(feature=FeatureKey(["independence_test", "parent_v1"]))
                 ],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
             pass
 
-    # Graph 2: Parent with code_version=2, child still has code_version=1
+    # Graph 2: Parent with code_version="2", child still has code_version="1"
     with graph2.use():
 
         class ParentV2(
@@ -164,7 +164,7 @@ def test_code_version_independence_from_dependencies() -> None:
                 key=FeatureKey(["independence_test", "parent_v2"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+                    FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
                 ],
             ),
         ):
@@ -179,7 +179,7 @@ def test_code_version_independence_from_dependencies() -> None:
                 ],
                 fields=[
                     FieldSpec(
-                        key=FieldKey(["default"]), code_version=1
+                        key=FieldKey(["default"]), code_version="1"
                     ),  # Same as ChildV1!
                 ],
             ),
@@ -205,8 +205,8 @@ def test_code_version_determinism() -> None:
             key=FeatureKey(["determinism_test"]),
             deps=None,
             fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version=1),
-                FieldSpec(key=FieldKey(["audio"]), code_version=2),
+                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+                FieldSpec(key=FieldKey(["audio"]), code_version="2"),
             ],
         ),
     ):
@@ -236,9 +236,9 @@ def test_code_version_field_order_invariance() -> None:
                 deps=None,
                 fields=[
                     FieldSpec(
-                        key=FieldKey(["frames"]), code_version=1
+                        key=FieldKey(["frames"]), code_version="1"
                     ),  # alphabetically first
-                    FieldSpec(key=FieldKey(["audio"]), code_version=2),
+                    FieldSpec(key=FieldKey(["audio"]), code_version="2"),
                 ],
             ),
         ):
@@ -253,9 +253,9 @@ def test_code_version_field_order_invariance() -> None:
                 deps=None,
                 fields=[
                     FieldSpec(
-                        key=FieldKey(["frames"]), code_version=1
+                        key=FieldKey(["frames"]), code_version="1"
                     ),  # Different order
-                    FieldSpec(key=FieldKey(["audio"]), code_version=2),
+                    FieldSpec(key=FieldKey(["audio"]), code_version="2"),
                 ],
             ),
         ):
@@ -266,14 +266,14 @@ def test_code_version_field_order_invariance() -> None:
 
 
 def test_code_version_no_dependencies_no_fields_edge_case() -> None:
-    """Test code_version with default field (single field with code_version=1)."""
+    """Test code_version with default field (single field with code_version="1")."""
 
     class MinimalFeature(
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["minimal"]),
             deps=None,
-            # Uses default field: [FieldSpec(key=FieldKey(["default"]), code_version=1)]
+            # Uses default field: [FieldSpec(key=FieldKey(["default"]), code_version="1")]
         ),
     ):
         pass
@@ -297,7 +297,7 @@ def test_code_version_complex_dependency_chain() -> None:
                 key=FeatureKey(["chain", "a"]),
                 deps=None,
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
@@ -309,7 +309,7 @@ def test_code_version_complex_dependency_chain() -> None:
                 key=FeatureKey(["chain", "b"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "a"]))],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=2),
+                    FieldSpec(key=FieldKey(["default"]), code_version="2"),
                 ],
             ),
         ):
@@ -321,7 +321,7 @@ def test_code_version_complex_dependency_chain() -> None:
                 key=FeatureKey(["chain", "c"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "b"]))],
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=3),
+                    FieldSpec(key=FieldKey(["default"]), code_version="3"),
                 ],
             ),
         ):
@@ -351,9 +351,9 @@ def test_code_version_complex_dependency_chain() -> None:
 
 
 @given(
-    code_version=st.integers(min_value=1, max_value=1000),
+    code_version=st.integers(min_value=1, max_value=1000).map(str),
 )
-def test_property_code_version_deterministic(code_version: int) -> None:
+def test_property_code_version_deterministic(code_version: str) -> None:
     """Property test: code_version is deterministic for any code_version value."""
     graph = FeatureGraph()
 
@@ -380,11 +380,11 @@ def test_property_code_version_deterministic(code_version: int) -> None:
 
 
 @given(
-    code_version1=st.integers(min_value=1, max_value=1000),
-    code_version2=st.integers(min_value=1, max_value=1000),
+    code_version1=st.integers(min_value=1, max_value=1000).map(str),
+    code_version2=st.integers(min_value=1, max_value=1000).map(str),
 )
 def test_property_code_version_changes_with_code(
-    code_version1: int, code_version2: int
+    code_version1: str, code_version2: str
 ) -> None:
     """Property test: different code versions produce different hashes (or same if same input)."""
     graph1 = FeatureGraph()
@@ -438,7 +438,7 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
 
     # Generate fields with unique keys
     fields = [
-        FieldSpec(key=FieldKey([f"field_{i}"]), code_version=i + 1)
+        FieldSpec(key=FieldKey([f"field_{i}"]), code_version=str(i + 1))
         for i in range(num_fields)
     ]
 
@@ -484,11 +484,13 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
     graph2 = FeatureGraph()
 
     # Create fields in original order
-    fields1 = [FieldSpec(key=FieldKey([name]), code_version=1) for name in field_names]
+    fields1 = [
+        FieldSpec(key=FieldKey([name]), code_version="1") for name in field_names
+    ]
 
     # Create fields in reversed order
     fields2 = [
-        FieldSpec(key=FieldKey([name]), code_version=1)
+        FieldSpec(key=FieldKey([name]), code_version="1")
         for name in reversed(field_names)
     ]
 
@@ -521,11 +523,11 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
 
 
 @given(
-    parent_code_version=st.integers(min_value=1, max_value=1000),
-    child_code_version=st.integers(min_value=1, max_value=1000),
+    parent_code_version=st.integers(min_value=1, max_value=1000).map(str),
+    child_code_version=st.integers(min_value=1, max_value=1000).map(str),
 )
 def test_property_code_version_independent_of_parent(
-    parent_code_version: int, child_code_version: int
+    parent_code_version: str, child_code_version: str
 ) -> None:
     """Property test: child's code_version is independent of parent's code_version."""
     graph = FeatureGraph()
@@ -576,8 +578,9 @@ def test_property_code_version_independent_of_parent(
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]),
-                        code_version=parent_code_version
-                        + 100,  # Different from parent!
+                        code_version=str(
+                            int(parent_code_version) + 100
+                        ),  # Different from parent!
                     ),
                 ],
             ),

@@ -148,7 +148,7 @@ def test_metadata_store_with_maximum_id_columns(graph: FeatureGraph):
         spec=TestingFeatureSpec(
             key=FeatureKey(["multikey"]),
             id_columns=["tenant", "user", "session", "device", "timestamp"],
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
         pass

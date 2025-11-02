@@ -58,7 +58,7 @@ def simple_graph_v1():
     spec_v1 = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
@@ -75,7 +75,7 @@ def simple_graph_v2():
     spec_v2 = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+            FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
         ],
     )
 
@@ -92,7 +92,7 @@ def upstream_downstream_v1():
     upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
@@ -102,7 +102,7 @@ def upstream_downstream_v1():
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test_integration", "upstream"]),
@@ -128,7 +128,7 @@ def upstream_downstream_v2():
     upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=2),  # Changed!
+            FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
         ],
     )
 
@@ -138,7 +138,7 @@ def upstream_downstream_v2():
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test_integration", "upstream"]),
@@ -542,8 +542,8 @@ def test_field_dependency_change(tmp_path):
     upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream"]),
         fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version=1),
-            FieldSpec(key=FieldKey(["audio"]), code_version=1),
+            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+            FieldSpec(key=FieldKey(["audio"]), code_version="1"),
         ],
     )
 
@@ -553,7 +553,7 @@ def test_field_dependency_change(tmp_path):
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test", "upstream"]),
@@ -578,7 +578,7 @@ def test_field_dependency_change(tmp_path):
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,  # Same code_version
+                code_version="1",  # Same code_version
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test", "upstream"]),
@@ -647,12 +647,12 @@ def test_feature_dependency_swap(tmp_path):
 
     upstream_a_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream_a"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     upstream_b_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream_b"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     downstream_v1_spec = TestingFeatureSpec(
@@ -661,7 +661,7 @@ def test_feature_dependency_swap(tmp_path):
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test", "upstream_a"]),
@@ -690,7 +690,7 @@ def test_feature_dependency_swap(tmp_path):
         fields=[
             FieldSpec(
                 key=FieldKey(["default"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test", "upstream_b"]),
@@ -816,12 +816,12 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
 
     simple_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],  # Unchanged
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],  # Unchanged
     )
 
     new_spec = TestingFeatureSpec(
         key=FeatureKey(["test_integration", "new"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_v2.write_features({"Simple": simple_spec, "New": new_spec})

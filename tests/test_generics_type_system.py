@@ -263,7 +263,7 @@ def test_feature_with_custom_spec_class():
             spec=VideoSpec(
                 key=FeatureKey(["video"]),
                 fields=[
-                    FieldSpec(key=FieldKey(["frames"]), code_version=1),
+                    FieldSpec(key=FieldKey(["frames"]), code_version="1"),
                 ],
             ),
         ):
@@ -316,7 +316,7 @@ def test_feature_spec_serialization_roundtrip():
         key=FeatureKey(["test"]),
         id_columns=["entity_id", "timestamp"],
         fields=[
-            FieldSpec(key=FieldKey(["data"]), code_version=1),
+            FieldSpec(key=FieldKey(["data"]), code_version="1"),
         ],
     )
 

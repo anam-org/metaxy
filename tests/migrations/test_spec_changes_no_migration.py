@@ -41,7 +41,7 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
 
     spec = TestingFeatureSpec(
         key=FeatureKey(["test", "feature"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_module.write_features({"TestFeature": spec})
@@ -76,12 +76,12 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     - feature_spec_version is stored for audit trail but not used for change detection
     - Only computational changes (affecting feature_version) trigger migrations
     """
-    # Create v1: Simple feature with code_version=1
+    # Create v1: Simple feature with code_version="1"
     temp_v1 = TempFeatureModule("test_migration_detector_v1")
 
     spec_v1 = TestingFeatureSpec(
         key=FeatureKey(["test", "simple"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_v1.write_features({"Simple": spec_v1})
@@ -120,7 +120,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     spec_v2 = TestingFeatureSpec(
         key=FeatureKey(["test", "simple"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=2)
+            FieldSpec(key=FieldKey(["default"]), code_version="2")
         ],  # Changed! This affects feature_version
     )
 
@@ -181,7 +181,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
 
     spec = TestingFeatureSpec(
         key=FeatureKey(["test", "feature"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_module.write_features({"TestFeature": spec})
@@ -245,14 +245,14 @@ def test_computational_property_changes_trigger_migrations(
     temp_cv1 = TempFeatureModule("test_code_version_v1")
     spec_cv1 = TestingFeatureSpec(
         key=FeatureKey(["test", "cv"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
     temp_cv1.write_features({"Feature": spec_cv1})
 
     temp_cv2 = TempFeatureModule("test_code_version_v2")
     spec_cv2 = TestingFeatureSpec(
         key=FeatureKey(["test", "cv"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=2)],  # Changed!
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],  # Changed!
     )
     temp_cv2.write_features({"Feature": spec_cv2})
 
@@ -274,7 +274,7 @@ def test_computational_property_changes_trigger_migrations(
     temp_f1 = TempFeatureModule("test_field_v1")
     spec_f1 = TestingFeatureSpec(
         key=FeatureKey(["test", "field"]),
-        fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
     )
     temp_f1.write_features({"Feature": spec_f1})
 
@@ -282,8 +282,8 @@ def test_computational_property_changes_trigger_migrations(
     spec_f2 = TestingFeatureSpec(
         key=FeatureKey(["test", "field"]),
         fields=[
-            FieldSpec(key=FieldKey(["field1"]), code_version=1),
-            FieldSpec(key=FieldKey(["field2"]), code_version=1),  # Added!
+            FieldSpec(key=FieldKey(["field1"]), code_version="1"),
+            FieldSpec(key=FieldKey(["field2"]), code_version="1"),  # Added!
         ],
     )
     temp_f2.write_features({"Feature": spec_f2})
@@ -307,13 +307,13 @@ def test_computational_property_changes_trigger_migrations(
 
     upstream_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "upstream"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     downstream_v1_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         # No deps
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_d1.write_features(
@@ -325,7 +325,7 @@ def test_computational_property_changes_trigger_migrations(
     downstream_v2_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],  # Added dep!
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_d2.write_features(
@@ -370,7 +370,7 @@ def test_snapshot_stores_both_versions(tmp_path):
 
     spec = TestingFeatureSpec(
         key=FeatureKey(["test", "feature"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     temp_module.write_features({"TestFeature": spec})

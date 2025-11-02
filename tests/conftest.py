@@ -84,7 +84,7 @@ def metaxy_project(tmp_path):
                 class MyFeature(Feature, spec=TestingFeatureSpec(
                     key=FeatureKey(["my_feature"]),
 
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)]
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
                 )):
                     pass
 

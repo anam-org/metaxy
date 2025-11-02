@@ -27,7 +27,7 @@ def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -70,7 +70,7 @@ def test_write_to_different_project_fails() -> None:
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -116,7 +116,7 @@ def test_allow_cross_project_writes_context_manager() -> None:
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -194,7 +194,7 @@ def test_write_multiple_features_same_project() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature1"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -203,7 +203,7 @@ def test_write_multiple_features_same_project() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature2"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -268,7 +268,7 @@ def test_cross_project_write_during_migration() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_a"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -280,7 +280,7 @@ def test_cross_project_write_during_migration() -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature_b"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -349,7 +349,7 @@ def test_project_validation_with_feature_key() -> None:
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass
@@ -393,7 +393,7 @@ def test_nested_cross_project_writes_context_managers() -> None:
         Feature,
         spec=FeatureSpec(
             key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
         pass

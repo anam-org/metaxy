@@ -119,8 +119,8 @@ class Video(
     spec=FeatureSpec(
         key="video",
         fields=[
-            FieldSpec(name="frames", code_version=1),
-            FieldSpec(name="audio", code_version=1),
+            FieldSpec(name="frames", code_version="1"),
+            FieldSpec(name="audio", code_version="1"),
         ],
     ),
 ):
