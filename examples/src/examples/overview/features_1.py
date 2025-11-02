@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from metaxy import (
     Feature,
     FeatureDep,
@@ -25,9 +27,9 @@ class Video(
 ):
     """Video metadata feature (root)."""
 
-    frames: int
-    duration: float
-    size: int
+    frames: ClassVar[int]
+    duration: ClassVar[float]
+    size: ClassVar[int]
 
 
 class Crop(
