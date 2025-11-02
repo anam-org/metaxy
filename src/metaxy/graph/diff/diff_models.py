@@ -10,6 +10,10 @@ from pydantic import Field
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
 
+# Sentinel value for None code_version in struct serialization
+# (Polars structs require a non-None value, so we use "0" to represent missing/None)
+EMPTY_CODE_VERSION = "0"
+
 
 class FieldChange(FrozenBaseModel):
     """Represents a change in a field between two snapshots."""
@@ -145,7 +149,7 @@ class GraphDiff(FrozenBaseModel):
                         if isinstance(field["key"], str)
                         else field["key"].to_string(),
                         "version": field.get("version", ""),
-                        "code_version": field.get("code_version", "") or "",
+                        "code_version": field["code_version"],
                     }
                 )
 
@@ -153,7 +157,7 @@ class GraphDiff(FrozenBaseModel):
                 {
                     "key": node.feature_key.to_string(),
                     "version": node.version,
-                    "code_version": node.code_version or "",
+                    "code_version": node.code_version or EMPTY_CODE_VERSION,
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                 }
@@ -169,7 +173,7 @@ class GraphDiff(FrozenBaseModel):
                         if isinstance(field["key"], str)
                         else field["key"].to_string(),
                         "version": field.get("version", ""),
-                        "code_version": field.get("code_version", "") or "",
+                        "code_version": field["code_version"],
                     }
                 )
 
@@ -177,7 +181,7 @@ class GraphDiff(FrozenBaseModel):
                 {
                     "key": node.feature_key.to_string(),
                     "version": node.version,
-                    "code_version": node.code_version or "",
+                    "code_version": node.code_version or EMPTY_CODE_VERSION,
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                 }
@@ -191,7 +195,7 @@ class GraphDiff(FrozenBaseModel):
                     {
                         "key": field.field_key.to_string(),
                         "version": field.new_version or "",
-                        "code_version": field.new_code_version or "",
+                        "code_version": field.new_code_version or EMPTY_CODE_VERSION,
                     }
                 )
 
@@ -201,7 +205,7 @@ class GraphDiff(FrozenBaseModel):
                     {
                         "key": field.field_key.to_string(),
                         "version": field.old_version or "",
-                        "code_version": field.old_code_version or "",
+                        "code_version": field.old_code_version or EMPTY_CODE_VERSION,
                     }
                 )
 
@@ -212,8 +216,10 @@ class GraphDiff(FrozenBaseModel):
                         "key": field.field_key.to_string(),
                         "old_version": field.old_version or "",
                         "new_version": field.new_version or "",
-                        "old_code_version": field.old_code_version or "",
-                        "new_code_version": field.new_code_version or "",
+                        "old_code_version": field.old_code_version
+                        or EMPTY_CODE_VERSION,
+                        "new_code_version": field.new_code_version
+                        or EMPTY_CODE_VERSION,
                     }
                 )
 
@@ -222,8 +228,8 @@ class GraphDiff(FrozenBaseModel):
                     "key": node.feature_key.to_string(),
                     "old_version": node.old_version or "",
                     "new_version": node.new_version or "",
-                    "old_code_version": node.old_code_version or "",
-                    "new_code_version": node.new_code_version or "",
+                    "old_code_version": node.old_code_version or EMPTY_CODE_VERSION,
+                    "new_code_version": node.new_code_version or EMPTY_CODE_VERSION,
                     "added_fields": added_fields_list,
                     "removed_fields": removed_fields_list,
                     "changed_fields": changed_fields_list,
@@ -263,9 +269,7 @@ class GraphDiff(FrozenBaseModel):
                         "version": field_data["version"]
                         if field_data["version"]
                         else None,
-                        "code_version": field_data["code_version"]
-                        if field_data["code_version"] != ""
-                        else None,
+                        "code_version": field_data["code_version"],
                     }
                 )
 
@@ -274,7 +278,7 @@ class GraphDiff(FrozenBaseModel):
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
                     code_version=node_data["code_version"]
-                    if node_data["code_version"] != ""
+                    if node_data["code_version"] != EMPTY_CODE_VERSION
                     else None,
                     fields=fields,
                     dependencies=[
@@ -294,9 +298,7 @@ class GraphDiff(FrozenBaseModel):
                         "version": field_data["version"]
                         if field_data["version"]
                         else None,
-                        "code_version": field_data["code_version"]
-                        if field_data["code_version"] != ""
-                        else None,
+                        "code_version": field_data["code_version"],
                     }
                 )
 
@@ -305,7 +307,7 @@ class GraphDiff(FrozenBaseModel):
                     feature_key=FeatureKey(node_data["key"].split("/")),
                     version=node_data["version"],
                     code_version=node_data["code_version"]
-                    if node_data["code_version"] != ""
+                    if node_data["code_version"] != EMPTY_CODE_VERSION
                     else None,
                     fields=fields,
                     dependencies=[
@@ -328,7 +330,7 @@ class GraphDiff(FrozenBaseModel):
                         else None,
                         old_code_version=None,
                         new_code_version=field_data["code_version"]
-                        if field_data["code_version"] != ""
+                        if field_data["code_version"] != EMPTY_CODE_VERSION
                         else None,
                     )
                 )
@@ -343,7 +345,7 @@ class GraphDiff(FrozenBaseModel):
                         else None,
                         new_version=None,
                         old_code_version=field_data["code_version"]
-                        if field_data["code_version"] != ""
+                        if field_data["code_version"] != EMPTY_CODE_VERSION
                         else None,
                         new_code_version=None,
                     )
@@ -361,10 +363,10 @@ class GraphDiff(FrozenBaseModel):
                         if field_data["new_version"]
                         else None,
                         old_code_version=field_data["old_code_version"]
-                        if field_data["old_code_version"] != ""
+                        if field_data["old_code_version"] != EMPTY_CODE_VERSION
                         else None,
                         new_code_version=field_data["new_code_version"]
-                        if field_data["new_code_version"] != ""
+                        if field_data["new_code_version"] != EMPTY_CODE_VERSION
                         else None,
                     )
                 )
@@ -379,10 +381,10 @@ class GraphDiff(FrozenBaseModel):
                     if node_data["new_version"]
                     else None,
                     old_code_version=node_data["old_code_version"]
-                    if node_data["old_code_version"] != ""
+                    if node_data["old_code_version"] != EMPTY_CODE_VERSION
                     else None,
                     new_code_version=node_data["new_code_version"]
-                    if node_data["new_code_version"] != ""
+                    if node_data["new_code_version"] != EMPTY_CODE_VERSION
                     else None,
                     added_fields=added_fields,
                     removed_fields=removed_fields,
