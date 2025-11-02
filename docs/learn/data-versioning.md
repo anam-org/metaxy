@@ -77,11 +77,11 @@ class Video(
         fields=[
             FieldSpec(
                 key="audio",
-                code_version=1,
+                code_version="1",
             ),
             FieldSpec(
                 key="frames",
-                code_version=1,
+                code_version="1",
             ),
         ],
     ),
@@ -101,7 +101,7 @@ class Crop(
         fields=[
             FieldSpec(
                 key="audio",
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=Video,
@@ -111,7 +111,7 @@ class Crop(
             ),
             FieldSpec(
                 key="frames",
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=Video,
@@ -137,7 +137,7 @@ class FaceDetection(
         fields=[
             FieldSpec(
                 key="faces",
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=Crop,
@@ -163,7 +163,7 @@ class SpeechToText(
         fields=[
             FieldSpec(
                 key="transcription",
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=Video,
@@ -208,8 +208,8 @@ Imagine the `audio` field of the `Video` feature changes (perhaps denoising was 
          fields=[
              FieldSpec(
                  key="audio",
--                code_version=1,
-+                code_version=2,
+-                code_version="1",
++                code_version="2",
              ),
 ```
 

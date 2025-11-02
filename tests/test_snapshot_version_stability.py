@@ -22,7 +22,7 @@ def test_snapshot_version_stability_with_module():
 
     parent_spec = TestingFeatureSpec(
         key=FeatureKey(["test", "parent"]),
-        fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
     child_spec = TestingFeatureSpec(
@@ -31,7 +31,7 @@ def test_snapshot_version_stability_with_module():
         fields=[
             FieldSpec(
                 key=FieldKey(["result"]),
-                code_version=1,
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=FeatureKey(["test", "parent"]),

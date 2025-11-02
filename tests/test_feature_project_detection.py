@@ -33,7 +33,7 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -60,7 +60,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -77,7 +77,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -237,7 +237,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature1"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -246,7 +246,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["feature2"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
             pass
@@ -277,7 +277,7 @@ def test_feature_project_persists_across_graph_operations(
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["snapshot", "test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 ),
             ):
                 pass

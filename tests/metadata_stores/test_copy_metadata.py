@@ -24,7 +24,7 @@ def sample_features() -> Iterator[tuple[type[Feature], type[Feature]]]:
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature_a"]),
-                fields=[FieldSpec(key=FieldKey("field_a"), code_version=1)],
+                fields=[FieldSpec(key=FieldKey("field_a"), code_version="1")],
             ),
         ):
             """First test feature."""
@@ -35,7 +35,7 @@ def sample_features() -> Iterator[tuple[type[Feature], type[Feature]]]:
             Feature,
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "feature_b"]),
-                fields=[FieldSpec(key=FieldKey("field_b"), code_version=1)],
+                fields=[FieldSpec(key=FieldKey("field_b"), code_version="1")],
             ),
         ):
             """Second test feature."""

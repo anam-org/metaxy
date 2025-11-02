@@ -49,7 +49,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 fields=[
                     FieldSpec(
                         key=FieldKey(["data"]),
-                        code_version=1,
+                        code_version="1",
                     ),
                 ],
             ),
@@ -192,7 +192,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
                 fields=[
                     FieldSpec(
                         key=FieldKey(["video_file"]),
-                        code_version=1,
+                        code_version="1",
                     ),
                 ],
             ),

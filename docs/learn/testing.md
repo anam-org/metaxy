@@ -170,7 +170,7 @@ def test_feature_dependencies():
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["upstream"]),
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
             pass
@@ -184,7 +184,7 @@ def test_feature_dependencies():
                 fields=[
                     FieldSpec(
                         key=FieldKey(["processed"]),
-                        code_version=1,
+                        code_version="1",
                         deps=[
                             FieldDep(
                                 feature=FeatureKey(["upstream"]),
@@ -218,7 +218,7 @@ def test_migration_scenario():
             Feature,
             spec=FeatureSpec(
                 key=FeatureKey(["my_feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
             ),
         ):
             pass
@@ -235,7 +235,7 @@ def test_migration_scenario():
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["my_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=2)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="2")],
                 ),
             ):
                 pass

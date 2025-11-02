@@ -26,7 +26,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
             spec=TestingFeatureSpec(
                 key=FeatureKey(["test", "comparison"]),
                 fields=[
-                    FieldSpec(key=FieldKey(["default"]), code_version=1),
+                    FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
             ),
         ):
@@ -58,14 +58,14 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     spec1 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
     spec2 = TestingFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version=1),
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
@@ -96,7 +96,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "one"]),
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -107,7 +107,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
             spec=TestingFeatureSpec(
                 key=FeatureKey(["upstream", "two"]),
                 fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version=1),
+                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 ],
             ),
         ):
@@ -131,7 +131,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
                     ),
                 ],
                 fields=[
-                    FieldSpec(key=FieldKey(["merged"]), code_version=1),
+                    FieldSpec(key=FieldKey(["merged"]), code_version="1"),
                 ],
             ),
         ):
@@ -170,7 +170,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
                 ),
             ],
             fields=[
-                FieldSpec(key=FieldKey(["merged"]), code_version=1),
+                FieldSpec(key=FieldKey(["merged"]), code_version="1"),
             ],
         )
 

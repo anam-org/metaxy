@@ -132,7 +132,7 @@ class TestFeatureTrackingVersion:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
                 ),
             ):
@@ -167,7 +167,7 @@ class TestFeatureTrackingVersion:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
                 ),
             ):
@@ -203,7 +203,7 @@ class TestMultiProjectIsolation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature", "a"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
                 pass
@@ -216,7 +216,7 @@ class TestMultiProjectIsolation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature", "b"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
                 pass
@@ -249,7 +249,7 @@ class TestMultiProjectIsolation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
             ):
                 pass
@@ -269,7 +269,7 @@ class TestMultiProjectIsolation:
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),  # Same key
                     fields=[
-                        FieldSpec(key=FieldKey(["value"]), code_version=1)
+                        FieldSpec(key=FieldKey(["value"]), code_version="1")
                     ],  # Same spec
                 ),
             ):
@@ -303,7 +303,7 @@ class TestSystemTableRecording:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
                 ),
             ):
@@ -403,7 +403,7 @@ class TestProjectValidation:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["value"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
                 ),
             ):

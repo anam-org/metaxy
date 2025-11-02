@@ -58,7 +58,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["default_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -74,7 +74,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field2"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                 ),
             ):
                 pass
@@ -91,7 +91,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["custom_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field3"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field3"]), code_version="1")],
                 ),
             ):
                 pass
@@ -111,7 +111,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["valid_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -150,7 +150,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature_a"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -188,7 +188,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["feature_a"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -232,7 +232,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["root_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -241,7 +241,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["child_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field2"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                     deps=[FeatureDep(feature=RootFeature.spec().key)],
                 ),
             ):
@@ -289,7 +289,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["root_feature_v2"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
@@ -299,7 +299,7 @@ class TestProjectValidationComprehensive:
                 spec=FeatureSpec(
                     key=FeatureKey(["child_feature_v2"]),
                     fields=[
-                        FieldSpec(key=FieldKey(["field2"]), code_version=2)
+                        FieldSpec(key=FieldKey(["field2"]), code_version="2")
                     ],  # Changed version
                     deps=[FeatureDep(feature=RootFeatureV2.spec().key)],
                 ),
@@ -399,7 +399,7 @@ class TestProjectValidationComprehensive:
                 Feature,
                 spec=FeatureSpec(
                     key=FeatureKey(["fixture_feature"]),
-                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version=1)],
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass

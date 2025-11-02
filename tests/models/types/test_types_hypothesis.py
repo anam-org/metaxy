@@ -396,7 +396,7 @@ class TestFeatureSpecProperties:
                 field_key = FieldKey(parts)  # FieldKey instance
 
             fields.append(
-                FieldSpec(key=field_key, code_version=1, deps=SpecialFieldDep.ALL)
+                FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL)
             )
 
         spec = FeatureSpec(key=key_data, fields=fields)
@@ -523,17 +523,17 @@ class TestFieldSpecProperties:
     @settings(max_examples=100)
     def test_field_spec_accepts_coercible_key(self, key_data: Any):
         """Test that FieldSpec accepts all coercible key formats."""
-        field = FieldSpec(key=key_data, code_version=1)
+        field = FieldSpec(key=key_data, code_version="1")
 
         assert isinstance(field.key, FieldKey)
         assert isinstance(field.key.parts, tuple)
 
     @given(
         key_data=coercible_to_field_key(),
-        code_version=st.integers(min_value=1, max_value=100),
+        code_version=st.integers(min_value=1, max_value=100).map(str),
     )
     @settings(max_examples=50)
-    def test_field_spec_with_code_version(self, key_data: Any, code_version: int):
+    def test_field_spec_with_code_version(self, key_data: Any, code_version: str):
         """Test FieldSpec with different code versions."""
         field = FieldSpec(key=key_data, code_version=code_version)
 
@@ -544,14 +544,14 @@ class TestFieldSpecProperties:
     @settings(max_examples=50)
     def test_field_spec_json_serialization(self, key_data: Any):
         """Test FieldSpec JSON serialization."""
-        field = FieldSpec(key=key_data, code_version=7, deps=SpecialFieldDep.ALL)
+        field = FieldSpec(key=key_data, code_version="7", deps=SpecialFieldDep.ALL)
 
         # Serialize to JSON
         json_data = field.model_dump(mode="json")
 
         # Key should be serialized as a list
         assert isinstance(json_data["key"], list)
-        assert json_data["code_version"] == 7
+        assert json_data["code_version"] == "7"
 
         # Should be able to reconstruct
         field_restored = FieldSpec(**json_data)
@@ -603,7 +603,7 @@ class TestComplexIntegration:
             fields.append(
                 FieldSpec(
                     key=field_key,
-                    code_version=i + 1,
+                    code_version=str(i + 1),
                     deps=SpecialFieldDep.ALL,  # Always use ALL since NONE doesn't exist
                 )
             )
