@@ -895,12 +895,20 @@ class MetadataStore(ABC):
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
+        # Map column names: provenance_by_field -> metaxy_provenance_by_field for DB query
+        db_columns = None
+        if columns is not None:
+            db_columns = [
+                "metaxy_provenance_by_field" if col == "provenance_by_field" else col
+                for col in columns
+            ]
+
         # Try local first with filters
         lazy_frame = self._read_metadata_native(
             feature,
             feature_version=feature_version_filter,
             filters=filters,  # Pass filters directly
-            columns=columns,
+            columns=db_columns,  # Use mapped column names
         )
 
         if lazy_frame is not None:
@@ -1709,6 +1717,14 @@ class MetadataStore(ABC):
                     feature, feature_version=feature.feature_version()
                 )
                 if current_lazy_native is not None:
+                    # Rename metaxy_provenance_by_field -> provenance_by_field before converting
+                    if (
+                        "metaxy_provenance_by_field"
+                        in current_lazy_native.collect_schema().names()
+                    ):
+                        current_lazy_native = current_lazy_native.rename(
+                            {"metaxy_provenance_by_field": "provenance_by_field"}
+                        )
                     # Convert to Polars using Narwhals' built-in method
                     current_lazy = nw.from_native(
                         current_lazy_native.collect().to_polars().lazy()
@@ -1720,6 +1736,15 @@ class MetadataStore(ABC):
                 current_lazy = self._read_metadata_native(
                     feature, feature_version=feature.feature_version()
                 )
+                # Rename metaxy_provenance_by_field -> provenance_by_field
+                if (
+                    current_lazy is not None
+                    and "metaxy_provenance_by_field"
+                    in current_lazy.collect_schema().names()
+                ):
+                    current_lazy = current_lazy.rename(
+                        {"metaxy_provenance_by_field": "provenance_by_field"}
+                    )
 
             # Use diff resolver to compare samples with current
             from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
@@ -1979,6 +2004,15 @@ class MetadataStore(ABC):
         current_lazy = self._read_metadata_native(
             feature, feature_version=feature.feature_version()
         )
+
+        # Rename metaxy_provenance_by_field -> provenance_by_field
+        if (
+            current_lazy is not None
+            and "metaxy_provenance_by_field" in current_lazy.collect_schema().names()
+        ):
+            current_lazy = current_lazy.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
 
         # Diff resolver returns Narwhals frames (lazy or eager based on flag)
         return feature.resolve_data_version_diff(
