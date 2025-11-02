@@ -8,14 +8,11 @@ from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.utils.constants import DEFAULT_CODE_VERSION
+from metaxy.utils.exceptions import MetaxyEmptyCodeVersionError
 
 if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
-
-
-# Sentinel value for None code_version in struct serialization
-# (Polars structs require a non-None value, so we use "0" to represent missing/None)
-EMPTY_CODE_VERSION = "0"
 
 
 class NodeStatus(str, Enum):
@@ -139,23 +136,27 @@ class GraphData(FrozenBaseModel):
         for node in self.nodes.values():
             fields_list = []
             for field in node.fields:
+                if field.code_version is None:
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Field {field.key.to_string()} in feature {node.key.to_string()} has empty code_version during serialization."
+                    )
                 fields_list.append(
                     {
                         "key": field.key.to_string(),
                         "version": field.version if field.version is not None else "",
-                        "code_version": field.code_version
-                        if field.code_version is not None
-                        else EMPTY_CODE_VERSION,
+                        "code_version": field.code_version,
                     }
                 )
 
+            if node.code_version is None:
+                raise MetaxyEmptyCodeVersionError(
+                    f"Feature {node.key.to_string()} has empty code_version during serialization."
+                )
             nodes_list.append(
                 {
                     "key": node.key.to_string(),
                     "version": node.version if node.version is not None else "",
-                    "code_version": node.code_version
-                    if node.code_version is not None
-                    else EMPTY_CODE_VERSION,
+                    "code_version": node.code_version,
                     "fields": fields_list,
                     "dependencies": [dep.to_string() for dep in node.dependencies],
                     "project": node.project if node.project is not None else "",
@@ -200,24 +201,36 @@ class GraphData(FrozenBaseModel):
         for node_data in struct_data["nodes"]:
             fields = []
             for field_data in node_data["fields"]:
+                if (
+                    field_data["code_version"] == ""
+                    or field_data["code_version"] is None
+                    or field_data["code_version"] == DEFAULT_CODE_VERSION
+                ):
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version during deserialization."
+                    )
                 fields.append(
                     FieldNode(
                         key=FieldKey(field_data["key"].split("/")),
                         version=field_data["version"]
                         if field_data["version"]
                         else None,
-                        code_version=field_data["code_version"]
-                        if field_data["code_version"] != EMPTY_CODE_VERSION
-                        else None,
+                        code_version=field_data["code_version"],
                     )
                 )
 
+            if (
+                node_data["code_version"] == ""
+                or node_data["code_version"] is None
+                or node_data["code_version"] == DEFAULT_CODE_VERSION
+            ):
+                raise MetaxyEmptyCodeVersionError(
+                    f"Feature {node_data['key']} has empty code_version during deserialization."
+                )
             node = GraphNode(
                 key=FeatureKey(node_data["key"].split("/")),
                 version=node_data["version"] if node_data["version"] else None,
-                code_version=node_data["code_version"]
-                if node_data["code_version"] != EMPTY_CODE_VERSION
-                else None,
+                code_version=node_data["code_version"],
                 fields=fields,
                 dependencies=[
                     FeatureKey(dep.split("/")) for dep in node_data["dependencies"]
