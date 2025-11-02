@@ -39,7 +39,7 @@ def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                         {"default": "hash3"},
@@ -86,7 +86,7 @@ def test_write_to_different_project_fails() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -131,7 +131,7 @@ def test_allow_cross_project_writes_context_manager() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -214,7 +214,7 @@ def test_write_multiple_features_same_project() -> None:
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                     ],
@@ -226,7 +226,7 @@ def test_write_multiple_features_same_project() -> None:
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                     ],
@@ -295,7 +295,7 @@ def test_cross_project_write_during_migration() -> None:
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                     ],
@@ -307,7 +307,7 @@ def test_cross_project_write_during_migration() -> None:
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                     ],
@@ -364,7 +364,7 @@ def test_project_validation_with_feature_key() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -408,7 +408,7 @@ def test_nested_cross_project_writes_context_managers() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"default": "hash1"}],
+                "provenance_by_field": [{"default": "hash1"}],
             }
         )
     )

@@ -32,7 +32,7 @@ def test_clickhouse_table_naming(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -99,7 +99,7 @@ def test_clickhouse_persistence(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -165,7 +165,7 @@ def test_clickhouse_hash_algorithms(
             metadata = pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"frames": "h1", "audio": "h1"},
                         {"frames": "h2", "audio": "h2"},
                     ],

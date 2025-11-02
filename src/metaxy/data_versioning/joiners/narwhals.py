@@ -28,7 +28,7 @@ class NarwhalsJoiner(UpstreamJoiner):
     - Sequentially inner joins remaining upstream features on configured ID columns
     - ID columns come from feature spec (default: ["sample_uid"])
     - Supports multi-column joins for composite keys
-    - Renames metaxy_provenance_by_field columns to avoid conflicts
+    - Renames provenance_by_field columns to avoid conflicts
     - All operations are lazy (no materialization until collect)
     - Backend-agnostic: same code works for in-memory and SQL backends
 
@@ -90,9 +90,9 @@ class NarwhalsJoiner(UpstreamJoiner):
         upstream_renames = upstream_renames or {}
 
         # Use imported constants for system columns
-        # Essential columns now include id_columns and metaxy_provenance_by_field
+        # Essential columns now include id_columns and provenance_by_field
         id_columns_set = set(id_columns)
-        system_cols = id_columns_set | {"metaxy_provenance_by_field"}
+        system_cols = id_columns_set | {"provenance_by_field"}
         system_cols_to_drop = DROPPABLE_SYSTEM_COLUMNS
 
         # Track all column names to detect conflicts
@@ -141,9 +141,9 @@ class NarwhalsJoiner(UpstreamJoiner):
         # Build select expressions with renaming for first upstream
         select_exprs = []
         for col in cols_to_select:
-            if col == "metaxy_provenance_by_field":
-                # Always rename metaxy_provenance_by_field to avoid conflicts
-                new_name = f"__upstream_{first_key}__metaxy_provenance_by_field"
+            if col == "provenance_by_field":
+                # Always rename provenance_by_field to avoid conflicts
+                new_name = f"__upstream_{first_key}__provenance_by_field"
                 select_exprs.append(nw.col(col).alias(new_name))
                 upstream_mapping[first_key] = new_name
             elif col in first_renames_spec:
@@ -216,9 +216,9 @@ class NarwhalsJoiner(UpstreamJoiner):
                 if col in id_columns_set:
                     # Always include ID columns for joining, but don't duplicate them
                     select_exprs.append(nw.col(col))
-                elif col == "metaxy_provenance_by_field":
-                    # Always rename metaxy_provenance_by_field to avoid conflicts
-                    new_name = f"__upstream_{upstream_key}__metaxy_provenance_by_field"
+                elif col == "provenance_by_field":
+                    # Always rename provenance_by_field to avoid conflicts
+                    new_name = f"__upstream_{upstream_key}__provenance_by_field"
                     select_exprs.append(nw.col(col).alias(new_name))
                     join_cols.append(new_name)
                     upstream_mapping[upstream_key] = new_name

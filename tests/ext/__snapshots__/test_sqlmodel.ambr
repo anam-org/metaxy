@@ -10,7 +10,7 @@
       'session_id',
       'timestamp',
     ]),
-    'metaxy_provenance_by_field': dict({
+    'provenance_by_field': dict({
       'event': '0e1c4ff52c78531ffe409d2ec18d0fe20a28a6a955666c185dc36c59625ae656',
       'metric': '3f943f7bebadf7fc11989e6419eabde9ca44a17d77cb0976b667628e1d4a2fb9',
     }),
@@ -42,7 +42,7 @@
     'child': list([
       dict({
         'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'total_duration': 'hash_t1',
         }),
         'session_id': 10,
@@ -53,7 +53,7 @@
       }),
       dict({
         'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'total_duration': 'hash_t2',
         }),
         'session_id': 20,
@@ -64,7 +64,7 @@
       }),
       dict({
         'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'total_duration': 'hash_t3',
         }),
         'session_id': 10,
@@ -75,7 +75,7 @@
       }),
       dict({
         'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'total_duration': 'hash_t4',
         }),
         'session_id': 30,
@@ -90,7 +90,7 @@
         'activity_type': 'read',
         'duration': 30.5,
         'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'activity_type': 'hash_a1',
           'duration': 'hash_d1',
         }),
@@ -103,7 +103,7 @@
         'activity_type': 'write',
         'duration': 45.0,
         'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'activity_type': 'hash_a2',
           'duration': 'hash_d2',
         }),
@@ -116,7 +116,7 @@
         'activity_type': 'read',
         'duration': 15.0,
         'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'activity_type': 'hash_a3',
           'duration': 'hash_d3',
         }),
@@ -129,7 +129,7 @@
         'activity_type': 'read',
         'duration': 60.0,
         'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'activity_type': 'hash_a4',
           'duration': 'hash_d4',
         }),
@@ -142,7 +142,7 @@
         'activity_type': 'write',
         'duration': 25.5,
         'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'metaxy_provenance_by_field': dict({
+        'provenance_by_field': dict({
           'activity_type': 'hash_a5',
           'duration': 'hash_d5',
         }),
@@ -225,7 +225,7 @@
       'duration': 120.5,
       'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
       'path': '/videos/v1.mp4',
-      'metaxy_provenance_by_field': dict({
+      'provenance_by_field': dict({
         'duration': 'hash1',
         'frames': 'hash1',
       }),
@@ -236,7 +236,7 @@
       'duration': 90.0,
       'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
       'path': '/videos/v2.mp4',
-      'metaxy_provenance_by_field': dict({
+      'provenance_by_field': dict({
         'duration': 'hash2',
         'frames': 'hash2',
       }),
@@ -247,7 +247,7 @@
       'duration': 150.3,
       'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
       'path': '/videos/v3.mp4',
-      'metaxy_provenance_by_field': dict({
+      'provenance_by_field': dict({
         'duration': 'hash3',
         'frames': 'hash3',
       }),

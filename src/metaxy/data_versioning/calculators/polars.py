@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
-    """Calculates metaxy_provenance_by_field values using polars-hash.
+    """Calculates provenance_by_field values using polars-hash.
 
     Accepts Narwhals LazyFrames and converts internally to Polars for hashing.
     Supports all hash functions available in polars-hash plugin.
@@ -43,7 +43,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         """xxHash64 - fast and cross-database compatible."""
         return HashAlgorithm.XXHASH64
 
-    def calculate_metaxy_provenance_by_field(
+    def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
         feature_spec: "BaseFeatureSpec[IDColumns]",
@@ -51,7 +51,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
     ) -> nw.LazyFrame[Any]:
-        """Calculate metaxy_provenance_by_field using polars-hash.
+        """Calculate provenance_by_field using polars-hash.
 
         Args:
             joined_upstream: Narwhals LazyFrame with upstream data joined
@@ -61,7 +61,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             hash_algorithm: Hash to use (default: xxHash64)
 
         Returns:
-            Narwhals LazyFrame with metaxy_provenance_by_field column added
+            Narwhals LazyFrame with provenance_by_field column added
         """
         algo = hash_algorithm or self.default_algorithm
 
@@ -105,7 +105,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
                 )
 
                 provenance_col_name = upstream_column_mapping.get(
-                    upstream_key_str, "metaxy_provenance_by_field"
+                    upstream_key_str, "provenance_by_field"
                 )
 
                 for upstream_field in sorted(upstream_fields):
@@ -128,12 +128,10 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
 
             field_exprs[field_key_str] = hashed
 
-        # Create metaxy_provenance_by_field struct
+        # Create provenance_by_field struct
         provenance_expr = pl.struct(**field_exprs)  # type: ignore[call-overload]
 
-        result_pl = pl_lazy.with_columns(
-            provenance_expr.alias("metaxy_provenance_by_field")
-        )
+        result_pl = pl_lazy.with_columns(provenance_expr.alias("provenance_by_field"))
 
         # Convert back to Narwhals LazyFrame and apply truncation
         result_nw = nw.from_native(result_pl, eager_only=False)
@@ -141,9 +139,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         # Use truncate_struct_column to apply hash truncation if configured
         # This needs to be eager for the truncation function
         result_eager = result_nw.collect()
-        result_truncated = truncate_struct_column(
-            result_eager, "metaxy_provenance_by_field"
-        )
+        result_truncated = truncate_struct_column(result_eager, "provenance_by_field")
 
         # Convert back to lazy
         return nw.from_native(result_truncated.to_native().lazy(), eager_only=False)

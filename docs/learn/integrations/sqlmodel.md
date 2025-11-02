@@ -93,7 +93,7 @@ When `__tablename__` is not specified, it is automatically generated from the fe
 
 Metaxy's metadata store automatically manages versioning columns:
 
-- `metaxy_provenance_by_field`: Struct column mapping field keys to hashes
+- `provenance_by_field`: Struct column mapping field keys to hashes
 - `feature_version`: Hash of feature specification
 - `snapshot_version`: Hash of entire graph state
 

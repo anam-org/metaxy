@@ -94,7 +94,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -194,7 +194,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"default": "h1"}],
+                "provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)
@@ -383,7 +383,7 @@ def test_snapshot_stores_both_versions(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"default": "h1"}],
+                "provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)

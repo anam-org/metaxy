@@ -46,7 +46,7 @@ with MetaxyConfig.load().get_store() as store:
     diff = store.resolve_update(ChildFeature)
 
     print(
-        f"Identified: {len(diff.added)} new samples, {len(diff.changed)} samples with new metaxy_provenance_by_field"
+        f"Identified: {len(diff.added)} new samples, {len(diff.changed)} samples with new provenance_by_field"
     )
 
     if len(diff.added) > 0:
@@ -59,11 +59,11 @@ with MetaxyConfig.load().get_store() as store:
         store.write_metadata(ChildFeature, diff.changed)
         print(f"✓ Recomputed {len(diff.changed)} changed samples")
 
-    # Show child metaxy_provenance_by_field
+    # Show child provenance_by_field
     child_result = store.read_metadata(ChildFeature, current_only=True)
-    print("\n📋 Child metaxy_provenance_by_field:")
+    print("\n📋 Child provenance_by_field:")
     # Materialize Narwhals LazyFrame to Polars DataFrame
     child_df = child_result.collect().to_polars()
     for row in child_df.iter_rows(named=True):
-        dv = row["metaxy_provenance_by_field"]
+        dv = row["provenance_by_field"]
         print(f"  sample_uid={row['sample_uid']}: {dv}")

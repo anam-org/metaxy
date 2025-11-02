@@ -163,7 +163,7 @@ def test_metadata_store_with_maximum_id_columns(graph: FeatureGraph):
                     "session": ["s1", "s2", "s3"],
                     "device": ["d1", "d2", "d3"],
                     "timestamp": [1000, 2000, 3000],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},
@@ -217,7 +217,7 @@ def test_upstream_with_subset_of_target_id_columns_fails(graph: FeatureGraph):
             {
                 "user_id": [1, 2, 3],
                 # Missing session_id and device_id
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},

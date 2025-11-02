@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_metaxy_provenance_by_field_unchanged_by_project
+# name: test_provenance_by_field_unchanged_by_project
   dict({
     'field1': '9cb9f5bd9b380278e273033d16f07feabda7bdf5b813e9941b0f29e63b20efdb',
     'field2': '0b485f68befbb7abb029b43a698161745c63259b8ad0bc00260b7da4b9830243',

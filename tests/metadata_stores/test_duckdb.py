@@ -31,7 +31,7 @@ def test_duckdb_table_naming(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -122,7 +122,7 @@ def test_duckdb_persistence_across_instances(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},

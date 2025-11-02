@@ -13,14 +13,14 @@ if TYPE_CHECKING:
 
 
 class ProvenanceByFieldCalculator(ABC):
-    """Calculates metaxy_provenance_by_field hash from joined upstream data.
+    """Calculates provenance_by_field hash from joined upstream data.
 
     The calculator takes joined upstream data (output from UpstreamJoiner)
-    and computes the metaxy_provenance_by_field hash for each sample.
+    and computes the provenance_by_field hash for each sample.
 
     This is Step 2 in the data provenance process:
     1. Join upstream features → unified upstream view
-    2. Calculate metaxy_provenance_by_field from upstream → target provenance ← THIS STEP
+    2. Calculate provenance_by_field from upstream → target provenance ← THIS STEP
     3. Diff with current metadata → identify changes
 
     All calculators work with Narwhals LazyFrames for backend compatibility.
@@ -63,7 +63,7 @@ class ProvenanceByFieldCalculator(ABC):
         pass
 
     @abstractmethod
-    def calculate_metaxy_provenance_by_field(
+    def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
         feature_spec: "BaseFeatureSpec[IDColumns]",
@@ -71,29 +71,29 @@ class ProvenanceByFieldCalculator(ABC):
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
     ) -> nw.LazyFrame[Any]:
-        """Calculate metaxy_provenance_by_field column from joined upstream data.
+        """Calculate provenance_by_field column from joined upstream data.
 
         Computes a Merkle tree hash for each sample by:
         1. For each field in the feature:
            a. Concatenate: field_key | code_version | upstream hashes
            b. Hash the concatenated string
         2. Create struct with all field hashes
-        3. Add as metaxy_provenance_by_field column
+        3. Add as provenance_by_field column
 
         Args:
-            joined_upstream: Narwhals LazyFrame with all upstream metaxy_provenance_by_field columns joined
+            joined_upstream: Narwhals LazyFrame with all upstream provenance_by_field columns joined
                 (output from UpstreamJoiner.join_upstream)
             feature_spec: Specification of the feature being computed
             feature_plan: Resolved feature plan with dependencies
             upstream_column_mapping: Maps upstream feature key -> column name
-                where its metaxy_provenance_by_field struct is located in joined_upstream
-                Example: {"video": "__upstream_video__metaxy_provenance_by_field"}
+                where its provenance_by_field struct is located in joined_upstream
+                Example: {"video": "__upstream_video__provenance_by_field"}
             hash_algorithm: Hash algorithm to use. If None, uses self.default_algorithm.
                 Must be in self.supported_algorithms.
 
         Returns:
-            Narwhals LazyFrame with metaxy_provenance_by_field column added
-            Shape: [sample_uid, __upstream_*__metaxy_provenance_by_field columns, metaxy_provenance_by_field (new)]
+            Narwhals LazyFrame with provenance_by_field column added
+            Shape: [sample_uid, __upstream_*__provenance_by_field columns, provenance_by_field (new)]
 
         Raises:
             ValueError: If hash_algorithm not in supported_algorithms

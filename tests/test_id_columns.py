@@ -66,7 +66,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -121,7 +121,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "user_id": [100, 200, 300],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -190,7 +190,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
             {
                 "user_id": [1, 1, 2, 2],
                 "session_id": [10, 20, 10, 30],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -206,7 +206,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
             {
                 "user_id": [1, 1, 2, 3],
                 "session_id": [10, 20, 10, 40],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash5"},
                     {"default": "hash6"},
                     {"default": "hash7"},
@@ -312,7 +312,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "content_id": ["vid_001", "vid_002", "vid_003"],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"frames": "frame_v1"},
                     {"frames": "frame_v2"},
                     {"frames": "frame_v3"},
@@ -333,7 +333,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
     # Step 2: Calculate field provenances
     calculator = PolarsProvenanceByFieldCalculator()
 
-    with_versions = calculator.calculate_metaxy_provenance_by_field(
+    with_versions = calculator.calculate_provenance_by_field(
         joined_upstream=joined,
         feature_spec=ProcessedFeature.spec(),
         feature_plan=plan,
@@ -347,7 +347,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "content_id": ["vid_001", "vid_002"],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"analysis": "old_hash1"},
                     {"analysis": "old_hash2"},
                 ],
@@ -440,7 +440,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
             {
                 "user_id": [1, 2, 3],
                 "session_id": [10, 20, 30],  # Has both columns
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -466,7 +466,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
             {
                 "user_id": [1, 2, 3],
                 # Missing session_id!
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -518,7 +518,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
             {
                 "user_id": [1, 2, 3],
                 "session_id": [10, 20, 30],  # This one has session_id
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash4"},
                     {"default": "hash5"},
                     {"default": "hash6"},
@@ -583,7 +583,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "user_id": [100, 200, 300],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"profile": "user_hash1"},
                         {"profile": "user_hash2"},
                         {"profile": "user_hash3"},
@@ -606,7 +606,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                 {
                     "user_id": [100, 100, 200],
                     "session_id": [1, 2, 1],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"activity": "session_hash1"},
                         {"activity": "session_hash2"},
                         {"activity": "session_hash3"},
@@ -680,7 +680,7 @@ def test_diff_resolver_with_composite_id_columns():
             {
                 "user_id": [1, 1, 2, 2],
                 "session_id": [10, 20, 10, 30],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "new1"},
                     {"default": "new2"},
                     {"default": "new3"},
@@ -696,7 +696,7 @@ def test_diff_resolver_with_composite_id_columns():
             {
                 "user_id": [1, 1, 2],
                 "session_id": [10, 20, 20],  # Note: (2, 20) not in target
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "old1"},  # Changed
                     {"default": "new2"},  # Unchanged
                     {"default": "old3"},  # Will be removed
@@ -821,7 +821,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
                 "user_id": [1, 2],
                 "session_id": [10, 20],
                 "extra_id": [100, 200],  # Extra column, not required by target
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                 ],
@@ -902,7 +902,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
             {
                 "user_id": [1, 2],
                 # Missing session_id
-                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         ).lazy()
     )
@@ -912,7 +912,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
             {
                 "session_id": [10, 20],
                 # Missing user_id
-                "metaxy_provenance_by_field": [{"default": "h3"}, {"default": "h4"}],
+                "provenance_by_field": [{"default": "h3"}, {"default": "h4"}],
             }
         ).lazy()
     )
@@ -962,7 +962,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
             {
                 "id1": [1, 2],
                 # Missing id2 and id3
-                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
                 "extra_col": ["a", "b"],
             }
         ).lazy()
@@ -1009,7 +1009,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

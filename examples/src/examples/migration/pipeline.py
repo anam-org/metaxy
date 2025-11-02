@@ -43,15 +43,12 @@ if result.returncode != 0:
 print(result.stdout)
 
 # Check for idempotence - when both new and changed are 0
-if (
-    "Identified: 0 new samples, 0 samples with new metaxy_provenance_by_field"
-    in result.stdout
-):
+if "Identified: 0 new samples, 0 samples with new provenance_by_field" in result.stdout:
     print("No changes detected (idempotent or migration worked correctly)")
 
 if (
     "changed samples" in result.stdout
-    and "0 samples with new metaxy_provenance_by_field" not in result.stdout
+    and "0 samples with new provenance_by_field" not in result.stdout
 ):
     print("Note: Recomputation occurred (expected if algorithm changed)")
 

@@ -172,7 +172,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "content_id": ["video-001", "video-002", "video-003"],
-                "metaxy_provenance_by_field": [
+                "provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -227,7 +227,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "uuid": ["uuid-123", "uuid-456", "uuid-789"],
-                    "metaxy_provenance_by_field": [
+                    "provenance_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

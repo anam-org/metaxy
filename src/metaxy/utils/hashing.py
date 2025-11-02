@@ -158,10 +158,10 @@ def truncate_struct_column(df: Any, struct_column: str) -> Any:
         ```py
         # With global config set to truncation_length=12:
         df = pl.DataFrame({
-            "metaxy_provenance_by_field": [{"field1": "a" * 64, "field2": "b" * 64}]
+            "provenance_by_field": [{"field1": "a" * 64, "field2": "b" * 64}]
             })
-        result = truncate_struct_column(df, "metaxy_provenance_by_field")
-        # result["metaxy_provenance_by_field"] contains [{"field1": "aaaaaaaaaaaa", "field2": "bbbbbbbbbbbb"}]
+        result = truncate_struct_column(df, "provenance_by_field")
+        # result["provenance_by_field"] contains [{"field1": "aaaaaaaaaaaa", "field2": "bbbbbbbbbbbb"}]
         ```
     """
     length = get_hash_truncation_length()

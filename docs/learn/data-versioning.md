@@ -45,7 +45,7 @@ These versions are sample-level and require access to the metadata store in orde
 
 - **Provenance By Field** is computed from the upstream **Provenance By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
 
-| sample_uid | metaxy_provenance_by_field                    |
+| sample_uid | provenance_by_field                           |
 | ---------- | --------------------------------------------- |
 | video_001  | `{"audio": "a7f3c2d8", "frames": "b9e1f4a2"}` |
 | video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
@@ -251,7 +251,7 @@ Notice:
 
 ## Incremental Computation
 
-The metadata store's `calculate_metaxy_provenance_by_field()` method:
+The metadata store's `calculate_provenance_by_field()` method:
 
 1. Joins upstream feature metadata
 2. Computes sample versions
@@ -264,7 +264,7 @@ The Python pipeline then processes only the delta
 
 ```python
 with store:  # MetadataStore
-    # Metaxy computes metaxy_provenance_by_field and identifies changes
+    # Metaxy computes provenance_by_field and identifies changes
     diff = store.resolve_update(MyFeature)
 
     # Process only changed samples

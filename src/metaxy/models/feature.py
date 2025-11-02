@@ -322,10 +322,10 @@ class FeatureGraph:
     def get_feature_version(self, key: FeatureKey) -> str:
         """Computes the feature version as a single string"""
         hasher = hashlib.sha256()
-        metaxy_provenance_by_field = self.get_feature_version_by_field(key)
-        for field_key in sorted(metaxy_provenance_by_field):
+        provenance_by_field = self.get_feature_version_by_field(key)
+        for field_key in sorted(provenance_by_field):
             hasher.update(field_key.encode())
-            hasher.update(metaxy_provenance_by_field[field_key].encode())
+            hasher.update(provenance_by_field[field_key].encode())
 
         return truncate_hash(hasher.hexdigest())
 
@@ -947,7 +947,7 @@ class BaseFeature(
         return truncate_hash(hasher.hexdigest())
 
     @classmethod
-    def metaxy_provenance_by_field(cls) -> dict[str, str]:
+    def provenance_by_field(cls) -> dict[str, str]:
         """Get the code-level field provenance for this feature.
 
         This returns a static hash based on code versions and dependencies,
