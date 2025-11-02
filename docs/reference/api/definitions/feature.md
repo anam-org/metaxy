@@ -9,3 +9,6 @@ Users can extend this class to define their features.
 ::: metaxy.BaseFeature
 
 ::: metaxy.Feature
+
+!!! note "Code Version Access"
+    Retrieve a feature's code version from its spec: `MyFeature.spec().code_version`.
