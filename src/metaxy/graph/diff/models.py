@@ -138,7 +138,7 @@ class GraphData(FrozenBaseModel):
             for field in node.fields:
                 if field.code_version is None:
                     raise MetaxyEmptyCodeVersionError(
-                        f"Field {field.key.to_string()} in feature {node.key.to_string()} has empty code_version during serialization."
+                        f"Field {field.key.to_string()} in feature {node.key.to_string()} has empty code_version."
                     )
                 fields_list.append(
                     {
@@ -150,7 +150,7 @@ class GraphData(FrozenBaseModel):
 
             if node.code_version is None:
                 raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node.key.to_string()} has empty code_version during serialization."
+                    f"Feature {node.key.to_string()} has empty code_version."
                 )
             nodes_list.append(
                 {
@@ -207,7 +207,7 @@ class GraphData(FrozenBaseModel):
                     or field_data["code_version"] == DEFAULT_CODE_VERSION
                 ):
                     raise MetaxyEmptyCodeVersionError(
-                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version during deserialization."
+                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
                     )
                 fields.append(
                     FieldNode(
@@ -225,7 +225,7 @@ class GraphData(FrozenBaseModel):
                 or node_data["code_version"] == DEFAULT_CODE_VERSION
             ):
                 raise MetaxyEmptyCodeVersionError(
-                    f"Feature {node_data['key']} has empty code_version during deserialization."
+                    f"Feature {node_data['key']} has empty code_version."
                 )
             node = GraphNode(
                 key=FeatureKey(node_data["key"].split("/")),

@@ -151,7 +151,9 @@ class GraphDiff(FrozenBaseModel):
                     }
                 )
             if not node.code_version:
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node.feature_key.to_string()} has empty code_version."
+                )
             added_nodes_list.append(
                 {
                     "key": node.feature_key.to_string(),
@@ -177,7 +179,9 @@ class GraphDiff(FrozenBaseModel):
                 )
 
             if not node.code_version:
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node.feature_key.to_string()} has empty code_version."
+                )
             removed_nodes_list.append(
                 {
                     "key": node.feature_key.to_string(),
@@ -193,7 +197,9 @@ class GraphDiff(FrozenBaseModel):
             added_fields_list = []
             for field in node.added_fields:
                 if not field.new_code_version:
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Node {node.feature_key.to_string()} has empty code_version for field {field.field_key.to_string()}."
+                    )
                 added_fields_list.append(
                     {
                         "key": field.field_key.to_string(),
@@ -205,7 +211,9 @@ class GraphDiff(FrozenBaseModel):
             removed_fields_list = []
             for field in node.removed_fields:
                 if not field.old_code_version:
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Node {node.feature_key.to_string()} has empty code_version."
+                    )
                 removed_fields_list.append(
                     {
                         "key": field.field_key.to_string(),
@@ -217,7 +225,9 @@ class GraphDiff(FrozenBaseModel):
             changed_fields_list = []
             for field in node.changed_fields:
                 if not (field.old_code_version and field.new_code_version):
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Node {node.feature_key.to_string()} has empty code_version."
+                    )
                 changed_fields_list.append(
                     {
                         "key": field.field_key.to_string(),
@@ -229,7 +239,9 @@ class GraphDiff(FrozenBaseModel):
                 )
 
             if not (node.old_code_version and node.new_code_version):
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node.feature_key.to_string()} has empty old/new code_version."
+                )
             changed_nodes_list.append(
                 {
                     "key": node.feature_key.to_string(),
@@ -284,7 +296,9 @@ class GraphDiff(FrozenBaseModel):
                 not node_data["code_version"]
                 or node_data["code_version"] == DEFAULT_CODE_VERSION
             ):
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node_data['key']} has empty code_version."
+                )
             added_nodes.append(
                 AddedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
@@ -316,7 +330,9 @@ class GraphDiff(FrozenBaseModel):
                 not node_data["code_version"]
                 or node_data["code_version"] == DEFAULT_CODE_VERSION
             ):
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node_data['key']} has empty code_version."
+                )
             removed_nodes.append(
                 RemovedNode(
                     feature_key=FeatureKey(node_data["key"].split("/")),
@@ -338,7 +354,9 @@ class GraphDiff(FrozenBaseModel):
                     not field_data["code_version"]
                     or field_data["code_version"] == DEFAULT_CODE_VERSION
                 ):
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
+                    )
                 added_fields.append(
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
@@ -357,7 +375,9 @@ class GraphDiff(FrozenBaseModel):
                     not field_data["code_version"]
                     or field_data["code_version"] == DEFAULT_CODE_VERSION
                 ):
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
+                    )
                 removed_fields.append(
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
@@ -376,7 +396,9 @@ class GraphDiff(FrozenBaseModel):
                     field_data.get(k) in (None, "", DEFAULT_CODE_VERSION)
                     for k in ("old_code_version", "new_code_version")
                 ):
-                    raise MetaxyEmptyCodeVersionError()
+                    raise MetaxyEmptyCodeVersionError(
+                        f"Field {field_data['key']} in feature {node_data['key']} has empty code_version."
+                    )
                 changed_fields.append(
                     FieldChange(
                         field_key=FieldKey(field_data["key"].split("/")),
@@ -395,7 +417,9 @@ class GraphDiff(FrozenBaseModel):
                 node_data.get(k) in (None, "", DEFAULT_CODE_VERSION)
                 for k in ("old_code_version", "new_code_version")
             ):
-                raise MetaxyEmptyCodeVersionError()
+                raise MetaxyEmptyCodeVersionError(
+                    f"Node {node_data['key']} has empty old/new code_version."
+                )
             changed_nodes.append(
                 NodeChange(
                     feature_key=FeatureKey(node_data["key"].split("/")),
