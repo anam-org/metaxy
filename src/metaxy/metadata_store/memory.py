@@ -144,7 +144,7 @@ class InMemoryMetadataStore(MetadataStore):
         if storage_key in self._storage:
             del self._storage[storage_key]
 
-    def _read_metadata_native(
+    def _read_local(
         self,
         feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,

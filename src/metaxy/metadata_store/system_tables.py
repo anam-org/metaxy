@@ -109,7 +109,7 @@ class SystemTableStorage:
             List of migration IDs that have been started/executed
         """
         # First try to read without filter to check if table exists
-        lazy = self.store._read_metadata_native(MIGRATION_EVENTS_KEY)
+        lazy = self.store._read_local(MIGRATION_EVENTS_KEY)
 
         if lazy is None:
             return []
@@ -176,7 +176,7 @@ class SystemTableStorage:
             Lazy frame with events sorted by timestamp
         """
         # Read the table first without project filter
-        lazy = self.store._read_metadata_native(
+        lazy = self.store._read_local(
             MIGRATION_EVENTS_KEY,
             filters=[nw.col("migration_id") == migration_id],
         )
@@ -312,7 +312,7 @@ class SystemTableStorage:
         Returns:
             Lazy frame with migration events
         """
-        lazy = self.store._read_metadata_native(MIGRATION_EVENTS_KEY)
+        lazy = self.store._read_local(MIGRATION_EVENTS_KEY)
 
         if lazy is None:
             # No events yet
@@ -421,7 +421,7 @@ class SystemTableStorage:
             - features_count: Number of features affected
             - rows_affected: Total rows affected
         """
-        lazy = self.store._read_metadata_native(MIGRATION_EVENTS_KEY)
+        lazy = self.store._read_local(MIGRATION_EVENTS_KEY)
 
         if lazy is None:
             return []

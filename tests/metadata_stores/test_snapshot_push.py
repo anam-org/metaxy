@@ -78,7 +78,7 @@ def test_record_snapshot_first_time():
             # Verify data was written to feature_versions table
             from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
 
-            versions_lazy = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_local(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
 
@@ -132,7 +132,7 @@ def test_record_snapshot_metadata_only_changes():
             assert result1.metadata_changed is False
 
             # Verify initial state
-            versions_lazy = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_local(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
             assert versions_df.height == 2  # upstream + downstream
@@ -194,7 +194,7 @@ def test_record_snapshot_metadata_only_changes():
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify new rows were appended
-                versions_lazy_after = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                versions_lazy_after = store._read_local(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_after is not None
                 versions_df_after = versions_lazy_after.collect().to_polars()
                 # Old rows + new row for downstream (upstream unchanged)
@@ -243,7 +243,7 @@ def test_record_snapshot_no_changes():
             # Verify no new rows appended
             from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
 
-            versions_lazy = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+            versions_lazy = store._read_local(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
             versions_df = versions_lazy.collect().to_polars()
             assert versions_df.height == 1  # Still only 1 row
@@ -347,7 +347,7 @@ def test_record_snapshot_partial_metadata_changes():
                 assert len(result2.features_with_spec_changes) == 2
 
                 # Verify correct rows appended
-                versions_lazy = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_local(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
                 # Original 3 + 2 new rows (B and C)
@@ -388,7 +388,7 @@ def test_record_snapshot_append_only_behavior():
             result1 = store.record_feature_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
-            versions_lazy_v1 = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+            versions_lazy_v1 = store._read_local(FEATURE_VERSIONS_KEY)
             assert versions_lazy_v1 is not None
             versions_df_v1 = versions_lazy_v1.collect().to_polars()
             assert versions_df_v1.height == 2  # upstream + my_feature
@@ -437,7 +437,7 @@ def test_record_snapshot_append_only_behavior():
                 assert result2.metadata_changed is True
 
                 # Verify append-only: old rows still exist
-                versions_lazy_v2 = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                versions_lazy_v2 = store._read_local(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_v2 is not None
                 versions_df_v2 = versions_lazy_v2.collect().to_polars()
 
@@ -616,7 +616,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                 )
 
                 # Get final feature_versions table state
-                versions_lazy = store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                versions_lazy = store._read_local(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
 

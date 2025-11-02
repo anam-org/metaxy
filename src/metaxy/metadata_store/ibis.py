@@ -345,7 +345,7 @@ class IbisMetadataStore(MetadataStore):
         if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
-    def _read_metadata_native(
+    def _read_local(
         self,
         feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
