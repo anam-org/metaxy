@@ -271,10 +271,10 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
 
 
 def test_provenance_method(snapshot: SnapshotAssertion) -> None:
-    """Test that SQLModelFeature.provenance_by_field() works correctly.
+    """Test that SQLModelFeature.metaxy_provenance_by_field() works correctly.
 
     Verifies that:
-    - provenance_by_field() returns dict mapping field keys to hashes
+    - metaxy_provenance_by_field() returns dict mapping field keys to hashes
     - Each hash is 64 characters
     """
 
@@ -289,23 +289,23 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "provenance_by_field"  # pyright: ignore[reportIncompatibleVariableOverride]
+        __tablename__: str = "metaxy_provenance_by_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         source_path: str  # Metadata column
         timestamp: int  # Metadata column
 
-    provenance_by_field = DataVersionFeature.provenance_by_field()
+    metaxy_provenance_by_field = DataVersionFeature.metaxy_provenance_by_field()
 
     # Should return dict mapping field keys to hashes
-    assert isinstance(provenance_by_field, dict)
-    assert "processed_data" in provenance_by_field
-    assert "embeddings" in provenance_by_field
+    assert isinstance(metaxy_provenance_by_field, dict)
+    assert "processed_data" in metaxy_provenance_by_field
+    assert "embeddings" in metaxy_provenance_by_field
 
     # Each hash should be 64 characters
-    assert all(len(v) == 64 for v in provenance_by_field.values())
+    assert all(len(v) == 64 for v in metaxy_provenance_by_field.values())
 
     # Snapshot
-    assert provenance_by_field == snapshot
+    assert metaxy_provenance_by_field == snapshot
 
 
 def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
@@ -720,13 +720,13 @@ def test_sqlmodel_feature_with_duckdb_store(
     db_path = tmp_path / "test.duckdb"
 
     with DuckDBMetadataStore(db_path, auto_create_tables=True) as store:
-        # Create metadata DataFrame with provenance_by_field column (required by metadata store)
+        # Create metadata DataFrame with metaxy_provenance_by_field column (required by metadata store)
         metadata_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/videos/v1.mp4", "/videos/v2.mp4", "/videos/v3.mp4"],
                 "duration": [120.5, 90.0, 150.3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash1", "duration": "hash1"},
                     {"frames": "hash2", "duration": "hash2"},
                     {"frames": "hash3", "duration": "hash3"},
@@ -745,8 +745,8 @@ def test_sqlmodel_feature_with_duckdb_store(
         assert len(result_df) == 3
         assert set(result_df["sample_uid"].to_list()) == {1, 2, 3}
 
-        # Check that provenance_by_field column was added
-        assert "provenance_by_field" in result_df.columns
+        # Check that metaxy_provenance_by_field column was added
+        assert "metaxy_provenance_by_field" in result_df.columns
 
         # Check feature_version column
         assert "feature_version" in result_df.columns
@@ -872,7 +872,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
                 "activity_type": ["read", "write", "read", "read", "write"],
                 "duration": [30.5, 45.0, 15.0, 60.0, 25.5],
                 "timestamp": [1000, 1100, 1200, 1300, 1400],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"activity_type": "hash_a1", "duration": "hash_d1"},
                     {"activity_type": "hash_a2", "duration": "hash_d2"},
                     {"activity_type": "hash_a3", "duration": "hash_d3"},
@@ -919,7 +919,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
                     "User 2 Session 10",
                     "User 2 Session 30",
                 ],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"total_duration": "hash_t1"},
                     {"total_duration": "hash_t2"},
                     {"total_duration": "hash_t3"},
@@ -990,14 +990,14 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     assert len(version) == 64
 
     # Verify field provenance structure
-    provenance_by_field = MultiKeyFeature.provenance_by_field()
-    assert "event" in provenance_by_field
-    assert "metric" in provenance_by_field
+    metaxy_provenance_by_field = MultiKeyFeature.metaxy_provenance_by_field()
+    assert "event" in metaxy_provenance_by_field
+    assert "metric" in metaxy_provenance_by_field
 
     # Snapshot versions
     assert {
         "feature_version": version,
-        "provenance_by_field": provenance_by_field,
+        "metaxy_provenance_by_field": metaxy_provenance_by_field,
         "id_columns": MultiKeyFeature.spec().id_columns,
     } == snapshot
 
@@ -1158,7 +1158,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
                     "2024-01-01",
                 ],
                 "value_a": [10.0, 20.0, 30.0, 40.0, 50.0],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"value_a": "hash_a1"},
                     {"value_a": "hash_a2"},
                     {"value_a": "hash_a3"},
@@ -1175,7 +1175,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
                 "user_id": [1, 1, 2, 3],  # Missing (2, 2024-01-02)
                 "date": ["2024-01-01", "2024-01-02", "2024-01-01", "2024-01-01"],
                 "value_b": [100.0, 200.0, 300.0, 500.0],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"value_b": "hash_b1"},
                     {"value_b": "hash_b2"},
                     {"value_b": "hash_b3"},
@@ -1651,7 +1651,7 @@ def test_sqlmodel_rename_validation_with_store(
                 "status": ["pending", "active", "done"],
                 "priority": [1, 2, 3],
                 "description": ["desc1", "desc2", "desc3"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"source_data": "hash1"},
                     {"source_data": "hash2"},
                     {"source_data": "hash3"},
@@ -1666,7 +1666,7 @@ def test_sqlmodel_rename_validation_with_store(
                 "sample_uid": [1, 2, 3],
                 "status": ["processed", "processing", "queued"],
                 "result": ["result1", "result2", "result3"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"target_data": "thash1"},
                     {"target_data": "thash2"},
                     {"target_data": "thash3"},

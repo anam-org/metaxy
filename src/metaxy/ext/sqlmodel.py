@@ -213,10 +213,10 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
 
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
-    metaxy_provenance_by_field: str | None = Field(
+    metaxy_metaxy_provenance_by_field: str | None = Field(
         default=None,
         sa_type=JSON,
-        sa_column_kwargs={"name": "provenance_by_field", "nullable": True},
+        sa_column_kwargs={"name": "metaxy_provenance_by_field", "nullable": True},
     )
 
     metaxy_feature_version: str | None = Field(

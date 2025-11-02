@@ -301,10 +301,10 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
         MetaxyConfig.reset()
 
 
-def test_provenance_by_field_unchanged_by_project(
+def test_metaxy_provenance_by_field_unchanged_by_project(
     snapshot: SnapshotAssertion,
 ) -> None:
-    """Test that provenance_by_field() method is also unchanged by project.
+    """Test that metaxy_provenance_by_field() method is also unchanged by project.
 
     This verifies the entire field provenance pipeline ignores project metadata.
     """
@@ -345,9 +345,9 @@ def test_provenance_by_field_unchanged_by_project(
         ):
             pass
 
-    # provenance_by_field() should be identical
-    provenance_a = FeatureA.provenance_by_field()
-    provenance_b = FeatureB.provenance_by_field()
+    # metaxy_provenance_by_field() should be identical
+    provenance_a = FeatureA.metaxy_provenance_by_field()
+    provenance_b = FeatureB.metaxy_provenance_by_field()
 
     assert provenance_a == provenance_b
     assert provenance_a == snapshot

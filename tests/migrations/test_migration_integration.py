@@ -174,7 +174,7 @@ def test_basic_migration_flow(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -277,7 +277,7 @@ def test_upstream_downstream_migration(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -287,7 +287,7 @@ def test_upstream_downstream_migration(
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
-        # Don't provide samples - let system auto-load upstream and calculate provenance_by_field
+        # Don't provide samples - let system auto-load upstream and calculate metaxy_provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
@@ -331,7 +331,7 @@ def test_upstream_downstream_migration(
         new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "new_h1"},
                     {"default": "new_h2"},
                     {"default": "new_h3"},
@@ -382,12 +382,12 @@ def test_migration_idempotency(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        # Write downstream - let system auto-load upstream and calculate metaxy_provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
@@ -408,7 +408,10 @@ def test_migration_idempotency(
         new_upstream = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "new_h1"},
+                    {"default": "new_h2"},
+                ],
             }
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
@@ -465,12 +468,12 @@ def test_migration_dry_run(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
-        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        # Write downstream - let system auto-load upstream and calculate metaxy_provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
@@ -496,7 +499,10 @@ def test_migration_dry_run(
         new_upstream = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "new_h1"},
+                    {"default": "new_h2"},
+                ],
             }
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
@@ -529,8 +535,8 @@ def test_migration_dry_run(
 
         assert len(final_data) == len(initial_data)
         # Compare field_provenance (dict types can't be in sets, so compare directly)
-        final_dvs = final_data["provenance_by_field"].to_list()
-        initial_dvs = initial_data["provenance_by_field"].to_list()
+        final_dvs = final_data["metaxy_provenance_by_field"].to_list()
+        initial_dvs = initial_data["metaxy_provenance_by_field"].to_list()
         assert final_dvs == initial_dvs
 
 
@@ -604,13 +610,13 @@ def test_field_dependency_change(tmp_path):
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "hf", "audio": "ha"}],
+                "metaxy_provenance_by_field": [{"frames": "hf", "audio": "ha"}],
             }
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream
-        # Write downstream - let system auto-load upstream and calculate provenance_by_field
+        # Write downstream - let system auto-load upstream and calculate metaxy_provenance_by_field
         diff = store_v1.resolve_update(DownstreamV1)
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
@@ -726,18 +732,18 @@ def test_feature_dependency_swap(tmp_path):
         store_v1.write_metadata(
             upstream_a_v1,
             pl.DataFrame(
-                {"sample_uid": [1], "provenance_by_field": [{"default": "ha"}]}
+                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
             ),
         )
         store_v1.write_metadata(
             upstream_b_v1,
             pl.DataFrame(
-                {"sample_uid": [1], "provenance_by_field": [{"default": "hb"}]}
+                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
             ),
         )
 
         # Write downstream (depends on A in v1)
-        # Let system auto-load upstream and calculate provenance_by_field
+        # Let system auto-load upstream and calculate metaxy_provenance_by_field
         diff = store_v1.resolve_update(down_v1)
         if len(diff.added) > 0:
             store_v1.write_metadata(down_v1, diff.added)
@@ -780,7 +786,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
         store.write_metadata(SimpleV1, data)
@@ -809,7 +815,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store_v1.write_metadata(SimpleV1, data)

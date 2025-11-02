@@ -63,7 +63,7 @@ def copy(
         bool,
         cyclopts.Parameter(
             name=["--incremental"],
-            help="Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination is empty or uses deduplication.",
+            help="Use incremental copy (compare metaxy_provenance_by_field to skip existing rows). Disable for better performance if destination is empty or uses deduplication.",
         ),
     ] = True,
 ):

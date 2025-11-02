@@ -59,10 +59,10 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
                 "These should come from the feature spec's id_columns property."
             )
 
-        # Select only ID columns and provenance_by_field from target_provenance
+        # Select only ID columns and metaxy_provenance_by_field from target_provenance
         # (it may have intermediate joined columns from upstream)
         target_provenance = target_provenance.select(
-            id_columns + ["provenance_by_field"]
+            id_columns + ["metaxy_provenance_by_field"]
         )
 
         if current_metadata is None:
@@ -72,7 +72,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
             # Create empty schema with ID columns
             schema = {col: [] for col in id_columns}
-            schema["provenance_by_field"] = []
+            schema["metaxy_provenance_by_field"] = []
             empty_lazy = nw.from_native(pl.LazyFrame(schema))
 
             return LazyDiffResult(
@@ -81,9 +81,11 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
                 removed=empty_lazy,
             )
 
-        # Keep only ID columns and provenance_by_field from current for comparison
+        # Keep only ID columns and metaxy_provenance_by_field from current for comparison
         select_cols = id_columns + [
-            nw.col("provenance_by_field").alias("__current_provenance_by_field")
+            nw.col("metaxy_provenance_by_field").alias(
+                "__current_metaxy_provenance_by_field"
+            )
         ]
         current_comparison = current_metadata.select(*select_cols)
 
@@ -96,28 +98,28 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
         # Build lazy queries for each category
         added_lazy = (
-            compared.filter(nw.col("__current_provenance_by_field").is_null())
-            .drop("__current_provenance_by_field")
-            .select(id_columns + ["provenance_by_field"])
+            compared.filter(nw.col("__current_metaxy_provenance_by_field").is_null())
+            .drop("__current_metaxy_provenance_by_field")
+            .select(id_columns + ["metaxy_provenance_by_field"])
         )
 
         changed_lazy = (
             compared.filter(
-                ~nw.col("__current_provenance_by_field").is_null()
+                ~nw.col("__current_metaxy_provenance_by_field").is_null()
                 & (
-                    nw.col("provenance_by_field")
-                    != nw.col("__current_provenance_by_field")
+                    nw.col("metaxy_provenance_by_field")
+                    != nw.col("__current_metaxy_provenance_by_field")
                 )
             )
-            .drop("__current_provenance_by_field")
-            .select(id_columns + ["provenance_by_field"])
+            .drop("__current_metaxy_provenance_by_field")
+            .select(id_columns + ["metaxy_provenance_by_field"])
         )
 
         removed_lazy = current_metadata.join(
             target_provenance.select(id_columns),
             on=id_columns,
             how="anti",
-        ).select(id_columns + ["provenance_by_field"])
+        ).select(id_columns + ["metaxy_provenance_by_field"])
 
         # Return lazy frames - caller will materialize if needed
         return LazyDiffResult(

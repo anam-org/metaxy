@@ -62,7 +62,7 @@ def test_copy_metadata_all_features(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -75,7 +75,10 @@ def test_copy_metadata_all_features(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
-                "provenance_by_field": [{"field_b": "hash10"}, {"field_b": "hash20"}],
+                "metaxy_provenance_by_field": [
+                    {"field_b": "hash10"},
+                    {"field_b": "hash20"},
+                ],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
@@ -131,7 +134,7 @@ def test_copy_metadata_specific_features(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -140,7 +143,7 @@ def test_copy_metadata_specific_features(
             {
                 "sample_uid": ["s1"],
                 "field_b": [10],
-                "provenance_by_field": [{"field_b": "hash10"}],
+                "metaxy_provenance_by_field": [{"field_b": "hash10"}],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
@@ -196,7 +199,10 @@ def test_copy_metadata_with_snapshot_filter(
                 {
                     "sample_uid": ["s1", "s2"],
                     "field_a": [1, 2],
-                    "provenance_by_field": [{"field_a": "hash1"}, {"field_a": "hash2"}],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                    ],
                     "feature_version": [FeatureA.feature_version()] * 2,
                     "snapshot_version": [snapshot_1] * 2,
                 }
@@ -208,7 +214,7 @@ def test_copy_metadata_with_snapshot_filter(
                 {
                     "sample_uid": ["s3", "s4", "s5"],
                     "field_a": [3, 4, 5],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field_a": "hash3"},
                         {"field_a": "hash4"},
                         {"field_a": "hash5"},
@@ -278,7 +284,7 @@ def test_copy_metadata_missing_feature(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -320,7 +326,7 @@ def test_copy_metadata_preserves_feature_version(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -373,7 +379,7 @@ def test_copy_metadata_preserves_snapshot_version(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -416,7 +422,7 @@ def test_copy_metadata_no_rows_for_snapshot(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -449,7 +455,7 @@ def test_copy_metadata_with_global_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -462,7 +468,7 @@ def test_copy_metadata_with_global_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -524,7 +530,7 @@ def test_copy_metadata_with_per_feature_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -537,7 +543,7 @@ def test_copy_metadata_with_per_feature_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_b": [10, 20, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -604,7 +610,7 @@ def test_copy_metadata_with_mixed_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_a": [1, 2, 3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -618,7 +624,7 @@ def test_copy_metadata_with_mixed_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -685,7 +691,10 @@ def test_copy_metadata_with_mixed_feature_types(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_a": [1, 2],
-                "provenance_by_field": [{"field_a": "hash1"}, {"field_a": "hash2"}],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "hash1"},
+                    {"field_a": "hash2"},
+                ],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -694,7 +703,10 @@ def test_copy_metadata_with_mixed_feature_types(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
-                "provenance_by_field": [{"field_b": "hash10"}, {"field_b": "hash20"}],
+                "metaxy_provenance_by_field": [
+                    {"field_b": "hash10"},
+                    {"field_b": "hash20"},
+                ],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)

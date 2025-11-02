@@ -1,9 +1,9 @@
 """Test resolve_update for root features (features with no upstream dependencies).
 
 Root features are special because:
-1. They have no upstream dependencies to calculate provenance_by_field from
-2. Users provide provenance_by_field directly in their samples
-3. resolve_update should compare user-provided provenance_by_field with stored metadata
+1. They have no upstream dependencies to calculate metaxy_provenance_by_field from
+2. Users provide metaxy_provenance_by_field directly in their samples
+3. resolve_update should compare user-provided metaxy_provenance_by_field with stored metadata
 """
 
 from typing import Any
@@ -36,7 +36,7 @@ class VideoEmbeddingsFeature(
 ):
     """Root feature - video embeddings with no upstream dependencies.
 
-    Users provide provenance_by_field directly based on their video files.
+    Users provide metaxy_provenance_by_field directly based on their video files.
     """
 
     pass
@@ -53,7 +53,7 @@ class TestResolveUpdateRootFeatures:
         """Test that resolve_update raises ValueError without samples parameter.
 
         Root features (no upstream dependencies) require user-provided samples
-        with provenance_by_field column.
+        with metaxy_provenance_by_field column.
         """
         store_type, config = store_config
         store = store_type(**config)  # type: ignore[abstract]
@@ -88,7 +88,7 @@ class TestResolveUpdateRootFeatures:
             user_samples = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
                         {"embedding": "hash3"},
@@ -126,7 +126,7 @@ class TestResolveUpdateRootFeatures:
             initial_metadata = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
                         {"embedding": "hash3"},
@@ -141,7 +141,7 @@ class TestResolveUpdateRootFeatures:
             user_samples = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 4],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},  # unchanged
                         {"embedding": "hash2_updated"},  # changed
                         {"embedding": "hash4"},  # new

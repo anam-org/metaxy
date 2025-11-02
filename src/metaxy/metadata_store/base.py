@@ -462,7 +462,7 @@ class MetadataStore(ABC):
         Args:
             feature: Feature to write metadata for
             df: Narwhals DataFrame or Polars DataFrame containing metadata.
-                Must have 'provenance_by_field' column of type Struct with fields matching feature's fields.
+                Must have 'metaxy_provenance_by_field' column of type Struct with fields matching feature's fields.
                 May optionally contain 'feature_version' column (for migrations).
 
         Raises:
@@ -562,17 +562,17 @@ class MetadataStore(ABC):
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
-        # Check for provenance_by_field column
-        if "provenance_by_field" not in df.columns:
+        # Check for metaxy_provenance_by_field column
+        if "metaxy_provenance_by_field" not in df.columns:
             raise MetadataSchemaError(
-                "DataFrame must have 'provenance_by_field' column"
+                "DataFrame must have 'metaxy_provenance_by_field' column"
             )
 
-        # Check that provenance_by_field is a struct
-        provenance_type = df.schema["provenance_by_field"]
+        # Check that metaxy_provenance_by_field is a struct
+        provenance_type = df.schema["metaxy_provenance_by_field"]
         if not isinstance(provenance_type, pl.Struct):
             raise MetadataSchemaError(
-                f"'provenance_by_field' column must be pl.Struct, got {provenance_type}"
+                f"'metaxy_provenance_by_field' column must be pl.Struct, got {provenance_type}"
             )
 
         # Check for feature_version column
@@ -585,7 +585,7 @@ class MetadataStore(ABC):
 
     def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
-        # System tables don't need provenance_by_field column
+        # System tables don't need metaxy_provenance_by_field column
         pass
 
     @abstractmethod
@@ -1362,7 +1362,7 @@ class MetadataStore(ABC):
                     if incremental:
                         try:
                             # Read existing sample_uids from destination for the same snapshot
-                            # This is much cheaper than comparing provenance_by_field structs
+                            # This is much cheaper than comparing metaxy_provenance_by_field structs
                             dest_lazy = self.read_metadata(
                                 feature_key,
                                 allow_fallback=False,
@@ -1478,7 +1478,7 @@ class MetadataStore(ABC):
 
         Returns:
             Dict mapping upstream feature keys (as strings) to Narwhals LazyFrames.
-            Each LazyFrame has a 'provenance_by_field' column (Struct).
+            Each LazyFrame has a 'metaxy_provenance_by_field' column (Struct).
 
         Raises:
             DependencyError: If required upstream feature is missing
@@ -1608,12 +1608,12 @@ class MetadataStore(ABC):
         Args:
             feature: Feature class to resolve updates for
             samples: Pre-computed DataFrame with ID columns
-                and `"provenance_by_field"` column. When provided, `MetadataStore` skips upstream loading, joining,
+                and `"metaxy_provenance_by_field"` column. When provided, `MetadataStore` skips upstream loading, joining,
                 and field provenance calculation.
 
                 **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate `"provenance_by_field"` from, so users
-                must provide samples with manually computed `"provenance_by_field"` column.
+                Root features don't have upstream to calculate `"metaxy_provenance_by_field"` from, so users
+                must provide samples with manually computed `"metaxy_provenance_by_field"` column.
 
                 For non-root features, use this when you
                 want to bypass the automatic upstream loading and field provenance calculation.
@@ -1643,7 +1643,7 @@ class MetadataStore(ABC):
             # Root feature - samples required
             samples = pl.DataFrame({
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                "metaxy_provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
             })
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
@@ -1728,8 +1728,8 @@ class MetadataStore(ABC):
         if not plan.deps:
             raise ValueError(
                 f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_uid and provenance_by_field columns. "
-                f"Root features require manual provenance_by_field computation."
+                f"Must provide 'samples' parameter with sample_uid and metaxy_provenance_by_field columns. "
+                f"Root features require manual metaxy_provenance_by_field computation."
             )
 
         # Non-root features without samples: automatic upstream loading
@@ -1844,7 +1844,7 @@ class MetadataStore(ABC):
         # Calculate field_provenance using the selected calculator
         # For IbisProvenanceByFieldCalculator: executes hash computation in SQL
         # For PolarsProvenanceByFieldCalculator: materializes to compute hashes in memory
-        target_provenance_nw = calculator.calculate_provenance_by_field(
+        target_provenance_nw = calculator.calculate_metaxy_provenance_by_field(
             joined_upstream=joined,
             feature_spec=feature.spec(),
             feature_plan=plan,
@@ -1933,7 +1933,7 @@ class MetadataStore(ABC):
         # Wrap in Narwhals before passing to calculator
         joined_nw = nw.from_native(joined_pl, eager_only=False)
 
-        target_provenance_nw = polars_calculator.calculate_provenance_by_field(
+        target_provenance_nw = polars_calculator.calculate_metaxy_provenance_by_field(
             joined_upstream=joined_nw,
             feature_spec=feature.spec(),
             feature_plan=plan,
@@ -1941,11 +1941,11 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Select only sample_uid and provenance_by_field for diff
+        # Select only sample_uid and metaxy_provenance_by_field for diff
         # The calculator returns the full joined DataFrame with upstream columns,
         # but diff resolver only needs these two columns
         target_provenance_nw = target_provenance_nw.select(
-            ["sample_uid", "provenance_by_field"]
+            ["sample_uid", "metaxy_provenance_by_field"]
         )
 
         # Step 3: Diff with current (filtered by feature_version at database level)

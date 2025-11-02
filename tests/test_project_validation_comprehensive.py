@@ -123,7 +123,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -163,7 +163,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -201,7 +201,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -252,7 +252,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field1": [10, 20, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field1": "hash1"},
                     {"field1": "hash2"},
                     {"field1": "hash3"},
@@ -263,7 +263,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field2": [100, 200, 300],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field2": "hash4"},
                     {"field2": "hash5"},
                     {"field2": "hash6"},

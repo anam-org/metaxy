@@ -37,7 +37,7 @@ class IbisMetadataStore(MetadataStore):
     - And other backends with struct support
 
     Note: Backends without native struct support (e.g., SQLite) are NOT supported.
-    The provenance_by_field field requires struct type support for proper storage.
+    The metaxy_provenance_by_field field requires struct type support for proper storage.
 
     Storage layout:
     - Each feature gets its own table: {namespace}__{feature_name}

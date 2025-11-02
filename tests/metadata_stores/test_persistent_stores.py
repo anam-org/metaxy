@@ -27,7 +27,7 @@ def test_store_requires_context_manager(
     data = pl.DataFrame(
         {
             "sample_uid": [1, 2],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"frames": "h1", "audio": "h1"},
                 {"frames": "h2", "audio": "h2"},
             ],
@@ -55,7 +55,7 @@ def test_store_context_manager(
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data)
@@ -76,7 +76,7 @@ def test_write_and_read_metadata(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash1", "audio": "hash1"},
                     {"frames": "hash2", "audio": "hash2"},
                     {"frames": "hash3", "audio": "hash3"},
@@ -91,14 +91,14 @@ def test_write_and_read_metadata(
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
-        assert "provenance_by_field" in result.columns
+        assert "metaxy_provenance_by_field" in result.columns
         assert "path" in result.columns
 
 
 def test_write_invalid_schema(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
-    """Test that writing without provenance_by_field column raises error."""
+    """Test that writing without metaxy_provenance_by_field column raises error."""
     with persistent_store as store:
         invalid_df = pl.DataFrame(
             {
@@ -107,7 +107,7 @@ def test_write_invalid_schema(
             }
         )
 
-        with pytest.raises(MetadataSchemaError, match="provenance_by_field"):
+        with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
             store.write_metadata(test_features["UpstreamFeatureA"], invalid_df)
 
 
@@ -119,7 +119,7 @@ def test_write_append(
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -129,7 +129,7 @@ def test_write_append(
         df2 = pl.DataFrame(
             {
                 "sample_uid": [3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
                 ],
@@ -154,7 +154,7 @@ def test_read_with_filters(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -183,7 +183,7 @@ def test_read_with_column_selection(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/a", "/b", "/c"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -195,11 +195,11 @@ def test_read_with_column_selection(
         result = collect_to_polars(
             store.read_metadata(
                 test_features["UpstreamFeatureA"],
-                columns=["sample_uid", "provenance_by_field"],
+                columns=["sample_uid", "metaxy_provenance_by_field"],
             )
         )
 
-        assert set(result.columns) == {"sample_uid", "provenance_by_field"}
+        assert set(result.columns) == {"sample_uid", "metaxy_provenance_by_field"}
         assert "path" not in result.columns
 
 
@@ -227,7 +227,7 @@ def test_has_feature_local(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -258,7 +258,7 @@ def test_list_features(
         data_a = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data_a)
@@ -266,7 +266,7 @@ def test_list_features(
         data_b = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureB"], data_b)
@@ -304,7 +304,7 @@ def test_system_tables(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -367,7 +367,7 @@ def test_nested_context_managers(
             metadata = pl.DataFrame(
                 {
                     "sample_uid": [1],
-                    "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
                 }
             )
             store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -400,7 +400,7 @@ def test_multiple_features(
         data_a = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -412,7 +412,7 @@ def test_multiple_features(
         data_b = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},

@@ -77,7 +77,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
     1. For each affected feature, derives old/new feature_versions from snapshots
     2. Finds rows with old feature_version
     3. Recalculates field_provenance based on new feature definition
-    4. Writes new rows with updated feature_version and provenance_by_field
+    4. Writes new rows with updated feature_version and metaxy_provenance_by_field
     5. Preserves all user metadata columns (immutable)
 
     Use ONLY when code changed but computation results would be identical:
@@ -250,12 +250,13 @@ class DataVersionReconciliation(pydantic.BaseModel):
         user_columns = [
             c
             for c in existing_metadata_df.columns
-            if c not in ["provenance_by_field", "feature_version", "snapshot_version"]
+            if c
+            not in ["metaxy_provenance_by_field", "feature_version", "snapshot_version"]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
         # 5. Use resolve_update to calculate field_provenance based on current upstream
-        # Don't pass samples - let resolve_update auto-load upstream and calculate provenance_by_field
+        # Don't pass samples - let resolve_update auto-load upstream and calculate metaxy_provenance_by_field
         diff_result = store.resolve_update(feature_cls)
 
         # Convert to Polars for the join to avoid cross-backend issues
@@ -266,7 +267,9 @@ class DataVersionReconciliation(pydantic.BaseModel):
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_provenance = changed_pl.select(["sample_uid", "provenance_by_field"])
+            new_provenance = changed_pl.select(
+                ["sample_uid", "metaxy_provenance_by_field"]
+            )
             df_to_write = sample_metadata_pl.join(
                 new_provenance, on="sample_uid", how="inner"
             )

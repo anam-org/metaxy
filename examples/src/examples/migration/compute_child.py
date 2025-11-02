@@ -23,11 +23,11 @@ with config.get_store() as store:
     print(f"  feature_version: {ChildFeature.feature_version()[:16]}...")
 
     # Use resolve_update to calculate what needs computing
-    # Don't pass samples - let system auto-load upstream and calculate provenance_by_field
+    # Don't pass samples - let system auto-load upstream and calculate metaxy_provenance_by_field
     diff_result = store.resolve_update(ChildFeature)
 
     print(
-        f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new provenance_by_field"
+        f"Identified: {len(diff_result.added)} new samples, {len(diff_result.changed)} samples with new metaxy_provenance_by_field"
     )
 
     if len(diff_result.added) > 0:
@@ -44,7 +44,7 @@ with config.get_store() as store:
 
     child_result = store.read_metadata(ChildFeature, current_only=True)
     child_eager = nw.from_native(child_result.collect())
-    print("\n📋 Child provenance_by_field:")
+    print("\n📋 Child metaxy_provenance_by_field:")
     for row in child_eager.iter_rows(named=True):
-        dv = row["provenance_by_field"]["predictions"]
+        dv = row["metaxy_provenance_by_field"]["predictions"]
         print(f"  sample_uid={row['sample_uid']}: {dv[:16]}...")

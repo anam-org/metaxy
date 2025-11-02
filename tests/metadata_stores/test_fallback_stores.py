@@ -160,7 +160,7 @@ def test_fallback_store_warning_issued(
     root_data = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"default": "hash1"},
                 {"default": "hash2"},
                 {"default": "hash3"},
@@ -220,7 +220,7 @@ def test_fallback_store_warning_issued(
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
                 ).sort("sample_uid")
-                versions = added_sorted["provenance_by_field"].to_list()
+                versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
                 results[(primary_store_type, fallback_store_type, prefer_native)] = {
                     "added": len(result.added),
@@ -278,7 +278,7 @@ def test_no_fallback_warning_when_all_local(
             root_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                         {"default": "hash3"},
@@ -343,7 +343,7 @@ def test_fallback_store_switches_to_polars_components(
     root_data = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"default": "hash1"},
                 {"default": "hash2"},
                 {"default": "hash3"},
@@ -385,7 +385,7 @@ def test_fallback_store_switches_to_polars_components(
                 else result_local.added
             )
             versions_local = added_local.sort("sample_uid")[
-                "provenance_by_field"
+                "metaxy_provenance_by_field"
             ].to_list()
 
             results[(primary_store_type, fallback_store_type, "all_local")] = {
@@ -439,7 +439,7 @@ def test_fallback_store_switches_to_polars_components(
             else result_fallback.added
         )
         versions_fallback = added_fallback.sort("sample_uid")[
-            "provenance_by_field"
+            "metaxy_provenance_by_field"
         ].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
@@ -495,7 +495,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
             root_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                         {"default": "hash3"},

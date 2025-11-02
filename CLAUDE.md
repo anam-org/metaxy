@@ -172,7 +172,7 @@ Three-component architecture for calculating and comparing field provenance entr
 - `PolarsProvenanceByFieldCalculator`: Uses `polars_hash` plugin for fast hashing (used when data is in memory)
 - Native implementations (e.g., Ibis-based): Execute hash calculations directly in the database using SQL/native functions
 - Supports multiple hash algorithms (xxhash, sha256, etc.)
-- Creates nested struct column: `provenance_by_field: {field1: hash, field2: hash}`
+- Creates nested struct column: `metaxy_provenance_by_field: {field1: hash, field2: hash}`
 - **Native approach**: All computations stay in the database, only final field provenance entries are pulled out
 - **Polars approach**: Used when fallback stores are needed, or when the store doesn't support native compute (InMemory, DeltaLake)
 
@@ -219,7 +219,7 @@ All metadata writes are append-only. When migrations update metadata:
 
 1. Query rows with old `feature_version`
 2. Copy all user columns (preserving custom metadata)
-3. Recalculate `provenance_by_field` based on new feature definition
+3. Recalculate `metaxy_provenance_by_field` based on new feature definition
 4. Write new rows with new `feature_version` and `snapshot_version`
 5. Old rows remain for historical queries and audit trail
 
@@ -231,7 +231,7 @@ semantics or lifecycle of:
 
 - `code_version` – tracks changes to a feature's own implementation,
 - `feature_version()` – incorporates dependencies and drives migrations, and
-- `provenance_by_field` – hashes upstream materialized inputs per sample.
+- `metaxy_provenance_by_field` – hashes upstream materialized inputs per sample.
 
 The public docs stay canonical; keep this file concise and defer to them for
 examples and diagrams.

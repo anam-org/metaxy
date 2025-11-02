@@ -45,7 +45,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -66,7 +66,10 @@ class TestColumnSelection:
 
             # Verify all columns are present
             assert "sample_uid" in joined_df.columns
-            assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+            assert (
+                "__upstream_test/upstream__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
             assert "custom_col1" in joined_df.columns
             assert "custom_col2" in joined_df.columns
             assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
@@ -104,7 +107,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -125,7 +128,10 @@ class TestColumnSelection:
 
             # Verify only selected columns are present
             assert "sample_uid" in joined_df.columns
-            assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+            assert (
+                "__upstream_test/upstream__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
             assert "custom_col1" in joined_df.columns
             assert "custom_col2" not in joined_df.columns
             assert "custom_col3" not in joined_df.columns
@@ -162,7 +168,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -185,7 +191,10 @@ class TestColumnSelection:
             # Note: feature_version and snapshot_version are NOT considered essential for joining
             # to avoid conflicts when joining multiple upstream features
             assert "sample_uid" in joined_df.columns
-            assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+            assert (
+                "__upstream_test/upstream__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
             assert (
                 "feature_version" not in joined_df.columns
             )  # Not essential, dropped to avoid conflicts
@@ -227,7 +236,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -247,7 +256,10 @@ class TestColumnSelection:
 
             # Verify columns are renamed
             assert "sample_uid" in joined_df.columns
-            assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+            assert (
+                "__upstream_test/upstream__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
             assert "upstream_col1" in joined_df.columns
             assert "upstream_col2" in joined_df.columns
             assert "custom_col1" not in joined_df.columns
@@ -288,7 +300,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -351,7 +363,7 @@ class TestColumnSelection:
             upstream1_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -363,7 +375,7 @@ class TestColumnSelection:
             upstream2_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h4"},
                         {"default": "h5"},
                         {"default": "h6"},
@@ -430,7 +442,7 @@ class TestColumnSelection:
             upstream1_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -442,7 +454,7 @@ class TestColumnSelection:
             upstream2_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h4"},
                         {"default": "h5"},
                         {"default": "h6"},
@@ -471,7 +483,7 @@ class TestColumnSelection:
             assert joined_df["upstream2_col"].to_list() == ["d", "e", "f"]
 
     def test_essential_system_columns_preserved(self):
-        """Test that essential system columns (sample_uid, provenance_by_field) are always preserved."""
+        """Test that essential system columns (sample_uid, metaxy_provenance_by_field) are always preserved."""
         test_graph = FeatureGraph()
 
         with test_graph.use():
@@ -504,7 +516,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -526,7 +538,10 @@ class TestColumnSelection:
 
             # Verify essential system columns are preserved
             assert "sample_uid" in joined_df.columns
-            assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+            assert (
+                "__upstream_test/upstream__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
             # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
             assert "feature_version" not in joined_df.columns
             assert "snapshot_version" not in joined_df.columns
@@ -549,10 +564,10 @@ class TestColumnSelection:
             ):
                 pass
 
-            # Renaming to provenance_by_field should raise an error
+            # Renaming to metaxy_provenance_by_field should raise an error
             with pytest.raises(
                 ValueError,
-                match="Cannot rename column.*to system column name.*provenance_by_field",
+                match="Cannot rename column.*to system column name.*metaxy_provenance_by_field",
             ):
 
                 class BadFeature1(
@@ -563,7 +578,7 @@ class TestColumnSelection:
                             FeatureDep(
                                 feature=FeatureKey(["test", "upstream"]),
                                 rename={
-                                    "old_col": "provenance_by_field"
+                                    "old_col": "metaxy_provenance_by_field"
                                 },  # Not allowed
                             )
                         ],
@@ -697,7 +712,7 @@ class TestColumnSelection:
                 {
                     "user_id": [1, 2, 3],
                     "session_id": ["a", "b", "c"],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -797,7 +812,7 @@ class TestColumnSelection:
             upstream1_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -810,7 +825,7 @@ class TestColumnSelection:
             upstream2_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h4"},
                         {"default": "h5"},
                         {"default": "h6"},
@@ -823,7 +838,7 @@ class TestColumnSelection:
             upstream3_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h7"},
                         {"default": "h8"},
                         {"default": "h9"},
@@ -862,23 +877,32 @@ class TestColumnSelection:
             assert "unique_col" in joined_df.columns  # Not renamed
             assert "excluded_col" not in joined_df.columns  # Not selected
 
-            # Verify provenance_by_field columns
-            assert "__upstream_test/upstream1__provenance_by_field" in joined_df.columns
-            assert "__upstream_test/upstream2__provenance_by_field" in joined_df.columns
-            assert "__upstream_test/upstream3__provenance_by_field" in joined_df.columns
+            # Verify metaxy_provenance_by_field columns
+            assert (
+                "__upstream_test/upstream1__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
+            assert (
+                "__upstream_test/upstream2__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
+            assert (
+                "__upstream_test/upstream3__metaxy_provenance_by_field"
+                in joined_df.columns
+            )
 
             # Verify mapping
             assert (
                 mapping["test/upstream1"]
-                == "__upstream_test/upstream1__provenance_by_field"
+                == "__upstream_test/upstream1__metaxy_provenance_by_field"
             )
             assert (
                 mapping["test/upstream2"]
-                == "__upstream_test/upstream2__provenance_by_field"
+                == "__upstream_test/upstream2__metaxy_provenance_by_field"
             )
             assert (
                 mapping["test/upstream3"]
-                == "__upstream_test/upstream3__provenance_by_field"
+                == "__upstream_test/upstream3__metaxy_provenance_by_field"
             )
 
     def test_custom_load_input_with_filtering(self):
@@ -925,7 +949,7 @@ class TestColumnSelection:
             upstream_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3, 4, 5],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"default": "h1"},
                         {"default": "h2"},
                         {"default": "h3"},
@@ -974,7 +998,7 @@ class TestColumnSelection:
             # Verify mapping
             assert (
                 mapping["test/upstream"]
-                == "__upstream_test/upstream__provenance_by_field"
+                == "__upstream_test/upstream__metaxy_provenance_by_field"
             )
 
     def test_columns_and_rename_serialized_to_snapshot(self):
@@ -1271,10 +1295,10 @@ class TestColumnSelection:
             ):
                 pass
 
-            # Renaming to system column provenance_by_field should raise an error
+            # Renaming to system column metaxy_provenance_by_field should raise an error
             with pytest.raises(
                 ValueError,
-                match="Cannot rename column.*to system column name.*provenance_by_field",
+                match="Cannot rename column.*to system column name.*metaxy_provenance_by_field",
             ):
 
                 class DownstreamFeature1(
@@ -1285,7 +1309,7 @@ class TestColumnSelection:
                             FeatureDep(
                                 feature=FeatureKey(["test", "upstream"]),
                                 rename={
-                                    "old_version": "provenance_by_field",  # Not allowed - system column
+                                    "old_version": "metaxy_provenance_by_field",  # Not allowed - system column
                                 },
                             )
                         ],

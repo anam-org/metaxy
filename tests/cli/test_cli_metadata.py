@@ -30,12 +30,14 @@ def _write_sample_metadata(
     # Get feature class from graph
     feature_cls = metaxy_project.graph.features_by_key[feature_key]
 
-    # Create sample data with provenance_by_field column
+    # Create sample data with metaxy_provenance_by_field column
     sample_data = pl.DataFrame(
         {
             "sample_uid": sample_uids,
             "value": [f"val_{i}" for i in sample_uids],
-            "provenance_by_field": [{"default": f"hash{i}"} for i in sample_uids],
+            "metaxy_provenance_by_field": [
+                {"default": f"hash{i}"} for i in sample_uids
+            ],
         }
     )
 
