@@ -4,10 +4,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Generic
 
-from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
-from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     BaseFeatureSpecWithIDColumns,
@@ -656,7 +654,7 @@ class FeatureGraph:
 graph = FeatureGraph()
 
 
-class MetaxyMeta(ModelMetaclass):
+class MetaxyMeta(type):
     def __new__(
         cls,
         cls_name: str,
@@ -671,14 +669,14 @@ class MetaxyMeta(ModelMetaclass):
         if spec:
             # Get graph from context at class definition time
             active_graph = FeatureGraph.get_active()
-            new_cls.graph = active_graph  # type: ignore[attr-defined]
-            new_cls._spec = spec  # type: ignore[attr-defined]
+            new_cls.graph = active_graph  # pyright: ignore[reportAttributeAccessIssue]
+            new_cls._spec = spec  # pyright: ignore[reportAttributeAccessIssue]
 
             # Determine project for this feature using intelligent detection
             project = cls._detect_project(new_cls)
-            new_cls.project = project  # type: ignore[attr-defined]
+            new_cls.project = project  # pyright: ignore[reportAttributeAccessIssue]
 
-            active_graph.add_feature(new_cls)
+            active_graph.add_feature(new_cls)  # pyright: ignore[reportArgumentType]
         else:
             pass  # TODO: set spec to a property that would raise an exception on access
 
@@ -809,9 +807,7 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
-class BaseFeature(
-    FrozenBaseModel, Generic[IDColumnsT], metaclass=MetaxyMeta, spec=None
-):
+class BaseFeature(Generic[IDColumnsT], metaclass=MetaxyMeta, spec=None):
     # once ClassVar supports it
     # this should be changed to spec: BaseFeatureSpec[IDColumnsT]
     _spec: ClassVar[BaseFeatureSpec[IDColumns]]
