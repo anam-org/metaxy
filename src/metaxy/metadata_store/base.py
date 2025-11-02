@@ -547,6 +547,10 @@ class MetadataStore(ABC):
         # Validate schema
         self._validate_schema(df)
 
+        # Rename provenance_by_field -> metaxy_provenance_by_field for database storage
+        # (Python code uses provenance_by_field, database uses metaxy_provenance_by_field)
+        df = df.rename({"provenance_by_field": "metaxy_provenance_by_field"})
+
         # Write metadata
         self._write_metadata_impl(feature_key, df)
 
@@ -900,6 +904,12 @@ class MetadataStore(ABC):
         )
 
         if lazy_frame is not None:
+            # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+            # (Database uses metaxy_provenance_by_field, Python code uses provenance_by_field)
+            if "metaxy_provenance_by_field" in lazy_frame.collect_schema().names():
+                lazy_frame = lazy_frame.rename(
+                    {"metaxy_provenance_by_field": "provenance_by_field"}
+                )
             return lazy_frame
 
         # Try fallback stores
@@ -1833,6 +1843,14 @@ class MetadataStore(ABC):
                 filters=upstream_filters,  # Apply extracted filters
             )
             if upstream_lazy is not None:
+                # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+                if (
+                    "metaxy_provenance_by_field"
+                    in upstream_lazy.collect_schema().names()
+                ):
+                    upstream_lazy = upstream_lazy.rename(
+                        {"metaxy_provenance_by_field": "provenance_by_field"}
+                    )
                 upstream_refs[upstream_key_str] = upstream_lazy
 
         # Join upstream using Narwhals (stays lazy)
@@ -1856,6 +1874,15 @@ class MetadataStore(ABC):
         current_lazy_nw = self._read_metadata_native(
             feature, feature_version=feature.feature_version()
         )
+
+        # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+        if (
+            current_lazy_nw is not None
+            and "metaxy_provenance_by_field" in current_lazy_nw.collect_schema().names()
+        ):
+            current_lazy_nw = current_lazy_nw.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
 
         return feature.resolve_data_version_diff(
             diff_resolver=diff_resolver,
