@@ -1,5 +1,6 @@
 """Main Metaxy CLI application."""
 
+from pathlib import Path
 from typing import Annotated
 
 import cyclopts
@@ -33,7 +34,7 @@ def shell():
 def launcher(
     *tokens: Annotated[str, cyclopts.Parameter(show=False, allow_leading_hyphen=True)],
     config_file: Annotated[
-        str | None,
+        Path | None,
         cyclopts.Parameter(
             None,
             help="Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.",
@@ -63,14 +64,12 @@ def launcher(
     """
     import logging
     import os
-    from pathlib import Path
 
     logging.getLogger().setLevel(os.environ.get("METAXY_LOG_LEVEL", "INFO"))
 
     # Load Metaxy configuration with parent directory search
     # This handles TOML discovery, env vars, and entrypoint loading
-    config_path = Path(config_file) if config_file else None
-    config = init_metaxy(config_file=config_path, search_parents=True)
+    config = init_metaxy(config_file=config_file, search_parents=True)
 
     # Store config in context for commands to access
     # Commands will instantiate and open store as needed

@@ -33,29 +33,15 @@ def test_pipeline(tmp_path, snapshot):
     # Use a test database instead of the default one
     test_db = tmp_path / "example_migration.db"
 
-    # Create a test-specific metaxy config that points to temp migrations dir
-    test_config_dir = tmp_path / ".metaxy"
-    test_config_dir.mkdir(exist_ok=True)
-    test_config_file = test_config_dir / "config.toml"
-    with open(test_config_file, "w") as f:
-        f.write(f"""
-project = "migration_test"
-migrations_dir = "{test_migrations_dir}"
-auto_create_tables = true
-
-[stores.dev]
-type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
-
-[stores.dev.config]
-database = "{test_db}"
-""")
-
     # Start with parent environment to preserve Nix paths
     base_env = os.environ.copy()
-    # Override specific values for the test
+    # Override specific values for the test using proper Pydantic environment variables
     base_env.update(
         {
-            "METAXY_CONFIG": str(test_config_file),
+            # Override the database path for the dev store
+            "METAXY_STORES__DEV__CONFIG__DATABASE": str(test_db),
+            # Override the migrations directory
+            "METAXY_MIGRATIONS_DIR": str(test_migrations_dir),
             # Ensure HOME is set for DuckDB extension installation
             "HOME": os.environ.get("HOME", str(tmp_path)),
         }

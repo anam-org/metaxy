@@ -20,7 +20,7 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 #### Field Level
 
-- **Field Code Version** is defined on the field and must be provided by the user (defaults to `"0"`).
+- **Field Code Version** is defined on the field and is provided by the user (defaults to `"__metaxy_initial__"`)
 
 > [!NOTE] Code Version Value
 > The value can be arbitrary, but in the future we might implement something around semantic versioning.
