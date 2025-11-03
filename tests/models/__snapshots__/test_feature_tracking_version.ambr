@@ -1,0 +1,47 @@
+# serializer version: 1
+# name: test_feature_tracking_version_includes_project
+  dict({
+    'feature_version_a': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
+    'feature_version_b': '3731d5aef6d53cfda612433171c52401406f94fd1c3482e7754ef2b24d85d170',
+    'feature_versions_same': True,
+    'project_a': 'project_a',
+    'project_b': 'project_b',
+    'tracking_version_a': 'b39ec2794ba7a734d9c75b92623ff6eb4f44c225891a1826e3f006555ce43b2b',
+    'tracking_version_b': 'abca64dcf3063fda7712f43e371da79b0d4493a00360f0fc15e51de5da3f9497',
+    'tracking_versions_differ': True,
+  })
+# ---
+# name: test_feature_version_unchanged_by_project
+  'fcd6985a4dea45488450141be5c4712fd47781b4d0a7e42f04760c376eadf42f'
+# ---
+# name: test_feature_with_deps_different_projects
+  dict({
+    'downstream_a_project': 'project_a',
+    'downstream_a_version': 'b7478f4be75eea0fa8d468df3f33cc8033cde080313e4ef783222fd65416f8e2',
+    'downstream_b_project': 'project_b',
+    'downstream_b_version': 'b7478f4be75eea0fa8d468df3f33cc8033cde080313e4ef783222fd65416f8e2',
+    'upstream_a_project': 'project_a',
+    'upstream_a_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
+    'upstream_b_project': 'project_b',
+    'upstream_b_version': '8fd9019605c792a83a2cab5aaac4aea7a1e8524e51b728c0e02beb8032ee0ec1',
+  })
+# ---
+# name: test_project_in_graph_snapshot
+  dict({
+    'feature1_project': 'snapshot_project',
+    'feature2_project': 'snapshot_project',
+    'feature_keys': list([
+      'feature1',
+      'feature2',
+    ]),
+  })
+# ---
+# name: test_provenance_by_field_unchanged_by_project
+  dict({
+    'field1': '9cb9f5bd9b380278e273033d16f07feabda7bdf5b813e9941b0f29e63b20efdb',
+    'field2': '0b485f68befbb7abb029b43a698161745c63259b8ad0bc00260b7da4b9830243',
+  })
+# ---
+# name: test_tracking_version_deterministic
+  '5b5f6eb2940ab3cceb11fb370a5582a8269387c3845b61c9dc6a8fe114cb97cf'
+# ---
