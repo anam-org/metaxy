@@ -48,9 +48,6 @@ class VideoFeatureSpec(BaseFeatureSpec[VideoIds]):
 
 `BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
 
-Users can attach arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
-This metadata does not influence graph topology or the versioning system.
-
 With our `VideoFeatureSpec` in place, we can proceed to defining features that would be using it.
 
 ## Feature Definitions
@@ -176,3 +173,8 @@ Both `FeatureKey` and `FieldKey` accept:
 - **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts
+
+## Attaching user-defined metadata
+
+Users can [attach](../reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
+This metadata does not influence graph topology or the versioning system.
