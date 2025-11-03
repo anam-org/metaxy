@@ -278,61 +278,6 @@ def test_default_fields_mapping_multiple_matches():
         assert audio_field.deps == []  # Will map to both upstream features at runtime
 
 
-def test_default_fields_mapping_exclude_features():
-    """Test excluding specific features from auto-mapping."""
-    graph = FeatureGraph()
-
-    with graph.use():
-        # Define two upstream features with same field
-        class Upstream1(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "upstream1"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["audio"]), code_version="1"),
-                ],
-            ),
-        ):
-            pass
-
-        class Upstream2(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "upstream2"]),
-                deps=None,
-                fields=[
-                    FieldSpec(key=FieldKey(["audio"]), code_version="2"),
-                ],
-            ),
-        ):
-            pass
-
-        # Use exclude to avoid ambiguity
-        class Downstream(
-            Feature,
-            spec=FeatureSpec(
-                key=FeatureKey(["test", "downstream"]),
-                deps=[
-                    FeatureDep(feature=Upstream1),
-                    FeatureDep(feature=Upstream2),
-                ],
-                fields=[
-                    FieldSpec(
-                        key=FieldKey(["audio"]),
-                        code_version="1",
-                        # deps will be resolved from FeatureDep.fields_mapping
-                    ),
-                ],
-            ),
-        ):
-            pass
-
-        # Field should have no explicit deps (will map to Upstream2 only at runtime due to exclude)
-        audio_field = Downstream.spec().fields_by_key[FieldKey(["audio"])]
-        assert audio_field.deps == []  # Will map to Upstream2 only at runtime
-
-
 def test_default_fields_mapping_mixed_deps():
     """Test mixing auto-mapped and explicit field deps."""
     graph = FeatureGraph()

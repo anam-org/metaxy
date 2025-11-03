@@ -148,7 +148,6 @@ class DefaultFieldsMapping(BaseFieldsMapping):
     Attributes:
         type: Always "DEFAULT" for discriminated union serialization
         match_suffix: If True, allows suffix matching (e.g., "french" matches "audio/french")
-        exclude_features: List of feature keys to exclude from auto-mapping
         exclude_fields: List of field keys to exclude from auto-mapping
 
     Examples:
@@ -158,26 +157,18 @@ class DefaultFieldsMapping(BaseFieldsMapping):
         >>> # Enable suffix matching
         >>> DefaultFieldsMapping(match_suffix=True)
 
-        >>> # Exclude specific upstream features
-        >>> DefaultFieldsMapping(exclude_features=[FeatureKey(["some", "feature"])])
-
         >>> # Exclude specific fields from being auto-mapped
         >>> DefaultFieldsMapping(exclude_fields=[FieldKey(["metadata"])])
     """
 
     type: Literal[FieldsMappingType.DEFAULT] = FieldsMappingType.DEFAULT
     match_suffix: bool = False
-    exclude_features: list[FeatureKey] = PydanticField(default_factory=list)
     exclude_fields: list[FieldKey] = PydanticField(default_factory=list)
 
     def resolve_field_deps(
         self,
         context: FieldsMappingResolutionContext,
     ) -> set[FieldKey]:
-        # Check if this feature is excluded
-        if context.upstream_feature_key in self.exclude_features:
-            return set()
-
         res = set()
 
         for upstream_field_key in context.upstream_feature_fields:
@@ -267,14 +258,12 @@ class FieldsMapping(BaseModel):
         cls,
         *,
         match_suffix: bool = False,
-        exclude_features: list[FeatureKey] | None = None,
         exclude_fields: list[FieldKey] | None = None,
     ) -> Self:
         """Create a default field mapping configuration.
 
         Args:
             match_suffix: If True, allows suffix matching (e.g., "french" matches "audio/french")
-            exclude_features: List of feature keys to exclude from auto-mapping
             exclude_fields: List of field keys to exclude from auto-mapping
 
         Returns:
@@ -283,7 +272,6 @@ class FieldsMapping(BaseModel):
         return cls(
             mapping=DefaultFieldsMapping(
                 match_suffix=match_suffix,
-                exclude_features=exclude_features or [],
                 exclude_fields=exclude_fields or [],
             )
         )

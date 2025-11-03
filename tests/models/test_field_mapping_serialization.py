@@ -2,7 +2,7 @@
 
 import json
 
-from metaxy import FeatureKey, FieldKey
+from metaxy import FieldKey
 from metaxy.models.fields_mapping import (
     AllFieldsMapping,
     DefaultFieldsMapping,
@@ -21,7 +21,6 @@ def test_default_fields_mapping_serialization_basic():
     assert serialized == {
         "type": "default",
         "match_suffix": False,
-        "exclude_features": [],
         "exclude_fields": [],
     }
 
@@ -29,18 +28,15 @@ def test_default_fields_mapping_serialization_basic():
     deserialized = FieldsMappingAdapter.validate_python(serialized)
     assert isinstance(deserialized, DefaultFieldsMapping)
     assert deserialized.match_suffix is False
-    assert deserialized.exclude_features == []
     assert deserialized.exclude_fields == []
 
 
 def test_default_fields_mapping_serialization_with_config():
     """Test DefaultFieldsMapping serialization with configuration."""
-    feature_key = FeatureKey(["test", "feature"])
     field_key = FieldKey(["test_field"])
 
     mapping = DefaultFieldsMapping(
         match_suffix=True,
-        exclude_features=[feature_key],
         exclude_fields=[field_key],
     )
 
@@ -49,7 +45,6 @@ def test_default_fields_mapping_serialization_with_config():
     assert serialized == {
         "type": "default",
         "match_suffix": True,
-        "exclude_features": [feature_key.model_dump()],
         "exclude_fields": [field_key.model_dump()],
     }
 
@@ -57,7 +52,6 @@ def test_default_fields_mapping_serialization_with_config():
     deserialized = FieldsMappingAdapter.validate_python(serialized)
     assert isinstance(deserialized, DefaultFieldsMapping)
     assert deserialized.match_suffix is True
-    assert deserialized.exclude_features == [feature_key]
     assert deserialized.exclude_fields == [field_key]
 
 
@@ -72,7 +66,6 @@ def test_default_fields_mapping_json_serialization():
     assert parsed == {
         "type": "default",
         "match_suffix": True,
-        "exclude_features": [],
         "exclude_fields": [],
     }
 
@@ -124,7 +117,6 @@ def test_fields_mapping_classmethod_serialization():
         "mapping": {
             "type": "default",
             "match_suffix": True,
-            "exclude_features": [],
             "exclude_fields": [["metadata"]],  # FieldKey serializes as list
         }
     }
@@ -140,7 +132,6 @@ def test_backward_compatibility_direct_instantiation():
     # Old-style direct dict without discriminated union structure
     old_style = {
         "match_suffix": True,
-        "exclude_features": [],
         "exclude_fields": [["metadata"]],  # FieldKey as list
     }
 
@@ -157,7 +148,6 @@ def test_discriminated_union_validation():
     default_data = {
         "type": "default",
         "match_suffix": False,
-        "exclude_features": [],
         "exclude_fields": [],
     }
     mapping = FieldsMappingAdapter.validate_python(default_data)
@@ -176,7 +166,6 @@ def test_round_trip_serialization():
         DefaultFieldsMapping(),
         DefaultFieldsMapping(match_suffix=True),
         DefaultFieldsMapping(
-            exclude_features=[FeatureKey(["test"])],
             exclude_fields=[FieldKey(["field1"]), FieldKey(["field2"])],
         ),
         AllFieldsMapping(),
@@ -196,7 +185,6 @@ def test_round_trip_serialization():
         if isinstance(original, DefaultFieldsMapping):
             assert isinstance(deserialized, DefaultFieldsMapping)
             assert deserialized.match_suffix == original.match_suffix
-            assert deserialized.exclude_features == original.exclude_features
             assert deserialized.exclude_fields == original.exclude_fields
 
         # Test JSON round-trip too
@@ -229,12 +217,11 @@ def test_mixed_serialization_formats():
     new_format = {
         "type": "default",
         "match_suffix": True,
-        "exclude_features": [],
         "exclude_fields": [],
     }
 
     # Old direct format (backward compatibility)
-    old_format = {"match_suffix": True, "exclude_features": [], "exclude_fields": []}
+    old_format = {"match_suffix": True, "exclude_fields": []}
 
     # Both should work
     from_new = DefaultFieldsMapping.model_validate(new_format)
@@ -242,5 +229,5 @@ def test_mixed_serialization_formats():
 
     assert from_new.match_suffix is True
     assert from_old.match_suffix is True
-    assert from_new.exclude_features == []
-    assert from_old.exclude_features == []
+    assert from_new.exclude_fields == []
+    assert from_old.exclude_fields == []

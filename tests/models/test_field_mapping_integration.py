@@ -311,11 +311,7 @@ def test_field_mapping_with_exclusions():
                     ),
                     FeatureDep(
                         feature="upstream_excluded",
-                        fields_mapping=FieldsMapping.default(
-                            exclude_features=[
-                                FeatureKey(["upstream_excluded"])
-                            ],  # Exclude this entire feature
-                        ),
+                        fields_mapping=FieldsMapping.none(),  # Don't map any fields from this feature
                     ),
                 ],
                 fields=[
