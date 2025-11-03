@@ -25,6 +25,7 @@ from metaxy import (
     TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy.data_versioning.diff import LazyDiffResult
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -36,6 +37,46 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # ============= STORE CONFIGURATION =============
+
+
+def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyDiffResult):
+    """Verify that lazy frames from IbisMetadataStore contain SQL and haven't been materialized.
+
+    Args:
+        store: The metadata store instance
+        lazy_result: LazyDiffResult with lazy frames to verify
+    """
+    from metaxy.metadata_store.ibis import IbisMetadataStore
+
+    if not isinstance(store, IbisMetadataStore):
+        return  # Only check for Ibis-based stores
+
+    # Check each lazy frame in the result
+    for frame_name in ["added", "changed", "removed"]:
+        lazy_frame = getattr(lazy_result, frame_name)
+
+        # Get the native lazy frame
+        native_frame = lazy_frame.to_native()
+
+        # For Ibis-based stores, the native frame should be an Ibis expression
+        # that can be compiled to SQL
+        import ibis
+
+        if isinstance(native_frame, ibis.expr.types.Table):
+            # Verify we can get SQL from it
+            try:
+                sql = store.conn.compile(native_frame)
+                assert isinstance(sql, str), (
+                    f"{frame_name} lazy frame should have SQL representation"
+                )
+                # Check that it's actually SQL (contains SELECT, FROM, etc.)
+                assert any(keyword in sql.upper() for keyword in ["SELECT", "FROM"]), (
+                    f"{frame_name} should contain SQL keywords"
+                )
+            except Exception as e:
+                raise AssertionError(
+                    f"Failed to get SQL from {frame_name} lazy frame: {e}"
+                )
 
 
 def get_available_store_types() -> list[str]:
@@ -429,7 +470,7 @@ def test_resolve_update_no_upstream(
 
                 # First verify that resolve_update raises ValueError without samples
                 try:
-                    store.resolve_update(root_feature)
+                    store.resolve_update(root_feature, lazy=True)
                     pytest.fail("Expected ValueError for root feature without samples")
                 except ValueError as e:
                     assert "root feature" in str(e)
@@ -461,7 +502,15 @@ def test_resolve_update_no_upstream(
                 import logging
 
                 with caplog.at_level(logging.WARNING):
-                    result = store.resolve_update(root_feature, samples=adapted_samples)
+                    lazy_result = store.resolve_update(
+                        root_feature, samples=adapted_samples, lazy=True
+                    )
+
+                    # Verify lazy frames for IbisMetadataStore before collect
+                    verify_lazy_sql_frames(store, lazy_result)
+
+                    # Now collect the lazy result
+                    result = lazy_result.collect()
 
                 # 4. Verify warning behavior matches expectation
                 polars_warnings = [
@@ -616,7 +665,9 @@ def test_resolve_update_with_upstream(
                             store.write_metadata(feature, upstream_data)
                         else:
                             # Intermediate features - resolve and write their field provenances
-                            result = store.resolve_update(feature)
+                            lazy_result = store.resolve_update(feature, lazy=True)
+                            verify_lazy_sql_frames(store, lazy_result)
+                            result = lazy_result.collect()
                             if len(result.added) > 0:
                                 # Write metadata with computed field provenances
                                 feature_data = pl.DataFrame(
@@ -635,7 +686,9 @@ def test_resolve_update_with_upstream(
                                 store.write_metadata(feature, feature_data)
 
                     # Now resolve update for the final downstream feature
-                    result = store.resolve_update(downstream_feature)
+                    lazy_result = store.resolve_update(downstream_feature, lazy=True)
+                    verify_lazy_sql_frames(store, lazy_result)
+                    result = lazy_result.collect()
 
                     # Assert no warning when prefer_native=True for stores that support native field provenance calculations
                     if prefer_native and store._supports_native_components():
@@ -775,7 +828,9 @@ def test_resolve_update_detects_changes(
                             store.write_metadata(feature, initial_data)
                         else:
                             # Intermediate features - resolve and write their field provenances
-                            result = store.resolve_update(feature)
+                            lazy_result = store.resolve_update(feature, lazy=True)
+                            verify_lazy_sql_frames(store, lazy_result)
+                            result = lazy_result.collect()
                             if len(result.added) > 0:
                                 # Convert Narwhals to Polars for manipulation
                                 added_df = (
@@ -799,7 +854,9 @@ def test_resolve_update_detects_changes(
                                 store.write_metadata(feature, feature_data)
 
                     # First resolve - get initial field provenances for downstream
-                    result1 = store.resolve_update(downstream_feature)
+                    lazy_result1 = store.resolve_update(downstream_feature, lazy=True)
+                    verify_lazy_sql_frames(store, lazy_result1)
+                    result1 = lazy_result1.collect()
                     # Convert to Polars for easier manipulation in test
                     initial_versions_nw = (
                         result1.added.to_polars()
@@ -827,7 +884,9 @@ def test_resolve_update_detects_changes(
 
                     # Update intermediate features with new field provenances
                     for i, feature in enumerate(features[1:-1], start=1):
-                        result = store.resolve_update(feature)
+                        lazy_result = store.resolve_update(feature, lazy=True)
+                        verify_lazy_sql_frames(store, lazy_result)
+                        result = lazy_result.collect()
                         if len(result.changed) > 0 or len(result.added) > 0:
                             # Convert Narwhals to Polars and combine changed and added
                             changed_pl = (
@@ -862,7 +921,9 @@ def test_resolve_update_detects_changes(
                             store.write_metadata(feature, feature_data)
 
                     # Resolve update again for downstream - should detect changes
-                    result2 = store.resolve_update(downstream_feature)
+                    lazy_result2 = store.resolve_update(downstream_feature, lazy=True)
+                    verify_lazy_sql_frames(store, lazy_result2)
+                    result2 = lazy_result2.collect()
 
                     # Assert no warning when prefer_native=True for stores that support native field provenance calculations
                     if prefer_native and store._supports_native_components():
@@ -1008,7 +1069,9 @@ def test_resolve_update_feature_version_change_idempotency(
                     store.write_metadata(RootFeature, root_data_v1)
 
                     # === PHASE 2: First resolve_update (should detect 3 new samples) ===
-                    result_first = store.resolve_update(LeafFeature)
+                    lazy_result_first = store.resolve_update(LeafFeature, lazy=True)
+                    verify_lazy_sql_frames(store, lazy_result_first)
+                    result_first = lazy_result_first.collect()
 
                     first_run_stats = {
                         "added": len(result_first.added),
@@ -1023,7 +1086,9 @@ def test_resolve_update_feature_version_change_idempotency(
                         store.write_metadata(LeafFeature, result_first.changed)
 
                     # === PHASE 4: Second resolve_update (should be idempotent - no changes) ===
-                    result_second = store.resolve_update(LeafFeature)
+                    lazy_result_second = store.resolve_update(LeafFeature, lazy=True)
+                    verify_lazy_sql_frames(store, lazy_result_second)
+                    result_second = lazy_result_second.collect()
 
                     second_run_stats = {
                         "added": len(result_second.added),
