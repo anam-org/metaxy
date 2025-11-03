@@ -37,15 +37,19 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/config/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metaxy/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/types/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/types/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/definitions/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -65,11 +69,15 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/base/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/memory/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -78,10 +86,6 @@
     </url>
     <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/duckdb/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/ibis/ibis/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
 </urlset>
