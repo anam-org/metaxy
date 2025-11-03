@@ -8,6 +8,17 @@ typecheck:
 sync:
     uv sync --all-extras --all-groups
 
+new-worktree branch:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    git worktree add ../worktrees/metaxy-{{branch}} origin/$(git branch --show-current)
+    cd ../worktrees/metaxy-{{branch}}
+    direnv allow
+    eval "$(direnv export bash)"
+    git checkout -b {{branch}}
+    gt track {{branch}}
+
+
 # Resolve GitHub issue with Claude in an independent git worktree
 claude-resolve number prompt="":
     #!/usr/bin/env bash
