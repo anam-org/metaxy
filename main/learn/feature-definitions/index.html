@@ -625,6 +625,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#attaching-user-defined-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attaching user-defined metadata
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1416,6 +1425,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#attaching-user-defined-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attaching user-defined metadata
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1473,8 +1491,6 @@ Very often these ID columns would stay the same across many feature specs, there
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">id_columns</span><span class="p">:</span> <span class="n">VideoIds</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;video_id&quot;</span><span class="p">,)</span>
 </span></code></pre></div>
 <p><code>BaseFeatureSpec</code> is a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model, so all normal Pydantic features apply.</p>
-<p>Users can attach arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
-This metadata does not influence graph topology or the versioning system.</p>
 <p>With our <code>VideoFeatureSpec</code> in place, we can proceed to defining features that would be using it.</p>
 <h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides a <code>BaseFeature</code> class that can be extended to make user-defined features.
@@ -1563,6 +1579,9 @@ See <a href="#syntactic-sugar">syntactic sugar</a> for more details.</p>
 <li><strong>Same type</strong>: <code>FeatureKey(another_feature_key)</code> -- for full Inception mode</li>
 </ul>
 <p>All formats produce equivalent keys, internally represented as a sequence of parts</p>
+<h2 id="attaching-user-defined-metadata">Attaching user-defined metadata<a class="headerlink" href="#attaching-user-defined-metadata" title="Permanent link">&para;</a></h2>
+<p>Users can <a href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
+This metadata does not influence graph topology or the versioning system.</p>
 
 
 
