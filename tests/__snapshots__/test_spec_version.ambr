@@ -3,7 +3,7 @@
   '473c860ef72ef30b5c2d6aa6601a3342d816512536b03cd61808e0dd93b2db40'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '285db9ad24660f445c4f394e1ed4c1e90f9270ff81ecaaf715bbbe00e8ec97d7'
+  'a78b96c0c2a764ae7a138d65bfc5e4fa94160345c34625585dce0c85ea32af7b'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
@@ -45,8 +45,20 @@
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
+<<<<<<< HEAD
   'ec274b4e2098124803f88d79b26b381da28140987bec4dc70369915e01e69567'
+||||||| parent of 3e171e3 (Resolve #141)
+  '69f1e1fd95746476d014639e56fdbe7518c03b8f0113996138f9a86e1352bfea'
+=======
+  '0cec311a85e177a14037257fc23a1ddd3f3eb8c3fe4befef49ccb4fbdf096c44'
+>>>>>>> 3e171e3 (Resolve #141)
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
+<<<<<<< HEAD
   'bc98ef44e7b4b35f290d7e9edde7e90b7a0d2042c24c6dca68c7cadf98c97073'
+||||||| parent of 3e171e3 (Resolve #141)
+  '1bbfdb3e9bd1acaca7f56d798ca7dcdb42dbf647ac5403139dc57f5216db4584'
+=======
+  '023df0c7c6bdadc38053a1d9f699b58521886ee38644fb0f098f55f3a6650592'
+>>>>>>> 3e171e3 (Resolve #141)
 # ---

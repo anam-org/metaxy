@@ -13,7 +13,8 @@
     Feature Dependencies:
       feature=examples/parent columns=None rename=None 
   fields_mapping=FieldsMapping(mapping=DefaultFieldsMapping(type=<FieldsMappingTyp
-  e.DEFAULT: 'default'>, match_suffix=False, exclude_fields=[]))
+  e.DEFAULT: 'default'>, match_suffix=False, exclude_fields=[])) 
+  id_columns_mapping=None
     Fields:
       predictions (code_version 1, version
   1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4)
@@ -34,7 +35,8 @@
     Feature Dependencies:
       feature=examples/parent columns=None rename=None 
   fields_mapping=FieldsMapping(mapping=DefaultFieldsMapping(type=<FieldsMappingTyp
-  e.DEFAULT: 'default'>, match_suffix=False, exclude_fields=[]))
+  e.DEFAULT: 'default'>, match_suffix=False, exclude_fields=[])) 
+  id_columns_mapping=None
     Fields:
       predictions (code_version 1, version
   bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997)

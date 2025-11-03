@@ -115,6 +115,20 @@ class FeatureGraph:
             if not isinstance(dep, FeatureDep):
                 continue
 
+            # Validate id_columns_mapping if provided
+            if dep.id_columns_mapping:
+                # Check that mapped target columns are valid
+                target_cols = set(dep.id_columns_mapping.keys())
+                invalid_cols = target_cols - set(spec.id_columns)
+                if invalid_cols:
+                    raise ValueError(
+                        f"Invalid target ID columns in id_columns_mapping for dependency '{dep.feature.to_string()}': "
+                        f"{sorted(invalid_cols)}. Target feature '{spec.key.to_string()}' has ID columns {spec.id_columns}."
+                    )
+
+                # Note: We can't validate upstream columns here since upstream feature might not be registered yet
+                # That validation happens in the joiner at runtime
+
             if dep.rename:
                 # Get the upstream feature's spec to check its ID columns
                 upstream_spec = self.feature_specs_by_key.get(dep.feature)
@@ -909,9 +923,10 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         """
         from metaxy.models.feature_spec import FeatureDep
 
-        # Extract columns and renames from deps
+        # Extract columns, renames, and id_mappings from deps
         upstream_columns: dict[str, tuple[str, ...] | None] = {}
         upstream_renames: dict[str, dict[str, str] | None] = {}
+        upstream_id_mappings: dict[str, dict[str, str] | None] = {}
 
         deps = cls.spec().deps
         if deps:
@@ -920,6 +935,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
                     dep_key_str = dep.feature.to_string()
                     upstream_columns[dep_key_str] = dep.columns
                     upstream_renames[dep_key_str] = dep.rename
+                    upstream_id_mappings[dep_key_str] = dep.id_columns_mapping
 
         return joiner.join_upstream(
             upstream_refs=upstream_refs,
@@ -927,6 +943,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             feature_plan=cls.graph.get_feature_plan(cls.spec().key),
             upstream_columns=upstream_columns,
             upstream_renames=upstream_renames,
+            upstream_id_mappings=upstream_id_mappings,
         )
 
     @classmethod

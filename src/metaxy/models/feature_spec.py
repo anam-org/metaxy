@@ -20,6 +20,7 @@ from pydantic import BeforeValidator
 from pydantic.types import JsonValue
 
 from metaxy.models.bases import FrozenBaseModel
+from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
 from metaxy.models.types import (
@@ -59,7 +60,7 @@ class FeatureClassProtocol(Protocol):
 
 
 class FeatureDep(pydantic.BaseModel):
-    """Feature dependency specification with optional column selection and renaming.
+    """Feature dependency specification with optional column selection, renaming, and ID column mapping.
 
     Attributes:
         key: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
@@ -73,6 +74,10 @@ class FeatureDep(pydantic.BaseModel):
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
             Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
+        id_columns_mapping: Optional mapping of target feature's ID columns to upstream feature's ID columns.
+            Enables flexible joins for one-to-many relationships where parent and child features
+            have different ID columns. Unmapped target ID columns (e.g., chunk_id) are child-specific
+            and will be generated dynamically at transform time.
 
     Examples:
         ```py
@@ -103,6 +108,16 @@ class FeatureDep(pydantic.BaseModel):
             columns=("col1", "col2"),
             rename={"col1": "upstream_col1"}
         )
+
+        # One-to-many relationship with ID column mapping
+        # Video chunks example: each video has multiple chunks
+        FeatureDep(
+            feature="video",
+            id_columns_mapping={
+                "video_id": "video_id",  # Map child's video_id to parent's video_id
+                # chunk_id is not mapped - it's child-specific and generated dynamically
+            }
+        )
         ```
     """
 
@@ -112,6 +127,9 @@ class FeatureDep(pydantic.BaseModel):
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
     fields_mapping: FieldsMapping
+    id_columns_mapping: dict[str, str] | None = (
+        None  # Maps target ID columns to upstream ID columns
+    )
 
     @overload
     def __init__(
@@ -121,6 +139,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -133,6 +152,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -145,6 +165,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -157,6 +178,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
     ) -> None:
         """Initialize from BaseFeatureSpec instance."""
         ...
@@ -169,6 +191,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
     ) -> None:
         """Initialize from BaseFeature class."""
         ...
@@ -180,6 +203,7 @@ class FeatureDep(pydantic.BaseModel):
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
+        id_columns_mapping: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
         # Handle different key types with proper type checking
@@ -203,6 +227,7 @@ class FeatureDep(pydantic.BaseModel):
             columns=columns,
             rename=rename,
             fields_mapping=fields_mapping or FieldsMapping.default(),
+            id_columns_mapping=id_columns_mapping,
             **kwargs,
         )
 
@@ -226,6 +251,7 @@ class _BaseFeatureSpec(FrozenBaseModel):
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
+                code_version=DEFAULT_CODE_VERSION,
             )
         ],
     )

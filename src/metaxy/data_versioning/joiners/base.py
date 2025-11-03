@@ -36,12 +36,16 @@ class UpstreamJoiner(ABC):
         feature_plan: "FeaturePlan",
         upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
         upstream_renames: dict[str, dict[str, str] | None] | None = None,
+        upstream_id_mappings: dict[str, dict[str, str] | None] | None = None,
     ) -> tuple[nw.LazyFrame[Any], dict[str, str]]:
-        """Join all upstream features together with optional column selection/renaming.
+        """Join all upstream features together with optional column selection/renaming and flexible ID column mapping.
 
         Joins upstream feature metadata on configured ID columns (from feature_spec.id_columns,
         default: ["sample_uid"]) to create a unified reference containing all upstream
         provenance_by_field columns needed for hash calculation, plus any additional user-specified columns.
+
+        When id_columns_mapping is provided for an upstream, only the mapped columns are used for joining,
+        enabling one-to-many relationships where parent and child features have different ID columns.
 
         Args:
             upstream_refs: Upstream feature metadata Narwhals LazyFrames
@@ -53,6 +57,11 @@ class UpstreamJoiner(ABC):
                 None or missing key = keep all columns. Empty tuple = only system columns.
             upstream_renames: Optional dict mapping upstream feature keys to rename dicts.
                 Applied after column selection.
+            upstream_id_mappings: Optional dict mapping upstream feature keys to ID column mappings.
+                Each mapping is a dict from target feature's ID columns to upstream feature's ID columns.
+                When provided for an upstream, only mapped columns are used for joining.
+                Unmapped target ID columns (e.g., chunk_id) are child-specific and generated at transform time.
+                Example: {"video": {"video_id": "video_id"}} for video -> chunks relationship.
 
         Returns:
             Tuple of (joined_ref, upstream_column_mapping):
@@ -62,8 +71,8 @@ class UpstreamJoiner(ABC):
                 Example: {"video": "__upstream_video__provenance_by_field"}
 
         Note:
-            - Uses INNER join by default - only rows with matching ID columns in ALL upstream
-              features are included. This ensures we can compute valid field_provenance.
+            - Default behavior (no id_columns_mapping): Uses INNER join on ALL ID columns
+            - With id_columns_mapping: Joins only on mapped columns, supports one-to-many relationships
             - ID columns come from feature_spec.id_columns (default: ["sample_uid"])
             - Supports composite keys (multiple ID columns) for complex join scenarios
             - System columns (ID columns, provenance_by_field) are always preserved
