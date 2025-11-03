@@ -782,30 +782,12 @@ class MetaxyMeta(ModelMetaclass):
         return config.project
 
 
-class _CodeVersionDescriptor:
-    """Descriptor that returns field-only code version hashes."""
-
-    def __get__(self, instance, owner) -> str:
-        if not hasattr(owner, "spec"):
-            raise AttributeError(
-                f"Feature class '{owner.__name__}' is missing a spec definition."
-            )
-        spec = owner.spec()
-        if spec is None:
-            raise ValueError(
-                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
-            )
-        return spec.code_version
-
-
 class _FeatureSpecDescriptor:
     """Descriptor that returns the feature spec of the feature."""
 
     def __get__(self, instance, owner) -> str:
         if owner.spec is None:
-            raise ValueError(
-                f"Feature '{owner.__name__}' has no spec; cannot compute code_version."
-            )
+            raise ValueError(f"Feature '{owner.__name__}' has no spec defined.")
         return owner.spec
 
 
@@ -818,7 +800,6 @@ class BaseFeature(
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
-    code_version: ClassVar[str] = _CodeVersionDescriptor()  # pyright: ignore[reportAssignmentType]
 
     # once ClassVar supports it
     # this should be replaced by
