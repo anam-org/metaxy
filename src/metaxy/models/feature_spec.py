@@ -23,7 +23,8 @@ from pydantic.types import JsonValue
 from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
-from metaxy.models.field import FieldSpec, SpecialFieldDep
+from metaxy.models.field import FieldSpec
+from metaxy.models.fields_mapping import FieldsMapping
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     FeatureKey,
@@ -72,17 +73,20 @@ class FeatureDep(pydantic.BaseModel):
             - Tuple of names: Keep only specified columns (plus system columns)
         rename: Optional mapping of old column names to new names.
             Applied after column selection.
+        fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
+            When provided, fields without explicit deps will automatically map to matching upstream fields.
+            Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
 
     Examples:
         ```py
-        # Keep all columns (string key format)
+        # Keep all columns with default field mapping
         FeatureDep(feature="upstream")
 
-        # Keep all columns (list format)
-        FeatureDep(feature=["upstream"])
+        # Keep all columns with suffix matching
+        FeatureDep(feature="upstream", fields_mapping=FieldsMapping.default(match_suffix=True))
 
-        # Keep all columns (FeatureKey instance)
-        FeatureDep(feature=FeatureKey(["upstream"]))
+        # Keep all columns with all fields mapping
+        FeatureDep(feature="upstream", fields_mapping=FieldsMapping.all())
 
         # Keep only specific columns
         FeatureDep(
@@ -110,6 +114,7 @@ class FeatureDep(pydantic.BaseModel):
         None  # None = all columns, () = only system columns
     )
     rename: dict[str, str] | None = None  # Column renaming mapping
+    fields_mapping: FieldsMapping
 
     @overload
     def __init__(
@@ -118,6 +123,7 @@ class FeatureDep(pydantic.BaseModel):
         feature: str,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
     ) -> None:
         """Initialize from string key."""
         ...
@@ -129,6 +135,7 @@ class FeatureDep(pydantic.BaseModel):
         feature: Sequence[str],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
         ...
@@ -140,6 +147,7 @@ class FeatureDep(pydantic.BaseModel):
         feature: FeatureKey,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
     ) -> None:
         """Initialize from FeatureKey instance."""
         ...
@@ -151,6 +159,7 @@ class FeatureDep(pydantic.BaseModel):
         feature: FeatureSpecProtocol,
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
     ) -> None:
         """Initialize from BaseFeatureSpec instance."""
         ...
@@ -162,6 +171,7 @@ class FeatureDep(pydantic.BaseModel):
         feature: type[BaseFeature[IDColumns]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
     ) -> None:
         """Initialize from BaseFeature class."""
         ...
@@ -174,6 +184,7 @@ class FeatureDep(pydantic.BaseModel):
         | type[BaseFeature[IDColumns]],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
+        fields_mapping: FieldsMapping | None = None,
         **kwargs: Any,
     ) -> None:
         # Handle different key types with proper type checking
@@ -196,6 +207,7 @@ class FeatureDep(pydantic.BaseModel):
             feature=resolved_key,
             columns=columns,
             rename=rename,
+            fields_mapping=fields_mapping or FieldsMapping.default(),
             **kwargs,
         )
 
@@ -219,7 +231,6 @@ class _BaseFeatureSpec(FrozenBaseModel):
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
-                deps=SpecialFieldDep.ALL,
             )
         ]
     )
@@ -365,6 +376,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
             # 'abc123...'  # 64-character hex string
             ```
         """
+
         # Use model_dump with mode="json" for deterministic serialization
         # This ensures all types (like FeatureKey) are properly serialized
         spec_dict = self.model_dump(mode="json")

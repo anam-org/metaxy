@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  '8f172f2cbfbdb47d3436805744df4fdc5c9d01d807fad215e1e20c4d1979f638'
+  '473c860ef72ef30b5c2d6aa6601a3342d816512536b03cd61808e0dd93b2db40'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  'd064fcf34eeae2421b1f5ea49a3c6129de81b2dfe6134f55f62193feb761d877'
+  '285db9ad24660f445c4f394e1ed4c1e90f9270ff81ecaaf715bbbe00e8ec97d7'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': 'c2789d844c9d45db84de5e807dcda8e6a1e82db996315120c13649018e0c28bf',
+    'feature_spec_version': 'c19bf840ba81c8e03f3eb0516a042157623def5df12cf1c92f453d943f0ad9b7',
     'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -21,7 +21,8 @@
       'fields': list([
         dict({
           'code_version': '1',
-          'deps': '__METAXY_ALL_DEP__',
+          'deps': list([
+          ]),
           'key': list([
             'data',
           ]),
@@ -37,15 +38,15 @@
       'metadata': dict({
       }),
     }),
-    'feature_spec_version': '4e4360e5ed4599f1a073f442fed25260423dbad28ea351e3e58d7e27fa8676df',
-    'feature_tracking_version': 'f9122c9cb65202ea7d3b1e07b937e4b7461c6e97f8fa348df4cf778465a29174',
+    'feature_spec_version': 'ffac5337d8ef946b5ebc04f54629037e5c7fc1affa56b9de24be7861bb70aa4a',
+    'feature_tracking_version': 'e94e07a211ecbb8852ad5b50eeff420370af84fc24ec39c511b2ca32ac9c6bb7',
     'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '69f1e1fd95746476d014639e56fdbe7518c03b8f0113996138f9a86e1352bfea'
+  'ec274b4e2098124803f88d79b26b381da28140987bec4dc70369915e01e69567'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  '1bbfdb3e9bd1acaca7f56d798ca7dcdb42dbf647ac5403139dc57f5216db4584'
+  'bc98ef44e7b4b35f290d7e9edde7e90b7a0d2042c24c6dca68c7cadf98c97073'
 # ---

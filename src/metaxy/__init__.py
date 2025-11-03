@@ -41,7 +41,17 @@ from metaxy.models.feature_spec import (
     IDColumnsT,
     TestingFeatureSpec,
 )
-from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
+from metaxy.models.field import (
+    FieldDep,
+    FieldSpec,
+    SpecialFieldDep,
+)
+from metaxy.models.fields_mapping import (
+    AllFieldsMapping,
+    DefaultFieldsMapping,
+    FieldsMapping,
+    FieldsMappingType,
+)
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 
 
@@ -81,6 +91,10 @@ __all__ = [
     "FeatureDepMetadata",
     "BaseFeatureSpec",
     "BaseFeatureSpecWithIDColumns",
+    "AllFieldsMapping",
+    "DefaultFieldsMapping",
+    "FieldsMapping",
+    "FieldsMappingType",
     "FieldDep",
     "FieldSpec",
     "SpecialFieldDep",
