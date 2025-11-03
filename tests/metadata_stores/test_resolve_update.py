@@ -25,7 +25,7 @@ from metaxy import (
     TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
-from metaxy.data_versioning.diff import LazyDiffResult
+from metaxy.data_versioning.diff import LazyIncrement
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -39,12 +39,12 @@ from metaxy.models.feature import FeatureGraph
 # ============= STORE CONFIGURATION =============
 
 
-def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyDiffResult):
+def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyIncrement):
     """Verify that lazy frames from IbisMetadataStore contain SQL and haven't been materialized.
 
     Args:
         store: The metadata store instance
-        lazy_result: LazyDiffResult with lazy frames to verify
+        lazy_result: LazyIncrement with lazy frames to verify
     """
     from metaxy.metadata_store.ibis import IbisMetadataStore
 
@@ -421,7 +421,7 @@ def test_resolve_update_no_upstream(
     Root features have no upstream dependencies, so users must provide samples
     with manually computed provenance_by_field. This test verifies:
     1. ValueError raised when samples not provided
-    2. Correct diff results when samples provided
+    2. Correct increment when samples provided
     3. Warning issued when Polars samples provided to SQL store (use_native_samples=False)
     4. No warning when samples match store backend (use_native_samples=True)
     5. Results are consistent across all stores and prefer_native settings

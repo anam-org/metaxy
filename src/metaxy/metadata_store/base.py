@@ -17,7 +17,7 @@ from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
 from metaxy.data_versioning.calculators.polars import (
     PolarsProvenanceByFieldCalculator,
 )
-from metaxy.data_versioning.diff import DiffResult, LazyDiffResult
+from metaxy.data_versioning.diff import Increment, LazyIncrement
 from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
@@ -1599,7 +1599,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         **kwargs: Any,
-    ) -> DiffResult: ...
+    ) -> Increment: ...
 
     @overload
     def resolve_update(
@@ -1610,7 +1610,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         **kwargs: Any,
-    ) -> LazyDiffResult: ...
+    ) -> LazyIncrement: ...
 
     def resolve_update(
         self,
@@ -1620,7 +1620,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         **kwargs: Any,
-    ) -> DiffResult | LazyDiffResult:
+    ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
 
         Args:
@@ -1649,8 +1649,8 @@ class MetadataStore(ABC):
             filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
                 Applied when reading upstream metadata to filter samples at the source.
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If `True`, return [metaxy.data_versioning.diff.LazyDiffResult][] with lazy Narwhals LazyFrames.
-                If `False`, return [metaxy.data_versioning.diff.DiffResult][] with eager Narwhals DataFrames.
+            lazy: If `True`, return [metaxy.data_versioning.diff.LazyIncrement][] with lazy Narwhals LazyFrames.
+                If `False`, return [metaxy.data_versioning.diff.Increment][] with eager Narwhals DataFrames.
             **kwargs: Backend-specific parameters
 
         Raises:
@@ -1802,7 +1802,7 @@ class MetadataStore(ABC):
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
-    ) -> DiffResult | LazyDiffResult:
+    ) -> Increment | LazyIncrement:
         """Resolve using native field provenance calculations (all data in this store).
 
         Uses native field provenance calculations when available (e.g., IbisProvenanceByFieldCalculator for SQL stores)
@@ -1922,7 +1922,7 @@ class MetadataStore(ABC):
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
-    ) -> DiffResult | LazyDiffResult:
+    ) -> Increment | LazyIncrement:
         """Resolve using Polars components (cross-store scenario).
 
         Pulls data from all stores to Polars, performs all operations in memory.
