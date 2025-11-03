@@ -638,7 +638,7 @@ class GraphDiffer:
         """
         # Query feature_versions table for this snapshot
         try:
-            features_lazy = store._read_local(FEATURE_VERSIONS_KEY)
+            features_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             if features_lazy is None:
                 raise ValueError(
                     f"No feature_versions table found in store. Cannot load snapshot {snapshot_version}."
