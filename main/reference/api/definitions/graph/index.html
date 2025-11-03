@@ -2043,8 +2043,8 @@
 
     <div class="doc doc-contents ">
 
-        <p>Computes the feature data version.</p>
-<p>Hash together field data versions versions with the feature code version.</p>
+        <p>Computes the field provenance map for a feature.</p>
+<p>Hash together field provenance entries with the feature code version.</p>
 
 
 <p><span class="doc-section-title">Returns:</span></p>
@@ -2053,7 +2053,7 @@
               <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
           –
           <div class="doc-md-description">
-            <p>dict[str, str]: The data version for each field in the feature plan.
+            <p>dict[str, str]: The provenance hash for each field in the feature plan.
 Keys are field names as strings.</p>
           </div>
         </li>
@@ -2081,12 +2081,12 @@ Keys are field names as strings.</p>
 <span class="normal"><a href="#__codelineno-0-318">318</a></span>
 <span class="normal"><a href="#__codelineno-0-319">319</a></span>
 <span class="normal"><a href="#__codelineno-0-320">320</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_feature_version_by_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">FeatureKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the feature data version.</span>
+</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the field provenance map for a feature.</span>
 </span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a>
-</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">    Hash together field data versions versions with the feature code version.</span>
+</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">    Hash together field provenance entries with the feature code version.</span>
 </span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>
 </span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">        dict[str, str]: The data version for each field in the feature plan.</span>
+</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="sd">        dict[str, str]: The provenance hash for each field in the feature plan.</span>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">            Keys are field names as strings.</span>
 </span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
@@ -2139,10 +2139,10 @@ Keys are field names as strings.</p>
 <span class="normal"><a href="#__codelineno-0-330">330</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_feature_version</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">FeatureKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the feature version as a single string&quot;&quot;&quot;</span>
 </span><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a>    <span class="n">hasher</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">()</span>
-</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="n">data_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_feature_version_by_field</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="k">for</span> <span class="n">field_key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">data_version</span><span class="p">):</span>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="n">provenance_by_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_feature_version_by_field</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="k">for</span> <span class="n">field_key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">provenance_by_field</span><span class="p">):</span>
 </span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="n">hasher</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">field_key</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="n">hasher</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data_version</span><span class="p">[</span><span class="n">field_key</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="n">hasher</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">provenance_by_field</span><span class="p">[</span><span class="n">field_key</span><span class="p">]</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 </span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="k">return</span> <span class="n">truncate_hash</span><span class="p">(</span><span class="n">hasher</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
 </span></code></pre></div></td></tr></table></div>

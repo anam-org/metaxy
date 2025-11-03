@@ -1165,9 +1165,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.BaseFeature.data_version" class="md-nav__link">
+  <a href="#metaxy.BaseFeature.provenance_by_field" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;data_version
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;provenance_by_field
     </span>
   </a>
   
@@ -1258,9 +1258,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.Feature.data_version" class="md-nav__link">
+  <a href="#metaxy.Feature.provenance_by_field" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;data_version
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;provenance_by_field
     </span>
   </a>
   
@@ -1935,9 +1935,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.BaseFeature.data_version" class="md-nav__link">
+  <a href="#metaxy.BaseFeature.provenance_by_field" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;data_version
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;provenance_by_field
     </span>
   </a>
   
@@ -2028,9 +2028,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#metaxy.Feature.data_version" class="md-nav__link">
+  <a href="#metaxy.Feature.provenance_by_field" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;data_version
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;provenance_by_field
     </span>
   </a>
   
@@ -2948,7 +2948,7 @@ parts with double underscores, consistent with IbisMetadataStore.</p>
 - Field code versions
 - Dependencies
 - Field definitions</p>
-<p>Used to distinguish current vs historical metadata versions.
+<p>Used to distinguish current vs historical metafield provenance hashes.
 Stored in the 'feature_version' column of metadata DataFrames.</p>
 
 
@@ -3023,7 +3023,7 @@ Stored in the 'feature_version' column of metadata DataFrames.</p>
 </span><span id="__span-0-847"><a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">    - Dependencies</span>
 </span><span id="__span-0-848"><a id="__codelineno-0-848" name="__codelineno-0-848"></a><span class="sd">    - Field definitions</span>
 </span><span id="__span-0-849"><a id="__codelineno-0-849" name="__codelineno-0-849"></a>
-</span><span id="__span-0-850"><a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">    Used to distinguish current vs historical metadata versions.</span>
+</span><span id="__span-0-850"><a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">    Used to distinguish current vs historical metafield provenance hashes.</span>
 </span><span id="__span-0-851"><a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">    Stored in the &#39;feature_version&#39; column of metadata DataFrames.</span>
 </span><span id="__span-0-852"><a id="__codelineno-0-852" name="__codelineno-0-852"></a>
 </span><span id="__span-0-853"><a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">    Returns:</span>
@@ -3283,23 +3283,23 @@ to another, triggering appropriate migrations.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="metaxy.BaseFeature.data_version" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">data_version</span>
+<h4 id="metaxy.BaseFeature.provenance_by_field" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">provenance_by_field</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#metaxy.BaseFeature.data_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">data_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span>
+<a href="#metaxy.BaseFeature.provenance_by_field" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">provenance_by_field</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Get the code-level data version for this feature.</p>
+        <p>Get the code-level field provenance for this feature.</p>
 <p>This returns a static hash based on code versions and dependencies,
-not sample-level data versions.</p>
+not sample-level field provenance computed from upstream data.</p>
 
 
 <p><span class="doc-section-title">Returns:</span></p>
@@ -3308,7 +3308,7 @@ not sample-level data versions.</p>
               <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Dictionary mapping field keys to their data version hashes.</p>
+            <p>Dictionary mapping field keys to their provenance hashes.</p>
           </div>
         </li>
     </ul>
@@ -3327,14 +3327,14 @@ not sample-level data versions.</p>
 <span class="normal"><a href="#__codelineno-0-938">938</a></span>
 <span class="normal"><a href="#__codelineno-0-939">939</a></span>
 <span class="normal"><a href="#__codelineno-0-940">940</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-930"><a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-931"><a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="k">def</span><span class="w"> </span><span class="nf">data_version</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-0-932"><a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the code-level data version for this feature.</span>
+</span><span id="__span-0-931"><a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="k">def</span><span class="w"> </span><span class="nf">provenance_by_field</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-0-932"><a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the code-level field provenance for this feature.</span>
 </span><span id="__span-0-933"><a id="__codelineno-0-933" name="__codelineno-0-933"></a>
 </span><span id="__span-0-934"><a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">    This returns a static hash based on code versions and dependencies,</span>
-</span><span id="__span-0-935"><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">    not sample-level data versions.</span>
+</span><span id="__span-0-935"><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">    not sample-level field provenance computed from upstream data.</span>
 </span><span id="__span-0-936"><a id="__codelineno-0-936" name="__codelineno-0-936"></a>
 </span><span id="__span-0-937"><a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-938"><a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">        Dictionary mapping field keys to their data version hashes.</span>
+</span><span id="__span-0-938"><a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">        Dictionary mapping field keys to their provenance hashes.</span>
 </span><span id="__span-0-939"><a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-940"><a id="__codelineno-0-940" name="__codelineno-0-940"></a>    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">get_feature_version_by_field</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
@@ -3514,12 +3514,12 @@ not sample-level data versions.</p>
   </span>
 
 <a href="#metaxy.BaseFeature.resolve_data_version_diff" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="n">diff_resolver</span><span class="p">:</span> <span class="n"><span title="metaxy.data_versioning.diff.MetadataDiffResolver">MetadataDiffResolver</span></span><span class="p">,</span> <span class="n">target_versions</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.DiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.DiffResult">DiffResult</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyDiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.LazyDiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.LazyDiffResult">LazyDiffResult</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="n">diff_resolver</span><span class="p">:</span> <span class="n"><span title="metaxy.data_versioning.diff.MetadataDiffResolver">MetadataDiffResolver</span></span><span class="p">,</span> <span class="n">target_provenance</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.DiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.DiffResult">DiffResult</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyDiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.LazyDiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.LazyDiffResult">LazyDiffResult</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Resolve differences between target and current data versions.</p>
+        <p>Resolve differences between target and current field provenance.</p>
 <p>Override for custom diff logic (ignore certain fields, custom rules, etc.).</p>
 
 
@@ -3534,11 +3534,11 @@ not sample-level data versions.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>target_versions</code></b>
+            <b><code>target_provenance</code></b>
               (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>Calculated target data_versions (Narwhals LazyFrame)</p>
+            <p>Calculated target field provenance (Narwhals LazyFrame)</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -3580,9 +3580,9 @@ Should be pre-filtered by feature_version at the store level.</p>
 <p>Example (ignore certain field changes):
     <div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=...</span><span class="p">):</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nd">@classmethod</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">diff_resolver</span><span class="p">,</span> <span class="n">target_versions</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">diff_resolver</span><span class="p">,</span> <span class="n">target_provenance</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="c1"># Get standard diff</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span><span class="n">target_versions</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span><span class="n">target_provenance</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">)</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="c1"># Custom: Only consider &#39;frames&#39; field changes, ignore &#39;audio&#39;</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="c1"># Users can filter/modify the diff result here</span>
@@ -3657,18 +3657,18 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-984"><a id="__codelineno-0-984" name="__codelineno-0-984"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span>
 </span><span id="__span-0-985"><a id="__codelineno-0-985" name="__codelineno-0-985"></a>    <span class="bp">cls</span><span class="p">,</span>
 </span><span id="__span-0-986"><a id="__codelineno-0-986" name="__codelineno-0-986"></a>    <span class="n">diff_resolver</span><span class="p">:</span> <span class="s2">&quot;MetadataDiffResolver&quot;</span><span class="p">,</span>
-</span><span id="__span-0-987"><a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">target_versions</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any]&quot;</span><span class="p">,</span>
+</span><span id="__span-0-987"><a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">target_provenance</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any]&quot;</span><span class="p">,</span>
 </span><span id="__span-0-988"><a id="__codelineno-0-988" name="__codelineno-0-988"></a>    <span class="n">current_metadata</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any] | None&quot;</span><span class="p">,</span>
 </span><span id="__span-0-989"><a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-990"><a id="__codelineno-0-990" name="__codelineno-0-990"></a>    <span class="n">lazy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-991"><a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DiffResult | LazyDiffResult&quot;</span><span class="p">:</span>
-</span><span id="__span-0-992"><a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve differences between target and current data versions.</span>
+</span><span id="__span-0-992"><a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve differences between target and current field provenance.</span>
 </span><span id="__span-0-993"><a id="__codelineno-0-993" name="__codelineno-0-993"></a>
 </span><span id="__span-0-994"><a id="__codelineno-0-994" name="__codelineno-0-994"></a><span class="sd">    Override for custom diff logic (ignore certain fields, custom rules, etc.).</span>
 </span><span id="__span-0-995"><a id="__codelineno-0-995" name="__codelineno-0-995"></a>
 </span><span id="__span-0-996"><a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-997"><a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="sd">        diff_resolver: MetadataDiffResolver from MetadataStore</span>
-</span><span id="__span-0-998"><a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">        target_versions: Calculated target data_versions (Narwhals LazyFrame)</span>
+</span><span id="__span-0-998"><a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">        target_provenance: Calculated target field provenance (Narwhals LazyFrame)</span>
 </span><span id="__span-0-999"><a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">        current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).</span>
 </span><span id="__span-0-1000"><a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">            Should be pre-filtered by feature_version at the store level.</span>
 </span><span id="__span-0-1001"><a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">        lazy: If True, return LazyDiffResult. If False, return DiffResult.</span>
@@ -3686,9 +3686,9 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-1013"><a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ```py</span>
 </span><span id="__span-0-1014"><a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">        class MyFeature(Feature, spec=...):</span>
 </span><span id="__span-0-1015"><a id="__codelineno-0-1015" name="__codelineno-0-1015"></a><span class="sd">            @classmethod</span>
-</span><span id="__span-0-1016"><a id="__codelineno-0-1016" name="__codelineno-0-1016"></a><span class="sd">            def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):</span>
+</span><span id="__span-0-1016"><a id="__codelineno-0-1016" name="__codelineno-0-1016"></a><span class="sd">            def resolve_data_version_diff(cls, diff_resolver, target_provenance, current_metadata, **kwargs):</span>
 </span><span id="__span-0-1017"><a id="__codelineno-0-1017" name="__codelineno-0-1017"></a><span class="sd">                # Get standard diff</span>
-</span><span id="__span-0-1018"><a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="sd">                result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)</span>
+</span><span id="__span-0-1018"><a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="sd">                result = diff_resolver.find_changes(target_provenance, current_metadata, cls.spec().id_columns)</span>
 </span><span id="__span-0-1019"><a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
 </span><span id="__span-0-1020"><a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="sd">                # Custom: Only consider &#39;frames&#39; field changes, ignore &#39;audio&#39;</span>
 </span><span id="__span-0-1021"><a id="__codelineno-0-1021" name="__codelineno-0-1021"></a><span class="sd">                # Users can filter/modify the diff result here</span>
@@ -3698,7 +3698,7 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-1025"><a id="__codelineno-0-1025" name="__codelineno-0-1025"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-1026"><a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>    <span class="c1"># Diff resolver always returns LazyDiffResult - materialize if needed</span>
 </span><span id="__span-0-1027"><a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>    <span class="n">lazy_result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span>
-</span><span id="__span-0-1028"><a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="n">target_versions</span><span class="o">=</span><span class="n">target_versions</span><span class="p">,</span>
+</span><span id="__span-0-1028"><a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="n">target_provenance</span><span class="o">=</span><span class="n">target_provenance</span><span class="p">,</span>
 </span><span id="__span-0-1029"><a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>        <span class="n">current_metadata</span><span class="o">=</span><span class="n">current_metadata</span><span class="p">,</span>
 </span><span id="__span-0-1030"><a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>        <span class="n">id_columns</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">,</span>  <span class="c1"># Pass ID columns from feature spec</span>
 </span><span id="__span-0-1031"><a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>    <span class="p">)</span>
@@ -3907,7 +3907,7 @@ parts with double underscores, consistent with IbisMetadataStore.</p>
 - Field code versions
 - Dependencies
 - Field definitions</p>
-<p>Used to distinguish current vs historical metadata versions.
+<p>Used to distinguish current vs historical metafield provenance hashes.
 Stored in the 'feature_version' column of metadata DataFrames.</p>
 
 
@@ -3982,7 +3982,7 @@ Stored in the 'feature_version' column of metadata DataFrames.</p>
 </span><span id="__span-0-847"><a id="__codelineno-0-847" name="__codelineno-0-847"></a><span class="sd">    - Dependencies</span>
 </span><span id="__span-0-848"><a id="__codelineno-0-848" name="__codelineno-0-848"></a><span class="sd">    - Field definitions</span>
 </span><span id="__span-0-849"><a id="__codelineno-0-849" name="__codelineno-0-849"></a>
-</span><span id="__span-0-850"><a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">    Used to distinguish current vs historical metadata versions.</span>
+</span><span id="__span-0-850"><a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="sd">    Used to distinguish current vs historical metafield provenance hashes.</span>
 </span><span id="__span-0-851"><a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">    Stored in the &#39;feature_version&#39; column of metadata DataFrames.</span>
 </span><span id="__span-0-852"><a id="__codelineno-0-852" name="__codelineno-0-852"></a>
 </span><span id="__span-0-853"><a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">    Returns:</span>
@@ -4242,23 +4242,23 @@ to another, triggering appropriate migrations.</p>
 <div class="doc doc-object doc-function">
 
 
-<h4 id="metaxy.Feature.data_version" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">data_version</span>
+<h4 id="metaxy.Feature.provenance_by_field" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">provenance_by_field</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#metaxy.Feature.data_version" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">data_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span>
+<a href="#metaxy.Feature.provenance_by_field" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">provenance_by_field</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Get the code-level data version for this feature.</p>
+        <p>Get the code-level field provenance for this feature.</p>
 <p>This returns a static hash based on code versions and dependencies,
-not sample-level data versions.</p>
+not sample-level field provenance computed from upstream data.</p>
 
 
 <p><span class="doc-section-title">Returns:</span></p>
@@ -4267,7 +4267,7 @@ not sample-level data versions.</p>
               <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
           –
           <div class="doc-md-description">
-            <p>Dictionary mapping field keys to their data version hashes.</p>
+            <p>Dictionary mapping field keys to their provenance hashes.</p>
           </div>
         </li>
     </ul>
@@ -4286,14 +4286,14 @@ not sample-level data versions.</p>
 <span class="normal"><a href="#__codelineno-0-938">938</a></span>
 <span class="normal"><a href="#__codelineno-0-939">939</a></span>
 <span class="normal"><a href="#__codelineno-0-940">940</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-930"><a id="__codelineno-0-930" name="__codelineno-0-930"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-931"><a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="k">def</span><span class="w"> </span><span class="nf">data_version</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-0-932"><a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the code-level data version for this feature.</span>
+</span><span id="__span-0-931"><a id="__codelineno-0-931" name="__codelineno-0-931"></a><span class="k">def</span><span class="w"> </span><span class="nf">provenance_by_field</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-0-932"><a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the code-level field provenance for this feature.</span>
 </span><span id="__span-0-933"><a id="__codelineno-0-933" name="__codelineno-0-933"></a>
 </span><span id="__span-0-934"><a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">    This returns a static hash based on code versions and dependencies,</span>
-</span><span id="__span-0-935"><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">    not sample-level data versions.</span>
+</span><span id="__span-0-935"><a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">    not sample-level field provenance computed from upstream data.</span>
 </span><span id="__span-0-936"><a id="__codelineno-0-936" name="__codelineno-0-936"></a>
 </span><span id="__span-0-937"><a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-938"><a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">        Dictionary mapping field keys to their data version hashes.</span>
+</span><span id="__span-0-938"><a id="__codelineno-0-938" name="__codelineno-0-938"></a><span class="sd">        Dictionary mapping field keys to their provenance hashes.</span>
 </span><span id="__span-0-939"><a id="__codelineno-0-939" name="__codelineno-0-939"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-940"><a id="__codelineno-0-940" name="__codelineno-0-940"></a>    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">get_feature_version_by_field</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
@@ -4473,12 +4473,12 @@ not sample-level data versions.</p>
   </span>
 
 <a href="#metaxy.Feature.resolve_data_version_diff" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="n">diff_resolver</span><span class="p">:</span> <span class="n"><span title="metaxy.data_versioning.diff.MetadataDiffResolver">MetadataDiffResolver</span></span><span class="p">,</span> <span class="n">target_versions</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.DiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.DiffResult">DiffResult</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyDiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.LazyDiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.LazyDiffResult">LazyDiffResult</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="n">diff_resolver</span><span class="p">:</span> <span class="n"><span title="metaxy.data_versioning.diff.MetadataDiffResolver">MetadataDiffResolver</span></span><span class="p">,</span> <span class="n">target_provenance</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">],</span> <span class="n">current_metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.DiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.DiffResult">DiffResult</a></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;LazyDiffResult&lt;/span&gt; (&lt;code&gt;metaxy.data_versioning.diff.LazyDiffResult&lt;/code&gt;)" href="../../types/#metaxy.data_versioning.diff.LazyDiffResult">LazyDiffResult</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Resolve differences between target and current data versions.</p>
+        <p>Resolve differences between target and current field provenance.</p>
 <p>Override for custom diff logic (ignore certain fields, custom rules, etc.).</p>
 
 
@@ -4493,11 +4493,11 @@ not sample-level data versions.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-            <b><code>target_versions</code></b>
+            <b><code>target_provenance</code></b>
               (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>Calculated target data_versions (Narwhals LazyFrame)</p>
+            <p>Calculated target field provenance (Narwhals LazyFrame)</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -4539,9 +4539,9 @@ Should be pre-filtered by feature_version at the store level.</p>
 <p>Example (ignore certain field changes):
     <div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=...</span><span class="p">):</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nd">@classmethod</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">diff_resolver</span><span class="p">,</span> <span class="n">target_versions</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">diff_resolver</span><span class="p">,</span> <span class="n">target_provenance</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="c1"># Get standard diff</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span><span class="n">target_versions</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span><span class="n">target_provenance</span><span class="p">,</span> <span class="n">current_metadata</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">)</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="c1"># Custom: Only consider &#39;frames&#39; field changes, ignore &#39;audio&#39;</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="c1"># Users can filter/modify the diff result here</span>
@@ -4616,18 +4616,18 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-984"><a id="__codelineno-0-984" name="__codelineno-0-984"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_data_version_diff</span><span class="p">(</span>
 </span><span id="__span-0-985"><a id="__codelineno-0-985" name="__codelineno-0-985"></a>    <span class="bp">cls</span><span class="p">,</span>
 </span><span id="__span-0-986"><a id="__codelineno-0-986" name="__codelineno-0-986"></a>    <span class="n">diff_resolver</span><span class="p">:</span> <span class="s2">&quot;MetadataDiffResolver&quot;</span><span class="p">,</span>
-</span><span id="__span-0-987"><a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">target_versions</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any]&quot;</span><span class="p">,</span>
+</span><span id="__span-0-987"><a id="__codelineno-0-987" name="__codelineno-0-987"></a>    <span class="n">target_provenance</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any]&quot;</span><span class="p">,</span>
 </span><span id="__span-0-988"><a id="__codelineno-0-988" name="__codelineno-0-988"></a>    <span class="n">current_metadata</span><span class="p">:</span> <span class="s2">&quot;nw.LazyFrame[Any] | None&quot;</span><span class="p">,</span>
 </span><span id="__span-0-989"><a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-990"><a id="__codelineno-0-990" name="__codelineno-0-990"></a>    <span class="n">lazy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-991"><a id="__codelineno-0-991" name="__codelineno-0-991"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DiffResult | LazyDiffResult&quot;</span><span class="p">:</span>
-</span><span id="__span-0-992"><a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve differences between target and current data versions.</span>
+</span><span id="__span-0-992"><a id="__codelineno-0-992" name="__codelineno-0-992"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve differences between target and current field provenance.</span>
 </span><span id="__span-0-993"><a id="__codelineno-0-993" name="__codelineno-0-993"></a>
 </span><span id="__span-0-994"><a id="__codelineno-0-994" name="__codelineno-0-994"></a><span class="sd">    Override for custom diff logic (ignore certain fields, custom rules, etc.).</span>
 </span><span id="__span-0-995"><a id="__codelineno-0-995" name="__codelineno-0-995"></a>
 </span><span id="__span-0-996"><a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-997"><a id="__codelineno-0-997" name="__codelineno-0-997"></a><span class="sd">        diff_resolver: MetadataDiffResolver from MetadataStore</span>
-</span><span id="__span-0-998"><a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">        target_versions: Calculated target data_versions (Narwhals LazyFrame)</span>
+</span><span id="__span-0-998"><a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">        target_provenance: Calculated target field provenance (Narwhals LazyFrame)</span>
 </span><span id="__span-0-999"><a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">        current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).</span>
 </span><span id="__span-0-1000"><a id="__codelineno-0-1000" name="__codelineno-0-1000"></a><span class="sd">            Should be pre-filtered by feature_version at the store level.</span>
 </span><span id="__span-0-1001"><a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">        lazy: If True, return LazyDiffResult. If False, return DiffResult.</span>
@@ -4645,9 +4645,9 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-1013"><a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        ```py</span>
 </span><span id="__span-0-1014"><a id="__codelineno-0-1014" name="__codelineno-0-1014"></a><span class="sd">        class MyFeature(Feature, spec=...):</span>
 </span><span id="__span-0-1015"><a id="__codelineno-0-1015" name="__codelineno-0-1015"></a><span class="sd">            @classmethod</span>
-</span><span id="__span-0-1016"><a id="__codelineno-0-1016" name="__codelineno-0-1016"></a><span class="sd">            def resolve_data_version_diff(cls, diff_resolver, target_versions, current_metadata, **kwargs):</span>
+</span><span id="__span-0-1016"><a id="__codelineno-0-1016" name="__codelineno-0-1016"></a><span class="sd">            def resolve_data_version_diff(cls, diff_resolver, target_provenance, current_metadata, **kwargs):</span>
 </span><span id="__span-0-1017"><a id="__codelineno-0-1017" name="__codelineno-0-1017"></a><span class="sd">                # Get standard diff</span>
-</span><span id="__span-0-1018"><a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="sd">                result = diff_resolver.find_changes(target_versions, current_metadata, cls.spec().id_columns)</span>
+</span><span id="__span-0-1018"><a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="sd">                result = diff_resolver.find_changes(target_provenance, current_metadata, cls.spec().id_columns)</span>
 </span><span id="__span-0-1019"><a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
 </span><span id="__span-0-1020"><a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="sd">                # Custom: Only consider &#39;frames&#39; field changes, ignore &#39;audio&#39;</span>
 </span><span id="__span-0-1021"><a id="__codelineno-0-1021" name="__codelineno-0-1021"></a><span class="sd">                # Users can filter/modify the diff result here</span>
@@ -4657,7 +4657,7 @@ Should be pre-filtered by feature_version at the store level.</p>
 </span><span id="__span-0-1025"><a id="__codelineno-0-1025" name="__codelineno-0-1025"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-1026"><a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>    <span class="c1"># Diff resolver always returns LazyDiffResult - materialize if needed</span>
 </span><span id="__span-0-1027"><a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>    <span class="n">lazy_result</span> <span class="o">=</span> <span class="n">diff_resolver</span><span class="o">.</span><span class="n">find_changes</span><span class="p">(</span>
-</span><span id="__span-0-1028"><a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="n">target_versions</span><span class="o">=</span><span class="n">target_versions</span><span class="p">,</span>
+</span><span id="__span-0-1028"><a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="n">target_provenance</span><span class="o">=</span><span class="n">target_provenance</span><span class="p">,</span>
 </span><span id="__span-0-1029"><a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>        <span class="n">current_metadata</span><span class="o">=</span><span class="n">current_metadata</span><span class="p">,</span>
 </span><span id="__span-0-1030"><a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>        <span class="n">id_columns</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">id_columns</span><span class="p">,</span>  <span class="c1"># Pass ID columns from feature spec</span>
 </span><span id="__span-0-1031"><a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>    <span class="p">)</span>

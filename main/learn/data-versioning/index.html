@@ -1508,13 +1508,13 @@
 <h3 id="samples">Samples<a class="headerlink" href="#samples" title="Permanent link">&para;</a></h3>
 <p>These versions are sample-level and require access to the metadata store in order to compute them.</p>
 <ul>
-<li><strong>Sample Version By Field</strong> is computed from the upstream <strong>Sample Version By Fields</strong> (with respect to defined <a href="../feature-definitions/#field-level-dependencies">field-level dependencies</a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
+<li><strong>Provenance By Field</strong> is computed from the upstream <strong>Provenance By Fields</strong> (with respect to defined <a href="../feature-definitions/#field-level-dependencies">field-level dependencies</a> and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):</li>
 </ul>
 <table>
 <thead>
 <tr>
 <th>sample_uid</th>
-<th>metaxy_sample_version_by_field</th>
+<th>provenance_by_field</th>
 </tr>
 </thead>
 <tbody>
@@ -1537,7 +1537,7 @@
 </tbody>
 </table>
 <ul>
-<li><strong>Sample Version</strong> is derived from the <strong>Sample Version By Field</strong> by simply hashing it.</li>
+<li><strong>Sample Version</strong> is derived from the <strong>Provenance By Field</strong> by simply hashing it.</li>
 </ul>
 <p>This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.</p>
 <h2 id="practical-example">Practical Example<a class="headerlink" href="#practical-example" title="Permanent link">&para;</a></h2>
@@ -1718,7 +1718,7 @@ color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt
 <li>Frame field versions stayed the same</li>
 </ul>
 <h2 id="incremental-computation">Incremental Computation<a class="headerlink" href="#incremental-computation" title="Permanent link">&para;</a></h2>
-<p>The metadata store's <code>calculate_and_write_data_versions()</code> method:</p>
+<p>The metadata store's <code>calculate_provenance_by_field()</code> method:</p>
 <ol>
 <li>Joins upstream feature metadata</li>
 <li>Computes sample versions</li>
@@ -1728,7 +1728,7 @@ color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt
 <p>Typically, steps 1-3 can be run directly in the database. Analytical databases such as ClickHouse or Snowflake can efficiently handle these operations.</p>
 <p>The Python pipeline then processes only the delta</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>  <span class="c1"># MetadataStore</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Metaxy computes data_version and identifies changes</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Metaxy computes provenance_by_field and identifies changes</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">diff</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">MyFeature</span><span class="p">)</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="c1"># Process only changed samples</span>

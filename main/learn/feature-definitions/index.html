@@ -1517,7 +1517,7 @@ Fields are completely independent from them.</p>
 Fields are supposed to represent parts of data that users care about.
 For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
 <p>Downstream features can depend on specific fields of upstream features.
-This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.</p>
+This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.</p>
 <p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the <a href="#feature-specs">example</a> above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express that with Metaxy:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>

@@ -1497,7 +1497,7 @@
           –
           <div class="doc-md-description">
             <p>New samples that appear upstream and haven't been processed yet.</p>
-<p>Columns: <code>[*user_defined_columns, "data_version"]</code></p>
+<p>Columns: <code>[*user_defined_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -1505,8 +1505,8 @@
               (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.LazyFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/lazyframe/#narwhals.dataframe.LazyFrame">LazyFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>Samples with new data versions that should be re-processed.</p>
-<p>Columns: <code>[*user_defined_columns, "data_version"]</code></p>
+            <p>Samples with new field provenance that should be re-processed.</p>
+<p>Columns: <code>[*user_defined_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -1515,7 +1515,7 @@
           –
           <div class="doc-md-description">
             <p>Samples that have been previously processed but have been removed from upstream since that.</p>
-<p>Columns: <code>[*id_columns, "data_version"]</code></p>
+<p>Columns: <code>[*id_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
     </ul>
@@ -1641,7 +1641,7 @@
           –
           <div class="doc-md-description">
             <p>New samples that appear upstream and haven't been processed yet.</p>
-<p>Columns: <code>[*user_defined_columns, "data_version"]</code></p>
+<p>Columns: <code>[*user_defined_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -1649,8 +1649,8 @@
               (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.DataFrame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/dataframe/#narwhals.dataframe.DataFrame">DataFrame</a>[<a class="autorefs autorefs-external" title="&lt;code&gt;typing.Any&lt;/code&gt;" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>Samples with new data versions that should be re-processed.</p>
-<p>Columns: <code>[*user_defined_columns, "data_version"]</code></p>
+            <p>Samples with new field provenance that should be re-processed.</p>
+<p>Columns: <code>[*user_defined_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -1659,7 +1659,7 @@
           –
           <div class="doc-md-description">
             <p>Samples that have been previously processed but have been removed from upstream since that.</p>
-<p>Columns: <code>[*id_columns, "data_version"]</code></p>
+<p>Columns: <code>[*id_columns, "provenance_by_field"]</code></p>
           </div>
         </li>
     </ul>
@@ -1714,11 +1714,11 @@
               Bases: <code><a class="autorefs autorefs-external" title="&lt;code&gt;enum.Enum&lt;/code&gt;" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
 
 
-        <p>Supported hash algorithms for data versioning.</p>
+        <p>Supported hash algorithms for field provenance calculation.</p>
 <p>These algorithms are chosen for:
 - Speed (non-cryptographic hashes preferred)
 - Cross-database availability
-- Good collision resistance for data versioning</p>
+- Good collision resistance for field provenance calculation</p>
 
 
 

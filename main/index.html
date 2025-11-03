@@ -1569,13 +1569,13 @@ color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt
 <p><strong>🤸 flexible</strong> to work around restrictions consciously:</p>
 <ul>
 <li><a href="learn/feature-definitions/">features</a> are defined as <a href="https://docs.pydantic.dev/latest/">Pydantic</a> models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY</li>
-<li>has a <strong>migrations system</strong> to compensate for reconciling data versions and metadata when computations are not desired</li>
+<li>has a <strong>migrations system</strong> to compensate for reconciling field provenances and metadata when computations are not desired</li>
 </ul>
 </li>
 <li>
 <p><strong>🪨 rock solid</strong> when it matters:</p>
 <ul>
-<li><a href="learn/data-versioning/">data versioning</a> is guaranteed to be <strong>consistent across DBs or in-memory</strong> compute engines. We really have tested this very well!</li>
+<li><a href="learn/data-versioning/">field provenance</a> is guaranteed to be <strong>consistent across DBs or in-memory</strong> compute engines. We really have tested this very well!</li>
 <li>changes to topology, feature versioning, or individual samples <strong>ruthlessly propagate downstream</strong></li>
 <li>unique <a href="learn/feature-definitions/#field-level-dependencies">field-level dependency system</a> prevents unnecessary recomputations for features that depend on partial data</li>
 <li>metadata is <strong>append-only</strong> to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).</li>
@@ -1638,7 +1638,7 @@ When you modify a feature—whether changing its dependencies, adding fields, or
 This is done on multiple levels: <code>Feature</code> level, field level, and of course on sample level: each <em>row</em> in the metadata store tracks the version of <em>each field</em> and the feature-level version.</p>
 <p>This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature <em>does not</em> require recomputation, even if one of its parents has been changed (but only irrelevant fields did).
 This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).</p>
-<p>Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation.
+<p>Because Metaxy feature graphs are static, Metaxy can calculate field provenance changes ahead of the actual computation.
 This enables patterns such as <strong>computation preview</strong> and <strong>computation cost prediction</strong>.</p>
 <h2 id="typical-user-workflow">Typical User Workflow<a class="headerlink" href="#typical-user-workflow" title="Permanent link">&para;</a></h2>
 <h3 id="1-record-metaxy-feature-graph-in-cicd">1. Record Metaxy feature graph in CI/CD<a class="headerlink" href="#1-record-metaxy-feature-graph-in-cicd" title="Permanent link">&para;</a></h3>
@@ -1659,7 +1659,7 @@ This enables patterns such as <strong>computation preview</strong> and <strong>c
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">diff</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">resolve_update</span><span class="p">(</span><span class="n">VoiceDetection</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>metaxy.MetadataStore.resolve_update</code> runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
-The returned object provides <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a> lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the data versions already computed.</p>
+The returned object provides <a href="https://narwhals-dev.github.io/narwhals/">Narwhals</a> lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the field provenances already computed.</p>
 <h3 id="3-run-user-defined-computation-over-the-metadata-increment">3. Run user-defined computation over the metadata increment<a class="headerlink" href="#3-run-user-defined-computation-over-the-metadata-increment" title="Permanent link">&para;</a></h3>
 <p>Metaxy is not involved in this step at all.</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">added</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="o">.</span><span class="n">changed</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>

@@ -2052,8 +2052,8 @@ when: - The destination store is empty or has no overlap with source - The desti
 --all-features.</li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Copy all features from source store  <em>[default: --no-all-features]</em></li>
 <li><code>SNAPSHOT, --snapshot</code>: Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.</li>
-<li><code>INCREMENTAL, --incremental, --no-incremental</code>: Use incremental copy (compare data_version to skip existing rows). Disable for better performance if destination is 
-empty or uses deduplication.  <em>[default: --incremental]</em></li>
+<li><code>INCREMENTAL, --incremental, --no-incremental</code>: Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination 
+is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 </ul>
 <h4 id="metaxy-metadata-drop"><code>metaxy metadata drop</code><a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h4>
 <p>Drop metadata from a store.</p>
