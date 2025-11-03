@@ -1,3 +1,6 @@
+fmt:
+    dprint fmt
+
 ruff:
     uv run ruff check --fix
     uv run ruff format
@@ -57,3 +60,12 @@ docs-publish version:
     git branch -D gh-pages
     git fetch origin gh-pages
     uv run --group docs --all-extras mike deploy --push --update-aliases {{version}}
+
+test-and-submit:
+    just ruff
+    just typecheck
+    uv run pytest --snapshot-update
+    dprint fmt
+    git add .
+    gt modify
+    gt ss
