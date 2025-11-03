@@ -1,6 +1,6 @@
 """Feature definitions - Version 2.
 
-ParentFeature.code_version changed from 1 to 2.
+ParentFeature's FeatureSpec.code_version changed from 1 to 2.
 This represents updating the embedding algorithm.
 When parent changes, child must recompute even though its code is unchanged.
 """
