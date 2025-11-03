@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 from pydantic import BaseModel, TypeAdapter
 from pydantic import Field as PydanticField
 
+from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.types import (
     CoercibleToFieldKey,
     FeatureKey,
@@ -118,7 +119,7 @@ class FieldDep(BaseModel):
 
 class FieldSpec(BaseModel):
     key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
-    code_version: str = "1"
+    code_version: str = DEFAULT_CODE_VERSION
 
     # field-level dependencies can be one of the following:
     # - the default SpecialFieldDep.ALL to depend on all upstream features and all their fields
@@ -129,7 +130,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: str,
-        code_version: str = "1",
+        code_version: str,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from string key."""
@@ -139,7 +140,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: Sequence[str],
-        code_version: str = "1",
+        code_version: str,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from sequence of parts."""
@@ -149,7 +150,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: FieldKey,
-        code_version: str = "1",
+        code_version: str,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize from FieldKey instance."""
@@ -159,7 +160,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: None,
-        code_version: str = "1",
+        code_version: str,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
     ) -> None:
         """Initialize with None key (uses default)."""
@@ -168,7 +169,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: CoercibleToFieldKey | None,
-        code_version: str = "1",
+        code_version: str = DEFAULT_CODE_VERSION,
         deps: SpecialFieldDep | list[FieldDep] = SpecialFieldDep.ALL,
         *args,
         **kwargs: Any,
