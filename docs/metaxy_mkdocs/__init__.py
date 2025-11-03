@@ -1,6 +1,6 @@
 """MkDocs utilities for Metaxy documentation."""
 
-from metaxy_mkdocs.config_generator import (
+from metaxy_mkdocs.config_generator import (  # pyright: ignore[reportImplicitRelativeImport]
     extract_field_info,
     format_default_value,
     format_field_type,
