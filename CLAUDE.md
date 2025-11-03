@@ -182,7 +182,7 @@ Three-component architecture for calculating and comparing field provenance entr
 
 - `NarwhalsDiffResolver`: Primary backend-agnostic comparison using Narwhals
 - Native implementations execute diffs (anti-joins, comparisons) directly in the database
-- Returns: `DiffResult(added, changed, removed)` or `LazyDiffResult` (lazy frames with Narwhals)
+- Returns: `Increment(added, changed, removed)` or `LazyIncrement` (lazy frames with Narwhals)
 - Only pulls necessary data (samples that need updating) out of the database
 
 #### 4. Migration System (`src/metaxy/migrations/`)

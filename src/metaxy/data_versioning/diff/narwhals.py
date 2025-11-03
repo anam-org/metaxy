@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 import narwhals as nw
 
 from metaxy.data_versioning.diff.base import (
-    LazyDiffResult,
+    LazyIncrement,
     MetadataDiffResolver,
 )
 
@@ -38,7 +38,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         target_provenance: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
         id_columns: Sequence[str],
-    ) -> LazyDiffResult:
+    ) -> LazyIncrement:
         """Find all changes between target and current.
 
         Args:
@@ -48,7 +48,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             id_columns: ID columns to use for comparison (required - from feature spec)
 
         Returns:
-            LazyDiffResult with three lazy Narwhals frames (caller materializes if needed)
+            LazyIncrement with three lazy Narwhals frames (caller materializes if needed)
         """
         id_columns = list(id_columns)
 
@@ -75,7 +75,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             schema["provenance_by_field"] = []
             empty_lazy = nw.from_native(pl.LazyFrame(schema))
 
-            return LazyDiffResult(
+            return LazyIncrement(
                 added=target_provenance,
                 changed=empty_lazy,
                 removed=empty_lazy,
@@ -120,7 +120,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         ).select(id_columns + ["provenance_by_field"])
 
         # Return lazy frames - caller will materialize if needed
-        return LazyDiffResult(
+        return LazyIncrement(
             added=added_lazy,
             changed=changed_lazy,
             removed=removed_lazy,

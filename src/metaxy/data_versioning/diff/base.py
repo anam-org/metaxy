@@ -10,15 +10,8 @@ if TYPE_CHECKING:
     pass
 
 
-class LazyDiffResult(NamedTuple):
+class LazyIncrement(NamedTuple):
     """Result of resolving an incremental update with lazy Narwhals LazyFrames.
-
-    Users can:
-    - Keep lazy for further operations: result.added.filter(...)
-
-    - Materialize to Polars: result.added.collect().to_native()
-
-    - Convert to DiffResult: result.collect()
 
     Attributes:
         added: New samples that appear upstream and haven't been processed yet.
@@ -39,20 +32,20 @@ class LazyDiffResult(NamedTuple):
     changed: nw.LazyFrame[Any]
     removed: nw.LazyFrame[Any]
 
-    def collect(self) -> "DiffResult":
-        """Materialize all lazy frames to create a DiffResult.
+    def collect(self) -> "Increment":
+        """Materialize all lazy frames to create a Increment.
 
         Returns:
-            DiffResult with all frames materialized to eager DataFrames.
+            Increment with all frames materialized to eager DataFrames.
         """
-        return DiffResult(
+        return Increment(
             added=self.added.collect(),
             changed=self.changed.collect(),
             removed=self.removed.collect(),
         )
 
 
-class DiffResult(NamedTuple):
+class Increment(NamedTuple):
     """Result of resolving an incremental update with eager Narwhals DataFrames.
 
     Contains materialized Narwhals DataFrames.
@@ -98,7 +91,7 @@ class MetadataDiffResolver(ABC):
         - IbisDiffResolver: Converts to Ibis internally for SQL processing
 
     Important Design:
-        Takes lazy Narwhals refs as input, returns LazyDiffResult as output.
+        Takes lazy Narwhals refs as input, returns LazyIncrement as output.
         This minimizes query execution:
         - SQL backends: One query with CTEs computes all three categories
         - Polars: Uses lazy operations, splits into three LazyFrames
@@ -115,7 +108,7 @@ class MetadataDiffResolver(ABC):
         target_provenance: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
         id_columns: Sequence[str],
-    ) -> LazyDiffResult:
+    ) -> LazyIncrement:
         """Find all changes between target and current metadata.
 
         Compares target field_provenance (newly calculated) with current metadata
@@ -130,8 +123,8 @@ class MetadataDiffResolver(ABC):
             id_columns: List of ID columns to use for comparison (required - from feature spec)
 
         Returns:
-            LazyDiffResult with three lazy Narwhals LazyFrames.
-            Caller materializes to DiffResult if needed (for lazy=False).
+            LazyIncrement with three lazy Narwhals LazyFrames.
+            Caller materializes to Increment if needed (for lazy=False).
 
         Implementation Note:
             Should build lazy operations without materializing:

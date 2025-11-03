@@ -786,9 +786,9 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
 
             # Materialize if lazy=False
             if not lazy:
-                from metaxy.data_versioning.diff import DiffResult
+                from metaxy.data_versioning.diff import Increment
 
-                return DiffResult(
+                return Increment(
                     added=lazy_result.added.collect(),
                     changed=lazy_result.changed.collect(),
                     removed=lazy_result.removed.collect(),
@@ -814,7 +814,7 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
 
     # Call overridden method (this calls find_changes which needs current_feature_version=False)
     # The test feature class needs to pass the parameter through
-    # Explicitly pass lazy=False to get DiffResult (eager) instead of LazyDiffResult
+    # Explicitly pass lazy=False to get Increment (eager) instead of LazyIncrement
     result = CustomDiffFeature.resolve_provenance_diff(
         diff_resolver=diff_resolver,
         target_provenance=target,
@@ -823,10 +823,10 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
     )
 
     # Should identify: added=1, changed=1
-    # Type assertion to help type checker understand result is DiffResult (eager)
-    from metaxy.data_versioning.diff import DiffResult
+    # Type assertion to help type checker understand result is Increment (eager)
+    from metaxy.data_versioning.diff import Increment
 
-    assert isinstance(result, DiffResult)
+    assert isinstance(result, Increment)
     assert len(result.added) == 1
     assert len(result.changed) == 1
 
@@ -1169,7 +1169,7 @@ def test_upstream_data_changes_snapshots(snapshot):
 
 
 def test_diff_result_snapshots(snapshot):
-    """Snapshot the structure of DiffResult for various scenarios."""
+    """Snapshot the structure of Increment for various scenarios."""
     diff_resolver = NarwhalsDiffResolver()
 
     target = nw.from_native(

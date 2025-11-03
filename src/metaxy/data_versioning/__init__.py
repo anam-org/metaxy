@@ -5,7 +5,7 @@ from metaxy.data_versioning.calculators import (
     ProvenanceByFieldCalculator,
 )
 from metaxy.data_versioning.diff import (
-    DiffResult,
+    Increment,
     MetadataDiffResolver,
     NarwhalsDiffResolver,
 )
@@ -18,7 +18,7 @@ __all__ = [
     "NarwhalsJoiner",
     "ProvenanceByFieldCalculator",
     "PolarsProvenanceByFieldCalculator",
-    "DiffResult",
+    "Increment",
     "MetadataDiffResolver",
     "NarwhalsDiffResolver",
 ]

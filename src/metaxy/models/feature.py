@@ -25,8 +25,8 @@ if TYPE_CHECKING:
     import narwhals as nw
 
     from metaxy.data_versioning.diff import (
-        DiffResult,
-        LazyDiffResult,
+        Increment,
+        LazyIncrement,
         MetadataDiffResolver,
     )
     from metaxy.data_versioning.joiners import UpstreamJoiner
@@ -989,7 +989,7 @@ class BaseFeature(
         current_metadata: "nw.LazyFrame[Any] | None",
         *,
         lazy: bool = False,
-    ) -> "DiffResult | LazyDiffResult":
+    ) -> "Increment | LazyIncrement":
         """Resolve differences between target and current field provenance.
 
         Override for custom diff logic (ignore certain fields, custom rules, etc.).
@@ -999,10 +999,10 @@ class BaseFeature(
             target_provenance: Calculated target field provenance (Narwhals LazyFrame)
             current_metadata: Current metadata for this feature (Narwhals LazyFrame, or None).
                 Should be pre-filtered by feature_version at the store level.
-            lazy: If True, return LazyDiffResult. If False, return DiffResult.
+            lazy: If True, return LazyIncrement. If False, return Increment.
 
         Returns:
-            DiffResult (eager) or LazyDiffResult (lazy) with added, changed, removed
+            Increment (eager) or LazyIncrement (lazy) with added, changed, removed
 
         Example (default):
             ```py
@@ -1019,23 +1019,23 @@ class BaseFeature(
                     result = diff_resolver.find_changes(target_provenance, current_metadata, cls.spec().id_columns)
 
                     # Custom: Only consider 'frames' field changes, ignore 'audio'
-                    # Users can filter/modify the diff result here
+                    # Users can filter/modify the increment here
 
-                    return result  # Return modified DiffResult
+                    return result  # Return modified Increment
             ```
         """
-        # Diff resolver always returns LazyDiffResult - materialize if needed
+        # Diff resolver always returns LazyIncrement - materialize if needed
         lazy_result = diff_resolver.find_changes(
             target_provenance=target_provenance,
             current_metadata=current_metadata,
             id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
         )
 
-        # Materialize to DiffResult if lazy=False
+        # Materialize to Increment if lazy=False
         if not lazy:
-            from metaxy.data_versioning.diff import DiffResult
+            from metaxy.data_versioning.diff import Increment
 
-            return DiffResult(
+            return Increment(
                 added=lazy_result.added.collect(),
                 changed=lazy_result.changed.collect(),
                 removed=lazy_result.removed.collect(),
