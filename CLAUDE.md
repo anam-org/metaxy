@@ -416,3 +416,5 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 
 - `cli/app.py`: Main CLI entry point
 - `cli/migrations.py`: Migration commands implementation
+
+**NEVER EVER ATTEMPT TO IMPLEMENT BACKWARDS COMPATIBILITY FOR THE SAKE OF IT**

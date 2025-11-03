@@ -62,8 +62,7 @@ class UpstreamJoiner(ABC):
                 Example: {"video": "__upstream_video__provenance_by_field"}
 
         Note:
-            - Uses INNER join by default - only rows with matching ID columns in ALL upstream
-              features are included. This ensures we can compute valid field_provenance.
+            - Uses INNER join on ALL ID columns from feature_spec.id_columns
             - ID columns come from feature_spec.id_columns (default: ["sample_uid"])
             - Supports composite keys (multiple ID columns) for complex join scenarios
             - System columns (ID columns, provenance_by_field) are always preserved

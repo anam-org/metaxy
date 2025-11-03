@@ -13,6 +13,7 @@ resolution-markers = [
 members = [
     "example-ducklake",
     "example-migration",
+    "example-one-to-many",
     "example-overview",
     "example-recompute",
     "examples",
@@ -535,6 +536,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+
+[[package]]
+name = "example-one-to-many"
+version = "0.1.0"
+source = { virtual = "examples/example-one-to-many" }
 
 [[package]]
 name = "example-overview"

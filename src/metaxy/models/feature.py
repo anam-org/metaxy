@@ -976,7 +976,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         lazy_result = diff_resolver.find_changes(
             target_provenance=target_provenance,
             current_metadata=current_metadata,
-            id_columns=cls.spec().id_columns,  # Pass ID columns from feature spec
+            id_columns=cls.spec().id_columns,
         )
 
         # Materialize to Increment if lazy=False

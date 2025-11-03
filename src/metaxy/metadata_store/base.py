@@ -1746,6 +1746,7 @@ class MetadataStore(ABC):
 
             diff_resolver = NarwhalsDiffResolver()
 
+            # Use diff resolver to compare samples with current
             lazy_result = diff_resolver.find_changes(
                 target_provenance=samples_lazy,
                 current_metadata=current_lazy,
@@ -1845,7 +1846,22 @@ class MetadataStore(ABC):
                 f"Using Polars components for {feature.spec().key} (native not supported)"
             )
 
-        # Load upstream as Narwhals LazyFrames (stays lazy in SQL for native stores)
+        # Check if this is a one-to-many initial generation scenario
+        # (no current data, single upstream dependency)
+        current_lazy_nw = self.read_metadata_in_store(
+            feature, feature_version=feature.feature_version()
+        )
+
+        # Rename metaxy_provenance_by_field -> provenance_by_field for current metadata
+        if (
+            current_lazy_nw is not None
+            and "metaxy_provenance_by_field" in current_lazy_nw.collect_schema().names()
+        ):
+            current_lazy_nw = current_lazy_nw.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
+
+        # Always load and join upstream data
         upstream_refs: dict[str, nw.LazyFrame[Any]] = {}
         for upstream_spec in plan.deps or []:
             upstream_key_str = (
@@ -1890,20 +1906,7 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Diff with current (filtered by feature_version at database level)
-        current_lazy_nw = self.read_metadata_in_store(
-            feature, feature_version=feature.feature_version()
-        )
-
-        # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
-        if (
-            current_lazy_nw is not None
-            and "metaxy_provenance_by_field" in current_lazy_nw.collect_schema().names()
-        ):
-            current_lazy_nw = current_lazy_nw.rename(
-                {"metaxy_provenance_by_field": "provenance_by_field"}
-            )
-
+        # Resolve differences between target and current metadata
         return feature.resolve_data_version_diff(
             diff_resolver=diff_resolver,
             target_provenance=target_provenance_nw,
@@ -1945,7 +1948,23 @@ class MetadataStore(ABC):
                 f"For better performance, ensure all upstream features are in the same store."
             )
 
-        # Load upstream from all sources (this store + fallbacks) as Narwhals LazyFrames
+        plan = feature.graph.get_feature_plan(feature.spec().key)
+
+        # Check current metadata first
+        current_lazy = self.read_metadata_in_store(
+            feature, feature_version=feature.feature_version()
+        )
+
+        # Rename metaxy_provenance_by_field -> provenance_by_field
+        if (
+            current_lazy is not None
+            and "metaxy_provenance_by_field" in current_lazy.collect_schema().names()
+        ):
+            current_lazy = current_lazy.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
+
+        # Always load upstream from all sources (this store + fallbacks) as Narwhals LazyFrames
         upstream_refs = self.read_upstream_metadata(
             feature, filters=filters, allow_fallback=True
         )
@@ -1958,7 +1977,6 @@ class MetadataStore(ABC):
         narwhals_diff = NarwhalsDiffResolver()
 
         # Step 1: Join upstream using Narwhals
-        plan = feature.graph.get_feature_plan(feature.spec().key)
         joined, mapping = feature.load_input(
             joiner=narwhals_joiner,
             upstream_refs=upstream_refs,
@@ -1987,27 +2005,6 @@ class MetadataStore(ABC):
             upstream_column_mapping=mapping,
             hash_algorithm=self.hash_algorithm,
         )
-
-        # Select only sample_uid and provenance_by_field for diff
-        # The calculator returns the full joined DataFrame with upstream columns,
-        # but diff resolver only needs these two columns
-        target_provenance_nw = target_provenance_nw.select(
-            ["sample_uid", "provenance_by_field"]
-        )
-
-        # Step 3: Diff with current (filtered by feature_version at database level)
-        current_lazy = self.read_metadata_in_store(
-            feature, feature_version=feature.feature_version()
-        )
-
-        # Rename metaxy_provenance_by_field -> provenance_by_field
-        if (
-            current_lazy is not None
-            and "metaxy_provenance_by_field" in current_lazy.collect_schema().names()
-        ):
-            current_lazy = current_lazy.rename(
-                {"metaxy_provenance_by_field": "provenance_by_field"}
-            )
 
         # Diff resolver returns Narwhals frames (lazy or eager based on flag)
         return feature.resolve_data_version_diff(

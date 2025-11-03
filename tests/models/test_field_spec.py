@@ -3,7 +3,7 @@ from metaxy.models.types import FieldKey
 
 
 def test_default_code_version():
-    field = FieldSpec("my_field")
+    field = FieldSpec(key="my_field")
 
     # this default is EXTREMELY important
     # changing it will affect **all versions on all fields and features**

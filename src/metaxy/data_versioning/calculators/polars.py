@@ -125,7 +125,6 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             # Concatenate and hash
             concat_expr = plh.concat_str(*components, separator="|")
             hashed = hash_fn(concat_expr).cast(pl.Utf8)
-
             field_exprs[field_key_str] = hashed
 
         # Create provenance_by_field struct

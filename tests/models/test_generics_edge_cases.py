@@ -232,7 +232,7 @@ def test_upstream_with_subset_of_target_id_columns_fails(graph: FeatureGraph):
         )
 
     error_msg = str(exc_info.value)
-    assert "missing required ID columns" in error_msg
+    assert "missing some required ID columns" in error_msg
     # Should mention both missing columns
     assert "session_id" in error_msg
     assert "device_id" in error_msg

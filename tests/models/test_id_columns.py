@@ -485,7 +485,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
 
     # Check the error message is helpful
     error_msg = str(exc_info.value)
-    assert "missing required ID columns" in error_msg
+    assert "missing some required ID columns" in error_msg
     assert "session_id" in error_msg
     assert "upstream" in error_msg
 
@@ -543,7 +543,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
     # Check error mentions the specific upstream missing the column
     error_msg = str(exc_info.value)
     assert "upstream" in error_msg
-    assert "missing required ID columns" in error_msg
+    assert "missing some required ID columns" in error_msg
     assert "session_id" in error_msg
 
 
@@ -935,7 +935,10 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
     assert ("up1" in error_msg and "session_id" in error_msg) or (
         "up2" in error_msg and "user_id" in error_msg
     )
-    assert "missing required ID columns" in error_msg
+    assert (
+        "missing some required ID columns" in error_msg
+        or "missing required ID columns" in error_msg
+    )
 
     # Test Case 4: Proper error message formatting
     class SingleMissing(

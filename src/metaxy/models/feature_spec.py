@@ -20,8 +20,10 @@ from pydantic import BeforeValidator
 from pydantic.types import JsonValue
 
 from metaxy.models.bases import FrozenBaseModel
+from metaxy.models.constants import DEFAULT_CODE_VERSION
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     FeatureKey,
@@ -69,7 +71,8 @@ class FeatureDep(pydantic.BaseModel):
             - Empty tuple (): Keep only system columns (sample_uid, provenance_by_field, etc.)
             - Tuple of names: Keep only specified columns (plus system columns)
         rename: Optional mapping of old column names to new names.
-            Applied after column selection.
+            Applied after column selection. Use this to handle column name differences
+            between parent and child features.
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
             Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
@@ -102,6 +105,13 @@ class FeatureDep(pydantic.BaseModel):
             feature="upstream/feature",
             columns=("col1", "col2"),
             rename={"col1": "upstream_col1"}
+        )
+
+        # One-to-many relationship with column renaming
+        # If parent has different column names, use rename
+        FeatureDep(
+            feature="video",
+            rename={"source_video_id": "video_id"}  # Rename parent's source_video_id to video_id
         )
         ```
     """
@@ -226,12 +236,17 @@ class _BaseFeatureSpec(FrozenBaseModel):
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
+                code_version=DEFAULT_CODE_VERSION,
             )
         ],
     )
     metadata: dict[str, JsonValue] = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
+    )
+    lineage: LineageRelationship = pydantic.Field(
+        default_factory=LineageRelationship.identity,
+        description="Lineage relationship type defining how this feature relates to its upstream dependencies.",
     )
 
 
@@ -248,6 +263,7 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -260,6 +276,7 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -272,6 +289,7 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -397,6 +415,7 @@ class FeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -409,6 +428,7 @@ class FeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -421,6 +441,7 @@ class FeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -450,6 +471,7 @@ class TestingFeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -462,6 +484,7 @@ class TestingFeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -474,6 +497,7 @@ class TestingFeatureSpec(BaseFeatureSpec):
         fields: Sequence[str | FieldSpec] | None = None,
         id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
+        lineage: LineageRelationship | None = None,
         **kwargs: Any,
     ) -> None: ...
     # Actual implementation - let Pydantic handle everything

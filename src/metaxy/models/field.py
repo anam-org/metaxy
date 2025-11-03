@@ -170,7 +170,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: str,
-        code_version: str,
+        code_version: str = DEFAULT_CODE_VERSION,
         deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from string key."""
@@ -180,7 +180,7 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: Sequence[str],
-        code_version: str,
+        code_version: str = DEFAULT_CODE_VERSION,
         deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from sequence of parts."""
@@ -190,15 +190,25 @@ class FieldSpec(BaseModel):
     def __init__(
         self,
         key: FieldKey,
-        code_version: str,
+        code_version: str = DEFAULT_CODE_VERSION,
         deps: SpecialFieldDep | list[FieldDep] | None = None,
     ) -> None:
         """Initialize from FieldKey instance."""
         ...
 
+    @overload
     def __init__(
         self,
-        key: CoercibleToFieldKey,
+        key: None,
+        code_version: str = DEFAULT_CODE_VERSION,
+        deps: SpecialFieldDep | list[FieldDep] | None = None,
+    ) -> None:
+        """Initialize with None key (uses default)."""
+        ...
+
+    def __init__(
+        self,
+        key: CoercibleToFieldKey | None,
         code_version: str = DEFAULT_CODE_VERSION,
         deps: SpecialFieldDep | list[FieldDep] | None = None,
         *args,
