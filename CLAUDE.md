@@ -363,7 +363,7 @@ Uses `syrupy` for snapshot testing. Snapshots stored in `__snapshots__/` directo
 ### Adding a New Metadata Store Backend
 
 1. Inherit from `MetadataStore[TRef]` with appropriate `TRef` type
-2. Implement abstract methods: `_get_default_hash_algorithm()`, `_supports_native_components()`, `_create_native_components()`, `open()`, `close()`, `_write_metadata_impl()`, `_read_metadata_native()`, `_drop_feature_metadata_impl()`, `_list_features_local()`
+2. Implement abstract methods: `_get_default_hash_algorithm()`, `_supports_native_components()`, `_create_native_components()`, `open()`, `close()`, `_write_metadata_impl()`, `read_metadata_in_store()`, `_drop_feature_metadata_impl()`, `_list_features_local()`
 3. Implement reference conversion methods: `_feature_to_ref()`, `_sample_to_ref()`, `_result_to_dataframe()`, `_dataframe_to_ref()`
 4. Add tests in `tests/metadata_stores/`
 

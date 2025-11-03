@@ -650,7 +650,7 @@ class MetadataStore(ABC):
 
         # Read existing feature versions once
         try:
-            existing_versions_lazy = self._read_metadata_native(FEATURE_VERSIONS_KEY)
+            existing_versions_lazy = self.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             # Materialize to Polars for iteration
             existing_versions = (
                 existing_versions_lazy.collect().to_polars()
@@ -804,7 +804,7 @@ class MetadataStore(ABC):
         )
 
     @abstractmethod
-    def _read_metadata_native(
+    def read_metadata_in_store(
         self,
         feature: FeatureKey | type[BaseFeature[IDColumns]],
         *,
@@ -886,7 +886,7 @@ class MetadataStore(ABC):
                     feature_version_filter = None
 
         # Try local first with filters
-        lazy_frame = self._read_metadata_native(
+        lazy_frame = self.read_metadata_in_store(
             feature,
             feature_version=feature_version_filter,
             filters=filters,  # Pass filters directly
@@ -938,7 +938,7 @@ class MetadataStore(ABC):
             True if feature exists, False otherwise
         """
         # Check local
-        if self._read_metadata_native(feature) is not None:
+        if self.read_metadata_in_store(feature) is not None:
             return True
 
         # Check fallback stores
@@ -1035,7 +1035,7 @@ class MetadataStore(ABC):
 
             filters = [nw.col("project") == project]
 
-        versions_lazy = self._read_metadata_native(
+        versions_lazy = self.read_metadata_in_store(
             FEATURE_VERSIONS_KEY, filters=filters
         )
         if versions_lazy is None:
@@ -1122,7 +1122,7 @@ class MetadataStore(ABC):
         if project is not None:
             filters.append(nw.col("project") == project)
 
-        versions_lazy = self._read_metadata_native(
+        versions_lazy = self.read_metadata_in_store(
             FEATURE_VERSIONS_KEY, filters=filters
         )
         if versions_lazy is None:
@@ -1276,7 +1276,7 @@ class MetadataStore(ABC):
         if from_snapshot is None:
             # Get latest snapshot from source store
             try:
-                versions_lazy = from_store._read_metadata_native(FEATURE_VERSIONS_KEY)
+                versions_lazy = from_store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 if versions_lazy is None:
                     # No feature_versions table yet - if no features to copy, that's okay
                     if len(features_to_copy) == 0:
@@ -1688,7 +1688,7 @@ class MetadataStore(ABC):
                     f"For better performance, consider using samples with backend matching the store's backend."
                 )
                 # Get current metadata and materialize to Polars
-                current_lazy_native = self._read_metadata_native(
+                current_lazy_native = self.read_metadata_in_store(
                     feature, feature_version=feature.feature_version()
                 )
                 if current_lazy_native is not None:
@@ -1700,7 +1700,7 @@ class MetadataStore(ABC):
                     current_lazy = None
             else:
                 # Same backend or no conversion needed - direct read
-                current_lazy = self._read_metadata_native(
+                current_lazy = self.read_metadata_in_store(
                     feature, feature_version=feature.feature_version()
                 )
 
@@ -1821,7 +1821,7 @@ class MetadataStore(ABC):
             if filters and upstream_key_str in filters:
                 upstream_filters = filters[upstream_key_str]
 
-            upstream_lazy = self._read_metadata_native(
+            upstream_lazy = self.read_metadata_in_store(
                 upstream_spec.key,
                 filters=upstream_filters,  # Apply extracted filters
             )
@@ -1846,7 +1846,7 @@ class MetadataStore(ABC):
         )
 
         # Diff with current (filtered by feature_version at database level)
-        current_lazy_nw = self._read_metadata_native(
+        current_lazy_nw = self.read_metadata_in_store(
             feature, feature_version=feature.feature_version()
         )
 
@@ -1940,7 +1940,7 @@ class MetadataStore(ABC):
         target_versions_nw = target_versions_nw.select(["sample_uid", "data_version"])
 
         # Step 3: Diff with current (filtered by feature_version at database level)
-        current_lazy = self._read_metadata_native(
+        current_lazy = self.read_metadata_in_store(
             feature, feature_version=feature.feature_version()
         )
 

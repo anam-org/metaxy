@@ -93,7 +93,9 @@ def test_serialize_uses_to_snapshot(
             # Read back the serialized data from the store
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-            versions_lazy = persistent_store._read_metadata_native(FEATURE_VERSIONS_KEY)
+            versions_lazy = persistent_store.read_metadata_in_store(
+                FEATURE_VERSIONS_KEY
+            )
             assert versions_lazy is not None, "Feature versions should be recorded"
 
             versions_df = versions_lazy.collect().to_polars()

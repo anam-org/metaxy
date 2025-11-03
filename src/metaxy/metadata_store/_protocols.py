@@ -26,7 +26,7 @@ class MetadataStoreProtocol(Protocol):
         """Write metadata for a feature key."""
         ...
 
-    def _read_metadata_native(
+    def read_metadata_in_store(
         self,
         feature: FeatureKey,
         *,
