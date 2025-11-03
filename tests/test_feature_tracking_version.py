@@ -2,7 +2,7 @@
 
 The tracking version is used for system tables (feature_versions) to isolate
 features from different projects in the same metadata store. It differs from
-feature_version (used for data versioning) in that it includes the project name.
+feature_version (used for field provenance) in that it includes the project name.
 
 Key behaviors:
 1. feature_tracking_version changes when project changes
@@ -66,7 +66,7 @@ def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) 
     tracking_version_b = FeatureInB.feature_tracking_version()
     assert tracking_version_a != tracking_version_b
 
-    # But feature_version should be SAME (data versioning unchanged by project)
+    # But feature_version should be SAME (field provenance unchanged by project)
     assert FeatureInA.feature_version() == FeatureInB.feature_version()
 
     # Snapshot for verification
@@ -88,7 +88,7 @@ def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) 
 def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> None:
     """Test that feature_version does NOT change when only project changes.
 
-    This is critical: feature_version is used for data versioning and should
+    This is critical: feature_version is used for field provenance and should
     only change when the computational definition changes, not metadata like project.
     """
     # Define identical feature specs in two projects
@@ -129,7 +129,7 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
         ):
             pass
 
-    # feature_version should be IDENTICAL (data versioning unchanged)
+    # feature_version should be IDENTICAL (field provenance unchanged)
     version_1 = Feature1.feature_version()
     version_2 = Feature2.feature_version()
 
@@ -301,12 +301,12 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
         MetaxyConfig.reset()
 
 
-def test_data_version_by_field_unchanged_by_project(
+def test_provenance_by_field_unchanged_by_project(
     snapshot: SnapshotAssertion,
 ) -> None:
-    """Test that data_version() method is also unchanged by project.
+    """Test that provenance_by_field() method is also unchanged by project.
 
-    This verifies the entire data versioning pipeline ignores project metadata.
+    This verifies the entire field provenance pipeline ignores project metadata.
     """
     graph_a = FeatureGraph()
     graph_b = FeatureGraph()
@@ -345,12 +345,12 @@ def test_data_version_by_field_unchanged_by_project(
         ):
             pass
 
-    # data_version() should be identical
-    data_version_a = FeatureA.data_version()
-    data_version_b = FeatureB.data_version()
+    # provenance_by_field() should be identical
+    provenance_a = FeatureA.provenance_by_field()
+    provenance_b = FeatureB.provenance_by_field()
 
-    assert data_version_a == data_version_b
-    assert data_version_a == snapshot
+    assert provenance_a == provenance_b
+    assert provenance_a == snapshot
 
     # But projects should differ
     assert FeatureA.project != FeatureB.project

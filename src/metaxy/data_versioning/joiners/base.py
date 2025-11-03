@@ -13,12 +13,12 @@ if TYPE_CHECKING:
 class UpstreamJoiner(ABC):
     """Joins upstream feature metadata together.
 
-    The joiner takes upstream feature metadata (which already has data_version columns)
+    The joiner takes upstream feature metadata (which already has provenance_by_field columns)
     and joins them together to create a unified view of all dependencies.
 
-    This is Step 1 in the data versioning process:
+    This is Step 1 in the data provenance process:
     1. Join upstream features → unified upstream view
-    2. Calculate data_version from upstream → target versions
+    2. Calculate provenance_by_field from upstream → target versions
     3. Diff with current metadata → identify changes
 
     All component boundaries use Narwhals LazyFrames for backend-agnostic processing.
@@ -41,7 +41,7 @@ class UpstreamJoiner(ABC):
 
         Joins upstream feature metadata on configured ID columns (from feature_spec.id_columns,
         default: ["sample_uid"]) to create a unified reference containing all upstream
-        data_version columns needed for hash calculation, plus any additional user-specified columns.
+        provenance_by_field columns needed for hash calculation, plus any additional user-specified columns.
 
         Args:
             upstream_refs: Upstream feature metadata Narwhals LazyFrames
@@ -57,16 +57,16 @@ class UpstreamJoiner(ABC):
         Returns:
             Tuple of (joined_ref, upstream_column_mapping):
             - joined_ref: Narwhals LazyFrame with all upstream data joined
-                Contains: ID columns, data_version columns, and any user columns
-            - upstream_column_mapping: Maps upstream feature key -> data_version column name
-                Example: {"video": "__upstream_video__data_version"}
+                Contains: ID columns, provenance_by_field columns, and any user columns
+            - upstream_column_mapping: Maps upstream feature key -> provenance_by_field column name
+                Example: {"video": "__upstream_video__provenance_by_field"}
 
         Note:
             - Uses INNER join by default - only rows with matching ID columns in ALL upstream
-              features are included. This ensures we can compute valid data_versions.
+              features are included. This ensures we can compute valid field_provenance.
             - ID columns come from feature_spec.id_columns (default: ["sample_uid"])
             - Supports composite keys (multiple ID columns) for complex join scenarios
-            - System columns (ID columns, data_version) are always preserved
+            - System columns (ID columns, provenance_by_field) are always preserved
             - User columns are preserved based on columns parameter (default: all)
         """
         pass

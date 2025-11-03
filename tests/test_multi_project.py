@@ -417,7 +417,7 @@ class TestProjectValidation:
                 test_df = pl.DataFrame(
                     {
                         "sample_uid": [1, 2],
-                        "data_version": [{"value": "hash1"}, {"value": "hash2"}],
+                        "provenance_by_field": [{"value": "hash1"}, {"value": "hash2"}],
                     }
                 )
 

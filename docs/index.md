@@ -85,11 +85,11 @@ Metaxy is:
 - **🤸 flexible** to work around restrictions consciously:
 
     - [features](./learn/feature-definitions.md) are defined as [Pydantic](https://docs.pydantic.dev/latest/) models, leveraging Pydantic's type safety guarantees, rich validation system, and allowing inheritance patterns to stay DRY
-    - has a **migrations system** to compensate for reconciling data versions and metadata when computations are not desired
+    - has a **migrations system** to compensate for reconciling field provenances and metadata when computations are not desired
 
 - **🪨 rock solid** when it matters:
 
-    - [data versioning](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
+    - [field provenance](./learn/data-versioning.md) is guaranteed to be **consistent across DBs or in-memory** compute engines. We really have tested this very well!
     - changes to topology, feature versioning, or individual samples **ruthlessly propagate downstream**
     - unique [field-level dependency system](./learn/feature-definitions.md#field-level-dependencies) prevents unnecessary recomputations for features that depend on partial data
     - metadata is **append-only** to ensure data integrity and immutability. Users can perform cleanup if needed (Metaxy provides tools for this).
@@ -153,7 +153,7 @@ This is done on multiple levels: `Feature` level, field level, and of course on 
 This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did).
 This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
 
-Because Metaxy feature graphs are static, Metaxy can calculate data version changes ahead of the actual computation.
+Because Metaxy feature graphs are static, Metaxy can calculate field provenance changes ahead of the actual computation.
 This enables patterns such as **computation preview** and **computation cost prediction**.
 
 ## Typical User Workflow
@@ -185,7 +185,7 @@ diff = store.resolve_update(VoiceDetection)
 ```
 
 `metaxy.MetadataStore.resolve_update` runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
-The returned object provides [Narwhals](https://narwhals-dev.github.io/narwhals/) lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the data versions already computed.
+The returned object provides [Narwhals](https://narwhals-dev.github.io/narwhals/) lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the field provenances already computed.
 
 ### 3. Run user-defined computation over the metadata increment
 

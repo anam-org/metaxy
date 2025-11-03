@@ -68,7 +68,7 @@ class FeatureDep(pydantic.BaseModel):
             or FeatureKey instance.
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
-            - Empty tuple (): Keep only system columns (sample_uid, data_version, etc.)
+            - Empty tuple (): Keep only system columns (sample_uid, provenance_by_field, etc.)
             - Tuple of names: Keep only specified columns (plus system columns)
         rename: Optional mapping of old column names to new names.
             Applied after column selection.

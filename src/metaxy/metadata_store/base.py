@@ -13,8 +13,10 @@ import narwhals as nw
 import polars as pl
 from typing_extensions import Self
 
-from metaxy.data_versioning.calculators.base import DataVersionCalculator
-from metaxy.data_versioning.calculators.polars import PolarsDataVersionCalculator
+from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.polars import (
+    PolarsProvenanceByFieldCalculator,
+)
 from metaxy.data_versioning.diff import DiffResult, LazyDiffResult
 from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
@@ -46,9 +48,11 @@ if TYPE_CHECKING:
 
 
 def _is_using_polars_components(
-    components: tuple[UpstreamJoiner, DataVersionCalculator, MetadataDiffResolver],
+    components: tuple[
+        UpstreamJoiner, ProvenanceByFieldCalculator, MetadataDiffResolver
+    ],
 ) -> TypeGuard[
-    tuple[NarwhalsJoiner, PolarsDataVersionCalculator, NarwhalsDiffResolver]
+    tuple[NarwhalsJoiner, PolarsProvenanceByFieldCalculator, NarwhalsDiffResolver]
 ]:
     """Type guard to check if using Narwhals components.
 
@@ -57,7 +61,7 @@ def _is_using_polars_components(
     joiner, calculator, diff_resolver = components
     return (
         isinstance(joiner, NarwhalsJoiner)
-        and isinstance(calculator, PolarsDataVersionCalculator)
+        and isinstance(calculator, PolarsProvenanceByFieldCalculator)
         and isinstance(diff_resolver, NarwhalsDiffResolver)
     )
 
@@ -94,11 +98,11 @@ class MetadataStore(ABC):
         Initialize metadata store.
 
         Args:
-            hash_algorithm: Hash algorithm to use for data versioning.
+            hash_algorithm: Hash algorithm to use for field provenance.
                 Default: None (uses default algorithm for this store type)
             hash_truncation_length: Length to truncate hashes to (minimum 8).
                 Default: None (uses global setting or no truncation)
-            prefer_native: If True, prefer native data version calculations when possible.
+            prefer_native: If True, prefer native field provenance calculations when possible.
                 If False, always use Polars components. Default: True
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
@@ -164,7 +168,7 @@ class MetadataStore(ABC):
         """Check if this store can use native (non-Polars) components.
 
         Returns:
-            True if store has backend-specific native data version calculations
+            True if store has backend-specific native field provenance calculations
             False if store only supports Polars components
         """
         pass
@@ -172,8 +176,8 @@ class MetadataStore(ABC):
     @abstractmethod
     def _create_native_components(
         self,
-    ) -> tuple[UpstreamJoiner, DataVersionCalculator, MetadataDiffResolver]:
-        """Create native data version calculations for this store.
+    ) -> tuple[UpstreamJoiner, ProvenanceByFieldCalculator, MetadataDiffResolver]:
+        """Create native field provenance calculations for this store.
 
         Only called if _supports_native_components() returns True.
 
@@ -182,7 +186,7 @@ class MetadataStore(ABC):
             for this store's backend (Narwhals-compatible)
 
         Raises:
-            NotImplementedError: If store doesn't support native data version calculations
+            NotImplementedError: If store doesn't support native field provenance calculations
         """
         pass
 
@@ -299,7 +303,7 @@ class MetadataStore(ABC):
             ValueError: If hash algorithm not supported by components or fallback stores
         """
         # Check if this store can support the algorithm
-        # Try native data version calculations first (if supported), then Polars
+        # Try native field provenance calculations first (if supported), then Polars
         supported_algorithms = []
 
         if self._supports_native_components():
@@ -307,12 +311,12 @@ class MetadataStore(ABC):
                 _, calculator, _ = self._create_native_components()
                 supported_algorithms = calculator.supported_algorithms
             except Exception:
-                # If native data version calculations fail, fall back to Polars
+                # If native field provenance calculations fail, fall back to Polars
                 pass
 
         # If no native support or prefer_native=False, use Polars
         if not supported_algorithms:
-            polars_calc = PolarsDataVersionCalculator()
+            polars_calc = PolarsProvenanceByFieldCalculator()
             supported_algorithms = polars_calc.supported_algorithms
 
         if self.hash_algorithm not in supported_algorithms:
@@ -458,7 +462,7 @@ class MetadataStore(ABC):
         Args:
             feature: Feature to write metadata for
             df: Narwhals DataFrame or Polars DataFrame containing metadata.
-                Must have 'data_version' column of type Struct with fields matching feature's fields.
+                Must have 'provenance_by_field' column of type Struct with fields matching feature's fields.
                 May optionally contain 'feature_version' column (for migrations).
 
         Raises:
@@ -543,6 +547,10 @@ class MetadataStore(ABC):
         # Validate schema
         self._validate_schema(df)
 
+        # Rename provenance_by_field -> metaxy_provenance_by_field for database storage
+        # (Python code uses provenance_by_field, database uses metaxy_provenance_by_field)
+        df = df.rename({"provenance_by_field": "metaxy_provenance_by_field"})
+
         # Write metadata
         self._write_metadata_impl(feature_key, df)
 
@@ -558,15 +566,17 @@ class MetadataStore(ABC):
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
-        # Check for data_version column
-        if "data_version" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'data_version' column")
-
-        # Check that data_version is a struct
-        data_version_type = df.schema["data_version"]
-        if not isinstance(data_version_type, pl.Struct):
+        # Check for provenance_by_field column
+        if "provenance_by_field" not in df.columns:
             raise MetadataSchemaError(
-                f"'data_version' column must be pl.Struct, got {data_version_type}"
+                "DataFrame must have 'provenance_by_field' column"
+            )
+
+        # Check that provenance_by_field is a struct
+        provenance_type = df.schema["provenance_by_field"]
+        if not isinstance(provenance_type, pl.Struct):
+            raise MetadataSchemaError(
+                f"'provenance_by_field' column must be pl.Struct, got {provenance_type}"
             )
 
         # Check for feature_version column
@@ -579,7 +589,7 @@ class MetadataStore(ABC):
 
     def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
-        # System tables don't need data_version column
+        # System tables don't need provenance_by_field column
         pass
 
     @abstractmethod
@@ -885,15 +895,29 @@ class MetadataStore(ABC):
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
+        # Map column names: provenance_by_field -> metaxy_provenance_by_field for DB query
+        db_columns = None
+        if columns is not None:
+            db_columns = [
+                "metaxy_provenance_by_field" if col == "provenance_by_field" else col
+                for col in columns
+            ]
+
         # Try local first with filters
         lazy_frame = self.read_metadata_in_store(
             feature,
             feature_version=feature_version_filter,
             filters=filters,  # Pass filters directly
-            columns=columns,
+            columns=db_columns,  # Use mapped column names
         )
 
         if lazy_frame is not None:
+            # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+            # (Database uses metaxy_provenance_by_field, Python code uses provenance_by_field)
+            if "metaxy_provenance_by_field" in lazy_frame.collect_schema().names():
+                lazy_frame = lazy_frame.rename(
+                    {"metaxy_provenance_by_field": "provenance_by_field"}
+                )
             return lazy_frame
 
         # Try fallback stores
@@ -1356,7 +1380,7 @@ class MetadataStore(ABC):
                     if incremental:
                         try:
                             # Read existing sample_uids from destination for the same snapshot
-                            # This is much cheaper than comparing data_version structs
+                            # This is much cheaper than comparing provenance_by_field structs
                             dest_lazy = self.read_metadata(
                                 feature_key,
                                 allow_fallback=False,
@@ -1472,7 +1496,7 @@ class MetadataStore(ABC):
 
         Returns:
             Dict mapping upstream feature keys (as strings) to Narwhals LazyFrames.
-            Each LazyFrame has a 'data_version' column (Struct).
+            Each LazyFrame has a 'provenance_by_field' column (Struct).
 
         Raises:
             DependencyError: If required upstream feature is missing
@@ -1602,21 +1626,21 @@ class MetadataStore(ABC):
         Args:
             feature: Feature class to resolve updates for
             samples: Pre-computed DataFrame with ID columns
-                and `"data_version"` column. When provided, `MetadataStore` skips upstream loading, joining,
-                and data version calculation.
+                and `"provenance_by_field"` column. When provided, `MetadataStore` skips upstream loading, joining,
+                and field provenance calculation.
 
                 **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate `"data_version"` from, so users
-                must provide samples with manually computed `"data_version"` column.
+                Root features don't have upstream to calculate `"provenance_by_field"` from, so users
+                must provide samples with manually computed `"provenance_by_field"` column.
 
                 For non-root features, use this when you
-                want to bypass the automatic upstream loading and data version calculation.
+                want to bypass the automatic upstream loading and field provenance calculation.
 
                 Examples:
 
                 - Loading upstream from custom sources
 
-                - Pre-computing data versions with custom logic
+                - Pre-computing field provenances with custom logic
 
                 - Testing specific scenarios
 
@@ -1637,7 +1661,7 @@ class MetadataStore(ABC):
             # Root feature - samples required
             samples = pl.DataFrame({
                 "sample_uid": [1, 2, 3],
-                "data_version": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                "provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
             })
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
@@ -1649,7 +1673,7 @@ class MetadataStore(ABC):
 
             ```py
             # Non-root feature - with escape hatch (advanced)
-            custom_samples = compute_custom_data_versions(...)
+            custom_samples = compute_custom_field_provenance(...)
             result = store.resolve_update(DownstreamFeature, samples=custom_samples)
             ```
 
@@ -1669,11 +1693,12 @@ class MetadataStore(ABC):
             logger = logging.getLogger(__name__)
 
             # Convert samples to lazy if needed
-            samples_lazy = (
-                samples
-                if isinstance(samples, nw.LazyFrame)
-                else nw.from_native(samples.to_native().lazy())
-            )
+            if isinstance(samples, nw.LazyFrame):
+                samples_lazy = samples
+            elif isinstance(samples, nw.DataFrame):
+                samples_lazy = samples.lazy()
+            else:
+                samples_lazy = nw.from_native(samples).lazy()
 
             # Check if samples are Polars-backed (common case for escape hatch)
             samples_native = samples_lazy.to_native()
@@ -1692,6 +1717,14 @@ class MetadataStore(ABC):
                     feature, feature_version=feature.feature_version()
                 )
                 if current_lazy_native is not None:
+                    # Rename metaxy_provenance_by_field -> provenance_by_field before converting
+                    if (
+                        "metaxy_provenance_by_field"
+                        in current_lazy_native.collect_schema().names()
+                    ):
+                        current_lazy_native = current_lazy_native.rename(
+                            {"metaxy_provenance_by_field": "provenance_by_field"}
+                        )
                     # Convert to Polars using Narwhals' built-in method
                     current_lazy = nw.from_native(
                         current_lazy_native.collect().to_polars().lazy()
@@ -1703,6 +1736,15 @@ class MetadataStore(ABC):
                 current_lazy = self.read_metadata_in_store(
                     feature, feature_version=feature.feature_version()
                 )
+                # Rename metaxy_provenance_by_field -> provenance_by_field
+                if (
+                    current_lazy is not None
+                    and "metaxy_provenance_by_field"
+                    in current_lazy.collect_schema().names()
+                ):
+                    current_lazy = current_lazy.rename(
+                        {"metaxy_provenance_by_field": "provenance_by_field"}
+                    )
 
             # Use diff resolver to compare samples with current
             from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
@@ -1710,7 +1752,7 @@ class MetadataStore(ABC):
             diff_resolver = NarwhalsDiffResolver()
 
             lazy_result = diff_resolver.find_changes(
-                target_versions=samples_lazy,
+                target_provenance=samples_lazy,
                 current_metadata=current_lazy,
                 id_columns=feature.spec().id_columns,  # Get ID columns from feature spec
             )
@@ -1721,8 +1763,8 @@ class MetadataStore(ABC):
         if not plan.deps:
             raise ValueError(
                 f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_uid and data_version columns. "
-                f"Root features require manual data_version computation."
+                f"Must provide 'samples' parameter with sample_uid and provenance_by_field columns. "
+                f"Root features require manual provenance_by_field computation."
             )
 
         # Non-root features without samples: automatic upstream loading
@@ -1730,7 +1772,7 @@ class MetadataStore(ABC):
         upstream_location = self._check_upstream_location(feature)
 
         if upstream_location == "all_local":
-            # All upstream in this store - use native data version calculations
+            # All upstream in this store - use native field provenance calculations
             return self._resolve_update_native(feature, filters=filters, lazy=lazy)
         else:
             # Some upstream in fallback stores - use Polars components
@@ -1761,17 +1803,17 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
     ) -> DiffResult | LazyDiffResult:
-        """Resolve using native data version calculations (all data in this store).
+        """Resolve using native field provenance calculations (all data in this store).
 
-        Uses native data version calculations when available (e.g., IbisDataVersionCalculator for SQL stores)
+        Uses native field provenance calculations when available (e.g., IbisProvenanceByFieldCalculator for SQL stores)
         to execute operations in the database without pulling data into memory.
 
-        For stores that support native data version calculations (DuckDB, ClickHouse), this method:
+        For stores that support native field provenance calculations (DuckDB, ClickHouse), this method:
         - Executes joins and diffs lazily via Narwhals
         - Computes hashes using native SQL functions (xxHash64, MD5, etc.)
         - Does not materialize data into memory (unless lazy=True)
 
-        For stores without native support, falls back to PolarsDataVersionCalculator.
+        For stores without native support, falls back to PolarsProvenanceByFieldCalculator.
         """
         import logging
 
@@ -1787,22 +1829,22 @@ class MetadataStore(ABC):
             )
 
         # Create components based on native support
-        # Only fallback to Polars if store explicitly doesn't support native data version calculations
+        # Only fallback to Polars if store explicitly doesn't support native field provenance calculations
         if self._supports_native_components():
             joiner, calculator, diff_resolver = self._create_native_components()
             logger.debug(
                 f"Using native calculator for {feature.spec().key}: {calculator.__class__.__name__}"
             )
         else:
-            # Store doesn't support native data version calculations - use Polars
+            # Store doesn't support native field provenance calculations - use Polars
             from metaxy.data_versioning.calculators.polars import (
-                PolarsDataVersionCalculator,
+                PolarsProvenanceByFieldCalculator,
             )
             from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
             from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
             joiner = NarwhalsJoiner()
-            calculator = PolarsDataVersionCalculator()
+            calculator = PolarsProvenanceByFieldCalculator()
             diff_resolver = NarwhalsDiffResolver()
             logger.debug(
                 f"Using Polars components for {feature.spec().key} (native not supported)"
@@ -1826,6 +1868,14 @@ class MetadataStore(ABC):
                 filters=upstream_filters,  # Apply extracted filters
             )
             if upstream_lazy is not None:
+                # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+                if (
+                    "metaxy_provenance_by_field"
+                    in upstream_lazy.collect_schema().names()
+                ):
+                    upstream_lazy = upstream_lazy.rename(
+                        {"metaxy_provenance_by_field": "provenance_by_field"}
+                    )
                 upstream_refs[upstream_key_str] = upstream_lazy
 
         # Join upstream using Narwhals (stays lazy)
@@ -1834,10 +1884,10 @@ class MetadataStore(ABC):
             upstream_refs=upstream_refs,
         )
 
-        # Calculate data_versions using the selected calculator
-        # For IbisDataVersionCalculator: executes hash computation in SQL
-        # For PolarsDataVersionCalculator: materializes to compute hashes in memory
-        target_versions_nw = calculator.calculate_data_versions(
+        # Calculate field_provenance using the selected calculator
+        # For IbisProvenanceByFieldCalculator: executes hash computation in SQL
+        # For PolarsProvenanceByFieldCalculator: materializes to compute hashes in memory
+        target_provenance_nw = calculator.calculate_provenance_by_field(
             joined_upstream=joined,
             feature_spec=feature.spec(),
             feature_plan=plan,
@@ -1850,9 +1900,18 @@ class MetadataStore(ABC):
             feature, feature_version=feature.feature_version()
         )
 
+        # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
+        if (
+            current_lazy_nw is not None
+            and "metaxy_provenance_by_field" in current_lazy_nw.collect_schema().names()
+        ):
+            current_lazy_nw = current_lazy_nw.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
+
         return feature.resolve_data_version_diff(
             diff_resolver=diff_resolver,
-            target_versions=target_versions_nw,
+            target_provenance=target_provenance_nw,
             current_metadata=current_lazy_nw,
             lazy=lazy,
         )
@@ -1876,7 +1935,7 @@ class MetadataStore(ABC):
         import logging
 
         from metaxy.data_versioning.calculators.polars import (
-            PolarsDataVersionCalculator,
+            PolarsProvenanceByFieldCalculator,
         )
         from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
         from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
@@ -1899,7 +1958,7 @@ class MetadataStore(ABC):
         # Create Narwhals components (work with any backend)
         narwhals_joiner = NarwhalsJoiner()
         polars_calculator = (
-            PolarsDataVersionCalculator()
+            PolarsProvenanceByFieldCalculator()
         )  # Still need this for hash calculation
         narwhals_diff = NarwhalsDiffResolver()
 
@@ -1910,7 +1969,7 @@ class MetadataStore(ABC):
             upstream_refs=upstream_refs,
         )
 
-        # Step 2: Calculate data_versions
+        # Step 2: Calculate field_provenance
         # to_native() returns underlying type without materializing
         joined_native = joined.to_native()
         if isinstance(joined_native, pl.LazyFrame):
@@ -1926,7 +1985,7 @@ class MetadataStore(ABC):
         # Wrap in Narwhals before passing to calculator
         joined_nw = nw.from_native(joined_pl, eager_only=False)
 
-        target_versions_nw = polars_calculator.calculate_data_versions(
+        target_provenance_nw = polars_calculator.calculate_provenance_by_field(
             joined_upstream=joined_nw,
             feature_spec=feature.spec(),
             feature_plan=plan,
@@ -1934,20 +1993,31 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Select only sample_uid and data_version for diff
+        # Select only sample_uid and provenance_by_field for diff
         # The calculator returns the full joined DataFrame with upstream columns,
         # but diff resolver only needs these two columns
-        target_versions_nw = target_versions_nw.select(["sample_uid", "data_version"])
+        target_provenance_nw = target_provenance_nw.select(
+            ["sample_uid", "provenance_by_field"]
+        )
 
         # Step 3: Diff with current (filtered by feature_version at database level)
         current_lazy = self.read_metadata_in_store(
             feature, feature_version=feature.feature_version()
         )
 
+        # Rename metaxy_provenance_by_field -> provenance_by_field
+        if (
+            current_lazy is not None
+            and "metaxy_provenance_by_field" in current_lazy.collect_schema().names()
+        ):
+            current_lazy = current_lazy.rename(
+                {"metaxy_provenance_by_field": "provenance_by_field"}
+            )
+
         # Diff resolver returns Narwhals frames (lazy or eager based on flag)
         return feature.resolve_data_version_diff(
             diff_resolver=narwhals_diff,
-            target_versions=target_versions_nw,
+            target_provenance=target_provenance_nw,
             current_metadata=current_lazy,
             lazy=lazy,
         )

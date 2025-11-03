@@ -113,7 +113,7 @@ Fields are supposed to represent parts of data that users care about.
 For example, a `Video` feature -- an `.mp4` file -- may have `frames` and `audio` fields.
 
 Downstream features can depend on specific fields of upstream features.
-This enables fine-grained control over data versioning, avoiding unnecessary reprocessing.
+This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.
 
 At this point, careful readers have probably noticed that the `Transcript` feature from the [example](#feature-specs) above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express that with Metaxy:

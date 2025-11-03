@@ -163,7 +163,7 @@ database = "{test_db}"
     ), "Expected migration completion message in output"
 
     # Step 6: Run pipeline with STAGE=2 after migration
-    # This should show NO recomputes because migration reconciled the data_versions
+    # This should show NO recomputes because migration reconciled the field_provenance
     result = subprocess.run(
         [sys.executable, "-m", "examples.migration.pipeline"],
         capture_output=True,
@@ -180,9 +180,9 @@ database = "{test_db}"
     assert "Pipeline STAGE=2" in result.stdout
     assert "✅ Stage 2 pipeline complete!" in result.stdout
 
-    # The migration should have reconciled the child feature's data_versions,
+    # The migration should have reconciled the child feature's field_provenance,
     # so no recomputation should be needed
     assert (
         "No changes detected (idempotent or migration worked correctly)"
         in result.stdout
-    ), "Migration should have reconciled data_versions, but child was recomputed"
+    ), "Migration should have reconciled field_provenance, but child was recomputed"

@@ -67,7 +67,7 @@ def create_store(
 
     Args:
         store_type: "inmemory", "duckdb", or "clickhouse"
-        prefer_native: Whether to prefer native data version calculations
+        prefer_native: Whether to prefer native field provenance calculations
         hash_algorithm: Hash algorithm to use
         params: Store-specific parameters dict containing:
             - tmp_path: Temporary directory for file-based stores (duckdb)
@@ -378,7 +378,7 @@ def test_resolve_update_no_upstream(
     """Test resolve_update for root features with samples parameter.
 
     Root features have no upstream dependencies, so users must provide samples
-    with manually computed data_version. This test verifies:
+    with manually computed provenance_by_field. This test verifies:
     1. ValueError raised when samples not provided
     2. Correct diff results when samples provided
     3. Warning issued when Polars samples provided to SQL store (use_native_samples=False)
@@ -397,7 +397,7 @@ def test_resolve_update_no_upstream(
     source_samples = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "data_version": [
+            "provenance_by_field": [
                 {"field_a": "hash1"},
                 {"field_a": "hash2"},
                 {"field_a": "hash3"},
@@ -410,7 +410,7 @@ def test_resolve_update_no_upstream(
 
     for store_type in get_available_store_types():
         # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
         if store_type == "duckdb_ducklake":
             continue
 
@@ -483,14 +483,14 @@ def test_resolve_update_no_upstream(
 
                 caplog.clear()
 
-                # 5. Record results for comparison - include data versions
+                # 5. Record results for comparison - include field provenances
                 # Convert Narwhals to Polars for manipulation
                 added_sorted = (
                     result.added.to_polars()
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
                 ).sort("sample_uid")
-                versions = added_sorted["data_version"].to_list()
+                versions = added_sorted["provenance_by_field"].to_list()
 
                 results[(store_type, prefer_native, use_native_samples)] = {
                     "added": len(result.added),
@@ -518,7 +518,7 @@ def test_resolve_update_no_upstream(
 
     # 6. Ensure results from all stores are correct and consistent
     if results:
-        # All variants should produce identical results (including data versions)
+        # All variants should produce identical results (including field provenances)
         assert_all_results_equal(results, snapshot)
 
         # Verify expected behavior: all samples are new (added)
@@ -547,7 +547,7 @@ def test_resolve_update_with_upstream(
     snapshot,
     recwarn,
 ):
-    """Test resolve_update calculates data versions from upstream.
+    """Test resolve_update calculates field provenances from upstream.
 
     Verifies that prefer_native=True and prefer_native=False produce identical results
     across all store types and different feature graphs.
@@ -558,8 +558,10 @@ def test_resolve_update_with_upstream(
     root_feature = features[0]
     downstream_feature = features[-1]
 
-    # Helper to create data_version dicts for a feature's fields
-    def make_data_versions(feature: type[Feature], prefix: str) -> list[dict[str, Any]]:
+    # Helper to create provenance_by_field dicts for a feature's fields
+    def make_provenance_by_field(
+        feature: type[Feature], prefix: str
+    ) -> list[dict[str, Any]]:
         fields = [c.key for c in feature.spec().fields]
         if len(fields) == 1:
             field_name = "_".join(fields[0])
@@ -574,7 +576,7 @@ def test_resolve_update_with_upstream(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
-            "data_version": make_data_versions(root_feature, "manual"),
+            "provenance_by_field": make_provenance_by_field(root_feature, "manual"),
         }
     )
 
@@ -583,7 +585,7 @@ def test_resolve_update_with_upstream(
 
     for store_type in get_available_store_types():
         # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
         if store_type == "duckdb_ducklake":
             continue
 
@@ -613,10 +615,10 @@ def test_resolve_update_with_upstream(
                             # Root feature - use manual data
                             store.write_metadata(feature, upstream_data)
                         else:
-                            # Intermediate features - resolve and write their data versions
+                            # Intermediate features - resolve and write their field provenances
                             result = store.resolve_update(feature)
                             if len(result.added) > 0:
-                                # Write metadata with computed data versions
+                                # Write metadata with computed field provenances
                                 feature_data = pl.DataFrame(
                                     {
                                         "sample_uid": [1, 2, 3],
@@ -624,9 +626,9 @@ def test_resolve_update_with_upstream(
                                     }
                                 ).with_columns(
                                     pl.Series(
-                                        "data_version",
+                                        "provenance_by_field",
                                         result.added.sort("sample_uid")[
-                                            "data_version"
+                                            "provenance_by_field"
                                         ].to_list(),
                                     )
                                 )
@@ -635,7 +637,7 @@ def test_resolve_update_with_upstream(
                     # Now resolve update for the final downstream feature
                     result = store.resolve_update(downstream_feature)
 
-                    # Assert no warning when prefer_native=True for stores that support native data version calculations
+                    # Assert no warning when prefer_native=True for stores that support native field provenance calculations
                     if prefer_native and store._supports_native_components():
                         prefer_native_warnings = [
                             w
@@ -647,14 +649,14 @@ def test_resolve_update_with_upstream(
                             f"{[str(w.message) for w in prefer_native_warnings]}"
                         )
 
-                    # Collect data versions
+                    # Collect field provenances
                     # Convert Narwhals to Polars for manipulation
                     added_sorted = (
                         result.added.to_polars()
                         if isinstance(result.added, nw.DataFrame)
                         else result.added
                     ).sort("sample_uid")
-                    versions = added_sorted["data_version"].to_list()
+                    versions = added_sorted["provenance_by_field"].to_list()
 
                     results[(store_type, prefer_native)] = {
                         "added": len(result.added),
@@ -693,7 +695,7 @@ def test_resolve_update_detects_changes(
     snapshot,
     recwarn,
 ):
-    """Test resolve_update detects changed data versions.
+    """Test resolve_update detects changed field provenances.
 
     Verifies that prefer_native=True and prefer_native=False produce identical results
     across all store types and different feature graphs.
@@ -707,8 +709,8 @@ def test_resolve_update_detects_changes(
     # Determine which fields to use
     root_fields = [c.key for c in root_feature.spec().fields]
 
-    # Create data version dicts for fields
-    def make_data_versions(
+    # Create field provenance dicts for fields
+    def make_provenance_by_field(
         version_prefix: str, sample_uids: list[int]
     ) -> list[dict[str, Any]]:
         if len(root_fields) == 1:
@@ -725,7 +727,7 @@ def test_resolve_update_detects_changes(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
-            "data_version": make_data_versions("v", [1, 2, 3]),
+            "provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
         }
     )
 
@@ -734,7 +736,7 @@ def test_resolve_update_detects_changes(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2_CHANGED", "a3"],  # Changed
-            "data_version": make_data_versions(
+            "provenance_by_field": make_provenance_by_field(
                 "v_new", [1, 2, 3]
             ),  # All changed to new version
         }
@@ -745,7 +747,7 @@ def test_resolve_update_detects_changes(
 
     for store_type in get_available_store_types():
         # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
         if store_type == "duckdb_ducklake":
             continue
 
@@ -772,7 +774,7 @@ def test_resolve_update_detects_changes(
                             # Root feature - use initial data
                             store.write_metadata(feature, initial_data)
                         else:
-                            # Intermediate features - resolve and write their data versions
+                            # Intermediate features - resolve and write their field provenances
                             result = store.resolve_update(feature)
                             if len(result.added) > 0:
                                 # Convert Narwhals to Polars for manipulation
@@ -788,15 +790,15 @@ def test_resolve_update_detects_changes(
                                     }
                                 ).with_columns(
                                     pl.Series(
-                                        "data_version",
+                                        "provenance_by_field",
                                         added_df.sort("sample_uid")[
-                                            "data_version"
+                                            "provenance_by_field"
                                         ].to_list(),
                                     )
                                 )
                                 store.write_metadata(feature, feature_data)
 
-                    # First resolve - get initial data versions for downstream
+                    # First resolve - get initial field provenances for downstream
                     result1 = store.resolve_update(downstream_feature)
                     # Convert to Polars for easier manipulation in test
                     initial_versions_nw = (
@@ -814,7 +816,8 @@ def test_resolve_update_detects_changes(
                         }
                     ).with_columns(
                         pl.Series(
-                            "data_version", initial_versions["data_version"].to_list()
+                            "provenance_by_field",
+                            initial_versions["provenance_by_field"].to_list(),
                         )
                     )
                     store.write_metadata(downstream_feature, downstream_data)
@@ -822,7 +825,7 @@ def test_resolve_update_detects_changes(
                     # Now change upstream root feature and propagate through intermediate features
                     store.write_metadata(root_feature, changed_data)
 
-                    # Update intermediate features with new data versions
+                    # Update intermediate features with new field provenances
                     for i, feature in enumerate(features[1:-1], start=1):
                         result = store.resolve_update(feature)
                         if len(result.changed) > 0 or len(result.added) > 0:
@@ -852,7 +855,7 @@ def test_resolve_update_detects_changes(
                                     ],
                                 }
                             ).join(
-                                updated.select(["sample_uid", "data_version"]),
+                                updated.select(["sample_uid", "provenance_by_field"]),
                                 on="sample_uid",
                                 how="left",
                             )
@@ -861,7 +864,7 @@ def test_resolve_update_detects_changes(
                     # Resolve update again for downstream - should detect changes
                     result2 = store.resolve_update(downstream_feature)
 
-                    # Assert no warning when prefer_native=True for stores that support native data version calculations
+                    # Assert no warning when prefer_native=True for stores that support native field provenance calculations
                     if prefer_native and store._supports_native_components():
                         prefer_native_warnings = [
                             w
@@ -890,10 +893,10 @@ def test_resolve_update_detects_changes(
                     for sample_uid in changed_sample_uids:
                         new_version = changed_df_pl.filter(
                             pl.col("sample_uid") == sample_uid
-                        )["data_version"][0]
+                        )["provenance_by_field"][0]
                         old_version = initial_versions.filter(
                             pl.col("sample_uid") == sample_uid
-                        )["data_version"][0]
+                        )["provenance_by_field"][0]
                         version_changes.append(new_version != old_version)
 
                     results[(store_type, prefer_native)] = {
@@ -921,7 +924,7 @@ def test_resolve_update_detects_changes(
         assert len(reference["changed_sample_uids"]) >= 1, (
             "At least one sample should change"
         )
-        assert reference["any_version_changed"], "Data version should have changed"
+        assert reference["any_version_changed"], "Field provenance should have changed"
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -958,7 +961,7 @@ def test_resolve_update_feature_version_change_idempotency(
 
     for store_type in get_available_store_types():
         # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # data version computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
+        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
         if store_type == "duckdb_ducklake":
             continue
 
@@ -982,22 +985,22 @@ def test_resolve_update_feature_version_change_idempotency(
                     root_field_names = {
                         field.key[0] for field in RootFeature.spec().fields
                     }
-                    root_data_version_dicts = []
+                    root_provenance_dicts = []
                     for i in range(1, 4):
                         dv = {
                             field_name: f"v1_{i}_{field_name}"
                             for field_name in root_field_names
                         }
-                        root_data_version_dicts.append(dv)
+                        root_provenance_dicts.append(dv)
 
                     root_data_v1 = pl.DataFrame(
                         {
                             "sample_uid": [1, 2, 3],
-                            "data_version": root_data_version_dicts,
+                            "provenance_by_field": root_provenance_dicts,
                         },
                         schema={
                             "sample_uid": pl.UInt32,
-                            "data_version": pl.Struct(
+                            "provenance_by_field": pl.Struct(
                                 {fn: pl.Utf8 for fn in root_field_names}
                             ),
                         },

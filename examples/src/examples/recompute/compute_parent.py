@@ -52,7 +52,7 @@ with MetaxyConfig.load().get_store() as store:
         {
             "sample_uid": [1, 2, 3],
             "raw_data": ["sample_1_data", "sample_2_data", "sample_3_data"],
-            "data_version": [
+            "provenance_by_field": [
                 {"embeddings": "v1"},
                 {"embeddings": "v2"},
                 {"embeddings": "v3"},
@@ -61,7 +61,7 @@ with MetaxyConfig.load().get_store() as store:
         schema={
             "sample_uid": pl.UInt32,
             "raw_data": pl.Utf8,
-            "data_version": pl.Struct({"embeddings": pl.Utf8}),
+            "provenance_by_field": pl.Struct({"embeddings": pl.Utf8}),
         },
     )
     store.write_metadata(ParentFeature, parent_metadata)

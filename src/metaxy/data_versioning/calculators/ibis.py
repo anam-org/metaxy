@@ -1,4 +1,4 @@
-"""Ibis-based data version calculator using native SQL hash functions.
+"""Ibis-based field provenance calculator using native SQL hash functions.
 
 This calculator uses Ibis to generate backend-specific SQL for hash computation,
 executing entirely in the database without pulling data into memory.
@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import narwhals as nw
 
-from metaxy.data_versioning.calculators.base import DataVersionCalculator
+from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.utils.hashing import get_hash_truncation_length
 
@@ -42,8 +42,8 @@ class HashSQLGenerator(Protocol):
         ...
 
 
-class IbisDataVersionCalculator(DataVersionCalculator):
-    """Calculates data versions using native SQL hash functions via Ibis.
+class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
+    """Calculates provenance_by_field values using native SQL hash functions via Ibis.
 
     This calculator:
     1. Accepts Narwhals LazyFrame as input
@@ -90,7 +90,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
             return HashAlgorithm.XXHASH64
         return self.supported_algorithms[0]
 
-    def calculate_data_versions(
+    def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
         feature_spec: "BaseFeatureSpecWithIDColumns",
@@ -98,7 +98,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
     ) -> nw.LazyFrame[Any]:
-        """Calculate data_version using SQL hash functions.
+        """Calculate provenance_by_field using SQL hash functions.
 
         Args:
             joined_upstream: Narwhals LazyFrame with upstream data joined
@@ -108,7 +108,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
             hash_algorithm: Hash to use
 
         Returns:
-            Narwhals LazyFrame with data_version column added
+            Narwhals LazyFrame with provenance_by_field column added
         """
         import ibis
 
@@ -129,10 +129,10 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         if not isinstance(native, ibis.expr.types.Table):
             # Not an Ibis table - this calculator only works with Ibis-backed data
             raise TypeError(
-                f"IbisDataVersionCalculator requires Ibis-backed data. "
+                f"IbisProvenanceByFieldCalculator requires Ibis-backed data. "
                 f"Got {type(native)} instead. "
                 f"This usually means the metadata store is not using Ibis tables. "
-                f"Use PolarsDataVersionCalculator for non-Ibis stores."
+                f"Use PolarsProvenanceByFieldCalculator for non-Ibis stores."
             )
 
         ibis_table: ibis.expr.types.Table = native  # type: ignore[assignment]
@@ -158,7 +158,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
                 ibis.literal(str(field.code_version)),
             ]
 
-            # Add upstream data versions in deterministic order
+            # Add upstream provenance values in deterministic order
             for upstream_feature_key in sorted(field_deps.keys()):
                 upstream_fields = field_deps[upstream_feature_key]
                 upstream_key_str = (
@@ -167,8 +167,8 @@ class IbisDataVersionCalculator(DataVersionCalculator):
                     else "__".join(upstream_feature_key)
                 )
 
-                data_version_col_name = upstream_column_mapping.get(
-                    upstream_key_str, "data_version"
+                provenance_col_name = upstream_column_mapping.get(
+                    upstream_key_str, "provenance_by_field"
                 )
 
                 for upstream_field in sorted(upstream_fields):
@@ -183,7 +183,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
                     )
                     # Access struct field for upstream field's hash
                     components.append(
-                        ibis_table[data_version_col_name][upstream_field_str]
+                        ibis_table[provenance_col_name][upstream_field_str]
                     )
 
             # Concatenate all components with separator
@@ -202,7 +202,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         # Execute SQL to get table with hash columns
         result_table = self._backend.sql(hash_sql)  # pyright: ignore[reportAttributeAccessIssue]
 
-        # Build data_version struct from hash columns
+        # Build provenance_by_field struct from hash columns
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]
         field_keys = list(concat_columns.keys())
 
@@ -223,7 +223,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
                 for field_key in field_keys
             }
 
-        # Drop temp columns and add data_version
+        # Drop temp columns and add provenance_by_field
         cols_to_keep = [
             c
             for c in result_table.columns
@@ -231,7 +231,7 @@ class IbisDataVersionCalculator(DataVersionCalculator):
         ]
 
         result_table = result_table.select(
-            *cols_to_keep, data_version=ibis.struct(struct_fields)
+            *cols_to_keep, provenance_by_field=ibis.struct(struct_fields)
         )
 
         # Convert back to Narwhals LazyFrame

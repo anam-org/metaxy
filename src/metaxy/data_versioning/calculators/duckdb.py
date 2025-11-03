@@ -1,6 +1,6 @@
-"""DuckDB-specific data version calculator with extension management.
+"""DuckDB-specific field provenance calculator with extension management.
 
-This calculator extends IbisDataVersionCalculator to handle DuckDB-specific
+This calculator extends IbisProvenanceByFieldCalculator to handle DuckDB-specific
 extension loading (e.g., hashfuncs for xxHash support).
 """
 # pyright: reportImportCycles=false
@@ -8,7 +8,7 @@ extension loading (e.g., hashfuncs for xxHash support).
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-from metaxy.data_versioning.calculators.ibis import IbisDataVersionCalculator
+from metaxy.data_versioning.calculators.ibis import IbisProvenanceByFieldCalculator
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.duckdb import ExtensionInput
 
 
-class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
+class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
     """DuckDB-specific calculator that manages extensions lazily.
 
     This calculator:
@@ -27,12 +27,12 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
     3. Generates DuckDB-specific SQL for hash computation
 
     The extension loading happens in __init__, which is only called when
-    native data version calculations are actually needed (not on store open).
+    native provenance calculations are actually needed (not on store open).
 
     Example:
         ```py
         backend = ibis.duckdb.connect("metadata.db")
-        calculator = DuckDBDataVersionCalculator(
+        calculator = DuckDBProvenanceByFieldCalculator(
             backend=backend,
             extensions=["hashfuncs"]
             )
@@ -78,7 +78,7 @@ class DuckDBDataVersionCalculator(IbisDataVersionCalculator):
         """Install and load DuckDB extensions.
 
         This is called once when the calculator is created, which happens
-        lazily when native data version calculations are first needed.
+        lazily when native field provenance calculations are first needed.
         """
         if not self.extensions:
             return

@@ -4,7 +4,7 @@ from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
 
-def test_single_feature_data_version(snapshot, graph: FeatureGraph):
+def test_single_feature_provenance(snapshot, graph: FeatureGraph):
     """Test feature with no dependencies."""
 
     class MyFeature(
@@ -13,7 +13,7 @@ def test_single_feature_data_version(snapshot, graph: FeatureGraph):
     ):
         pass
 
-    assert MyFeature.data_version() == snapshot
+    assert MyFeature.provenance_by_field() == snapshot
 
 
 def test_feature_with_multiple_fields(snapshot, graph: FeatureGraph):
@@ -32,7 +32,7 @@ def test_feature_with_multiple_fields(snapshot, graph: FeatureGraph):
     ):
         pass
 
-    assert VideoFeature.data_version() == snapshot
+    assert VideoFeature.provenance_by_field() == snapshot
 
 
 def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
@@ -68,9 +68,9 @@ def test_linear_dependency_chain(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "a": FeatureA.data_version(),
-        "b": FeatureB.data_version(),
-        "c": FeatureC.data_version(),
+        "a": FeatureA.provenance_by_field(),
+        "b": FeatureB.provenance_by_field(),
+        "c": FeatureC.provenance_by_field(),
     }
 
     assert versions == snapshot
@@ -122,10 +122,10 @@ def test_diamond_dependency_graph(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "root": Root.data_version(),
-        "branch_left": BranchLeft.data_version(),
-        "branch_right": BranchRight.data_version(),
-        "merged": Merged.data_version(),
+        "root": Root.provenance_by_field(),
+        "branch_left": BranchLeft.provenance_by_field(),
+        "branch_right": BranchRight.provenance_by_field(),
+        "merged": Merged.provenance_by_field(),
     }
 
     assert versions == snapshot
@@ -195,8 +195,8 @@ def test_specific_field_dependencies(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "multi": MultiField.data_version(),
-        "selective": Selective.data_version(),
+        "multi": MultiField.provenance_by_field(),
+        "selective": Selective.provenance_by_field(),
     }
 
     assert versions == snapshot
@@ -296,10 +296,10 @@ def test_complex_multi_level_graph(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "raw_video": RawVideoData.data_version(),
-        "raw_metadata": RawMetadata.data_version(),
-        "processed_video": ProcessedVideo.data_version(),
-        "analysis": Analysis.data_version(),
+        "raw_video": RawVideoData.provenance_by_field(),
+        "raw_metadata": RawMetadata.provenance_by_field(),
+        "processed_video": ProcessedVideo.provenance_by_field(),
+        "analysis": Analysis.provenance_by_field(),
     }
 
     assert versions == snapshot
@@ -328,8 +328,8 @@ def test_code_version_changes_propagate(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "base": Base.data_version(),
-        "derived": Derived.data_version(),
+        "base": Base.provenance_by_field(),
+        "derived": Derived.provenance_by_field(),
     }
 
     assert versions == snapshot
@@ -405,9 +405,9 @@ def test_multiple_fields_different_deps(snapshot, graph: FeatureGraph):
         pass
 
     versions = {
-        "x": FeatureX.data_version(),
-        "y": FeatureY.data_version(),
-        "z": FeatureZ.data_version(),
+        "x": FeatureX.provenance_by_field(),
+        "y": FeatureY.provenance_by_field(),
+        "z": FeatureZ.provenance_by_field(),
     }
 
     # Verify that different fields have different versions

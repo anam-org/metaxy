@@ -38,7 +38,7 @@ def get_available_store_types_for_fallback() -> list[str]:
     """Get store types that support native components and can be used for fallback tests.
 
     We test with DuckDB since it:
-    1. Supports native components (IbisDataVersionCalculator)
+    1. Supports native components (IbisProvenanceByFieldCalculator)
     2. Can be easily instantiated with separate databases
     3. Supports multiple hash algorithms
     """
@@ -160,7 +160,7 @@ def test_fallback_store_warning_issued(
     root_data = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "data_version": [
+            "provenance_by_field": [
                 {"default": "hash1"},
                 {"default": "hash2"},
                 {"default": "hash3"},
@@ -214,13 +214,13 @@ def test_fallback_store_warning_issued(
                         f"Unexpected fallback warning for {primary_store_type} with prefer_native=False"
                     )
 
-                # Collect data versions for comparison
+                # Collect field provenances for comparison
                 added_sorted = (
                     result.added.to_polars()
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
                 ).sort("sample_uid")
-                versions = added_sorted["data_version"].to_list()
+                versions = added_sorted["provenance_by_field"].to_list()
 
                 results[(primary_store_type, fallback_store_type, prefer_native)] = {
                     "added": len(result.added),
@@ -232,7 +232,7 @@ def test_fallback_store_warning_issued(
     except HashAlgorithmNotSupportedError:
         pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
 
-    # All variants should produce identical results (including data versions)
+    # All variants should produce identical results (including field provenances)
     assert_all_results_equal(results, snapshot)
 
     # Verify expected behavior
@@ -278,7 +278,7 @@ def test_no_fallback_warning_when_all_local(
             root_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "data_version": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                         {"default": "hash3"},
@@ -343,7 +343,7 @@ def test_fallback_store_switches_to_polars_components(
     root_data = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "data_version": [
+            "provenance_by_field": [
                 {"default": "hash1"},
                 {"default": "hash2"},
                 {"default": "hash3"},
@@ -378,13 +378,15 @@ def test_fallback_store_switches_to_polars_components(
             ]
             assert len(warnings_local) == 0
 
-            # Collect data versions from result
+            # Collect field provenances from result
             added_local = (
                 result_local.added.to_polars()
                 if isinstance(result_local.added, nw.DataFrame)
                 else result_local.added
             )
-            versions_local = added_local.sort("sample_uid")["data_version"].to_list()
+            versions_local = added_local.sort("sample_uid")[
+                "provenance_by_field"
+            ].to_list()
 
             results[(primary_store_type, fallback_store_type, "all_local")] = {
                 "added": len(result_local.added),
@@ -430,13 +432,15 @@ def test_fallback_store_switches_to_polars_components(
         ]
         assert len(warnings_fallback) == 1
 
-        # Collect data versions from result
+        # Collect field provenances from result
         added_fallback = (
             result_fallback.added.to_polars()
             if isinstance(result_fallback.added, nw.DataFrame)
             else result_fallback.added
         )
-        versions_fallback = added_fallback.sort("sample_uid")["data_version"].to_list()
+        versions_fallback = added_fallback.sort("sample_uid")[
+            "provenance_by_field"
+        ].to_list()
 
         results[(primary_store_type, fallback_store_type, "with_fallback")] = {
             "added": len(result_fallback.added),
@@ -491,7 +495,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
             root_data = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "data_version": [
+                    "provenance_by_field": [
                         {"default": "hash1"},
                         {"default": "hash2"},
                         {"default": "hash3"},

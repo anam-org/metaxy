@@ -199,7 +199,7 @@ class TestNarwhalsFunctions:
         # Create test data with struct containing hash values
         df = pl.DataFrame(
             {
-                "data_version": [
+                "provenance_by_field": [
                     {"field1": "a" * 64, "field2": "b" * 64},
                     {"field1": "c" * 64, "field2": "d" * 64},
                 ],
@@ -209,20 +209,20 @@ class TestNarwhalsFunctions:
 
         # No truncation when config is None
         MetaxyConfig.reset()
-        result_pl = truncate_struct_column(df, "data_version")
-        assert result_pl["data_version"][0]["field1"] == "a" * 64
+        result_pl = truncate_struct_column(df, "provenance_by_field")
+        assert result_pl["provenance_by_field"][0]["field1"] == "a" * 64
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=16)
         MetaxyConfig.set(config)
 
-        result_pl = truncate_struct_column(df, "data_version")
+        result_pl = truncate_struct_column(df, "provenance_by_field")
 
         # Check struct values are truncated
-        assert result_pl["data_version"][0]["field1"] == "a" * 16
-        assert result_pl["data_version"][0]["field2"] == "b" * 16
-        assert result_pl["data_version"][1]["field1"] == "c" * 16
-        assert result_pl["data_version"][1]["field2"] == "d" * 16
+        assert result_pl["provenance_by_field"][0]["field1"] == "a" * 16
+        assert result_pl["provenance_by_field"][0]["field2"] == "b" * 16
+        assert result_pl["provenance_by_field"][1]["field1"] == "c" * 16
+        assert result_pl["provenance_by_field"][1]["field2"] == "d" * 16
 
         # Other columns unchanged
         assert result_pl["sample_uid"].to_list() == [1, 2]
@@ -244,13 +244,13 @@ class TestNarwhalsFunctions:
 
         # Empty DataFrame with struct column
         df = pl.DataFrame(
-            {"data_version": pl.Series([], dtype=pl.Struct({"field1": pl.Utf8}))}
+            {"provenance_by_field": pl.Series([], dtype=pl.Struct({"field1": pl.Utf8}))}
         )
 
         # This may fail if schema inference doesn't work on empty structs
         # That's okay - it's an edge case
         try:
-            result_pl = truncate_struct_column(df, "data_version")
+            result_pl = truncate_struct_column(df, "provenance_by_field")
             assert result_pl.height == 0
         except Exception:
             # Expected for empty struct handling
@@ -354,14 +354,14 @@ class TestFeatureVersionTruncation:
                 pass
 
             # Get field versions without truncation
-            data_version_full = TestFeature.data_version()
-            assert all(len(v) == 64 for v in data_version_full.values())
+            provenance_full = TestFeature.provenance_by_field()
+            assert all(len(v) == 64 for v in provenance_full.values())
 
             # Enable truncation
             config = MetaxyConfig(hash_truncation_length=20)
             MetaxyConfig.set(config)
-            data_version_truncated = TestFeature.data_version()
-            assert all(len(v) == 20 for v in data_version_truncated.values())
+            provenance_truncated = TestFeature.provenance_by_field()
+            assert all(len(v) == 20 for v in provenance_truncated.values())
 
             # Clean up
             MetaxyConfig.reset()
@@ -458,8 +458,8 @@ class TestMetadataStoreTruncation:
         ) as store:
             assert store.hash_truncation_length == 16
 
-    def test_data_version_truncation(self):
-        """Test that data versions are truncated in stores."""
+    def test_provenance_truncation(self):
+        """Test that field provenances are truncated in stores."""
         # Create isolated graph
         test_graph = FeatureGraph()
 
@@ -478,13 +478,13 @@ class TestMetadataStoreTruncation:
             config = MetaxyConfig(project="test", hash_truncation_length=16)
             MetaxyConfig.set(config)
 
-            # Store should use truncated data versions
+            # Store should use truncated field provenances
             with InMemoryMetadataStore() as store:
-                # Write some dummy metadata with data_version
+                # Write some dummy metadata with provenance_by_field
                 metadata = pl.DataFrame(
                     {
                         "sample_uid": ["s1", "s2"],
-                        "data_version": [
+                        "provenance_by_field": [
                             {"field1": "a" * 16},  # Already truncated
                             {"field1": "b" * 16},  # Already truncated
                         ],
@@ -498,10 +498,10 @@ class TestMetadataStoreTruncation:
                 result_pl = result.to_polars()
                 assert result_pl.height == 2
 
-                # Data version should be truncated
+                # Field provenance should be truncated
                 for row in result_pl.iter_rows(named=True):
-                    data_version = row["data_version"]
-                    assert len(data_version["field1"]) == 16
+                    provenance_by_field = row["provenance_by_field"]
+                    assert len(provenance_by_field["field1"]) == 16
 
             # Clean up
             MetaxyConfig.reset()
@@ -637,7 +637,7 @@ class TestEndToEnd:
                 parent_data = pl.DataFrame(
                     {
                         "sample_uid": ["s1", "s2"],
-                        "data_version": [
+                        "provenance_by_field": [
                             {"value": "h" * 16},  # Truncated hash
                             {"value": "i" * 16},  # Truncated hash
                         ],
@@ -653,7 +653,7 @@ class TestEndToEnd:
                 for row in result_pl.iter_rows(named=True):
                     assert len(row["feature_version"]) == 16
                     assert len(row["snapshot_version"]) == 16
-                    assert len(row["data_version"]["value"]) == 16
+                    assert len(row["provenance_by_field"]["value"]) == 16
 
             # Clean up
             MetaxyConfig.reset()

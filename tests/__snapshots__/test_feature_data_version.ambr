@@ -81,7 +81,7 @@
     }),
   })
 # ---
-# name: test_single_feature_data_version
+# name: test_single_feature_provenance
   dict({
     'default': '8aa2ac16379005571ba10a1d73d038001526faf4b0abc62db9dd2f3c8afeea6c',
   })

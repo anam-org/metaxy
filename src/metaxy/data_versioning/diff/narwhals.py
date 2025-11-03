@@ -35,14 +35,14 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
     def find_changes(
         self,
-        target_versions: nw.LazyFrame[Any],
+        target_provenance: nw.LazyFrame[Any],
         current_metadata: nw.LazyFrame[Any] | None,
         id_columns: Sequence[str],
     ) -> LazyDiffResult:
         """Find all changes between target and current.
 
         Args:
-            target_versions: Narwhals LazyFrame with calculated data_versions
+            target_provenance: Narwhals LazyFrame with calculated field_provenance
             current_metadata: Narwhals LazyFrame with current metadata, or None.
                 Should be pre-filtered by feature_version at caller level if needed.
             id_columns: ID columns to use for comparison (required - from feature spec)
@@ -59,9 +59,11 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
                 "These should come from the feature spec's id_columns property."
             )
 
-        # Select only ID columns and data_version from target_versions
+        # Select only ID columns and provenance_by_field from target_provenance
         # (it may have intermediate joined columns from upstream)
-        target_versions = target_versions.select(id_columns + ["data_version"])
+        target_provenance = target_provenance.select(
+            id_columns + ["provenance_by_field"]
+        )
 
         if current_metadata is None:
             # No existing metadata - all target rows are new
@@ -70,23 +72,23 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
             # Create empty schema with ID columns
             schema = {col: [] for col in id_columns}
-            schema["data_version"] = []
+            schema["provenance_by_field"] = []
             empty_lazy = nw.from_native(pl.LazyFrame(schema))
 
             return LazyDiffResult(
-                added=target_versions,
+                added=target_provenance,
                 changed=empty_lazy,
                 removed=empty_lazy,
             )
 
-        # Keep only ID columns and data_version from current for comparison
+        # Keep only ID columns and provenance_by_field from current for comparison
         select_cols = id_columns + [
-            nw.col("data_version").alias("__current_data_version")
+            nw.col("provenance_by_field").alias("__current_provenance_by_field")
         ]
         current_comparison = current_metadata.select(*select_cols)
 
         # LEFT JOIN target with current on ID columns
-        compared = target_versions.join(
+        compared = target_provenance.join(
             current_comparison,
             on=id_columns,
             how="left",
@@ -94,25 +96,28 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
         # Build lazy queries for each category
         added_lazy = (
-            compared.filter(nw.col("__current_data_version").is_null())
-            .drop("__current_data_version")
-            .select(id_columns + ["data_version"])
+            compared.filter(nw.col("__current_provenance_by_field").is_null())
+            .drop("__current_provenance_by_field")
+            .select(id_columns + ["provenance_by_field"])
         )
 
         changed_lazy = (
             compared.filter(
-                ~nw.col("__current_data_version").is_null()
-                & (nw.col("data_version") != nw.col("__current_data_version"))
+                ~nw.col("__current_provenance_by_field").is_null()
+                & (
+                    nw.col("provenance_by_field")
+                    != nw.col("__current_provenance_by_field")
+                )
             )
-            .drop("__current_data_version")
-            .select(id_columns + ["data_version"])
+            .drop("__current_provenance_by_field")
+            .select(id_columns + ["provenance_by_field"])
         )
 
         removed_lazy = current_metadata.join(
-            target_versions.select(id_columns),
+            target_provenance.select(id_columns),
             on=id_columns,
             how="anti",
-        ).select(id_columns + ["data_version"])
+        ).select(id_columns + ["provenance_by_field"])
 
         # Return lazy frames - caller will materialize if needed
         return LazyDiffResult(

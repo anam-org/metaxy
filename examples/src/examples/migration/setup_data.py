@@ -12,7 +12,7 @@ data_dir.mkdir(exist_ok=True)
 upstream_data = pl.DataFrame(
     {
         "sample_uid": ["video1", "video2", "video3"],
-        "data_version": [
+        "provenance_by_field": [
             {"frames": "upstream_v1_frames"},
             {"frames": "upstream_v2_frames"},
             {"frames": "upstream_v3_frames"},
