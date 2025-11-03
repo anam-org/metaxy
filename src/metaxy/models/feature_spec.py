@@ -399,6 +399,8 @@ DefaultFeatureCols: TypeAlias = tuple[Literal["sample_uid"],]
 
 TestingUIDCols: TypeAlias = list[str]
 
+CoercibleToFieldSpec: TypeAlias = str | FieldSpec
+
 
 class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
     """A default concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
@@ -413,8 +415,8 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         self,
         key: str,
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
+        deps: Sequence[FeatureDep] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
@@ -426,8 +428,8 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         self,
         key: Sequence[str],
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
+        deps: Sequence[FeatureDep] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
@@ -439,8 +441,8 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         self,
         key: FeatureKey,
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
+        deps: Sequence[FeatureDep] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
@@ -452,15 +454,28 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
         self,
         key: Self,
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
+        deps: Sequence[FeatureDep] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
         id_columns: Sequence[str] | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
     ) -> None:
         """Initialize from FeatureSpec instance."""
         ...
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
+    def __init__(
+        self,
+        key: CoercibleToFeatureKey | Self,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
+        **kwargs: Any,
+    ):
+        from metaxy.models.field import FieldSpecAdapter
+
+        # Validate fields using FieldSpecAdapter which supports string coercion
+        # Only pass fields if provided (let parent use default if None)
+        if fields is not None:
+            validated_fields = [FieldSpecAdapter.validate_python(f) for f in fields]
+            kwargs["fields"] = validated_fields
+
         # id_columns is always set for FeatureSpec
         super().__init__(key=key, **kwargs)
 
