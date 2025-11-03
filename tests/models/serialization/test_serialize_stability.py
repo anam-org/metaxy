@@ -7,7 +7,7 @@ from metaxy.models.feature import FeatureGraph
 
 
 def test_record_feature_graph_snapshot_stability(
-    persistent_store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
+    store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
 ) -> None:
     """Test that record_feature_graph_snapshot produces consistent snapshot_versions.
 
@@ -21,12 +21,12 @@ def test_record_feature_graph_snapshot_stability(
 
     # Ensure this graph is active so record_feature_graph_snapshot uses it
     with graph.use():
-        with persistent_store:
+        with store:
             # Get the original snapshot_version from the graph
             original_snapshot_version = graph.snapshot_version
 
             # Serialize the graph for the first time
-            result_1 = persistent_store.record_feature_graph_snapshot()
+            result_1 = store.record_feature_graph_snapshot()
             snapshot_version_1 = result_1.snapshot_version
             was_already_recorded_1 = result_1.already_recorded
 
@@ -41,7 +41,7 @@ def test_record_feature_graph_snapshot_stability(
             )
 
             # Serialize again - should be idempotent
-            result_2 = persistent_store.record_feature_graph_snapshot()
+            result_2 = store.record_feature_graph_snapshot()
             snapshot_version_2 = result_2.snapshot_version
             was_already_recorded_2 = result_2.already_recorded
 
@@ -69,7 +69,7 @@ def test_record_feature_graph_snapshot_stability(
 
 
 def test_serialize_uses_to_snapshot(
-    persistent_store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
+    store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
 ) -> None:
     """Test that record_feature_graph_snapshot correctly uses to_snapshot().
 
@@ -82,9 +82,9 @@ def test_serialize_uses_to_snapshot(
 
     # Ensure this graph is active so record_feature_graph_snapshot uses it
     with graph.use():
-        with persistent_store:
+        with store:
             # Serialize to the store
-            result = persistent_store.record_feature_graph_snapshot()
+            result = store.record_feature_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 
@@ -93,9 +93,7 @@ def test_serialize_uses_to_snapshot(
             # Read back the serialized data from the store
             from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-            versions_lazy = persistent_store.read_metadata_in_store(
-                FEATURE_VERSIONS_KEY
-            )
+            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None, "Feature versions should be recorded"
 
             versions_df = versions_lazy.collect().to_polars()

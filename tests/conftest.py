@@ -2,8 +2,20 @@ import random
 
 import pytest
 
-from metaxy.config import MetaxyConfig
+from metaxy import (
+    FeatureDep,
+    FeatureKey,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
+    MetadataStore,
+    TestingFeatureSpec,
+)
+from metaxy._testing import HashAlgorithmCases, TempFeatureModule
+from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
+
+assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
 def pytest_configure(config):
@@ -43,15 +55,17 @@ def pytest_runtest_setup(item):
 
 
 @pytest.fixture(autouse=True)
-def test_config():
-    """Ensure test configuration with project='test' is active for all tests.
-
-    This fixture yields the test configuration that was set in pytest_configure.
-    Individual tests can still override this by setting their own MetaxyConfig if needed.
-    """
-    # Always ensure test config is set, even if tests reset it
-    # This handles cases where tests call MetaxyConfig.reset()
-    test_config = MetaxyConfig(project="test")
+def config(tmp_path_factory):
+    data_dir = tmp_path_factory.mktemp("data")
+    test_config = MetaxyConfig(
+        project="test",
+        stores={
+            "dev": StoreConfig(
+                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                config={"database": data_dir / "test.duckdb"},
+            )
+        },
+    )
     MetaxyConfig.set(test_config)
 
     yield test_config
@@ -60,8 +74,14 @@ def test_config():
     # (pytest_runtest_setup will handle feature graph reset)
 
 
+@pytest.fixture
+def store(config: MetaxyConfig) -> MetadataStore:
+    """Clean MetadataStore for testing"""
+    return config.get_store("dev")
+
+
 @pytest.fixture(autouse=True)
-def graph(test_config):
+def graph():
     """Create a clean FeatureGraph for testing.
 
     This will set up a fresh FeatureGraph for each test.
@@ -97,6 +117,95 @@ def metaxy_project(tmp_path):
     from metaxy._testing import TempMetaxyProject
 
     return TempMetaxyProject(tmp_path)
+
+
+@pytest.fixture
+def test_graph():
+    """Create a clean FeatureGraph for testing with test features registered.
+
+    Returns a tuple of (graph, features_dict) where features_dict provides
+    easy access to feature classes by simple names.
+
+    Uses TempFeatureModule to make features importable for historical graph reconstruction.
+    """
+    temp_module = TempFeatureModule("test_stores_features")
+
+    # Define specs
+    upstream_a_spec = TestingFeatureSpec(
+        key=FeatureKey(["test_stores", "upstream_a"]),
+        fields=[
+            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
+            FieldSpec(key=FieldKey(["audio"]), code_version="1"),
+        ],
+    )
+
+    upstream_b_spec = TestingFeatureSpec(
+        key=FeatureKey(["test_stores", "upstream_b"]),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
+        ],
+    )
+
+    downstream_spec = TestingFeatureSpec(
+        key=FeatureKey(["test_stores", "downstream"]),
+        deps=[
+            FeatureDep(feature=FeatureKey(["test_stores", "upstream_a"])),
+        ],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["test_stores", "upstream_a"]),
+                        fields=[
+                            FieldKey(["frames"]),
+                            FieldKey(["audio"]),
+                        ],
+                    )
+                ],
+            ),
+        ],
+    )
+
+    # Write to temp module
+    temp_module.write_features(
+        {
+            "UpstreamFeatureA": upstream_a_spec,
+            "UpstreamFeatureB": upstream_b_spec,
+            "DownstreamFeature": downstream_spec,
+        }
+    )
+
+    # Get graph from module
+    graph = temp_module.graph
+
+    # Create features dict for easy access
+    features = {
+        "UpstreamFeatureA": graph.features_by_key[
+            FeatureKey(["test_stores", "upstream_a"])
+        ],
+        "UpstreamFeatureB": graph.features_by_key[
+            FeatureKey(["test_stores", "upstream_b"])
+        ],
+        "DownstreamFeature": graph.features_by_key[
+            FeatureKey(["test_stores", "downstream"])
+        ],
+    }
+
+    yield graph, features
+
+    temp_module.cleanup()
+
+
+@pytest.fixture
+def test_features(test_graph):
+    """Provide dict of test feature classes for easy access in tests.
+
+    This fixture extracts just the features dict from test_graph for convenience.
+    """
+    _, features = test_graph
+    return features
 
 
 def pytest_addoption(parser):
