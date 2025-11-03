@@ -4,24 +4,31 @@ This guide covers patterns for testing your features when using Metaxy.
 
 ## Graph Isolation
 
-By default, Metaxy uses a single global feature graph where all features register themselves automatically. In testing, you need isolated graphs to prevent test interference.
+By default, Metaxy uses a single global feature [graph][metaxy.FeatureGraph] where all features register themselves automatically.
+During testing, you might want to construct your own, clean and isolated graphs.
 
 ### Using Isolated Graphs
 
 Always use isolated graphs in tests:
 
 ```python
-def test_my_feature():
-    test_graph = FeatureGraph()
-    with test_graph.use():
+@pytest.fixture(autouse=True)
+def graph():
+    with FeatureGraph().use():
+        yield graph
 
-        class MyFeature(Feature, spec=...):
-            pass
 
-        # Test operations here
+def test_my_feature(graph: FeatureGraph):
+    class MyFeature(Feature, spec=...):
+        pass
+
+    # Test operations here
+
+    # inspect the graph object if needed
 ```
 
 The context manager ensures all feature registrations within the block use the test graph instead of the global one.
+Multiple graphs can exist at the same time, but only one will be used for feature registration.
 
 ### Graph Context Management
 

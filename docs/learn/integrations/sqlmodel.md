@@ -138,14 +138,14 @@ class BadFeature(
 
 ### Loading Features and Populating Metadata
 
-When using `metaxyload_features()` to discover and import feature modules, all `SQLModelFeature` classes are automatically registered in SQLModel's metadata:
+When using [metaxy.init_metaxy][metaxy.init_metaxy] to discover and import feature modules, all `SQLModelFeature` classes are automatically registered in SQLModel's metadata:
 
 ```python
-from metaxy importload_features
+from metaxy import init_metaxy, init_metaxy
 from sqlmodel import SQLModel
 
 # Load all features from configured entrypoints
-graph =load_features()
+graph = init_metaxy()
 
 # All SQLModelFeature tables are now registered in SQLModel.metadata
 # This metadata can be used with Alembic for migrations
@@ -159,7 +159,7 @@ This is particularly useful when:
 - Using SQLModel's `create_all()` for development/testing (Metaxy's `auto_create_tables` setting should be preferred over `create_all()`)
 
 !!! tip "Migration Generation"
-After calling `load_features()`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
+After calling `init_metaxy`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
 
 ## Configuration
 
@@ -259,8 +259,9 @@ Configure `alembic/env.py` to manage user tables, excluding metaxy system tables
 ```python
 # standard Alembic boilerplate
 from sqlmodel import SQLModel
-from metaxy importload_features
-load_features()
+from metaxy import init_metaxy
+
+init_metaxy()
 
 # SQLModel.metadata now has user-defined Metaxy tables
 

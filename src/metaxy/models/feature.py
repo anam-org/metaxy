@@ -40,7 +40,7 @@ _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
 def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
     """Get a feature class by its key from the active graph.
 
-    Convenience function that retrieves from the currently active graph.
+    Convenience function that retrieves Metaxy feature class from the currently active [feature graph][metaxy.FeatureGraph]. Can be useful when receiving a feature key from storage or across process boundaries.
 
     Args:
         key: Feature key to look up

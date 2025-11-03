@@ -173,20 +173,21 @@ nav:
           - SQLModel: learn/integrations/sqlmodel.md
   - CLI: reference/cli.md
   - API:
-    - Metaxy: reference/api/metaxy.md
+    - reference/api/index.md
     - Definitions:
-      - Feature: reference/api/definitions/feature.md
+      - reference/api/definitions/index.md
       - Feature Spec: reference/api/definitions/feature-spec.md
+      - Feature: reference/api/definitions/feature.md
       - Field: reference/api/definitions/field.md
+      - Graph: reference/api/definitions/graph.md
     - Metadata Stores:
-      - Base Class: reference/api/metadata-stores/base.md
+      - reference/api/metadata-stores/index.md
       - Databases:
-        - Ibis: reference/api/metadata-stores/ibis/ibis.md
+        - reference/api/metadata-stores/ibis/index.md
         - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
         - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
       - Memory: reference/api/metadata-stores/memory.md
     - Config: reference/api/config.md
-    - Graph: reference/api/definitions/graph.md
     - Types: reference/api/types.md
   - Configuration: reference/configuration.md
 

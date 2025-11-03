@@ -33,6 +33,9 @@ claude-draft-solution branch prompt:
     gt track {{branch}}
     claude --dangerously-skip-permissions "{{prompt}}. create a new GitHub issue if this is a new problem -- do not ask for confirmation, I explicitly allow creating it, or search for existing one if the issue number was not mentioned. @agent-planner a plan together with @agent-python-dev. Wait for my confirmation before proceeding with the implementation. Do not create commits."
 
+claude-resolve-conflicts:
+    claude --dangerously-skip-permissions -p "resolve git conflicts. If really in doubt, ask the user for help."
+
 docs-build:
     uv run --group docs mkdocs build --clean --strict
 
