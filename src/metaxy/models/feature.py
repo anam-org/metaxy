@@ -690,8 +690,11 @@ class MetaxyMeta(ModelMetaclass):
         """Detect project for a feature class.
 
         Detection order:
-        1. Check metaxy.projects entry points - maps entrypoints to project names
-        2. Fall back to MetaxyConfig.project
+        1. Try to auto-load MetaxyConfig from metaxy.toml/pyproject.toml
+           starting from the feature's file location
+        2. Use config.project if available
+        3. Check metaxy.projects entry points as fallback
+        4. Fall back to "default" with a warning
 
         Args:
             feature_cls: The Feature class being registered
@@ -699,19 +702,46 @@ class MetaxyMeta(ModelMetaclass):
         Returns:
             Project name string
         """
+        import inspect
+        import warnings
+        from pathlib import Path
+
         from metaxy._packaging import detect_project_from_entrypoints
         from metaxy.config import MetaxyConfig
 
         module_name = feature_cls.__module__
 
-        # Strategy 1: Check metaxy.projects entry points
+        # Strategy 1: Try to load config if not already set
+        if not MetaxyConfig.is_set():
+            # Get the file where the feature class is defined
+            feature_file = inspect.getfile(feature_cls)
+            feature_dir = Path(feature_file).parent
+
+            # Attempt to auto-load config from metaxy.toml or pyproject.toml
+            # starting from the feature's directory
+            config = MetaxyConfig.load(
+                search_parents=True, auto_discovery_start=feature_dir
+            )
+            return config.project
+        else:
+            # Config already set, use it
+            config = MetaxyConfig.get()
+            return config.project
+
+        # Strategy 2: Check metaxy.projects entry points as fallback
         project = detect_project_from_entrypoints(module_name)
         if project is not None:
             return project
 
-        # Strategy 2: Fall back to global config
-        config = MetaxyConfig.get()
-        return config.project
+        # Strategy 3: Fall back to "default" with a warning
+        warnings.warn(
+            f"Could not detect project for feature '{feature_cls.__name__}' "
+            f"from module '{module_name}'. No metaxy.toml found and no entry point configured. "
+            f"Using 'default' as project name. This may cause issues with metadata isolation. "
+            f"Please ensure features are imported after init_metaxy() or configure a metaxy.toml file.",
+            stacklevel=3,
+        )
+        return "default"
 
 
 class _FeatureSpecDescriptor:

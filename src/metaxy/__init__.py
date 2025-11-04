@@ -74,7 +74,6 @@ def init_metaxy(
         search_parents=search_parents,
     )
     load_features(cfg.entrypoints)
-    MetaxyConfig.set(cfg)
     return cfg
 
 
