@@ -540,7 +540,13 @@ requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
 [[package]]
 name = "example-one-to-many"
 version = "0.1.0"
-source = { virtual = "examples/example-one-to-many" }
+source = { editable = "examples/example-one-to-many" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
 
 [[package]]
 name = "example-overview"
@@ -571,6 +577,7 @@ source = { editable = "examples" }
 dependencies = [
     { name = "example-ducklake" },
     { name = "example-migration" },
+    { name = "example-one-to-many" },
     { name = "example-overview" },
     { name = "example-recompute" },
 ]
@@ -579,6 +586,7 @@ dependencies = [
 requires-dist = [
     { name = "example-ducklake", editable = "examples/example-ducklake" },
     { name = "example-migration", editable = "examples/example-migration" },
+    { name = "example-one-to-many", editable = "examples/example-one-to-many" },
     { name = "example-overview", editable = "examples/example-overview" },
     { name = "example-recompute", editable = "examples/example-recompute" },
 ]
