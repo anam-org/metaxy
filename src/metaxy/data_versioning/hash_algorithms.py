@@ -17,3 +17,4 @@ class HashAlgorithm(Enum):
     WYHASH = "wyhash"  # Very fast, Polars-specific
     SHA256 = "sha256"  # Cryptographic, slower, universally available
     MD5 = "md5"  # Legacy, widely available, not recommended for new code
+    FARMHASH = "farmhash"  # Better than MD5, available in BigQuery

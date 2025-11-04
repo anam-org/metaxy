@@ -33,6 +33,15 @@ graphviz = [
 sqlmodel = [
   "sqlmodel>=0.0.27",
 ]
+bigquery = [
+  "ibis-framework[bigquery]>=11.0.0",
+]
+clickhouse = [
+  "ibis-framework[clickhouse]>=11.0.0",
+]
+duckdb = [
+  "ibis-framework[duckdb]>=11.0.0",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
