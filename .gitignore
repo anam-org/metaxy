@@ -20,3 +20,4 @@ site/
 docs/reference/configuration.md  # this is generated with `mkdocs build`
 .hypothesis/
 .claude/settings.local.json
+examples/.generated
