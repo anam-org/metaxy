@@ -15,7 +15,6 @@ import polars as pl
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
-from metaxy.models.feature_spec import IDColumns
 from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
@@ -349,7 +348,7 @@ class IbisMetadataStore(MetadataStore):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,

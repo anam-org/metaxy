@@ -12,7 +12,7 @@ from sqlmodel.main import SQLModelMetaclass
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import BaseFeature, MetaxyMeta
-from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns, IDColumns
+from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
 
 if TYPE_CHECKING:
     pass
@@ -159,7 +159,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
 
 class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
-    SQLModel, BaseFeature[IDColumns], metaclass=SQLModelFeatureMeta, spec=None
+    SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
 ):  # type: ignore[misc]
     """Base class for features that are also SQLModel tables.
 

@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, Generic
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
@@ -11,11 +11,7 @@ from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     BaseFeatureSpecWithIDColumns,
-    DefaultFeatureCols,
     FeatureSpec,
-    IDColumns,
-    IDColumnsT,
-    TestingUIDCols,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
@@ -37,7 +33,7 @@ _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
 )
 
 
-def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
+def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
     """Get a feature class by its key from the active graph.
 
     Convenience function that retrieves Metaxy feature class from the currently active [feature graph][metaxy.FeatureGraph]. Can be useful when receiving a feature key from storage or across process boundaries.
@@ -64,10 +60,10 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
 
 class FeatureGraph:
     def __init__(self):
-        self.features_by_key: dict[FeatureKey, type[BaseFeature[IDColumns]]] = {}
+        self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
         self.feature_specs_by_key: dict[FeatureKey, BaseFeatureSpecWithIDColumns] = {}
 
-    def add_feature(self, feature: type["BaseFeature[IDColumns]"]) -> None:
+    def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
 
         Args:
@@ -250,7 +246,7 @@ class FeatureGraph:
         del self.features_by_key[key]
         del self.feature_specs_by_key[key]
 
-    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[IDColumns]"]:
+    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
 
         Args:
@@ -753,23 +749,14 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
-class BaseFeature(
-    FrozenBaseModel, Generic[IDColumnsT], metaclass=MetaxyMeta, spec=None
-):
-    # once ClassVar supports it
-    # this should be changed to spec: BaseFeatureSpec[IDColumnsT]
-    _spec: ClassVar[BaseFeatureSpec[IDColumns]]
+class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
+    _spec: ClassVar[BaseFeatureSpec]
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
 
-    # once ClassVar supports it
-    # this should be replaced by
-    # spec: BaseFeatureSpec[IDColumnsT]
     @classmethod
-    def spec(cls) -> BaseFeatureSpec[IDColumns]:  # type: ignore[override]
-        # Note: Return type should be BaseFeatureSpec[IDColumnsT] but ClassVar
-        # doesn't support generics. Using IDColumns for now until Python improves.
+    def spec(cls) -> BaseFeatureSpec:  # type: ignore[override]
         return cls._spec
 
     @classmethod
@@ -1005,7 +992,7 @@ class BaseFeature(
         return lazy_result
 
 
-class Feature(BaseFeature[DefaultFeatureCols], spec=None):
+class Feature(BaseFeature, spec=None):
     """
     A default specialization of BaseFeature that uses a `sample_uid` ID column.
     """
@@ -1013,5 +1000,5 @@ class Feature(BaseFeature[DefaultFeatureCols], spec=None):
     # spec: ClassVar[FeatureSpec]
 
 
-class TestingFeature(BaseFeature[TestingUIDCols], spec=None):
+class TestingFeature(BaseFeature, spec=None):
     sample_uid: str | None = None

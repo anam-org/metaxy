@@ -16,6 +16,7 @@ from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     FeatureDep,
     FeatureSpec,
+    IDColumns,
     TestingFeatureSpec,
 )
 from metaxy.models.field import FieldSpec
@@ -29,8 +30,10 @@ def test_base_feature_spec_generic_parameter():
     list[str]
 
     # Create a spec with the custom type
-    class CustomSpec(BaseFeatureSpec[list[str]]):
-        id_columns: list[str] = pydantic.Field(default=["custom_id_1", "custom_id_2"])
+    class CustomSpec(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
+            default=["custom_id_1", "custom_id_2"]
+        )
 
     spec = CustomSpec(
         key=FeatureKey(["test"]),
@@ -44,12 +47,14 @@ def test_base_feature_generic_parameter():
     """Test that BaseFeature accepts and preserves generic type parameter from spec."""
 
     # Create a custom spec type
-    class CustomSpec(BaseFeatureSpec[list[str]]):
-        id_columns: list[str] = pydantic.Field(default=["entity_id", "version_id"])
+    class CustomSpec(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
+            default=["entity_id", "version_id"]
+        )
 
     # Create a feature using the custom spec
     class CustomFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=CustomSpec(
             key=FeatureKey(["custom"]),
         ),
@@ -86,8 +91,8 @@ def test_custom_literal_type_id_columns():
     # Define a spec with Literal type for exact column names
     tuple[Literal["user_id"], Literal["session_id"]]
 
-    class StrictSpec(BaseFeatureSpec[tuple[Literal["user_id"], Literal["session_id"]]]):
-        id_columns: tuple[Literal["user_id"], Literal["session_id"]] = pydantic.Field(
+    class StrictSpec(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
             default=("user_id", "session_id"),
         )
 
@@ -108,12 +113,16 @@ def test_spec_version_stability_across_generic_types():
     """
 
     # Spec 1: Using list[str]
-    class Spec1(BaseFeatureSpec[list[str]]):
-        id_columns: list[str] = pydantic.Field(default=["user_id"])
+    class Spec1(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
+            default=["user_id"]
+        )
 
     # Spec 2: Using tuple[str, ...]
-    class Spec2(BaseFeatureSpec[tuple[str, ...]]):
-        id_columns: tuple[str, ...] = pydantic.Field(default=("user_id",))
+    class Spec2(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
+            default=("user_id",)
+        )
 
     spec1 = Spec1(
         key=FeatureKey(["test"]),
@@ -132,7 +141,7 @@ def test_classmethod_spec_returns_correct_type():
     """Test that the .spec() classmethod returns the correct spec instance."""
 
     class MyFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["my_feature"]),
             id_columns=["custom_id"],
@@ -150,7 +159,7 @@ def test_multiple_features_with_different_id_columns():
     """Test creating multiple features with different ID column configurations."""
 
     class Feature1(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["feature1"]),
             id_columns=["sample_uid"],
@@ -159,7 +168,7 @@ def test_multiple_features_with_different_id_columns():
         pass
 
     class Feature2(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["feature2"]),
             id_columns=["user_id", "session_id"],
@@ -168,7 +177,7 @@ def test_multiple_features_with_different_id_columns():
         pass
 
     class Feature3(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["feature3"]),
             id_columns=["entity_id"],
@@ -186,7 +195,7 @@ def test_feature_with_deps_preserves_id_columns():
     """Test that features with dependencies preserve their own ID columns."""
 
     class UpstreamFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],
@@ -195,7 +204,7 @@ def test_feature_with_deps_preserves_id_columns():
         pass
 
     class DownstreamFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -241,15 +250,15 @@ def test_feature_with_custom_spec_class():
         video_id: str = ""
         frame_number: int = 0
 
-    class VideoSpec(BaseFeatureSpec[list[str]]):
+    class VideoSpec(BaseFeatureSpec):
         """Custom spec for video features."""
 
-        id_columns: list[str] = pydantic.Field(
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
             default=["video_id", "frame_number"],
         )
 
     class VideoFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=VideoSpec(
             key=FeatureKey(["video"]),
             fields=[
@@ -329,7 +338,7 @@ def test_backward_compatibility_with_existing_features():
 
     # This mimics old code that doesn't specify generic types
     class LegacyFeature(
-        BaseFeature[list[str]],  # Using default list[str] for backward compatibility
+        BaseFeature,  # Using default list[str] for backward compatibility
         spec=TestingFeatureSpec(
             key=FeatureKey(["legacy"]),
             # Uses default id_columns from TestingFeatureSpec
@@ -365,7 +374,7 @@ def test_feature_graph_tracks_features_with_different_id_columns(
     """Test that FeatureGraph correctly tracks features with different ID columns."""
 
     class Feature1(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f1"]),
             id_columns=["sample_uid"],
@@ -374,7 +383,7 @@ def test_feature_graph_tracks_features_with_different_id_columns(
         pass
 
     class Feature2(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f2"]),
             id_columns=["user_id"],

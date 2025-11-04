@@ -3,7 +3,7 @@
 import pytest
 
 from metaxy.models.feature import BaseFeature
-from metaxy.models.feature_spec import BaseFeatureSpec, FeatureSpec, IDColumns
+from metaxy.models.feature_spec import BaseFeatureSpec, FeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
@@ -76,7 +76,7 @@ def test_default_field_is_unique():
 def test_duplicate_field_keys_in_base_feature_spec():
     """Test that BaseFeatureSpec also validates unique field keys."""
     with pytest.raises(ValueError, match="Duplicate field key found: .*data.*"):
-        _ = BaseFeatureSpec[IDColumns](
+        _ = BaseFeatureSpec(
             key="test/feature",
             id_columns=["sample_uid", "chunk_id"],
             fields=[
@@ -92,7 +92,7 @@ def test_duplicate_field_keys_in_feature_class_definition():
     with pytest.raises(ValueError, match="Duplicate field key found"):
 
         class _TestFeature(  # pyright: ignore[reportUnusedClass]
-            BaseFeature[IDColumns],
+            BaseFeature,
             spec=BaseFeatureSpec(
                 key="test/duplicate_fields",
                 id_columns=["sample_uid"],

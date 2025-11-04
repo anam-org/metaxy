@@ -38,7 +38,6 @@ from metaxy.models.feature_spec import (
     FeatureDep,
     FeatureSpec,
     IDColumns,
-    IDColumnsT,
     TestingFeatureSpec,
 )
 from metaxy.models.field import (
@@ -119,6 +118,5 @@ __all__ = [
     "StoreConfig",
     "init_metaxy",
     "IDColumns",
-    "IDColumnsT",
     "HashAlgorithm",
 ]

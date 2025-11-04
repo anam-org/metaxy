@@ -8,7 +8,7 @@ import narwhals as nw
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import BaseFeatureSpec, IDColumns
+    from metaxy.models.feature_spec import BaseFeatureSpec
     from metaxy.models.plan import FeaturePlan
 
 
@@ -66,7 +66,7 @@ class ProvenanceByFieldCalculator(ABC):
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "BaseFeatureSpec[IDColumns]",
+        feature_spec: "BaseFeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

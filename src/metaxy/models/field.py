@@ -1,8 +1,8 @@
 from collections.abc import Sequence
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-from pydantic import BaseModel, BeforeValidator, TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 from pydantic import Field as PydanticField
 
 from metaxy.models.constants import DEFAULT_CODE_VERSION
@@ -118,6 +118,26 @@ class FieldDep(BaseModel):
         super().__init__(feature=feature_key, fields=validated_fields, *args, **kwargs)
 
 
+def _validate_field_spec_from_string(value: Any) -> Any:
+    """Validator function to convert string to FieldSpec dict.
+
+    This allows FieldSpec to be constructed from just a string key:
+    - "my_field" -> FieldSpec(key="my_field", code_version="1")
+
+    Args:
+        value: The value to validate (can be str, dict, or FieldSpec)
+
+    Returns:
+        Either the original value or a dict that Pydantic will use to construct FieldSpec
+    """
+    # If it's a string, convert to dict with key field
+    if isinstance(value, str):
+        return {"key": value}
+
+    # Otherwise return as-is for normal Pydantic processing
+    return value
+
+
 class FieldSpec(BaseModel):
     key: FieldKey = PydanticField(default_factory=lambda: FieldKey(["default"]))
     code_version: str = DEFAULT_CODE_VERSION
@@ -126,6 +146,20 @@ class FieldSpec(BaseModel):
     # - SpecialFieldDep.ALL: explicitly depend on all upstream features and all their fields
     # - list[FieldDep]: depend on particular fields of specific features
     deps: SpecialFieldDep | list[FieldDep] = PydanticField(default_factory=list)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        """Add custom validator to coerce strings to FieldSpec."""
+        from pydantic_core import core_schema
+
+        # Get the default schema
+        python_schema = handler(source_type)
+
+        # Wrap it with a before validator that converts strings
+        return core_schema.no_info_before_validator_function(
+            _validate_field_spec_from_string,
+            python_schema,
+        )
 
     @overload
     def __init__(self, key: CoercibleToFieldKey, **kwargs) -> None:
@@ -185,27 +219,6 @@ class FieldSpec(BaseModel):
         )
 
 
-def _validate_field_spec_from_string(value: Any) -> Any:
-    """Validator function to convert string to FieldSpec dict.
-
-    This allows FieldSpec to be constructed from just a string key:
-    - "my_field" -> FieldSpec(key="my_field", code_version="1")
-
-    Args:
-        value: The value to validate (can be str, dict, or FieldSpec)
-
-    Returns:
-        Either the original value or a dict that Pydantic will use to construct FieldSpec
-    """
-    # If it's a string, convert to dict with key field
-    if isinstance(value, str):
-        return {"key": value}
-
-    # Otherwise return as-is for normal Pydantic processing
-    return value
-
-
 # Type adapter for validating FieldSpec with string coercion support
-FieldSpecAdapter: TypeAdapter[FieldSpec] = TypeAdapter(
-    Annotated[FieldSpec, BeforeValidator(_validate_field_spec_from_string)]
-)
+
+CoersibleToFieldSpecsTypeAdapter = TypeAdapter(list[FieldSpec])

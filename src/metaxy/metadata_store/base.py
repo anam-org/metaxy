@@ -36,7 +36,6 @@ from metaxy.metadata_store.system_tables import (
     allow_feature_version_override,
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph
-from metaxy.models.feature_spec import IDColumns
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
@@ -341,7 +340,7 @@ class MetadataStore(ABC):
         return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
 
     def _resolve_feature_key(
-        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+        self, feature: FeatureKey | type[BaseFeature]
     ) -> FeatureKey:
         """Resolve a Feature class or FeatureKey to FeatureKey."""
         if isinstance(feature, FeatureKey):
@@ -350,7 +349,7 @@ class MetadataStore(ABC):
             return feature.spec().key
 
     def _resolve_feature_plan(
-        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
+        self, feature: FeatureKey | type[BaseFeature]
     ) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
         if isinstance(feature, FeatureKey):
@@ -387,9 +386,7 @@ class MetadataStore(ABC):
         finally:
             self._allow_cross_project_writes = previous_value
 
-    def _validate_project_write(
-        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
-    ) -> None:
+    def _validate_project_write(self, feature: FeatureKey | type[BaseFeature]) -> None:
         """Validate that writing to a feature matches the expected project from config.
 
         Args:
@@ -450,7 +447,7 @@ class MetadataStore(ABC):
 
     def write_metadata(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         df: nw.DataFrame[Any] | pl.DataFrame,
     ) -> None:
         """
@@ -603,9 +600,7 @@ class MetadataStore(ABC):
         """
         pass
 
-    def drop_feature_metadata(
-        self, feature: FeatureKey | type[BaseFeature[IDColumns]]
-    ) -> None:
+    def drop_feature_metadata(self, feature: FeatureKey | type[BaseFeature]) -> None:
         """Drop all metadata for a feature.
 
         This removes all stored metadata for the specified feature from the store.
@@ -816,7 +811,7 @@ class MetadataStore(ABC):
     @abstractmethod
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -838,7 +833,7 @@ class MetadataStore(ABC):
 
     def read_metadata(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -947,7 +942,7 @@ class MetadataStore(ABC):
 
     def has_feature(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         *,
         check_fallback: bool = False,
     ) -> bool:
@@ -1161,7 +1156,7 @@ class MetadataStore(ABC):
     def copy_metadata(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature[IDColumns]]] | None = None,
+        features: list[FeatureKey | type[BaseFeature]] | None = None,
         *,
         from_snapshot: str | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1270,7 +1265,7 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature[IDColumns]]] | None,
+        features: list[FeatureKey | type[BaseFeature]] | None,
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
@@ -1476,7 +1471,7 @@ class MetadataStore(ABC):
 
     def read_upstream_metadata(
         self,
-        feature: FeatureKey | type[BaseFeature[IDColumns]],
+        feature: FeatureKey | type[BaseFeature],
         field: FieldKey | None = None,
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1593,7 +1588,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1604,7 +1599,7 @@ class MetadataStore(ABC):
     @overload
     def resolve_update(
         self,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1614,7 +1609,7 @@ class MetadataStore(ABC):
 
     def resolve_update(
         self,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         *,
         samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1778,7 +1773,7 @@ class MetadataStore(ABC):
             # Some upstream in fallback stores - use Polars components
             return self._resolve_update_polars(feature, filters=filters, lazy=lazy)
 
-    def _check_upstream_location(self, feature: type[BaseFeature[IDColumns]]) -> str:
+    def _check_upstream_location(self, feature: type[BaseFeature]) -> str:
         """Check if all upstream is in this store or in fallback stores.
 
         Returns:
@@ -1798,7 +1793,7 @@ class MetadataStore(ABC):
 
     def _resolve_update_native(
         self,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
@@ -1918,7 +1913,7 @@ class MetadataStore(ABC):
 
     def _resolve_update_polars(
         self,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         *,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
