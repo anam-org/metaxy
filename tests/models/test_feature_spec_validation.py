@@ -2,7 +2,7 @@
 
 import pytest
 
-from metaxy.models.feature import BaseFeature, FeatureGraph
+from metaxy.models.feature import BaseFeature
 from metaxy.models.feature_spec import BaseFeatureSpec, FeatureSpec, IDColumns
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
@@ -89,26 +89,21 @@ def test_duplicate_field_keys_in_base_feature_spec():
 
 def test_duplicate_field_keys_in_feature_class_definition():
     """Test that duplicate field keys are caught when defining a Feature class."""
-    test_graph = FeatureGraph()
+    with pytest.raises(ValueError, match="Duplicate field key found"):
 
-    with test_graph.use():
-        with pytest.raises(ValueError, match="Duplicate field key found"):
-
-            class _TestFeature(  # pyright: ignore[reportUnusedClass]
-                BaseFeature[IDColumns],
-                spec=BaseFeatureSpec(
-                    key="test/duplicate_fields",
-                    id_columns=["sample_uid"],
-                    fields=[
-                        FieldSpec(key=FieldKey(["output"]), code_version="1"),
-                        FieldSpec(key=FieldKey(["intermediate"])),
-                        FieldSpec(
-                            key=FieldKey(["output"]), code_version="2"
-                        ),  # Duplicate!
-                    ],
-                ),
-            ):
-                pass
+        class _TestFeature(  # pyright: ignore[reportUnusedClass]
+            BaseFeature[IDColumns],
+            spec=BaseFeatureSpec(
+                key="test/duplicate_fields",
+                id_columns=["sample_uid"],
+                fields=[
+                    FieldSpec(key=FieldKey(["output"]), code_version="1"),
+                    FieldSpec(key=FieldKey(["intermediate"])),
+                    FieldSpec(key=FieldKey(["output"]), code_version="2"),  # Duplicate!
+                ],
+            ),
+        ):
+            pass
 
 
 def test_field_keys_case_sensitive():

@@ -216,16 +216,15 @@ def test_load_package_entrypoints_discovers_and_loads(graph: FeatureGraph):
     # Mock the load() method to define a feature
     def mock_load():
         # Define a feature when load() is called
-        with graph.use():
 
-            class PluginFeature(
-                Feature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["plugin", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        class PluginFeature(
+            Feature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["plugin", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     mock_ep.load = mock_load
 
@@ -265,16 +264,14 @@ def test_load_package_entrypoints_custom_group(graph: FeatureGraph):
     mock_ep.value = "custom.features"
 
     def mock_load():
-        with graph.use():
-
-            class CustomFeature(
-                Feature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["custom", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        class CustomFeature(
+            Feature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["custom", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     mock_ep.load = mock_load
 
@@ -339,16 +336,14 @@ class ConfigFeature(Feature, spec=TestingFeatureSpec(
         mock_ep.value = "package.features"
 
         def mock_load():
-            with graph.use():
-
-                class PackageFeature(
-                    Feature,
-                    spec=TestingFeatureSpec(
-                        key=FeatureKey(["package", "feature"]),
-                        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                    ),
-                ):
-                    pass
+            class PackageFeature(
+                Feature,
+                spec=TestingFeatureSpec(
+                    key=FeatureKey(["package", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                ),
+            ):
+                pass
 
         mock_ep.load = mock_load
 
@@ -358,12 +353,11 @@ class ConfigFeature(Feature, spec=TestingFeatureSpec(
             mock_entry_points.return_value = mock_eps
 
             # Load from both sources
-            with graph.use():
-                result_graph = load_features(
-                    entrypoints=["config_module.feature"],
-                    load_config=True,
-                    load_packages=True,
-                )
+            result_graph = load_features(
+                entrypoints=["config_module.feature"],
+                load_config=True,
+                load_packages=True,
+            )
 
             # Verify both features were registered
             assert len(result_graph.features_by_key) == 2
@@ -397,12 +391,11 @@ class ConfigOnlyFeature(Feature, spec=TestingFeatureSpec(
     try:
         with patch("metaxy.entrypoints.entry_points") as mock_entry_points:
             # Should not be called when load_packages=False
-            with graph.use():
-                load_features(
-                    entrypoints=["config_only.feature"],
-                    load_config=True,
-                    load_packages=False,
-                )
+            load_features(
+                entrypoints=["config_only.feature"],
+                load_config=True,
+                load_packages=False,
+            )
 
             mock_entry_points.assert_not_called()
             assert FeatureKey(["config_only", "feature"]) in graph.features_by_key
@@ -417,16 +410,14 @@ def test_load_features_packages_only(graph: FeatureGraph):
     mock_ep.value = "package.only"
 
     def mock_load():
-        with graph.use():
-
-            class PackageOnlyFeature(
-                Feature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["package_only", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        class PackageOnlyFeature(
+            Feature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["package_only", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
     mock_ep.load = mock_load
 
@@ -435,24 +426,22 @@ def test_load_features_packages_only(graph: FeatureGraph):
         mock_eps.select.return_value = [mock_ep]
         mock_entry_points.return_value = mock_eps
 
-        with graph.use():
-            load_features(
-                entrypoints=None,
-                load_config=False,
-                load_packages=True,
-            )
+        load_features(
+            entrypoints=None,
+            load_config=False,
+            load_packages=True,
+        )
 
         assert FeatureKey(["package_only", "feature"]) in graph.features_by_key
 
 
 def test_load_features_returns_graph(graph: FeatureGraph):
     """Test that load_features returns the populated graph."""
-    with graph.use():
-        result = load_features(
-            entrypoints=None,
-            load_config=False,
-            load_packages=False,
-        )
+    result = load_features(
+        entrypoints=None,
+        load_config=False,
+        load_packages=False,
+    )
 
     assert result is graph
 
