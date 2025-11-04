@@ -20,7 +20,6 @@ from typing import (
 import pydantic
 from pydantic import BeforeValidator
 from pydantic.types import JsonValue
-from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import FieldSpec
@@ -243,66 +242,47 @@ class _BaseFeatureSpec(FrozenBaseModel):
 class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
     id_columns: pydantic.SkipValidation[IDColumnsT]
 
-    @overload
-    def __init__(
-        self,
-        key: str,
-        *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from string key."""
-        ...
+    # @overload
+    # def __init__(
+    #     self,
+    #     key: CoercibleToFeatureKey,
+    #     **kwargs: Any,
+    # ) -> None:
+    #     ...
 
     @overload
-    def __init__(
+    def __init__(  # pyright: ignore[reportInconsistentOverload]
         self,
-        key: Sequence[str],
+        key: CoercibleToFeatureKey,
         *,
         deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
+        id_columns: IDColumnsT | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
-    @overload
     def __init__(
         self,
-        key: FeatureKey,
+        key: CoercibleToFeatureKey,
         *,
         deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
+        fields: Sequence[CoercibleToFieldSpec] | None = None,
+        id_columns: IDColumnsT | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureKey instance."""
-        ...
+        **kwargs: Any,
+    ):
+        from metaxy.models.field import FieldSpecAdapter
 
-    @overload
-    def __init__(
-        self,
-        key: Self,
-        *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from BaseFeatureSpec instance."""
-        ...
+        key = FeatureKeyAdapter.validate_python(key)
 
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
-        if isinstance(key, type(self)):
-            key = key.key
-        else:
-            key = FeatureKeyAdapter.validate_python(key)
+        # Validate fields using FieldSpecAdapter which supports string coercion
+        # Only pass fields if provided (let parent use default if None)
+        if fields is not None:
+            validated_fields = [FieldSpecAdapter.validate_python(f) for f in fields]
+            kwargs["fields"] = validated_fields
 
-        assert isinstance(key, FeatureKey)
-
+        # id_columns is always set for FeatureSpec
         super().__init__(key=key, **kwargs)
 
     @cached_property
@@ -411,73 +391,16 @@ class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
     )
 
     @overload
-    def __init__(
+    def __init__(  # pyright: ignore[reportNoOverloadImplementation,reportInconsistentOverload]
         self,
-        key: str,
+        key: CoercibleToFeatureKey,
         *,
-        deps: Sequence[FeatureDep] | None = None,
+        deps: list[FeatureDep] | None = None,
         fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
+        id_columns: DefaultFeatureCols | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from string key."""
-        ...
-
-    @overload
-    def __init__(
-        self,
-        key: Sequence[str],
-        *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from sequence of parts."""
-        ...
-
-    @overload
-    def __init__(
-        self,
-        key: FeatureKey,
-        *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureKey instance."""
-        ...
-
-    @overload
-    def __init__(
-        self,
-        key: Self,
-        *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureSpec instance."""
-        ...
-
-    def __init__(
-        self,
-        key: CoercibleToFeatureKey | Self,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
         **kwargs: Any,
-    ):
-        from metaxy.models.field import FieldSpecAdapter
-
-        # Validate fields using FieldSpecAdapter which supports string coercion
-        # Only pass fields if provided (let parent use default if None)
-        if fields is not None:
-            validated_fields = [FieldSpecAdapter.validate_python(f) for f in fields]
-            kwargs["fields"] = validated_fields
-
-        # id_columns is always set for FeatureSpec
-        super().__init__(key=key, **kwargs)
+    ) -> None: ...
 
 
 class TestingFeatureSpec(BaseFeatureSpec[TestingUIDCols]):

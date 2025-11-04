@@ -637,23 +637,17 @@ def test_feature_dep_key_overloads():
     _ = FeatureDep(feature=TestFeature)
 
 
-def test_feature_spec_key_overloads():
-    _ = FeatureSpec(key=feature_spec, deps=None)
-
-
 def test_feature_spec_deps_required():
     """Test that FeatureSpec requires deps parameter."""
     # These should all work - deps is provided
     spec1 = FeatureSpec(key="test", deps=None)
     spec2 = FeatureSpec(key=["test"], deps=None)
     spec3 = FeatureSpec(key=FeatureKey("test"), deps=None)
-    spec4 = FeatureSpec(key=spec1, deps=None)
 
     # Verify they were created correctly
     assert spec1.deps is None
     assert spec2.deps is None
     assert spec3.deps is None
-    assert spec4.deps is None
 
     # With actual dependencies
     dep = FeatureDep(feature="upstream")
