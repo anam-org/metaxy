@@ -10,16 +10,19 @@ import pytest
 
 def test_pipeline(tmp_path):
     """Test that the recompute example runs successfully."""
+    example_dir = Path("examples/example-recompute")
+    from metaxy._testing import ExternalMetaxyProject
+
+    project = ExternalMetaxyProject(example_dir)
+
     # Set up environment with test-specific database path
     env = os.environ.copy()
     test_db = tmp_path / "example_recompute.db"
     env["METAXY_STORES__DEV__CONFIG__DATABASE"] = str(test_db)
 
-    example_dir = Path("examples/src/examples/recompute")
-
     # Step 1: Setup upstream data
     result = subprocess.run(
-        [sys.executable, "-m", "examples.recompute.setup_data"],
+        [sys.executable, "-m", f"{project.package_name}.setup_data"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -32,7 +35,7 @@ def test_pipeline(tmp_path):
     # Step 2: Run pipeline with STAGE=1
     env["STAGE"] = "1"
     result = subprocess.run(
-        [sys.executable, "-m", "examples.recompute.pipeline"],
+        [sys.executable, "-m", f"{project.package_name}.pipeline"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -48,7 +51,7 @@ def test_pipeline(tmp_path):
 
     # Step 3: Run pipeline with STAGE=1 again (demonstrate idempotence)
     result = subprocess.run(
-        [sys.executable, "-m", "examples.recompute.pipeline"],
+        [sys.executable, "-m", f"{project.package_name}.pipeline"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -67,7 +70,7 @@ def test_pipeline(tmp_path):
     # Step 4: Run pipeline with STAGE=2 (with updated algorithm)
     env["STAGE"] = "2"
     result = subprocess.run(
-        [sys.executable, "-m", "examples.recompute.pipeline"],
+        [sys.executable, "-m", f"{project.package_name}.pipeline"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -96,6 +99,11 @@ def test_list_features(snapshot, stage):
     This captures the feature specifications at STAGE=1 and STAGE=2,
     demonstrating how feature versions change when code_version changes.
     """
+    example_dir = Path("examples/example-recompute")
+    from metaxy._testing import ExternalMetaxyProject
+
+    ExternalMetaxyProject(example_dir)
+
     # Set up environment
     env = os.environ.copy()
     env["STAGE"] = stage
@@ -107,7 +115,7 @@ def test_list_features(snapshot, stage):
         text=True,
         timeout=10,
         env=env,
-        cwd=Path("examples/src/examples/recompute"),
+        cwd=example_dir,
     )
 
     assert result.returncode == 0, f"Command failed: {result.stderr}"

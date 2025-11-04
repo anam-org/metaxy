@@ -10,7 +10,7 @@ import os
 def entrypoint():
     """Load features based on STAGE environment variable."""
     version = os.environ.get("STAGE", "1")
-    module_name = f"examples.migration.features_{version}"
+    module_name = f"example_migration.features_{version}"
     module = importlib.import_module(module_name)
     return module
 

@@ -70,6 +70,10 @@ dev = [
   "dprint-py>=0.50.2.0",
 ]
 
+examples = [
+  "examples",
+]
+
 docs = [
   "griffe>=1.14.0",
   "griffe-inherited-docstrings>=1.1.2",
@@ -86,6 +90,8 @@ docs = [
   "cyclopts[mkdocs]",
   "mkdocs-autoapi>=0.4.1",
   "mkdocs-api-autonav>=0.4.0",
+
+  "examples",
 ]
 
 [tool.ruff]
@@ -106,6 +112,7 @@ banned-module-level-imports = ["ibis", "duckdb"]
 [tool.uv.workspace]
 members = [
   "examples",
+  "examples/example-*",
 ]
 
 [tool.uv.sources]

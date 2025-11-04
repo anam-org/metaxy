@@ -1,5 +1,5 @@
-project = "examples"
-entrypoints = ["examples.ducklake.demo"]
+project = "example-ducklake"
+entrypoints = ["example_ducklake.demo"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]

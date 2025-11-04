@@ -1,8 +1,8 @@
 """Record feature graph snapshot (normally done in CI/CD)."""
 
-from metaxy import MetaxyConfig
+from metaxy import init_metaxy
 
-config = MetaxyConfig.load(search_parents=True)
+config = init_metaxy()
 with config.get_store() as store:
     result = store.record_feature_graph_snapshot()
     snapshot_version = result.snapshot_version

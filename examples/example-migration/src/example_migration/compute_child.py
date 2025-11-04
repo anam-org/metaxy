@@ -4,7 +4,7 @@ from pathlib import Path
 
 import polars as pl
 
-from metaxy import FeatureKey, MetaxyConfig, get_feature_by_key, load_features
+from metaxy import FeatureKey, get_feature_by_key, init_metaxy, load_features
 
 # Load features
 load_features()
@@ -17,7 +17,7 @@ data_dir = Path("/tmp/migration_example_data")
 upstream_data = pl.read_parquet(data_dir / "upstream_data.parquet")
 
 # Get metadata store
-config = MetaxyConfig.load(search_parents=True)
+config = init_metaxy()
 with config.get_store() as store:
     print(f"📊 Computing {ChildFeature.spec().key.to_string()}...")
     print(f"  feature_version: {ChildFeature.feature_version()[:16]}...")

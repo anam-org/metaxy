@@ -316,9 +316,10 @@ class ExternalMetaxyProject(MetaxyProject):
 
     Example:
         ```py
-        project = ExternalMetaxyProject(Path("examples/src/examples/migration"))
+        project = ExternalMetaxyProject(Path("examples/example-migration"))
         result = project.run_cli("graph", "push", env={"STAGE": "1"})
         assert result.returncode == 0
+        print(project.package_name)  # "example_migration"
         ```
     """
 
@@ -480,6 +481,44 @@ class ExternalMetaxyProject(MetaxyProject):
         )
 
         return result
+
+    @cached_property
+    def package_name(self) -> str:
+        """Get the Python package name from pyproject.toml.
+
+        Converts the project name (e.g., "example-migration") to a valid
+        Python module name (e.g., "example_migration") by replacing hyphens
+        with underscores.
+
+        Returns:
+            The Python package/module name
+
+        Raises:
+            FileNotFoundError: If pyproject.toml doesn't exist
+            ValueError: If pyproject.toml doesn't contain project.name
+        """
+        pyproject_path = self.project_dir / "pyproject.toml"
+        if not pyproject_path.exists():
+            raise FileNotFoundError(
+                f"No pyproject.toml found in {self.project_dir}. "
+                "Cannot determine package name."
+            )
+
+        # Parse TOML to get project name
+        import tomli
+
+        with open(pyproject_path, "rb") as f:
+            pyproject = tomli.load(f)
+
+        project_name = pyproject.get("project", {}).get("name")
+        if not project_name:
+            raise ValueError(
+                f"No project.name found in {pyproject_path}. "
+                "Cannot determine package name."
+            )
+
+        # Convert project name to valid Python package name (replace hyphens with underscores)
+        return project_name.replace("-", "_")
 
 
 class TempMetaxyProject(MetaxyProject):

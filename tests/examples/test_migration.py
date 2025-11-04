@@ -20,7 +20,7 @@ def test_pipeline(tmp_path, snapshot):
     5. Apply migration (reconcile existing data from v1 to v2)
     6. Run pipeline with STAGE=2 - should show no recomputes (migration worked)
     """
-    example_dir = Path("examples/src/examples/migration")
+    example_dir = Path("examples/example-migration")
     project = ExternalMetaxyProject(example_dir)
 
     # Use a temp directory for test migrations (don't modify example source code)
@@ -49,7 +49,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 0: Setup upstream data
     result = subprocess.run(
-        [sys.executable, "-m", "examples.migration.setup_data"],
+        [sys.executable, "-m", f"{project.package_name}.setup_data"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -80,7 +80,7 @@ def test_pipeline(tmp_path, snapshot):
 
     # Step 2: Run pipeline with STAGE=1
     result = subprocess.run(
-        [sys.executable, "-m", "examples.migration.pipeline"],
+        [sys.executable, "-m", f"{project.package_name}.pipeline"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -151,7 +151,7 @@ def test_pipeline(tmp_path, snapshot):
     # Step 6: Run pipeline with STAGE=2 after migration
     # This should show NO recomputes because migration reconciled the field_provenance
     result = subprocess.run(
-        [sys.executable, "-m", "examples.migration.pipeline"],
+        [sys.executable, "-m", f"{project.package_name}.pipeline"],
         capture_output=True,
         text=True,
         timeout=30,
