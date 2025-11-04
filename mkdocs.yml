@@ -54,7 +54,7 @@ plugins:
   - search
   - gen-files:
       scripts:
-        - docs/gen_config_reference.py
+        - docs/.mkdocs-metaxy/src/mkdocs_metaxy/gen_config_reference.py
   - cyclopts
   - autorefs
   - section-index

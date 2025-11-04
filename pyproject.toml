@@ -90,7 +90,7 @@ docs = [
   "cyclopts[mkdocs]",
   "mkdocs-autoapi>=0.4.1",
   "mkdocs-api-autonav>=0.4.0",
-
+  "mkdocs-metaxy",
   "examples",
 ]
 
@@ -113,10 +113,12 @@ banned-module-level-imports = ["ibis", "duckdb"]
 members = [
   "examples",
   "examples/example-*",
+  "docs/.mkdocs-metaxy",
 ]
 
 [tool.uv.sources]
 examples = { workspace = true }
+mkdocs-metaxy = { workspace = true }
 cyclopts = { git = "https://github.com/BrianPugh/cyclopts.git", branch = "mkdocs-plugin" }
 
 [tool.vulture]

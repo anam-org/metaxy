@@ -8,13 +8,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 import mkdocs_gen_files
-from metaxy_mkdocs.config_generator import (  # pyright: ignore
+
+from metaxy.config import MetaxyConfig
+from mkdocs_metaxy.config_generator import (  # pyright: ignore
     extract_field_info,
     generate_individual_field_doc,
     generate_toml_example,
 )
-
-from metaxy.config import MetaxyConfig
 
 
 def generate_configuration_docs():
