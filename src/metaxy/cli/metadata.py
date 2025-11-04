@@ -161,7 +161,11 @@ def _preview_rows(
     """Return formatted preview rows for verbose output."""
     try:
         preview_df = lazy_frame.collect().to_polars()
-    except Exception:
+    except Exception as exc:
+        console.print(
+            f"[yellow]Warning:[/yellow] Failed to preview rows: {exc}",
+            style="dim",
+        )
         return []
 
     headers = list(id_columns or ())
@@ -170,7 +174,7 @@ def _preview_rows(
 
     available_headers = [col for col in headers if col in preview_df.columns]
     if not available_headers:
-        available_headers = preview_df.columns[: limit or len(preview_df.columns)]
+        available_headers = list(preview_df.columns)
     if not available_headers:
         return []
 
@@ -368,8 +372,10 @@ def status(
                 if verbose and changed_preview:
                     console.print("    Changed samples: " + "; ".join(changed_preview))
 
-        if needs_update or assert_in_sync:
-            raise SystemExit(1 if needs_update else 0)
+        if needs_update:
+            raise SystemExit(1)
+        if assert_in_sync:
+            raise SystemExit(0)
 
 
 @app.command()
