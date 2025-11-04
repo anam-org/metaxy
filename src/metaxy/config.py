@@ -329,13 +329,18 @@ class MetaxyConfig(BaseSettings):
 
     @classmethod
     def load(
-        cls, config_file: str | Path | None = None, *, search_parents: bool = True
+        cls,
+        config_file: str | Path | None = None,
+        *,
+        search_parents: bool = True,
+        auto_discovery_start: Path | None = None,
     ) -> "MetaxyConfig":
         """Load config with auto-discovery and parent directory search.
 
         Args:
             config_file: Optional config file path (overrides auto-discovery)
             search_parents: Search parent directories for config file (default: True)
+            auto_discovery_start: Directory to start search from (defaults to cwd)
 
         Returns:
             Loaded config (TOML + env vars merged)
@@ -350,11 +355,14 @@ class MetaxyConfig(BaseSettings):
 
             # Auto-discover without parent search
             config = MetaxyConfig.load(search_parents=False)
+
+            # Auto-discover from a specific directory
+            config = MetaxyConfig.load(auto_discovery_start=Path("/path/to/project"))
             ```
         """
         # Search for config file if not explicitly provided
         if config_file is None and search_parents:
-            config_file = cls._discover_config_with_parents()
+            config_file = cls._discover_config_with_parents(auto_discovery_start)
 
         # For explicit file, temporarily patch the TomlConfigSettingsSource
         # to use that file, then use normal instantiation
@@ -399,16 +407,19 @@ class MetaxyConfig(BaseSettings):
         return config
 
     @staticmethod
-    def _discover_config_with_parents() -> Path | None:
+    def _discover_config_with_parents(start_dir: Path | None = None) -> Path | None:
         """Discover config file by searching current and parent directories.
 
-        Searches for metaxy.toml or pyproject.toml in current directory,
+        Searches for metaxy.toml or pyproject.toml in start directory,
         then iteratively searches parent directories.
+
+        Args:
+            start_dir: Directory to start search from (defaults to cwd)
 
         Returns:
             Path to config file if found, None otherwise
         """
-        current = Path.cwd()
+        current = start_dir or Path.cwd()
 
         while True:
             # Check for metaxy.toml (preferred)

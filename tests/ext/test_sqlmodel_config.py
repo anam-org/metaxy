@@ -18,7 +18,7 @@ from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 
 
-class FeatureSpec(BaseFeatureSpec[Sequence[str]]):
+class FeatureSpec(BaseFeatureSpec):
     id_columns: Sequence[str] = ["sample_id"]
 
 

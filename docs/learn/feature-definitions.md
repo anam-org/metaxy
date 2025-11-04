@@ -42,7 +42,7 @@ from metaxy import BaseFeatureSpec
 VideoIds: TypeAlias = tuple[str]
 
 
-class VideoFeatureSpec(BaseFeatureSpec[VideoIds]):
+class VideoFeatureSpec(BaseFeatureSpec):
     id_columns: VideoIds = ("video_id",)
 ```
 

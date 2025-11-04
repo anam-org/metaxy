@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 from functools import cached_property
 
+import pydantic
+
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpecWithIDColumns,
@@ -49,8 +51,8 @@ class FQFieldKey(FrozenBaseModel):
 class FeaturePlan(FrozenBaseModel):
     """Slice of the feature graph that includes a given feature and its parents"""
 
-    feature: BaseFeatureSpecWithIDColumns
-    deps: list[BaseFeatureSpecWithIDColumns] | None
+    feature: pydantic.SkipValidation[BaseFeatureSpecWithIDColumns]
+    deps: pydantic.SkipValidation[list[BaseFeatureSpecWithIDColumns] | None]
     feature_deps: list[FeatureDep] | None = (
         None  # The actual dependency specifications with field mappings
     )

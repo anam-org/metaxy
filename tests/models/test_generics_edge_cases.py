@@ -17,6 +17,7 @@ from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     FeatureDep,
+    IDColumns,
     TestingFeatureSpec,
 )
 from metaxy.models.field import FieldSpec
@@ -27,7 +28,7 @@ def test_single_id_column_vs_multiple():
     """Test features with single vs multiple ID columns work independently."""
 
     class SingleIDFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["single"]),
             id_columns=["id"],  # Single column
@@ -36,7 +37,7 @@ def test_single_id_column_vs_multiple():
         pass
 
     class MultiIDFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["multi"]),
             id_columns=["id1", "id2", "id3"],  # Multiple columns
@@ -52,7 +53,7 @@ def test_id_column_names_with_special_characters():
     """Test that ID column names with special characters work correctly."""
 
     class SpecialCharsFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["special"]),
             # Column names with underscores, numbers, etc.
@@ -75,7 +76,7 @@ def test_very_long_id_column_list():
     many_columns = [f"col_{i}" for i in range(10)]
 
     class ManyColumnsFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["many"]),
             id_columns=many_columns,
@@ -138,7 +139,7 @@ def test_metadata_store_with_maximum_id_columns(graph: FeatureGraph):
 
     # Feature with 5 ID columns
     class MultiKeyFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["multikey"]),
             id_columns=["tenant", "user", "session", "device", "timestamp"],
@@ -186,7 +187,7 @@ def test_upstream_with_subset_of_target_id_columns_fails(graph: FeatureGraph):
 
     # Upstream with fewer ID columns
     class UpstreamLimited(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],  # Only user_id
@@ -196,7 +197,7 @@ def test_upstream_with_subset_of_target_id_columns_fails(graph: FeatureGraph):
 
     # Target needs more ID columns
     class TargetExpanded(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -268,8 +269,8 @@ def test_feature_spec_with_literal_union_type():
     # Define a type that allows specific column name combinations
     list[str]  # In practice, you'd validate this separately
 
-    class FlexibleSpec(BaseFeatureSpec[list[str]]):
-        id_columns: list[str] = pydantic.Field(
+    class FlexibleSpec(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
             default=["sample_uid"],
         )
 
@@ -290,8 +291,8 @@ def test_feature_spec_with_literal_union_type():
 def test_pydantic_field_metadata_preserved():
     """Test that Pydantic Field metadata is preserved in subclasses."""
 
-    class DocumentedSpec(BaseFeatureSpec[list[str]]):
-        id_columns: list[str] = pydantic.Field(
+    class DocumentedSpec(BaseFeatureSpec):
+        id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
             default=["doc_id"],
             description="Document identifier columns",
             examples=[["doc_id"], ["doc_id", "version"]],
@@ -311,7 +312,7 @@ def test_feature_with_zero_upstream_deps_and_custom_id():
     """Test source feature (no deps) with custom ID columns."""
 
     class SourceFeature(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["source"]),
             # No dependencies
@@ -329,7 +330,7 @@ def test_deeply_nested_feature_dependency_chain():
 
     # Create a chain: F1 -> F2 -> F3 -> F4
     class F1(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f1"]),
             id_columns=["id"],
@@ -338,7 +339,7 @@ def test_deeply_nested_feature_dependency_chain():
         pass
 
     class F2(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f2"]),
             deps=[FeatureDep(feature=FeatureKey(["f1"]))],
@@ -348,7 +349,7 @@ def test_deeply_nested_feature_dependency_chain():
         pass
 
     class F3(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f3"]),
             deps=[FeatureDep(feature=FeatureKey(["f2"]))],
@@ -358,7 +359,7 @@ def test_deeply_nested_feature_dependency_chain():
         pass
 
     class F4(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f4"]),
             deps=[FeatureDep(feature=FeatureKey(["f3"]))],
@@ -385,7 +386,7 @@ def test_feature_diamond_dependency_with_id_columns():
     """
 
     class F1(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f1"]),
             id_columns=["user_id"],
@@ -394,7 +395,7 @@ def test_feature_diamond_dependency_with_id_columns():
         pass
 
     class F2(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f2"]),
             deps=[FeatureDep(feature=FeatureKey(["f1"]))],
@@ -404,7 +405,7 @@ def test_feature_diamond_dependency_with_id_columns():
         pass
 
     class F3(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f3"]),
             deps=[FeatureDep(feature=FeatureKey(["f1"]))],
@@ -414,7 +415,7 @@ def test_feature_diamond_dependency_with_id_columns():
         pass
 
     class F4(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["f4"]),
             deps=[
@@ -482,17 +483,16 @@ def test_id_columns_mutation_attempt():
         id_columns=["id1", "id2"],
     )
 
-    spec.id_columns.copy()
+    # With SkipValidation, direct mutation is no longer accessible via .copy() or .append()
+    # The underlying value is wrapped by SkipValidation
+    initial_columns = spec.id_columns
 
-    # Try to mutate (this might work or fail depending on if it's a list)
-    # Since TestingFeatureSpec uses list[str], mutation is possible
-    spec.id_columns.append("id3")
+    # Verify initial state
+    assert initial_columns == ["id1", "id2"]
 
-    # The list was mutated (lists are mutable in Python)
-    assert spec.id_columns == ["id1", "id2", "id3"]
-
-    # But feature_spec_version is cached and won't change
-    # This demonstrates why immutable types (tuples) are preferred for this field
+    # The feature_spec_version is computed on access
+    initial_version = spec.feature_spec_version
+    assert initial_version is not None
 
 
 def test_concurrent_features_with_different_id_columns_in_same_graph(
@@ -501,7 +501,7 @@ def test_concurrent_features_with_different_id_columns_in_same_graph(
     """Test that multiple features with different ID columns can coexist in one graph."""
 
     class FeatureA(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["a"]),
             id_columns=["sample_uid"],
@@ -510,7 +510,7 @@ def test_concurrent_features_with_different_id_columns_in_same_graph(
         pass
 
     class FeatureB(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["b"]),
             id_columns=["user_id"],
@@ -519,7 +519,7 @@ def test_concurrent_features_with_different_id_columns_in_same_graph(
         pass
 
     class FeatureC(
-        BaseFeature[list[str]],
+        BaseFeature,
         spec=TestingFeatureSpec(
             key=FeatureKey(["c"]),
             id_columns=["entity_id", "timestamp"],

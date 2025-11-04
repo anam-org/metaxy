@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar, Generic
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
@@ -11,11 +11,7 @@ from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     BaseFeatureSpecWithIDColumns,
-    DefaultFeatureCols,
     FeatureSpec,
-    IDColumns,
-    IDColumnsT,
-    TestingUIDCols,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
@@ -37,7 +33,7 @@ _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
 )
 
 
-def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
+def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
     """Get a feature class by its key from the active graph.
 
     Convenience function that retrieves Metaxy feature class from the currently active [feature graph][metaxy.FeatureGraph]. Can be useful when receiving a feature key from storage or across process boundaries.
@@ -64,10 +60,10 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature[IDColumns]"]:
 
 class FeatureGraph:
     def __init__(self):
-        self.features_by_key: dict[FeatureKey, type[BaseFeature[IDColumns]]] = {}
+        self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
         self.feature_specs_by_key: dict[FeatureKey, BaseFeatureSpecWithIDColumns] = {}
 
-    def add_feature(self, feature: type["BaseFeature[IDColumns]"]) -> None:
+    def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
 
         Args:
@@ -250,7 +246,7 @@ class FeatureGraph:
         del self.features_by_key[key]
         del self.feature_specs_by_key[key]
 
-    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature[IDColumns]"]:
+    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
 
         Args:
@@ -690,8 +686,11 @@ class MetaxyMeta(ModelMetaclass):
         """Detect project for a feature class.
 
         Detection order:
-        1. Check metaxy.projects entry points - maps entrypoints to project names
-        2. Fall back to MetaxyConfig.project
+        1. Try to auto-load MetaxyConfig from metaxy.toml/pyproject.toml
+           starting from the feature's file location
+        2. Use config.project if available
+        3. Check metaxy.projects entry points as fallback
+        4. Fall back to "default" with a warning
 
         Args:
             feature_cls: The Feature class being registered
@@ -699,19 +698,46 @@ class MetaxyMeta(ModelMetaclass):
         Returns:
             Project name string
         """
+        import inspect
+        import warnings
+        from pathlib import Path
+
         from metaxy._packaging import detect_project_from_entrypoints
         from metaxy.config import MetaxyConfig
 
         module_name = feature_cls.__module__
 
-        # Strategy 1: Check metaxy.projects entry points
+        # Strategy 1: Try to load config if not already set
+        if not MetaxyConfig.is_set():
+            # Get the file where the feature class is defined
+            feature_file = inspect.getfile(feature_cls)
+            feature_dir = Path(feature_file).parent
+
+            # Attempt to auto-load config from metaxy.toml or pyproject.toml
+            # starting from the feature's directory
+            config = MetaxyConfig.load(
+                search_parents=True, auto_discovery_start=feature_dir
+            )
+            return config.project
+        else:
+            # Config already set, use it
+            config = MetaxyConfig.get()
+            return config.project
+
+        # Strategy 2: Check metaxy.projects entry points as fallback
         project = detect_project_from_entrypoints(module_name)
         if project is not None:
             return project
 
-        # Strategy 2: Fall back to global config
-        config = MetaxyConfig.get()
-        return config.project
+        # Strategy 3: Fall back to "default" with a warning
+        warnings.warn(
+            f"Could not detect project for feature '{feature_cls.__name__}' "
+            f"from module '{module_name}'. No metaxy.toml found and no entry point configured. "
+            f"Using 'default' as project name. This may cause issues with metadata isolation. "
+            f"Please ensure features are imported after init_metaxy() or configure a metaxy.toml file.",
+            stacklevel=3,
+        )
+        return "default"
 
 
 class _FeatureSpecDescriptor:
@@ -723,23 +749,14 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
-class BaseFeature(
-    FrozenBaseModel, Generic[IDColumnsT], metaclass=MetaxyMeta, spec=None
-):
-    # once ClassVar supports it
-    # this should be changed to spec: BaseFeatureSpec[IDColumnsT]
-    _spec: ClassVar[BaseFeatureSpec[IDColumns]]
+class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
+    _spec: ClassVar[BaseFeatureSpec]
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
 
-    # once ClassVar supports it
-    # this should be replaced by
-    # spec: BaseFeatureSpec[IDColumnsT]
     @classmethod
-    def spec(cls) -> BaseFeatureSpec[IDColumns]:  # type: ignore[override]
-        # Note: Return type should be BaseFeatureSpec[IDColumnsT] but ClassVar
-        # doesn't support generics. Using IDColumns for now until Python improves.
+    def spec(cls) -> BaseFeatureSpec:  # type: ignore[override]
         return cls._spec
 
     @classmethod
@@ -975,7 +992,7 @@ class BaseFeature(
         return lazy_result
 
 
-class Feature(BaseFeature[DefaultFeatureCols], spec=None):
+class Feature(BaseFeature, spec=None):
     """
     A default specialization of BaseFeature that uses a `sample_uid` ID column.
     """
@@ -983,5 +1000,5 @@ class Feature(BaseFeature[DefaultFeatureCols], spec=None):
     # spec: ClassVar[FeatureSpec]
 
 
-class TestingFeature(BaseFeature[TestingUIDCols], spec=None):
+class TestingFeature(BaseFeature, spec=None):
     sample_uid: str | None = None

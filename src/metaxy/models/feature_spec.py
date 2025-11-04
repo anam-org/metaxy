@@ -8,11 +8,9 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Generic,
     Literal,
     Protocol,
     TypeAlias,
-    TypeVar,
     overload,
     runtime_checkable,
 )
@@ -20,10 +18,9 @@ from typing import (
 import pydantic
 from pydantic import BeforeValidator
 from pydantic.types import JsonValue
-from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
-from metaxy.models.field import FieldSpec
+from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -168,7 +165,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        feature: type[BaseFeature[IDColumns]],
+        feature: type[BaseFeature],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
@@ -179,9 +176,7 @@ class FeatureDep(pydantic.BaseModel):
     def __init__(
         self,
         *,
-        feature: CoercibleToFeatureKey
-        | FeatureSpecProtocol
-        | type[BaseFeature[IDColumns]],
+        feature: CoercibleToFeatureKey | FeatureSpecProtocol | type[BaseFeature],
         columns: tuple[str, ...] | None = None,
         rename: dict[str, str] | None = None,
         fields_mapping: FieldsMapping | None = None,
@@ -219,20 +214,20 @@ class FeatureDep(pydantic.BaseModel):
 IDColumns: TypeAlias = Sequence[
     str
 ]  # non-bound, should be used for feature specs with arbitrary id columns
-IDColumnsT = TypeVar(
-    "IDColumnsT", bound=IDColumns, covariant=True
-)  # bound, should be used for generic
 
 
 class _BaseFeatureSpec(FrozenBaseModel):
     key: Annotated[FeatureKey, BeforeValidator(FeatureKeyAdapter.validate_python)]
     deps: list[FeatureDep] | None = None
-    fields: list[FieldSpec] = pydantic.Field(
+    fields: Annotated[
+        list[FieldSpec],
+        BeforeValidator(CoersibleToFieldSpecsTypeAdapter.validate_python),
+    ] = pydantic.Field(
         default_factory=lambda: [
             FieldSpec(
                 key=FieldKey(["default"]),
             )
-        ]
+        ],
     )
     metadata: dict[str, JsonValue] = pydantic.Field(
         default_factory=dict,
@@ -240,21 +235,21 @@ class _BaseFeatureSpec(FrozenBaseModel):
     )
 
 
-class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
-    id_columns: pydantic.SkipValidation[IDColumnsT]
+class BaseFeatureSpec(_BaseFeatureSpec):
+    id_columns: pydantic.SkipValidation[IDColumns]
 
+    # Overloads for type checking only - Pydantic handles actual initialization
     @overload
     def __init__(
         self,
         key: str,
         *,
         deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from string key."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
     @overload
     def __init__(
@@ -262,12 +257,11 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         key: Sequence[str],
         *,
         deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
     @overload
     def __init__(
@@ -275,35 +269,18 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         key: FeatureKey,
         *,
         deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureKey instance."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
-    @overload
-    def __init__(
-        self,
-        key: Self,
-        *,
-        deps: list[FeatureDep] | None = None,
-        fields: list[FieldSpec] | None = None,
-        id_columns: list[str] | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from BaseFeatureSpec instance."""
-        ...
-
-    def __init__(self, key: CoercibleToFeatureKey | Self, **kwargs: Any):
-        if isinstance(key, type(self)):
-            key = key.key
+    # Actual implementation - let Pydantic handle everything
+    def __init__(self, key: Any = None, **data: Any) -> None:
+        if key is not None:
+            super().__init__(key=key, **data)
         else:
-            key = FeatureKeyAdapter.validate_python(key)
-
-        assert isinstance(key, FeatureKey)
-
-        super().__init__(key=key, **kwargs)
+            super().__init__(**data)
 
     @cached_property
     def fields_by_key(self) -> Mapping[FieldKey, FieldSpec]:
@@ -328,7 +305,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         return self.key.table_name
 
     @pydantic.model_validator(mode="after")
-    def validate_unique_field_keys(self) -> BaseFeatureSpec[IDColumnsT]:
+    def validate_unique_field_keys(self) -> BaseFeatureSpec:
         """Validate that all fields have unique keys."""
         seen_keys: set[tuple[str, ...]] = set()
         for field in self.fields:
@@ -343,7 +320,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         return self
 
     @pydantic.model_validator(mode="after")
-    def validate_id_columns(self) -> BaseFeatureSpec[IDColumnsT]:
+    def validate_id_columns(self) -> BaseFeatureSpec:
         """Validate that id_columns is non-empty if specified."""
         if self.id_columns is not None and len(self.id_columns) == 0:
             raise ValueError(
@@ -391,7 +368,7 @@ class BaseFeatureSpec(_BaseFeatureSpec, Generic[IDColumnsT]):
         return hasher.hexdigest()
 
 
-BaseFeatureSpecWithIDColumns: TypeAlias = BaseFeatureSpec[IDColumns]
+BaseFeatureSpecWithIDColumns: TypeAlias = BaseFeatureSpec
 
 
 DefaultFeatureCols: TypeAlias = tuple[Literal["sample_uid"],]
@@ -402,88 +379,106 @@ TestingUIDCols: TypeAlias = list[str]
 CoercibleToFieldSpec: TypeAlias = str | FieldSpec
 
 
-class FeatureSpec(BaseFeatureSpec[DefaultFeatureCols]):
+class FeatureSpec(BaseFeatureSpec):
     """A default concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
 
-    id_columns: DefaultFeatureCols = pydantic.Field(
+    id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
         default=("sample_uid",),
         description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
     )
 
+    # Overloads for type checking only - Pydantic handles actual initialization
     @overload
     def __init__(
         self,
         key: str,
         *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from string key."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
     @overload
     def __init__(
         self,
         key: Sequence[str],
         *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
     @overload
     def __init__(
         self,
         key: FeatureKey,
         *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureKey instance."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
+
+    # Actual implementation - let Pydantic handle everything
+    def __init__(self, key: Any = None, **data: Any) -> None:
+        if key is not None:
+            super().__init__(key=key, **data)
+        else:
+            super().__init__(**data)
+
+
+class TestingFeatureSpec(BaseFeatureSpec):
+    """A testing concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
+
+    id_columns: pydantic.SkipValidation[IDColumns] = pydantic.Field(
+        default_factory=lambda: ["sample_uid"],
+        description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
+    )
+
+    # Overloads for type checking only - Pydantic handles actual initialization
+    @overload
+    def __init__(
+        self,
+        key: str,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
+        **kwargs: Any,
+    ) -> None: ...
 
     @overload
     def __init__(
         self,
-        key: Self,
+        key: Sequence[str],
         *,
-        deps: Sequence[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: Sequence[str] | None = None,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
-    ) -> None:
-        """Initialize from FeatureSpec instance."""
-        ...
+        **kwargs: Any,
+    ) -> None: ...
 
+    @overload
     def __init__(
         self,
-        key: CoercibleToFeatureKey | Self,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
+        key: FeatureKey,
+        *,
+        deps: list[FeatureDep] | None = None,
+        fields: Sequence[str | FieldSpec] | None = None,
+        id_columns: IDColumns | None = None,
+        metadata: Mapping[str, JsonValue] | None = None,
         **kwargs: Any,
-    ):
-        from metaxy.models.field import FieldSpecAdapter
-
-        # Validate fields using FieldSpecAdapter which supports string coercion
-        # Only pass fields if provided (let parent use default if None)
-        if fields is not None:
-            validated_fields = [FieldSpecAdapter.validate_python(f) for f in fields]
-            kwargs["fields"] = validated_fields
-
-        # id_columns is always set for FeatureSpec
-        super().__init__(key=key, **kwargs)
-
-
-class TestingFeatureSpec(BaseFeatureSpec[TestingUIDCols]):
-    """A testing concrete implementation of BaseFeatureSpec that has a `sample_uid` ID column."""
-
-    id_columns: TestingUIDCols = pydantic.Field(
-        default=["sample_uid"],
-        description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
-    )
+    ) -> None: ...
+    # Actual implementation - let Pydantic handle everything
+    def __init__(self, key: Any = None, **data: Any) -> None:
+        if key is not None:
+            super().__init__(key=key, **data)
+        else:
+            super().__init__(**data)

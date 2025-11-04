@@ -1,4 +1,4 @@
-from metaxy.models.field import FieldSpec, FieldSpecAdapter
+from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.types import FieldKey
 
 
@@ -28,33 +28,38 @@ def test_field_spec_from_string_with_code_version():
 
 
 def test_field_spec_adapter_validates_string():
-    """Test that FieldSpecAdapter can validate strings into FieldSpec instances."""
-    # Validate from string
-    field = FieldSpecAdapter.validate_python("my_field")
+    """Test that CoersibleToFieldSpecsTypeAdapter can validate strings into FieldSpec instances."""
+    # Validate from string list
+    fields = CoersibleToFieldSpecsTypeAdapter.validate_python(["my_field"])
 
-    assert isinstance(field, FieldSpec)
-    assert field.key.to_string() == "my_field"
-    assert field.code_version == "__metaxy_initial__"
+    assert len(fields) == 1
+    assert isinstance(fields[0], FieldSpec)
+    assert fields[0].key.to_string() == "my_field"
+    assert fields[0].code_version == "__metaxy_initial__"
 
 
 def test_field_spec_adapter_validates_dict():
-    """Test that FieldSpecAdapter can validate dicts into FieldSpec instances."""
-    # Validate from dict
-    field = FieldSpecAdapter.validate_python({"key": "my_field", "code_version": "3"})
+    """Test that CoersibleToFieldSpecsTypeAdapter can validate dicts into FieldSpec instances."""
+    # Validate from dict list
+    fields = CoersibleToFieldSpecsTypeAdapter.validate_python(
+        [{"key": "my_field", "code_version": "3"}]
+    )
 
-    assert isinstance(field, FieldSpec)
-    assert field.key.to_string() == "my_field"
-    assert field.code_version == "3"
+    assert len(fields) == 1
+    assert isinstance(fields[0], FieldSpec)
+    assert fields[0].key.to_string() == "my_field"
+    assert fields[0].code_version == "3"
 
 
 def test_field_spec_adapter_preserves_field_spec():
-    """Test that FieldSpecAdapter preserves existing FieldSpec instances."""
+    """Test that CoersibleToFieldSpecsTypeAdapter preserves existing FieldSpec instances."""
     original = FieldSpec("my_field", code_version="5")
-    validated = FieldSpecAdapter.validate_python(original)
+    validated = CoersibleToFieldSpecsTypeAdapter.validate_python([original])
 
-    assert validated is original
-    assert validated.key.to_string() == "my_field"
-    assert validated.code_version == "5"
+    assert len(validated) == 1
+    assert validated[0] is original
+    assert validated[0].key.to_string() == "my_field"
+    assert validated[0].code_version == "5"
 
 
 def test_feature_spec_with_string_fields():

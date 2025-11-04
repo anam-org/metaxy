@@ -13,5 +13,3 @@ A few types used in Metaxy here and there.
 ::: metaxy.models.types.SnapshotPushResult
 
 ::: metaxy.IDColumns
-
-::: metaxy.IDColumnsT

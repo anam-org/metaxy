@@ -38,7 +38,6 @@ from metaxy.models.feature_spec import (
     FeatureDep,
     FeatureSpec,
     IDColumns,
-    IDColumnsT,
     TestingFeatureSpec,
 )
 from metaxy.models.field import (
@@ -74,7 +73,6 @@ def init_metaxy(
         search_parents=search_parents,
     )
     load_features(cfg.entrypoints)
-    MetaxyConfig.set(cfg)
     return cfg
 
 
@@ -120,6 +118,5 @@ __all__ = [
     "StoreConfig",
     "init_metaxy",
     "IDColumns",
-    "IDColumnsT",
     "HashAlgorithm",
 ]

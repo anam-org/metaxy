@@ -38,7 +38,7 @@ from metaxy.models.feature import FeatureGraph
 # Basic Creation and Registration Tests
 
 
-class FeatureSpec(BaseFeatureSpec[Sequence[str]]):
+class FeatureSpec(BaseFeatureSpec):
     id_columns: Sequence[str] = ["sample_id"]
 
 
