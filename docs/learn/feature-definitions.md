@@ -118,13 +118,23 @@ Let's express that with Metaxy:
 ```py
 from metaxy import FieldDep, FieldSpec
 
-video_spec = VideoFeatureSpec(key="/raw/video", fields=[FieldSpec(key="audio"], FieldSpec(key="frames"))
+video_spec = VideoFeatureSpec(key="/raw/video", fields=["audio", "frames"])
+
 
 class VideoFeature(BaseVideoFeature, spec=video_spec):
     path: str
 
 
-transcript_spec = TranscriptFeatureSpec(key="/raw/transcript", fields=[FieldSpec(key="text", deps=[FieldDep(feature=VideoFeature.spec().key, fields=["audio"])])])
+transcript_spec = TranscriptFeatureSpec(
+    key="/raw/transcript",
+    fields=[
+        FieldSpec(
+            key="text",
+            deps=[FieldDep(feature=VideoFeature.spec().key, fields=["audio"])],
+        )
+    ],
+)
+
 
 class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
     path: str
@@ -132,49 +142,18 @@ class TranscriptFeature(BaseTranscriptFeature, spec=transcript_spec):
 
 Voilà!
 
-The [Data Versioning](data-versioning.md) docs explain more about this system.
+> [!TIP] Use boilerplate-free API
+> Metaxy allows passing simplified types to some of the models like `FeatureSpec` or `FeatureKey`.
+> See [syntactic sugar](./syntactic-sugar.md) for more details.
 
-### Fully Qualified Field Key
-
-A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
-It consists of the **feature key** and the **field key**, separated by a colon, for example: `/raw/video:frames`, `/raw/video:audio/english`.
-
-## A Note on Type Coercion for Metaxy types
-
-Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.
-
-To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes.
-Different ways to provide them are automatically coerced into canonical internal models.
-This is fully typed and only affects **constructor arguments**, so accessing **attributes** on Metaxy models will always return only the canonical types.
-
-Some examples:
-
-```py
-from metaxy import FeatureKey
-
-key = FeatureKey("prefix/feature")
-key = FeatureKey(["prefix", "feature"])
-key = FeatureKey("prefix", "feature")
-same_key = FeatureKey(key)
-```
-
-Metaxy really loves you, the user!
-See [syntactic sugar](#syntactic-sugar) for more details.
-
-## Syntactic Sugar
-
-### Keys
-
-Both `FeatureKey` and `FieldKey` accept:
-
-- **String format**: `FeatureKey("prefix/feature")`
-- **Sequence format**: `FeatureKey(["prefix", "feature"])`
-- **Variadic format**: `FeatureKey("prefix", "feature")`
-- **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
-
-All formats produce equivalent keys, internally represented as a sequence of parts
+The [Data Versioning](data-versioning.md) docs explain more about how Metaxy calculates versions for different components of a feature graph.
 
 ## Attaching user-defined metadata
 
 Users can [attach](../reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.
+
+### Fully Qualified Field Key
+
+A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
+It consists of the **feature key** and the **field key**, separated by a colon, for example: `/raw/video:frames`, `/raw/video:audio/english`.

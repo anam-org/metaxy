@@ -101,7 +101,7 @@ Metaxy is:
 
 - **🧑‍💻 dev friendly**:
 
-    - clean, [intuitive Python API](./learn/feature-definitions.md#syntactic-sugar) that stays out of your way when you don't need it
+    - clean, [intuitive Python API](./learn/syntactic-sugar.md) that stays out of your way when you don't need it
     - [feature discovery](./learn/feature-discovery.md) system for effortless dependency management
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
@@ -119,7 +119,9 @@ class Video(
     spec=FeatureSpec(
         key="video",
         fields=[
-            FieldSpec(name="frames", code_version="1"),
+            # simple field with only the key defined and the default code_version used
+            "frames",
+            # let's version this one!
             FieldSpec(name="audio", code_version="1"),
         ],
     ),
@@ -133,6 +135,10 @@ class VoiceDetection(
     spec=FeatureSpec(
         key="voice_detection",
         deps=[Video],
+        fields=[
+            "frames",   # dependency automatically mapped into Video.frames
+            "audio",  # dependency automatically mapped into Video.audio
+        ]
     ),
 ):
     path: str = Field(description="Path to the voice detection json file")
@@ -209,10 +215,15 @@ We have now successfully recorded the metadata for the computed samples! Process
 
 > [!WARNING] No Uniqueness Checks!
 > Metaxy doesn't attempt to perform any deduplication or uniqueness checks for performance reasons.
-While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store.
-Configuring deduplication or uniqueness checks in the store (database) is a good idea.
+> While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store.
+> Configuring deduplication or uniqueness checks in the store (database) is a good idea.
 
 ## What's Next?
 
-- Learn more about [Data Versioning](./learn/data-versioning.md)
-- Take a look at [CLI reference](./reference/cli.md)
+- Learn more about feature [definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
+
+- Use Metaxy [from the command line](./reference/cli.md)
+
+- Learn how to [configure Metaxy](./reference/configuration.md)
+
+- Get lost in our [API Reference](./reference/api/index.md)

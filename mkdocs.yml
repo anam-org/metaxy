@@ -168,6 +168,7 @@ nav:
       - Feature Definitions: learn/feature-definitions.md
       - Versioning: learn/data-versioning.md
       - Feature Discovery: learn/feature-discovery.md
+      - Syntactic Sugar: learn/syntactic-sugar.md
       - Testing: learn/testing.md
       - Integrations:
           - SQLModel: learn/integrations/sqlmodel.md
