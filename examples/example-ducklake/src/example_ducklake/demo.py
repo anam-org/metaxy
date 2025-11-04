@@ -5,9 +5,7 @@ Narwhals-compatible. No DuckLake installation is required to run this script;
 we preview the SQL statements that would be executed when attaching DuckLake.
 """
 
-from pathlib import Path
-
-from metaxy import MetaxyConfig
+from metaxy import init_metaxy
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 
 
@@ -17,8 +15,9 @@ def preview_attachment_sql(store: DuckDBMetadataStore) -> list[str]:
 
 
 if __name__ == "__main__":
-    config_path = Path(__file__).with_name("metaxy.toml")
-    ducklake_store = MetaxyConfig.load(config_path, search_parents=False).get_store()
+    # Initialize metaxy and get config (searches for metaxy.toml)
+    config = init_metaxy()
+    ducklake_store = config.get_store()
     assert isinstance(ducklake_store, DuckDBMetadataStore), (
         "DuckLake example misconfigured: expected DuckDBMetadataStore."
     )

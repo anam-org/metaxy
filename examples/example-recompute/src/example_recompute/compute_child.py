@@ -11,8 +11,8 @@ Run with VERSION=1 initially, then VERSION=2 to see recomputation.
 
 from metaxy import (
     FeatureKey,
-    MetaxyConfig,
     get_feature_by_key,
+    init_metaxy,
     load_features,
 )
 
@@ -25,7 +25,8 @@ ChildFeature = get_feature_by_key(child_key)
 ParentFeature = get_feature_by_key(parent_key)
 
 # Get metadata store from metaxy.toml config
-with MetaxyConfig.load().get_store() as store:
+config = init_metaxy()
+with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = store.record_feature_graph_snapshot()
 

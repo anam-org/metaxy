@@ -1,17 +1,12 @@
 """Configuration system for Metaxy using pydantic-settings."""
 # pyright: reportImportCycles=false
 
+import warnings
+from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
-try:
-    import tomllib  # Python 3.11+  # pyright: ignore[reportMissingImports]
-except ImportError:
-    import tomli as tomllib  # Fallback for Python 3.10
-
-import warnings
-from contextvars import ContextVar
-
+import tomli
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator
 from pydantic_settings import (
@@ -62,7 +57,7 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
             return {}
 
         with open(self.toml_file, "rb") as f:
-            data = tomllib.load(f)
+            data = tomli.load(f)
 
         # Extract [tool.metaxy] from pyproject.toml or root from metaxy.toml
         if self.toml_file.name == "pyproject.toml":

@@ -1,9 +1,9 @@
-project = "examples"
-entrypoints = ["examples.recompute.__entrypoint__"]
+project = "example-overview"
+entrypoints = ["example_overview.__entrypoint__"]
 auto_create_tables = true # Enable for development/examples
 
 [stores.dev]
 type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 
 [stores.dev.config]
-database = "/tmp/example_recompute.db"
+database = "/tmp/example_overview.db"

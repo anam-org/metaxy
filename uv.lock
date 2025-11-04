@@ -11,6 +11,10 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "example-ducklake",
+    "example-migration",
+    "example-overview",
+    "example-recompute",
     "examples",
     "metaxy",
 ]
@@ -510,18 +514,66 @@ wheels = [
 ]
 
 [[package]]
+name = "example-ducklake"
+version = "0.1.0"
+source = { editable = "examples/example-ducklake" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+
+[[package]]
+name = "example-migration"
+version = "0.1.0"
+source = { editable = "examples/example-migration" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+
+[[package]]
+name = "example-overview"
+version = "0.1.0"
+source = { editable = "examples/example-overview" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+
+[[package]]
+name = "example-recompute"
+version = "0.1.0"
+source = { editable = "examples/example-recompute" }
+dependencies = [
+    { name = "metaxy", extra = ["duckdb"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+
+[[package]]
 name = "examples"
 version = "0.1.0"
 source = { editable = "examples" }
 dependencies = [
-    { name = "duckdb" },
-    { name = "metaxy" },
+    { name = "example-ducklake" },
+    { name = "example-migration" },
+    { name = "example-overview" },
+    { name = "example-recompute" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "duckdb", specifier = ">=1.4.1" },
-    { name = "metaxy", editable = "." },
+    { name = "example-ducklake", editable = "examples/example-ducklake" },
+    { name = "example-migration", editable = "examples/example-migration" },
+    { name = "example-overview", editable = "examples/example-overview" },
+    { name = "example-recompute", editable = "examples/example-recompute" },
 ]
 
 [[package]]
@@ -1326,6 +1378,7 @@ dev = [
 ]
 docs = [
     { name = "cyclopts", extra = ["mkdocs"] },
+    { name = "examples" },
     { name = "griffe" },
     { name = "griffe-inherited-docstrings" },
     { name = "griffe-pydantic" },
@@ -1340,6 +1393,9 @@ docs = [
     { name = "mkdocs-section-index" },
     { name = "mkdocstrings-python" },
     { name = "pymdown-extensions" },
+]
+examples = [
+    { name = "examples" },
 ]
 
 [package.metadata]
@@ -1384,6 +1440,7 @@ dev = [
 ]
 docs = [
     { name = "cyclopts", extras = ["mkdocs"], git = "https://github.com/BrianPugh/cyclopts.git?branch=mkdocs-plugin" },
+    { name = "examples", editable = "examples" },
     { name = "griffe", specifier = ">=1.14.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.2" },
     { name = "griffe-pydantic", specifier = ">=1.1.7" },
@@ -1399,6 +1456,7 @@ docs = [
     { name = "mkdocstrings-python", specifier = ">=1.18.2" },
     { name = "pymdown-extensions", specifier = ">=10.16.1" },
 ]
+examples = [{ name = "examples", editable = "examples" }]
 
 [[package]]
 name = "mike"

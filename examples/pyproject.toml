@@ -5,9 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "metaxy",
-  "duckdb>=1.4.1",
+  "example-recompute",
+  "example-overview",
+  "example-migration",
+  "example-ducklake",
 ]
 
 [tool.uv.sources]
+example-overview = { workspace = true }
+example-recompute = { workspace = true }
+example-migration = { workspace = true }
+example-ducklake = { workspace = true }
 metaxy = { workspace = true }

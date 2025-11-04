@@ -13,8 +13,8 @@ import polars as pl
 
 from metaxy import (
     FeatureKey,
-    MetaxyConfig,
     get_feature_by_key,
+    init_metaxy,
     load_features,
 )
 
@@ -25,7 +25,8 @@ parent_key = FeatureKey(["examples", "parent"])
 ParentFeature = get_feature_by_key(parent_key)
 
 # Get metadata store from metaxy.toml config
-with MetaxyConfig.load().get_store() as store:
+config = init_metaxy()
+with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
     result = store.record_feature_graph_snapshot()
 

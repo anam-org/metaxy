@@ -7,10 +7,13 @@ from pathlib import Path
 
 def test_ducklake_demo_preview():
     """Test that the DuckLake demo runs and previews attachment SQL."""
-    example_dir = Path("examples/src/examples/ducklake")
+    example_dir = Path("examples/example-ducklake")
+    from metaxy._testing import ExternalMetaxyProject
+
+    project = ExternalMetaxyProject(example_dir)
 
     result = subprocess.run(
-        [sys.executable, "-m", "examples.ducklake.demo"],
+        [sys.executable, "-m", f"{project.package_name}.demo"],
         capture_output=True,
         text=True,
         timeout=10,
