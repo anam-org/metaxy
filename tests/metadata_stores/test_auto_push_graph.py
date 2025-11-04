@@ -117,7 +117,8 @@ def test_snapshot_push_cache_skips_duplicate_reads(
         project_entry = metadata_section.get(config.project, {})
         assert project_entry, "Expected project-specific cache entry"
 
-        scope_entry = next(iter(project_entry.values()))
+        scope_entry = next(iter(project_entry.values()), None)
+        assert scope_entry is not None, "Expected at least one scoped cache entry"
         assert isinstance(scope_entry, dict) and scope_entry, (
             "Expected scoped cache entries"
         )
