@@ -26,50 +26,46 @@ from metaxy.models.types import FeatureKey, FieldKey
 def test_single_id_column_vs_multiple():
     """Test features with single vs multiple ID columns work independently."""
 
-    with FeatureGraph().use():
+    class SingleIDFeature(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["single"]),
+            id_columns=["id"],  # Single column
+        ),
+    ):
+        pass
 
-        class SingleIDFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["single"]),
-                id_columns=["id"],  # Single column
-            ),
-        ):
-            pass
+    class MultiIDFeature(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["multi"]),
+            id_columns=["id1", "id2", "id3"],  # Multiple columns
+        ),
+    ):
+        pass
 
-        class MultiIDFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["multi"]),
-                id_columns=["id1", "id2", "id3"],  # Multiple columns
-            ),
-        ):
-            pass
-
-        assert len(SingleIDFeature.spec().id_columns) == 1
-        assert len(MultiIDFeature.spec().id_columns) == 3
+    assert len(SingleIDFeature.spec().id_columns) == 1
+    assert len(MultiIDFeature.spec().id_columns) == 3
 
 
 def test_id_column_names_with_special_characters():
     """Test that ID column names with special characters work correctly."""
 
-    with FeatureGraph().use():
+    class SpecialCharsFeature(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["special"]),
+            # Column names with underscores, numbers, etc.
+            id_columns=["user_id_123", "session_2024", "_internal_id"],
+        ),
+    ):
+        pass
 
-        class SpecialCharsFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["special"]),
-                # Column names with underscores, numbers, etc.
-                id_columns=["user_id_123", "session_2024", "_internal_id"],
-            ),
-        ):
-            pass
-
-        assert SpecialCharsFeature.spec().id_columns == [
-            "user_id_123",
-            "session_2024",
-            "_internal_id",
-        ]
+    assert SpecialCharsFeature.spec().id_columns == [
+        "user_id_123",
+        "session_2024",
+        "_internal_id",
+    ]
 
 
 def test_very_long_id_column_list():
@@ -78,19 +74,17 @@ def test_very_long_id_column_list():
     # Create a feature with 10 ID columns
     many_columns = [f"col_{i}" for i in range(10)]
 
-    with FeatureGraph().use():
+    class ManyColumnsFeature(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["many"]),
+            id_columns=many_columns,
+        ),
+    ):
+        pass
 
-        class ManyColumnsFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["many"]),
-                id_columns=many_columns,
-            ),
-        ):
-            pass
-
-        assert ManyColumnsFeature.spec().id_columns == many_columns
-        assert len(ManyColumnsFeature.spec().id_columns) == 10
+    assert ManyColumnsFeature.spec().id_columns == many_columns
+    assert len(ManyColumnsFeature.spec().id_columns) == 10
 
 
 def test_duplicate_id_columns_allowed_but_unusual():
@@ -316,71 +310,68 @@ def test_pydantic_field_metadata_preserved():
 def test_feature_with_zero_upstream_deps_and_custom_id():
     """Test source feature (no deps) with custom ID columns."""
 
-    with FeatureGraph().use():
+    class SourceFeature(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["source"]),
+            # No dependencies
+            id_columns=["entity_id", "event_time"],
+        ),
+    ):
+        pass
 
-        class SourceFeature(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["source"]),
-                # No dependencies
-                id_columns=["entity_id", "event_time"],
-            ),
-        ):
-            pass
-
-        # Source features should still have ID columns defined
-        assert SourceFeature.spec().id_columns == ["entity_id", "event_time"]
+    # Source features should still have ID columns defined
+    assert SourceFeature.spec().id_columns == ["entity_id", "event_time"]
 
 
 def test_deeply_nested_feature_dependency_chain():
     """Test that ID columns work correctly in a long dependency chain."""
 
-    with FeatureGraph().use():
-        # Create a chain: F1 -> F2 -> F3 -> F4
-        class F1(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f1"]),
-                id_columns=["id"],
-            ),
-        ):
-            pass
+    # Create a chain: F1 -> F2 -> F3 -> F4
+    class F1(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f1"]),
+            id_columns=["id"],
+        ),
+    ):
+        pass
 
-        class F2(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f2"]),
-                deps=[FeatureDep(feature=FeatureKey(["f1"]))],
-                id_columns=["id"],
-            ),
-        ):
-            pass
+    class F2(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f2"]),
+            deps=[FeatureDep(feature=FeatureKey(["f1"]))],
+            id_columns=["id"],
+        ),
+    ):
+        pass
 
-        class F3(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f3"]),
-                deps=[FeatureDep(feature=FeatureKey(["f2"]))],
-                id_columns=["id"],
-            ),
-        ):
-            pass
+    class F3(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f3"]),
+            deps=[FeatureDep(feature=FeatureKey(["f2"]))],
+            id_columns=["id"],
+        ),
+    ):
+        pass
 
-        class F4(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f4"]),
-                deps=[FeatureDep(feature=FeatureKey(["f3"]))],
-                id_columns=["id"],
-            ),
-        ):
-            pass
+    class F4(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f4"]),
+            deps=[FeatureDep(feature=FeatureKey(["f3"]))],
+            id_columns=["id"],
+        ),
+    ):
+        pass
 
-        # All features in the chain should have consistent ID columns
-        assert F1.spec().id_columns == ["id"]
-        assert F2.spec().id_columns == ["id"]
-        assert F3.spec().id_columns == ["id"]
-        assert F4.spec().id_columns == ["id"]
+    # All features in the chain should have consistent ID columns
+    assert F1.spec().id_columns == ["id"]
+    assert F2.spec().id_columns == ["id"]
+    assert F3.spec().id_columns == ["id"]
+    assert F4.spec().id_columns == ["id"]
 
 
 def test_feature_diamond_dependency_with_id_columns():
@@ -393,53 +384,51 @@ def test_feature_diamond_dependency_with_id_columns():
            F4
     """
 
-    with FeatureGraph().use():
+    class F1(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f1"]),
+            id_columns=["user_id"],
+        ),
+    ):
+        pass
 
-        class F1(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f1"]),
-                id_columns=["user_id"],
-            ),
-        ):
-            pass
+    class F2(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f2"]),
+            deps=[FeatureDep(feature=FeatureKey(["f1"]))],
+            id_columns=["user_id"],
+        ),
+    ):
+        pass
 
-        class F2(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f2"]),
-                deps=[FeatureDep(feature=FeatureKey(["f1"]))],
-                id_columns=["user_id"],
-            ),
-        ):
-            pass
+    class F3(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f3"]),
+            deps=[FeatureDep(feature=FeatureKey(["f1"]))],
+            id_columns=["user_id"],
+        ),
+    ):
+        pass
 
-        class F3(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f3"]),
-                deps=[FeatureDep(feature=FeatureKey(["f1"]))],
-                id_columns=["user_id"],
-            ),
-        ):
-            pass
+    class F4(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["f4"]),
+            deps=[
+                FeatureDep(feature=FeatureKey(["f2"])),
+                FeatureDep(feature=FeatureKey(["f3"])),
+            ],
+            id_columns=["user_id"],
+        ),
+    ):
+        pass
 
-        class F4(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["f4"]),
-                deps=[
-                    FeatureDep(feature=FeatureKey(["f2"])),
-                    FeatureDep(feature=FeatureKey(["f3"])),
-                ],
-                id_columns=["user_id"],
-            ),
-        ):
-            pass
-
-        # All features should have consistent ID columns
-        for feature_cls in [F1, F2, F3, F4]:
-            assert feature_cls.spec().id_columns == ["user_id"]
+    # All features should have consistent ID columns
+    for feature_cls in [F1, F2, F3, F4]:
+        assert feature_cls.spec().id_columns == ["user_id"]
 
 
 def test_id_column_case_sensitivity_in_validation():
@@ -506,39 +495,37 @@ def test_id_columns_mutation_attempt():
     # This demonstrates why immutable types (tuples) are preferred for this field
 
 
-def test_concurrent_features_with_different_id_columns_in_same_graph():
+def test_concurrent_features_with_different_id_columns_in_same_graph(
+    graph: FeatureGraph,
+):
     """Test that multiple features with different ID columns can coexist in one graph."""
 
-    graph = FeatureGraph()
+    class FeatureA(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["a"]),
+            id_columns=["sample_uid"],
+        ),
+    ):
+        pass
 
-    with graph.use():
+    class FeatureB(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["b"]),
+            id_columns=["user_id"],
+        ),
+    ):
+        pass
 
-        class FeatureA(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["a"]),
-                id_columns=["sample_uid"],
-            ),
-        ):
-            pass
-
-        class FeatureB(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["b"]),
-                id_columns=["user_id"],
-            ),
-        ):
-            pass
-
-        class FeatureC(
-            BaseFeature[list[str]],
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["c"]),
-                id_columns=["entity_id", "timestamp"],
-            ),
-        ):
-            pass
+    class FeatureC(
+        BaseFeature[list[str]],
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["c"]),
+            id_columns=["entity_id", "timestamp"],
+        ),
+    ):
+        pass
 
     # All three features should be registered in the graph
     assert len(graph.features_by_key) == 3

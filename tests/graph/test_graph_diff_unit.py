@@ -13,7 +13,7 @@ from metaxy.graph.diff.diff_models import (
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy.models.feature import TestingFeature
 from metaxy.models.feature_spec import TestingFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -125,32 +125,28 @@ class TestSnapshotResolver:
         result = resolver.resolve_snapshot("abc123def456", None, None)
         assert result == "abc123def456"
 
-    def test_resolve_current_with_empty_graph(self):
+    def test_resolve_current_with_empty_graph(self, graph):
         """Test resolving 'current' with empty graph fails."""
         resolver = SnapshotResolver()
-        graph = FeatureGraph()
         with pytest.raises(ValueError, match="active graph is empty"):
             resolver.resolve_snapshot("current", None, graph)
 
-    def test_resolve_current_with_graph(self):
+    def test_resolve_current_with_graph(self, graph):
         """Test resolving 'current' with active graph."""
         resolver = SnapshotResolver()
-        graph = FeatureGraph()
 
-        with graph.use():
+        class TestFeature(
+            TestingFeature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["test"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
-            class TestFeature(
-                TestingFeature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["test"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
-
-            result = resolver.resolve_snapshot("current", None, graph)
-            assert result == graph.snapshot_version
-            assert result != "empty"
+        result = resolver.resolve_snapshot("current", None, graph)
+        assert result == graph.snapshot_version
+        assert result != "empty"
 
     def test_resolve_latest_empty_store(self):
         """Test resolving 'latest' with empty store fails."""
@@ -159,33 +155,30 @@ class TestSnapshotResolver:
             with pytest.raises(ValueError, match="No snapshots found"):
                 resolver.resolve_snapshot("latest", store, None)
 
-    def test_resolve_latest_with_snapshot(self):
+    def test_resolve_latest_with_snapshot(self, graph):
         """Test resolving 'latest' from store."""
         resolver = SnapshotResolver()
-        graph = FeatureGraph()
 
-        with graph.use():
+        class TestFeature(
+            TestingFeature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["test"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
-            class TestFeature(
-                TestingFeature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["test"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        with InMemoryMetadataStore() as store:
+            # Record a snapshot
+            result = store.record_feature_graph_snapshot()
 
-            with InMemoryMetadataStore() as store:
-                # Record a snapshot
-                result = store.record_feature_graph_snapshot()
+            snapshot_version = result.snapshot_version
 
-                snapshot_version = result.snapshot_version
+            _ = result.already_recorded
 
-                _ = result.already_recorded
-
-                # Resolve latest
-                result = resolver.resolve_snapshot("latest", store, graph)
-                assert result == snapshot_version
+            # Resolve latest
+            result = resolver.resolve_snapshot("latest", store, graph)
+            assert result == snapshot_version
 
 
 class TestGraphDiffer:
@@ -345,36 +338,33 @@ class TestGraphDiffer:
         making it non-importable. To properly test this, features must be defined at module level.
         """
         differ = GraphDiffer()
-        graph = FeatureGraph()
 
-        with graph.use():
+        class TestFeature(
+            TestingFeature,
+            spec=TestingFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
 
-            class TestFeature(
-                TestingFeature,
-                spec=TestingFeatureSpec(
-                    key=FeatureKey(["test", "feature"]),
-                    fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-                ),
-            ):
-                pass
+        with InMemoryMetadataStore() as store:
+            # Record snapshot
+            result = store.record_feature_graph_snapshot()
 
-            with InMemoryMetadataStore() as store:
-                # Record snapshot
-                result = store.record_feature_graph_snapshot()
+            snapshot_version = result.snapshot_version
 
-                snapshot_version = result.snapshot_version
+            _ = result.already_recorded
 
-                _ = result.already_recorded
+            # Load snapshot data
+            snapshot_data = differ.load_snapshot_data(
+                store, snapshot_version, project="default"
+            )
 
-                # Load snapshot data
-                snapshot_data = differ.load_snapshot_data(
-                    store, snapshot_version, project="default"
-                )
-
-                assert "test/feature" in snapshot_data
-                feature_data = snapshot_data["test/feature"]
-                assert "feature_version" in feature_data
-                assert "fields" in feature_data
+            assert "test/feature" in snapshot_data
+            feature_data = snapshot_data["test/feature"]
+            assert "feature_version" in feature_data
+            assert "fields" in feature_data
 
     def test_load_snapshot_data_invalid_version(self):
         """Test loading non-existent snapshot fails."""
