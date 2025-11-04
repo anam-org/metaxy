@@ -52,6 +52,7 @@ from metaxy.models.fields_mapping import (
     FieldsMapping,
     FieldsMappingType,
 )
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 
 

@@ -542,11 +542,17 @@ name = "example-one-to-many"
 version = "0.1.0"
 source = { editable = "examples/example-one-to-many" }
 dependencies = [
-    { name = "metaxy", extra = ["duckdb"] },
+    { name = "duckdb" },
+    { name = "ibis-framework", extra = ["duckdb"] },
+    { name = "metaxy" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
+requires-dist = [
+    { name = "duckdb" },
+    { name = "ibis-framework", extras = ["duckdb"] },
+    { name = "metaxy" },
+]
 
 [[package]]
 name = "example-overview"
