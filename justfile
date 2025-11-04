@@ -68,4 +68,5 @@ test-and-submit:
     dprint fmt
     git add .
     gt modify
-    gt ss
+    gt sync
+    gt ss --no--interactive
