@@ -1,66 +1,20 @@
-from collections.abc import Mapping, Sequence
-from typing import (
-    Any,
-    Literal,
-    TypeAlias,
-    overload,
-)
-
-from pydantic.types import JsonValue
-
 import metaxy as mx
-from metaxy.models.feature_spec import CoercibleToFieldSpec, FeatureDep
-from metaxy.models.types import (
-    CoercibleToFeatureKey,
-)
-
-VideoIDColumns: TypeAlias = tuple[Literal["video_id"]]
-VideoChunkIDColumns: TypeAlias = tuple[Literal["video_chunk_id"]]
-
-
-class VideoFeatureSpec(mx.BaseFeatureSpec[VideoIDColumns]):
-    id_columns: VideoIDColumns = ("video_id",)
-
-    @overload
-    def __init__(  # pyright: ignore[reportNoOverloadImplementation,reportInconsistentOverload]
-        self,
-        key: CoercibleToFeatureKey,
-        *,
-        deps: list[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: VideoIDColumns | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-        **kwargs: Any,
-    ) -> None: ...
 
 
 class Video(
-    mx.BaseFeature[VideoIDColumns],
-    spec=VideoFeatureSpec(key="video/raw", fields=["audio", "frames"]),
+    mx.BaseFeature,
+    spec=mx.BaseFeatureSpec(
+        key="video/raw", id_columns=["video_id"], fields=["audio", "frames"]
+    ),
 ):
-    pass
-
-
-class VideoChunkFeatureSpec(mx.BaseFeatureSpec[VideoChunkIDColumns]):
-    id_columns: VideoChunkIDColumns = ("video_chunk_id",)
-
-    @overload
-    def __init__(  # pyright: ignore[reportNoOverloadImplementation,reportInconsistentOverload]
-        self,
-        key: CoercibleToFeatureKey,
-        *,
-        deps: list[FeatureDep] | None = None,
-        fields: Sequence[CoercibleToFieldSpec] | None = None,
-        id_columns: VideoChunkIDColumns | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
-        **kwargs: Any,
-    ) -> None: ...
+    path: str  # where the video is stored
 
 
 class VideoChunk(
-    mx.BaseFeature[VideoChunkIDColumns],
-    spec=VideoChunkFeatureSpec(
+    mx.BaseFeature,
+    spec=mx.BaseFeatureSpec(
         key="video/chunk",
+        id_columns=["video_chunk_id"],
         fields=["audio", "frames"],
         deps=[
             mx.FeatureDep(
@@ -69,4 +23,4 @@ class VideoChunk(
         ],
     ),
 ):
-    pass
+    path: str  # where the video chunk is stored

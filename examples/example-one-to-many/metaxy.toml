@@ -1,4 +1,4 @@
-project = "example_one_to_many"
+project = "example-one-to-many"
 entrypoints = ["example_one_to_many.features"]
 auto_create_tables = true # Enable for development/examples
 
