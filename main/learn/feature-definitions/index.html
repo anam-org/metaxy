@@ -1446,7 +1446,7 @@ Very often these ID columns would stay the same across many feature specs, there
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">VideoIds</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeatureSpec</span><span class="p">(</span><span class="n">BaseFeatureSpec</span><span class="p">[</span><span class="n">VideoIds</span><span class="p">]):</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeatureSpec</span><span class="p">(</span><span class="n">BaseFeatureSpec</span><span class="p">):</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">id_columns</span><span class="p">:</span> <span class="n">VideoIds</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;video_id&quot;</span><span class="p">,)</span>
 </span></code></pre></div>
 <p><code>BaseFeatureSpec</code> is a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model, so all normal Pydantic features apply.</p>
