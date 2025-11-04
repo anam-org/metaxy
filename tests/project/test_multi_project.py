@@ -1,13 +1,16 @@
 """Tests for multi-project feature architecture."""
 
+import subprocess
 import sys
-from unittest.mock import MagicMock, patch
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import Feature, FeatureGraph, MetaxyMeta
+from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureSpec, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -15,107 +18,145 @@ from metaxy.models.types import FeatureKey, FieldKey
 class TestProjectDetection:
     """Test automatic project detection from various sources."""
 
-    def test_detect_project_from_entrypoint(self):
-        """Test project detection from installed package entrypoint."""
-        # Create a mock distribution
-        mock_dist = MagicMock()
-        mock_dist.metadata.get.side_effect = lambda key, default="": {
-            "Name": "my-awesome-project",
-        }.get(key, default)
+    def test_detect_project_from_entrypoints(self):
+        """Test project detection from installed package with entry points."""
+        # Install the test-project fixture in a temporary venv and test it
+        test_project_path = Path(__file__).parent.parent / "fixtures" / "test-project"
 
-        with patch("importlib.metadata.distributions", return_value=[mock_dist]):
-            # Create a feature with module name matching the distribution
-            test_cls = type(
-                "TestFeature", (), {"__module__": "my_awesome_project.features"}
+        with tempfile.TemporaryDirectory() as tmpdir:
+            venv_path = Path(tmpdir) / "venv"
+
+            # Create venv using uv
+            subprocess.run(["uv", "venv", str(venv_path)], check=True)
+
+            # Get python path
+            if sys.platform == "win32":
+                python = venv_path / "Scripts" / "python"
+            else:
+                python = venv_path / "bin" / "python"
+
+            # Install metaxy and test-project using uv pip
+            subprocess.run(
+                [
+                    "uv",
+                    "pip",
+                    "install",
+                    "-e",
+                    str(Path.cwd()),
+                    "--python",
+                    str(python),
+                ],
+                check=True,
+            )
+            subprocess.run(
+                [
+                    "uv",
+                    "pip",
+                    "install",
+                    "-e",
+                    str(test_project_path),
+                    "--python",
+                    str(python),
+                ],
+                check=True,
             )
 
-            # Test the _detect_project method
-            project = MetaxyMeta._detect_project(test_cls)
+            # Use the test script that's already in the project
+            test_script = test_project_path / "entrypoint_detection.py"
 
-            assert project == "my_awesome_project"  # Hyphens replaced with underscores
+            result = subprocess.run(
+                [str(python), str(test_script)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
 
-    def test_detect_project_from_module_path(self):
-        """Test project detection from module path."""
-        # Create a feature with a specific module path
-        test_cls = type(
-            "TestFeature", (), {"__module__": "custom_project.features.video"}
-        )
+            if result.returncode != 0:
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
+                pytest.fail(f"Test failed: {result.stderr}")
 
-        # Test the _detect_project method (should extract root package)
-        project = MetaxyMeta._detect_project(test_cls)
-
-        assert project == "custom_project"
-
-    def test_detect_project_from_pyproject_toml(self, tmp_path):
-        """Test project detection from pyproject.toml file."""
-        # Create a temporary pyproject.toml
-        pyproject_path = tmp_path / "pyproject.toml"
-        pyproject_content = """
-[project]
-name = "test-project-from-file"
-version = "0.1.0"
-"""
-        pyproject_path.write_text(pyproject_content)
-
-        # Create a mock module with __file__ pointing to tmp directory
-        mock_module = MagicMock()
-        mock_module.__file__ = str(tmp_path / "test_module.py")
-
-        # Create a test class
-        test_cls = type("TestFeature", (), {"__module__": "test_module"})
-
-        with patch.dict(sys.modules, {"test_module": mock_module}):
-            project = MetaxyMeta._detect_project(test_cls)
-
-        assert project == "test_project_from_file"  # Hyphens replaced with underscores
-
-    def test_detect_project_from_poetry_pyproject(self, tmp_path):
-        """Test project detection from Poetry-style pyproject.toml."""
-        # Create a temporary pyproject.toml with Poetry config
-        pyproject_path = tmp_path / "pyproject.toml"
-        pyproject_content = """
-[tool.poetry]
-name = "poetry-project"
-version = "0.1.0"
-"""
-        pyproject_path.write_text(pyproject_content)
-
-        # Create a mock module with __file__ pointing to tmp directory
-        mock_module = MagicMock()
-        mock_module.__file__ = str(tmp_path / "test_module.py")
-
-        # Create a test class - use a module name that won't be recognized as a package
-        test_cls = type("TestFeature", (), {"__module__": "test_poetry_module"})
-
-        # Need to patch config too since poetry check is in Strategy 3
-        config = MetaxyConfig(project="poetry_project")
-
-        with patch.dict(sys.modules, {"test_poetry_module": mock_module}):
-            with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-                project = MetaxyMeta._detect_project(test_cls)
-
-        # For now this test will check that it falls back to config
-        # The poetry detection would need refactoring to check tool.poetry section
-        assert project == "poetry_project"
+            assert "SUCCESS" in result.stdout
 
     def test_fallback_to_global_config(self):
-        """Test fallback to global config when other methods fail."""
+        """Test fallback to global config when no entry points are found."""
+        from unittest.mock import patch
+
         # Set a specific project in config
         config = MetaxyConfig(project="fallback_project")
 
-        # Create a mock module with no __file__ (to prevent pyproject.toml detection)
-        mock_module = MagicMock()
-        mock_module.__file__ = None
+        # Create a test graph with the custom config
+        test_graph = FeatureGraph()
+        with test_graph.use():
+            # Patch MetaxyConfig.get to return our custom config
+            with patch("metaxy.config.MetaxyConfig.get", return_value=config):
+                # Create a feature with generic module name (no entry points for this module)
+                class TestFeature(
+                    Feature,
+                    spec=FeatureSpec(
+                        key="test_feature", fields=[FieldSpec(key="field1")]
+                    ),
+                ):
+                    pass
 
-        # Need to patch the global config for the final fallback
-        with patch("metaxy.config.MetaxyConfig.get", return_value=config):
-            with patch.dict(sys.modules, {"__main__": mock_module}):
-                # Create a feature with generic module name
-                test_cls = type("TestFeature", (), {"__module__": "__main__"})
+                # Should fall back to config.project
+                assert TestFeature.project == "fallback_project"
 
-                project = MetaxyMeta._detect_project(test_cls)
+    def test_load_features_from_entrypoints(self):
+        """Test that load_features() actually loads features from entry points."""
+        from metaxy._testing import ExternalMetaxyProject
 
-        assert project == "fallback_project"
+        test_project_path = Path(__file__).parent.parent / "fixtures" / "test-project"
+        project = ExternalMetaxyProject(test_project_path, require_config=False)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Setup venv and install project
+            project.setup_venv(Path(tmpdir) / "venv")
+
+            # Run the test script in the venv
+            test_script = test_project_path / "entrypoints_group_discovery.py"
+
+            result = project.run_in_venv(
+                "python",
+                str(test_script),
+                check=False,
+            )
+
+            if result.returncode != 0:
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
+                pytest.fail(f"Test script failed with return code {result.returncode}")
+
+    def test_multiple_entrypoints_same_package_raises_error(self):
+        """Test that multiple entry points from the same package raises an error."""
+        from unittest.mock import MagicMock, patch
+
+        from metaxy._packaging import get_all_project_entrypoints
+
+        # Clear the cache first
+        get_all_project_entrypoints.cache_clear()
+
+        # Create mock entry points - two from the same package
+        mock_ep1 = MagicMock()
+        mock_ep1.name = "project-one"
+        mock_ep1.value = "my_package.features"
+
+        mock_ep2 = MagicMock()
+        mock_ep2.name = "project-two"
+        mock_ep2.value = "my_package.other"
+
+        with patch("metaxy._packaging.entry_points") as mock_entry_points:
+            mock_entry_points.return_value = [mock_ep1, mock_ep2]
+
+            with pytest.raises(
+                ValueError,
+                match=r"Found multiple entries in `metaxy\.project` entrypoints group: 'project-one', 'project-two'\. "
+                r"The key should be the Metaxy project name, thus only one entry is allowed\.",
+            ):
+                get_all_project_entrypoints()
+
+        # Clear cache after test
+        get_all_project_entrypoints.cache_clear()
 
 
 class TestFeatureTrackingVersion:

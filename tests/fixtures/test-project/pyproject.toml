@@ -1,0 +1,13 @@
+[project]
+name = "test-metaxy-project"
+version = "0.1.0"
+description = "Test project for Metaxy project detection tests"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.entry-points."metaxy.project"]
+test-metaxy-project = "test_metaxy_project:init"
+
+[build-system]
+requires = ["uv_build>=0.8.14,<0.9.0"]
+build-backend = "uv_build"

@@ -15,7 +15,7 @@ Feature discovery solves these problems through automatic registration at import
 
 ## Package Entry Points
 
-The most powerful discovery mechanism uses Python's standard entry point system via `project.entry-points."metaxy.features"` in `pyproject.toml`.
+The most powerful discovery mechanism uses Python's standard entry point system via a well-known `"metaxy.project"` entrypoint group in the package metadata.
 
 ### Creating a Feature Plugin
 
@@ -39,39 +39,22 @@ name = "my-video-features"
 version = "1.0.0"
 dependencies = ["metaxy"]
 
-[project.entry-points."metaxy.features"]
-detection = "my_video_features.detection"
-transcription = "my_video_features.transcription"
+[project.entry-points."metaxy.project"]
+my-video-features = "my_video_features"
 ```
 
-Define features in the modules:
+The entry point name is your project name. The value can be either:
 
-```python
-# my_video_features/detection.py
-from metaxy import Feature, FeatureSpec, FeatureKey
+- **Function syntax** (`module:function`) - Points to a callable function that will be invoked to load features. Useful when you need conditional loading or setup logic.
+- **Module syntax** (`module`) - Points directly to a module containing Feature definitions. Simply importing the module registers the features.
 
+!!! warning "One Entry Point Per Package"
 
-class FaceDetection(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["video", "face_detection"]),
-        # ... spec details
-    ),
-):
-    pass
+    Each package can only declare **one** entry point in the `metaxy.project` group, since `metaxy.toml` only supports a single `project` field.
 
+    To organize features into logical groups within a package, use submodules and import them from your entry point function.
 
-class ObjectDetection(
-    Feature,
-    spec=FeatureSpec(
-        key=FeatureKey(["video", "object_detection"]),
-        # ... spec details
-    ),
-):
-    pass
-```
-
-### Installing and Using Plugins
+### Installing and Using Feature Plugins
 
 Install the package:
 
@@ -86,24 +69,8 @@ pip install -e ./packages/my-video-features
     If you're using `uv` and modify entry points in `pyproject.toml`, `uv sync` will **not** recreate the editable package metadata. You must explicitly reinstall:
 
     ```bash
-    uv sync --reinstall-package my-video-features
+    uv sync --reinstall-package my-video-features my-video-features
     ```
-
-Installed features will be automatically discovered and loaded:
-
-```python
-from metaxy import init_metaxy
-
-# Automatically discovers and loads all features
-# from installed packages with metaxy.features entry points
-init_metaxy()
-
-# Features are now available in the global graph
-from metaxy import FeatureGraph
-
-graph = FeatureGraph.get_active()
-print(f"Loaded {len(graph.features_by_key)} features")
-```
 
 ## Monorepo Patterns
 
@@ -129,22 +96,29 @@ Each team maintains their features independently:
 
 ```toml
 # packages/ml-features/pyproject.toml
-[project.entry-points."metaxy.features"]
-embeddings = "ml_features.embeddings"
-classifiers = "ml_features.classifiers"
+[project.entry-points."metaxy.project"]
+ml-features = "ml_features.load"
 ```
 
-The main application discovers all features.
+```toml
+# packages/core-features/pyproject.toml
+[project.entry-points."metaxy.project"]
+core-features = "core_features.load"
+```
+
+The main application imports features from all installed packages, and each feature automatically knows its project based on the entry point.
 
 ## Config-Based Discovery
 
-For simpler use cases, load features directly from module paths specified in Metaxy configuration:
+For simpler use cases that don't require distribution, you can specify module paths directly in configuration:
 
 === "metaxy.toml"
 
     ```toml
+    project = "my-project"
     entrypoints = [
         "myapp.features.video",
+        "myapp.features.audio",
     ]
     ```
 
@@ -152,17 +126,12 @@ For simpler use cases, load features directly from module paths specified in Met
 
     ```toml
     [tool.metaxy]
+    project = "my-project"
     entrypoints = [
         "myapp.features.video",
+        "myapp.features.audio",
     ]
     ```
-
-```python
-from metaxy import init_metaxy
-
-# Discovers features from configured entrypoints
-init_metaxy()
-```
 
 ## Best Practices
 

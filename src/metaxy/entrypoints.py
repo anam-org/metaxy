@@ -11,20 +11,16 @@ containing modules are imported (via the Feature metaclass).
 """
 
 import importlib
-import logging
 import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from metaxy.models.feature import FeatureGraph
 
-# Conditional import for Python 3.10+ compatibility
 from importlib.metadata import entry_points  # type: ignore[import-not-found]
 
-logger = logging.getLogger(__name__)
-
 # Default entry point group name for package-based discovery
-DEFAULT_ENTRY_POINT_GROUP = "metaxy.features"
+DEFAULT_ENTRY_POINT_GROUP = "metaxy.project"
 
 
 class EntrypointLoadError(Exception):
@@ -65,9 +61,7 @@ def load_module_entrypoint(
     try:
         # Set graph as active during import so Features register to it
         with target_graph.use():
-            logger.debug(f"Loading entrypoint module: {module_path}")
             importlib.import_module(module_path)
-            logger.info(f"Successfully loaded entrypoint: {module_path}")
     except ImportError as e:
         raise EntrypointLoadError(
             f"Failed to import entrypoint module '{module_path}': {e}"
@@ -106,8 +100,6 @@ def load_entrypoints(
 
     target_graph = graph or FeatureGraph.get_active()
 
-    logger.info(f"Loading {len(entrypoints)} entrypoints")
-
     for module_path in entrypoints:
         load_module_entrypoint(module_path, graph=target_graph)
 
@@ -124,11 +116,17 @@ def load_package_entrypoints(
     packaging infrastructure.
 
     Packages declare entrypoints in their pyproject.toml:
-        [project.entry-points."metaxy.features"]
-        myfeature = "mypackage.features.module"
+        [project.entry-points."metaxy.project"]
+        my-project = "mypackage:init"
+        # or point directly to a module
+        my-project = "mypackage.features"
+
+    The entry point can reference either:
+    - A callable function (module:function syntax) that will be invoked to load features
+    - A module (module syntax) that contains Feature definitions (importing registers them)
 
     Args:
-        group: Entry point group name (default: "metaxy.features")
+        group: Entry point group name (default: "metaxy.project")
         graph: Target graph. If None, uses FeatureGraph.get_active()
 
     Raises:
@@ -145,8 +143,6 @@ def load_package_entrypoints(
 
     target_graph = graph or FeatureGraph.get_active()
 
-    logger.info(f"Discovering package entrypoints in group: {group}")
-
     # Discover entry points
     # Note: Python 3.10+ returns SelectableGroups, 3.9 returns dict
     discovered = entry_points()
@@ -162,18 +158,17 @@ def load_package_entrypoints(
     eps_list = list(eps)
 
     if not eps_list:
-        logger.debug(f"No package entrypoints found in group: {group}")
         return
-
-    logger.info(f"Found {len(eps_list)} package entrypoints in group: {group}")
 
     for ep in eps_list:
         try:
-            logger.debug(f"Loading package entrypoint: {ep.name} = {ep.value}")
-            # Load the entry point (imports the module)
+            # Load the entry point (imports the module and returns the object)
             with target_graph.use():
-                ep.load()
-            logger.info(f"Successfully loaded package entrypoint: {ep.name}")
+                loaded = ep.load()
+                # If it's callable (module:function syntax), call it
+                # If it's a module (just module syntax), importing already registered features
+                if callable(loaded):
+                    loaded()
         except Exception as e:
             raise EntrypointLoadError(
                 f"Failed to load package entrypoint '{ep.name}' ({ep.value}): {e}"
@@ -206,8 +201,6 @@ def load_env_entrypoints() -> None:
         ```
     """
 
-    logger.info("Discovering environment-based entrypoints (METAXY_ENTRYPOINT*)")
-
     # Find all environment variables matching METAXY_ENTRYPOINT*
     env_vars = {
         key: value
@@ -216,26 +209,17 @@ def load_env_entrypoints() -> None:
     }
 
     if not env_vars:
-        logger.debug("No environment entrypoints found (METAXY_ENTRYPOINT* not set)")
         return
-
-    logger.info(f"Found {len(env_vars)} METAXY_ENTRYPOINT* environment variable(s)")
 
     # Collect all module paths from all matching env vars
     all_module_paths = []
     for env_var, value in sorted(env_vars.items()):
-        logger.debug(f"Processing {env_var}={value}")
         # Split by comma and strip whitespace
         module_paths = [path.strip() for path in value.split(",") if path.strip()]
         all_module_paths.extend(module_paths)
 
     if not all_module_paths:
-        logger.debug("No module paths found in METAXY_ENTRYPOINT* variables")
         return
-
-    logger.info(
-        f"Loading {len(all_module_paths)} module(s) from environment entrypoints"
-    )
 
     # Load each module path
     for module_path in all_module_paths:
@@ -292,8 +276,6 @@ def load_features(
 
     target_graph = FeatureGraph.get_active()
 
-    logger.info("Starting entrypoint discovery and loading")
-
     # Load explicit entrypoints
     if entrypoints:
         load_entrypoints(entrypoints)
@@ -310,10 +292,5 @@ def load_features(
     # Load environment-based entrypoints
     if load_env:
         load_env_entrypoints()
-
-    num_features = len(target_graph.features_by_key)
-    logger.info(
-        f"Entrypoint loading complete. Registry now contains {num_features} features."
-    )
 
     return target_graph
