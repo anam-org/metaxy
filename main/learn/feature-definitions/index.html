@@ -432,6 +432,8 @@
       
         
       
+        
+      
     
     
     
@@ -575,7 +577,16 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Field-Level Dependencies">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attaching-user-defined-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attaching user-defined metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attaching user-defined metadata">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -589,48 +600,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#a-note-on-type-coercion-for-metaxy-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      A Note on Type Coercion for Metaxy types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#syntactic-sugar" class="md-nav__link">
-    <span class="md-ellipsis">
-      Syntactic Sugar
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Syntactic Sugar">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      Keys
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#attaching-user-defined-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      Attaching user-defined metadata
-    </span>
-  </a>
   
 </li>
       
@@ -696,6 +665,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../syntactic-sugar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Syntactic Sugar
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../testing/" class="md-nav__link">
         
   
@@ -741,10 +733,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_7" >
         
           
-          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="">
             
   
   
@@ -757,8 +749,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -1375,7 +1367,16 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Field-Level Dependencies">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attaching-user-defined-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attaching user-defined metadata
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Attaching user-defined metadata">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1389,48 +1390,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#a-note-on-type-coercion-for-metaxy-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      A Note on Type Coercion for Metaxy types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#syntactic-sugar" class="md-nav__link">
-    <span class="md-ellipsis">
-      Syntactic Sugar
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Syntactic Sugar">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      Keys
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#attaching-user-defined-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      Attaching user-defined metadata
-    </span>
-  </a>
   
 </li>
       
@@ -1538,50 +1497,40 @@ This enables fine-grained control over field provenance, avoiding unnecessary re
 Let's express that with Metaxy:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;audio&quot;</span><span class="p">],</span> <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;frames&quot;</span><span class="p">))</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">VideoFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">,</span> <span class="s2">&quot;frames&quot;</span><span class="p">])</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseVideoFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">video_spec</span><span class="p">):</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseVideoFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">video_spec</span><span class="p">):</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="n">transcript_spec</span> <span class="o">=</span> <span class="n">TranscriptFeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/transcript&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">VideoFeature</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">])])])</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">TranscriptFeature</span><span class="p">(</span><span class="n">BaseTranscriptFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">transcript_spec</span><span class="p">):</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">transcript_spec</span> <span class="o">=</span> <span class="n">TranscriptFeatureSpec</span><span class="p">(</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/transcript&quot;</span><span class="p">,</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="n">FieldSpec</span><span class="p">(</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>            <span class="n">key</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>            <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">VideoFeature</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">])],</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="p">)</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="p">],</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="p">)</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="k">class</span><span class="w"> </span><span class="nc">TranscriptFeature</span><span class="p">(</span><span class="n">BaseTranscriptFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">transcript_spec</span><span class="p">):</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span></code></pre></div>
 <p>Voilà!</p>
-<p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about this system.</p>
-<h3 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h3>
-<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
-It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
-<h2 id="a-note-on-type-coercion-for-metaxy-types">A Note on Type Coercion for Metaxy types<a class="headerlink" href="#a-note-on-type-coercion-for-metaxy-types" title="Permanent link">&para;</a></h2>
-<p>Internally, Metaxy uses strongly typed Pydantic models to represent feature keys, their fields, and the dependencies between them.</p>
-<p>To avoid boilerplate, Metaxy also has syntactic sugar for construction of these classes.
-Different ways to provide them are automatically coerced into canonical internal models.
-This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
-<p>Some examples:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureKey</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix/feature&quot;</span><span class="p">)</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">])</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">)</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">same_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span></code></pre></div>
-<p>Metaxy really loves you, the user!
-See <a href="#syntactic-sugar">syntactic sugar</a> for more details.</p>
-<h2 id="syntactic-sugar">Syntactic Sugar<a class="headerlink" href="#syntactic-sugar" title="Permanent link">&para;</a></h2>
-<h3 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h3>
-<p>Both <code>FeatureKey</code> and <code>FieldKey</code> accept:</p>
-<ul>
-<li><strong>String format</strong>: <code>FeatureKey("prefix/feature")</code></li>
-<li><strong>Sequence format</strong>: <code>FeatureKey(["prefix", "feature"])</code></li>
-<li><strong>Variadic format</strong>: <code>FeatureKey("prefix", "feature")</code></li>
-<li><strong>Same type</strong>: <code>FeatureKey(another_feature_key)</code> -- for full Inception mode</li>
-</ul>
-<p>All formats produce equivalent keys, internally represented as a sequence of parts</p>
+<div class="admonition tip">
+<p class="admonition-title">Use boilerplate-free API</p>
+<p>Metaxy allows passing simplified types to some of the models like <code>FeatureSpec</code> or <code>FeatureKey</code>.
+See <a href="../syntactic-sugar/">syntactic sugar</a> for more details.</p>
+</div>
+<p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about how Metaxy calculates versions for different components of a feature graph.</p>
 <h2 id="attaching-user-defined-metadata">Attaching user-defined metadata<a class="headerlink" href="#attaching-user-defined-metadata" title="Permanent link">&para;</a></h2>
 <p>Users can <a href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.</p>
+<h3 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h3>
+<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
+It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
 
 
 
