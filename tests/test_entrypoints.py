@@ -1,7 +1,6 @@
 """Tests for entrypoint discovery and loading."""
 
 import sys
-from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -22,14 +21,6 @@ from metaxy.entrypoints import (
     load_module_entrypoint,
     load_package_entrypoints,
 )
-
-
-@pytest.fixture
-def graph() -> Iterator[FeatureGraph]:
-    """Create a clean FeatureGraph for testing."""
-    reg = FeatureGraph()
-    with reg.use():
-        yield reg
 
 
 @pytest.fixture

@@ -1099,73 +1099,67 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
     assert versions_by_code_version == snapshot
 
 
-def test_upstream_data_changes_snapshots(snapshot):
+def test_upstream_data_changes_snapshots(snapshot, graph: FeatureGraph):
     """Snapshot showing upstream data changes produce different hashes."""
     calculator = PolarsProvenanceByFieldCalculator()
 
-    with FeatureGraph().use() as graph:
+    class Video(
+        TestingFeature,
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["video"]),
+            fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
+        ),
+    ):
+        pass
 
-        class Video(
-            TestingFeature,
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["video"]),
-                fields=[FieldSpec(key=FieldKey(["frames"]), code_version="1")],
-            ),
-        ):
-            pass
+    class Processed(
+        TestingFeature,
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["processed"]),
+            deps=[FeatureDep(feature=FeatureKey(["video"]))],
+            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+        ),
+    ):
+        pass
 
-        class Processed(
-            TestingFeature,
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["processed"]),
-                deps=[FeatureDep(feature=FeatureKey(["video"]))],
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
+    plan = graph.get_feature_plan(Processed.spec().key)
 
-        plan = graph.get_feature_plan(Processed.spec().key)
+    # Different upstream data scenarios
+    scenarios = {
+        "original": [{"frames": "hash_original"}],
+        "modified": [{"frames": "hash_modified"}],
+        "different": [{"frames": "hash_completely_different"}],
+    }
 
-        # Different upstream data scenarios
-        scenarios = {
-            "original": [{"frames": "hash_original"}],
-            "modified": [{"frames": "hash_modified"}],
-            "different": [{"frames": "hash_completely_different"}],
-        }
+    hashes_by_scenario = {}
 
-        hashes_by_scenario = {}
-
-        for scenario_name, provenance_list in scenarios.items():
-            joined_upstream = nw.from_native(
-                pl.DataFrame(
-                    {
-                        "sample_uid": [1],
-                        "__upstream_video__provenance_by_field": provenance_list,
-                    }
-                ).lazy()
-            )
-
-            with_versions = calculator.calculate_provenance_by_field(
-                joined_upstream=joined_upstream,
-                feature_spec=Processed.spec(),
-                feature_plan=plan,
-                upstream_column_mapping={
-                    "video": "__upstream_video__provenance_by_field"
-                },
-            )
-
-            result = with_versions.collect()
-            hashes_by_scenario[scenario_name] = result["provenance_by_field"][0][
-                "default"
-            ]
-
-        # All scenarios should produce different hashes
-        unique_hashes = set(hashes_by_scenario.values())
-        assert len(unique_hashes) == 3, (
-            "Different upstream data should produce different hashes"
+    for scenario_name, provenance_list in scenarios.items():
+        joined_upstream = nw.from_native(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "__upstream_video__provenance_by_field": provenance_list,
+                }
+            ).lazy()
         )
 
-        assert hashes_by_scenario == snapshot
+        with_versions = calculator.calculate_provenance_by_field(
+            joined_upstream=joined_upstream,
+            feature_spec=Processed.spec(),
+            feature_plan=plan,
+            upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
+        )
+
+        result = with_versions.collect()
+        hashes_by_scenario[scenario_name] = result["provenance_by_field"][0]["default"]
+
+    # All scenarios should produce different hashes
+    unique_hashes = set(hashes_by_scenario.values())
+    assert len(unique_hashes) == 3, (
+        "Different upstream data should produce different hashes"
+    )
+
+    assert hashes_by_scenario == snapshot
 
 
 def test_diff_result_snapshots(snapshot):

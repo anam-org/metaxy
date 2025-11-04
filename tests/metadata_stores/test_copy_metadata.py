@@ -9,40 +9,35 @@ import pytest
 from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
-from metaxy.models.feature import FeatureGraph
 
 
 @pytest.fixture
-def sample_features() -> Iterator[tuple[type[Feature], type[Feature]]]:
+def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
     """Create sample features for testing."""
-    # Use a dedicated graph for these tests
-    graph = FeatureGraph()
 
-    with graph.use():
+    class FeatureA(
+        Feature,
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["test", "feature_a"]),
+            fields=[FieldSpec(key=FieldKey("field_a"), code_version="1")],
+        ),
+    ):
+        """First test feature."""
 
-        class FeatureA(
-            Feature,
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["test", "feature_a"]),
-                fields=[FieldSpec(key=FieldKey("field_a"), code_version="1")],
-            ),
-        ):
-            """First test feature."""
+        pass
 
-            pass
+    class FeatureB(
+        Feature,
+        spec=TestingFeatureSpec(
+            key=FeatureKey(["test", "feature_b"]),
+            fields=[FieldSpec(key=FieldKey("field_b"), code_version="1")],
+        ),
+    ):
+        """Second test feature."""
 
-        class FeatureB(
-            Feature,
-            spec=TestingFeatureSpec(
-                key=FeatureKey(["test", "feature_b"]),
-                fields=[FieldSpec(key=FieldKey("field_b"), code_version="1")],
-            ),
-        ):
-            """Second test feature."""
+        pass
 
-            pass
-
-        yield FeatureA, FeatureB
+    yield FeatureA, FeatureB
 
 
 def test_copy_metadata_all_features(
