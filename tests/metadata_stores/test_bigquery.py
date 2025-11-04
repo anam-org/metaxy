@@ -205,11 +205,8 @@ def test_bigquery_config_with_hash_algorithm():
 
     store_default = config_default.get_store("bigquery_store")
     assert isinstance(store_default, BigQueryMetadataStore)
-    assert (
-        store_default.hash_algorithm == HashAlgorithm.XXHASH64
-    )  # Config system default
+    assert store_default.hash_algorithm == HashAlgorithm.MD5  # Config system default
 
-    # Test explicit FARMHASH (BigQuery's preferred algorithm)
     config_farmhash = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(

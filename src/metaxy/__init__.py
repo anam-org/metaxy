@@ -49,6 +49,7 @@ from metaxy.models.fields_mapping import (
     FieldsMapping,
     FieldsMappingType,
 )
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
 from metaxy.provenance.types import HashAlgorithm
 
@@ -118,4 +119,5 @@ __all__ = [
     "init_metaxy",
     "IDColumns",
     "HashAlgorithm",
+    "LineageRelationship",
 ]

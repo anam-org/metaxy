@@ -1859,8 +1859,14 @@ class MetadataStore(ABC):
                     upstream_filters = filters[upstream_key_str]
                     filters_by_key[upstream_key] = list(upstream_filters)
 
+                # Get the upstream feature's current feature_version
+                # Look up the Feature class from the graph to get its feature_version
+                upstream_feature_cls = feature.graph.features_by_key[upstream_key]
+                upstream_feature_version = upstream_feature_cls.feature_version()
+
                 upstream_lazy = self.read_metadata_in_store(
                     upstream_key,
+                    feature_version=upstream_feature_version,  # Filter to latest version
                     filters=upstream_filters,  # Apply extracted filters
                 )
                 if upstream_lazy is not None:

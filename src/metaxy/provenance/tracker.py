@@ -500,13 +500,15 @@ class ProvenanceTracker(ABC):
                 ),
                 on=join_columns,
                 how="inner",
-            ).filter(
+            )
+            .filter(
                 nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
                 | (
                     nw.col(METAXY_PROVENANCE)
                     != nw.col(f"__current_{METAXY_PROVENANCE}")
                 )
-            ),
+            )
+            .drop(f"__current_{METAXY_PROVENANCE}"),
         )
 
         removed = cast(
