@@ -52,6 +52,8 @@ theme:
 
 plugins:
   - search
+  - metaxy-examples:
+      examples_dir: "../examples"
   - gen-files:
       scripts:
         - docs/.mkdocs-metaxy/src/mkdocs_metaxy/gen_config_reference.py
@@ -145,7 +147,8 @@ markdown_extensions:
       repo: metaxy
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ['examples']
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -164,14 +167,16 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
-      - Metadata Stores: learn/metadata-stores.md
-      - Feature Definitions: learn/feature-definitions.md
-      - Versioning: learn/data-versioning.md
-      - Feature Discovery: learn/feature-discovery.md
-      - Syntactic Sugar: learn/syntactic-sugar.md
-      - Testing: learn/testing.md
-      - Integrations:
-          - SQLModel: learn/integrations/sqlmodel.md
+    - Metadata Stores: learn/metadata-stores.md
+    - Feature Definitions: learn/feature-definitions.md
+    - Versioning: learn/data-versioning.md
+    - Feature Discovery: learn/feature-discovery.md
+    - Syntactic Sugar: learn/syntactic-sugar.md
+    - Testing: learn/testing.md
+    - Integrations:
+        - SQLModel: learn/integrations/sqlmodel.md
+  - Examples:
+    - Recompute: examples/recompute.md
   - CLI: reference/cli.md
   - API:
     - reference/api/index.md

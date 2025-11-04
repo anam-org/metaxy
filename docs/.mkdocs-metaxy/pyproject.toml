@@ -1,13 +1,28 @@
 [project]
 name = "mkdocs-metaxy"
 version = "0.1.0"
-description = "Add your description here"
+description = "MkDocs plugins for Metaxy documentation"
 readme = "README.md"
 authors = [
   { name = "danielgafni", email = "danielgafni16@gmail.com" },
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+  "mkdocs>=1.5.0",
+  "markdown>=3.4",
+  "pyyaml>=6.0",
+  "pygments>=2.15.0",
+  "metaxy",
+]
+
+[tool.uv.sources]
+metaxy = { workspace = true }
+
+[project.entry-points."mkdocs.plugins"]
+metaxy-examples = "mkdocs_metaxy.examples:MetaxyExamplesPlugin"
+
+[project.entry-points."markdown.extensions"]
+metaxy_examples = "mkdocs_metaxy.examples.markdown_ext:makeExtension"
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]
