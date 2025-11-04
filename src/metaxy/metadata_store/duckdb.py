@@ -224,9 +224,9 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return joiner, calculator, diff_resolver
 
     # ------------------------------------------------------------------ DuckLake
-    def open(self) -> None:
+    def _open_impl(self) -> None:
         """Open DuckDB connection and configure optional DuckLake attachment."""
-        super().open()
+        super()._open_impl()
         if self._ducklake_attachment is not None:
             try:
                 duckdb_conn = self._duckdb_raw_connection()

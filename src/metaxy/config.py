@@ -68,6 +68,10 @@ class TomlConfigSettingsSource(PydanticBaseSettingsSource):
     def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
         """Get field value from TOML data."""
         field_value = self.toml_data.get(field_name)
+        if field_value is None:
+            core_section = self.toml_data.get("core")
+            if isinstance(core_section, dict):
+                field_value = core_section.get(field_name)
         return field_value, field_name, False
 
     def __call__(self) -> dict[str, Any]:
@@ -223,6 +227,11 @@ class MetaxyConfig(BaseSettings):
     hash_truncation_length: int | None = PydanticField(
         default=None,
         description="Truncate hash values to this length (minimum 8 characters). None = no truncation.",
+    )
+
+    auto_push_graph: bool = PydanticField(
+        default=False,
+        description="Automatically record a feature graph snapshot when metadata stores open.",
     )
 
     auto_create_tables: bool = PydanticField(

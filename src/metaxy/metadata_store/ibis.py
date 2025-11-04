@@ -6,6 +6,7 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+import json
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -132,6 +133,15 @@ class IbisMetadataStore(MetadataStore):
         """
         return HashAlgorithm.MD5
 
+    def _snapshot_push_cache_identity(self) -> str:
+        """Generate cache identity based on connection details."""
+        if self.connection_string is not None:
+            return f"connection_string::{self.connection_string}"
+
+        params_json = json.dumps(self.connection_params, sort_keys=True, default=str)
+        backend = self.backend or "unknown"
+        return f"backend::{backend}::params::{params_json}"
+
     def _supports_native_components(self) -> bool:
         """Ibis stores support native (Ibis-based) components when connection is open."""
         return self._conn is not None
@@ -224,11 +234,11 @@ class IbisMetadataStore(MetadataStore):
         """
         return self.ibis_conn
 
-    def open(self) -> None:
+    def _open_impl(self) -> None:
         """Open connection to database via Ibis.
 
         Subclasses should override this to add backend-specific initialization
-        (e.g., loading extensions) and should call super().open() first.
+        (e.g., loading extensions) and should call super()._open_impl() first.
 
         If auto_create_tables is enabled, creates system tables.
         """

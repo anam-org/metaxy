@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TypeGuard, overload
 
 import narwhals as nw
 import polars as pl
+from platformdirs import user_cache_dir
 from typing_extensions import Self
 
 from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
@@ -79,6 +82,8 @@ class MetadataStore(ABC):
     Context Manager:
         Stores must be used as context managers for resource management.
     """
+
+    _PUSH_CACHE_METADATA_KEY = "_metadata"
 
     # Subclasses can override this to disable auto_create_tables warning
     # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
@@ -153,6 +158,82 @@ class MetadataStore(ABC):
 
         # Validation happens in open()
 
+    def _snapshot_push_cache_path(self) -> Path:
+        """Return the path to the graph push cache file."""
+        return Path(user_cache_dir("metaxy")) / "push_cache.json"
+
+    def _snapshot_push_cache_scope(self) -> str:
+        """Get namespaced scope identifier for snapshot cache entries."""
+        identity = self._snapshot_push_cache_identity()
+        identity_hash = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        return (
+            f"{self.__class__.__module__}.{self.__class__.__qualname__}:{identity_hash}"
+        )
+
+    def _snapshot_push_cache_identity(self) -> str:
+        """Return a string uniquely identifying this store instance for caching."""
+        return "default"
+
+    def _snapshot_push_cache_key(self, snapshot_version: str) -> str:
+        """Generate a unique cache key for a snapshot and store scope."""
+        return f"{self._snapshot_push_cache_scope()}::{snapshot_version}"
+
+    def _read_snapshot_push_cache(self) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Load snapshot push cache data and metadata section."""
+        cache_path = self._snapshot_push_cache_path()
+        try:
+            raw_cache = json.loads(cache_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            raw_cache = {}
+        except json.JSONDecodeError:
+            raw_cache = {}
+        except OSError:
+            raw_cache = {}
+
+        metadata_section = raw_cache.get(self._PUSH_CACHE_METADATA_KEY)
+        if not isinstance(metadata_section, dict):
+            metadata_section = {}
+
+        return raw_cache, metadata_section
+
+    def _write_snapshot_push_cache(
+        self,
+        cache_data: dict[str, Any],
+        metadata_section: dict[str, Any],
+        *,
+        project_name: str,
+        snapshot_version: str,
+        spec_versions: Mapping[str, str],
+    ) -> None:
+        """Persist snapshot push cache metadata for the current snapshot."""
+        timestamp = datetime.now(timezone.utc).timestamp()
+        project_cache = metadata_section.setdefault(project_name, {})
+        if not isinstance(project_cache, dict):
+            project_cache = {}
+            metadata_section[project_name] = project_cache
+
+        scope = self._snapshot_push_cache_scope()
+        scope_cache = project_cache.setdefault(scope, {})
+        if not isinstance(scope_cache, dict):
+            scope_cache = {}
+            project_cache[scope] = scope_cache
+
+        scope_cache[snapshot_version] = {
+            "timestamp": timestamp,
+            "spec_versions": dict(spec_versions),
+        }
+
+        cache_data[self._PUSH_CACHE_METADATA_KEY] = metadata_section
+        cache_data[self._snapshot_push_cache_key(snapshot_version)] = timestamp
+
+        cache_path = self._snapshot_push_cache_path()
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(cache_data), encoding="utf-8")
+        except OSError:
+            # Cache persistence failures should not block snapshot recording
+            pass
+
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get the default hash algorithm for this store type.
@@ -190,13 +271,29 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
+    def _open_impl(self) -> None:
+        """Subclass-specific implementation for opening the store."""
+        pass
+
     def open(self) -> None:
         """Open/initialize the store for operations.
 
-        Called by __enter__. Subclasses implement connection setup here.
-        Can be called manually but context manager usage is recommended.
+        Executes subclass-specific logic, runs validation, and triggers optional
+        graph snapshot recording when enabled via configuration.
         """
-        pass
+        try:
+            self._open_impl()
+            self._is_open = True
+            self._validate_after_open()
+            self._maybe_auto_push_graph_snapshot()
+        except Exception:
+            self._is_open = False
+            try:
+                self.close()
+            except Exception:
+                # Cleanup failures should not mask the original error
+                pass
+            raise
 
     @abstractmethod
     def close(self) -> None:
@@ -227,12 +324,17 @@ class MetadataStore(ABC):
                 )
 
             self.open()
-            self._is_open = True
-
-            # Validate after opening (when all components are ready)
-            self._validate_after_open()
 
         return self
+
+    def _maybe_auto_push_graph_snapshot(self) -> None:
+        """Automatically push graph snapshot if configured."""
+        from metaxy.config import MetaxyConfig
+
+        if not MetaxyConfig.get().auto_push_graph:
+            return
+
+        self.record_feature_graph_snapshot()
 
     def _validate_after_open(self) -> None:
         """Validate configuration after store is opened.
@@ -653,6 +755,31 @@ class MetadataStore(ABC):
         # Generate deterministic snapshot_version from graph
         snapshot_version = graph.snapshot_version
 
+        # Track spec versions for cache comparisons
+        snapshot_spec_versions = {
+            feature_key_str: feature_data["feature_spec_version"]
+            for feature_key_str, feature_data in snapshot_dict.items()
+        }
+
+        # Determine project name from graph (if available)
+        if graph.features_by_key:
+            first_feature = next(iter(graph.features_by_key.values()))
+            project_name = getattr(first_feature, "project", "")
+        else:
+            project_name = ""
+
+        # Load cache (used to short-circuit duplicate pushes)
+        cache_data, cache_metadata = self._read_snapshot_push_cache()
+        cache_scope = self._snapshot_push_cache_scope()
+        project_cache = cache_metadata.get(project_name)
+        cached_spec_versions = None
+        if isinstance(project_cache, dict):
+            scope_cache = project_cache.get(cache_scope)
+            if isinstance(scope_cache, dict):
+                cache_entry = scope_cache.get(snapshot_version)
+                if isinstance(cache_entry, dict):
+                    cached_spec_versions = cache_entry.get("spec_versions")
+
         # Read existing feature versions once
         try:
             existing_versions_lazy = self.read_metadata_in_store(FEATURE_VERSIONS_KEY)
@@ -666,18 +793,10 @@ class MetadataStore(ABC):
             # Table doesn't exist yet
             existing_versions = None
 
-        # Get project from any feature in the graph (all should have the same project)
-        # Default to empty string if no features in graph
-        if graph.features_by_key:
-            # Get first feature's project
-            first_feature = next(iter(graph.features_by_key.values()))
-            project_name = first_feature.project  # type: ignore[attr-defined]
-        else:
-            project_name = ""
-
         # Check if this exact snapshot already exists for this project
         snapshot_already_exists = False
         existing_spec_versions: dict[str, str] = {}
+        has_spec_version = False
 
         if existing_versions is not None:
             # Check if project column exists (it may not in old tables)
@@ -704,6 +823,8 @@ class MetadataStore(ABC):
                         existing_spec_versions[row["feature_key"]] = row[
                             "feature_spec_version"
                         ]
+                elif isinstance(cached_spec_versions, dict):
+                    existing_spec_versions.update(cached_spec_versions)
                 # If no spec_version column, existing_spec_versions remains empty
                 # This means we'll treat it as "no metadata changes" (conservative approach)
 
@@ -742,6 +863,14 @@ class MetadataStore(ABC):
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
                 self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+
+            self._write_snapshot_push_cache(
+                cache_data,
+                cache_metadata,
+                project_name=project_name,
+                snapshot_version=snapshot_version,
+                spec_versions=snapshot_spec_versions,
+            )
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
@@ -793,6 +922,14 @@ class MetadataStore(ABC):
                 )
                 self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
 
+            self._write_snapshot_push_cache(
+                cache_data,
+                cache_metadata,
+                project_name=project_name,
+                snapshot_version=snapshot_version,
+                spec_versions=snapshot_spec_versions,
+            )
+
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
                 already_recorded=True,
@@ -801,6 +938,14 @@ class MetadataStore(ABC):
             )
 
         # Scenario 3: No changes at all
+        self._write_snapshot_push_cache(
+            cache_data,
+            cache_metadata,
+            project_name=project_name,
+            snapshot_version=snapshot_version,
+            spec_versions=snapshot_spec_versions,
+        )
+
         return SnapshotPushResult(
             snapshot_version=snapshot_version,
             already_recorded=True,

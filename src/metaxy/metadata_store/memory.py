@@ -80,6 +80,10 @@ class InMemoryMetadataStore(MetadataStore):
             "InMemoryMetadataStore does not support native field provenance calculations"
         )
 
+    def _snapshot_push_cache_identity(self) -> str:
+        """Use per-instance identity for cache scoping to avoid cross-store collisions."""
+        return f"inmemory::{id(self)}"
+
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
@@ -223,7 +227,7 @@ class InMemoryMetadataStore(MetadataStore):
 
     # ========== Context Manager Implementation ==========
 
-    def open(self) -> None:
+    def _open_impl(self) -> None:
         """Open the in-memory store.
 
         For InMemoryMetadataStore, this is a no-op since no external
