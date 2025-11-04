@@ -322,18 +322,164 @@ class ExternalMetaxyProject(MetaxyProject):
         ```
     """
 
-    def __init__(self, project_dir: Path):
+    def __init__(self, project_dir: Path, require_config: bool = True):
         """Initialize an external Metaxy project.
 
         Args:
-            project_dir: Path to existing project directory containing metaxy.toml
+            project_dir: Path to existing project directory (may contain metaxy.toml)
+            require_config: If True, requires metaxy.toml to exist (default: True)
         """
         super().__init__(project_dir)
-        if not (self.project_dir / "metaxy.toml").exists():
+        if require_config and not (self.project_dir / "metaxy.toml").exists():
             raise ValueError(
                 f"No metaxy.toml found in {self.project_dir}. "
                 "ExternalMetaxyProject requires an existing project configuration."
             )
+        self._venv_path: Path | None = None
+        self._venv_python: Path | None = None
+
+    def setup_venv(self, venv_path: Path, install_metaxy_from: Path | None = None):
+        """Create a virtual environment and install the project.
+
+        Args:
+            venv_path: Path where the venv should be created
+            install_metaxy_from: Optional path to metaxy source to install (defaults to current)
+
+        Returns:
+            Path to the Python interpreter in the venv
+
+        Example:
+            ```py
+            project = ExternalMetaxyProject(Path("tests/fixtures/test-project"))
+            with tempfile.TemporaryDirectory() as tmpdir:
+                project.setup_venv(Path(tmpdir) / "venv")
+                result = project.run_in_venv("python", "-c", "import test_metaxy_project")
+            ```
+        """
+        import os
+        import subprocess
+
+        # Create venv using uv
+        subprocess.run(
+            ["uv", "venv", str(venv_path), "--python", str(sys.executable)], check=True
+        )
+
+        # Install metaxy using the venv's pip directly
+        if install_metaxy_from is None:
+            # Default to metaxy package location (get the repo root)
+            # metaxy.__file__ -> .../src/metaxy/__init__.py
+            # .parent -> .../src/metaxy
+            # .parent -> .../src
+            # .parent -> repo root
+            import metaxy
+
+            install_metaxy_from = Path(metaxy.__file__).parent.parent.parent
+
+        # Set VIRTUAL_ENV to activate the venv
+        venv_env = os.environ.copy()
+        venv_env["VIRTUAL_ENV"] = str(venv_path)
+        # Remove PYTHONHOME if set (can interfere with venv)
+        venv_env.pop("PYTHONHOME", None)
+
+        # Use uv pip to install packages into the venv
+        result = subprocess.run(
+            [
+                "uv",
+                "pip",
+                "install",
+                "-e",
+                str(install_metaxy_from),
+            ],
+            env=venv_env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to install metaxy from {install_metaxy_from}\n"
+                f"STDOUT: {result.stdout}\n"
+                f"STDERR: {result.stderr}"
+            )
+
+        # Install the project itself using uv pip
+        result = subprocess.run(
+            [
+                "uv",
+                "pip",
+                "install",
+                "-e",
+                str(self.project_dir),
+            ],
+            env=venv_env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to install project from {self.project_dir}\n"
+                f"STDOUT: {result.stdout}\n"
+                f"STDERR: {result.stderr}"
+            )
+
+        self._venv_path = venv_path
+
+    def run_in_venv(
+        self, *args, check: bool = True, env: dict[str, str] | None = None, **kwargs
+    ):
+        """Run a command in the configured venv.
+
+        Args:
+            *args: Command and arguments (e.g., "python", "-c", "print('hello')")
+            check: If True (default), raises CalledProcessError on non-zero exit
+            env: Optional dict of additional environment variables
+            **kwargs: Additional arguments to pass to subprocess.run()
+
+        Returns:
+            subprocess.CompletedProcess: Result of the command
+
+        Raises:
+            RuntimeError: If setup_venv() hasn't been called yet
+            subprocess.CalledProcessError: If check=True and command fails
+
+        Example:
+            ```py
+            project.setup_venv(Path("/tmp/venv"))
+            result = project.run_in_venv("python", "-m", "my_module")
+            ```
+        """
+        import subprocess
+
+        if self._venv_path is None:
+            raise RuntimeError("No venv configured. Call setup_venv() first.")
+
+        # Start with current environment
+        import os
+
+        cmd_env = os.environ.copy()
+
+        # Set VIRTUAL_ENV to activate the venv
+        cmd_env["VIRTUAL_ENV"] = str(self._venv_path)
+        # Remove PYTHONHOME if set (can interfere with venv)
+        cmd_env.pop("PYTHONHOME", None)
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run command with venv python
+        result = subprocess.run(
+            ["uv", "run", "--active", *args],
+            cwd=str(self.project_dir),
+            capture_output=True,
+            text=True,
+            env=cmd_env,
+            check=check,
+            **kwargs,
+        )
+
+        return result
 
 
 class TempMetaxyProject(MetaxyProject):

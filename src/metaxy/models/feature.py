@@ -687,14 +687,11 @@ class MetaxyMeta(ModelMetaclass):
 
     @staticmethod
     def _detect_project(feature_cls: type) -> str:
-        """Detect project for a feature class using multiple strategies.
+        """Detect project for a feature class.
 
         Detection order:
-        1. If loaded via entrypoint, extract project from package name
-        2. Extract package name from module path (e.g., "my_package.features" -> "my_package")
-        3. For test/example modules, use global config (before searching filesystem)
-        4. Look for pyproject.toml in parent directories to get project name
-        5. Fall back to global config
+        1. Check metaxy.projects entry points - maps entrypoints to project names
+        2. Fall back to MetaxyConfig.project
 
         Args:
             feature_cls: The Feature class being registered
@@ -702,83 +699,17 @@ class MetaxyMeta(ModelMetaclass):
         Returns:
             Project name string
         """
-        import sys
-        from pathlib import Path
+        from metaxy._packaging import detect_project_from_entrypoints
+        from metaxy.config import MetaxyConfig
 
         module_name = feature_cls.__module__
 
-        # Get the top-level package name
-        root_package = module_name.split(".")[0]
+        # Strategy 1: Check metaxy.projects entry points
+        project = detect_project_from_entrypoints(module_name)
+        if project is not None:
+            return project
 
-        # Strategy 1: Check if loaded via entrypoint
-        # When loaded via entrypoints, sys.modules will have metadata about the entry point
-        # This is the most reliable method for installed packages
-        # Check if this was loaded as an entrypoint
-        # Entry points are typically registered in the package's metadata
-        import importlib.metadata
-
-        # Try to find the distribution that owns this module
-        for dist in importlib.metadata.distributions():
-            # Use bracket notation for metadata access (works across Python versions)
-            try:
-                name = dist.metadata["Name"]
-            except KeyError:
-                continue
-            if name.replace("-", "_") == root_package:
-                # Found the distribution - use its name as the project
-                # Normalize project name (replace hyphens with underscores)
-                return name.replace("-", "_")
-
-        # Strategy 2: Extract package name from module path
-        # For modules like "my_package.features.video", extract "my_package"
-        if "." in module_name:
-            # Only use this if it's not a common/generic name
-            if root_package not in ("metaxy", "tests", "examples", "__main__"):
-                return root_package
-
-        # Strategy 3: For test/example modules, prioritize global config
-        # This ensures tests use the configured test project
-        # But skip this for modules that are mocked in tests (they have MagicMock in sys.modules)
-        if root_package in ("tests", "test", "examples") or (
-            root_package.startswith("test_") and module_name != "test_module"
-        ):
-            # Check if this is a real test module or a mock used in testing
-            module = sys.modules.get(module_name)
-            if module and not hasattr(module, "_mock_name"):  # Not a MagicMock
-                from metaxy.config import MetaxyConfig
-
-                config = MetaxyConfig.get()
-                return config.project
-
-        # Strategy 4: Look for pyproject.toml in parent directories
-        # Get the module's file path
-        module = sys.modules.get(module_name)
-        if module and hasattr(module, "__file__") and module.__file__:
-            module_path = Path(module.__file__).parent
-
-            # Search up the directory tree for pyproject.toml
-            current_dir = module_path
-            while current_dir != current_dir.parent:
-                pyproject_path = current_dir / "pyproject.toml"
-                if pyproject_path.exists():
-                    import tomli as tomllib
-
-                    with open(pyproject_path, "rb") as f:
-                        pyproject_data = tomllib.load(f)
-
-                    # Extract project name from pyproject.toml
-                    if "project" in pyproject_data:
-                        project_name = pyproject_data["project"].get("name")
-                        if project_name:
-                            # Normalize project name
-                            return project_name.replace("-", "_")
-
-                current_dir = current_dir.parent
-
-        # Strategy 5: Fall back to global config
-        # This is used for any remaining cases
-        from metaxy.config import MetaxyConfig
-
+        # Strategy 2: Fall back to global config
         config = MetaxyConfig.get()
         return config.project
 
