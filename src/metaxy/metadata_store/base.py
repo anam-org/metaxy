@@ -764,7 +764,7 @@ class MetadataStore(ABC):
         # Determine project name from graph (if available)
         if graph.features_by_key:
             first_feature = next(iter(graph.features_by_key.values()))
-            project_name = getattr(first_feature, "project", "")
+            project_name = first_feature.project
         else:
             project_name = ""
 
