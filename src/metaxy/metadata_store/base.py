@@ -796,8 +796,6 @@ class MetadataStore(ABC):
         # Check if this exact snapshot already exists for this project
         snapshot_already_exists = False
         existing_spec_versions: dict[str, str] = {}
-        has_spec_version = False
-
         if existing_versions is not None:
             # Check if project column exists (it may not in old tables)
             if "project" in existing_versions.columns:
@@ -815,9 +813,7 @@ class MetadataStore(ABC):
             if snapshot_already_exists:
                 # Check if feature_spec_version column exists (backward compatibility)
                 # Old records (before issue #77) won't have this column
-                has_spec_version = "feature_spec_version" in snapshot_rows.columns
-
-                if has_spec_version:
+                if "feature_spec_version" in snapshot_rows.columns:
                     # Build dict of existing feature_key -> feature_spec_version
                     for row in snapshot_rows.iter_rows(named=True):
                         existing_spec_versions[row["feature_key"]] = row[
