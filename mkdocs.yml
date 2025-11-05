@@ -175,12 +175,12 @@ nav:
     - Feature Discovery: learn/feature-discovery.md
     - Syntactic Sugar: learn/syntactic-sugar.md
     - Testing: learn/testing.md
+    - System Columns: learn/system-columns.md
     - Integrations:
         - SQLModel: learn/integrations/sqlmodel.md
   - Examples:
     - Recompute: examples/recompute.md
   - CLI: reference/cli.md
-  - System Columns: reference/system-columns.md
   - API:
     - reference/api/index.md
     - Definitions:
@@ -198,6 +198,7 @@ nav:
       - Memory: reference/api/metadata-stores/memory.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
+    - Constants: reference/api/constants.md
   - Configuration: reference/configuration.md
 
 extra:
