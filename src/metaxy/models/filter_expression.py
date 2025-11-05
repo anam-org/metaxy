@@ -74,23 +74,6 @@ class NarwhalsFilter(FrozenBaseModel):
         if isinstance(data, str):
             expression = _parse_to_expression(data)
             return {"expression": expression, "source": data}
-
-        if isinstance(data, dict):
-            maybe_expression = data.get("expression")
-            if isinstance(maybe_expression, str):
-                expression = _parse_to_expression(maybe_expression)
-                updated = dict(data)
-                updated["expression"] = expression
-                updated.setdefault("source", maybe_expression)
-                return updated
-
-            maybe_source = data.get("source")
-            if isinstance(maybe_source, str) and "expression" not in data:
-                expression = _parse_to_expression(maybe_source)
-                updated = dict(data)
-                updated["expression"] = expression
-                return updated
-
         return data
 
     @field_serializer("expression")
