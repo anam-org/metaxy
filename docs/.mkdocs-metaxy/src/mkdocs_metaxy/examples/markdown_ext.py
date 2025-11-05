@@ -27,6 +27,13 @@ This module provides a markdown preprocessor that handles directives like:
         scenario: "Initial pipeline run"
         step: "run_pipeline"
     :::
+
+    ::: metaxy-example patch-with-diff
+        example: one-to-many
+        path: patches/01_update_video_code_version.patch
+        scenario: "Code change - audio field only"
+        step: "update_audio_version"
+    :::
 """
 
 from __future__ import annotations
@@ -133,17 +140,9 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
             pos = end_match.end()
 
-            # Process the directive
-            try:
-                html = self._process_directive(directive_type, directive_content)
-                result_lines.append(html)
-            except Exception as e:
-                # Render error
-                error_html = self.renderer.render_error(
-                    f"Failed to process metaxy-example {directive_type}",
-                    details=str(e),
-                )
-                result_lines.append(error_html)
+            # Process the directive - let exceptions propagate to fail the build
+            html = self._process_directive(directive_type, directive_content)
+            result_lines.append(html)
 
         # Add remaining text
         result_lines.append(text[pos:])
@@ -220,6 +219,12 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             return self._render_patch(example_name, params)
         if directive_type == "output":
             return self._render_output(example_name, params)
+        if directive_type == "patch-with-diff":
+            return self._render_patch_with_diff(example_name, params)
+        if directive_type == "graph":
+            return self._render_graph(example_name, params)
+        if directive_type == "graph-diff":
+            return self._render_graph_diff(example_name, params)
         raise ValueError(f"Unknown directive type: {directive_type}")
 
     def _render_scenarios(self, example_name: str) -> str:
@@ -357,14 +362,8 @@ class MetaxyExamplesPreprocessor(Preprocessor):
         """
         from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
 
-        # Load execution result
-        try:
-            result = self.loader.load_execution_result(example_name)
-        except FileNotFoundError as e:
-            return self.renderer.render_error(
-                f"Execution result not found for example '{example_name}'",
-                details=str(e),
-            )
+        # Load execution result (raises FileNotFoundError if missing)
+        result = self.loader.load_execution_result(example_name)
 
         # Filter events by scenario if specified
         scenario_name = params.get("scenario")
@@ -386,7 +385,15 @@ class MetaxyExamplesPreprocessor(Preprocessor):
                     self.renderer.render_command_output(event, show_command)
                 )
             elif isinstance(event, PatchApplied):
-                md_parts.append(self.renderer.render_patch_applied(event))
+                # Render graph diff from saved graph snapshots
+                graph_diff_md = None
+                if event.before_graph and event.after_graph:
+                    graph_diff_md = self._render_graph_diff_from_snapshots(
+                        event.before_graph, event.after_graph
+                    )
+                md_parts.append(
+                    self.renderer.render_patch_applied(event, graph_diff_md)
+                )
             elif isinstance(event, GraphPushed):
                 md_parts.append(self.renderer.render_graph_pushed(event))
 
@@ -397,6 +404,189 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             )
 
         return "\n".join(md_parts)
+
+    def _render_patch_with_diff(self, example_name: str, params: dict[str, Any]) -> str:
+        """Render patch and graph diff side-by-side in content tabs.
+
+        Args:
+            example_name: Name of the example.
+            params: Directive parameters (path, scenario, step).
+
+        Returns:
+            Markdown string with tabbed content.
+        """
+        from metaxy._testing import PatchApplied
+
+        patch_path = params.get("path")
+        if not patch_path:
+            raise ValueError(
+                "Missing required parameter for patch-with-diff directive: path"
+            )
+
+        scenario_name = params.get("scenario")
+        step_name = params.get("step")
+
+        # Render the patch content
+        patch_md = self._render_patch(example_name, {"path": patch_path})
+
+        # Get graph diff from execution result
+        result = self.loader.load_execution_result(example_name)
+
+        # Find the PatchApplied event
+        matching_event = None
+        for event in result.execution_state.events:
+            if not isinstance(event, PatchApplied):
+                continue
+            if scenario_name and event.scenario_name != scenario_name:
+                continue
+            if step_name and event.step_name != step_name:
+                continue
+            if event.patch_path == patch_path:
+                matching_event = event
+                break
+
+        if matching_event is None:
+            raise ValueError(
+                f"No PatchApplied event found for patch '{patch_path}' "
+                f"(scenario={scenario_name}, step={step_name})"
+            )
+
+        if not matching_event.before_graph or not matching_event.after_graph:
+            raise ValueError(
+                f"PatchApplied event for '{patch_path}' is missing graph data. "
+                f"Re-run the example tests to regenerate the execution result."
+            )
+
+        graph_diff_md = self._render_graph_diff_from_snapshots(
+            matching_event.before_graph, matching_event.after_graph
+        )
+
+        # Build tabbed content using pymdownx.tabbed syntax
+        md_parts = []
+        md_parts.append('=== "Patch"')
+        md_parts.append("")
+        # Indent the patch content for the tab
+        for line in patch_md.split("\n"):
+            md_parts.append(f"    {line}" if line else "")
+        md_parts.append("")
+
+        md_parts.append('=== "Feature Graph Changes"')
+        md_parts.append("")
+        # Indent the graph diff content for the tab
+        for line in graph_diff_md.split("\n"):
+            md_parts.append(f"    {line}" if line else "")
+        md_parts.append("")
+
+        return "\n".join(md_parts)
+
+    def _render_graph_diff_from_snapshots(
+        self, before_graph: dict, after_graph: dict
+    ) -> str:
+        """Render graph diff from saved graph snapshots.
+
+        Args:
+            before_graph: Serialized graph before the change.
+            after_graph: Serialized graph after the change.
+
+        Returns:
+            Mermaid diagram string.
+        """
+        from metaxy.graph import MermaidRenderer
+        from metaxy.graph.diff import GraphDiffer
+        from metaxy.graph.diff.models import GraphData
+
+        differ = GraphDiffer()
+        diff = differ.diff(before_graph, after_graph)
+
+        # Create merged graph data for rendering
+        merged_data = differ.create_merged_graph_data(before_graph, after_graph, diff)
+        graph_data = GraphData.from_merged_diff(merged_data)
+
+        renderer = MermaidRenderer(graph_data=graph_data)
+        mermaid = renderer.render()
+
+        return f"```mermaid\n{mermaid}\n```"
+
+    def _render_graph(self, example_name: str, params: dict[str, Any]) -> str:
+        """Render feature graph from command output as mermaid diagram.
+
+        Args:
+            example_name: Name of the example.
+            params: Directive parameters (scenario, step).
+
+        Returns:
+            Mermaid diagram markdown string.
+
+        Raises:
+            ValueError: If required parameters are missing.
+        """
+        from metaxy._testing import CommandExecuted
+
+        result = self.loader.load_execution_result(example_name)
+
+        scenario_name = params.get("scenario")
+        step_name = params.get("step")
+
+        # Find the matching command output
+        for event in result.execution_state.events:
+            if not isinstance(event, CommandExecuted):
+                continue
+            if scenario_name and event.scenario_name != scenario_name:
+                continue
+            if step_name and event.step_name != step_name:
+                continue
+
+            # Found matching event - return stdout wrapped in mermaid fence
+            if event.stdout:
+                return f"```mermaid\n{event.stdout.strip()}\n```"
+
+        raise ValueError(
+            f"No CommandExecuted event found for scenario={scenario_name}, step={step_name}"
+        )
+
+    def _render_graph_diff(self, example_name: str, params: dict[str, Any]) -> str:
+        """Render graph diff from PatchApplied event as mermaid diagram.
+
+        Args:
+            example_name: Name of the example.
+            params: Directive parameters (scenario, step).
+
+        Returns:
+            Mermaid diagram markdown string.
+
+        Raises:
+            ValueError: If required parameters are missing or no matching event found.
+        """
+        from metaxy._testing import PatchApplied
+
+        result = self.loader.load_execution_result(example_name)
+
+        scenario_name = params.get("scenario")
+        step_name = params.get("step")
+
+        # Find the matching PatchApplied event
+        for event in result.execution_state.events:
+            if not isinstance(event, PatchApplied):
+                continue
+            if scenario_name and event.scenario_name != scenario_name:
+                continue
+            if step_name and event.step_name != step_name:
+                continue
+
+            # Found matching event - render graph diff
+            if not event.before_graph or not event.after_graph:
+                raise ValueError(
+                    "PatchApplied event is missing graph data. "
+                    "Re-run the example tests to regenerate the execution result."
+                )
+
+            return self._render_graph_diff_from_snapshots(
+                event.before_graph, event.after_graph
+            )
+
+        raise ValueError(
+            f"No PatchApplied event found for scenario={scenario_name}, step={step_name}"
+        )
 
 
 class MetaxyExamplesExtension(Extension):

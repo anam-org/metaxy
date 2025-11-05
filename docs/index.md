@@ -27,9 +27,26 @@
 
 Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](guide/learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
-It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements.
+| **Subject** | **Description** |
+|---------|-------------|
+| **Data** | The actual multi-modal data itself, such as images, audio files, video files, text documents, and other raw content that your pipelines process and transform. |
+| **Metadata** | Information about the data, typically including references to where data is stored (e.g., object store keys) plus additional descriptive entries such as video length, file size, format, version, and other attributes. |
 
-Metaxy can scale to handle large amounts of **big metadata**.
+Metaxy manages **metadata** while your **data** lives elsewhere:
+
+```
+┌────────────────────────────----─┐          ┌─────────────────────────┐
+│      Metadata (Metaxy)          │          │   Data (e.g., S3)       │
+├──────┬──────────┬──────┬───----─┤          │                         │
+│  ID  │   path   │ size │version │          │  📦 s3://my-bucket/     │
+├──────┼──────────┼──────┼──────--┤          │                         │
+│ img1 │ s3://... │ 2.1M │a3fdsf  │ ────────>│    ├─ img1.jpg          │
+│ img2 │ s3://... │ 1.8M │b7e123  │ ────────>│    ├─ img2.jpg          │
+└──────┴──────────┴──────┴───----─┘          └─────────────────────────┘
+
+```
+
+Metaxy is [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data or [metadata storage](guide/learn/metadata-stores.md). Metaxy has no strict infrastructure requirements, and can scale to handle large amounts of **big metadata**.
 
 All of this is possible thanks to (1) [Narwhals](https://narwhals-dev.github.io/narwhals/), [Ibis](https://ibis-project.org/), and a few clever tricks.
 { .annotate }

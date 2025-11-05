@@ -1,7 +1,5 @@
 """Graph diffing logic and snapshot resolution."""
 
-import json
-import warnings
 from collections.abc import Mapping
 from typing import Any
 
@@ -13,7 +11,6 @@ from metaxy.graph.diff.diff_models import (
     RemovedNode,
 )
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -626,7 +623,12 @@ class GraphDiffer:
         return downstream
 
     def load_snapshot_data(
-        self, store: MetadataStore, snapshot_version: str, project: str | None = None
+        self,
+        store: MetadataStore,
+        snapshot_version: str,
+        project: str | None = None,
+        class_path_overrides: dict[str, str] | None = None,
+        force_reload: bool = False,
     ) -> Mapping[str, Mapping[str, Any]]:
         """Load snapshot data from store.
 
@@ -634,6 +636,11 @@ class GraphDiffer:
             store: Metadata store to query
             snapshot_version: Snapshot version to load
             project: Optional project name to filter by (None means all projects)
+            class_path_overrides: Optional dict mapping feature_key to new class path
+                                  for features that have been moved/renamed
+            force_reload: If True, force reimport of feature modules from disk.
+                         Use this when loading multiple snapshots that share
+                         the same class paths.
 
         Returns:
             Dict mapping feature_key (string) -> {feature_version, feature_spec, fields}
@@ -642,128 +649,47 @@ class GraphDiffer:
         Raises:
             ValueError: If snapshot not found in store
         """
-        # Import at function level to avoid circular imports
+        from metaxy.metadata_store.system.storage import SystemTableStorage
 
         # Auto-open store if not already open
         if not store._is_open:
             with store.open("read"):
-                return self.load_snapshot_data(store, snapshot_version, project)
-
-        # Query feature_versions table for this snapshot
-        try:
-            features_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
-            if features_lazy is None:
-                raise ValueError(
-                    f"No feature_versions table found in store. Cannot load snapshot {snapshot_version}."
+                return self.load_snapshot_data(
+                    store, snapshot_version, project, class_path_overrides, force_reload
                 )
 
-            # Filter by snapshot_version and project
-            import narwhals as nw
+        storage = SystemTableStorage(store)
 
-            features_df = (
-                features_lazy.filter(
-                    nw.col("metaxy_snapshot_version") == snapshot_version
-                )
-                .collect()
-                .to_polars()
+        # Reconstruct the graph from the snapshot - this imports the Feature classes
+        # and gives us access to proper field version computation
+        graph = storage.load_graph_from_snapshot(
+            snapshot_version=snapshot_version,
+            project=project,
+            class_path_overrides=class_path_overrides,
+            force_reload=force_reload,
+        )
+
+        # Build snapshot data using the reconstructed graph
+        snapshot_data: dict[str, dict] = {}
+
+        for feature_key, spec in graph.all_specs_by_key.items():
+            feature_key_str = feature_key.to_string()
+            feature_version = graph.get_feature_version(feature_key)
+            field_versions = graph.get_feature_version_by_field(feature_key)
+
+            # Get full definition version from the feature class
+            feature_cls = graph.features_by_key.get(feature_key)
+            full_definition_version = (
+                feature_cls.full_definition_version()
+                if feature_cls
+                else feature_version
             )
-
-            if features_df.height == 0:
-                raise ValueError(
-                    f"Snapshot {snapshot_version} not found in store. "
-                    "Run 'metaxy graph push' to record snapshots or check the version hash."
-                )
-
-        except Exception as e:
-            raise ValueError(f"Failed to load snapshot {snapshot_version}: {e}") from e
-
-        # Build snapshot data structure
-        snapshot_dict = {}
-        for row in features_df.iter_rows(named=True):
-            feature_key_str = row["feature_key"]
-            feature_version = row["metaxy_feature_version"]
-            feature_spec_json = row["feature_spec"]
-            feature_class_path = row.get("feature_class_path", "")
-
-            feature_spec_dict = json.loads(feature_spec_json)
-
-            snapshot_dict[feature_key_str] = {
-                "metaxy_feature_version": feature_version,
-                "feature_spec": feature_spec_dict,
-                "feature_class_path": feature_class_path,
-                "metaxy_full_definition_version": row.get(
-                    "metaxy_full_definition_version", feature_version
-                ),  # Fallback for backward compatibility
-            }
-
-        # Try to reconstruct FeatureGraph from snapshot to compute field versions
-        # This may fail if features have been removed/moved, so we handle that gracefully
-        graph: FeatureGraph | None = None
-        try:
-            graph = FeatureGraph.from_snapshot(snapshot_dict)
-            graph_available = True
-        except ImportError:
-            # Some features can't be imported (likely removed) - proceed without graph
-            # For diff purposes, we can still show feature-level changes
-            # We'll use feature_version as a fallback for all field versions
-            graph_available = False
-            warnings.warn(
-                "Using feature_version as field_version fallback for features that cannot be imported. "
-                "This may occur when features have been removed or moved.",
-                UserWarning,
-                stacklevel=2,
-            )
-
-        # Compute field versions using the reconstructed graph (if available)
-        from metaxy.models.plan import FQFieldKey
-
-        snapshot_data = {}
-        for feature_key_str in snapshot_dict.keys():
-            feature_version = snapshot_dict[feature_key_str]["metaxy_feature_version"]
-            feature_spec = snapshot_dict[feature_key_str]["feature_spec"]
-            feature_key_obj = FeatureKey(feature_key_str.split("/"))
-
-            # Compute field versions using graph (if available)
-            fields_data = {}
-            if (
-                graph_available
-                and graph is not None
-                and feature_key_obj in graph.features_by_key
-            ):
-                # Feature exists in reconstructed graph - compute precise field versions
-                for field_dict in feature_spec.get("fields", []):
-                    field_key_list = field_dict.get("key")
-                    if isinstance(field_key_list, list):
-                        field_key = FieldKey(field_key_list)
-                        field_key_str_normalized = "/".join(field_key_list)
-                    else:
-                        field_key = FieldKey([field_key_list])
-                        field_key_str_normalized = field_key_list
-
-                    # Compute field version using the graph
-                    fq_key = FQFieldKey(feature=feature_key_obj, field=field_key)
-                    field_version = graph.get_field_version(fq_key)
-                    fields_data[field_key_str_normalized] = field_version
-            else:
-                # Feature doesn't exist in graph (removed/moved) - use feature_version as fallback
-                # All fields get the same version (the feature version)
-                for field_dict in feature_spec.get("fields", []):
-                    field_key_list = field_dict.get("key")
-                    if isinstance(field_key_list, list):
-                        field_key_str_normalized = "/".join(field_key_list)
-                    else:
-                        field_key_str_normalized = field_key_list
-
-                    # Use feature_version directly as fallback
-                    fields_data[field_key_str_normalized] = feature_version
 
             snapshot_data[feature_key_str] = {
                 "metaxy_feature_version": feature_version,
-                "fields": fields_data,
-                "feature_spec": feature_spec,
-                "metaxy_full_definition_version": snapshot_dict[feature_key_str].get(
-                    "metaxy_full_definition_version", feature_version
-                ),
+                "fields": field_versions,
+                "feature_spec": spec.model_dump(mode="json"),
+                "metaxy_full_definition_version": full_definition_version,
             }
 
         return snapshot_data

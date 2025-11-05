@@ -7,7 +7,7 @@
       {
         "type": "graph_pushed",
         "snapshot_version": "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82",
-        "timestamp": "2026-01-08T08:53:58.985252",
+        "timestamp": "2026-01-08T12:16:59.769876",
         "scenario_name": "Setup upstream data",
         "step_name": null
       },
@@ -17,7 +17,7 @@
         "returncode": 0,
         "stdout": "",
         "stderr": "",
-        "timestamp": "2026-01-08T08:53:59.017591",
+        "timestamp": "2026-01-08T12:16:59.802480",
         "scenario_name": "Setup upstream data",
         "step_name": "setup_data"
       },
@@ -27,7 +27,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82\n\n📊 Computing examples/child...\n  feature_version: 440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}\n  sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}\n  sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "sys:1: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'examples__parent'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n",
-        "timestamp": "2026-01-08T08:54:01.603033",
+        "timestamp": "2026-01-08T12:17:02.467318",
         "scenario_name": "Initial pipeline run",
         "step_name": "initial_run"
       },
@@ -37,14 +37,14 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82\nMetadata already exists for feature examples/parent (feature_version: 0aad9b8a2ea055cd...)\nSkipping write to avoid duplicates\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82\n\n📊 Computing examples/child...\n  feature_version: 440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f\nIdentified: 0 new samples, 0 samples with new provenance_by_field\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}\n  sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}\n  sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}\n\nNo changes detected (idempotent)\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-01-08T08:54:04.103268",
+        "timestamp": "2026-01-08T12:17:05.105915",
         "scenario_name": "Idempotent rerun",
         "step_name": "idempotent_run"
       },
       {
         "type": "graph_pushed",
         "snapshot_version": "31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477",
-        "timestamp": "2026-01-08T08:54:05.350936",
+        "timestamp": "2026-01-08T12:17:06.428568",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -53,7 +53,149 @@
         "patch_path": "patches/01_update_parent_algorithm.patch",
         "before_snapshot": "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82",
         "after_snapshot": "31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477",
-        "timestamp": "2026-01-08T08:54:05.350957",
+        "before_graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "0aad9b8a2ea055cde3c4149fc4cde576e6478a982cea75b45c3cd012db43a5e8",
+            "fields": {
+              "embeddings": "05e66510da58ef37168095b60188849cd6b1f0a4b539d0ac29ffd1e15b756459"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f",
+            "fields": {
+              "predictions": "1905d9e85ceb58b0361e863c7fbfbf5843582f8ed135ea5ce6c24ee2c68c6bb4"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "examples/parent",
+                      "fields": [
+                        "embeddings"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "after_graph": {
+          "examples/parent": {
+            "metaxy_feature_version": "a007f308d0a852e3fbf80a442bd0089e29eed94efefe85231ef4fc927aa7d737",
+            "fields": {
+              "embeddings": "3c8d3e9ba031ab3613eb4db0877d3959fce76d94d625335b89bae7fbd4f27add"
+            },
+            "feature_spec": {
+              "key": "examples/parent",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "embeddings",
+                  "code_version": "2",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "examples/child": {
+            "metaxy_feature_version": "7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd",
+            "fields": {
+              "predictions": "bcb950543ea50ba3e19aef4846cbc3d36725e2548040c4327219eb2e75e6d997"
+            },
+            "feature_spec": {
+              "key": "examples/child",
+              "id_columns": [
+                "sample_uid"
+              ],
+              "deps": [
+                {
+                  "feature": "examples/parent",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "1:1"
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "predictions",
+                  "code_version": "1",
+                  "deps": [
+                    {
+                      "feature": "examples/parent",
+                      "fields": [
+                        "embeddings"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T12:17:06.428596",
         "scenario_name": "Code evolution",
         "step_name": "update_parent_version"
       },
@@ -63,7 +205,7 @@
         "returncode": 0,
         "stdout": "Graph snapshot_version: 31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477\nWritten 3 rows for feature examples/parent\nPipeline\n============================================================\n\n[1/2] Computing parent feature...\n\n[2/2] Computing child feature...\nGraph snapshot_version: 31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477\n\n📊 Computing examples/child...\n  feature_version: 7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd\nIdentified: 3 new samples, 0 samples with new provenance_by_field\n✓ Materialized 3 new samples\n\n📋 Child provenance_by_field:\n  sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}\n  sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}\n  sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}\n\n\n✅ Pipeline complete!\n",
         "stderr": "",
-        "timestamp": "2026-01-08T08:54:07.941364",
+        "timestamp": "2026-01-08T12:17:09.125641",
         "scenario_name": "Code evolution",
         "step_name": "recompute_after_change"
       }

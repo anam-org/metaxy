@@ -21,7 +21,7 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
 
     with metaxy_project.with_features(features):
         # No migrations created yet
-        result = metaxy_project.run_cli("migrations", "list")
+        result = metaxy_project.run_cli(["migrations", "list"])
 
         assert result.returncode == 0
         assert "No migrations found" in result.stderr
@@ -73,7 +73,7 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli("migrations", "list")
+        result = metaxy_project.run_cli(["migrations", "list"])
 
         assert result.returncode == 0
         # Check for table contents
@@ -145,7 +145,7 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli("migrations", "list")
+        result = metaxy_project.run_cli(["migrations", "list"])
 
         assert result.returncode == 0
         # Check both migrations are listed
@@ -206,7 +206,7 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
             yaml.dump(migration_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli("migrations", "list")
+        result = metaxy_project.run_cli(["migrations", "list"])
 
         assert result.returncode == 0
         assert "multi_op_migration" in result.stderr
@@ -278,7 +278,7 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
             yaml.dump(migration2_yaml, f)
 
         # Run migrations list
-        result = metaxy_project.run_cli("migrations", "list", check=False)
+        result = metaxy_project.run_cli(["migrations", "list"], check=False)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
         assert "Invalid migration" in result.stderr

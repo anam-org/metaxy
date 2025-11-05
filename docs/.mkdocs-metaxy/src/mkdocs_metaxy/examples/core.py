@@ -260,7 +260,7 @@ class RunbookLoader:
             or empty dict if no execution state exists.
         """
         runbook = self.load_runbook(example_name)
-        return runbook.get_patch_snapshots()
+        return runbook.patch_snapshots
 
     def load_execution_result(self, example_name: str) -> SavedRunbookResult:
         """Load saved execution result from .example.result.json file.

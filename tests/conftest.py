@@ -119,7 +119,7 @@ def metaxy_project(tmp_path):
                     pass
 
             with metaxy_project.with_features(features):
-                result = metaxy_project.run_cli("graph", "push")
+                result = metaxy_project.run_cli(["graph", "push"])
                 assert result.returncode == 0
     """
     from metaxy._testing import TempMetaxyProject

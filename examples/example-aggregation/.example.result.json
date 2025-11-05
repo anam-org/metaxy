@@ -7,7 +7,7 @@
       {
         "type": "graph_pushed",
         "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "timestamp": "2026-01-08T08:53:38.502205",
+        "timestamp": "2026-01-08T12:16:32.785624",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -15,9 +15,9 @@
         "type": "command_executed",
         "command": "python pipeline.py",
         "returncode": 0,
-        "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s2 from 2 audio recordings\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'audio'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'speaker__embedding'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
-        "timestamp": "2026-01-08T08:53:39.973919",
+        "stdout": "Found 4 new audio recordings\nFound 2 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\n  Computing embedding for speaker s2 from 2 audio recordings\nWriting embeddings for 2 speakers\n",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'audio'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:119: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'speaker__embedding'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2026-01-08T12:16:34.340000",
         "scenario_name": "Initial pipeline run",
         "step_name": null
       },
@@ -26,15 +26,15 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T08:53:41.405972",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
+        "timestamp": "2026-01-08T12:16:35.812912",
         "scenario_name": "Idempotent rerun",
         "step_name": null
       },
       {
         "type": "graph_pushed",
         "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "timestamp": "2026-01-08T08:53:42.630744",
+        "timestamp": "2026-01-08T12:16:37.060824",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -43,7 +43,141 @@
         "patch_path": "patches/01_update_audio_provenance.patch",
         "before_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
         "after_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "timestamp": "2026-01-08T08:53:42.630766",
+        "before_graph": {
+          "audio": {
+            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "fields": {
+              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+            },
+            "feature_spec": {
+              "key": "audio",
+              "id_columns": [
+                "audio_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "speaker/embedding": {
+            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "fields": {
+              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+            },
+            "feature_spec": {
+              "key": "speaker/embedding",
+              "id_columns": [
+                "speaker_id"
+              ],
+              "deps": [
+                {
+                  "feature": "audio",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "N:1",
+                      "on": [
+                        "speaker_id"
+                      ]
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "embedding",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "after_graph": {
+          "audio": {
+            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "fields": {
+              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+            },
+            "feature_spec": {
+              "key": "audio",
+              "id_columns": [
+                "audio_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "speaker/embedding": {
+            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "fields": {
+              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+            },
+            "feature_spec": {
+              "key": "speaker/embedding",
+              "id_columns": [
+                "speaker_id"
+              ],
+              "deps": [
+                {
+                  "feature": "audio",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "N:1",
+                      "on": [
+                        "speaker_id"
+                      ]
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "embedding",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T12:16:37.060852",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -52,15 +186,15 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 1 changed audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 2 audio recordings\nWriting embeddings for 1 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T08:53:44.192603",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:58: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
+        "timestamp": "2026-01-08T12:16:38.636623",
         "scenario_name": "Update one audio - only affected speaker recomputed",
         "step_name": null
       },
       {
         "type": "graph_pushed",
         "snapshot_version": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "timestamp": "2026-01-08T08:53:45.401939",
+        "timestamp": "2026-01-08T12:16:39.894374",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -69,7 +203,141 @@
         "patch_path": "patches/02_add_audio.patch",
         "before_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
         "after_snapshot": "d20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc",
-        "timestamp": "2026-01-08T08:53:45.401962",
+        "before_graph": {
+          "audio": {
+            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "fields": {
+              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+            },
+            "feature_spec": {
+              "key": "audio",
+              "id_columns": [
+                "audio_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "speaker/embedding": {
+            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "fields": {
+              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+            },
+            "feature_spec": {
+              "key": "speaker/embedding",
+              "id_columns": [
+                "speaker_id"
+              ],
+              "deps": [
+                {
+                  "feature": "audio",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "N:1",
+                      "on": [
+                        "speaker_id"
+                      ]
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "embedding",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "after_graph": {
+          "audio": {
+            "metaxy_feature_version": "c97627054100197ec6c746b0305a630569f2f13968aa53b610100a01f0991908",
+            "fields": {
+              "default": "80200592cc6accc65ee0b09a7fcf4082c729a0b919cd9c3edf088eb94f27a60c"
+            },
+            "feature_spec": {
+              "key": "audio",
+              "id_columns": [
+                "audio_id"
+              ],
+              "deps": [],
+              "fields": [
+                {
+                  "key": "default",
+                  "code_version": "__metaxy_initial__",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          },
+          "speaker/embedding": {
+            "metaxy_feature_version": "83296faf60084eb70f7d1976367ffcc541f1149195b79bebe46dbb98a50f3bdd",
+            "fields": {
+              "embedding": "8b5b20fb5aab8799f1fbf969e97e71540801d94cae081a6dbef6acbf941fd71a"
+            },
+            "feature_spec": {
+              "key": "speaker/embedding",
+              "id_columns": [
+                "speaker_id"
+              ],
+              "deps": [
+                {
+                  "feature": "audio",
+                  "columns": null,
+                  "rename": null,
+                  "fields_mapping": {
+                    "mapping": {
+                      "type": "default",
+                      "match_suffix": false,
+                      "exclude_fields": []
+                    }
+                  },
+                  "sql_filters": null,
+                  "lineage": {
+                    "relationship": {
+                      "type": "N:1",
+                      "on": [
+                        "speaker_id"
+                      ]
+                    }
+                  },
+                  "optional": false
+                }
+              ],
+              "fields": [
+                {
+                  "key": "embedding",
+                  "code_version": "1",
+                  "deps": []
+                }
+              ],
+              "metadata": {}
+            }
+          }
+        },
+        "timestamp": "2026-01-08T12:16:39.894393",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -78,8 +346,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "Found 1 new audio recordings\nFound 1 speakers that need embedding computation\n  Computing embedding for speaker s1 from 3 audio recordings\nWriting embeddings for 1 speakers\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T08:53:46.942875",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
+        "timestamp": "2026-01-08T12:16:41.458247",
         "scenario_name": "Add new audio - only affected speaker recomputed",
         "step_name": null
       },
@@ -88,8 +356,8 @@
         "command": "python pipeline.py",
         "returncode": 0,
         "stdout": "No new or changed audio recordings\nFound 0 speakers that need embedding computation\n",
-        "stderr": "/tmp/nix-shell.D1X7TE/tmpvwohu0kd/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
-        "timestamp": "2026-01-08T08:53:48.369456",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmpptd81z0u/example-aggregation/pipeline.py:65: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Audio, samples=AUDIO_SAMPLES)\n",
+        "timestamp": "2026-01-08T12:16:42.942472",
         "scenario_name": "Final idempotent check",
         "step_name": null
       }
