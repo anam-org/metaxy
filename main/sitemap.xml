@@ -29,6 +29,10 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/system-columns/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/learn/testing/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -45,15 +49,15 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/reference/system-columns/</loc>
-         <lastmod>1980-01-01</lastmod>
-    </url>
-    <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/config/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/constants/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
