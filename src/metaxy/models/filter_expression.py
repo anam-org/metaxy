@@ -72,23 +72,8 @@ class NarwhalsFilter(FrozenBaseModel):
     @classmethod
     def _parse_expression_from_string(cls, data: Any) -> Any:
         if isinstance(data, str):
-            expression = _parse_to_expression(data)
+            expression = _parse_to_sqlglot_expression(data)
             return {"expression": expression, "source": data}
-        if (
-            isinstance(data, dict)
-            and isinstance(data.get("expression"), str)
-            and data.get("expression")
-        ):
-            expression_str = data["expression"]
-            parsed = _parse_to_expression(expression_str)
-            source = data.get("source", expression_str)
-            if source is None:
-                source = expression_str
-            return {
-                **data,
-                "expression": parsed,
-                "source": source,
-            }
         return data
 
     @field_serializer("expression")
@@ -133,7 +118,7 @@ for operator, class_names in _COMPARISON_NODE_ALIASES.items():
         _COMPARISON_NODE_MAP[cls] = operator
 
 
-def _parse_to_expression(filter_string: str) -> sqlglot.exp.Expression:
+def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
     if not filter_string or not filter_string.strip():
         raise FilterParseError("Filter string cannot be empty.")
 
