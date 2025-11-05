@@ -1,19 +1,18 @@
 """SQL filter string parsing into Narwhals expressions.
 
-This module exposes Pydantic models that represent backend-agnostic filter
-expressions and utilities to parse SQL WHERE-like strings into Narwhals
-``IntoExpr`` objects. The primary entry point is :func:`parse_filter_string`,
-which returns a Narwhals expression that can be fed directly into
+This module exposes utilities to parse SQL WHERE-like strings into Narwhals
+``Expr`` objects. The primary entry point is :func:`parse_filter_string`, which
+returns a Narwhals expression that can be fed directly into
 ``LazyFrame.filter`` (works across all Narwhals backends).
 """
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any, ClassVar, Literal
+from typing import Any, NamedTuple
 
 import narwhals as nw
-from pydantic import Field, field_validator
+from pydantic import field_serializer, model_validator
 from sqlglot import exp, parse_one
 from sqlglot.errors import ParseError
 
@@ -50,138 +49,67 @@ class ComparisonOperator(str, Enum):
         raise FilterParseError(f"Unsupported comparison operator: {self.value}")
 
 
-class LogicalOperator(str, Enum):
-    AND = "and"
-    OR = "or"
-
-    def apply(self, left: nw.Expr, right: nw.Expr) -> nw.Expr:
-        if self is LogicalOperator.AND:
-            return left & right
-        if self is LogicalOperator.OR:
-            return left | right
-        raise FilterParseError(f"Unsupported logical operator: {self.value}")
-
-
-class FilterOperand(FrozenBaseModel):
-    """Base class for value operands inside comparison expressions."""
-
-    model_config: ClassVar[dict[str, Any]] = {
-        "extra": "forbid",
-        "frozen": True,
-    }
-
-    def to_expr(self) -> nw.Expr:
-        raise NotImplementedError
-
-
-class ColumnOperand(FilterOperand):
-    type: Literal["column"] = "column"
-    name: str
-
-    @field_validator("name")
-    @classmethod
-    def _strip(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            msg = "Column name cannot be empty"
-            raise FilterParseError(msg)
-        return value
-
-    def to_expr(self) -> nw.Expr:
-        return nw.col(self.name)
-
-
-class LiteralOperand(FilterOperand):
-    type: Literal["literal"] = "literal"
-    value: LiteralValue
-
-    def to_expr(self) -> nw.Expr:
-        return nw.lit(self.value)
-
-
-FilterOperandType = Annotated[
-    ColumnOperand | LiteralOperand,
-    Field(discriminator="type"),
-]
-
-
-class FilterExpression(FrozenBaseModel):
-    """Base class for boolean filter expressions."""
-
-    model_config: ClassVar[dict[str, Any]] = {
-        "extra": "forbid",
-        "frozen": True,
-    }
-
-    def to_expr(self) -> nw.Expr:
-        raise NotImplementedError
-
-
-class ComparisonExpression(FilterExpression):
-    type: Literal["comparison"] = "comparison"
-    operator: ComparisonOperator
-    left: FilterOperandType
-    right: FilterOperandType
-
-    def to_expr(self) -> nw.Expr:
-        if self.operator in {ComparisonOperator.EQ, ComparisonOperator.NEQ}:
-            # Handle NULL-safe comparisons explicitly for backend correctness.
-            null_comparison = _maybe_null_comparison(
-                self.left, self.right, self.operator
-            )
-            if null_comparison is not None:
-                return null_comparison
-
-        return self.operator.apply(self.left.to_expr(), self.right.to_expr())
-
-
-class LogicalExpression(FilterExpression):
-    type: Literal["logical"] = "logical"
-    operator: LogicalOperator
-    left: FilterExpressionType
-    right: FilterExpressionType
-
-    def to_expr(self) -> nw.Expr:
-        return self.operator.apply(self.left.to_expr(), self.right.to_expr())
-
-
-class NotExpression(FilterExpression):
-    type: Literal["not"] = "not"
-    operand: FilterExpressionType
-
-    def to_expr(self) -> nw.Expr:
-        return ~self.operand.to_expr()
-
-
-class OperandExpression(FilterExpression):
-    type: Literal["operand"] = "operand"
-    operand: FilterOperandType
-
-    def to_expr(self) -> nw.Expr:
-        return self.operand.to_expr()
-
-
-FilterExpressionType = Annotated[
-    ComparisonExpression | LogicalExpression | NotExpression | OperandExpression,
-    Field(discriminator="type"),
-]
+class OperandInfo(NamedTuple):
+    expr: nw.Expr
+    is_literal: bool
+    literal_value: LiteralValue
+    is_column: bool
 
 
 class NarwhalsFilter(FrozenBaseModel):
     """Pydantic model for serializable Narwhals filter expressions."""
 
-    expression: FilterExpressionType
+    expression: exp.Expression
     source: str | None = None
+
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "forbid",
+        "frozen": True,
+    }
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_expression_from_string(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            expression = _parse_to_expression(data)
+            return {"expression": expression, "source": data}
+
+        if isinstance(data, dict):
+            maybe_expression = data.get("expression")
+            if isinstance(maybe_expression, str):
+                expression = _parse_to_expression(maybe_expression)
+                updated = dict(data)
+                updated["expression"] = expression
+                updated.setdefault("source", maybe_expression)
+                return updated
+
+            maybe_source = data.get("source")
+            if isinstance(maybe_source, str) and "expression" not in data:
+                expression = _parse_to_expression(maybe_source)
+                updated = dict(data)
+                updated["expression"] = expression
+                return updated
+
+        return data
+
+    @field_serializer("expression")
+    def _serialize_expression(self, expression: exp.Expression) -> str:
+        return expression.sql()
 
     def to_expr(self) -> nw.Expr:
         """Convert the stored expression into a Narwhals ``Expr``."""
-        return self.expression.to_expr()
+        return _expression_to_narwhals(self.expression)
 
     @classmethod
     def from_string(cls, filter_string: str) -> NarwhalsFilter:
         """Parse a SQL WHERE-like string into a ``NarwhalsFilter``."""
-        expression = _parse_to_expression(filter_string)
-        return cls(expression=expression, source=filter_string)
+        return cls.model_validate(filter_string)
+
+
+def parse_filter_string(filter_string: str) -> nw.Expr:
+    """Parse a SQL WHERE-like string into a Narwhals expression."""
+    return NarwhalsFilter.from_string(filter_string).to_expr()
 
 
 _COMPARISON_NODE_MAP: dict[type[exp.Expression], ComparisonOperator] = {}
@@ -207,12 +135,7 @@ for operator, class_names in _COMPARISON_NODE_ALIASES.items():
         _COMPARISON_NODE_MAP[cls] = operator
 
 
-def parse_filter_string(filter_string: str) -> nw.Expr:
-    """Parse a SQL WHERE-like string into a Narwhals expression."""
-    return NarwhalsFilter.from_string(filter_string).to_expr()
-
-
-def _parse_to_expression(filter_string: str) -> FilterExpressionType:
+def _parse_to_expression(filter_string: str) -> exp.Expression:
     if not filter_string or not filter_string.strip():
         raise FilterParseError("Filter string cannot be empty.")
 
@@ -225,30 +148,26 @@ def _parse_to_expression(filter_string: str) -> FilterExpressionType:
     if parsed is None:
         raise FilterParseError("Failed to parse filter string into an expression.")
 
-    return _convert_expression(parsed)
+    return parsed
 
 
-def _convert_expression(node: exp.Expression) -> FilterExpressionType:
+def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
     node = _strip_parens(node)
 
     if isinstance(node, exp.Not):
         operand = node.this
         if operand is None:
             raise FilterParseError("NOT operator requires an operand.")
-        return NotExpression(operand=_convert_expression(operand))
+        return ~_expression_to_narwhals(operand)
 
     if isinstance(node, exp.And):
-        return LogicalExpression(
-            operator=LogicalOperator.AND,
-            left=_convert_expression(node.this),
-            right=_convert_expression(node.expression),
+        return _expression_to_narwhals(node.this) & _expression_to_narwhals(
+            node.expression
         )
 
     if isinstance(node, exp.Or):
-        return LogicalExpression(
-            operator=LogicalOperator.OR,
-            left=_convert_expression(node.this),
-            right=_convert_expression(node.expression),
+        return _expression_to_narwhals(node.this) | _expression_to_narwhals(
+            node.expression
         )
 
     operator = _COMPARISON_NODE_MAP.get(type(node))
@@ -259,11 +178,12 @@ def _convert_expression(node: exp.Expression) -> FilterExpressionType:
             raise FilterParseError(
                 f"Comparison operator {operator.value} requires two operands."
             )
-        return ComparisonExpression(
-            operator=operator,
-            left=_convert_operand(left),
-            right=_convert_operand(right),
-        )
+        left_operand = _operand_info(left)
+        right_operand = _operand_info(right)
+        null_comparison = _maybe_null_comparison(left_operand, right_operand, operator)
+        if null_comparison is not None:
+            return null_comparison
+        return operator.apply(left_operand.expr, right_operand.expr)
 
     if isinstance(
         node,
@@ -273,11 +193,108 @@ def _convert_expression(node: exp.Expression) -> FilterExpressionType:
             exp.Boolean,
             exp.Literal,
             exp.Null,
+            exp.Neg,
         ),
     ):
-        return OperandExpression(operand=_convert_operand(node))
+        return _operand_info(node).expr
 
     raise FilterParseError(f"Unsupported expression: {node.sql()}")
+
+
+def _operand_info(node: exp.Expression) -> OperandInfo:
+    node = _strip_parens(node)
+
+    if isinstance(node, exp.Column):
+        return OperandInfo(
+            expr=nw.col(_column_name(node)),
+            is_literal=False,
+            literal_value=None,
+            is_column=True,
+        )
+
+    if isinstance(node, exp.Identifier):
+        return OperandInfo(
+            expr=nw.col(_column_name(node)),
+            is_literal=False,
+            literal_value=None,
+            is_column=True,
+        )
+
+    if isinstance(node, exp.Neg):
+        inner = node.this
+        if inner is None:
+            raise FilterParseError("Unary minus requires an operand.")
+        operand = _operand_info(inner)
+        if not operand.is_literal or not isinstance(
+            operand.literal_value, (int, float)
+        ):
+            raise FilterParseError("Unary minus only supported for numeric literals.")
+        value = -operand.literal_value
+        return OperandInfo(
+            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
+        )
+
+    if isinstance(node, exp.Literal):
+        value = _literal_to_python(node)
+        return OperandInfo(
+            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
+        )
+
+    if isinstance(node, exp.Boolean):
+        value = _literal_to_python(node)
+        return OperandInfo(
+            expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
+        )
+
+    if isinstance(node, exp.Null):
+        return OperandInfo(
+            expr=nw.lit(None), is_literal=True, literal_value=None, is_column=False
+        )
+
+    raise FilterParseError(f"Unsupported operand: {node.sql()}")
+
+
+def _maybe_null_comparison(
+    left: OperandInfo,
+    right: OperandInfo,
+    operator: ComparisonOperator,
+) -> nw.Expr | None:
+    if left.is_literal and left.literal_value is None and right.is_column:
+        column_expr = right.expr
+        if operator is ComparisonOperator.EQ:
+            return column_expr.is_null()
+        if operator is ComparisonOperator.NEQ:
+            return ~column_expr.is_null()
+        return None
+
+    if right.is_literal and right.literal_value is None and left.is_column:
+        column_expr = left.expr
+        if operator is ComparisonOperator.EQ:
+            return column_expr.is_null()
+        if operator is ComparisonOperator.NEQ:
+            return ~column_expr.is_null()
+        return None
+
+    return None
+
+
+def _literal_to_python(node: exp.Expression) -> LiteralValue:
+    match node:
+        case exp.Null():
+            return None
+        case exp.Boolean():
+            return node.this is True or str(node.this).lower() == "true"
+        case exp.Literal():
+            literal = node
+            if literal.is_string:
+                return literal.name
+            if literal.is_int:
+                return int(literal.this)
+            if literal.is_number:
+                return float(literal.this)
+            return literal.this
+        case _:
+            raise FilterParseError(f"Unsupported literal: {node.sql()}")
 
 
 def _strip_parens(node: exp.Expression) -> exp.Expression:
@@ -312,98 +329,9 @@ def _column_name(node: exp.Expression) -> str:
     return name
 
 
-def _convert_operand(node: exp.Expression) -> FilterOperandType:
-    node = _strip_parens(node)
-
-    if isinstance(node, exp.Column):
-        return ColumnOperand(name=_column_name(node))
-
-    if isinstance(node, exp.Identifier):
-        return ColumnOperand(name=_column_name(node))
-
-    if isinstance(node, exp.Neg):
-        inner = node.this
-        if inner is None:
-            raise FilterParseError("Unary minus requires an operand.")
-        operand = _convert_operand(inner)
-        if not isinstance(operand, LiteralOperand):
-            raise FilterParseError("Unary minus only supported for numeric literals.")
-        value = operand.value
-        if isinstance(value, (int, float)):
-            return LiteralOperand(value=-value)
-        raise FilterParseError("Unary minus only supported for numeric literals.")
-
-    if isinstance(node, exp.Literal):
-        return LiteralOperand(value=_literal_to_python(node))
-
-    if isinstance(node, exp.Boolean):
-        return LiteralOperand(value=_literal_to_python(node))
-
-    if isinstance(node, exp.Null):
-        return LiteralOperand(value=None)
-
-    raise FilterParseError(f"Unsupported operand: {node.sql()}")
-
-
-def _literal_to_python(node: exp.Expression) -> LiteralValue:
-    match node:
-        case exp.Null():
-            return None
-        case exp.Boolean():
-            return node.this is True or str(node.this).lower() == "true"
-        case exp.Literal():
-            literal = node
-            if literal.is_string:
-                return literal.name
-            if literal.is_int:
-                return int(literal.this)
-            if literal.is_number:
-                return float(literal.this)
-            return literal.this
-        case _:
-            raise FilterParseError(f"Unsupported literal: {node.sql()}")
-
-
-def _maybe_null_comparison(
-    left: FilterOperand,
-    right: FilterOperand,
-    operator: ComparisonOperator,
-) -> nw.Expr | None:
-    if (
-        isinstance(left, LiteralOperand)
-        and left.value is None
-        and isinstance(right, ColumnOperand)
-    ):
-        column_expr = right.to_expr()
-        if operator is ComparisonOperator.EQ:
-            return column_expr.is_null()
-        return ~column_expr.is_null()
-
-    if (
-        isinstance(right, LiteralOperand)
-        and right.value is None
-        and isinstance(left, ColumnOperand)
-    ):
-        column_expr = left.to_expr()
-        if operator is ComparisonOperator.EQ:
-            return column_expr.is_null()
-        return ~column_expr.is_null()
-
-    return None
-
-
 __all__ = [
-    "ComparisonExpression",
     "ComparisonOperator",
-    "FilterExpression",
-    "FilterOperand",
     "FilterParseError",
-    "LiteralOperand",
-    "LogicalExpression",
-    "LogicalOperator",
     "NarwhalsFilter",
-    "NotExpression",
-    "OperandExpression",
-    "ColumnOperand",
     "parse_filter_string",
 ]

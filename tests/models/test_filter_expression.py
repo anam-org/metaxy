@@ -3,10 +3,9 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
+from sqlglot import exp
 
 from metaxy.models.filter_expression import (
-    ColumnOperand,
-    ComparisonExpression,
     FilterParseError,
     NarwhalsFilter,
     parse_filter_string,
@@ -67,8 +66,7 @@ def test_parse_boolean_and_null_literals(
 def test_serialization_round_trip() -> None:
     filter_model = NarwhalsFilter.from_string("age <= 30 OR NOT is_active")
     dumped = filter_model.model_dump()
-    assert dumped["expression"]["type"] == "logical"
-    assert dumped["expression"]["operator"] == "or"
+    assert dumped["expression"] == "age <= 30 OR NOT is_active"
     assert dumped["source"] == "age <= 30 OR NOT is_active"
 
     restored = NarwhalsFilter.model_validate(dumped)
@@ -83,6 +81,6 @@ def test_unsupported_expression_raises() -> None:
 def test_dotted_column_name_preserved() -> None:
     filter_model = NarwhalsFilter.from_string("metadata.owner = 'alice'")
     expression = filter_model.expression
-    assert isinstance(expression, ComparisonExpression)
-    assert isinstance(expression.left, ColumnOperand)
-    assert expression.left.name == "metadata.owner"
+    assert isinstance(expression, exp.EQ)
+    assert isinstance(expression.this, exp.Column)
+    assert expression.this.sql() == "metadata.owner"
