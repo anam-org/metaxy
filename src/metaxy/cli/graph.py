@@ -3,19 +3,17 @@
 from typing import Annotated, Literal
 
 import cyclopts
-from rich.console import Console
 from rich.table import Table
 
+from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
-
-# Rich console for formatted output
-console = Console()
 
 # Graph subcommand app
 app = cyclopts.App(
     name="graph",  # pyrefly: ignore[unexpected-keyword]
     help="Manage feature graphs",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 
@@ -37,20 +35,21 @@ def push(
 
     Example:
         $ metaxy graph push
-
         ✓ Recorded feature graph
-          Snapshot version: abc123def456...
+        abc123def456...
 
         # Or if already recorded:
+        $ metaxy graph push
         ℹ Snapshot already recorded (no changes)
-          Snapshot version: abc123def456...
+        abc123def456...
 
         # Or if metadata-only changes:
+        $ metaxy graph push
         ℹ Updated feature graph metadata (no topological changes)
           Features with metadata changes:
             - video/processing
             - user/profile
-          Snapshot version: abc123def456...
+        abc123def456...
     """
     from metaxy.cli.context import AppContext
 
@@ -65,23 +64,26 @@ def push(
         # Scenario 1: New snapshot (computational changes)
         if not result.already_recorded:
             console.print("[green]✓[/green] Recorded feature graph")
-            console.print(f"  Snapshot version: {result.snapshot_version}")
 
         # Scenario 2: Metadata-only changes
         elif result.metadata_changed:
             console.print(
-                "[blue]ℹ[/blue] Updated feature graph metadata (no topological changes)"
+                "[blue]ℹ[/blue] [cyan]Updated feature graph metadata[/cyan] (no topological changes)"
             )
             if result.features_with_spec_changes:
-                console.print("  Features with metadata changes:")
+                console.print("  [dim]Features with metadata changes:[/dim]")
                 for feature_key in result.features_with_spec_changes:
-                    console.print(f"    - {feature_key}")
-            console.print(f"  Snapshot version: {result.snapshot_version}")
+                    console.print(f"    [yellow]- {feature_key}[/yellow]")
 
         # Scenario 3: No changes
         else:
-            console.print("[blue]ℹ[/blue] Snapshot already recorded (no changes)")
-            console.print(f"  Snapshot version: {result.snapshot_version}")
+            console.print(
+                "[green]✓[/green] [green]Snapshot already recorded[/green] [dim](no changes)[/dim]"
+            )
+
+        # Always output the snapshot version to stdout (for scripting)
+        # Note: snapshot_version is "empty" when graph has no features
+        data_console.print(result.snapshot_version)
 
 
 @app.command()
@@ -601,10 +603,6 @@ def render(
             console.print(f"[red]✗[/red] Failed to write to file: {e}")
             raise SystemExit(1)
     else:
-        # Print to stdout
-        # For terminal/dag formats, the output already contains ANSI codes from Rich
-        # so we print directly to avoid double-escaping
-        if format in ("terminal", "dag"):
-            print(rendered)
-        else:
-            console.print(rendered)
+        # Print to stdout using data_console
+        # Rendered graph output is data that users might pipe/redirect
+        data_console.print(rendered)

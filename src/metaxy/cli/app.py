@@ -7,7 +7,7 @@ import cyclopts
 
 from metaxy import init_metaxy
 from metaxy._version import __version__
-from metaxy.cli.console import console
+from metaxy.cli.console import console, error_console
 
 # Main app
 app = cyclopts.App(
@@ -15,6 +15,7 @@ app = cyclopts.App(
     help="Metaxy - Feature Metadata Management",  # pyrefly: ignore[unexpected-keyword]
     version=__version__,  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
     config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]
         "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
     ),

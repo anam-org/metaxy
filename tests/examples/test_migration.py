@@ -1,7 +1,6 @@
 """Tests for migration example."""
 
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -66,17 +65,14 @@ def test_pipeline(tmp_path, snapshot):
         env={**base_env, "STAGE": "1"},
     )
     assert result.returncode == 0, f"Push v1 failed: {result.stderr}"
-    print(result.stdout)
 
-    # Extract v1 snapshot version from output
-    # Format is: "Snapshot version: \nd49e39c7ad7523cd..." (multiline)
-    match = re.search(r"Snapshot version:\s+\n([a-f0-9]+)", result.stdout)
-    if not match:
-        # Try alternative format
-        match = re.search(r"Full ID: \('([^']+)'", result.stdout)
-    assert match, f"Could not find snapshot version in push output:\n{result.stdout}"
-    v1_snapshot = match.group(1)
-    assert v1_snapshot is not None
+    # After the stream separation changes, stdout contains ONLY the raw snapshot ID hash
+    v1_snapshot = result.stdout.strip()
+    # v1_snapshot should be the expected hash from the snapshot data
+    assert (
+        v1_snapshot
+        == "d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82"
+    )
 
     # Step 2: Run pipeline with STAGE=1
     result = subprocess.run(
@@ -101,7 +97,10 @@ def test_pipeline(tmp_path, snapshot):
         env={**base_env, "STAGE": "2"},
     )
     assert result.returncode == 0, f"Push v2 failed: {result.stderr}"
-    print(result.stdout)
+
+    # stdout contains ONLY the raw snapshot ID hash
+    v2_snapshot = result.stdout.strip()
+    print(f"V2 snapshot: {v2_snapshot}")
 
     # Step 4: Use reference migration (don't generate, just use the existing one)
     import shutil
@@ -141,12 +140,12 @@ def test_pipeline(tmp_path, snapshot):
     assert result.returncode == 0, (
         f"Migration apply failed: {result.stderr}\nstdout: {result.stdout}"
     )
-    print(result.stdout)
+    print(result.stderr)  # Migration status messages go to stderr now
 
-    # Verify migration was applied successfully
+    # Verify migration was applied successfully (check stderr for status messages)
     assert (
-        "Migration completed" in result.stdout or "completed" in result.stdout.lower()
-    ), "Expected migration completion message in output"
+        "Migration completed" in result.stderr or "completed" in result.stderr.lower()
+    ), f"Expected migration completion message in stderr, got: {result.stderr}"
 
     # Step 6: Run pipeline with STAGE=2 after migration
     # This should show NO recomputes because migration reconciled the field_provenance
