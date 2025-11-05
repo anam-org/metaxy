@@ -2,13 +2,13 @@ import metaxy as mx
 
 
 class Video(
-    mx.BaseFeature,
-    spec=mx.BaseFeatureSpec(
-        key="video/raw",
+    mx.Feature,
+    spec=mx.FeatureSpec(
+        key=["video", "raw"],
         id_columns=["video_id"],
         fields=[
-            mx.FieldSpec(key="audio", code_version="1"),
-            mx.FieldSpec(key="frames", code_version="1"),
+            mx.FieldSpec(key=["audio"], code_version="1"),
+            mx.FieldSpec(key=["frames"], code_version="1"),
         ],
     ),
 ):
@@ -17,15 +17,15 @@ class Video(
 
 
 class VideoChunk(
-    mx.BaseFeature,
-    spec=mx.BaseFeatureSpec(
-        key="video/chunk",
+    mx.Feature,
+    spec=mx.FeatureSpec(
+        key=["video", "chunk"],
         id_columns=["video_chunk_id"],
+        deps=[mx.FeatureDep(feature=["video", "raw"])],
         fields=[
-            mx.FieldSpec(key="audio", code_version="1"),
-            mx.FieldSpec(key="frames", code_version="1"),
+            mx.FieldSpec(key=["audio"], code_version="1"),
+            mx.FieldSpec(key=["frames"], code_version="1"),
         ],
-        deps=[mx.FeatureDep(feature="video/raw")],
         lineage=mx.LineageRelationship.expansion(on=["video_id"]),
     ),
 ):

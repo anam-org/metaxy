@@ -115,15 +115,19 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             # Find common ID columns between target and current that might be parent IDs
             # Usually the parent ID columns are a subset of child ID columns
             # For example: parent has [video_id], child has [video_id, video_chunk_id]
+            # Use a heuristic: only consider columns that look like IDs (end with "_id" or are explicitly named "id")
             parent_id_cols = []
             for col in target_cols:
                 if col in available_cols and col not in [
                     "provenance_by_field",
                     "feature_version",
                     "snapshot_version",
+                    "metaxy_provenance_by_field",
                 ]:
-                    # This column exists in both - might be a parent ID
-                    parent_id_cols.append(col)
+                    # Check if this looks like an ID column
+                    if col.endswith("_id") or col == "id" or col.endswith("_uid") or col == "uid":
+                        # This column exists in both and looks like an ID - likely a parent ID
+                        parent_id_cols.append(col)
 
             if parent_id_cols:
                 # We found potential parent ID columns
@@ -159,35 +163,38 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
                     removed=empty_lazy,  # Don't remove existing data
                 )
 
-        # Build aggregation expressions
-        # Note: .max() doesn't work well with struct columns in Narwhals/Polars (returns null)
-        # Use .first() instead, but sort first to avoid order-dependency errors
-        agg_cols = [
-            nw.col("provenance_by_field")
-            .first()  # Use .first() for struct columns (all values in group should be identical)
-            .alias("__current_provenance_by_field")
-        ]
+        # Use .unique() instead of group_by().agg() to avoid order-dependent operations
+        # This is more semantically correct: we want unique records by ID columns,
+        # and all duplicate records should have identical provenance values
 
-        # Track child-specific columns for later use
-        child_specific_cols = []
-        # Add any missing child-specific ID columns to aggregation (for 1:N)
-        # Only add if they're not in the grouping columns
-        for col in id_columns:
-            if col not in effective_id_columns and col in available_cols:
-                child_specific_cols.append(col)
-                # Use .first() for consistency (all values in group should be same)
-                agg_cols.append(nw.col(col).first().alias(f"__child_{col}"))
+        # Track child-specific columns (defined at this scope for later use)
+        child_specific_cols: list[str] = []
 
-        # Standard case: group by effective ID columns
-        # Query optimizer will optimize this away for unique keys
         if effective_id_columns:
-            # Sort first by ID columns to make .first() deterministic
-            current_sorted = current_metadata.sort(effective_id_columns)
-            current_comparison = current_sorted.group_by(
-                sorted(effective_id_columns)
-            ).agg(agg_cols)
-            # Sort to maintain deterministic ordering
-            current_comparison = current_comparison.sort(sorted(effective_id_columns))
+            # Find any missing child-specific ID columns (for 1:N)
+            for col in id_columns:
+                if col not in effective_id_columns and col in available_cols:
+                    child_specific_cols.append(col)
+
+            # Select only the columns we need for comparison to avoid duplicates
+            # We need: effective ID columns + provenance_by_field + child-specific columns
+            cols_to_select = list(effective_id_columns) + ["provenance_by_field"]
+            cols_to_select.extend(child_specific_cols)
+
+            # Get unique records by effective ID columns
+            # IMPORTANT: Select columns first, then unique to ensure we don't have duplicate columns
+            current_comparison = current_metadata.select(cols_to_select).unique(subset=effective_id_columns)
+
+            # Rename the provenance column for comparison
+            current_comparison = current_comparison.with_columns(
+                nw.col("provenance_by_field").alias("__current_provenance_by_field")
+            )
+
+            # Rename child-specific columns to avoid conflicts
+            for col in child_specific_cols:
+                current_comparison = current_comparison.with_columns(
+                    nw.col(col).alias(f"__child_{col}")
+                )
         else:
             # No effective ID columns - this shouldn't normally happen
             # but can occur in edge cases with expansion relationships

@@ -1,0 +1,38 @@
+name: "One-to-Many Expansion Example"
+description: "Demonstrates 1:N expansion relationships where parent records expand into multiple child records"
+package_name: "example_one_to_many"
+
+scenarios:
+  - name: "Initial pipeline run"
+    description: "First execution creates videos and splits them into chunks"
+    steps:
+      - type: "run_command"
+        command: "uv run python pipeline.py"
+        description: "Run pipeline to create videos and chunks"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify pipeline processed videos and created chunks"
+        returncode: 0
+        contains:
+          - "Found 3 videos to process for chunking"
+          - "Writing"
+          - "chunks for video"
+
+  - name: "Idempotent rerun"
+    description: "Second execution should detect no changes and create no new chunks"
+    steps:
+      - type: "run_command"
+        command: "uv run python pipeline.py"
+        description: "Rerun pipeline without any code changes"
+        capture_output: true
+        timeout: 30.0
+
+      - type: "assert_output"
+        description: "Verify no new chunks are created (idempotent)"
+        returncode: 0
+        contains:
+          - "Found 0 videos to process for chunking"
+        not_contains:
+          - "Writing"
