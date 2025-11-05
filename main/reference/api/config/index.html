@@ -1739,13 +1739,13 @@
 
 <details class="example" open>
   <summary>Accessing current configuration</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 </span></code></pre></div>
 </details>
 
 <details class="example" open>
   <summary>Getting a configured metadata store</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </details>        <p>The default store is <code>"dev"</code>; <code>METAXY_STORE</code> can be used to override it.</p>
 
@@ -1816,52 +1816,30 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-238">238</a></span>
-<span class="normal"><a href="#__codelineno-0-239">239</a></span>
-<span class="normal"><a href="#__codelineno-0-240">240</a></span>
-<span class="normal"><a href="#__codelineno-0-241">241</a></span>
-<span class="normal"><a href="#__codelineno-0-242">242</a></span>
-<span class="normal"><a href="#__codelineno-0-243">243</a></span>
-<span class="normal"><a href="#__codelineno-0-244">244</a></span>
-<span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span>
-<span class="normal"><a href="#__codelineno-0-247">247</a></span>
-<span class="normal"><a href="#__codelineno-0-248">248</a></span>
-<span class="normal"><a href="#__codelineno-0-249">249</a></span>
-<span class="normal"><a href="#__codelineno-0-250">250</a></span>
-<span class="normal"><a href="#__codelineno-0-251">251</a></span>
-<span class="normal"><a href="#__codelineno-0-252">252</a></span>
-<span class="normal"><a href="#__codelineno-0-253">253</a></span>
-<span class="normal"><a href="#__codelineno-0-254">254</a></span>
-<span class="normal"><a href="#__codelineno-0-255">255</a></span>
-<span class="normal"><a href="#__codelineno-0-256">256</a></span>
-<span class="normal"><a href="#__codelineno-0-257">257</a></span>
-<span class="normal"><a href="#__codelineno-0-258">258</a></span>
-<span class="normal"><a href="#__codelineno-0-259">259</a></span>
-<span class="normal"><a href="#__codelineno-0-260">260</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;project&quot;</span><span class="p">)</span>
-</span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_project</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate project name follows naming rules.&quot;&quot;&quot;</span>
-</span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span><span class="p">:</span>
-</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;project name cannot be empty&quot;</span><span class="p">)</span>
-</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a>    <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
-</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; cannot contain forward slashes (/). &quot;</span>
-</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a>            <span class="sa">f</span><span class="s2">&quot;Forward slashes are reserved for FeatureKey separation&quot;</span>
-</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a>        <span class="p">)</span>
-</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a>    <span class="k">if</span> <span class="s2">&quot;__&quot;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
-</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; cannot contain double underscores (__). &quot;</span>
-</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a>            <span class="sa">f</span><span class="s2">&quot;Double underscores are reserved for table name generation&quot;</span>
-</span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a>        <span class="p">)</span>
-</span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-</span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a>
-</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z0-9_-]+$&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
-</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; must contain only alphanumeric characters, underscores, and hyphens&quot;</span>
-</span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a>        <span class="p">)</span>
-</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="k">return</span> <span class="n">v</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><a href="#__codelineno-0-238"><span class="linenos" data-linenos="238 "></span></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;project&quot;</span><span class="p">)</span>
+</span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a><a href="#__codelineno-0-239"><span class="linenos" data-linenos="239 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a><a href="#__codelineno-0-240"><span class="linenos" data-linenos="240 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_project</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a><a href="#__codelineno-0-241"><span class="linenos" data-linenos="241 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate project name follows naming rules.&quot;&quot;&quot;</span>
+</span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a><a href="#__codelineno-0-242"><span class="linenos" data-linenos="242 "></span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span><span class="p">:</span>
+</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><a href="#__codelineno-0-243"><span class="linenos" data-linenos="243 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;project name cannot be empty&quot;</span><span class="p">)</span>
+</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><a href="#__codelineno-0-244"><span class="linenos" data-linenos="244 "></span></a>    <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a><a href="#__codelineno-0-245"><span class="linenos" data-linenos="245 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><a href="#__codelineno-0-246"><span class="linenos" data-linenos="246 "></span></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; cannot contain forward slashes (/). &quot;</span>
+</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a><a href="#__codelineno-0-247"><span class="linenos" data-linenos="247 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Forward slashes are reserved for FeatureKey separation&quot;</span>
+</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a><a href="#__codelineno-0-248"><span class="linenos" data-linenos="248 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><a href="#__codelineno-0-249"><span class="linenos" data-linenos="249 "></span></a>    <span class="k">if</span> <span class="s2">&quot;__&quot;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a><a href="#__codelineno-0-250"><span class="linenos" data-linenos="250 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><a href="#__codelineno-0-251"><span class="linenos" data-linenos="251 "></span></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; cannot contain double underscores (__). &quot;</span>
+</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><a href="#__codelineno-0-252"><span class="linenos" data-linenos="252 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Double underscores are reserved for table name generation&quot;</span>
+</span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><a href="#__codelineno-0-253"><span class="linenos" data-linenos="253 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a><a href="#__codelineno-0-254"><span class="linenos" data-linenos="254 "></span></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+</span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><a href="#__codelineno-0-255"><span class="linenos" data-linenos="255 "></span></a>
+</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><a href="#__codelineno-0-256"><span class="linenos" data-linenos="256 "></span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[a-zA-Z0-9_-]+$&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><a href="#__codelineno-0-257"><span class="linenos" data-linenos="257 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><a href="#__codelineno-0-258"><span class="linenos" data-linenos="258 "></span></a>            <span class="sa">f</span><span class="s2">&quot;project name &#39;</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&#39; must contain only alphanumeric characters, underscores, and hyphens&quot;</span>
+</span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><a href="#__codelineno-0-259"><span class="linenos" data-linenos="259 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><a href="#__codelineno-0-260"><span class="linenos" data-linenos="260 "></span></a>    <span class="k">return</span> <span class="n">v</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -1889,24 +1867,16 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-272">272</a></span>
-<span class="normal"><a href="#__codelineno-0-273">273</a></span>
-<span class="normal"><a href="#__codelineno-0-274">274</a></span>
-<span class="normal"><a href="#__codelineno-0-275">275</a></span>
-<span class="normal"><a href="#__codelineno-0-276">276</a></span>
-<span class="normal"><a href="#__codelineno-0-277">277</a></span>
-<span class="normal"><a href="#__codelineno-0-278">278</a></span>
-<span class="normal"><a href="#__codelineno-0-279">279</a></span>
-<span class="normal"><a href="#__codelineno-0-280">280</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">)</span>
-</span><span id="__span-0-273"><a id="__codelineno-0-273" name="__codelineno-0-273"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-274"><a id="__codelineno-0-274" name="__codelineno-0-274"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_hash_truncation_length</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-275"><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate hash truncation length is at least 8 if set.&quot;&quot;&quot;</span>
-</span><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
-</span><span id="__span-0-277"><a id="__codelineno-0-277" name="__codelineno-0-277"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a>            <span class="sa">f</span><span class="s2">&quot;hash_truncation_length must be at least 8 characters, got </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a>        <span class="p">)</span>
-</span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="k">return</span> <span class="n">v</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a><a href="#__codelineno-0-272"><span class="linenos" data-linenos="272 "></span></a><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">)</span>
+</span><span id="__span-0-273"><a id="__codelineno-0-273" name="__codelineno-0-273"></a><a href="#__codelineno-0-273"><span class="linenos" data-linenos="273 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-274"><a id="__codelineno-0-274" name="__codelineno-0-274"></a><a href="#__codelineno-0-274"><span class="linenos" data-linenos="274 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_hash_truncation_length</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-275"><a id="__codelineno-0-275" name="__codelineno-0-275"></a><a href="#__codelineno-0-275"><span class="linenos" data-linenos="275 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate hash truncation length is at least 8 if set.&quot;&quot;&quot;</span>
+</span><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a><a href="#__codelineno-0-276"><span class="linenos" data-linenos="276 "></span></a>    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+</span><span id="__span-0-277"><a id="__codelineno-0-277" name="__codelineno-0-277"></a><a href="#__codelineno-0-277"><span class="linenos" data-linenos="277 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a><a href="#__codelineno-0-278"><span class="linenos" data-linenos="278 "></span></a>            <span class="sa">f</span><span class="s2">&quot;hash_truncation_length must be at least 8 characters, got </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><a href="#__codelineno-0-279"><span class="linenos" data-linenos="279 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a><a href="#__codelineno-0-280"><span class="linenos" data-linenos="280 "></span></a>    <span class="k">return</span> <span class="n">v</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -1938,42 +1908,25 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-282">282</a></span>
-<span class="normal"><a href="#__codelineno-0-283">283</a></span>
-<span class="normal"><a href="#__codelineno-0-284">284</a></span>
-<span class="normal"><a href="#__codelineno-0-285">285</a></span>
-<span class="normal"><a href="#__codelineno-0-286">286</a></span>
-<span class="normal"><a href="#__codelineno-0-287">287</a></span>
-<span class="normal"><a href="#__codelineno-0-288">288</a></span>
-<span class="normal"><a href="#__codelineno-0-289">289</a></span>
-<span class="normal"><a href="#__codelineno-0-290">290</a></span>
-<span class="normal"><a href="#__codelineno-0-291">291</a></span>
-<span class="normal"><a href="#__codelineno-0-292">292</a></span>
-<span class="normal"><a href="#__codelineno-0-293">293</a></span>
-<span class="normal"><a href="#__codelineno-0-294">294</a></span>
-<span class="normal"><a href="#__codelineno-0-295">295</a></span>
-<span class="normal"><a href="#__codelineno-0-296">296</a></span>
-<span class="normal"><a href="#__codelineno-0-297">297</a></span>
-<span class="normal"><a href="#__codelineno-0-298">298</a></span>
-<span class="normal"><a href="#__codelineno-0-299">299</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="k">def</span><span class="w"> </span><span class="nf">settings_customise_sources</span><span class="p">(</span>
-</span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a>    <span class="bp">cls</span><span class="p">,</span>
-</span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="n">settings_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseSettings</span><span class="p">],</span>
-</span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="n">init_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
-</span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>    <span class="n">env_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
-</span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a>    <span class="n">dotenv_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
-</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>    <span class="n">file_secret_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
-</span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PydanticBaseSettingsSource</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-</span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Customize settings sources: init → env → TOML.</span>
-</span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a>
-</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="sd">    Priority (first wins):</span>
-</span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">    1. Init arguments</span>
-</span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">    2. Environment variables</span>
-</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">    3. TOML file</span>
-</span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">toml_settings</span> <span class="o">=</span> <span class="n">TomlConfigSettingsSource</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
-</span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">init_settings</span><span class="p">,</span> <span class="n">env_settings</span><span class="p">,</span> <span class="n">toml_settings</span><span class="p">)</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><a href="#__codelineno-0-282"><span class="linenos" data-linenos="282 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a><a href="#__codelineno-0-283"><span class="linenos" data-linenos="283 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">settings_customise_sources</span><span class="p">(</span>
+</span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a><a href="#__codelineno-0-284"><span class="linenos" data-linenos="284 "></span></a>    <span class="bp">cls</span><span class="p">,</span>
+</span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a><a href="#__codelineno-0-285"><span class="linenos" data-linenos="285 "></span></a>    <span class="n">settings_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseSettings</span><span class="p">],</span>
+</span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a><a href="#__codelineno-0-286"><span class="linenos" data-linenos="286 "></span></a>    <span class="n">init_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
+</span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a><a href="#__codelineno-0-287"><span class="linenos" data-linenos="287 "></span></a>    <span class="n">env_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
+</span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><a href="#__codelineno-0-288"><span class="linenos" data-linenos="288 "></span></a>    <span class="n">dotenv_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
+</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a><a href="#__codelineno-0-289"><span class="linenos" data-linenos="289 "></span></a>    <span class="n">file_secret_settings</span><span class="p">:</span> <span class="n">PydanticBaseSettingsSource</span><span class="p">,</span>
+</span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a><a href="#__codelineno-0-290"><span class="linenos" data-linenos="290 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PydanticBaseSettingsSource</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+</span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><a href="#__codelineno-0-291"><span class="linenos" data-linenos="291 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Customize settings sources: init → env → TOML.</span>
+</span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a><a href="#__codelineno-0-292"><span class="linenos" data-linenos="292 "></span></a>
+</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a><a href="#__codelineno-0-293"><span class="linenos" data-linenos="293 "></span></a><span class="sd">    Priority (first wins):</span>
+</span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a><a href="#__codelineno-0-294"><span class="linenos" data-linenos="294 "></span></a><span class="sd">    1. Init arguments</span>
+</span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a><a href="#__codelineno-0-295"><span class="linenos" data-linenos="295 "></span></a><span class="sd">    2. Environment variables</span>
+</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><a href="#__codelineno-0-296"><span class="linenos" data-linenos="296 "></span></a><span class="sd">    3. TOML file</span>
+</span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a><a href="#__codelineno-0-297"><span class="linenos" data-linenos="297 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a><a href="#__codelineno-0-298"><span class="linenos" data-linenos="298 "></span></a>    <span class="n">toml_settings</span> <span class="o">=</span> <span class="n">TomlConfigSettingsSource</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
+</span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a><a href="#__codelineno-0-299"><span class="linenos" data-linenos="299 "></span></a>    <span class="k">return</span> <span class="p">(</span><span class="n">init_settings</span><span class="p">,</span> <span class="n">env_settings</span><span class="p">,</span> <span class="n">toml_settings</span><span class="p">)</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2001,32 +1954,20 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-301">301</a></span>
-<span class="normal"><a href="#__codelineno-0-302">302</a></span>
-<span class="normal"><a href="#__codelineno-0-303">303</a></span>
-<span class="normal"><a href="#__codelineno-0-304">304</a></span>
-<span class="normal"><a href="#__codelineno-0-305">305</a></span>
-<span class="normal"><a href="#__codelineno-0-306">306</a></span>
-<span class="normal"><a href="#__codelineno-0-307">307</a></span>
-<span class="normal"><a href="#__codelineno-0-308">308</a></span>
-<span class="normal"><a href="#__codelineno-0-309">309</a></span>
-<span class="normal"><a href="#__codelineno-0-310">310</a></span>
-<span class="normal"><a href="#__codelineno-0-311">311</a></span>
-<span class="normal"><a href="#__codelineno-0-312">312</a></span>
-<span class="normal"><a href="#__codelineno-0-313">313</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetaxyConfig&quot;</span><span class="p">:</span>
-</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the current Metaxy configuration.&quot;&quot;&quot;</span>
-</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a>    <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a>            <span class="ne">UserWarning</span><span class="p">(</span>
-</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a>                <span class="s2">&quot;Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project=&#39;default&#39;).&quot;</span>
-</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a>            <span class="p">)</span>
-</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>        <span class="p">)</span>
-</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
-</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>        <span class="k">return</span> <span class="n">cfg</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a><a href="#__codelineno-0-301"><span class="linenos" data-linenos="301 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a><a href="#__codelineno-0-302"><span class="linenos" data-linenos="302 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetaxyConfig&quot;</span><span class="p">:</span>
+</span><span id="__span-0-303"><a id="__codelineno-0-303" name="__codelineno-0-303"></a><a href="#__codelineno-0-303"><span class="linenos" data-linenos="303 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the current Metaxy configuration.&quot;&quot;&quot;</span>
+</span><span id="__span-0-304"><a id="__codelineno-0-304" name="__codelineno-0-304"></a><a href="#__codelineno-0-304"><span class="linenos" data-linenos="304 "></span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a><a href="#__codelineno-0-305"><span class="linenos" data-linenos="305 "></span></a>    <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a><a href="#__codelineno-0-306"><span class="linenos" data-linenos="306 "></span></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><a href="#__codelineno-0-307"><span class="linenos" data-linenos="307 "></span></a>            <span class="ne">UserWarning</span><span class="p">(</span>
+</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><a href="#__codelineno-0-308"><span class="linenos" data-linenos="308 "></span></a>                <span class="s2">&quot;Global Metaxy configuration not initialized. It can be set with MetaxyConfig.set(config) typically after loading it from a toml file. Returning default configuration (with environment variables and other pydantic settings sources resolved, project=&#39;default&#39;).&quot;</span>
+</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><a href="#__codelineno-0-309"><span class="linenos" data-linenos="309 "></span></a>            <span class="p">)</span>
+</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a><a href="#__codelineno-0-310"><span class="linenos" data-linenos="310 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a><a href="#__codelineno-0-311"><span class="linenos" data-linenos="311 "></span></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><a href="#__codelineno-0-312"><span class="linenos" data-linenos="312 "></span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a><a href="#__codelineno-0-313"><span class="linenos" data-linenos="313 "></span></a>        <span class="k">return</span> <span class="n">cfg</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2054,14 +1995,11 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-315">315</a></span>
-<span class="normal"><a href="#__codelineno-0-316">316</a></span>
-<span class="normal"><a href="#__codelineno-0-317">317</a></span>
-<span class="normal"><a href="#__codelineno-0-318">318</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Self</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the current Metaxy configuration.&quot;&quot;&quot;</span>
-</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>    <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><a href="#__codelineno-0-315"><span class="linenos" data-linenos="315 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><a href="#__codelineno-0-316"><span class="linenos" data-linenos="316 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Self</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><a href="#__codelineno-0-317"><span class="linenos" data-linenos="317 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the current Metaxy configuration.&quot;&quot;&quot;</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><a href="#__codelineno-0-318"><span class="linenos" data-linenos="318 "></span></a>    <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2089,14 +2027,11 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-320">320</a></span>
-<span class="normal"><a href="#__codelineno-0-321">321</a></span>
-<span class="normal"><a href="#__codelineno-0-322">322</a></span>
-<span class="normal"><a href="#__codelineno-0-323">323</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_set</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the current Metaxy configuration is set.&quot;&quot;&quot;</span>
-</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a>    <span class="k">return</span> <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><a href="#__codelineno-0-320"><span class="linenos" data-linenos="320 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a><a href="#__codelineno-0-321"><span class="linenos" data-linenos="321 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">is_set</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><a href="#__codelineno-0-322"><span class="linenos" data-linenos="322 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the current Metaxy configuration is set.&quot;&quot;&quot;</span>
+</span><span id="__span-0-323"><a id="__codelineno-0-323" name="__codelineno-0-323"></a><a href="#__codelineno-0-323"><span class="linenos" data-linenos="323 "></span></a>    <span class="k">return</span> <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">get</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2124,14 +2059,11 @@
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-325">325</a></span>
-<span class="normal"><a href="#__codelineno-0-326">326</a></span>
-<span class="normal"><a href="#__codelineno-0-327">327</a></span>
-<span class="normal"><a href="#__codelineno-0-328">328</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the current Metaxy configuration to None.&quot;&quot;&quot;</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><a href="#__codelineno-0-325"><span class="linenos" data-linenos="325 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><a href="#__codelineno-0-326"><span class="linenos" data-linenos="326 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><a href="#__codelineno-0-327"><span class="linenos" data-linenos="327 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the current Metaxy configuration to None.&quot;&quot;&quot;</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><a href="#__codelineno-0-328"><span class="linenos" data-linenos="328 "></span></a>    <span class="n">_metaxy_config</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2206,178 +2138,101 @@
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Auto-discover with parent search</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Explicit file</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;custom.toml&quot;</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Auto-discover without parent search</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">search_parents</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Auto-discover from a specific directory</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">auto_discovery_start</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/project&quot;</span><span class="p">))</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Auto-discover with parent search</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># Explicit file</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;custom.toml&quot;</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1"># Auto-discover without parent search</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">search_parents</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="c1"># Auto-discover from a specific directory</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">auto_discovery_start</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/project&quot;</span><span class="p">))</span>
 </span></code></pre></div>
 </details>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-330">330</a></span>
-<span class="normal"><a href="#__codelineno-0-331">331</a></span>
-<span class="normal"><a href="#__codelineno-0-332">332</a></span>
-<span class="normal"><a href="#__codelineno-0-333">333</a></span>
-<span class="normal"><a href="#__codelineno-0-334">334</a></span>
-<span class="normal"><a href="#__codelineno-0-335">335</a></span>
-<span class="normal"><a href="#__codelineno-0-336">336</a></span>
-<span class="normal"><a href="#__codelineno-0-337">337</a></span>
-<span class="normal"><a href="#__codelineno-0-338">338</a></span>
-<span class="normal"><a href="#__codelineno-0-339">339</a></span>
-<span class="normal"><a href="#__codelineno-0-340">340</a></span>
-<span class="normal"><a href="#__codelineno-0-341">341</a></span>
-<span class="normal"><a href="#__codelineno-0-342">342</a></span>
-<span class="normal"><a href="#__codelineno-0-343">343</a></span>
-<span class="normal"><a href="#__codelineno-0-344">344</a></span>
-<span class="normal"><a href="#__codelineno-0-345">345</a></span>
-<span class="normal"><a href="#__codelineno-0-346">346</a></span>
-<span class="normal"><a href="#__codelineno-0-347">347</a></span>
-<span class="normal"><a href="#__codelineno-0-348">348</a></span>
-<span class="normal"><a href="#__codelineno-0-349">349</a></span>
-<span class="normal"><a href="#__codelineno-0-350">350</a></span>
-<span class="normal"><a href="#__codelineno-0-351">351</a></span>
-<span class="normal"><a href="#__codelineno-0-352">352</a></span>
-<span class="normal"><a href="#__codelineno-0-353">353</a></span>
-<span class="normal"><a href="#__codelineno-0-354">354</a></span>
-<span class="normal"><a href="#__codelineno-0-355">355</a></span>
-<span class="normal"><a href="#__codelineno-0-356">356</a></span>
-<span class="normal"><a href="#__codelineno-0-357">357</a></span>
-<span class="normal"><a href="#__codelineno-0-358">358</a></span>
-<span class="normal"><a href="#__codelineno-0-359">359</a></span>
-<span class="normal"><a href="#__codelineno-0-360">360</a></span>
-<span class="normal"><a href="#__codelineno-0-361">361</a></span>
-<span class="normal"><a href="#__codelineno-0-362">362</a></span>
-<span class="normal"><a href="#__codelineno-0-363">363</a></span>
-<span class="normal"><a href="#__codelineno-0-364">364</a></span>
-<span class="normal"><a href="#__codelineno-0-365">365</a></span>
-<span class="normal"><a href="#__codelineno-0-366">366</a></span>
-<span class="normal"><a href="#__codelineno-0-367">367</a></span>
-<span class="normal"><a href="#__codelineno-0-368">368</a></span>
-<span class="normal"><a href="#__codelineno-0-369">369</a></span>
-<span class="normal"><a href="#__codelineno-0-370">370</a></span>
-<span class="normal"><a href="#__codelineno-0-371">371</a></span>
-<span class="normal"><a href="#__codelineno-0-372">372</a></span>
-<span class="normal"><a href="#__codelineno-0-373">373</a></span>
-<span class="normal"><a href="#__codelineno-0-374">374</a></span>
-<span class="normal"><a href="#__codelineno-0-375">375</a></span>
-<span class="normal"><a href="#__codelineno-0-376">376</a></span>
-<span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
-<span class="normal"><a href="#__codelineno-0-379">379</a></span>
-<span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span>
-<span class="normal"><a href="#__codelineno-0-383">383</a></span>
-<span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span>
-<span class="normal"><a href="#__codelineno-0-386">386</a></span>
-<span class="normal"><a href="#__codelineno-0-387">387</a></span>
-<span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span>
-<span class="normal"><a href="#__codelineno-0-390">390</a></span>
-<span class="normal"><a href="#__codelineno-0-391">391</a></span>
-<span class="normal"><a href="#__codelineno-0-392">392</a></span>
-<span class="normal"><a href="#__codelineno-0-393">393</a></span>
-<span class="normal"><a href="#__codelineno-0-394">394</a></span>
-<span class="normal"><a href="#__codelineno-0-395">395</a></span>
-<span class="normal"><a href="#__codelineno-0-396">396</a></span>
-<span class="normal"><a href="#__codelineno-0-397">397</a></span>
-<span class="normal"><a href="#__codelineno-0-398">398</a></span>
-<span class="normal"><a href="#__codelineno-0-399">399</a></span>
-<span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span>
-<span class="normal"><a href="#__codelineno-0-402">402</a></span>
-<span class="normal"><a href="#__codelineno-0-403">403</a></span>
-<span class="normal"><a href="#__codelineno-0-404">404</a></span>
-<span class="normal"><a href="#__codelineno-0-405">405</a></span>
-<span class="normal"><a href="#__codelineno-0-406">406</a></span>
-<span class="normal"><a href="#__codelineno-0-407">407</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
-</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="bp">cls</span><span class="p">,</span>
-</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="n">config_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="n">auto_discovery_start</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetaxyConfig&quot;</span><span class="p">:</span>
-</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Load config with auto-discovery and parent directory search.</span>
-</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a>
-</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="sd">        config_file: Optional config file path (overrides auto-discovery)</span>
-</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="sd">        search_parents: Search parent directories for config file (default: True)</span>
-</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><span class="sd">        auto_discovery_start: Directory to start search from (defaults to cwd)</span>
-</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a>
-</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="sd">        Loaded config (TOML + env vars merged)</span>
-</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a>
-</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="sd">    Example:</span>
-</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">        ```py</span>
-</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">        # Auto-discover with parent search</span>
-</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">        config = MetaxyConfig.load()</span>
-</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a>
-</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="sd">        # Explicit file</span>
-</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">        config = MetaxyConfig.load(&quot;custom.toml&quot;)</span>
-</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>
-</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">        # Auto-discover without parent search</span>
-</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">        config = MetaxyConfig.load(search_parents=False)</span>
-</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>
-</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="sd">        # Auto-discover from a specific directory</span>
-</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a><span class="sd">        config = MetaxyConfig.load(auto_discovery_start=Path(&quot;/path/to/project&quot;))</span>
-</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">        ```</span>
-</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="c1"># Search for config file if not explicitly provided</span>
-</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="k">if</span> <span class="n">config_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">search_parents</span><span class="p">:</span>
-</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>        <span class="n">config_file</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_discover_config_with_parents</span><span class="p">(</span><span class="n">auto_discovery_start</span><span class="p">)</span>
-</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>
-</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a>    <span class="c1"># For explicit file, temporarily patch the TomlConfigSettingsSource</span>
-</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a>    <span class="c1"># to use that file, then use normal instantiation</span>
-</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a>    <span class="c1"># This ensures env vars still work</span>
-</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a>
-</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="k">if</span> <span class="n">config_file</span><span class="p">:</span>
-</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>        <span class="c1"># Create a custom settings source class for this file</span>
-</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a>        <span class="n">toml_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
-</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a>
-</span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a>        <span class="k">class</span><span class="w"> </span><span class="nc">CustomTomlSource</span><span class="p">(</span><span class="n">TomlConfigSettingsSource</span><span class="p">):</span>
-</span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>            <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseSettings</span><span class="p">]):</span>
-</span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a>                <span class="c1"># Skip auto-discovery, use explicit file</span>
-</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a>                <span class="nb">super</span><span class="p">(</span><span class="n">TomlConfigSettingsSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
-</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">toml_file</span> <span class="o">=</span> <span class="n">toml_path</span>
-</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">toml_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_toml</span><span class="p">()</span>
-</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a>
-</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a>        <span class="c1"># Customize sources to use custom TOML file</span>
-</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a>        <span class="n">original_method</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span>
-</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a>
-</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a>        <span class="nd">@classmethod</span>  <span class="c1"># type: ignore[misc]</span>
-</span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a>        <span class="k">def</span><span class="w"> </span><span class="nf">custom_sources</span><span class="p">(</span>
-</span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a>            <span class="n">cls_inner</span><span class="p">,</span>
-</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a>            <span class="n">settings_cls</span><span class="p">,</span>
-</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a>            <span class="n">init_settings</span><span class="p">,</span>
-</span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a>            <span class="n">env_settings</span><span class="p">,</span>
-</span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a>            <span class="n">dotenv_settings</span><span class="p">,</span>
-</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a>            <span class="n">file_secret_settings</span><span class="p">,</span>
-</span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a>        <span class="p">):</span>
-</span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a>            <span class="n">toml_settings</span> <span class="o">=</span> <span class="n">CustomTomlSource</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
-</span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a>            <span class="k">return</span> <span class="p">(</span><span class="n">init_settings</span><span class="p">,</span> <span class="n">env_settings</span><span class="p">,</span> <span class="n">toml_settings</span><span class="p">)</span>
-</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a>        <span class="c1"># Temporarily replace method</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a>        <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span> <span class="o">=</span> <span class="n">custom_sources</span>  <span class="c1"># type: ignore[assignment]</span>
-</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a>        <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
-</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>        <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span> <span class="o">=</span> <span class="n">original_method</span>  <span class="c1"># type: ignore[method-assign]</span>
-</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a>        <span class="c1"># Use default sources (auto-discovery + env vars)</span>
-</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a>        <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
-</span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a>
-</span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="bp">cls</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a>
-</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="k">return</span> <span class="n">config</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><a href="#__codelineno-0-330"><span class="linenos" data-linenos="330 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><a href="#__codelineno-0-331"><span class="linenos" data-linenos="331 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
+</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><a href="#__codelineno-0-332"><span class="linenos" data-linenos="332 "></span></a>    <span class="bp">cls</span><span class="p">,</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a>    <span class="n">config_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><a href="#__codelineno-0-335"><span class="linenos" data-linenos="335 "></span></a>    <span class="n">search_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a>    <span class="n">auto_discovery_start</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><a href="#__codelineno-0-337"><span class="linenos" data-linenos="337 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetaxyConfig&quot;</span><span class="p">:</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Load config with auto-discovery and parent directory search.</span>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a>
+</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><a href="#__codelineno-0-340"><span class="linenos" data-linenos="340 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a><span class="sd">        config_file: Optional config file path (overrides auto-discovery)</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a><span class="sd">        search_parents: Search parent directories for config file (default: True)</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a><span class="sd">        auto_discovery_start: Directory to start search from (defaults to cwd)</span>
+</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a><a href="#__codelineno-0-344"><span class="linenos" data-linenos="344 "></span></a>
+</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a><a href="#__codelineno-0-345"><span class="linenos" data-linenos="345 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a><a href="#__codelineno-0-346"><span class="linenos" data-linenos="346 "></span></a><span class="sd">        Loaded config (TOML + env vars merged)</span>
+</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a><a href="#__codelineno-0-347"><span class="linenos" data-linenos="347 "></span></a>
+</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><a href="#__codelineno-0-348"><span class="linenos" data-linenos="348 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><a href="#__codelineno-0-349"><span class="linenos" data-linenos="349 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a><a href="#__codelineno-0-350"><span class="linenos" data-linenos="350 "></span></a><span class="sd">        # Auto-discover with parent search</span>
+</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><a href="#__codelineno-0-351"><span class="linenos" data-linenos="351 "></span></a><span class="sd">        config = MetaxyConfig.load()</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><a href="#__codelineno-0-352"><span class="linenos" data-linenos="352 "></span></a>
+</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><a href="#__codelineno-0-353"><span class="linenos" data-linenos="353 "></span></a><span class="sd">        # Explicit file</span>
+</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><a href="#__codelineno-0-354"><span class="linenos" data-linenos="354 "></span></a><span class="sd">        config = MetaxyConfig.load(&quot;custom.toml&quot;)</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><a href="#__codelineno-0-355"><span class="linenos" data-linenos="355 "></span></a>
+</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><a href="#__codelineno-0-356"><span class="linenos" data-linenos="356 "></span></a><span class="sd">        # Auto-discover without parent search</span>
+</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a><a href="#__codelineno-0-357"><span class="linenos" data-linenos="357 "></span></a><span class="sd">        config = MetaxyConfig.load(search_parents=False)</span>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><a href="#__codelineno-0-358"><span class="linenos" data-linenos="358 "></span></a>
+</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><a href="#__codelineno-0-359"><span class="linenos" data-linenos="359 "></span></a><span class="sd">        # Auto-discover from a specific directory</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a><a href="#__codelineno-0-360"><span class="linenos" data-linenos="360 "></span></a><span class="sd">        config = MetaxyConfig.load(auto_discovery_start=Path(&quot;/path/to/project&quot;))</span>
+</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><a href="#__codelineno-0-361"><span class="linenos" data-linenos="361 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a><a href="#__codelineno-0-362"><span class="linenos" data-linenos="362 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a><a href="#__codelineno-0-363"><span class="linenos" data-linenos="363 "></span></a>    <span class="c1"># Search for config file if not explicitly provided</span>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a><a href="#__codelineno-0-364"><span class="linenos" data-linenos="364 "></span></a>    <span class="k">if</span> <span class="n">config_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">search_parents</span><span class="p">:</span>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><a href="#__codelineno-0-365"><span class="linenos" data-linenos="365 "></span></a>        <span class="n">config_file</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_discover_config_with_parents</span><span class="p">(</span><span class="n">auto_discovery_start</span><span class="p">)</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a><a href="#__codelineno-0-366"><span class="linenos" data-linenos="366 "></span></a>
+</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><a href="#__codelineno-0-367"><span class="linenos" data-linenos="367 "></span></a>    <span class="c1"># For explicit file, temporarily patch the TomlConfigSettingsSource</span>
+</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a><a href="#__codelineno-0-368"><span class="linenos" data-linenos="368 "></span></a>    <span class="c1"># to use that file, then use normal instantiation</span>
+</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><a href="#__codelineno-0-369"><span class="linenos" data-linenos="369 "></span></a>    <span class="c1"># This ensures env vars still work</span>
+</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><a href="#__codelineno-0-370"><span class="linenos" data-linenos="370 "></span></a>
+</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><a href="#__codelineno-0-371"><span class="linenos" data-linenos="371 "></span></a>    <span class="k">if</span> <span class="n">config_file</span><span class="p">:</span>
+</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a><a href="#__codelineno-0-372"><span class="linenos" data-linenos="372 "></span></a>        <span class="c1"># Create a custom settings source class for this file</span>
+</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a><a href="#__codelineno-0-373"><span class="linenos" data-linenos="373 "></span></a>        <span class="n">toml_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a><a href="#__codelineno-0-374"><span class="linenos" data-linenos="374 "></span></a>
+</span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a><a href="#__codelineno-0-375"><span class="linenos" data-linenos="375 "></span></a>        <span class="k">class</span><span class="w"> </span><span class="nc">CustomTomlSource</span><span class="p">(</span><span class="n">TomlConfigSettingsSource</span><span class="p">):</span>
+</span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a><a href="#__codelineno-0-376"><span class="linenos" data-linenos="376 "></span></a>            <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseSettings</span><span class="p">]):</span>
+</span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><a href="#__codelineno-0-377"><span class="linenos" data-linenos="377 "></span></a>                <span class="c1"># Skip auto-discovery, use explicit file</span>
+</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><a href="#__codelineno-0-378"><span class="linenos" data-linenos="378 "></span></a>                <span class="nb">super</span><span class="p">(</span><span class="n">TomlConfigSettingsSource</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
+</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a><a href="#__codelineno-0-379"><span class="linenos" data-linenos="379 "></span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">toml_file</span> <span class="o">=</span> <span class="n">toml_path</span>
+</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a><a href="#__codelineno-0-380"><span class="linenos" data-linenos="380 "></span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">toml_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_toml</span><span class="p">()</span>
+</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><a href="#__codelineno-0-381"><span class="linenos" data-linenos="381 "></span></a>
+</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a><a href="#__codelineno-0-382"><span class="linenos" data-linenos="382 "></span></a>        <span class="c1"># Customize sources to use custom TOML file</span>
+</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a><a href="#__codelineno-0-383"><span class="linenos" data-linenos="383 "></span></a>        <span class="n">original_method</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span>
+</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a><a href="#__codelineno-0-384"><span class="linenos" data-linenos="384 "></span></a>
+</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a><a href="#__codelineno-0-385"><span class="linenos" data-linenos="385 "></span></a>        <span class="nd">@classmethod</span>  <span class="c1"># type: ignore[misc]</span>
+</span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a><a href="#__codelineno-0-386"><span class="linenos" data-linenos="386 "></span></a>        <span class="k">def</span><span class="w"> </span><span class="nf">custom_sources</span><span class="p">(</span>
+</span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a><a href="#__codelineno-0-387"><span class="linenos" data-linenos="387 "></span></a>            <span class="n">cls_inner</span><span class="p">,</span>
+</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a><a href="#__codelineno-0-388"><span class="linenos" data-linenos="388 "></span></a>            <span class="n">settings_cls</span><span class="p">,</span>
+</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a><a href="#__codelineno-0-389"><span class="linenos" data-linenos="389 "></span></a>            <span class="n">init_settings</span><span class="p">,</span>
+</span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a><a href="#__codelineno-0-390"><span class="linenos" data-linenos="390 "></span></a>            <span class="n">env_settings</span><span class="p">,</span>
+</span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a><a href="#__codelineno-0-391"><span class="linenos" data-linenos="391 "></span></a>            <span class="n">dotenv_settings</span><span class="p">,</span>
+</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a><a href="#__codelineno-0-392"><span class="linenos" data-linenos="392 "></span></a>            <span class="n">file_secret_settings</span><span class="p">,</span>
+</span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a><a href="#__codelineno-0-393"><span class="linenos" data-linenos="393 "></span></a>        <span class="p">):</span>
+</span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a><a href="#__codelineno-0-394"><span class="linenos" data-linenos="394 "></span></a>            <span class="n">toml_settings</span> <span class="o">=</span> <span class="n">CustomTomlSource</span><span class="p">(</span><span class="n">settings_cls</span><span class="p">)</span>
+</span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a><a href="#__codelineno-0-395"><span class="linenos" data-linenos="395 "></span></a>            <span class="k">return</span> <span class="p">(</span><span class="n">init_settings</span><span class="p">,</span> <span class="n">env_settings</span><span class="p">,</span> <span class="n">toml_settings</span><span class="p">)</span>
+</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><a href="#__codelineno-0-396"><span class="linenos" data-linenos="396 "></span></a>
+</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><a href="#__codelineno-0-397"><span class="linenos" data-linenos="397 "></span></a>        <span class="c1"># Temporarily replace method</span>
+</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><a href="#__codelineno-0-398"><span class="linenos" data-linenos="398 "></span></a>        <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span> <span class="o">=</span> <span class="n">custom_sources</span>  <span class="c1"># type: ignore[assignment]</span>
+</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><a href="#__codelineno-0-399"><span class="linenos" data-linenos="399 "></span></a>        <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a><a href="#__codelineno-0-400"><span class="linenos" data-linenos="400 "></span></a>        <span class="bp">cls</span><span class="o">.</span><span class="n">settings_customise_sources</span> <span class="o">=</span> <span class="n">original_method</span>  <span class="c1"># type: ignore[method-assign]</span>
+</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><a href="#__codelineno-0-401"><span class="linenos" data-linenos="401 "></span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><a href="#__codelineno-0-402"><span class="linenos" data-linenos="402 "></span></a>        <span class="c1"># Use default sources (auto-discovery + env vars)</span>
+</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a><a href="#__codelineno-0-403"><span class="linenos" data-linenos="403 "></span></a>        <span class="n">config</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
+</span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a><a href="#__codelineno-0-404"><span class="linenos" data-linenos="404 "></span></a>
+</span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a><a href="#__codelineno-0-405"><span class="linenos" data-linenos="405 "></span></a>    <span class="bp">cls</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a><a href="#__codelineno-0-406"><span class="linenos" data-linenos="406 "></span></a>
+</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a><a href="#__codelineno-0-407"><span class="linenos" data-linenos="407 "></span></a>    <span class="k">return</span> <span class="n">config</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2448,212 +2303,115 @@ have different hash algorithms than the parent store</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Use default store</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Use default store</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
 </span></code></pre></div>
 </details>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-444">444</a></span>
-<span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span>
-<span class="normal"><a href="#__codelineno-0-448">448</a></span>
-<span class="normal"><a href="#__codelineno-0-449">449</a></span>
-<span class="normal"><a href="#__codelineno-0-450">450</a></span>
-<span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span>
-<span class="normal"><a href="#__codelineno-0-453">453</a></span>
-<span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span>
-<span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span>
-<span class="normal"><a href="#__codelineno-0-459">459</a></span>
-<span class="normal"><a href="#__codelineno-0-460">460</a></span>
-<span class="normal"><a href="#__codelineno-0-461">461</a></span>
-<span class="normal"><a href="#__codelineno-0-462">462</a></span>
-<span class="normal"><a href="#__codelineno-0-463">463</a></span>
-<span class="normal"><a href="#__codelineno-0-464">464</a></span>
-<span class="normal"><a href="#__codelineno-0-465">465</a></span>
-<span class="normal"><a href="#__codelineno-0-466">466</a></span>
-<span class="normal"><a href="#__codelineno-0-467">467</a></span>
-<span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span>
-<span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span>
-<span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
-<span class="normal"><a href="#__codelineno-0-490">490</a></span>
-<span class="normal"><a href="#__codelineno-0-491">491</a></span>
-<span class="normal"><a href="#__codelineno-0-492">492</a></span>
-<span class="normal"><a href="#__codelineno-0-493">493</a></span>
-<span class="normal"><a href="#__codelineno-0-494">494</a></span>
-<span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span>
-<span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span>
-<span class="normal"><a href="#__codelineno-0-512">512</a></span>
-<span class="normal"><a href="#__codelineno-0-513">513</a></span>
-<span class="normal"><a href="#__codelineno-0-514">514</a></span>
-<span class="normal"><a href="#__codelineno-0-515">515</a></span>
-<span class="normal"><a href="#__codelineno-0-516">516</a></span>
-<span class="normal"><a href="#__codelineno-0-517">517</a></span>
-<span class="normal"><a href="#__codelineno-0-518">518</a></span>
-<span class="normal"><a href="#__codelineno-0-519">519</a></span>
-<span class="normal"><a href="#__codelineno-0-520">520</a></span>
-<span class="normal"><a href="#__codelineno-0-521">521</a></span>
-<span class="normal"><a href="#__codelineno-0-522">522</a></span>
-<span class="normal"><a href="#__codelineno-0-523">523</a></span>
-<span class="normal"><a href="#__codelineno-0-524">524</a></span>
-<span class="normal"><a href="#__codelineno-0-525">525</a></span>
-<span class="normal"><a href="#__codelineno-0-526">526</a></span>
-<span class="normal"><a href="#__codelineno-0-527">527</a></span>
-<span class="normal"><a href="#__codelineno-0-528">528</a></span>
-<span class="normal"><a href="#__codelineno-0-529">529</a></span>
-<span class="normal"><a href="#__codelineno-0-530">530</a></span>
-<span class="normal"><a href="#__codelineno-0-531">531</a></span>
-<span class="normal"><a href="#__codelineno-0-532">532</a></span>
-<span class="normal"><a href="#__codelineno-0-533">533</a></span>
-<span class="normal"><a href="#__codelineno-0-534">534</a></span>
-<span class="normal"><a href="#__codelineno-0-535">535</a></span>
-<span class="normal"><a href="#__codelineno-0-536">536</a></span>
-<span class="normal"><a href="#__codelineno-0-537">537</a></span>
-<span class="normal"><a href="#__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#__codelineno-0-541">541</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetadataStore&quot;</span><span class="p">:</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Instantiate metadata store by name.</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a><span class="sd">        name: Store name (uses config.store if None)</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="sd">        Instantiated metadata store</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">        ValueError: If store name not found in config, or if fallback stores</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">            have different hash algorithms than the parent store</span>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">        ImportError: If store class cannot be imported</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">    Example:</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">        ```py</span>
-</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">        config = MetaxyConfig.load()</span>
-</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">        store = config.get_store(&quot;prod&quot;)</span>
-</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">        # Use default store</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="sd">        store = config.get_store()</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">        ```</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.data_versioning.hash_algorithms</span><span class="w"> </span><span class="kn">import</span> <span class="n">HashAlgorithm</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>            <span class="s2">&quot;No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.&quot;</span>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>        <span class="p">)</span>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a>    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">:</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found in config. &quot;</span>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a>            <span class="sa">f</span><span class="s2">&quot;Available stores: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="p">)</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="n">store_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="c1"># Import store class</span>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a>    <span class="n">store_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_import_class</span><span class="p">(</span><span class="n">store_config</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="c1"># Extract configuration</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a>    <span class="n">config_copy</span> <span class="o">=</span> <span class="n">store_config</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="n">fallback_store_names</span> <span class="o">=</span> <span class="n">config_copy</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fallback_stores&quot;</span><span class="p">,</span> <span class="p">[])</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="c1"># Get hash_algorithm from config (if specified) and convert to enum</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">config_copy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">)</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>    <span class="k">if</span> <span class="n">configured_hash_algorithm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="c1"># Convert string to enum if needed</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">configured_hash_algorithm</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>            <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="p">(</span><span class="n">configured_hash_algorithm</span><span class="p">)</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>            <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>        <span class="c1"># Use default</span>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>        <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="o">.</span><span class="n">XXHASH64</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="c1"># Get hash_truncation_length from global config (unless overridden in store config)</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="k">if</span> <span class="p">(</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a>        <span class="s2">&quot;hash_truncation_length&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a>    <span class="p">):</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="c1"># Get auto_create_tables from global config (unless overridden in store config)</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="k">if</span> <span class="p">(</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>        <span class="s2">&quot;auto_create_tables&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
-</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a>    <span class="p">):</span>
-</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
-</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;auto_create_tables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span>
-</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a>
-</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a>    <span class="c1"># Build fallback stores recursively</span>
-</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a>    <span class="n">fallback_stores</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a>    <span class="k">for</span> <span class="n">fallback_name</span> <span class="ow">in</span> <span class="n">fallback_store_names</span><span class="p">:</span>
-</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a>        <span class="n">fallback_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="n">fallback_name</span><span class="p">)</span>
-</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a>        <span class="n">fallback_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fallback_store</span><span class="p">)</span>
-</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a>
-</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a>    <span class="c1"># Instantiate store with config + fallback_stores</span>
-</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">store_class</span><span class="p">(</span>
-</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
-</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a>        <span class="o">**</span><span class="n">config_copy</span><span class="p">,</span>
-</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="p">)</span>
-</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a>
-</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="c1"># Verify the store actually uses the hash algorithm we configured</span>
-</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="c1"># (in case a store subclass overrides the default or ignores the parameter)</span>
-</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a>    <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span> <span class="o">!=</span> <span class="n">configured_hash_algorithm</span><span class="p">:</span>
-</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">store_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">) was configured with &quot;</span>
-</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a>            <span class="sa">f</span><span class="s2">&quot;hash_algorithm=&#39;</span><span class="si">{</span><span class="n">configured_hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; but is using &quot;</span>
-</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a>            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;. The store class may have overridden &quot;</span>
-</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a>            <span class="sa">f</span><span class="s2">&quot;the hash algorithm. All stores must use the same hash algorithm.&quot;</span>
-</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a>        <span class="p">)</span>
-</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a>
-</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="k">return</span> <span class="n">store</span>
-</span></code></pre></div></td></tr></table></div>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><a href="#__codelineno-0-444"><span class="linenos" data-linenos="444 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">get_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MetadataStore&quot;</span><span class="p">:</span>
+</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a><a href="#__codelineno-0-445"><span class="linenos" data-linenos="445 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Instantiate metadata store by name.</span>
+</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a><a href="#__codelineno-0-446"><span class="linenos" data-linenos="446 "></span></a>
+</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a><a href="#__codelineno-0-447"><span class="linenos" data-linenos="447 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a><a href="#__codelineno-0-448"><span class="linenos" data-linenos="448 "></span></a><span class="sd">        name: Store name (uses config.store if None)</span>
+</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a><a href="#__codelineno-0-449"><span class="linenos" data-linenos="449 "></span></a>
+</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><a href="#__codelineno-0-450"><span class="linenos" data-linenos="450 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><a href="#__codelineno-0-451"><span class="linenos" data-linenos="451 "></span></a><span class="sd">        Instantiated metadata store</span>
+</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a><a href="#__codelineno-0-452"><span class="linenos" data-linenos="452 "></span></a>
+</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a><a href="#__codelineno-0-453"><span class="linenos" data-linenos="453 "></span></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a><a href="#__codelineno-0-454"><span class="linenos" data-linenos="454 "></span></a><span class="sd">        ValueError: If store name not found in config, or if fallback stores</span>
+</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><a href="#__codelineno-0-455"><span class="linenos" data-linenos="455 "></span></a><span class="sd">            have different hash algorithms than the parent store</span>
+</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><a href="#__codelineno-0-456"><span class="linenos" data-linenos="456 "></span></a><span class="sd">        ImportError: If store class cannot be imported</span>
+</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a><a href="#__codelineno-0-457"><span class="linenos" data-linenos="457 "></span></a>
+</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><a href="#__codelineno-0-458"><span class="linenos" data-linenos="458 "></span></a><span class="sd">    Example:</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a><a href="#__codelineno-0-459"><span class="linenos" data-linenos="459 "></span></a><span class="sd">        ```py</span>
+</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a><a href="#__codelineno-0-460"><span class="linenos" data-linenos="460 "></span></a><span class="sd">        config = MetaxyConfig.load()</span>
+</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a><a href="#__codelineno-0-461"><span class="linenos" data-linenos="461 "></span></a><span class="sd">        store = config.get_store(&quot;prod&quot;)</span>
+</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><a href="#__codelineno-0-462"><span class="linenos" data-linenos="462 "></span></a>
+</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a><a href="#__codelineno-0-463"><span class="linenos" data-linenos="463 "></span></a><span class="sd">        # Use default store</span>
+</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a><a href="#__codelineno-0-464"><span class="linenos" data-linenos="464 "></span></a><span class="sd">        store = config.get_store()</span>
+</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><a href="#__codelineno-0-465"><span class="linenos" data-linenos="465 "></span></a><span class="sd">        ```</span>
+</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><a href="#__codelineno-0-466"><span class="linenos" data-linenos="466 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a><a href="#__codelineno-0-467"><span class="linenos" data-linenos="467 "></span></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.data_versioning.hash_algorithms</span><span class="w"> </span><span class="kn">import</span> <span class="n">HashAlgorithm</span>
+</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a><a href="#__codelineno-0-468"><span class="linenos" data-linenos="468 "></span></a>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><a href="#__codelineno-0-469"><span class="linenos" data-linenos="469 "></span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><a href="#__codelineno-0-470"><span class="linenos" data-linenos="470 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a><a href="#__codelineno-0-471"><span class="linenos" data-linenos="471 "></span></a>            <span class="s2">&quot;No Metaxy stores available. They should be configured in metaxy.toml|pyproject.toml or via environment variables.&quot;</span>
+</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><a href="#__codelineno-0-472"><span class="linenos" data-linenos="472 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><a href="#__codelineno-0-473"><span class="linenos" data-linenos="473 "></span></a>
+</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><a href="#__codelineno-0-474"><span class="linenos" data-linenos="474 "></span></a>    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span>
+</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a><a href="#__codelineno-0-475"><span class="linenos" data-linenos="475 "></span></a>
+</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><a href="#__codelineno-0-476"><span class="linenos" data-linenos="476 "></span></a>    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">:</span>
+</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><a href="#__codelineno-0-477"><span class="linenos" data-linenos="477 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><a href="#__codelineno-0-478"><span class="linenos" data-linenos="478 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; not found in config. &quot;</span>
+</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><a href="#__codelineno-0-479"><span class="linenos" data-linenos="479 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Available stores: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><a href="#__codelineno-0-480"><span class="linenos" data-linenos="480 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a><a href="#__codelineno-0-481"><span class="linenos" data-linenos="481 "></span></a>
+</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><a href="#__codelineno-0-482"><span class="linenos" data-linenos="482 "></span></a>    <span class="n">store_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stores</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><a href="#__codelineno-0-483"><span class="linenos" data-linenos="483 "></span></a>
+</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><a href="#__codelineno-0-484"><span class="linenos" data-linenos="484 "></span></a>    <span class="c1"># Import store class</span>
+</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><a href="#__codelineno-0-485"><span class="linenos" data-linenos="485 "></span></a>    <span class="n">store_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_import_class</span><span class="p">(</span><span class="n">store_config</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><a href="#__codelineno-0-486"><span class="linenos" data-linenos="486 "></span></a>
+</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><a href="#__codelineno-0-487"><span class="linenos" data-linenos="487 "></span></a>    <span class="c1"># Extract configuration</span>
+</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><a href="#__codelineno-0-488"><span class="linenos" data-linenos="488 "></span></a>    <span class="n">config_copy</span> <span class="o">=</span> <span class="n">store_config</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a><a href="#__codelineno-0-489"><span class="linenos" data-linenos="489 "></span></a>    <span class="n">fallback_store_names</span> <span class="o">=</span> <span class="n">config_copy</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;fallback_stores&quot;</span><span class="p">,</span> <span class="p">[])</span>
+</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a><a href="#__codelineno-0-490"><span class="linenos" data-linenos="490 "></span></a>
+</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a><a href="#__codelineno-0-491"><span class="linenos" data-linenos="491 "></span></a>    <span class="c1"># Get hash_algorithm from config (if specified) and convert to enum</span>
+</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a><a href="#__codelineno-0-492"><span class="linenos" data-linenos="492 "></span></a>    <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">config_copy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">)</span>
+</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a><a href="#__codelineno-0-493"><span class="linenos" data-linenos="493 "></span></a>    <span class="k">if</span> <span class="n">configured_hash_algorithm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a><a href="#__codelineno-0-494"><span class="linenos" data-linenos="494 "></span></a>        <span class="c1"># Convert string to enum if needed</span>
+</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a><a href="#__codelineno-0-495"><span class="linenos" data-linenos="495 "></span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">configured_hash_algorithm</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a><a href="#__codelineno-0-496"><span class="linenos" data-linenos="496 "></span></a>            <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="p">(</span><span class="n">configured_hash_algorithm</span><span class="p">)</span>
+</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a><a href="#__codelineno-0-497"><span class="linenos" data-linenos="497 "></span></a>            <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
+</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a><a href="#__codelineno-0-498"><span class="linenos" data-linenos="498 "></span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a><a href="#__codelineno-0-499"><span class="linenos" data-linenos="499 "></span></a>        <span class="c1"># Use default</span>
+</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a><a href="#__codelineno-0-500"><span class="linenos" data-linenos="500 "></span></a>        <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="o">.</span><span class="n">XXHASH64</span>
+</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a><a href="#__codelineno-0-501"><span class="linenos" data-linenos="501 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
+</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a><a href="#__codelineno-0-502"><span class="linenos" data-linenos="502 "></span></a>
+</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a><a href="#__codelineno-0-503"><span class="linenos" data-linenos="503 "></span></a>    <span class="c1"># Get hash_truncation_length from global config (unless overridden in store config)</span>
+</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a><a href="#__codelineno-0-504"><span class="linenos" data-linenos="504 "></span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a><a href="#__codelineno-0-505"><span class="linenos" data-linenos="505 "></span></a>        <span class="s2">&quot;hash_truncation_length&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
+</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a><a href="#__codelineno-0-506"><span class="linenos" data-linenos="506 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><a href="#__codelineno-0-507"><span class="linenos" data-linenos="507 "></span></a>    <span class="p">):</span>
+</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><a href="#__codelineno-0-508"><span class="linenos" data-linenos="508 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
+</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><a href="#__codelineno-0-509"><span class="linenos" data-linenos="509 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span>
+</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a>
+</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a>    <span class="c1"># Get auto_create_tables from global config (unless overridden in store config)</span>
+</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="s2">&quot;auto_create_tables&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
+</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>    <span class="p">):</span>
+</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
+</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><a href="#__codelineno-0-517"><span class="linenos" data-linenos="517 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;auto_create_tables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span>
+</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a><a href="#__codelineno-0-518"><span class="linenos" data-linenos="518 "></span></a>
+</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><a href="#__codelineno-0-519"><span class="linenos" data-linenos="519 "></span></a>    <span class="c1"># Build fallback stores recursively</span>
+</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><a href="#__codelineno-0-520"><span class="linenos" data-linenos="520 "></span></a>    <span class="n">fallback_stores</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a><a href="#__codelineno-0-521"><span class="linenos" data-linenos="521 "></span></a>    <span class="k">for</span> <span class="n">fallback_name</span> <span class="ow">in</span> <span class="n">fallback_store_names</span><span class="p">:</span>
+</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><a href="#__codelineno-0-522"><span class="linenos" data-linenos="522 "></span></a>        <span class="n">fallback_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="n">fallback_name</span><span class="p">)</span>
+</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><a href="#__codelineno-0-523"><span class="linenos" data-linenos="523 "></span></a>        <span class="n">fallback_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fallback_store</span><span class="p">)</span>
+</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><a href="#__codelineno-0-524"><span class="linenos" data-linenos="524 "></span></a>
+</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><a href="#__codelineno-0-525"><span class="linenos" data-linenos="525 "></span></a>    <span class="c1"># Instantiate store with config + fallback_stores</span>
+</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><a href="#__codelineno-0-526"><span class="linenos" data-linenos="526 "></span></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">store_class</span><span class="p">(</span>
+</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><a href="#__codelineno-0-527"><span class="linenos" data-linenos="527 "></span></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
+</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><a href="#__codelineno-0-528"><span class="linenos" data-linenos="528 "></span></a>        <span class="o">**</span><span class="n">config_copy</span><span class="p">,</span>
+</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a><a href="#__codelineno-0-529"><span class="linenos" data-linenos="529 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a><a href="#__codelineno-0-530"><span class="linenos" data-linenos="530 "></span></a>
+</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a><a href="#__codelineno-0-531"><span class="linenos" data-linenos="531 "></span></a>    <span class="c1"># Verify the store actually uses the hash algorithm we configured</span>
+</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><a href="#__codelineno-0-532"><span class="linenos" data-linenos="532 "></span></a>    <span class="c1"># (in case a store subclass overrides the default or ignores the parameter)</span>
+</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a><a href="#__codelineno-0-533"><span class="linenos" data-linenos="533 "></span></a>    <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span> <span class="o">!=</span> <span class="n">configured_hash_algorithm</span><span class="p">:</span>
+</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><a href="#__codelineno-0-534"><span class="linenos" data-linenos="534 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a><a href="#__codelineno-0-535"><span class="linenos" data-linenos="535 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">store_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">) was configured with &quot;</span>
+</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a><a href="#__codelineno-0-536"><span class="linenos" data-linenos="536 "></span></a>            <span class="sa">f</span><span class="s2">&quot;hash_algorithm=&#39;</span><span class="si">{</span><span class="n">configured_hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; but is using &quot;</span>
+</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><a href="#__codelineno-0-537"><span class="linenos" data-linenos="537 "></span></a>            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;. The store class may have overridden &quot;</span>
+</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a><a href="#__codelineno-0-538"><span class="linenos" data-linenos="538 "></span></a>            <span class="sa">f</span><span class="s2">&quot;the hash algorithm. All stores must use the same hash algorithm.&quot;</span>
+</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a><a href="#__codelineno-0-539"><span class="linenos" data-linenos="539 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a><a href="#__codelineno-0-540"><span class="linenos" data-linenos="540 "></span></a>
+</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a><a href="#__codelineno-0-541"><span class="linenos" data-linenos="541 "></span></a>    <span class="k">return</span> <span class="n">store</span>
+</span></code></pre></div>
             </details>
     </div>
 
@@ -2688,14 +2446,14 @@ have different hash algorithms than the parent store</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">StoreConfig</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;metaxy_delta.DeltaMetadataStore&quot;</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">config</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="s2">&quot;table_uri&quot;</span><span class="p">:</span> <span class="s2">&quot;s3://bucket/metadata&quot;</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west-2&quot;</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="s2">&quot;fallback_stores&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">],</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="p">}</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">StoreConfig</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;metaxy_delta.DeltaMetadataStore&quot;</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a>    <span class="n">config</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>        <span class="s2">&quot;table_uri&quot;</span><span class="p">:</span> <span class="s2">&quot;s3://bucket/metadata&quot;</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>        <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="s2">&quot;us-west-2&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a>        <span class="s2">&quot;fallback_stores&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">],</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>    <span class="p">}</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">)</span>
 </span></code></pre></div>
 </details>
 

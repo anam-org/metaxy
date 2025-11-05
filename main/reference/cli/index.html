@@ -1976,7 +1976,7 @@
 </li>
 </ul>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <p><strong>Options</strong>:</p>
@@ -1997,12 +1997,12 @@
 <h3 id="metaxy-shell"><code>metaxy shell</code><a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h3>
 <p>Start interactive shell.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="gp">$ </span>shell
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>shell
 </span></code></pre></div>
 <h3 id="metaxy-migrations"><code>metaxy migrations</code><a class="headerlink" href="#metaxy-migrations" title="Permanent link">&para;</a></h3>
 <p>Metadata migration commands</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="gp">$ </span>migrations<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>migrations<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
@@ -2018,7 +2018,7 @@
 <p>Compares the latest snapshot in the store (or specified from_snapshot) with the current active graph to detect changes.</p>
 <p>The migration is recorded in the system tables (not a YAML file).</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>LIST<span class="o">[</span>STR<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>LIST<span class="o">[</span>STR<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
@@ -2035,7 +2035,7 @@
 <p>Reads migration definitions from .metaxy/migrations/ directory (git). Follows parent chain to ensure correct order. 
 Tracks execution state in database (events).</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2048,19 +2048,19 @@ Tracks execution state in database (events).</p>
 <p>Reads migration definitions from YAML files (git). Shows execution status from database events. Displays the parent 
 chain in order.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>status
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>status
 </span></code></pre></div>
 <h4 id="metaxy-migrations-list"><code>metaxy migrations list</code><a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h4>
 <p>List all migrations in chain order as defined in code.</p>
 <p>Displays a simple table showing migration ID, creation time, and operations.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>list
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>list
 </span></code></pre></div>
 <h4 id="metaxy-migrations-explain"><code>metaxy migrations explain</code><a class="headerlink" href="#metaxy-migrations-explain" title="Permanent link">&para;</a></h4>
 <p>Show detailed diff for a migration.</p>
 <p>Reads migration from YAML file. Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>explain<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>explain<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2071,7 +2071,7 @@ chain in order.</p>
 <p>Displays detailed information about what the migration will do: - Migration metadata (ID, parent, snapshots, created 
 timestamp) - Operations to execute - Affected features with row counts - Execution status if already run</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2081,7 +2081,7 @@ timestamp) - Operations to execute - Affected features with row counts - Executi
 <h3 id="metaxy-graph"><code>metaxy graph</code><a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h3>
 <p>Manage feature graphs</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="gp">$ </span>graph<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>graph<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
@@ -2095,7 +2095,7 @@ timestamp) - Operations to execute - Affected features with row counts - Executi
 <p>Records all features in the active graph to the metadata store with a deterministic snapshot version. This should be run
 after deploying new feature definitions.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>push<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>push<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2106,7 +2106,7 @@ after deploying new feature definitions.</p>
 <p>Displays all recorded graph snapshots from the metadata store, showing snapshot versions, when they were recorded, and 
 feature counts.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span><span class="nb">history</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span><span class="nb">history</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2119,7 +2119,7 @@ feature counts.</p>
 depth (longest dependency chain) - Root features (features with no dependencies) - Leaf features (features with no 
 dependents) - Project breakdown (if multi-project)</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2129,12 +2129,12 @@ dependents) - Project breakdown (if multi-project)</p>
 <h4 id="metaxy-graph-render"><code>metaxy graph render</code><a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h4>
 <p>Render feature graph visualization.</p>
 <p>Visualize the feature graph in different formats: - terminal: Terminal rendering with two types:</p>
-<div class="language-python highlight"><pre><span></span><code><span class="n">graph</span> <span class="p">(</span><span class="n">default</span><span class="p">):</span> <span class="n">Hierarchical</span> <span class="n">tree</span> <span class="n">view</span>  <span class="n">cards</span><span class="p">:</span> <span class="n">Panel</span><span class="o">/</span><span class="n">card</span><span class="o">-</span><span class="n">based</span> <span class="n">view</span> <span class="k">with</span> <span class="n">dependency</span> <span class="n">edges</span>
+<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span><span class="n">graph</span> <span class="p">(</span><span class="n">default</span><span class="p">):</span> <span class="n">Hierarchical</span> <span class="n">tree</span> <span class="n">view</span>  <span class="n">cards</span><span class="p">:</span> <span class="n">Panel</span><span class="o">/</span><span class="n">card</span><span class="o">-</span><span class="n">based</span> <span class="n">view</span> <span class="k">with</span> <span class="n">dependency</span> <span class="n">edges</span>
 </code></pre></div>
 <p>• mermaid: Mermaid flowchart markup
  • graphviz: Graphviz DOT format</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2161,7 +2161,7 @@ dependents) - Project breakdown (if multi-project)</p>
 <h3 id="metaxy-graph-diff"><code>metaxy graph-diff</code><a class="headerlink" href="#metaxy-graph-diff" title="Permanent link">&para;</a></h3>
 <p>Compare and visualize graph snapshots</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="gp">$ </span>graph-diff<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>graph-diff<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
@@ -2175,7 +2175,7 @@ renderers as 'metaxy graph render'.</p>
 <p>Output formats: - terminal: Hierarchical tree view (default) - cards: Panel/card-based view - mermaid: Mermaid flowchart
 diagram - graphviz: Graphviz DOT format</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>FROM-SNAPSHOT<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>FROM-SNAPSHOT<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
@@ -2205,7 +2205,7 @@ diagram - graphviz: Graphviz DOT format</p>
 <h3 id="metaxy-list"><code>metaxy list</code><a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h3>
 <p>List Metaxy entities</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="gp">$ </span>list<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>list<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
@@ -2214,12 +2214,12 @@ diagram - graphviz: Graphviz DOT format</p>
 <h4 id="metaxy-list-features"><code>metaxy list features</code><a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h4>
 <p>List Metaxy features.</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features
+<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features
 </span></code></pre></div>
 <h3 id="metaxy-metadata"><code>metaxy metadata</code><a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h3>
 <p>Manage Metaxy metadata</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="gp">$ </span>metadata<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metadata<span class="w"> </span>COMMAND
 </span></code></pre></div>
 <p><strong>Commands</strong>:</p>
 <ul>
@@ -2235,7 +2235,7 @@ Migrating data between environments - Backfilling metadata - Copying specific fe
 snapshot_version. This prevents duplicate writes.  Disabling incremental (--no-incremental) may improve performance 
 when: - The destination store is empty or has no overlap with source - The destination store has eventual deduplication</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>FROM<span class="w"> </span>TO<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><a href="#__codelineno-19-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>FROM<span class="w"> </span>TO<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
 <ul>
@@ -2256,7 +2256,7 @@ is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 <p>Removes metadata for specified features from the store. This is a destructive operation and requires --confirm flag.</p>
 <p>Useful for: - Cleaning up test data - Re-computing feature metadata from scratch - Removing obsolete features</p>
 <p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>drop<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><a href="#__codelineno-20-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>drop<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
 </span></code></pre></div>
 <p><strong>Options</strong>:</p>
 <ul>
@@ -2268,26 +2268,26 @@ is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 </ul>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="recording-a-graph-snapshot">Recording a graph snapshot<a class="headerlink" href="#recording-a-graph-snapshot" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Push the current feature graph to the metadata store</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>metaxy<span class="w"> </span>graph<span class="w"> </span>push
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><a href="#__codelineno-21-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Push the current feature graph to the metadata store</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2"></a><a href="#__codelineno-21-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>push
 </span></code></pre></div>
 <p>The recommendation is to run this command in your CD pipeline.</p>
 <h3 id="generating-and-applying-migrations">Generating and applying migrations<a class="headerlink" href="#generating-and-applying-migrations" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Generate a migration for detected changes</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>metaxy.migrations.ops.DataVersionReconciliation
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Apply pending migrations</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><a href="#__codelineno-22-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Generate a migration for detected changes</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2"></a><a href="#__codelineno-22-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>metaxy.migrations.ops.DataVersionReconciliation
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3"></a><a href="#__codelineno-22-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4"></a><a href="#__codelineno-22-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Apply pending migrations</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5"></a><a href="#__codelineno-22-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply
 </span></code></pre></div>
 <h3 id="visualizing-the-feature-graph">Visualizing the feature graph<a class="headerlink" href="#visualizing-the-feature-graph" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Render as terminal tree view</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># Render as Mermaid diagram</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># Compare two snapshots</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>&lt;snapshot-id&gt;<span class="w"> </span>current<span class="w"> </span>--format<span class="w"> </span>mermaid
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><a href="#__codelineno-23-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Render as terminal tree view</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2"></a><a href="#__codelineno-23-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3"></a><a href="#__codelineno-23-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4"></a><a href="#__codelineno-23-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Render as Mermaid diagram</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5"></a><a href="#__codelineno-23-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6"></a><a href="#__codelineno-23-6"><span class="linenos" data-linenos="6 "></span></a>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7"></a><a href="#__codelineno-23-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># Compare two snapshots</span>
+</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8"></a><a href="#__codelineno-23-8"><span class="linenos" data-linenos="8 "></span></a>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>&lt;snapshot-id&gt;<span class="w"> </span>current<span class="w"> </span>--format<span class="w"> </span>mermaid
 </span></code></pre></div>
 
 
