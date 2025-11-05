@@ -11,6 +11,7 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         exclude: ^.basedpyright/baseline\.json$
+        args: ['--maxkb=600']
   - repo: local
     hooks:
     - id: ruff-check
