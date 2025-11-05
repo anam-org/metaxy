@@ -2,11 +2,14 @@ import metaxy as mx
 
 
 class Video(
-    mx.Feature,
-    spec=mx.FeatureSpec(
-        key=mx.FeatureKey(["video", "raw"]),
+    mx.BaseFeature,
+    spec=mx.BaseFeatureSpec(
+        key="video/raw",
         id_columns=["video_id"],
-        fields=["audio", "frames"],
+        fields=[
+            mx.FieldSpec(key="audio", code_version="1"),
+            mx.FieldSpec(key="frames", code_version="1"),
+        ],
     ),
 ):
     video_id: str
@@ -14,13 +17,16 @@ class Video(
 
 
 class VideoChunk(
-    mx.Feature,
-    spec=mx.FeatureSpec(
-        key=mx.FeatureKey(["video", "chunk"]),
+    mx.BaseFeature,
+    spec=mx.BaseFeatureSpec(
+        key="video/chunk",
         id_columns=["video_chunk_id"],
-        fields=["audio", "frames"],
-        deps=[mx.FeatureDep(feature=Video)],
-        lineage=mx.LineageRelationship.expansion()
+        fields=[
+            mx.FieldSpec(key="audio", code_version="1"),
+            mx.FieldSpec(key="frames", code_version="1"),
+        ],
+        deps=[mx.FeatureDep(feature="video/raw")],
+        lineage=mx.LineageRelationship.expansion(on=["video_id"]),
     ),
 ):
     video_id: str  # points to the parent video

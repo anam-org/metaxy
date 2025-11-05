@@ -24,7 +24,6 @@ from metaxy.migrations import (
     SystemTableStorage,
     detect_migration,
 )
-from metaxy.models.lineage import LineageRelationship
 from metaxy.models.feature import (
     BaseFeature,
     Feature,

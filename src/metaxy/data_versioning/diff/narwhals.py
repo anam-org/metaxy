@@ -105,20 +105,66 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             effective_id_columns = list(id_columns)
 
         # Special case: For expansion relationships with no common ID columns,
-        # this is likely an initial generation where parent data becomes child data.
-        # In this case, all target data is "added" since we can't meaningfully compare.
+        # we need to check if parent records already have child records.
+        # Extract parent ID columns from child metadata to see which parents are covered
         if not effective_id_columns:
-            # No ID columns to join on - treat all target as added
-            return LazyIncrement(
-                added=target_provenance,
-                changed=empty_lazy,
-                removed=current_metadata,  # All current rows are "removed" (shouldn't happen for initial gen)
-            )
+            # For expansion relationships, we need to find which parent IDs already have children
+            # The target has parent IDs, current has child IDs
+            # We want to find parent records that DON'T have children yet
+
+            # Find common ID columns between target and current that might be parent IDs
+            # Usually the parent ID columns are a subset of child ID columns
+            # For example: parent has [video_id], child has [video_id, video_chunk_id]
+            parent_id_cols = []
+            for col in target_cols:
+                if col in available_cols and col not in [
+                    "provenance_by_field",
+                    "feature_version",
+                    "snapshot_version",
+                ]:
+                    # This column exists in both - might be a parent ID
+                    parent_id_cols.append(col)
+
+            if parent_id_cols:
+                # We found potential parent ID columns
+                # Group current child records by parent IDs to get unique parent IDs that have children
+                [nw.col(col).max().alias(col) for col in parent_id_cols]
+                existing_parents = current_metadata.select(parent_id_cols).unique()
+
+                # Anti-join: find target parent records that don't have children
+                added_lazy = target_provenance.join(
+                    existing_parents,
+                    on=parent_id_cols,
+                    how="anti",
+                )
+
+                # Changed: empty (can't determine changes without matching IDs)
+                changed_lazy = empty_lazy
+
+                # Removed: all current child records (they have child IDs we can't match)
+                # This is expected - child records are preserved, we're only adding new parents
+                removed_lazy = empty_lazy  # Don't remove existing children
+
+                return LazyIncrement(
+                    added=added_lazy,
+                    changed=changed_lazy,
+                    removed=removed_lazy,
+                )
+            else:
+                # No common columns at all - treat all target as added
+                # This shouldn't normally happen in well-designed expansion relationships
+                return LazyIncrement(
+                    added=target_provenance,
+                    changed=empty_lazy,
+                    removed=empty_lazy,  # Don't remove existing data
+                )
 
         # Build aggregation expressions
+        # Note: .max() doesn't work well with struct columns in Narwhals/Polars (returns null)
+        # Use .first() instead, but sort first to avoid order-dependency errors
         agg_cols = [
             nw.col("provenance_by_field")
-            .first()  # Use .first() for struct columns (all values in group are identical for 1->N)
+            .first()  # Use .first() for struct columns (all values in group should be identical)
             .alias("__current_provenance_by_field")
         ]
 
@@ -129,13 +175,15 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         for col in id_columns:
             if col not in effective_id_columns and col in available_cols:
                 child_specific_cols.append(col)
-                # Give these columns a temporary alias to avoid conflicts
+                # Use .first() for consistency (all values in group should be same)
                 agg_cols.append(nw.col(col).first().alias(f"__child_{col}"))
 
         # Standard case: group by effective ID columns
         # Query optimizer will optimize this away for unique keys
         if effective_id_columns:
-            current_comparison = current_metadata.group_by(
+            # Sort first by ID columns to make .first() deterministic
+            current_sorted = current_metadata.sort(effective_id_columns)
+            current_comparison = current_sorted.group_by(
                 sorted(effective_id_columns)
             ).agg(agg_cols)
             # Sort to maintain deterministic ordering

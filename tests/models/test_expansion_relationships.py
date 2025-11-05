@@ -51,8 +51,8 @@ class TestExpansionRelationships:
         lineage = VideoFrames.spec().lineage
         assert lineage is not None
         aggregation_cols = lineage.get_aggregation_columns(["video_id", "frame_id"])
-        assert aggregation_cols == ["video_id"], (
-            f"Expected ['video_id'], got {aggregation_cols}"
+        assert aggregation_cols is None, (
+            f"Expected None for expansion relationships, got {aggregation_cols}"
         )
 
         # Test with metadata store
@@ -97,8 +97,8 @@ class TestExpansionRelationships:
             # Should group by parent ID, so 2 parent changes detected
             assert changed_df.shape[0] == 2
 
-    def test_expansion_without_on_parameter(self, graph):
-        """Test ExpansionRelationship without 'on' parameter (inferred)."""
+    def test_expansion_with_parent_column_as_regular_field(self, graph):
+        """Test ExpansionRelationship where parent ID becomes regular field in child."""
 
         class Document(
             BaseFeature,
@@ -116,8 +116,8 @@ class TestExpansionRelationships:
                 key="chunks",
                 id_columns=["doc_id", "chunk_id"],
                 lineage=LineageRelationship.expansion(
-                    # No 'on' parameter - will be inferred
-                    id_generation_pattern="hash"
+                    on=["doc_id"],  # Required - explicit parent ID column
+                    id_generation_pattern="hash",
                 ),
                 fields=[FieldSpec(key="chunk_text", code_version="1")],
                 deps=[
@@ -130,10 +130,12 @@ class TestExpansionRelationships:
         ):
             pass
 
-        # Verify lineage returns None for inference
+        # Verify lineage returns the specified columns
         lineage = DocumentChunks.spec().lineage
         aggregation_cols = lineage.get_aggregation_columns(["doc_id", "chunk_id"])
-        assert aggregation_cols is None, "Should return None for inference"
+        assert aggregation_cols is None, (
+            "Expansion relationships don't aggregate during join"
+        )
 
         # Test with joiner
         doc_data = pl.DataFrame(
@@ -401,17 +403,17 @@ class TestExpansionRelationships:
             on=["video_id"], id_generation_pattern="sequential"
         )
         result1 = rel1.get_aggregation_columns(["video_id", "frame_id"])
-        assert result1 == ["video_id"]
+        assert result1 is None  # Expansion relationships don't aggregate during join
 
-        # Without 'on' parameter (None for inference)
-        rel2 = ExpansionRelationship(id_generation_pattern="hash")
+        # With 'on' parameter for different ID structure
+        rel2 = ExpansionRelationship(on=["doc_id"], id_generation_pattern="hash")
         result2 = rel2.get_aggregation_columns(["doc_id", "chunk_id"])
-        assert result2 is None
+        assert result2 is None  # Expansion relationships don't aggregate during join
 
         # Empty 'on' parameter
         rel3 = ExpansionRelationship(on=[], id_generation_pattern="custom")
         result3 = rel3.get_aggregation_columns(["id1", "id2"])
-        assert result3 == []
+        assert result3 is None  # Expansion relationships don't aggregate during join
 
     def test_expansion_vs_aggregation_difference(self, graph):
         """Test that Expansion and Aggregation behave differently."""
@@ -497,7 +499,8 @@ class TestExpansionRelationships:
         exp_df = exp_result.collect().to_native()
 
         # Expansion should NOT aggregate (keep all 5 rows)
-        # Actually, since ExpansionRelationship with on=["sensor_id", "timestamp"]
-        # returns those columns for aggregation, it WILL aggregate!
-        # This shows why the semantic difference matters
-        assert exp_df.shape[0] == 2, "Expansion with 'on' still aggregates in joiner!"
+        # Since ExpansionRelationship.get_aggregation_columns() returns None,
+        # the joiner will not aggregate and should keep all 5 rows
+        assert exp_df.shape[0] == 5, (
+            "Expansion relationships should not aggregate in joiner"
+        )

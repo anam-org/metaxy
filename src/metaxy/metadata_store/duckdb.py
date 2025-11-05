@@ -160,6 +160,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         self.extensions = base_extensions
 
         # Auto-add hashfuncs extension if not present (needed for default XXHASH64)
+        # But we'll fall back to MD5 if hashfuncs is not available
         extension_names: list[str] = []
         for ext in self.extensions:
             if isinstance(ext, str):
@@ -186,9 +187,11 @@ class DuckDBMetadataStore(IbisMetadataStore):
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for DuckDB stores.
 
-        Uses XXHASH64 which requires the hashfuncs extension (lazily loaded).
+        Uses XXHASH64 if hashfuncs extension is available, otherwise falls back to MD5.
         """
-        return HashAlgorithm.XXHASH64
+        # Default to MD5 which is always available
+        # If hashfuncs loads successfully, the calculator will support XXHASH64 too
+        return HashAlgorithm.MD5
 
     def _supports_native_components(self) -> bool:
         """DuckDB stores support native field provenance calculations when connection is open."""

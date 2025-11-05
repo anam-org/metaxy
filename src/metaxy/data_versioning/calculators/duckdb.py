@@ -61,6 +61,9 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
         """
         self._backend = backend
         self.extensions = list(extensions or [])
+        self._loaded_extensions: set[str] = (
+            set()
+        )  # Track successfully loaded extensions
 
         # Load extensions immediately (lazy at calculator creation time)
         self._load_extensions()
@@ -108,14 +111,27 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
                     f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext_spec)}"
                 )
 
-            # Install and load the extension
-            if ext_repo == "community":
-                backend.raw_sql(f"INSTALL {ext_name} FROM community")
-            else:
-                backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
-                backend.raw_sql(f"INSTALL {ext_name}")
+            # Try to install and load the extension, but don't fail if not available
+            try:
+                # Install and load the extension
+                if ext_repo == "community":
+                    backend.raw_sql(f"INSTALL {ext_name} FROM community")
+                else:
+                    backend.raw_sql(f"SET custom_extension_repository='{ext_repo}'")
+                    backend.raw_sql(f"INSTALL {ext_name}")
 
-            backend.raw_sql(f"LOAD {ext_name}")
+                backend.raw_sql(f"LOAD {ext_name}")
+                # Track successfully loaded extension
+                self._loaded_extensions.add(ext_name)
+            except Exception as e:
+                # Log the error but continue - the extension may not be available
+                import warnings
+
+                warnings.warn(
+                    f"Failed to load DuckDB extension '{ext_name}': {e}. "
+                    f"Falling back to available hash algorithms.",
+                    stacklevel=2,
+                )
 
     def _generate_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
         """Generate hash SQL generators for DuckDB.
@@ -144,30 +160,8 @@ class DuckDBProvenanceByFieldCalculator(IbisProvenanceByFieldCalculator):
 
         generators[HashAlgorithm.MD5] = md5_generator
 
-        # Check if hashfuncs extension is in the list
-        extension_names = []
-        for ext in self.extensions:
-            if isinstance(ext, str):
-                extension_names.append(ext)
-            elif isinstance(ext, Mapping):
-                name = ext.get("name")
-                if not name:
-                    raise ValueError(
-                        f"Extension mapping must have a non-empty 'name' key; got {ext}"
-                    )
-                extension_names.append(str(name))
-            else:
-                # Must be ExtensionSpec
-                from metaxy.metadata_store.duckdb import ExtensionSpec
-
-                if isinstance(ext, ExtensionSpec):
-                    extension_names.append(ext.name)
-                else:
-                    raise TypeError(
-                        f"Extension must be str, Mapping, or ExtensionSpec; got {type(ext)}"
-                    )
-
-        if "hashfuncs" in extension_names:
+        # Check if hashfuncs extension was successfully loaded
+        if "hashfuncs" in self._loaded_extensions:
 
             def xxhash32_generator(table, concat_columns: dict[str, str]) -> str:
                 hash_selects: list[str] = []

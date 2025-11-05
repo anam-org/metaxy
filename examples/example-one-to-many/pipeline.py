@@ -39,8 +39,7 @@ def main():
             print(f"Processing video: {row_dict}")
             # let's split each video to 3-5 chunks randomly
 
-            # The ID column was renamed from video_id to video_chunk_id
-            video_chunk_id = row_dict["video_chunk_id"]
+            video_id = row_dict["video_id"]
             path = row_dict["path"]
             provenance_by_field = row_dict["provenance_by_field"]
 
@@ -48,17 +47,18 @@ def main():
             chunk_paths = split_video_into_chunks(path)
 
             # Generate chunk IDs based on the parent video ID
-            chunk_ids = [f"{video_chunk_id}_{i}" for i in range(len(chunk_paths))]
+            chunk_ids = [f"{video_id}_{i}" for i in range(len(chunk_paths))]
 
             # write the chunks to the store
             chunk_df = pl.DataFrame(
                 {
+                    "video_id": [video_id] * len(chunk_paths),
                     "video_chunk_id": chunk_ids,
                     "path": chunk_paths,
                     "provenance_by_field": [provenance_by_field] * len(chunk_paths),
                 }
             )
-            print(f"Writing {len(chunk_paths)} chunks for video {video_chunk_id}")
+            print(f"Writing {len(chunk_paths)} chunks for video {video_id}")
             store.write_metadata(VideoChunk, nw.from_native(chunk_df))
 
 

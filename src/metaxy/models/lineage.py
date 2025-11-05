@@ -139,9 +139,9 @@ class ExpansionRelationship(BaseLineageRelationship):
     """
 
     type: Literal[LineageRelationshipType.EXPANSION] = LineageRelationshipType.EXPANSION
-    on: Sequence[str] | None = PydanticField(
-        default=None,
-        description="Parent ID columns for grouping. Child records with same parent IDs share provenance.",
+    on: Sequence[str] = PydanticField(
+        ...,
+        description="Parent ID columns for grouping. Child records with same parent IDs share provenance. Required for expansion relationships.",
     )
     id_generation_pattern: str | None = PydanticField(
         default=None,
@@ -152,25 +152,21 @@ class ExpansionRelationship(BaseLineageRelationship):
         self,
         target_id_columns: Sequence[str],
     ) -> Sequence[str] | None:
-        """Get parent ID columns for grouping child records.
+        """Get aggregation columns for the joiner phase.
 
-        For expansion relationships, this returns the parent ID columns.
-        Child records that share the same parent IDs will be compared
-        against the same parent provenance.
+        For expansion relationships, returns None because aggregation
+        happens during diff resolution, not during joining. The joiner
+        should pass through all parent records without aggregation.
 
         Args:
             target_id_columns: The target (child) feature's ID columns.
 
         Returns:
-            Parent ID columns if specified, otherwise None (will be inferred).
+            None - no aggregation during join phase for expansion relationships.
         """
-        if self.on is not None:
-            # Use explicitly specified parent ID columns
-            return self.on
-        else:
-            # Will need to be inferred from available columns
-            # This happens in DiffResolver when it detects missing columns
-            return None
+        # Expansion relationships don't aggregate during join phase
+        # Aggregation happens later during diff resolution
+        return None
 
 
 # Discriminated union type for all lineage relationships
@@ -235,7 +231,7 @@ class LineageRelationship(BaseModel):
     @classmethod
     def expansion(
         cls,
-        on: Sequence[str] | None = None,
+        on: Sequence[str],
         id_generation_pattern: str | None = None,
     ) -> LineageRelationship:
         """Create an expansion (1:N) relationship.
@@ -243,7 +239,7 @@ class LineageRelationship(BaseModel):
         Args:
             on: Parent ID columns that identify the parent record. Child records with
                 the same parent IDs will share the same upstream provenance.
-                If None, will be inferred from available columns.
+                Required - must explicitly specify which columns link parent to child.
             id_generation_pattern: Pattern for generating child IDs.
                 Can be "sequential", "hash", or custom. If None, handled by load_input().
 
