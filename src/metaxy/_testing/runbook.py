@@ -104,11 +104,21 @@ class ApplyPatchStep(BaseStep):
         ...     patch_path="patches/01_update_algorithm.patch",
         ...     description="Update parent feature embedding algorithm to v2",
         ... )
+
+        >>> # Apply a patch without pushing graph snapshot
+        >>> ApplyPatchStep(
+        ...     type="apply_patch",
+        ...     patch_path="patches/02_refactor_only.patch",
+        ...     push_graph=False,  # Don't push graph for refactoring-only changes
+        ... )
     """
 
     type: Literal[StepType.APPLY_PATCH] = StepType.APPLY_PATCH
     patch_path: str
     """Path to patch file relative to example directory."""
+
+    push_graph: bool = True
+    """Whether to push graph snapshot after applying this patch (default: True)."""
 
     def step_type(self) -> StepType:
         return StepType.APPLY_PATCH
@@ -218,6 +228,12 @@ class Runbook(BaseModel):
     scenarios: list[Scenario]
     """List of test scenarios for this example."""
 
+    auto_push_graph: bool = True
+    """Whether to automatically push graph snapshots after initial load and patches.
+
+    Set to False to skip automatic graph pushes (e.g., when no metadata store is configured).
+    """
+
     @classmethod
     def from_yaml_file(cls, path: Path) -> Runbook:
         """Load a runbook from a YAML file.
@@ -294,6 +310,13 @@ class RunbookRunner:
         self.env_overrides = env_overrides or {}
         self.last_result: CommandResult | None = None
         self.applied_patches: list[str] = []
+        self._initial_graph_pushed = False
+
+        # Import ExternalMetaxyProject
+        from metaxy._testing.metaxy_project import ExternalMetaxyProject
+
+        # Create ExternalMetaxyProject for this example
+        self.project = ExternalMetaxyProject(example_dir, require_config=True)
 
     def get_base_env(self) -> dict[str, str]:
         """Get base environment with test-specific overrides.
@@ -301,7 +324,7 @@ class RunbookRunner:
         Returns:
             Environment dict with test database and other overrides.
         """
-        env = os.environ.copy()
+        env = {}
 
         # Override database path if provided
         if self.override_db_path:
@@ -311,6 +334,27 @@ class RunbookRunner:
         env.update(self.env_overrides)
 
         return env
+
+    def push_graph_snapshot(self) -> None:
+        """Push the current graph snapshot using metaxy graph push.
+
+        This is called automatically after the initial load and after each patch,
+        unless disabled via auto_push_graph=False in the runbook.
+        """
+        # Skip if auto push is disabled
+        if not self.runbook.auto_push_graph:
+            return
+
+        env = self.get_base_env()
+
+        # Use ExternalMetaxyProject to push graph
+        result = self.project.push_graph(env=env)
+
+        # Check if push succeeded
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+            )
 
     def run_command(
         self,
@@ -326,20 +370,37 @@ class RunbookRunner:
         Returns:
             CommandResult with returncode and output.
         """
+        import sys
+
         env = self.get_base_env()
 
         # Apply step-specific environment variables
         if step.env:
             env.update(step.env)
 
+        # Get full environment including current env
+        full_env = os.environ.copy()
+        full_env.update(env)
+
+        # Ensure project directory is in PYTHONPATH
+        pythonpath = str(self.example_dir)
+        if "PYTHONPATH" in full_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{full_env['PYTHONPATH']}"
+        full_env["PYTHONPATH"] = pythonpath
+
+        # Replace "python" with full path to Python executable
+        command = step.command
+        if command.startswith("python "):
+            command = f"{sys.executable} {command[7:]}"
+
         # Execute the command
         result = subprocess.run(
-            step.command,
+            command,
             shell=True,
             capture_output=step.capture_output,
             text=True,
             timeout=step.timeout,
-            env=env,
+            env=full_env,
             cwd=self.example_dir,
         )
 
@@ -387,6 +448,10 @@ class RunbookRunner:
 
         # Track applied patches for cleanup (use relative path)
         self.applied_patches.append(step.patch_path)
+
+        # Push graph snapshot after applying patch if requested
+        if step.push_graph:
+            self.push_graph_snapshot()
 
     def revert_patches(self) -> None:
         """Revert all applied patches in reverse order."""
@@ -452,6 +517,11 @@ class RunbookRunner:
         Args:
             scenario: The scenario to execute.
         """
+        # Push initial graph snapshot before the first scenario
+        if not self._initial_graph_pushed:
+            self.push_graph_snapshot()
+            self._initial_graph_pushed = True
+
         for step in scenario.steps:
             if isinstance(step, RunCommandStep):
                 self.run_command(step, scenario.name)

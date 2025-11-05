@@ -538,6 +538,69 @@ class ExternalMetaxyProject(MetaxyProject):
         # Convert project name to valid Python package name (replace hyphens with underscores)
         return project_name.replace("-", "_")
 
+    def run_python_module(
+        self,
+        module_name: str,
+        env: dict[str, str] | None = None,
+        check: bool = True,
+        **kwargs,
+    ):
+        """Run a Python module from the project.
+
+        Args:
+            module_name: Python module to run (e.g., "example_recompute.setup_data").
+            env: Optional dict of additional environment variables.
+            check: If True (default), raises CalledProcessError on non-zero exit.
+            **kwargs: Additional arguments to pass to subprocess.run().
+
+        Returns:
+            subprocess.CompletedProcess: Result of running the module.
+
+        Example:
+            ```py
+            result = project.run_python_module("example_recompute.pipeline")
+            print(result.stdout)
+            ```
+        """
+        # Start with current environment
+        cmd_env = os.environ.copy()
+
+        # Add project directory to PYTHONPATH so modules can be imported
+        pythonpath = str(self.project_dir)
+        if "PYTHONPATH" in cmd_env:
+            pythonpath = f"{pythonpath}{os.pathsep}{cmd_env['PYTHONPATH']}"
+        cmd_env["PYTHONPATH"] = pythonpath
+
+        # Apply additional env overrides
+        if env:
+            cmd_env.update(env)
+
+        # Run Python module
+        result = subprocess.run(
+            [sys.executable, "-m", module_name],
+            cwd=str(self.project_dir),
+            capture_output=True,
+            text=True,
+            env=cmd_env,
+            check=check,
+            **kwargs,
+        )
+
+        return result
+
+    def push_graph(
+        self, env: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
+        """Push the current graph snapshot.
+
+        Args:
+            env: Optional dict of additional environment variables.
+
+        Returns:
+            subprocess.CompletedProcess: Result of the push command.
+        """
+        return self.run_cli("graph", "push", env=env)
+
 
 class TempMetaxyProject(MetaxyProject):
     """Helper for creating temporary Metaxy projects.
