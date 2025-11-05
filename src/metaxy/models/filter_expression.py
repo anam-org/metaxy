@@ -12,8 +12,8 @@ from enum import Enum
 from typing import Any, NamedTuple
 
 import narwhals as nw
+import sqlglot
 from pydantic import field_serializer, model_validator
-from sqlglot import exp, parse_one
 from sqlglot.errors import ParseError
 
 from metaxy.models.bases import FrozenBaseModel
@@ -59,7 +59,7 @@ class OperandInfo(NamedTuple):
 class NarwhalsFilter(FrozenBaseModel):
     """Pydantic model for serializable Narwhals filter expressions."""
 
-    expression: exp.Expression
+    expression: sqlglot.exp.Expression
     source: str | None = None
 
     model_config = {
@@ -94,7 +94,7 @@ class NarwhalsFilter(FrozenBaseModel):
         return data
 
     @field_serializer("expression")
-    def _serialize_expression(self, expression: exp.Expression) -> str:
+    def _serialize_expression(self, expression: sqlglot.exp.Expression) -> str:
         return expression.sql()
 
     def to_expr(self) -> nw.Expr:
@@ -112,7 +112,7 @@ def parse_filter_string(filter_string: str) -> nw.Expr:
     return NarwhalsFilter.from_string(filter_string).to_expr()
 
 
-_COMPARISON_NODE_MAP: dict[type[exp.Expression], ComparisonOperator] = {}
+_COMPARISON_NODE_MAP: dict[type[sqlglot.exp.Expression], ComparisonOperator] = {}
 
 _COMPARISON_NODE_ALIASES: dict[ComparisonOperator, tuple[str, ...]] = {
     ComparisonOperator.EQ: ("EQ",),
@@ -129,18 +129,18 @@ _COMPARISON_NODE_ALIASES: dict[ComparisonOperator, tuple[str, ...]] = {
 # first match so we do not overwrite identical mappings repeatedly.
 for operator, class_names in _COMPARISON_NODE_ALIASES.items():
     for class_name in class_names:
-        cls = getattr(exp, class_name, None)
+        cls = getattr(sqlglot.exp, class_name, None)
         if not isinstance(cls, type) or cls in _COMPARISON_NODE_MAP:
             continue
         _COMPARISON_NODE_MAP[cls] = operator
 
 
-def _parse_to_expression(filter_string: str) -> exp.Expression:
+def _parse_to_expression(filter_string: str) -> sqlglot.exp.Expression:
     if not filter_string or not filter_string.strip():
         raise FilterParseError("Filter string cannot be empty.")
 
     try:
-        parsed = parse_one(filter_string)
+        parsed = sqlglot.parse_one(filter_string)
     except ParseError as exc:
         msg = f"Failed to parse filter string: {exc}"
         raise FilterParseError(msg) from exc
@@ -151,21 +151,21 @@ def _parse_to_expression(filter_string: str) -> exp.Expression:
     return parsed
 
 
-def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
+def _expression_to_narwhals(node: sqlglot.exp.Expression) -> nw.Expr:
     node = _strip_parens(node)
 
-    if isinstance(node, exp.Not):
+    if isinstance(node, sqlglot.exp.Not):
         operand = node.this
         if operand is None:
             raise FilterParseError("NOT operator requires an operand.")
         return ~_expression_to_narwhals(operand)
 
-    if isinstance(node, exp.And):
+    if isinstance(node, sqlglot.exp.And):
         return _expression_to_narwhals(node.this) & _expression_to_narwhals(
             node.expression
         )
 
-    if isinstance(node, exp.Or):
+    if isinstance(node, sqlglot.exp.Or):
         return _expression_to_narwhals(node.this) | _expression_to_narwhals(
             node.expression
         )
@@ -188,12 +188,12 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
     if isinstance(
         node,
         (
-            exp.Column,
-            exp.Identifier,
-            exp.Boolean,
-            exp.Literal,
-            exp.Null,
-            exp.Neg,
+            sqlglot.exp.Column,
+            sqlglot.exp.Identifier,
+            sqlglot.exp.Boolean,
+            sqlglot.exp.Literal,
+            sqlglot.exp.Null,
+            sqlglot.exp.Neg,
         ),
     ):
         return _operand_info(node).expr
@@ -201,10 +201,10 @@ def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
     raise FilterParseError(f"Unsupported expression: {node.sql()}")
 
 
-def _operand_info(node: exp.Expression) -> OperandInfo:
+def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
     node = _strip_parens(node)
 
-    if isinstance(node, exp.Column):
+    if isinstance(node, sqlglot.exp.Column):
         return OperandInfo(
             expr=nw.col(_column_name(node)),
             is_literal=False,
@@ -212,7 +212,7 @@ def _operand_info(node: exp.Expression) -> OperandInfo:
             is_column=True,
         )
 
-    if isinstance(node, exp.Identifier):
+    if isinstance(node, sqlglot.exp.Identifier):
         return OperandInfo(
             expr=nw.col(_column_name(node)),
             is_literal=False,
@@ -220,7 +220,7 @@ def _operand_info(node: exp.Expression) -> OperandInfo:
             is_column=True,
         )
 
-    if isinstance(node, exp.Neg):
+    if isinstance(node, sqlglot.exp.Neg):
         inner = node.this
         if inner is None:
             raise FilterParseError("Unary minus requires an operand.")
@@ -234,19 +234,19 @@ def _operand_info(node: exp.Expression) -> OperandInfo:
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, exp.Literal):
+    if isinstance(node, sqlglot.exp.Literal):
         value = _literal_to_python(node)
         return OperandInfo(
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, exp.Boolean):
+    if isinstance(node, sqlglot.exp.Boolean):
         value = _literal_to_python(node)
         return OperandInfo(
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, exp.Null):
+    if isinstance(node, sqlglot.exp.Null):
         return OperandInfo(
             expr=nw.lit(None), is_literal=True, literal_value=None, is_column=False
         )
@@ -278,13 +278,13 @@ def _maybe_null_comparison(
     return None
 
 
-def _literal_to_python(node: exp.Expression) -> LiteralValue:
+def _literal_to_python(node: sqlglot.exp.Expression) -> LiteralValue:
     match node:
-        case exp.Null():
+        case sqlglot.exp.Null():
             return None
-        case exp.Boolean():
+        case sqlglot.exp.Boolean():
             return node.this is True or str(node.this).lower() == "true"
-        case exp.Literal():
+        case sqlglot.exp.Literal():
             literal = node
             if literal.is_string:
                 return literal.name
@@ -297,28 +297,28 @@ def _literal_to_python(node: exp.Expression) -> LiteralValue:
             raise FilterParseError(f"Unsupported literal: {node.sql()}")
 
 
-def _strip_parens(node: exp.Expression) -> exp.Expression:
+def _strip_parens(node: sqlglot.exp.Expression) -> sqlglot.exp.Expression:
     current = node
-    while isinstance(current, exp.Paren) and current.this is not None:
+    while isinstance(current, sqlglot.exp.Paren) and current.this is not None:
         current = current.this
     return current
 
 
-def _identifier_part_to_string(part: exp.Expression | str) -> str:
-    if isinstance(part, exp.Identifier):
+def _identifier_part_to_string(part: sqlglot.exp.Expression | str) -> str:
+    if isinstance(part, sqlglot.exp.Identifier):
         return part.name
-    if isinstance(part, exp.Star):
+    if isinstance(part, sqlglot.exp.Star):
         return "*"
-    if isinstance(part, exp.Expression):
+    if isinstance(part, sqlglot.exp.Expression):
         return part.sql(dialect="")
     return str(part)
 
 
-def _column_name(node: exp.Expression) -> str:
-    if isinstance(node, exp.Column):
+def _column_name(node: sqlglot.exp.Expression) -> str:
+    if isinstance(node, sqlglot.exp.Column):
         parts = [_identifier_part_to_string(part) for part in node.parts or ()]
         name = ".".join(part for part in parts if part)
-    elif isinstance(node, exp.Identifier):
+    elif isinstance(node, sqlglot.exp.Identifier):
         name = node.name
     else:
         name = node.sql(dialect="")

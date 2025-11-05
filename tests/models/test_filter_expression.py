@@ -3,7 +3,7 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
-from sqlglot import exp
+import sqlglot
 
 from metaxy.models.filter_expression import (
     FilterParseError,
@@ -81,6 +81,6 @@ def test_unsupported_expression_raises() -> None:
 def test_dotted_column_name_preserved() -> None:
     filter_model = NarwhalsFilter.from_string("metadata.owner = 'alice'")
     expression = filter_model.expression
-    assert isinstance(expression, exp.EQ)
-    assert isinstance(expression.this, exp.Column)
+    assert isinstance(expression, sqlglot.exp.EQ)
+    assert isinstance(expression.this, sqlglot.exp.Column)
     assert expression.this.sql() == "metadata.owner"
