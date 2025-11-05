@@ -217,15 +217,12 @@ class NarwhalsJoiner(UpstreamJoiner):
                         )
                 else:
                     # No explicit parent columns - infer from available columns
-                    # Only validate that SOME ID columns exist in upstream (not all)
-                    # The child-specific columns (like chunk_id) will be generated
-                    common_id_cols = set(id_columns) & available_cols
-                    if not common_id_cols:
-                        raise ValueError(
-                            f"Upstream feature '{upstream_key}' has no common ID columns with target. "
-                            f"Target has ID columns {id_columns}, but upstream only has: {sorted(available_cols)}. "
-                            f"For expansion relationships, at least some ID columns must match for joining."
-                        )
+                    # For expansion relationships, the parent's ID columns often become regular fields
+                    # in the child (e.g., video_id is an ID in Video but a regular field in VideoChunk).
+                    # So we shouldn't validate at this point - the join will use whatever common
+                    # columns exist after the child's load_input() is called.
+                    # Just skip validation for inference-based expansion relationships.
+                    pass
             else:
                 # Default validation for non-expansion relationships
                 # No mapping provided - only need unmapped ID columns

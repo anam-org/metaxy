@@ -62,15 +62,16 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         # Always preserve all columns from target_provenance
         # Column selection should be handled by FeatureDep.columns during join phase
 
+        # Create empty LazyFrame with proper schema (used in multiple places)
+        import polars as pl
+
+        # Create empty schema with ID columns
+        schema = {col: [] for col in id_columns}
+        schema["provenance_by_field"] = []
+        empty_lazy = nw.from_native(pl.LazyFrame(schema))
+
         if current_metadata is None:
             # No existing metadata - all target rows are new
-            # Create empty LazyFrame with proper schema
-            import polars as pl
-
-            # Create empty schema with ID columns
-            schema = {col: [] for col in id_columns}
-            schema["provenance_by_field"] = []
-            empty_lazy = nw.from_native(pl.LazyFrame(schema))
 
             return LazyIncrement(
                 added=target_provenance,
@@ -103,6 +104,17 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             # All ID columns available - normal case
             effective_id_columns = list(id_columns)
 
+        # Special case: For expansion relationships with no common ID columns,
+        # this is likely an initial generation where parent data becomes child data.
+        # In this case, all target data is "added" since we can't meaningfully compare.
+        if not effective_id_columns:
+            # No ID columns to join on - treat all target as added
+            return LazyIncrement(
+                added=target_provenance,
+                changed=empty_lazy,
+                removed=current_metadata,  # All current rows are "removed" (shouldn't happen for initial gen)
+            )
+
         # Build aggregation expressions
         agg_cols = [
             nw.col("provenance_by_field")
@@ -122,11 +134,19 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
         # Standard case: group by effective ID columns
         # Query optimizer will optimize this away for unique keys
-        current_comparison = current_metadata.group_by(
-            sorted(effective_id_columns)
-        ).agg(agg_cols)
-        # Sort to maintain deterministic ordering
-        current_comparison = current_comparison.sort(sorted(effective_id_columns))
+        if effective_id_columns:
+            current_comparison = current_metadata.group_by(
+                sorted(effective_id_columns)
+            ).agg(agg_cols)
+            # Sort to maintain deterministic ordering
+            current_comparison = current_comparison.sort(sorted(effective_id_columns))
+        else:
+            # No effective ID columns - this shouldn't normally happen
+            # but can occur in edge cases with expansion relationships
+            # Just use the current metadata as-is with renamed provenance column
+            current_comparison = current_metadata.with_columns(
+                nw.col("provenance_by_field").alias("__current_provenance_by_field")
+            )
 
         # Rename child-specific columns back to their original names
         if child_specific_cols:
