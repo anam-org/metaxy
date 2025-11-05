@@ -344,25 +344,22 @@ def _convert_operand(node: exp.Expression) -> FilterOperandType:
 
 
 def _literal_to_python(node: exp.Expression) -> LiteralValue:
-    if isinstance(node, exp.Null):
-        return None
-
-    if isinstance(node, exp.Boolean):
-        return node.this is True or str(node.this).lower() == "true"
-
-    if isinstance(node, exp.Literal):
-        literal = node
-        if literal.is_string:
-            return literal.name
-        if literal.is_int:
-            return int(literal.this)
-        if literal.is_number:
-            return float(literal.this)
-        return literal.this
-
-    raise FilterParseError(f"Unsupported literal: {node.sql()}")
-
-
+    match node:
+        case exp.Null():
+            return None
+        case exp.Boolean():
+            return node.this is True or str(node.this).lower() == "true"
+        case exp.Literal():
+            literal = node
+            if literal.is_string:
+                return literal.name
+            if literal.is_int:
+                return int(literal.this)
+            if literal.is_number:
+                return float(literal.this)
+            return literal.this
+        case _:
+            raise FilterParseError(f"Unsupported literal: {node.sql()}")
 def _maybe_null_comparison(
     left: FilterOperand,
     right: FilterOperand,
