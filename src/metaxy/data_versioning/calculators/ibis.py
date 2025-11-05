@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import narwhals as nw
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.base import (
+    FIELD_NAME_PREFIX,
+    ProvenanceByFieldCalculator,
+)
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.utils.hashing import get_hash_truncation_length
 
@@ -90,6 +93,116 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             return HashAlgorithm.XXHASH64
         return self.supported_algorithms[0]
 
+    def compute_struct_hash(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        struct_column: str,
+        output_column: str,
+        hash_algorithm: HashAlgorithm | None = None,
+    ) -> nw.LazyFrame[Any]:
+        """Compute a single hash from a struct column containing field hashes.
+
+        Args:
+            lazy_frame: Narwhals LazyFrame containing the struct column
+            struct_column: Name of the struct column containing field hashes
+            output_column: Name for the output hash column
+            hash_algorithm: Hash algorithm to use. If None, uses self.default_algorithm.
+
+        Returns:
+            Narwhals LazyFrame with the output hash column added
+        """
+        import ibis
+
+        algo = hash_algorithm or self.default_algorithm
+
+        if algo not in self.supported_algorithms:
+            raise ValueError(
+                f"Hash algorithm {algo} not supported by {self.__class__.__name__}. "
+                f"Supported: {self.supported_algorithms}"
+            )
+
+        # Convert Narwhals LazyFrame to Ibis table
+        import ibis.expr.types
+
+        native = lazy_frame.to_native()
+
+        # Validate that we have an Ibis table
+        if not isinstance(native, ibis.expr.types.Table):
+            raise TypeError(
+                f"IbisProvenanceByFieldCalculator requires Ibis-backed data. "
+                f"Got {type(native)} instead."
+            )
+
+        ibis_table: ibis.expr.types.Table = native  # type: ignore[assignment]
+
+        # Get the hash SQL generator
+        hash_sql_gen = self._hash_sql_generators[algo]
+
+        # Get struct field names from the schema
+        import ibis.expr.datatypes as dt
+
+        struct_schema = ibis_table[struct_column].type()
+
+        # Check if we have a struct type
+        if not isinstance(struct_schema, dt.Struct):
+            raise TypeError(
+                f"Expected struct type for column '{struct_column}', "
+                f"got {struct_schema} instead."
+            )
+
+        # Extract field names from the struct
+        field_names = sorted(list(struct_schema.fields.keys()))
+
+        if not field_names:
+            # Empty struct (no fields) - return with empty hash
+            raise ValueError(
+                f"Expected non-empty struct type for column '{struct_column}', "
+                f"got {struct_schema} instead."
+            )
+
+        # Build concatenation expression for all field hashes
+        components = []
+        for field_name in field_names:
+            components.append(ibis.literal(field_name))
+            components.append(ibis_table[struct_column][field_name])
+
+        # Concatenate all components
+        concat_expr = components[0]
+        for component in components[1:]:
+            concat_expr = concat_expr.concat(ibis.literal("|")).concat(component)  # pyright: ignore[reportAttributeAccessIssue]
+
+        # Add concatenation column
+        concat_col_name = f"__concat_for_{output_column}"
+        ibis_table = ibis_table.mutate(**{concat_col_name: concat_expr})
+
+        # Generate SQL for hashing
+        hash_sql = hash_sql_gen(ibis_table, {"hash": concat_col_name})
+
+        # Execute SQL to get table with hash column
+        result_table = self._backend.sql(hash_sql)  # pyright: ignore[reportAttributeAccessIssue]
+
+        # Get the hash column and rename it
+        hash_col = result_table["__hash_hash"]
+
+        # Apply truncation if configured
+        from metaxy.utils.hashing import get_hash_truncation_length
+
+        truncation_length = get_hash_truncation_length()
+        if truncation_length is not None:
+            hash_col = hash_col.substr(0, truncation_length)
+
+        # Select all original columns plus the new hash column
+        # Exclude temporary columns and any existing output column to avoid duplicates
+        cols_to_keep = [
+            c
+            for c in result_table.columns
+            if c != "__hash_hash" and c != concat_col_name and c != output_column
+        ]
+        result_table = result_table.select(*cols_to_keep, **{output_column: hash_col})
+
+        # Convert back to Narwhals LazyFrame
+        return nw.from_native(result_table, eager_only=False)
+
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
@@ -144,11 +257,8 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         concat_columns = {}
 
         for field in feature_spec.fields:
-            field_key_str = (
-                field.key.to_string()
-                if hasattr(field.key, "to_string")
-                else "__".join(field.key)
-            )
+            # Use database-safe field names to avoid reserved keywords
+            field_key_str = FIELD_NAME_PREFIX + field.key.to_string().replace("/", "_")
 
             field_deps = feature_plan.field_dependencies.get(field.key, {})
 
@@ -161,30 +271,45 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             # Add upstream provenance values in deterministic order
             for upstream_feature_key in sorted(field_deps.keys()):
                 upstream_fields = field_deps[upstream_feature_key]
-                upstream_key_str = (
-                    upstream_feature_key.to_string()
-                    if hasattr(upstream_feature_key, "to_string")
-                    else "__".join(upstream_feature_key)
-                )
+                upstream_key_str = upstream_feature_key.to_string()
 
                 provenance_col_name = upstream_column_mapping.get(
                     upstream_key_str, "provenance_by_field"
                 )
 
-                for upstream_field in sorted(upstream_fields):
+                # Get actual field names from the struct schema
+                import ibis.expr.datatypes as dt
+
+                struct_col = ibis_table[provenance_col_name]
+                struct_type = struct_col.type()
+                actual_field_names = (
+                    sorted(list(struct_type.fields.keys()))
+                    if isinstance(struct_type, dt.Struct)
+                    else []
+                )
+
+                for i, upstream_field in enumerate(sorted(upstream_fields)):
+                    # Use the same prefix for consistency
                     upstream_field_str = (
-                        upstream_field.to_string()
-                        if hasattr(upstream_field, "to_string")
-                        else "__".join(upstream_field)
+                        FIELD_NAME_PREFIX + upstream_field.to_string().replace("/", "_")
                     )
 
                     components.append(
                         ibis.literal(f"{upstream_key_str}/{upstream_field_str}")
                     )
-                    # Access struct field for upstream field's hash
-                    components.append(
-                        ibis_table[provenance_col_name][upstream_field_str]
-                    )
+                    # Access struct field - use actual field name from sorted schema
+                    # ClickHouse renames fields to f0, f1, etc. when creating tables from Arrow
+                    # We use positional access based on sorted order since field names might differ
+                    if actual_field_names and i < len(actual_field_names):
+                        actual_field_name = actual_field_names[i]
+                        components.append(
+                            ibis_table[provenance_col_name][actual_field_name]
+                        )
+                    else:
+                        # Fallback to expected field name
+                        components.append(
+                            ibis_table[provenance_col_name][upstream_field_str]
+                        )
 
             # Concatenate all components with separator
             concat_expr = components[0]
@@ -234,5 +359,15 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             *cols_to_keep, provenance_by_field=ibis.struct(struct_fields)
         )
 
-        # Convert back to Narwhals LazyFrame
-        return nw.from_native(result_table, eager_only=False)
+        # Convert to Narwhals LazyFrame
+        result_nw = nw.from_native(result_table, eager_only=False)
+
+        # Compute metaxy_provenance using the new method
+        result_with_metaxy = self.compute_struct_hash(
+            result_nw,
+            struct_column="provenance_by_field",
+            output_column="metaxy_provenance",
+            hash_algorithm=algo,
+        )
+
+        return result_with_metaxy

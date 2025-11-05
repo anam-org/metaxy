@@ -339,7 +339,9 @@ class NarwhalsJoiner(UpstreamJoiner):
         for col in cols_to_select:
             if col == "provenance_by_field":
                 # Always rename provenance_by_field to avoid conflicts
-                new_name = f"{UPSTREAM_PROVENANCE_PREFIX}{upstream_key}{UPSTREAM_PROVENANCE_SUFFIX}"
+                # Sanitize upstream_key to replace / with _ for SQL compatibility
+                sanitized_key = upstream_key.replace("/", "_")
+                new_name = f"{UPSTREAM_PROVENANCE_PREFIX}{sanitized_key}{UPSTREAM_PROVENANCE_SUFFIX}"
                 select_exprs.append(nw.col(col).alias(new_name))
                 upstream_mapping = new_name
             elif col in renames_spec:

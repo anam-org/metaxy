@@ -7,6 +7,10 @@ import narwhals as nw
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
+# Prefix for field names in provenance_by_field struct to ensure database compatibility
+# Avoids SQL reserved keywords like 'default', 'order', 'select', etc.
+FIELD_NAME_PREFIX = "f_"
+
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import BaseFeatureSpec
     from metaxy.models.plan import FeaturePlan
@@ -63,6 +67,30 @@ class ProvenanceByFieldCalculator(ABC):
         pass
 
     @abstractmethod
+    def compute_struct_hash(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        struct_column: str,
+        output_column: str,
+        hash_algorithm: HashAlgorithm | None = None,
+    ) -> nw.LazyFrame[Any]:
+        """Compute a single hash from a struct column containing field hashes.
+
+        This method computes a deterministic hash from all fields in a struct column,
+        typically used to generate the metaxy_provenance column from provenance_by_field.
+
+        Args:
+            lazy_frame: Narwhals LazyFrame containing the struct column
+            struct_column: Name of the struct column containing field hashes
+            output_column: Name for the output hash column
+            hash_algorithm: Hash algorithm to use. If None, uses self.default_algorithm.
+
+        Returns:
+            Narwhals LazyFrame with the output hash column added
+        """
+        pass
+
+    @abstractmethod
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
@@ -79,6 +107,7 @@ class ProvenanceByFieldCalculator(ABC):
            b. Hash the concatenated string
         2. Create struct with all field hashes
         3. Add as provenance_by_field column
+        4. Compute metaxy_provenance from the provenance_by_field struct
 
         Args:
             joined_upstream: Narwhals LazyFrame with all upstream provenance_by_field columns joined
@@ -92,8 +121,8 @@ class ProvenanceByFieldCalculator(ABC):
                 Must be in self.supported_algorithms.
 
         Returns:
-            Narwhals LazyFrame with provenance_by_field column added
-            Shape: [sample_uid, __upstream_*__provenance_by_field columns, provenance_by_field (new)]
+            Narwhals LazyFrame with provenance_by_field and metaxy_provenance columns added
+            Shape: [sample_uid, __upstream_*__provenance_by_field columns, provenance_by_field (new), metaxy_provenance (new)]
 
         Raises:
             ValueError: If hash_algorithm not in supported_algorithms
