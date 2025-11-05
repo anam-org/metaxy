@@ -1,9 +1,13 @@
 # Recompute
 
-> [!WARNING]
-> This examples is a WIP
+::: metaxy-example source-link
+example: recompute
+:::
 
 This example demonstrates how Metaxy automatically detects when upstream features change and recomputes downstream dependencies.
+
+> [!WARNING]
+> This examples is a WIP
 
 ## How It Works
 
