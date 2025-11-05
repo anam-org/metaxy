@@ -12,6 +12,7 @@ Metaxy has built-in support for the following metadata store types:
 ## Storage Only
 
 - [DeltaMetadataStore](./delta.md).
+- [LanceDBMetadataStore](./lancedb.md).
 - [InMemoryMetadataStore](./memory.md).
 
 ---

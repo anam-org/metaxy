@@ -16,6 +16,25 @@ from metaxy.metadata_store.system import (
 )
 from metaxy.metadata_store.types import AccessMode
 
+if TYPE_CHECKING:
+    from typing import Any
+
+    from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+
+
+def _optional_import(name: str) -> Any | None:
+    """Import optional metadata store modules on demand."""
+    try:
+        module = import_module(f"metaxy.metadata_store.{name}")
+    except ModuleNotFoundError:
+        return None
+    return module
+
+
+_delta_module = _optional_import("delta")
+_lancedb_module = _optional_import("lancedb")
+
+
 __all__ = [
     "MetadataStore",
     "InMemoryMetadataStore",
@@ -29,4 +48,5 @@ __all__ = [
     "FEATURE_VERSIONS_KEY",
     "allow_feature_version_override",
     "AccessMode",
+    "LanceDBMetadataStore",
 ]

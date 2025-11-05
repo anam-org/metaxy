@@ -235,9 +235,10 @@ nav:
           - BigQuery: reference/api/metadata-stores/ibis/bigquery.md
           - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
           - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-        - Storage Only:
-            - Delta Lake: reference/api/metadata-stores/delta.md
-            - Memory: reference/api/metadata-stores/memory.md
+        - Stores without engine:
+          - Delta Lake: reference/api/metadata-stores/delta.md
+          - LanceDB: reference/api/metadata-stores/lancedb.md
+          - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
       - Plugins:
         - SQLModel: reference/api/ext/sqlmodel.md

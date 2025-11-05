@@ -52,6 +52,10 @@ dagster = [
   "dagster>=1.12.3",
 ]
 
+lancedb = [
+  "lancedb>=0.15.0",
+]
+
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
