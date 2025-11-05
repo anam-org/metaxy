@@ -1,9 +1,4 @@
-"""Feature definitions - Version 2.
-
-ParentFeature's FeatureSpec.code_version changed from 1 to 2.
-This represents updating the embedding algorithm.
-When parent changes, child must recompute even though its code is unchanged.
-"""
+"""Feature definitions for recompute example."""
 
 from metaxy import (
     Feature,
@@ -23,12 +18,12 @@ class ParentFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["embeddings"]),
-                code_version="2",  # ⚠️ CHANGED: Updated embedding algorithm
+                code_version="1",
             ),
         ],
     ),
 ):
-    """Parent feature with updated embedding algorithm."""
+    """Parent feature that generates embeddings from raw data."""
 
     pass
 
@@ -41,7 +36,7 @@ class ChildFeature(
         fields=[
             FieldSpec(
                 key=FieldKey(["predictions"]),
-                code_version="1",  # Unchanged - but will recompute due to parent change
+                code_version="1",
                 deps=[
                     FieldDep(
                         feature=ParentFeature.spec().key,
@@ -52,6 +47,6 @@ class ChildFeature(
         ],
     ),
 ):
-    """Child feature (unchanged code, but will recompute due to parent change)."""
+    """Child feature that uses parent embeddings to generate predictions."""
 
     pass
