@@ -6,6 +6,10 @@ dist/
 wheels/
 *.egg-info
 
+# Patch artifacts
+*.orig
+*.rej
+
 # Virtual environments
 .venv
 .direnv
@@ -16,6 +20,7 @@ preprocessed_configs
 # Metaxy
 .metaxy
 site/
+examples/.generated/  # mkdocs plugin generates patched files here
 
 docs/reference/configuration.md  # this is generated with `mkdocs build`
 .hypothesis/
