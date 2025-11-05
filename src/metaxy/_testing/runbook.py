@@ -13,12 +13,77 @@ import subprocess
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from contextlib import contextmanager
+
+# ============================================================================
+# Runbook Execution State Models
+# ============================================================================
+from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pydantic import Field as PydanticField
+
+
+@dataclass(frozen=True)
+class GraphPushed:
+    """Event recorded when a graph snapshot is pushed."""
+
+    snapshot_version: str
+    timestamp: datetime
+    scenario_name: str | None = None
+
+
+@dataclass(frozen=True)
+class PatchApplied:
+    """Event recorded when a patch is applied."""
+
+    patch_path: str
+    before_snapshot: str | None
+    after_snapshot: str | None
+    timestamp: datetime
+    scenario_name: str | None = None
+
+
+# Type alias for all event types
+RunbookEvent = GraphPushed | PatchApplied
+
+
+@dataclass(frozen=True)
+class RunbookExecutionState:
+    """Captured state from a runbook execution.
+
+    This preserves all events that occurred during the runbook run,
+    allowing for later analysis, documentation generation, etc.
+    """
+
+    events: list[RunbookEvent]
+
+    def get_patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
+        """Extract patch snapshots from the event stream.
+
+        Returns:
+            Dictionary mapping patch paths to (before, after) snapshot tuples.
+        """
+        result = {}
+        for event in self.events:
+            if isinstance(event, PatchApplied):
+                result[event.patch_path] = (event.before_snapshot, event.after_snapshot)
+        return result
+
+    def get_latest_snapshot(self) -> str | None:
+        """Get the most recent snapshot version.
+
+        Returns:
+            Latest snapshot version or None if no snapshots.
+        """
+        for event in reversed(self.events):
+            if isinstance(event, GraphPushed):
+                return event.snapshot_version
+        return None
+
 
 # ============================================================================
 # Runbook Models
@@ -233,6 +298,36 @@ class Runbook(BaseModel):
     Set to False to skip automatic graph pushes (e.g., when no metadata store is configured).
     """
 
+    # Private attribute to store execution state
+    _execution_state: RunbookExecutionState | None = PrivateAttr(default=None)
+    """Captured state from runbook execution."""
+
+    def set_execution_state(self, state: RunbookExecutionState) -> None:
+        """Set the execution state.
+
+        Args:
+            state: The captured execution state.
+        """
+        self._execution_state = state
+
+    def get_execution_state(self) -> RunbookExecutionState | None:
+        """Get the execution state.
+
+        Returns:
+            The execution state or None if not yet executed.
+        """
+        return self._execution_state
+
+    def get_patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
+        """Get patch snapshots from execution state.
+
+        Returns:
+            Dictionary mapping patch paths to (before, after) snapshot tuples.
+        """
+        if self._execution_state is None:
+            return {}
+        return self._execution_state.get_patch_snapshots()
+
     @classmethod
     def from_yaml_file(cls, path: Path) -> Runbook:
         """Load a runbook from a YAML file.
@@ -310,6 +405,9 @@ class RunbookRunner:
         self.last_result: CommandResult | None = None
         self.applied_patches: list[str] = []
         self._initial_graph_pushed = False
+        self._last_pushed_snapshot: str | None = None
+        self._events: list[RunbookEvent] = []
+        self._current_scenario: str | None = None
 
         # Import ExternalMetaxyProject
         from metaxy._testing.metaxy_project import ExternalMetaxyProject
@@ -334,15 +432,18 @@ class RunbookRunner:
 
         return env
 
-    def push_graph_snapshot(self) -> None:
+    def push_graph_snapshot(self) -> str | None:
         """Push the current graph snapshot using metaxy graph push.
 
         This is called automatically after the initial load and after each patch,
         unless disabled via auto_push_graph=False in the runbook.
+
+        Returns:
+            The snapshot version hash from the push, or None if push was skipped.
         """
         # Skip if auto push is disabled
         if not self.runbook.auto_push_graph:
-            return
+            return None
 
         env = self.get_base_env()
 
@@ -354,6 +455,28 @@ class RunbookRunner:
             raise RuntimeError(
                 f"Failed to push graph snapshot:\nstdout: {result.stdout}\nstderr: {result.stderr}"
             )
+
+        # Extract snapshot version from output
+        # The snapshot hash is printed on its own line after "✓ Recorded feature graph"
+        import re
+
+        lines = result.stdout.strip().split("\n")
+        for i, line in enumerate(lines):
+            if "Recorded feature graph" in line and i + 1 < len(lines):
+                # Next line should be the snapshot hash
+                next_line = lines[i + 1].strip()
+                # Check if it looks like a hash (64 hex characters)
+                if re.match(r"^[a-f0-9]{64}$", next_line):
+                    # Record event
+                    self._events.append(
+                        GraphPushed(
+                            timestamp=datetime.now(),
+                            scenario_name=self._current_scenario,
+                            snapshot_version=next_line,
+                        )
+                    )
+                    return next_line
+        return None
 
     def run_command(
         self,
@@ -409,6 +532,9 @@ class RunbookRunner:
                 f"Patch file not found: {patch_path_abs} (resolved from {step.patch_path})"
             )
 
+        # Get snapshot before applying patch
+        before_snapshot = self._last_pushed_snapshot
+
         # Apply the patch using patch command (works without git)
         # -p1: strip one level from paths (a/ and b/ prefixes)
         # -i: specify input file
@@ -429,8 +555,22 @@ class RunbookRunner:
         self.applied_patches.append(step.patch_path)
 
         # Push graph snapshot after applying patch if requested
+        after_snapshot = None
         if step.push_graph:
-            self.push_graph_snapshot()
+            after_snapshot = self.push_graph_snapshot()
+            if after_snapshot:
+                self._last_pushed_snapshot = after_snapshot
+
+        # Record the PatchApplied event
+        self._events.append(
+            PatchApplied(
+                timestamp=datetime.now(),
+                scenario_name=self._current_scenario,
+                patch_path=step.patch_path,
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+            )
+        )
 
     def revert_patches(self) -> None:
         """Revert all applied patches in reverse order."""
@@ -496,9 +636,14 @@ class RunbookRunner:
         Args:
             scenario: The scenario to execute.
         """
+        # Set current scenario for event tracking
+        self._current_scenario = scenario.name
+
         # Push initial graph snapshot before the first scenario
         if not self._initial_graph_pushed:
-            self.push_graph_snapshot()
+            initial_snapshot = self.push_graph_snapshot()
+            if initial_snapshot:
+                self._last_pushed_snapshot = initial_snapshot
             self._initial_graph_pushed = True
 
         for step in scenario.steps:
@@ -516,6 +661,10 @@ class RunbookRunner:
         try:
             for scenario in self.runbook.scenarios:
                 self.run_scenario(scenario)
+
+            # Set the execution state on the runbook
+            state = RunbookExecutionState(events=self._events.copy())
+            self.runbook.set_execution_state(state)
         finally:
             # Always revert patches on completion or error
             if self.applied_patches:
