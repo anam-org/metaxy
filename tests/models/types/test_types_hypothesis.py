@@ -237,19 +237,25 @@ class TestFeatureKeyProperties:
     @settings(max_examples=100)
     def test_feature_key_serialization_roundtrip(self, parts: list[str]):
         """Test JSON serialization roundtrip."""
+        from pydantic import BaseModel
+
         key = FeatureKey(parts)
 
-        # Serialize
-        json_data = key.model_dump()
-        assert isinstance(json_data, list)
-        assert json_data == parts
+        # When used in a container model, keys serialize as slashed strings
+        class Container(BaseModel):
+            key: FeatureKey
+
+        container = Container(key=key)
+        json_data = container.model_dump()
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
         restored_data = json.loads(json_str)
-        restored_key = FeatureKey(restored_data)
+        restored_container = Container(**restored_data)
 
-        assert restored_key == key
+        assert restored_container.key == key
 
     @given(parts=key_parts_list())
     def test_feature_key_immutability(self, parts: list[str]):
@@ -325,19 +331,25 @@ class TestFieldKeyProperties:
     @settings(max_examples=100)
     def test_field_key_serialization_roundtrip(self, parts: list[str]):
         """Test JSON serialization roundtrip."""
+        from pydantic import BaseModel
+
         key = FieldKey(parts)
 
-        # Serialize
-        json_data = key.model_dump()
-        assert isinstance(json_data, list)
-        assert json_data == parts
+        # When used in a container model, keys serialize as slashed strings
+        class Container(BaseModel):
+            key: FieldKey
+
+        container = Container(key=key)
+        json_data = container.model_dump()
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "/".join(parts)
 
         # JSON string roundtrip
         json_str = json.dumps(json_data)
         restored_data = json.loads(json_str)
-        restored_key = FieldKey(restored_data)
+        restored_container = Container(**restored_data)
 
-        assert restored_key == key
+        assert restored_container.key == key
 
 
 # ============================================================================
@@ -417,8 +429,8 @@ class TestFeatureSpecProperties:
         # Serialize to JSON
         json_data = spec.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["key"], list)
+        # Key should be serialized as a slashed string
+        assert isinstance(json_data["key"], str)
 
         # Should be able to reconstruct
         spec_restored = SampleFeatureSpec(**json_data)
@@ -501,8 +513,8 @@ class TestFeatureDepProperties:
         # Serialize to JSON
         json_data = dep.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["feature"], list)
+        # Key should be serialized as a slashed string
+        assert isinstance(json_data["feature"], str)
         assert json_data["columns"] == ["col1", "col2"]  # Tuple becomes list in JSON
         assert json_data["rename"] == {"col1": "new_col1"}
 
@@ -551,8 +563,8 @@ class TestFieldSpecProperties:
         # Serialize to JSON
         json_data = field.model_dump(mode="json")
 
-        # Key should be serialized as a list
-        assert isinstance(json_data["key"], list)
+        # Key should be serialized as a slashed string
+        assert isinstance(json_data["key"], str)
         assert json_data["code_version"] == "7"
 
         # Should be able to reconstruct
@@ -671,11 +683,11 @@ class TestComplexIntegration:
         # Test JSON serialization
         json_data = container.model_dump(mode="json")
 
-        # All keys should be serialized as lists
+        # All keys should be serialized as slashed strings
         for item in json_data["items"]:
-            assert isinstance(item["feature_key"], list)
-            assert isinstance(item["field_key"], list)
-        assert isinstance(json_data["main_feature"]["key"], list)
+            assert isinstance(item["feature_key"], str)
+            assert isinstance(item["field_key"], str)
+        assert isinstance(json_data["main_feature"]["key"], str)
 
         # Roundtrip
         container_restored = MyContainerModel(**json_data)

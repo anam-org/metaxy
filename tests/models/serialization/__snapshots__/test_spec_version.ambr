@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  'eded67864d72c8aa6a753ec90f12371feb7c2200747672aaa80cb5d404a5324f'
+  'e8e37a4ec0ff8a4e6c9b3c995bf9f2a11327b283eb67c7c62cfe893fa6f0ad9b'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '94f31edd238f91502dabe67679c38597242d3fcea87ba36aa0ccc106a83270c0'
+  'c64c0fc9b5d3fef9c3742fd99bf9c69198b90ac09f12f1c930ede43b887b6c91'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_feature_spec_version': '72471e8bfba84439e4814b65bee1589a56f702592f4068ef30c61167bb6781aa',
+    'metaxy_feature_spec_version': '88d511493754f1378b86e75311d9a4efd06ee800ea167449596d2c89bcd2062c',
     'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -155,8 +155,8 @@
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '10e301186731f6b21b28148d88bcb3bf5d9474951bae3091139f38839bd3d15a'
+  '52b0b3ebe47b29d84216118c7293e917910a16b4e9846a049a3f23ee94150b6c'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'd4f1d3b37efdcdedacfc0a087f22627b00f151cc8ef19295579767dae03f055c'
+  '8fb49f51965f9f806331cc8823beb7a1b9d79375de496abf22053438ae26d81e'
 # ---

@@ -144,7 +144,7 @@ class _Key(RootModel[tuple[str, ...]]):
                 )
         return value
 
-    @model_serializer
+    @model_serializer(mode="plain")
     def _serialize_model(self) -> str:
         """Serialize to string format (e.g., 'a/b/c')."""
         return self.to_string()

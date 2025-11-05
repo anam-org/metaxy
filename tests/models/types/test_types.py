@@ -358,9 +358,9 @@ class TestJSONSerialization:
         model = MyModel(key=FeatureKey(["a", "b", "c"]))
         json_data = model.model_dump()
 
-        # key should be serialized as a list
-        assert isinstance(json_data["key"], list)
-        assert json_data["key"] == ["a", "b", "c"]
+        # key should be serialized as a slashed string
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "a/b/c"
 
     def test_field_key_in_pydantic_model(self):
         """Test FieldKey serialization when used as a field in Pydantic model."""
@@ -373,9 +373,9 @@ class TestJSONSerialization:
         model = MyModel(key=FieldKey(["x", "y"]))
         json_data = model.model_dump()
 
-        # key should be serialized as a list
-        assert isinstance(json_data["key"], list)
-        assert json_data["key"] == ["x", "y"]
+        # key should be serialized as a slashed string
+        assert isinstance(json_data["key"], str)
+        assert json_data["key"] == "x/y"
 
 
 class TestFeatureSpecIntegration:
@@ -492,14 +492,14 @@ class TestFeatureSpecIntegration:
         assert spec.fields[0].key.to_string() == "field/one"
         assert spec.fields[1].key.to_string() == "field/two"
 
-        # Verify JSON serialization
+        # Verify JSON serialization (keys serialize as slashed strings)
         json_data = spec.model_dump(mode="json")
-        assert json_data["key"] == ["my", "complete", "feature"]
+        assert json_data["key"] == "my/complete/feature"
         assert json_data["deps"] is not None  # Type narrowing for type checker
-        assert json_data["deps"][0]["feature"] == ["upstream", "one"]
-        assert json_data["deps"][1]["feature"] == ["upstream", "two"]
-        assert json_data["fields"][0]["key"] == ["field", "one"]
-        assert json_data["fields"][1]["key"] == ["field", "two"]
+        assert json_data["deps"][0]["feature"] == "upstream/one"
+        assert json_data["deps"][1]["feature"] == "upstream/two"
+        assert json_data["fields"][0]["key"] == "field/one"
+        assert json_data["fields"][1]["key"] == "field/two"
 
 
 class TestEdgeCases:

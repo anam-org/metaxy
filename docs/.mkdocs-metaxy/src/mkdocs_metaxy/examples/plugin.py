@@ -302,7 +302,6 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         content = self.loader.read_patch(example_name, patch_path)
 
         # Preserve the full path structure for patches
-        Path(patch_path)
         generated_file = self.generated_dir / patch_path
         generated_file.parent.mkdir(parents=True, exist_ok=True)
         generated_file.write_text(content)
