@@ -186,22 +186,24 @@ class NarwhalsFilter(FrozenBaseModel):
 
 _COMPARISON_NODE_MAP: dict[type[exp.Expression], ComparisonOperator] = {}
 
-for class_name, operator in (
-    ("EQ", ComparisonOperator.EQ),
-    ("NEQ", ComparisonOperator.NEQ),
-    ("Gt", ComparisonOperator.GT),
-    ("GT", ComparisonOperator.GT),
-    ("Lt", ComparisonOperator.LT),
-    ("LT", ComparisonOperator.LT),
-    ("GTE", ComparisonOperator.GTE),
-    ("GE", ComparisonOperator.GTE),
-    ("GTOrEq", ComparisonOperator.GTE),
-    ("LTE", ComparisonOperator.LTE),
-    ("LE", ComparisonOperator.LTE),
-    ("LTOrEq", ComparisonOperator.LTE),
-):
-    cls = getattr(exp, class_name, None)
-    if isinstance(cls, type):
+_COMPARISON_NODE_ALIASES: dict[ComparisonOperator, tuple[str, ...]] = {
+    ComparisonOperator.EQ: ("EQ",),
+    ComparisonOperator.NEQ: ("NEQ",),
+    ComparisonOperator.GT: ("Gt", "GT"),
+    ComparisonOperator.LT: ("Lt", "LT"),
+    ComparisonOperator.GTE: ("GTE", "GE", "GTOrEq"),
+    ComparisonOperator.LTE: ("LTE", "LE", "LTOrEq"),
+}
+
+# SQLGlot publishes both legacy CamelCase comparison classes (``Gt``, ``Lt``)
+# and uppercase aliases (``GT``, ``LT``). Some dialect-specific rewrites still
+# emit older names like ``GTOrEq``. Register every known alias but keep the
+# first match so we do not overwrite identical mappings repeatedly.
+for operator, class_names in _COMPARISON_NODE_ALIASES.items():
+    for class_name in class_names:
+        cls = getattr(exp, class_name, None)
+        if not isinstance(cls, type) or cls in _COMPARISON_NODE_MAP:
+            continue
         _COMPARISON_NODE_MAP[cls] = operator
 
 
@@ -360,6 +362,8 @@ def _literal_to_python(node: exp.Expression) -> LiteralValue:
             return literal.this
         case _:
             raise FilterParseError(f"Unsupported literal: {node.sql()}")
+
+
 def _maybe_null_comparison(
     left: FilterOperand,
     right: FilterOperand,
