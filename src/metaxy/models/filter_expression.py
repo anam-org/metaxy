@@ -74,6 +74,21 @@ class NarwhalsFilter(FrozenBaseModel):
         if isinstance(data, str):
             expression = _parse_to_expression(data)
             return {"expression": expression, "source": data}
+        if (
+            isinstance(data, dict)
+            and isinstance(data.get("expression"), str)
+            and data.get("expression")
+        ):
+            expression_str = data["expression"]
+            parsed = _parse_to_expression(expression_str)
+            source = data.get("source", expression_str)
+            if source is None:
+                source = expression_str
+            return {
+                **data,
+                "expression": parsed,
+                "source": source,
+            }
         return data
 
     @field_serializer("expression")
@@ -86,7 +101,7 @@ class NarwhalsFilter(FrozenBaseModel):
 
     @classmethod
     def from_string(cls, filter_string: str) -> NarwhalsFilter:
-        """Parse a SQL WHERE-like string into a ``NarwhalsFilter``."""
+        """Parse a SQL WHERE-like string into a ``NarwhalsFilter`` instance."""
         return cls.model_validate(filter_string)
 
 
