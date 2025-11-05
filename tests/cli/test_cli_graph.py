@@ -1,7 +1,5 @@
 """Tests for graph CLI commands."""
 
-import re
-
 from metaxy._testing import TempMetaxyProject
 
 
@@ -24,8 +22,9 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "push")
 
         assert result.returncode == 0
-        assert "Recorded feature graph" in result.stdout
-        assert "Snapshot version:" in result.stdout
+        assert "Recorded feature graph" in result.stderr
+        # Snapshot version now only goes to stdout, not stderr
+        assert len(result.stdout.strip()) == 64  # Check hash is in stdout
 
 
 def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
@@ -46,12 +45,13 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # First push
         result1 = metaxy_project.run_cli("graph", "push")
-        assert "Recorded feature graph" in result1.stdout
+        assert "Recorded feature graph" in result1.stderr
 
         # Second push - should skip
         result2 = metaxy_project.run_cli("graph", "push")
-        assert "already recorded" in result2.stdout
-        assert "Snapshot version:" in result2.stdout
+        assert "already recorded" in result2.stderr
+        # Snapshot version now only goes to stdout, not stderr
+        assert len(result2.stdout.strip()) == 64  # Check hash is in stdout
 
 
 def test_graph_history_empty(metaxy_project: TempMetaxyProject):
@@ -73,7 +73,7 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "history")
 
         assert result.returncode == 0
-        assert "No graph snapshots recorded yet" in result.stdout
+        assert "No graph snapshots recorded yet" in result.stderr
 
 
 def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
@@ -99,11 +99,11 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "history")
 
         assert result.returncode == 0
-        assert "Graph Snapshot History" in result.stdout
-        assert "Snapshot version" in result.stdout
-        assert "Recorded At" in result.stdout
-        assert "Feature Count" in result.stdout
-        assert "1" in result.stdout  # 1 feature
+        assert "Graph Snapshot History" in result.stderr
+        assert "Snapshot version" in result.stderr
+        assert "Recorded At" in result.stderr
+        assert "Feature Count" in result.stderr
+        assert "1" in result.stderr  # 1 feature
 
 
 def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
@@ -129,7 +129,7 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "history", "--limit", "1")
 
         assert result.returncode == 0
-        assert "Total snapshots: 1" in result.stdout
+        assert "Total snapshots: 1" in result.stderr
 
 
 def test_graph_describe_current(metaxy_project: TempMetaxyProject):
@@ -151,13 +151,13 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "describe")
 
         assert result.returncode == 0
-        assert "Describing current graph from code" in result.stdout
-        assert "Graph Snapshot:" in result.stdout
-        assert "Total Features" in result.stdout
-        assert "Graph Depth" in result.stdout
-        assert "Root Features" in result.stdout
-        assert "1" in result.stdout  # 1 feature
-        assert "video/files" in result.stdout
+        assert "Describing current graph from code" in result.stderr
+        assert "Graph Snapshot:" in result.stderr
+        assert "Total Features" in result.stderr
+        assert "Graph Depth" in result.stderr
+        assert "Root Features" in result.stderr
+        assert "1" in result.stderr  # 1 feature
+        assert "video/files" in result.stderr
 
 
 def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
@@ -213,13 +213,13 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             result = metaxy_project.run_cli("graph", "describe")
 
             assert result.returncode == 0
-            assert "Total Features" in result.stdout
-            assert "2" in result.stdout  # 2 features
-            assert "Graph Depth" in result.stdout
+            assert "Total Features" in result.stderr
+            assert "2" in result.stderr  # 2 features
+            assert "Graph Depth" in result.stderr
             # Depth should be 2 (root -> dependent)
-            assert "Root Features" in result.stdout
-            assert "1" in result.stdout  # 1 root feature
-            assert "video/files" in result.stdout
+            assert "Root Features" in result.stderr
+            assert "1" in result.stderr  # 1 root feature
+            assert "video/files" in result.stderr
 
 
 def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
@@ -241,15 +241,11 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
         # Push to create snapshot
         push_result = metaxy_project.run_cli("graph", "push")
 
-        # Extract snapshot version from output
-        # The snapshot version might be wrapped to the next line, so use DOTALL flag
-        match = re.search(
-            r"Snapshot version:\s+([a-f0-9]+)", push_result.stdout, re.DOTALL
-        )
-        assert match, (
+        # Extract snapshot version from stdout (just the raw hash)
+        snapshot_version = push_result.stdout.strip()
+        assert snapshot_version, (
             f"Could not find snapshot version in push output. Output: {push_result.stdout}"
         )
-        snapshot_version = match.group(1)
 
         # Describe specific snapshot
         result = metaxy_project.run_cli(
@@ -258,10 +254,10 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
 
         assert result.returncode == 0
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in result.stdout
-        assert snapshot_version in result.stdout
-        assert "Graph Snapshot:" in result.stdout
-        assert "Total Features" in result.stdout
+        assert "Describing snapshot" in result.stderr
+        assert snapshot_version in result.stderr
+        assert "Graph Snapshot:" in result.stderr
+        assert "Total Features" in result.stderr
 
 
 def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
@@ -284,7 +280,7 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("graph", "push", "--store", "dev")
 
         assert result.returncode == 0
-        assert "Snapshot" in result.stdout
+        assert result.stdout
 
 
 def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
@@ -314,33 +310,29 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Step 1: Push
         push_result = metaxy_project.run_cli("graph", "push")
-        assert "Recorded feature graph" in push_result.stdout
+        assert "Recorded feature graph" in push_result.stderr
 
-        # Extract snapshot version
-        # The snapshot version might be wrapped to the next line, so use DOTALL flag
-        match = re.search(
-            r"Snapshot version:\s+([a-f0-9]+)", push_result.stdout, re.DOTALL
-        )
-        assert match is not None
-        snapshot_version = match.group(1)
+        # Extract snapshot version from stdout (just the raw hash)
+        snapshot_version = push_result.stdout.strip()
+        assert snapshot_version
 
-        # Step 2: History should show the snapshot
+        # Step 2: History should show the snapshot (table output goes to stderr)
         history_result = metaxy_project.run_cli("graph", "history")
-        assert snapshot_version[:13] in history_result.stdout
-        assert "2" in history_result.stdout  # 2 features
+        assert snapshot_version[:13] in history_result.stderr
+        assert "2" in history_result.stderr  # 2 features
 
         # Step 3: Describe should show current graph
         describe_result = metaxy_project.run_cli("graph", "describe")
-        assert "Total Features" in describe_result.stdout
-        assert "2" in describe_result.stdout
+        assert "Total Features" in describe_result.stderr
+        assert "2" in describe_result.stderr
 
         # Step 4: Describe historical snapshot
         describe_historical = metaxy_project.run_cli(
             "graph", "describe", "--snapshot", snapshot_version
         )
         # Check that output contains "Describing snapshot" and the snapshot_version (may have newlines between them)
-        assert "Describing snapshot" in describe_historical.stdout
-        assert snapshot_version in describe_historical.stdout
+        assert "Describing snapshot" in describe_historical.stderr
+        assert snapshot_version in describe_historical.stderr
 
 
 def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
@@ -609,7 +601,7 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 0
-        assert "saved to" in result.stdout
+        assert "saved to" in result.stderr
         assert output_file.exists()
 
         # Check file contents
@@ -820,8 +812,9 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features_v1):
         result1 = metaxy_project.run_cli("graph", "push")
         assert result1.returncode == 0
-        assert "Recorded feature graph" in result1.stdout
-        assert "Snapshot version:" in result1.stdout
+        assert "Recorded feature graph" in result1.stderr
+        # Snapshot version now only goes to stdout
+        assert len(result1.stdout.strip()) == 64
 
     # Push v2 (metadata-only change)
     with metaxy_project.with_features(features_v2):
@@ -829,14 +822,14 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
         assert result2.returncode == 0
 
         # Should show metadata-only change message
-        assert "Updated feature graph metadata" in result2.stdout
-        assert "no topological changes" in result2.stdout
+        assert "Updated feature graph metadata" in result2.stderr
+        assert "no topological changes" in result2.stderr
 
         # Should list the changed feature
-        assert "downstream" in result2.stdout
+        assert "downstream" in result2.stderr
 
-        # Should still show snapshot version
-        assert "Snapshot version:" in result2.stdout
+        # Snapshot version should be in stdout
+        assert len(result2.stdout.strip()) == 64
 
 
 def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
@@ -857,14 +850,15 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # First push
         result1 = metaxy_project.run_cli("graph", "push")
-        assert "Recorded feature graph" in result1.stdout
+        assert "Recorded feature graph" in result1.stderr
 
         # Second push - no changes
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
-        assert "already recorded" in result2.stdout
-        assert "no changes" in result2.stdout
-        assert "Snapshot version:" in result2.stdout
+        assert "already recorded" in result2.stderr
+        assert "no changes" in result2.stderr
+        # Snapshot version now only goes to stdout
+        assert len(result2.stdout.strip()) == 64
 
 
 def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProject):
@@ -937,23 +931,24 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
     with metaxy_project.with_features(features_v1):
         result1 = metaxy_project.run_cli("graph", "push")
         assert result1.returncode == 0
-        assert "Recorded feature graph" in result1.stdout
-        assert "Snapshot version:" in result1.stdout
+        assert "Recorded feature graph" in result1.stderr
+        # Snapshot version now only goes to stdout
+        assert len(result1.stdout.strip()) == 64
 
     # Scenario 2: Metadata change
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
-        assert "Updated feature graph metadata" in result2.stdout
-        assert "no topological changes" in result2.stdout
-        assert "downstream" in result2.stdout
+        assert "Updated feature graph metadata" in result2.stderr
+        assert "no topological changes" in result2.stderr
+        assert "downstream" in result2.stderr
 
     # Scenario 3: No change
     with metaxy_project.with_features(features_v2):
         result3 = metaxy_project.run_cli("graph", "push")
         assert result3.returncode == 0
-        assert "already recorded" in result3.stdout
-        assert "no changes" in result3.stdout
+        assert "already recorded" in result3.stderr
+        assert "no changes" in result3.stderr
 
 
 def test_graph_push_multiple_features_metadata_changes(
@@ -1050,17 +1045,17 @@ def test_graph_push_multiple_features_metadata_changes(
     # Push v1
     with metaxy_project.with_features(features_v1):
         result1 = metaxy_project.run_cli("graph", "push")
-        assert "Recorded feature graph" in result1.stdout
+        assert "Recorded feature graph" in result1.stderr
 
     # Push v2 - multiple metadata changes
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
-        assert "Updated feature graph metadata" in result2.stdout
+        assert "Updated feature graph metadata" in result2.stderr
 
         # Should list both changed features
-        assert "feature_b" in result2.stdout
-        assert "feature_c" in result2.stdout
+        assert "feature_b" in result2.stderr
+        assert "feature_c" in result2.stderr
 
         # Should NOT list unchanged feature
         # Note: feature_a might appear in deps, so we check it's not in the "Features with metadata changes" section

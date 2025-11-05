@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from metaxy.graph.diff.differ import GraphDiffer
+from metaxy.migrations.models import DiffMigration
 from metaxy.models.feature import FeatureGraph
 from metaxy.utils.hashing import ensure_hash_compatibility, get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.migrations.models import DiffMigration
 
 
 def detect_migration(
@@ -45,15 +45,16 @@ def detect_migration(
             if migration:
             print(f"Migration written to {migration.yaml_path}")
 
+        ```py
         # Use custom operation
         migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
+        ```
 
+        ```py
         # Use custom name
         migration = detect_migration(store, project="my_project", name="example_migration")
         ```
     """
-    from metaxy.migrations.models import DiffMigration
-
     differ = GraphDiffer()
 
     # Get from_snapshot_version (use latest if not specified)

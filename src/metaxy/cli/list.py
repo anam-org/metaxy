@@ -1,14 +1,13 @@
 import cyclopts
-from rich.console import Console
 
-# Rich console for formatted output
-console = Console()
+from metaxy.cli.console import console, data_console, error_console
 
-# Migrations subcommand app
+# List subcommand app
 app = cyclopts.App(
     name="list",  # pyrefly: ignore[unexpected-keyword]
     help="List Metaxy entities",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 
@@ -30,18 +29,18 @@ def features():
             and get_feature_by_key(feature_key).project != context.project
         ):
             continue
-        console.print("---")
+        data_console.print("---")
         version = graph.get_feature_version(feature_key)
-        console.print(f"{feature_key} (version\n{version})")
+        data_console.print(f"{feature_key} (version\n{version})")
         if feature_spec.deps:
-            console.print("  Feature Dependencies:")
+            data_console.print("  Feature Dependencies:")
             for dep in feature_spec.deps:
-                console.print(f"    {dep}")
-        console.print("  Fields:")
+                data_console.print(f"    {dep}")
+        data_console.print("  Fields:")
         for field_key, field_spec in feature_spec.fields_by_key.items():
             field_version = graph.get_field_version(
                 FQFieldKey(feature=feature_key, field=field_key)
             )
-            console.print(
+            data_console.print(
                 f"    {field_spec.key.to_string()} (code_version {field_spec.code_version}, version\n{field_version})"
             )
