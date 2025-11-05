@@ -25,6 +25,7 @@ from metaxy import (
     TestingFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy.data_versioning.calculators.base import FIELD_NAME_PREFIX
 from metaxy.data_versioning.diff import LazyIncrement
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
@@ -439,9 +440,9 @@ def test_resolve_update_no_upstream(
         {
             "sample_uid": [1, 2, 3],
             "provenance_by_field": [
-                {"field_a": "hash1"},
-                {"field_a": "hash2"},
-                {"field_a": "hash3"},
+                {f"{FIELD_NAME_PREFIX}field_a": "hash1"},
+                {f"{FIELD_NAME_PREFIX}field_a": "hash2"},
+                {f"{FIELD_NAME_PREFIX}field_a": "hash3"},
             ],
         }
     )
@@ -532,20 +533,34 @@ def test_resolve_update_no_upstream(
 
                 caplog.clear()
 
-                # 5. Record results for comparison - include field provenances
+                # 5. Record results for comparison - include field provenances and metaxy_provenance
                 # Convert Narwhals to Polars for manipulation
                 added_sorted = (
                     result.added.to_polars()
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
                 ).sort("sample_uid")
-                versions = added_sorted["provenance_by_field"].to_list()
+                # Extract provenance_by_field values for comparison
+                # ClickHouse renames struct fields to f0, f1, etc. when creating tables from Arrow
+                # So we only compare the values in sorted order, not the field names
+                versions = []
+                for prov in added_sorted["provenance_by_field"].to_list():
+                    if isinstance(prov, dict):
+                        # Sort by key and extract values only to avoid field name differences
+                        sorted_values = [v for k, v in sorted(prov.items())]
+                        versions.append(sorted_values)
+                    else:
+                        versions.append(prov)
+
+                # Extract metaxy_provenance (MANDATORY - always present)
+                metaxy_provenances = added_sorted["metaxy_provenance"].to_list()
 
                 results[(store_type, prefer_native, use_native_samples)] = {
                     "added": len(result.added),
                     "changed": len(result.changed),
                     "removed": len(result.removed),
                     "versions": versions,
+                    "metaxy_provenances": metaxy_provenances,
                 }
 
                 # Clean up temp table for SQL stores if created
@@ -578,13 +593,26 @@ def test_resolve_update_no_upstream(
 
         # Verify versions structure
         assert len(reference["versions"]) == 3
-        assert all(isinstance(v, dict) for v in reference["versions"])
+        assert all(isinstance(v, list) for v in reference["versions"])
         # All versions should match the source (user provided them manually)
+        # We extract values only, so compare against expected values
         assert reference["versions"] == [
-            {"field_a": "hash1"},
-            {"field_a": "hash2"},
-            {"field_a": "hash3"},
+            ["hash1"],  # Single field, single value
+            ["hash2"],
+            ["hash3"],
         ]
+
+        # Verify metaxy_provenance is present and consistent (MANDATORY)
+        assert reference["metaxy_provenances"] is not None, (
+            "metaxy_provenance column is MANDATORY"
+        )
+        assert len(reference["metaxy_provenances"]) == 3, (
+            "Should have metaxy_provenance for all 3 samples"
+        )
+        # Each sample should have a non-empty metaxy_provenance hash
+        assert all(
+            mp is not None and mp != "" for mp in reference["metaxy_provenances"]
+        ), "All metaxy_provenance values should be non-empty"
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -613,11 +641,16 @@ def test_resolve_update_with_upstream(
     ) -> list[dict[str, Any]]:
         fields = [c.key for c in feature.spec().fields]
         if len(fields) == 1:
-            field_name = "_".join(fields[0])
+            # Use prefix for database-safe field names
+            field_name = FIELD_NAME_PREFIX + "_".join(fields[0])
             return [{field_name: f"{prefix}_{i}"} for i in [1, 2, 3]]
         else:
             return [
-                {"_".join(ck): f"{prefix}_{i}_{ck}" for ck in fields} for i in [1, 2, 3]
+                {
+                    FIELD_NAME_PREFIX + "_".join(ck): f"{prefix}_{i}_{ck}"
+                    for ck in fields
+                }
+                for i in [1, 2, 3]
             ]
 
     # Create upstream data for root feature
@@ -670,6 +703,13 @@ def test_resolve_update_with_upstream(
                             result = lazy_result.collect()
                             if len(result.added) > 0:
                                 # Write metadata with computed field provenances
+                                # Convert Narwhals to Polars for manipulation
+                                added_df = (
+                                    result.added.to_polars()
+                                    if isinstance(result.added, nw.DataFrame)
+                                    else result.added
+                                ).sort("sample_uid")
+
                                 feature_data = pl.DataFrame(
                                     {
                                         "sample_uid": [1, 2, 3],
@@ -678,9 +718,7 @@ def test_resolve_update_with_upstream(
                                 ).with_columns(
                                     pl.Series(
                                         "provenance_by_field",
-                                        result.added.sort("sample_uid")[
-                                            "provenance_by_field"
-                                        ].to_list(),
+                                        added_df["provenance_by_field"].to_list(),
                                     )
                                 )
                                 store.write_metadata(feature, feature_data)
@@ -702,20 +740,34 @@ def test_resolve_update_with_upstream(
                             f"{[str(w.message) for w in prefer_native_warnings]}"
                         )
 
-                    # Collect field provenances
+                    # Collect field provenances and metaxy_provenance
                     # Convert Narwhals to Polars for manipulation
                     added_sorted = (
                         result.added.to_polars()
                         if isinstance(result.added, nw.DataFrame)
                         else result.added
                     ).sort("sample_uid")
-                    versions = added_sorted["provenance_by_field"].to_list()
+                    # Extract provenance_by_field values for comparison
+                # ClickHouse renames struct fields to f0, f1, etc. when creating tables from Arrow
+                # So we only compare the values in sorted order, not the field names
+                versions = []
+                for prov in added_sorted["provenance_by_field"].to_list():
+                    if isinstance(prov, dict):
+                        # Sort by key and extract values only to avoid field name differences
+                        sorted_values = [v for k, v in sorted(prov.items())]
+                        versions.append(sorted_values)
+                    else:
+                        versions.append(prov)
+
+                    # Extract metaxy_provenance (MANDATORY - always present)
+                    metaxy_provenances = added_sorted["metaxy_provenance"].to_list()
 
                     results[(store_type, prefer_native)] = {
                         "added": len(result.added),
                         "changed": len(result.changed),
                         "removed": len(result.removed),
                         "versions": versions,
+                        "metaxy_provenances": metaxy_provenances,
                     }
             except HashAlgorithmNotSupportedError:
                 # Hash algorithm not supported by this store - skip
@@ -730,13 +782,25 @@ def test_resolve_update_with_upstream(
         assert reference["added"] == 3, "All 3 samples should be added"
         assert reference["changed"] == 0
         assert reference["removed"] == 0
-        assert all(isinstance(v, dict) for v in reference["versions"])
-        # Verify versions contain expected field keys
+        assert all(isinstance(v, list) for v in reference["versions"])
+        # Verify we have the right number of field values (one per field)
         downstream_fields = [c.key for c in downstream_feature.spec().fields]
-        for version_dict in reference["versions"]:
-            for field_key in downstream_fields:
-                field_name = "_".join(field_key)
-                assert field_name in version_dict
+        for version_values in reference["versions"]:
+            assert len(version_values) == len(downstream_fields), (
+                f"Expected {len(downstream_fields)} field values, got {len(version_values)}"
+            )
+
+        # Verify metaxy_provenance is present and consistent (MANDATORY)
+        assert reference["metaxy_provenances"] is not None, (
+            "metaxy_provenance column is MANDATORY"
+        )
+        assert len(reference["metaxy_provenances"]) == 3, (
+            "Should have metaxy_provenance for all 3 samples"
+        )
+        # Each sample should have a non-empty metaxy_provenance hash
+        assert all(
+            mp is not None and mp != "" for mp in reference["metaxy_provenances"]
+        ), "All metaxy_provenance values should be non-empty"
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -767,11 +831,14 @@ def test_resolve_update_detects_changes(
         version_prefix: str, sample_uids: list[int]
     ) -> list[dict[str, Any]]:
         if len(root_fields) == 1:
-            field_name = "_".join(root_fields[0])
+            field_name = FIELD_NAME_PREFIX + "_".join(root_fields[0])
             return [{field_name: f"{version_prefix}{i}"} for i in sample_uids]
         else:
             return [
-                {"_".join(ck): f"{version_prefix}{i}_{ck}" for ck in root_fields}
+                {
+                    FIELD_NAME_PREFIX + "_".join(ck): f"{version_prefix}{i}_{ck}"
+                    for ck in root_fields
+                }
                 for i in sample_uids
             ]
 
@@ -837,7 +904,8 @@ def test_resolve_update_detects_changes(
                                     result.added.to_polars()
                                     if isinstance(result.added, nw.DataFrame)
                                     else result.added
-                                )
+                                ).sort("sample_uid")
+
                                 feature_data = pl.DataFrame(
                                     {
                                         "sample_uid": [1, 2, 3],
@@ -846,9 +914,7 @@ def test_resolve_update_detects_changes(
                                 ).with_columns(
                                     pl.Series(
                                         "provenance_by_field",
-                                        added_df.sort("sample_uid")[
-                                            "provenance_by_field"
-                                        ].to_list(),
+                                        added_df["provenance_by_field"].to_list(),
                                     )
                                 )
                                 store.write_metadata(feature, feature_data)
@@ -951,6 +1017,7 @@ def test_resolve_update_detects_changes(
 
                     # Check if any versions changed
                     version_changes = []
+                    metaxy_provenance_changes = []
                     for sample_uid in changed_sample_uids:
                         new_version = changed_df_pl.filter(
                             pl.col("sample_uid") == sample_uid
@@ -960,6 +1027,15 @@ def test_resolve_update_detects_changes(
                         )["provenance_by_field"][0]
                         version_changes.append(new_version != old_version)
 
+                        # Check metaxy_provenance changes (MANDATORY - always present)
+                        new_metaxy = changed_df_pl.filter(
+                            pl.col("sample_uid") == sample_uid
+                        )["metaxy_provenance"][0]
+                        old_metaxy = initial_versions.filter(
+                            pl.col("sample_uid") == sample_uid
+                        )["metaxy_provenance"][0]
+                        metaxy_provenance_changes.append(new_metaxy != old_metaxy)
+
                     results[(store_type, prefer_native)] = {
                         "added": len(result2.added),
                         "changed": len(result2.changed),
@@ -968,6 +1044,9 @@ def test_resolve_update_detects_changes(
                         "any_version_changed": any(version_changes)
                         if version_changes
                         else False,
+                        "any_metaxy_changed": any(metaxy_provenance_changes)
+                        if metaxy_provenance_changes
+                        else False,  # Should always have values now that metaxy_provenance is mandatory
                     }
             except HashAlgorithmNotSupportedError:
                 # Hash algorithm not supported by this store - skip
@@ -986,6 +1065,14 @@ def test_resolve_update_detects_changes(
             "At least one sample should change"
         )
         assert reference["any_version_changed"], "Field provenance should have changed"
+
+        # Verify metaxy_provenance changed too (MANDATORY)
+        assert reference.get("any_metaxy_changed") is not None, (
+            "metaxy_provenance tracking is MANDATORY"
+        )
+        assert reference["any_metaxy_changed"], (
+            "metaxy_provenance should have changed when provenance_by_field changed"
+        )
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -1044,7 +1131,8 @@ def test_resolve_update_feature_version_change_idempotency(
                     # === PHASE 1: Write root metadata (upstream) ===
                     # Write root metadata - handle multiple fields
                     root_field_names = {
-                        field.key[0] for field in RootFeature.spec().fields
+                        FIELD_NAME_PREFIX + field.key[0]
+                        for field in RootFeature.spec().fields
                     }
                     root_provenance_dicts = []
                     for i in range(1, 4):

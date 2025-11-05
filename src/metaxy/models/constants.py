@@ -4,11 +4,10 @@ DEFAULT_CODE_VERSION = "__metaxy_initial__"
 
 # Essential system columns that must always be preserved for joining/versioning
 # Note: ID columns are defined by BaseFeatureSpec.id_columns (default: ["sample_uid"])
-# provenance_by_field is always required for versioning (stored as metaxy_provenance_by_field in DB)
+# provenance_by_field is always required for versioning (Python name in code, metaxy_provenance_by_field in DB)
 ESSENTIAL_SYSTEM_COLUMNS = frozenset(
     {
         "provenance_by_field",  # Always required for versioning (Python name)
-        "metaxy_provenance_by_field",  # Database storage name
     }
 )
 

@@ -544,6 +544,29 @@ class MetadataStore(ABC):
         # Validate schema
         self._validate_schema(df)
 
+        # Auto-compute metaxy_provenance for root features if missing (backward compatibility)
+        # Check if feature is a root feature (no upstream dependencies)
+        if "metaxy_provenance" not in df.columns:
+            # Determine if this is a root feature
+            plan = self._resolve_feature_plan(feature)
+            is_root_feature = not plan.deps  # No dependencies means root feature
+
+            if is_root_feature:
+                # Auto-compute metaxy_provenance from provenance_by_field for backward compatibility
+                from metaxy.data_versioning.calculators.polars import (
+                    PolarsProvenanceByFieldCalculator,
+                )
+
+                calculator = PolarsProvenanceByFieldCalculator()
+                df_lazy = nw.from_native(df.lazy(), eager_only=False)
+                df_with_metaxy = calculator.compute_struct_hash(
+                    df_lazy,
+                    struct_column="provenance_by_field",
+                    output_column="metaxy_provenance",
+                    hash_algorithm=self.hash_algorithm,
+                )
+                df = df_with_metaxy.collect().to_polars()
+
         # Rename provenance_by_field -> metaxy_provenance_by_field for database storage
         # (Python code uses provenance_by_field, database uses metaxy_provenance_by_field)
         df = df.rename({"provenance_by_field": "metaxy_provenance_by_field"})
@@ -1695,7 +1718,33 @@ class MetadataStore(ABC):
             else:
                 samples_lazy = nw.from_native(samples).lazy()
 
-            # Check if samples are Polars-backed (common case for escape hatch)
+            # Ensure samples have metaxy_provenance column computed from provenance_by_field
+            # Check if metaxy_provenance is missing
+            if "metaxy_provenance" not in samples_lazy.collect_schema().names():
+                # Determine which calculator to use based on samples backend
+                samples_native = samples_lazy.to_native()
+                is_polars_samples = isinstance(
+                    samples_native, (pl.DataFrame, pl.LazyFrame)
+                )
+
+                if is_polars_samples or not self._supports_native_components():
+                    # Use PolarsProvenanceByFieldCalculator for Polars samples or non-native stores
+                    from metaxy.data_versioning.calculators.polars import (
+                        PolarsProvenanceByFieldCalculator,
+                    )
+
+                    calculator = PolarsProvenanceByFieldCalculator()
+                else:
+                    # Use native calculator for native samples (Ibis-backed)
+                    _, calculator, _ = self._create_native_components()
+
+                samples_lazy = calculator.compute_struct_hash(
+                    samples_lazy,
+                    struct_column="provenance_by_field",
+                    output_column="metaxy_provenance",
+                    hash_algorithm=self.hash_algorithm,
+                )
+
             samples_native = samples_lazy.to_native()
             is_polars_samples = isinstance(samples_native, (pl.DataFrame, pl.LazyFrame))
 
@@ -1988,11 +2037,11 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Select only sample_uid and provenance_by_field for diff
+        # Select only sample_uid, provenance_by_field, and metaxy_provenance for diff
         # The calculator returns the full joined DataFrame with upstream columns,
-        # but diff resolver only needs these two columns
+        # but diff resolver only needs these columns
         target_provenance_nw = target_provenance_nw.select(
-            ["sample_uid", "provenance_by_field"]
+            ["sample_uid", "provenance_by_field", "metaxy_provenance"]
         )
 
         # Step 3: Diff with current (filtered by feature_version at database level)
