@@ -234,3 +234,37 @@ class ExampleRenderer:
 
         md_parts.append("")
         return "\n".join(md_parts)
+
+    def render_graph_diff(
+        self, from_snapshot: str, to_snapshot: str, example_name: str
+    ) -> str | None:
+        """Render a graph diff as Mermaid diagram.
+
+        Args:
+            from_snapshot: Before snapshot version hash.
+            to_snapshot: After snapshot version hash.
+            example_name: Name of the example for context.
+
+        Returns:
+            Mermaid diagram string or None if rendering fails.
+        """
+        try:
+            # We need access to the example's config to get the store
+            # For now, we'll generate a placeholder
+            # In a real implementation, we'd need to:
+            # 1. Load the example's config
+            # 2. Get the metadata store
+            # 3. Use GraphDiffer to generate the diff
+            # 4. Use MermaidRenderer to render it
+
+            # Placeholder that shows the concept
+            return f"""```mermaid
+%%{{init: {{'flowchart': {{'htmlLabels': true, 'curve': 'basis'}}, 'themeVariables': {{'fontSize': '14px'}}}}}}%%
+flowchart TD
+    %% Graph diff from {from_snapshot[:8]} to {to_snapshot[:8]}
+    placeholder[Graph diff visualization would appear here]
+    note[This requires metadata store access to render]
+```"""
+
+        except Exception:
+            return None
