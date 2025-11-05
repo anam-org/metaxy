@@ -35,6 +35,13 @@ from metaxy.metadata_store.system_tables import (
     _suppress_feature_version_warning,
     allow_feature_version_override,
 )
+from metaxy.models.constants import (
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_TRACKING_VERSION,
+    METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE_BY_FIELD,
+    METAXY_SNAPSHOT_VERSION,
+)
 from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
@@ -63,6 +70,13 @@ def _is_using_polars_components(
         and isinstance(calculator, PolarsProvenanceByFieldCalculator)
         and isinstance(diff_resolver, NarwhalsDiffResolver)
     )
+
+
+PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
+FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
+SNAPSHOT_VERSION_COL = METAXY_SNAPSHOT_VERSION
+FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 
 
 class MetadataStore(ABC):
@@ -453,14 +467,15 @@ class MetadataStore(ABC):
         """
         Write metadata for a feature (immutable, append-only).
 
-        Automatically adds 'feature_version' column from current code state,
-        unless the DataFrame already contains one (useful for migrations).
+        Automatically adds the canonical system columns (`metaxy_feature_version`,
+        `metaxy_snapshot_version`) unless they already exist in the DataFrame
+        (useful for migrations).
 
         Args:
             feature: Feature to write metadata for
             df: Narwhals DataFrame or Polars DataFrame containing metadata.
-                Must have 'provenance_by_field' column of type Struct with fields matching feature's fields.
-                May optionally contain 'feature_version' column (for migrations).
+                Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
+                May optionally contain `metaxy_feature_version` and `metaxy_snapshot_version` (for migrations).
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
@@ -469,7 +484,7 @@ class MetadataStore(ABC):
 
         Note:
             - Always writes to current store, never to fallback stores.
-            - If df already contains 'feature_version' column, it will be used
+            - If df already contains the metaxy-managed columns, they will be used
               as-is (no replacement). This allows migrations to write historical
               versions. A warning is issued unless suppressed via context manager.
             - Project validation is performed unless disabled via allow_cross_project_writes()
@@ -503,7 +518,7 @@ class MetadataStore(ABC):
 
         # For regular features: add feature_version and snapshot_version, validate, and write
         # Check if feature_version and snapshot_version already exist in DataFrame
-        if "feature_version" in df.columns and "snapshot_version" in df.columns:
+        if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
             # DataFrame already has feature_version and snapshot_version - use as-is
             # This is intended for migrations writing historical versions
             # Issue a warning unless we're in a suppression context
@@ -512,8 +527,8 @@ class MetadataStore(ABC):
 
                 warnings.warn(
                     f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"feature_version and snapshot_version columns. This is intended for migrations only. "
-                    f"Normal code should let write_metadata() add the current versions automatically.",
+                    f"{FEATURE_VERSION_COL} and {SNAPSHOT_VERSION_COL} columns. This is intended for migrations only. "
+                    "Normal code should let write_metadata() add the current versions automatically.",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -536,17 +551,13 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 [
-                    pl.lit(current_feature_version).alias("feature_version"),
-                    pl.lit(current_snapshot_version).alias("snapshot_version"),
+                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
                 ]
             )
 
         # Validate schema
         self._validate_schema(df)
-
-        # Rename provenance_by_field -> metaxy_provenance_by_field for database storage
-        # (Python code uses provenance_by_field, database uses metaxy_provenance_by_field)
-        df = df.rename({"provenance_by_field": "metaxy_provenance_by_field"})
 
         # Write metadata
         self._write_metadata_impl(feature_key, df)
@@ -563,30 +574,34 @@ class MetadataStore(ABC):
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
-        # Check for provenance_by_field column
-        if "provenance_by_field" not in df.columns:
+        # Check for metaxy_provenance_by_field column
+        if PROVENANCE_BY_FIELD_COL not in df.columns:
             raise MetadataSchemaError(
-                "DataFrame must have 'provenance_by_field' column"
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
-        # Check that provenance_by_field is a struct
-        provenance_type = df.schema["provenance_by_field"]
+        # Check that metaxy_provenance_by_field is a struct
+        provenance_type = df.schema[PROVENANCE_BY_FIELD_COL]
         if not isinstance(provenance_type, pl.Struct):
             raise MetadataSchemaError(
-                f"'provenance_by_field' column must be pl.Struct, got {provenance_type}"
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
             )
 
         # Check for feature_version column
-        if "feature_version" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'feature_version' column")
+        if FEATURE_VERSION_COL not in df.columns:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{FEATURE_VERSION_COL}' column"
+            )
 
         # Check for snapshot_version column
-        if "snapshot_version" not in df.columns:
-            raise MetadataSchemaError("DataFrame must have 'snapshot_version' column")
+        if SNAPSHOT_VERSION_COL not in df.columns:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
+            )
 
     def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
-        # System tables don't need provenance_by_field column
+        # System tables don't need metaxy_provenance_by_field column
         pass
 
     @abstractmethod
@@ -683,26 +698,26 @@ class MetadataStore(ABC):
             # Check if project column exists (it may not in old tables)
             if "project" in existing_versions.columns:
                 snapshot_rows = existing_versions.filter(
-                    (pl.col("snapshot_version") == snapshot_version)
+                    (pl.col(SNAPSHOT_VERSION_COL) == snapshot_version)
                     & (pl.col("project") == project_name)
                 )
             else:
                 # Old table without project column - just check snapshot_version
                 snapshot_rows = existing_versions.filter(
-                    pl.col("snapshot_version") == snapshot_version
+                    pl.col(SNAPSHOT_VERSION_COL) == snapshot_version
                 )
             snapshot_already_exists = snapshot_rows.height > 0
 
             if snapshot_already_exists:
                 # Check if feature_spec_version column exists (backward compatibility)
                 # Old records (before issue #77) won't have this column
-                has_spec_version = "feature_spec_version" in snapshot_rows.columns
+                has_spec_version = FEATURE_SPEC_VERSION_COL in snapshot_rows.columns
 
                 if has_spec_version:
                     # Build dict of existing feature_key -> feature_spec_version
                     for row in snapshot_rows.iter_rows(named=True):
                         existing_spec_versions[row["feature_key"]] = row[
-                            "feature_spec_version"
+                            FEATURE_SPEC_VERSION_COL
                         ]
                 # If no spec_version column, existing_spec_versions remains empty
                 # This means we'll treat it as "no metadata changes" (conservative approach)
@@ -723,15 +738,17 @@ class MetadataStore(ABC):
                     {
                         "project": project_name,
                         "feature_key": feature_key_str,
-                        "feature_version": feature_data["feature_version"],
-                        "feature_spec_version": feature_data["feature_spec_version"],
-                        "feature_tracking_version": feature_data[
-                            "feature_tracking_version"
+                        FEATURE_VERSION_COL: feature_data[FEATURE_VERSION_COL],
+                        FEATURE_SPEC_VERSION_COL: feature_data[
+                            FEATURE_SPEC_VERSION_COL
+                        ],
+                        FEATURE_TRACKING_VERSION_COL: feature_data[
+                            FEATURE_TRACKING_VERSION_COL
                         ],
                         "recorded_at": datetime.now(timezone.utc),
                         "feature_spec": feature_spec_json,
                         "feature_class_path": feature_data["feature_class_path"],
-                        "snapshot_version": snapshot_version,
+                        SNAPSHOT_VERSION_COL: snapshot_version,
                     }
                 )
 
@@ -754,7 +771,7 @@ class MetadataStore(ABC):
         features_with_spec_changes = []
 
         for feature_key_str, feature_data in snapshot_dict.items():
-            current_spec_version = feature_data["feature_spec_version"]
+            current_spec_version = feature_data[FEATURE_SPEC_VERSION_COL]
             existing_spec_version = existing_spec_versions.get(feature_key_str)
 
             if existing_spec_version != current_spec_version:
@@ -773,15 +790,17 @@ class MetadataStore(ABC):
                     {
                         "project": project_name,
                         "feature_key": feature_key_str,
-                        "feature_version": feature_data["feature_version"],
-                        "feature_spec_version": feature_data["feature_spec_version"],
-                        "feature_tracking_version": feature_data[
-                            "feature_tracking_version"
+                        FEATURE_VERSION_COL: feature_data[FEATURE_VERSION_COL],
+                        FEATURE_SPEC_VERSION_COL: feature_data[
+                            FEATURE_SPEC_VERSION_COL
+                        ],
+                        FEATURE_TRACKING_VERSION_COL: feature_data[
+                            FEATURE_TRACKING_VERSION_COL
                         ],
                         "recorded_at": datetime.now(timezone.utc),
                         "feature_spec": feature_spec_json,
                         "feature_class_path": feature_data["feature_class_path"],
-                        "snapshot_version": snapshot_version,
+                        SNAPSHOT_VERSION_COL: snapshot_version,
                     }
                 )
 
@@ -890,29 +909,15 @@ class MetadataStore(ABC):
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
-        # Map column names: provenance_by_field -> metaxy_provenance_by_field for DB query
-        db_columns = None
-        if columns is not None:
-            db_columns = [
-                "metaxy_provenance_by_field" if col == "provenance_by_field" else col
-                for col in columns
-            ]
-
         # Try local first with filters
         lazy_frame = self.read_metadata_in_store(
             feature,
             feature_version=feature_version_filter,
             filters=filters,  # Pass filters directly
-            columns=db_columns,  # Use mapped column names
+            columns=columns,
         )
 
         if lazy_frame is not None:
-            # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
-            # (Database uses metaxy_provenance_by_field, Python code uses provenance_by_field)
-            if "metaxy_provenance_by_field" in lazy_frame.collect_schema().names():
-                lazy_frame = lazy_frame.rename(
-                    {"metaxy_provenance_by_field": "provenance_by_field"}
-                )
             return lazy_frame
 
         # Try fallback stores
@@ -1038,7 +1043,7 @@ class MetadataStore(ABC):
             with store:
                 # Get snapshots for a specific project
                 snapshots = store.read_graph_snapshots(project="my_project")
-                latest_snapshot = snapshots["snapshot_version"][0]
+                latest_snapshot = snapshots[SNAPSHOT_VERSION_COL][0]
                 print(f"Latest snapshot: {latest_snapshot}")
 
                 # Get snapshots across all projects
@@ -1061,7 +1066,7 @@ class MetadataStore(ABC):
             # No snapshots recorded yet
             return pl.DataFrame(
                 schema={
-                    "snapshot_version": pl.String,
+                    SNAPSHOT_VERSION_COL: pl.String,
                     "recorded_at": pl.Datetime("us"),
                     "feature_count": pl.UInt32,
                 }
@@ -1071,7 +1076,7 @@ class MetadataStore(ABC):
 
         # Group by snapshot_version and get earliest recorded_at and count
         snapshots = (
-            versions_df.group_by("snapshot_version")
+            versions_df.group_by(SNAPSHOT_VERSION_COL)
             .agg(
                 [
                     pl.col("recorded_at").min().alias("recorded_at"),
@@ -1124,7 +1129,7 @@ class MetadataStore(ABC):
             with store:
                 features = store.read_features(current=False, snapshot_version="abc123")
                 for row in features.iter_rows(named=True):
-                    print(f"{row['feature_key']}: {row['feature_version']}")
+                    print(f"{row['feature_key']}: {row['metaxy_feature_version']}")
             ```
         """
         self._check_open()
@@ -1137,7 +1142,7 @@ class MetadataStore(ABC):
             graph = FeatureGraph.get_active()
             snapshot_version = graph.snapshot_version
 
-        filters = [nw.col("snapshot_version") == snapshot_version]
+        filters = [nw.col(SNAPSHOT_VERSION_COL) == snapshot_version]
         if project is not None:
             filters.append(nw.col("project") == project)
 
@@ -1324,8 +1329,8 @@ class MetadataStore(ABC):
                         # Get most recent snapshot_version by recorded_at
                         from_snapshot = (
                             versions_df.sort("recorded_at", descending=True)
-                            .select("snapshot_version")
-                            .head(1)["snapshot_version"][0]
+                            .select(SNAPSHOT_VERSION_COL)
+                            .head(1)[SNAPSHOT_VERSION_COL][0]
                         )
                         logger.info(
                             f"Using latest snapshot from source: {from_snapshot}"
@@ -1361,7 +1366,7 @@ class MetadataStore(ABC):
                     import narwhals as nw
 
                     source_filtered = source_lazy.filter(
-                        nw.col("snapshot_version") == from_snapshot
+                        nw.col(SNAPSHOT_VERSION_COL) == from_snapshot
                     )
 
                     # Apply filters for this feature (if any)
@@ -1375,7 +1380,7 @@ class MetadataStore(ABC):
                     if incremental:
                         try:
                             # Read existing sample_uids from destination for the same snapshot
-                            # This is much cheaper than comparing provenance_by_field structs
+                            # This is much cheaper than comparing metaxy_provenance_by_field structs
                             dest_lazy = self.read_metadata(
                                 feature_key,
                                 allow_fallback=False,
@@ -1383,7 +1388,7 @@ class MetadataStore(ABC):
                             )
                             # Filter destination to same snapshot_version
                             dest_for_snapshot = dest_lazy.filter(
-                                nw.col("snapshot_version") == from_snapshot
+                                nw.col(SNAPSHOT_VERSION_COL) == from_snapshot
                             )
 
                             # Materialize destination sample_uids to avoid cross-backend join issues
@@ -1491,7 +1496,7 @@ class MetadataStore(ABC):
 
         Returns:
             Dict mapping upstream feature keys (as strings) to Narwhals LazyFrames.
-            Each LazyFrame has a 'provenance_by_field' column (Struct).
+            Each LazyFrame has a 'metaxy_provenance_by_field' column (Struct).
 
         Raises:
             DependencyError: If required upstream feature is missing
@@ -1621,12 +1626,12 @@ class MetadataStore(ABC):
         Args:
             feature: Feature class to resolve updates for
             samples: Pre-computed DataFrame with ID columns
-                and `"provenance_by_field"` column. When provided, `MetadataStore` skips upstream loading, joining,
+                and `PROVENANCE_BY_FIELD_COL` column. When provided, `MetadataStore` skips upstream loading, joining,
                 and field provenance calculation.
 
                 **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate `"provenance_by_field"` from, so users
-                must provide samples with manually computed `"provenance_by_field"` column.
+                Root features don't have upstream to calculate `PROVENANCE_BY_FIELD_COL` from, so users
+                must provide samples with manually computed `PROVENANCE_BY_FIELD_COL` column.
 
                 For non-root features, use this when you
                 want to bypass the automatic upstream loading and field provenance calculation.
@@ -1656,7 +1661,7 @@ class MetadataStore(ABC):
             # Root feature - samples required
             samples = pl.DataFrame({
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                PROVENANCE_BY_FIELD_COL: [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
             })
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
@@ -1712,14 +1717,6 @@ class MetadataStore(ABC):
                     feature, feature_version=feature.feature_version()
                 )
                 if current_lazy_native is not None:
-                    # Rename metaxy_provenance_by_field -> provenance_by_field before converting
-                    if (
-                        "metaxy_provenance_by_field"
-                        in current_lazy_native.collect_schema().names()
-                    ):
-                        current_lazy_native = current_lazy_native.rename(
-                            {"metaxy_provenance_by_field": "provenance_by_field"}
-                        )
                     # Convert to Polars using Narwhals' built-in method
                     current_lazy = nw.from_native(
                         current_lazy_native.collect().to_polars().lazy()
@@ -1731,15 +1728,6 @@ class MetadataStore(ABC):
                 current_lazy = self.read_metadata_in_store(
                     feature, feature_version=feature.feature_version()
                 )
-                # Rename metaxy_provenance_by_field -> provenance_by_field
-                if (
-                    current_lazy is not None
-                    and "metaxy_provenance_by_field"
-                    in current_lazy.collect_schema().names()
-                ):
-                    current_lazy = current_lazy.rename(
-                        {"metaxy_provenance_by_field": "provenance_by_field"}
-                    )
 
             # Use diff resolver to compare samples with current
             from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
@@ -1758,8 +1746,8 @@ class MetadataStore(ABC):
         if not plan.deps:
             raise ValueError(
                 f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_uid and provenance_by_field columns. "
-                f"Root features require manual provenance_by_field computation."
+                f"Must provide 'samples' parameter with sample_uid and {PROVENANCE_BY_FIELD_COL} columns. "
+                f"Root features require manual {PROVENANCE_BY_FIELD_COL} computation."
             )
 
         # Non-root features without samples: automatic upstream loading
@@ -1863,14 +1851,6 @@ class MetadataStore(ABC):
                 filters=upstream_filters,  # Apply extracted filters
             )
             if upstream_lazy is not None:
-                # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
-                if (
-                    "metaxy_provenance_by_field"
-                    in upstream_lazy.collect_schema().names()
-                ):
-                    upstream_lazy = upstream_lazy.rename(
-                        {"metaxy_provenance_by_field": "provenance_by_field"}
-                    )
                 upstream_refs[upstream_key_str] = upstream_lazy
 
         # Join upstream using Narwhals (stays lazy)
@@ -1894,15 +1874,6 @@ class MetadataStore(ABC):
         current_lazy_nw = self.read_metadata_in_store(
             feature, feature_version=feature.feature_version()
         )
-
-        # Rename metaxy_provenance_by_field -> provenance_by_field for Python code
-        if (
-            current_lazy_nw is not None
-            and "metaxy_provenance_by_field" in current_lazy_nw.collect_schema().names()
-        ):
-            current_lazy_nw = current_lazy_nw.rename(
-                {"metaxy_provenance_by_field": "provenance_by_field"}
-            )
 
         return feature.resolve_data_version_diff(
             diff_resolver=diff_resolver,
@@ -1988,26 +1959,17 @@ class MetadataStore(ABC):
             hash_algorithm=self.hash_algorithm,
         )
 
-        # Select only sample_uid and provenance_by_field for diff
+        # Select only sample_uid and metaxy_provenance_by_field for diff
         # The calculator returns the full joined DataFrame with upstream columns,
         # but diff resolver only needs these two columns
         target_provenance_nw = target_provenance_nw.select(
-            ["sample_uid", "provenance_by_field"]
+            ["sample_uid", PROVENANCE_BY_FIELD_COL]
         )
 
         # Step 3: Diff with current (filtered by feature_version at database level)
         current_lazy = self.read_metadata_in_store(
             feature, feature_version=feature.feature_version()
         )
-
-        # Rename metaxy_provenance_by_field -> provenance_by_field
-        if (
-            current_lazy is not None
-            and "metaxy_provenance_by_field" in current_lazy.collect_schema().names()
-        ):
-            current_lazy = current_lazy.rename(
-                {"metaxy_provenance_by_field": "provenance_by_field"}
-            )
 
         # Diff resolver returns Narwhals frames (lazy or eager based on flag)
         return feature.resolve_data_version_diff(

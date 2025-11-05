@@ -12,6 +12,7 @@ from metaxy.data_versioning.diff.base import (
     LazyIncrement,
     MetadataDiffResolver,
 )
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 if TYPE_CHECKING:
     pass
@@ -59,10 +60,10 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
                 "These should come from the feature spec's id_columns property."
             )
 
-        # Select only ID columns and provenance_by_field from target_provenance
+        # Select only ID columns and provenance column from target_provenance
         # (it may have intermediate joined columns from upstream)
         target_provenance = target_provenance.select(
-            id_columns + ["provenance_by_field"]
+            id_columns + [PROVENANCE_BY_FIELD_COL]
         )
 
         if current_metadata is None:
@@ -72,7 +73,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
             # Create empty schema with ID columns
             schema = {col: [] for col in id_columns}
-            schema["provenance_by_field"] = []
+            schema[PROVENANCE_BY_FIELD_COL] = []
             empty_lazy = nw.from_native(pl.LazyFrame(schema))
 
             return LazyIncrement(
@@ -83,7 +84,7 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
 
         # Keep only ID columns and provenance_by_field from current for comparison
         select_cols = id_columns + [
-            nw.col("provenance_by_field").alias("__current_provenance_by_field")
+            nw.col(PROVENANCE_BY_FIELD_COL).alias("__current_provenance_by_field")
         ]
         current_comparison = current_metadata.select(*select_cols)
 
@@ -98,26 +99,26 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
         added_lazy = (
             compared.filter(nw.col("__current_provenance_by_field").is_null())
             .drop("__current_provenance_by_field")
-            .select(id_columns + ["provenance_by_field"])
+            .select(id_columns + [PROVENANCE_BY_FIELD_COL])
         )
 
         changed_lazy = (
             compared.filter(
                 ~nw.col("__current_provenance_by_field").is_null()
                 & (
-                    nw.col("provenance_by_field")
+                    nw.col(PROVENANCE_BY_FIELD_COL)
                     != nw.col("__current_provenance_by_field")
                 )
             )
             .drop("__current_provenance_by_field")
-            .select(id_columns + ["provenance_by_field"])
+            .select(id_columns + [PROVENANCE_BY_FIELD_COL])
         )
 
         removed_lazy = current_metadata.join(
             target_provenance.select(id_columns),
             on=id_columns,
             how="anti",
-        ).select(id_columns + ["provenance_by_field"])
+        ).select(id_columns + [PROVENANCE_BY_FIELD_COL])
 
         # Return lazy frames - caller will materialize if needed
         return LazyIncrement(
@@ -125,3 +126,6 @@ class NarwhalsDiffResolver(MetadataDiffResolver):
             changed=changed_lazy,
             removed=removed_lazy,
         )
+
+
+PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD

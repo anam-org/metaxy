@@ -67,15 +67,15 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
         # Verify structure is correct
         assert "parent" in snapshot_data
         parent_data = snapshot_data["parent"]
-        assert "feature_version" in parent_data
+        assert "metaxy_feature_version" in parent_data
         assert "fields" in parent_data
         assert "field1" in parent_data["fields"]
         assert "field2" in parent_data["fields"]
 
         # In fallback mode, fields use feature_version
         # (This is acceptable behavior when features can't be imported)
-        assert parent_data["fields"]["field1"] == parent_data["feature_version"]
-        assert parent_data["fields"]["field2"] == parent_data["feature_version"]
+        assert parent_data["fields"]["field1"] == parent_data["metaxy_feature_version"]
+        assert parent_data["fields"]["field2"] == parent_data["metaxy_feature_version"]
 
 
 def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
@@ -117,12 +117,16 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
         # Verify data was loaded (even with fallback)
         assert "test/feature" in snapshot_data
         feature_data = snapshot_data["test/feature"]
-        assert "feature_version" in feature_data
+        assert "metaxy_feature_version" in feature_data
         assert "fields" in feature_data
 
         # In fallback mode, all fields get the same version (feature_version)
-        assert feature_data["fields"]["field1"] == feature_data["feature_version"]
-        assert feature_data["fields"]["field2"] == feature_data["feature_version"]
+        assert (
+            feature_data["fields"]["field1"] == feature_data["metaxy_feature_version"]
+        )
+        assert (
+            feature_data["fields"]["field2"] == feature_data["metaxy_feature_version"]
+        )
 
 
 def test_field_key_normalization(graph: FeatureGraph):

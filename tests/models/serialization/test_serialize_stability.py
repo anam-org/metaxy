@@ -112,13 +112,14 @@ def test_serialize_uses_to_snapshot(
                 row = matching_rows.to_dicts()[0]
 
                 # Verify the data matches
-                assert row["feature_version"] == feature_data["feature_version"], (
-                    f"Feature version mismatch for {feature_key_str}"
-                )
+                assert (
+                    row["metaxy_feature_version"]
+                    == feature_data["metaxy_feature_version"]
+                ), f"Feature version mismatch for {feature_key_str}"
                 assert (
                     row["feature_class_path"] == feature_data["feature_class_path"]
                 ), f"Feature class path mismatch for {feature_key_str}"
-                assert row["snapshot_version"] == snapshot_version, (
+                assert row["metaxy_snapshot_version"] == snapshot_version, (
                     f"Snapshot version mismatch for {feature_key_str}"
                 )
 

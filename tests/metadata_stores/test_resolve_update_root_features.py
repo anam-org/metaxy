@@ -88,7 +88,7 @@ class TestResolveUpdateRootFeatures:
             user_samples = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
                         {"embedding": "hash3"},
@@ -126,7 +126,7 @@ class TestResolveUpdateRootFeatures:
             initial_metadata = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},
                         {"embedding": "hash2"},
                         {"embedding": "hash3"},
@@ -141,7 +141,7 @@ class TestResolveUpdateRootFeatures:
             user_samples = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 4],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"embedding": "hash1"},  # unchanged
                         {"embedding": "hash2_updated"},  # changed
                         {"embedding": "hash4"},  # new

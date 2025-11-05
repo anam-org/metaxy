@@ -66,5 +66,5 @@ with config.get_store() as store:
     # Materialize Narwhals LazyFrame to Polars DataFrame
     child_df = child_result.collect().to_polars()
     for row in child_df.iter_rows(named=True):
-        dv = row["provenance_by_field"]
+        dv = row["metaxy_provenance_by_field"]
         print(f"  sample_uid={row['sample_uid']}: {dv}")

@@ -59,7 +59,7 @@ class SnapshotResolver:
             )
 
         # read_graph_snapshots() returns sorted by recorded_at descending
-        latest_snapshot = snapshots_df["snapshot_version"][0]
+        latest_snapshot = snapshots_df["metaxy_snapshot_version"][0]
         return latest_snapshot
 
     def _resolve_current(self, graph: FeatureGraph | None) -> str:
@@ -148,7 +148,7 @@ class GraphDiffer:
             added_nodes.append(
                 AddedNode(
                     feature_key=FeatureKey(key_str.split("/")),
-                    version=feature_data["feature_version"],
+                    version=feature_data["metaxy_feature_version"],
                     code_version=feature_spec.get("code_version"),
                     fields=fields_list,
                     dependencies=deps,
@@ -194,7 +194,7 @@ class GraphDiffer:
             removed_nodes.append(
                 RemovedNode(
                     feature_key=FeatureKey(key_str.split("/")),
-                    version=feature_data["feature_version"],
+                    version=feature_data["metaxy_feature_version"],
                     code_version=feature_spec.get("code_version"),
                     fields=fields_list,
                     dependencies=deps,
@@ -207,8 +207,8 @@ class GraphDiffer:
             feature1 = snapshot1_data[key_str]
             feature2 = snapshot2_data[key_str]
 
-            version1 = feature1["feature_version"]
-            version2 = feature2["feature_version"]
+            version1 = feature1["metaxy_feature_version"]
+            version2 = feature2["metaxy_feature_version"]
 
             spec1 = feature1.get("feature_spec", {})
             spec2 = feature2.get("feature_spec", {})
@@ -218,8 +218,12 @@ class GraphDiffer:
 
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
-            tracking_version1 = feature1.get("feature_tracking_version", version1)
-            tracking_version2 = feature2.get("feature_tracking_version", version2)
+            tracking_version1 = feature1.get(
+                "metaxy_feature_tracking_version", version1
+            )
+            tracking_version2 = feature2.get(
+                "metaxy_feature_tracking_version", version2
+            )
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
@@ -362,7 +366,7 @@ class GraphDiffer:
             if feature_key_str in added_keys:
                 status = "added"
                 old_version = None
-                new_version = snapshot2_data[feature_key_str]["feature_version"]
+                new_version = snapshot2_data[feature_key_str]["metaxy_feature_version"]
                 fields = snapshot2_data[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
@@ -371,7 +375,7 @@ class GraphDiffer:
                 )
             elif feature_key_str in removed_keys:
                 status = "removed"
-                old_version = snapshot1_data[feature_key_str]["feature_version"]
+                old_version = snapshot1_data[feature_key_str]["metaxy_feature_version"]
                 new_version = None
                 fields = snapshot1_data[feature_key_str].get("fields", {})
                 field_changes = []
@@ -398,8 +402,8 @@ class GraphDiffer:
             else:
                 # Unchanged
                 status = "unchanged"
-                old_version = snapshot1_data[feature_key_str]["feature_version"]
-                new_version = snapshot2_data[feature_key_str]["feature_version"]
+                old_version = snapshot1_data[feature_key_str]["metaxy_feature_version"]
+                new_version = snapshot2_data[feature_key_str]["metaxy_feature_version"]
                 fields = snapshot2_data[feature_key_str].get("fields", {})
                 field_changes = []
                 # Dependencies from snapshot2
@@ -648,7 +652,9 @@ class GraphDiffer:
             import narwhals as nw
 
             features_df = (
-                features_lazy.filter(nw.col("snapshot_version") == snapshot_version)
+                features_lazy.filter(
+                    nw.col("metaxy_snapshot_version") == snapshot_version
+                )
                 .collect()
                 .to_polars()
             )
@@ -666,18 +672,18 @@ class GraphDiffer:
         snapshot_dict = {}
         for row in features_df.iter_rows(named=True):
             feature_key_str = row["feature_key"]
-            feature_version = row["feature_version"]
+            feature_version = row["metaxy_feature_version"]
             feature_spec_json = row["feature_spec"]
             feature_class_path = row.get("feature_class_path", "")
 
             feature_spec_dict = json.loads(feature_spec_json)
 
             snapshot_dict[feature_key_str] = {
-                "feature_version": feature_version,
+                "metaxy_feature_version": feature_version,
                 "feature_spec": feature_spec_dict,
                 "feature_class_path": feature_class_path,
-                "feature_tracking_version": row.get(
-                    "feature_tracking_version", feature_version
+                "metaxy_feature_tracking_version": row.get(
+                    "metaxy_feature_tracking_version", feature_version
                 ),  # Fallback for backward compatibility
             }
 
@@ -704,7 +710,7 @@ class GraphDiffer:
 
         snapshot_data = {}
         for feature_key_str in snapshot_dict.keys():
-            feature_version = snapshot_dict[feature_key_str]["feature_version"]
+            feature_version = snapshot_dict[feature_key_str]["metaxy_feature_version"]
             feature_spec = snapshot_dict[feature_key_str]["feature_spec"]
             feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
@@ -743,11 +749,11 @@ class GraphDiffer:
                     fields_data[field_key_str_normalized] = feature_version
 
             snapshot_data[feature_key_str] = {
-                "feature_version": feature_version,
+                "metaxy_feature_version": feature_version,
                 "fields": fields_data,
                 "feature_spec": feature_spec,
-                "feature_tracking_version": snapshot_dict[feature_key_str].get(
-                    "feature_tracking_version", feature_version
+                "metaxy_feature_tracking_version": snapshot_dict[feature_key_str].get(
+                    "metaxy_feature_tracking_version", feature_version
                 ),
             }
 

@@ -94,7 +94,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -107,12 +107,14 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         # Verify snapshot captures both versions
         snapshot_data = graph_v1.to_snapshot()
         assert "test/simple" in snapshot_data
-        assert "feature_version" in snapshot_data["test/simple"]
-        assert "feature_spec_version" in snapshot_data["test/simple"]
+        assert "metaxy_feature_version" in snapshot_data["test/simple"]
+        assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
 
         # Store the versions for comparison
-        v1_feature_version = snapshot_data["test/simple"]["feature_version"]
-        v1_feature_spec_version = snapshot_data["test/simple"]["feature_spec_version"]
+        v1_feature_version = snapshot_data["test/simple"]["metaxy_feature_version"]
+        v1_feature_spec_version = snapshot_data["test/simple"][
+            "metaxy_feature_spec_version"
+        ]
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
@@ -194,7 +196,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)
@@ -383,7 +385,7 @@ def test_snapshot_stores_both_versions(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)
@@ -394,19 +396,20 @@ def test_snapshot_stores_both_versions(tmp_path):
         feature_data = snapshot_data["test/feature"]
 
         # Both versions should be present
-        assert "feature_version" in feature_data
-        assert "feature_spec_version" in feature_data
+        assert "metaxy_feature_version" in feature_data
+        assert "metaxy_feature_spec_version" in feature_data
         assert "feature_spec" in feature_data
         assert "feature_class_path" in feature_data
 
         # Verify they're valid hashes
-        assert len(feature_data["feature_version"]) == 64
-        assert len(feature_data["feature_spec_version"]) == 64
+        assert len(feature_data["metaxy_feature_version"]) == 64
+        assert len(feature_data["metaxy_feature_spec_version"]) == 64
 
         # Check that they match the class methods
-        assert feature_data["feature_version"] == TestFeature.feature_version()
+        assert feature_data["metaxy_feature_version"] == TestFeature.feature_version()
         assert (
-            feature_data["feature_spec_version"] == TestFeature.feature_spec_version()
+            feature_data["metaxy_feature_spec_version"]
+            == TestFeature.feature_spec_version()
         )
 
     temp_module.cleanup()
@@ -428,8 +431,8 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
     # For now, we verify the diff logic uses the feature_version field
     snapshot1 = {
         "test/feature": {
-            "feature_version": "abc123",  # Same
-            "feature_spec_version": "spec_v1",  # Different (if we had metadata/tags)
+            "metaxy_feature_version": "abc123",  # Same
+            "metaxy_feature_spec_version": "spec_v1",  # Different (if we had metadata/tags)
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -441,8 +444,8 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
 
     snapshot2 = {
         "test/feature": {
-            "feature_version": "abc123",  # Same - no computational change
-            "feature_spec_version": "spec_v2",  # Different - non-computational change
+            "metaxy_feature_version": "abc123",  # Same - no computational change
+            "metaxy_feature_spec_version": "spec_v2",  # Different - non-computational change
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -465,8 +468,8 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
     # Now test with feature_version change
     snapshot3 = {
         "test/feature": {
-            "feature_version": "xyz789",  # Changed - computational change
-            "feature_spec_version": "spec_v3",  # Also changed
+            "metaxy_feature_version": "xyz789",  # Changed - computational change
+            "metaxy_feature_spec_version": "spec_v3",  # Also changed
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,

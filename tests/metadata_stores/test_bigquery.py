@@ -339,7 +339,7 @@ def test_bigquery_table_operations(
             metadata = pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"frames": "h1", "audio": "h1"},
                         {"frames": "h2", "audio": "h2"},
                         {"frames": "h3", "audio": "h3"},

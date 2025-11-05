@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import narwhals as nw
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
+from metaxy.data_versioning.calculators.base import (
+    PROVENANCE_BY_FIELD_COL,
+    ProvenanceByFieldCalculator,
+)
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.utils.hashing import get_hash_truncation_length
 
@@ -43,7 +46,7 @@ class HashSQLGenerator(Protocol):
 
 
 class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
-    """Calculates provenance_by_field values using native SQL hash functions via Ibis.
+    """Calculates metaxy_provenance_by_field values using native SQL hash functions via Ibis.
 
     This calculator:
     1. Accepts Narwhals LazyFrame as input
@@ -98,7 +101,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,
     ) -> nw.LazyFrame[Any]:
-        """Calculate provenance_by_field using SQL hash functions.
+        """Calculate metaxy_provenance_by_field using SQL hash functions.
 
         Args:
             joined_upstream: Narwhals LazyFrame with upstream data joined
@@ -108,7 +111,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             hash_algorithm: Hash to use
 
         Returns:
-            Narwhals LazyFrame with provenance_by_field column added
+            Narwhals LazyFrame with metaxy_provenance_by_field column added
         """
         import ibis
 
@@ -168,7 +171,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
                 )
 
                 provenance_col_name = upstream_column_mapping.get(
-                    upstream_key_str, "provenance_by_field"
+                    upstream_key_str, PROVENANCE_BY_FIELD_COL
                 )
 
                 for upstream_field in sorted(upstream_fields):
@@ -202,7 +205,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         # Execute SQL to get table with hash columns
         result_table = self._backend.sql(hash_sql)  # pyright: ignore[reportAttributeAccessIssue]
 
-        # Build provenance_by_field struct from hash columns
+        # Build metaxy_provenance_by_field struct from hash columns
         hash_col_names = [f"__hash_{k}" for k in concat_columns.keys()]
         field_keys = list(concat_columns.keys())
 
@@ -223,7 +226,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
                 for field_key in field_keys
             }
 
-        # Drop temp columns and add provenance_by_field
+        # Drop temp columns and add provenance column
         cols_to_keep = [
             c
             for c in result_table.columns
@@ -231,7 +234,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         ]
 
         result_table = result_table.select(
-            *cols_to_keep, provenance_by_field=ibis.struct(struct_fields)
+            *cols_to_keep, **{PROVENANCE_BY_FIELD_COL: ibis.struct(struct_fields)}
         )
 
         # Convert back to Narwhals LazyFrame

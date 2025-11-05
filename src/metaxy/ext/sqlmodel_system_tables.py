@@ -17,6 +17,12 @@ from sqlmodel import Field, SQLModel
 
 # Import the namespace constant from the core module
 from metaxy.metadata_store.system_tables import SYSTEM_NAMESPACE
+from metaxy.models.constants import (
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_TRACKING_VERSION,
+    METAXY_FEATURE_VERSION,
+    METAXY_SNAPSHOT_VERSION,
+)
 
 # System tables that metaxy uses internally
 SYSTEM_TABLES: list[str] = [
@@ -34,14 +40,27 @@ class FeatureVersionsTable(SQLModel, table=True):
 
     __tablename__: str = f"{SYSTEM_NAMESPACE}__feature_versions"  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Composite primary key: project + feature_key + snapshot_version
+    # Composite primary key: project + feature_key + metaxy_snapshot_version
     project: str = Field(primary_key=True, index=True)
     feature_key: str = Field(primary_key=True)
-    snapshot_version: str = Field(primary_key=True)
+    metaxy_snapshot_version: str = Field(
+        primary_key=True,
+        sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
+    )
 
     # Version and timestamp
-    feature_version: str = Field(index=True)
-    feature_spec_version: str = Field(index=True)  # Hash of complete BaseFeatureSpec
+    metaxy_feature_version: str = Field(
+        index=True,
+        sa_column_kwargs={"name": METAXY_FEATURE_VERSION},
+    )
+    metaxy_feature_spec_version: str = Field(
+        index=True,  # Hash of complete BaseFeatureSpec
+        sa_column_kwargs={"name": METAXY_FEATURE_SPEC_VERSION},
+    )
+    metaxy_feature_tracking_version: str = Field(
+        index=True,
+        sa_column_kwargs={"name": METAXY_FEATURE_TRACKING_VERSION},
+    )
     recorded_at: datetime = Field(index=True)
 
     # Serialized feature specification and class path
@@ -51,7 +70,10 @@ class FeatureVersionsTable(SQLModel, table=True):
     # Additional indexes for common queries
     __table_args__ = (
         Index(
-            "idx_feature_versions_lookup", "project", "feature_key", "feature_version"
+            "idx_feature_versions_lookup",
+            "project",
+            "feature_key",
+            METAXY_FEATURE_VERSION,
         ),
     )
 

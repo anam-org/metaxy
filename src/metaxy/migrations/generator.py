@@ -117,7 +117,7 @@ def generate_migration(
                 feature_versions.sort("recorded_at", descending=True).head(1).collect()
             )
             if latest_snapshot.shape[0] > 0:
-                from_snapshot_version = latest_snapshot["snapshot_version"][0]
+                from_snapshot_version = latest_snapshot["metaxy_snapshot_version"][0]
                 print(f"From: latest snapshot {from_snapshot_version}...")
             else:
                 raise ValueError(
@@ -158,7 +158,7 @@ def generate_migration(
         feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
         snapshot_data_df = nw.from_native(
             feature_versions.filter(
-                nw.col("snapshot_version") == to_snapshot_version
+                nw.col("metaxy_snapshot_version") == to_snapshot_version
             ).collect()
         )
 
@@ -173,8 +173,8 @@ def generate_migration(
                 "feature_spec": row.get(
                     "feature_spec", {}
                 ),  # This would need the actual spec
-                "feature_version": row["feature_version"],
-                "feature_spec_version": row["feature_spec_version"],
+                "metaxy_feature_version": row["metaxy_feature_version"],
+                "metaxy_feature_spec_version": row["metaxy_feature_spec_version"],
                 "feature_class_path": row.get("feature_class_path", ""),
             }
 
@@ -265,7 +265,7 @@ def generate_migration(
                 feature_cls,
                 current_only=False,
                 allow_fallback=False,
-                filters=[nw.col("snapshot_version") == from_snapshot_version],
+                filters=[nw.col("metaxy_snapshot_version") == from_snapshot_version],
             )
             # Only collect head(1) to check existence
             from_metadata_sample = nw.from_native(from_metadata.head(1).collect())

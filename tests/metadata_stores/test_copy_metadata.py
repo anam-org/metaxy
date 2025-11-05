@@ -57,7 +57,7 @@ def test_copy_metadata_all_features(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -70,7 +70,10 @@ def test_copy_metadata_all_features(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
-                "provenance_by_field": [{"field_b": "hash10"}, {"field_b": "hash20"}],
+                "metaxy_provenance_by_field": [
+                    {"field_b": "hash10"},
+                    {"field_b": "hash20"},
+                ],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
@@ -81,7 +84,7 @@ def test_copy_metadata_all_features(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with destination store (source will be opened automatically)
     with dest_store:
@@ -101,14 +104,18 @@ def test_copy_metadata_all_features(
         )
         assert dest_data_a.height == 3
         assert dest_data_a["sample_uid"].to_list() == ["s1", "s2", "s3"]
-        assert all(sid == snapshot_version for sid in dest_data_a["snapshot_version"])
+        assert all(
+            sid == snapshot_version for sid in dest_data_a["metaxy_snapshot_version"]
+        )
 
         dest_data_b = (
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
         assert dest_data_b.height == 2
         assert dest_data_b["sample_uid"].to_list() == ["s1", "s2"]
-        assert all(sid == snapshot_version for sid in dest_data_b["snapshot_version"])
+        assert all(
+            sid == snapshot_version for sid in dest_data_b["metaxy_snapshot_version"]
+        )
 
 
 def test_copy_metadata_specific_features(
@@ -126,7 +133,7 @@ def test_copy_metadata_specific_features(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -135,7 +142,7 @@ def test_copy_metadata_specific_features(
             {
                 "sample_uid": ["s1"],
                 "field_b": [10],
-                "provenance_by_field": [{"field_b": "hash10"}],
+                "metaxy_provenance_by_field": [{"field_b": "hash10"}],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
@@ -146,7 +153,7 @@ def test_copy_metadata_specific_features(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy only FeatureA
     with dest_store:
@@ -191,9 +198,12 @@ def test_copy_metadata_with_snapshot_filter(
                 {
                     "sample_uid": ["s1", "s2"],
                     "field_a": [1, 2],
-                    "provenance_by_field": [{"field_a": "hash1"}, {"field_a": "hash2"}],
-                    "feature_version": [FeatureA.feature_version()] * 2,
-                    "snapshot_version": [snapshot_1] * 2,
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                    ],
+                    "metaxy_feature_version": [FeatureA.feature_version()] * 2,
+                    "metaxy_snapshot_version": [snapshot_1] * 2,
                 }
             )
             source_store.write_metadata(FeatureA, data_snapshot_1)
@@ -203,13 +213,13 @@ def test_copy_metadata_with_snapshot_filter(
                 {
                     "sample_uid": ["s3", "s4", "s5"],
                     "field_a": [3, 4, 5],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field_a": "hash3"},
                         {"field_a": "hash4"},
                         {"field_a": "hash5"},
                     ],
-                    "feature_version": [FeatureA.feature_version()] * 3,
-                    "snapshot_version": [snapshot_2] * 3,
+                    "metaxy_feature_version": [FeatureA.feature_version()] * 3,
+                    "metaxy_snapshot_version": [snapshot_2] * 3,
                 }
             )
             source_store.write_metadata(FeatureA, data_snapshot_2)
@@ -240,7 +250,7 @@ def test_copy_metadata_with_snapshot_filter(
         )
         assert dest_data.height == 3
         assert dest_data["sample_uid"].to_list() == ["s3", "s4", "s5"]
-        assert all(sid == snapshot_2 for sid in dest_data["snapshot_version"])
+        assert all(sid == snapshot_2 for sid in dest_data["metaxy_snapshot_version"])
 
 
 def test_copy_metadata_empty_source() -> None:
@@ -273,7 +283,7 @@ def test_copy_metadata_missing_feature(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -284,7 +294,7 @@ def test_copy_metadata_missing_feature(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Try to copy both features (FeatureB doesn't exist)
     with dest_store:
@@ -315,7 +325,7 @@ def test_copy_metadata_preserves_feature_version(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -326,7 +336,7 @@ def test_copy_metadata_preserves_feature_version(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy to destination
     with dest_store:
@@ -340,7 +350,7 @@ def test_copy_metadata_preserves_feature_version(
         dest_data = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert dest_data["feature_version"][0] == original_version
+        assert dest_data["metaxy_feature_version"][0] == original_version
 
 
 def test_copy_metadata_store_not_open() -> None:
@@ -368,7 +378,7 @@ def test_copy_metadata_preserves_snapshot_version(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -379,7 +389,7 @@ def test_copy_metadata_preserves_snapshot_version(
             .collect()
             .to_polars()
         )
-        original_snapshot = written_data["snapshot_version"][0]
+        original_snapshot = written_data["metaxy_snapshot_version"][0]
 
     # Copy - snapshot_version should be preserved
     with dest_store:
@@ -393,7 +403,7 @@ def test_copy_metadata_preserves_snapshot_version(
         dest_data = (
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
-        assert dest_data["snapshot_version"][0] == original_snapshot
+        assert dest_data["metaxy_snapshot_version"][0] == original_snapshot
 
 
 def test_copy_metadata_no_rows_for_snapshot(
@@ -411,7 +421,7 @@ def test_copy_metadata_no_rows_for_snapshot(
             {
                 "sample_uid": ["s1"],
                 "field_a": [1],
-                "provenance_by_field": [{"field_a": "hash1"}],
+                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
             }
         )
         source_store.write_metadata(FeatureA, source_data)
@@ -444,7 +454,7 @@ def test_copy_metadata_with_global_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -457,7 +467,7 @@ def test_copy_metadata_with_global_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -473,7 +483,7 @@ def test_copy_metadata_with_global_filters(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with global filter - only s1 and s2
     with dest_store:
@@ -519,7 +529,7 @@ def test_copy_metadata_with_per_feature_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_a": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -532,7 +542,7 @@ def test_copy_metadata_with_per_feature_filters(
             {
                 "sample_uid": ["s1", "s2", "s3"],
                 "field_b": [10, 20, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -547,7 +557,7 @@ def test_copy_metadata_with_per_feature_filters(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with per-feature filters
     with dest_store:
@@ -599,7 +609,7 @@ def test_copy_metadata_with_mixed_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_a": [1, 2, 3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_a": "hash1"},
                     {"field_a": "hash2"},
                     {"field_a": "hash3"},
@@ -613,7 +623,7 @@ def test_copy_metadata_with_mixed_filters(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
                 "field_b": [10, 20, 30, 40],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field_b": "hash10"},
                     {"field_b": "hash20"},
                     {"field_b": "hash30"},
@@ -629,7 +639,7 @@ def test_copy_metadata_with_mixed_filters(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with multiple filters combined for each feature
     with dest_store:
@@ -680,7 +690,10 @@ def test_copy_metadata_with_mixed_feature_types(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_a": [1, 2],
-                "provenance_by_field": [{"field_a": "hash1"}, {"field_a": "hash2"}],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "hash1"},
+                    {"field_a": "hash2"},
+                ],
             }
         )
         source_store.write_metadata(FeatureA, source_data_a)
@@ -689,7 +702,10 @@ def test_copy_metadata_with_mixed_feature_types(
             {
                 "sample_uid": ["s1", "s2"],
                 "field_b": [10, 20],
-                "provenance_by_field": [{"field_b": "hash10"}, {"field_b": "hash20"}],
+                "metaxy_provenance_by_field": [
+                    {"field_b": "hash10"},
+                    {"field_b": "hash20"},
+                ],
             }
         )
         source_store.write_metadata(FeatureB, source_data_b)
@@ -700,7 +716,7 @@ def test_copy_metadata_with_mixed_feature_types(
             .collect()
             .to_polars()
         )
-        snapshot_version = written_data["snapshot_version"][0]
+        snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Apply filter to one feature but not the other
     with dest_store:

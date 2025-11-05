@@ -16,13 +16,13 @@ class LazyIncrement(NamedTuple):
     Attributes:
         added: New samples that appear upstream and haven't been processed yet.
 
-            Columns: `[*user_defined_columns, "provenance_by_field"]`
+            Columns: `[*user_defined_columns, "metaxy_provenance_by_field"]`
         changed: Samples with new field provenance that should be re-processed.
 
-            Columns: `[*user_defined_columns, "provenance_by_field"]`
+            Columns: `[*user_defined_columns, "metaxy_provenance_by_field"]`
         removed: Samples that have been previously processed but have been removed from upstream since that.
 
-            Columns: `[*id_columns, "provenance_by_field"]`
+            Columns: `[*id_columns, "metaxy_provenance_by_field"]`
 
     Note:
         `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
@@ -56,13 +56,13 @@ class Increment(NamedTuple):
     Attributes:
         added: New samples that appear upstream and haven't been processed yet.
 
-            Columns: `[*user_defined_columns, "provenance_by_field"]`
+            Columns: `[*user_defined_columns, "metaxy_provenance_by_field"]`
         changed: Samples with new field provenance that should be re-processed.
 
-            Columns: `[*user_defined_columns, "provenance_by_field"]`
+            Columns: `[*user_defined_columns, "metaxy_provenance_by_field"]`
         removed: Samples that have been previously processed but have been removed from upstream since that.
 
-            Columns: `[*id_columns, "provenance_by_field"]`
+            Columns: `[*id_columns, "metaxy_provenance_by_field"]`
 
     Note:
         `added` and `changed` contain all the user-defined columns, but `removed` only contains the ID columns.
@@ -81,7 +81,7 @@ class MetadataDiffResolver(ABC):
 
     This is Step 3 in the data provenance process:
     1. Join upstream features → unified upstream view
-    2. Calculate provenance_by_field from upstream → target versions
+    2. Calculate metaxy_provenance_by_field from upstream → target versions
     3. Diff with current metadata → identify changes ← THIS STEP
 
     All component boundaries use Narwhals LazyFrames for backend-agnostic processing.
@@ -116,10 +116,10 @@ class MetadataDiffResolver(ABC):
 
         Args:
             target_provenance: Narwhals LazyFrame with newly calculated field_provenance
-                Shape: [ID columns, provenance_by_field (calculated), upstream columns...]
+                Shape: [ID columns, metaxy_provenance_by_field (calculated), upstream columns...]
             current_metadata: Narwhals LazyFrame with current metadata, or None
-                Shape: [ID columns, provenance_by_field (existing), feature_version, custom columns...]
-                Should be pre-filtered by feature_version at the caller level if needed.
+                Shape: [ID columns, metaxy_provenance_by_field (existing), metaxy_feature_version, custom columns...]
+                Should be pre-filtered by metaxy_feature_version at the caller level if needed.
             id_columns: List of ID columns to use for comparison (required - from feature spec)
 
         Returns:

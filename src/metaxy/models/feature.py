@@ -8,6 +8,11 @@ from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
 from metaxy.models.bases import FrozenBaseModel
+from metaxy.models.constants import (
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_TRACKING_VERSION,
+    METAXY_FEATURE_VERSION,
+)
 from metaxy.models.feature_spec import (
     BaseFeatureSpec,
     BaseFeatureSpecWithIDColumns,
@@ -16,6 +21,10 @@ from metaxy.models.feature_spec import (
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
 from metaxy.utils.hashing import truncate_hash
+
+FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
+FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -396,9 +405,9 @@ class FeatureGraph:
         Returns:
             Dict of feature_key -> {
                 feature_spec: dict,
-                feature_version: str,
-                feature_spec_version: str,
-                feature_tracking_version: str,
+                metaxy_feature_version: str,
+                metaxy_feature_spec_version: str,
+                metaxy_feature_tracking_version: str,
                 feature_class_path: str,
                 project: str
             }
@@ -406,11 +415,11 @@ class FeatureGraph:
         Example:
             ```py
             snapshot = graph.to_snapshot()
-            snapshot["video_processing"]["feature_version"]
+            snapshot["video_processing"]["metaxy_feature_version"]
             # 'abc12345'
-            snapshot["video_processing"]["feature_spec_version"]
+            snapshot["video_processing"]["metaxy_feature_spec_version"]
             # 'def67890'
-            snapshot["video_processing"]["feature_tracking_version"]
+            snapshot["video_processing"]["metaxy_feature_tracking_version"]
             # 'xyz98765'
             snapshot["video_processing"]["feature_class_path"]
             # 'myapp.features.video.VideoProcessing'
@@ -433,9 +442,9 @@ class FeatureGraph:
 
             snapshot[feature_key_str] = {
                 "feature_spec": feature_spec_dict,
-                "feature_version": feature_version,
-                "feature_spec_version": feature_spec_version,
-                "feature_tracking_version": feature_tracking_version,
+                FEATURE_VERSION_COL: feature_version,
+                FEATURE_SPEC_VERSION_COL: feature_spec_version,
+                FEATURE_TRACKING_VERSION_COL: feature_tracking_version,
                 "feature_class_path": class_path,
                 "project": project,
             }
@@ -797,7 +806,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         - Field definitions
 
         Used to distinguish current vs historical metafield provenance hashes.
-        Stored in the 'feature_version' column of metadata DataFrames.
+        Stored in the 'metaxy_feature_version' column of metadata DataFrames.
 
         Returns:
             SHA256 hex digest (like git short hashes)
@@ -830,7 +839,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         (for migration triggering), feature_spec_version captures the entire specification
         for complete reproducibility and audit purposes.
 
-        Stored in the 'feature_spec_version' column of metadata DataFrames.
+        Stored in the 'metaxy_feature_spec_version' column of metadata DataFrames.
 
         Returns:
             SHA256 hex digest of the complete specification
