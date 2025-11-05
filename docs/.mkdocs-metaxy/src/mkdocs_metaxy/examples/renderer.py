@@ -93,6 +93,7 @@ class ExampleRenderer:
         path: str,
         show_line_numbers: bool = True,
         hl_lines: list[int] | None = None,
+        collapsible: bool = True,
     ) -> str:
         """Render a code snippet using pymdownx.snippets.
 
@@ -100,44 +101,114 @@ class ExampleRenderer:
             path: Path to the file (relative to snippets base_path).
             show_line_numbers: Whether to show line numbers.
             hl_lines: List of line numbers to highlight.
+            collapsible: Whether to make the code block collapsible.
 
         Returns:
             Markdown string with snippet directive.
         """
-        # Build attributes list
-        attrs = []
-
         # Determine file extension for syntax highlighting
-        base, extension = path.rsplit(".", 1)
-        if extension:
-            # Map patch extension to diff language
-            if extension == "patch":
-                attrs.append("diff")
-            else:
-                attrs.append(extension)
+        lang = ""
+        if "." in path:
+            base, extension = path.rsplit(".", 1)
+            if extension:
+                # Map patch extension to diff language
+                if extension == "patch":
+                    lang = "diff"
+                else:
+                    lang = extension
 
-        # Note: Line numbers are controlled by pymdownx.highlight config, not fence attributes
-        # Note: show_line_numbers parameter is ignored - use pymdownx.highlight configuration instead
+        # Clean up path for display in title
+        display_path = path
 
-        # Add highlighted lines if provided (this IS supported by superfences)
+        # Remove .generated/ prefix for patched/generated files
+        if display_path.startswith(".generated/"):
+            display_path = display_path[11:]  # Remove .generated/ prefix
+        # Remove example-name prefix for regular files (e.g., "example-recompute/")
+        elif "/" in display_path:
+            # Check if it starts with an example name pattern
+            parts_split = display_path.split("/", 1)
+            if parts_split[0].startswith("example-"):
+                # Keep only the path after the example name
+                display_path = parts_split[1]
+
+        # Build the code fence with pymdownx.superfences attributes
+        # Format: ``` language title="filename" linenums="1" hl_lines="1 2 3"
+        parts = []
+
+        # Language must come first
+        if lang:
+            parts.append(lang)
+
+        # Add title to display the file path
+        if display_path:
+            parts.append(f'title="{display_path}"')
+
+        # Add line numbers if requested
+        if show_line_numbers:
+            parts.append('linenums="1"')
+
+        # Add highlighted lines if provided
         if hl_lines:
             hl_lines_str = " ".join(str(line) for line in hl_lines)
-            attrs.append(f'hl_lines="{hl_lines_str}"')
+            parts.append(f'hl_lines="{hl_lines_str}"')
 
-        # Build the snippet directive for pymdownx.snippets
-        # Format: ``` <attrs>
-        #         --8<-- "path"
-        #         ```
-        # Pymdownx.snippets will replace the --8<-- line with actual file content
-        attr_str = " ".join(attrs) if attrs else ""
+        # Join all parts
+        fence_attrs = " ".join(parts)
 
-        # Standard code block with snippet directive
-        # Need blank line before for block-level recognition
-        result = f"\n\n``` {attr_str}\n"
-        result += f'--8<-- "{path}"\n'
-        result += "```\n\n"
+        # Build the result with optional collapsible wrapper
+        result = "\n\n"
 
+        if collapsible:
+            # Use pymdownx.details for collapsible sections (expanded by default with ???+)
+            # The summary will be just the file path
+            summary_text = f"`{display_path}`"
+
+            result += f'???+ example "{summary_text}"\n\n'
+            # Indent the code block for the details section
+            code_block = f"    ``` {fence_attrs}\n"
+            code_block += f'    --8<-- "{path}"\n'
+            code_block += "    ```\n"
+            result += code_block
+        else:
+            # Non-collapsible version
+            result += f"``` {fence_attrs}\n"
+            result += f'--8<-- "{path}"\n'
+            result += "```\n"
+
+        result += "\n"
         return result
+
+    def render_source_link(
+        self, example_name: str, button_style: bool = True, text: str | None = None
+    ) -> str:
+        """Render a GitHub source link for an example.
+
+        Args:
+            example_name: Name of the example.
+            button_style: Whether to render as a button (True) or inline link (False).
+            text: Custom text for the link. Defaults to "View Example Source on GitHub".
+
+        Returns:
+            Markdown string with GitHub link.
+        """
+        example_dir = (
+            f"example-{example_name}"
+            if not example_name.startswith("example-")
+            else example_name
+        )
+        github_url = (
+            f"https://github.com/anam-org/metaxy/tree/main/examples/{example_dir}"
+        )
+
+        if text is None:
+            text = "View Example Source on GitHub"
+
+        if button_style:
+            return f"[:octicons-mark-github-16: {text}]({github_url}){{.md-button target=_blank}}\n\n"
+        else:
+            return (
+                f"[:octicons-mark-github-16: {text}]({github_url}){{target=_blank}}\n\n"
+            )
 
     def render_error(self, message: str, details: str | None = None) -> str:
         """Render an error message as markdown.

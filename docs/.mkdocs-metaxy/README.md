@@ -33,9 +33,55 @@ plugins:
 
 #### Usage
 
-The plugin provides three main directives:
+The plugin provides the following directives:
 
-##### 1. Display Scenarios
+##### 1. GitHub Source Link
+
+Display a link to the example source code on GitHub:
+
+```markdown
+::: metaxy-example source-link
+example: recompute
+:::
+```
+
+Parameters:
+
+- `example` (required): Example name
+- `button` (optional): Display as button (default: true) or inline link (false)
+- `text` (optional): Custom link text (default: "View Example Source on GitHub")
+
+Examples:
+
+```markdown
+# As a button (default)
+
+::: metaxy-example source-link
+example: recompute
+:::
+
+# As an inline link
+
+::: metaxy-example source-link
+example: recompute
+button: false
+:::
+
+# With custom text
+
+::: metaxy-example source-link
+example: recompute
+text: "Browse Example Code"
+:::
+
+# Alternative directive name
+
+::: metaxy-example github
+example: recompute
+:::
+```
+
+##### 2. Display Scenarios
 
 Show the scenarios from a runbook:
 
@@ -51,15 +97,14 @@ This displays:
 - Lists of steps in each scenario
 - Command descriptions and assertions
 
-##### 2. Display Source Files
+##### 3. Display Source Files
 
-Show a Python source file with syntax highlighting:
+Show a Python source file with syntax highlighting and collapsible wrapper:
 
 ```markdown
 ::: metaxy-example file
 example: recompute
 path: src/example_recompute/features.py
-stage: Initial version
 :::
 ```
 
@@ -67,12 +112,10 @@ Parameters:
 
 - `example` (required): Example name (e.g., "recompute" for "example-recompute")
 - `path` (required): File path relative to example directory
-- `stage` (optional): Label for this stage (default: "Initial")
-- `language` (optional): Programming language for highlighting (default: "python")
 - `linenos` (optional): Show line numbers (default: true)
 - `patches` (optional): List of patches to apply before displaying
 
-##### 3. Display Files After Patches
+##### 4. Display Files After Patches
 
 Show how a file looks after applying patches:
 
@@ -91,7 +134,7 @@ The plugin will:
 3. Display the modified file with syntax highlighting
 4. Clean up the temporary files
 
-##### 4. Display Patches
+##### 5. Display Patches
 
 Show the diff patch itself:
 
@@ -109,6 +152,8 @@ This displays the patch with diff syntax highlighting.
 - **Automatic patch application**: Applies patches in a temporary directory without modifying the original files
 - **Syntax highlighting**: Uses Pygments for beautiful code and diff highlighting
 - **Line numbers**: Optional line numbers for code files
+- **Collapsible code blocks**: All code snippets are wrapped in collapsible `<details>` elements
+- **GitHub integration**: Direct links to example source code on GitHub
 - **Error handling**: Clear error messages if examples, files, or patches are not found
 - **Custom styling**: CSS classes for easy customization
 - **Runbook integration**: Reads directly from `.example.yaml` files

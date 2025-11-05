@@ -79,6 +79,7 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         # Create directory for generated files (patched versions)
         self.generated_dir = examples_dir / ".generated"
+        assert self.generated_dir is not None  # For type checker
         self.generated_dir.mkdir(exist_ok=True)
 
         # Remove fenced_code if present (conflicts with pymdownx.superfences)
@@ -101,13 +102,17 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return markdown
 
-        # Pattern to match directive blocks
+        # Pattern to match directive blocks (allow hyphens in directive type)
         directive_pattern = re.compile(
-            r"^:::\s+metaxy-example\s+(\w+)\s*\n(.*?)\n:::\s*$",
+            r"^:::\s+metaxy-example\s+([\w-]+)\s*\n(.*?)\n:::\s*$",
             re.MULTILINE | re.DOTALL,
         )
 
         def replace_directive(match: re.Match[str]) -> str:
+            # These are guaranteed to be non-None due to the check above
+            assert self.loader is not None
+            assert self.renderer is not None
+
             directive_type = match.group(1)
             directive_content = match.group(2).strip()
 
@@ -134,6 +139,13 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 if directive_type == "scenarios":
                     scenarios = self.loader.get_scenarios(example_name)
                     return self.renderer.render_scenarios(scenarios, example_name)
+                elif directive_type == "source-link" or directive_type == "github":
+                    # Render GitHub source link
+                    button_style = params.get("button", True)
+                    text = params.get("text", None)
+                    return self.renderer.render_source_link(
+                        example_name, button_style=button_style, text=text
+                    )
                 elif directive_type == "file":
                     return self._render_file(example_name, params)
                 elif directive_type == "patch":
@@ -250,14 +262,27 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
                 example_name, patches, content
             )
 
-            # Write patched file to generated directory
-            file_base = Path(file_path).stem
-            file_ext = Path(file_path).suffix
-            filename = f"{file_base}_v{version_num}{file_ext}"
-            generated_file = self.generated_dir / filename
-            generated_file.write_text(content)
+            # Write patched file to generated directory, preserving directory structure
+            file_path_obj = Path(file_path)
+            # Create versioned filename: dir/file_v2.ext
+            if file_path_obj.parent != Path("."):
+                # Preserve directory structure
+                versioned_name = (
+                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
+                )
+                versioned_path = file_path_obj.parent / versioned_name
+                generated_file = self.generated_dir / versioned_path
+                generated_file.parent.mkdir(parents=True, exist_ok=True)
+                snippets_path = f".generated/{versioned_path}"
+            else:
+                # No directory structure
+                versioned_name = (
+                    f"{file_path_obj.stem}_v{version_num}{file_path_obj.suffix}"
+                )
+                generated_file = self.generated_dir / versioned_name
+                snippets_path = f".generated/{versioned_name}"
 
-            snippets_path = f".generated/{filename}"
+            generated_file.write_text(content)
 
         return self.renderer.render_snippet(
             path=snippets_path,
@@ -276,11 +301,13 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
 
         content = self.loader.read_patch(example_name, patch_path)
 
-        patch_filename = Path(patch_path).name
-        generated_file = self.generated_dir / patch_filename
+        # Preserve the full path structure for patches
+        Path(patch_path)
+        generated_file = self.generated_dir / patch_path
+        generated_file.parent.mkdir(parents=True, exist_ok=True)
         generated_file.write_text(content)
 
-        snippets_path = f".generated/{patch_filename}"
+        snippets_path = f".generated/{patch_path}"
         return self.renderer.render_snippet(
             path=snippets_path,
             show_line_numbers=True,
