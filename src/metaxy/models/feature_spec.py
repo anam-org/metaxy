@@ -22,6 +22,7 @@ from pydantic.types import JsonValue
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     FeatureKey,
@@ -229,6 +230,10 @@ class _BaseFeatureSpec(FrozenBaseModel):
             )
         ],
     )
+    lineage: LineageRelationship = pydantic.Field(
+        default_factory=LineageRelationship.identity,
+        description="Lineage relationship of this feature.",
+    )
     metadata: dict[str, JsonValue] = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
@@ -244,10 +249,11 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         self,
         key: str,
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: Sequence[str | FieldSpec] | None = None,
-        id_columns: IDColumns | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
+        deps: list[FeatureDep] | None,
+        fields: Sequence[str | FieldSpec] | None,
+        id_columns: IDColumns | None,
+        lineage: LineageRelationship | None,
+        metadata: Mapping[str, JsonValue] | None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -256,10 +262,11 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         self,
         key: Sequence[str],
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: Sequence[str | FieldSpec] | None = None,
-        id_columns: IDColumns | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
+        deps: list[FeatureDep] | None,
+        fields: Sequence[str | FieldSpec] | None,
+        id_columns: IDColumns | None,
+        lineage: LineageRelationship,
+        metadata: Mapping[str, JsonValue] | None,
         **kwargs: Any,
     ) -> None: ...
 
@@ -268,15 +275,16 @@ class BaseFeatureSpec(_BaseFeatureSpec):
         self,
         key: FeatureKey,
         *,
-        deps: list[FeatureDep] | None = None,
-        fields: Sequence[str | FieldSpec] | None = None,
-        id_columns: IDColumns | None = None,
-        metadata: Mapping[str, JsonValue] | None = None,
+        deps: list[FeatureDep] | None,
+        fields: Sequence[str | FieldSpec] | None,
+        id_columns: IDColumns | None,
+        lineage: LineageRelationship,
+        metadata: Mapping[str, JsonValue] | None,
         **kwargs: Any,
     ) -> None: ...
 
     # Actual implementation - let Pydantic handle everything
-    def __init__(self, key: Any = None, **data: Any) -> None:
+    def __init__(self, key: Any, **data: Any) -> None:
         if key is not None:
             super().__init__(key=key, **data)
         else:
