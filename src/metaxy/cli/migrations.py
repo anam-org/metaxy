@@ -5,16 +5,15 @@ from __future__ import annotations
 from typing import Annotated
 
 import cyclopts
-from rich.console import Console
 
-# Rich console for formatted output
-console = Console()
+from metaxy.cli.console import console, data_console, error_console
 
 # Migrations subcommand app
 app = cyclopts.App(
     name="migrations",  # pyrefly: ignore[unexpected-keyword]
     help="Metadata migration commands",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 
@@ -109,6 +108,9 @@ def generate(
         app.console.print(f"  YAML file: {yaml_path}")
         app.console.print(f"  From snapshot: {migration.from_snapshot_version}")
         app.console.print(f"  To snapshot: {migration.to_snapshot_version}")
+
+        # Output migration ID to stdout for scripting
+        data_console.print(migration.migration_id)
 
         # Show description
         description = migration.get_description(metadata_store, project)

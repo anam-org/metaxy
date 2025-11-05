@@ -3,18 +3,16 @@
 from typing import Annotated, Literal
 
 import cyclopts
-from rich.console import Console
 
+from metaxy.cli.console import console, data_console, error_console
 from metaxy.graph import RenderConfig
-
-# Rich console for formatted output
-console = Console()
 
 # Graph-diff subcommand app
 app = cyclopts.App(
     name="graph-diff",  # pyrefly: ignore[unexpected-keyword]
     help="Compare and visualize graph snapshots",  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
+    error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
 )
 
 
@@ -279,10 +277,6 @@ def render(
                 console.print(f"[red]Error:[/red] Failed to write to file: {e}")
                 raise SystemExit(1)
         else:
-            # Print to stdout
-            if format in ("terminal", "cards"):
-                # Use plain print for terminal formats (they have ANSI codes)
-                print(rendered)
-            else:
-                # Use Rich console for non-terminal formats
-                console.print(rendered)
+            # Print to stdout using data_console
+            # Rendered diff output is data that users might pipe/redirect
+            data_console.print(rendered)

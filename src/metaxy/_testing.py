@@ -1,6 +1,11 @@
 import importlib
+import inspect
+import os
+import subprocess
 import sys
 import tempfile
+import textwrap
+from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
 from typing import Any
@@ -14,6 +19,16 @@ from metaxy.models.feature_spec import (
 )
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
+
+__all__ = [
+    "TempFeatureModule",
+    "assert_all_results_equal",
+    "HashAlgorithmCases",
+    "MetaxyProject",
+    "ExternalMetaxyProject",
+    "TempMetaxyProject",  # Backward compatibility alias
+    "DEFAULT_ID_COLUMNS",
+]
 
 
 class TempFeatureModule:
@@ -268,9 +283,6 @@ class MetaxyProject:
             print(result.stdout)
             ```
         """
-        import os
-        import subprocess
-
         # Start with current environment
         cmd_env = os.environ.copy()
 
@@ -535,11 +547,10 @@ class TempMetaxyProject(MetaxyProject):
             from metaxy import Feature, BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
             class MyFeature(Feature, spec=BaseFeatureSpec(
-            key=FeatureKey(["my_feature"]),
-
-            fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
+                key=FeatureKey(["my_feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
             )):
-            pass
+                pass
 
         with project.with_features(features):
             result = project.run_cli("graph", "push")
@@ -609,16 +620,13 @@ database = "{staging_db_path}"
                 from metaxy import Feature, BaseFeatureSpec, FeatureKey
 
                 class MyFeature(Feature, spec=...):
-                pass
+                    pass
 
             with project.with_features(my_features) as module:
                 print(module)  # "features_0"
                 result = project.run_cli("graph", "push")
             ```
         """
-        import inspect
-        import textwrap
-        from contextlib import contextmanager
 
         @contextmanager
         def _context():
@@ -684,9 +692,6 @@ database = "{staging_db_path}"
             print(result.stdout)
             ```
         """
-        import os
-        import subprocess
-
         # Start with current environment
         cmd_env = os.environ.copy()
 

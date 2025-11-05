@@ -73,7 +73,7 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
         result = metaxy_project.run_cli("metadata", "drop", "--confirm", check=False)
 
         assert result.returncode == 1
-        assert "Must specify either --all-features or --feature" in result.stdout
+        assert "Must specify either --all-features or --feature" in result.stderr
 
 
 def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
@@ -101,7 +101,7 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 1
-        assert "Must specify --confirm flag" in result.stdout
+        assert "Must specify --confirm flag" in result.stderr
 
 
 def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
@@ -139,7 +139,7 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stdout
+        assert "Dropped: video/files" in result.stderr
 
 
 def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyProject):
@@ -182,7 +182,7 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
         )
 
         assert result.returncode == 0
-        assert "Copy complete" in result.stdout
+        assert "Copy complete" in result.stderr
 
         # Verify staging now has [1, 2, 3, 4] (no duplicates)
         # Only sample_uid 1 should have been copied (2 and 3 were skipped)
@@ -249,7 +249,7 @@ def test_metadata_copy_non_incremental_creates_duplicates(
         )
 
         assert result.returncode == 0
-        assert "Copy complete" in result.stdout
+        assert "Copy complete" in result.stderr
 
         # Verify staging now has duplicates for sample_uids 2 and 3
         store = metaxy_project.stores["staging"]
@@ -307,7 +307,7 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
         )
 
         assert result.returncode == 0
-        assert "Copy complete" in result.stdout
+        assert "Copy complete" in result.stderr
 
         # Verify staging has all 3 rows
         store = metaxy_project.stores["staging"]
@@ -376,9 +376,9 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stdout
-        assert "Dropped: audio/files" in result.stdout
-        assert "Drop complete: 2 feature(s) dropped" in result.stdout
+        assert "Dropped: video/files" in result.stderr
+        assert "Dropped: audio/files" in result.stderr
+        assert "Drop complete: 2 feature(s) dropped" in result.stderr
 
 
 def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
@@ -416,12 +416,12 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 0
-        assert "Dropping metadata for 2 feature(s)" in result.stdout
+        assert "Dropping metadata for 2 feature(s)" in result.stderr
         assert (
-            "Dropped: video/files" in result.stdout
-            or "Dropped: audio/files" in result.stdout
+            "Dropped: video/files" in result.stderr
+            or "Dropped: audio/files" in result.stderr
         )
-        assert "Drop complete: 2 feature(s) dropped" in result.stdout
+        assert "Drop complete: 2 feature(s) dropped" in result.stderr
 
 
 def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
@@ -449,8 +449,8 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
 
         # Should succeed with 0 features dropped
         assert result.returncode == 0
-        assert "Dropping metadata for 0 feature(s)" in result.stdout
-        assert "Drop complete: 0 feature(s) dropped" in result.stdout
+        assert "Dropping metadata for 0 feature(s)" in result.stderr
+        assert "Drop complete: 0 feature(s) dropped" in result.stderr
 
 
 def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
@@ -481,7 +481,7 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
         )
 
         assert result.returncode == 1
-        assert "Cannot specify both --all-features and --feature" in result.stdout
+        assert "Cannot specify both --all-features and --feature" in result.stderr
 
 
 def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
@@ -515,4 +515,4 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stdout
+        assert "Dropped: video/files" in result.stderr
