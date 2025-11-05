@@ -11,11 +11,28 @@ from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy.config import MetaxyConfig
+from metaxy.models.constants import (
+    ALL_SYSTEM_COLUMNS,
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE_BY_FIELD,
+    METAXY_SNAPSHOT_VERSION,
+    SYSTEM_COLUMN_PREFIX,
+)
 from metaxy.models.feature import BaseFeature, MetaxyMeta
 from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
 
 if TYPE_CHECKING:
     pass
+
+RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
+    set(ALL_SYSTEM_COLUMNS)
+    | {
+        name.removeprefix(SYSTEM_COLUMN_PREFIX)
+        for name in ALL_SYSTEM_COLUMNS
+        if name.startswith(SYSTEM_COLUMN_PREFIX)
+    }
+)
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -86,6 +103,30 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         config = MetaxyConfig.get()
 
         if kwargs.get("table") and spec is not None:
+            # Prevent user-defined fields from shadowing system-managed columns
+            conflicts = {
+                attr_name
+                for attr_name in namespace
+                if attr_name in RESERVED_SQLMODEL_FIELD_NAMES
+            }
+
+            # Also guard against explicit sa_column_kwargs targeting system columns
+            for attr_name, attr_value in namespace.items():
+                sa_column_kwargs = getattr(attr_value, "sa_column_kwargs", None)
+                if isinstance(sa_column_kwargs, dict):
+                    column_name = sa_column_kwargs.get("name")
+                    if column_name in ALL_SYSTEM_COLUMNS:
+                        conflicts.add(attr_name)
+
+            if conflicts:
+                reserved = ", ".join(sorted(ALL_SYSTEM_COLUMNS))
+                conflict_list = ", ".join(sorted(conflicts))
+                raise ValueError(
+                    "Cannot define SQLModel field(s) "
+                    f"{conflict_list} because they map to reserved Metaxy system columns. "
+                    f"Reserved columns: {reserved}"
+                )
+
             # Automatically set __tablename__ from the feature key if not provided
             if (
                 "__tablename__" not in namespace
@@ -216,18 +257,32 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     metaxy_provenance_by_field: str | None = Field(
         default=None,
         sa_type=JSON,
-        sa_column_kwargs={"name": "provenance_by_field", "nullable": True},
+        sa_column_kwargs={
+            "name": METAXY_PROVENANCE_BY_FIELD,
+            "nullable": True,
+        },
     )
 
     metaxy_feature_version: str | None = Field(
-        default=None, sa_column_kwargs={"name": "feature_version", "nullable": True}
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_FEATURE_VERSION,
+            "nullable": True,
+        },
     )
 
     metaxy_feature_spec_version: str | None = Field(
         default=None,
-        sa_column_kwargs={"name": "feature_spec_version", "nullable": True},
+        sa_column_kwargs={
+            "name": METAXY_FEATURE_SPEC_VERSION,
+            "nullable": True,
+        },
     )
 
     metaxy_snapshot_version: str | None = Field(
-        default=None, sa_column_kwargs={"name": "snapshot_version", "nullable": True}
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_SNAPSHOT_VERSION,
+            "nullable": True,
+        },
     )

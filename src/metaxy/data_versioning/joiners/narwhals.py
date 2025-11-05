@@ -9,7 +9,8 @@ import narwhals as nw
 
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.models.constants import (
-    DROPPABLE_SYSTEM_COLUMNS,
+    METAXY_PROVENANCE_BY_FIELD,
+    is_droppable_system_column,
 )
 
 if TYPE_CHECKING:
@@ -90,10 +91,15 @@ class NarwhalsJoiner(UpstreamJoiner):
         upstream_renames = upstream_renames or {}
 
         # Use imported constants for system columns
-        # Essential columns now include id_columns and provenance_by_field
+        # Essential columns now include id_columns and metaxy_provenance_by_field
         id_columns_set = set(id_columns)
-        system_cols = id_columns_set | {"provenance_by_field"}
-        system_cols_to_drop = DROPPABLE_SYSTEM_COLUMNS
+        system_cols_canonical = id_columns_set | {METAXY_PROVENANCE_BY_FIELD}
+
+        def _is_essential(col: str) -> bool:
+            return col in system_cols_canonical
+
+        def _is_droppable(col: str) -> bool:
+            return is_droppable_system_column(col)
 
         # Track all column names to detect conflicts
         all_columns: dict[str, str] = {}  # column_name -> source_feature
@@ -117,16 +123,18 @@ class NarwhalsJoiner(UpstreamJoiner):
         # Determine columns to select
         if first_columns_spec is None:
             # Keep all columns (new default behavior) except problematic system columns
-            cols_to_select = [c for c in available_cols if c not in system_cols_to_drop]
+            cols_to_select = [c for c in available_cols if not _is_droppable(c)]
         elif first_columns_spec == ():
             # Keep only essential system columns
-            cols_to_select = [c for c in available_cols if c in system_cols]
+            cols_to_select = [c for c in available_cols if _is_essential(c)]
         else:
             # Keep specified columns plus essential system columns
             requested = set(first_columns_spec)
             # Filter out problematic system columns even if requested
-            requested = requested - system_cols_to_drop
-            cols_to_select = list(requested | (available_cols & system_cols))
+            requested = {col for col in requested if not _is_droppable(col)}
+            cols_to_select = list(
+                requested | {col for col in available_cols if _is_essential(col)}
+            )
 
             # Warn about missing columns
             missing = requested - available_cols
@@ -141,9 +149,9 @@ class NarwhalsJoiner(UpstreamJoiner):
         # Build select expressions with renaming for first upstream
         select_exprs = []
         for col in cols_to_select:
-            if col == "provenance_by_field":
+            if col == METAXY_PROVENANCE_BY_FIELD:
                 # Always rename provenance_by_field to avoid conflicts
-                new_name = f"__upstream_{first_key}__provenance_by_field"
+                new_name = f"__upstream_{first_key}__{METAXY_PROVENANCE_BY_FIELD}"
                 select_exprs.append(nw.col(col).alias(new_name))
                 upstream_mapping[first_key] = new_name
             elif col in first_renames_spec:
@@ -185,18 +193,18 @@ class NarwhalsJoiner(UpstreamJoiner):
             # Determine columns to select
             if columns_spec is None:
                 # Keep all columns except problematic system columns
-                cols_to_select = [
-                    c for c in available_cols if c not in system_cols_to_drop
-                ]
+                cols_to_select = [c for c in available_cols if not _is_droppable(c)]
             elif columns_spec == ():
                 # Keep only essential system columns
-                cols_to_select = [c for c in available_cols if c in system_cols]
+                cols_to_select = [c for c in available_cols if _is_essential(c)]
             else:
                 # Keep specified columns plus essential system columns
                 requested = set(columns_spec)
                 # Filter out problematic system columns even if requested
-                requested = requested - system_cols_to_drop
-                cols_to_select = list(requested | (available_cols & system_cols))
+                requested = {col for col in requested if not _is_droppable(col)}
+                cols_to_select = list(
+                    requested | {col for col in available_cols if _is_essential(col)}
+                )
 
                 # Warn about missing columns
                 missing = requested - available_cols
@@ -216,9 +224,11 @@ class NarwhalsJoiner(UpstreamJoiner):
                 if col in id_columns_set:
                     # Always include ID columns for joining, but don't duplicate them
                     select_exprs.append(nw.col(col))
-                elif col == "provenance_by_field":
+                elif col == METAXY_PROVENANCE_BY_FIELD:
                     # Always rename provenance_by_field to avoid conflicts
-                    new_name = f"__upstream_{upstream_key}__provenance_by_field"
+                    new_name = (
+                        f"__upstream_{upstream_key}__{METAXY_PROVENANCE_BY_FIELD}"
+                    )
                     select_exprs.append(nw.col(col).alias(new_name))
                     join_cols.append(new_name)
                     upstream_mapping[upstream_key] = new_name

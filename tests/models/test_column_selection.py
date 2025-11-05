@@ -43,7 +43,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -64,7 +64,9 @@ class TestColumnSelection:
 
         # Verify all columns are present
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert (
+            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
+        )
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" in joined_df.columns
         assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
@@ -99,7 +101,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -120,7 +122,9 @@ class TestColumnSelection:
 
         # Verify only selected columns are present
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert (
+            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
+        )
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" not in joined_df.columns
         assert "custom_col3" not in joined_df.columns
@@ -154,12 +158,12 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
-                "feature_version": ["v1", "v1", "v1"],
+                "metaxy_feature_version": ["v1", "v1", "v1"],
                 "custom_col1": ["a", "b", "c"],
                 "custom_col2": [10, 20, 30],
             }
@@ -177,9 +181,11 @@ class TestColumnSelection:
         # Note: feature_version and snapshot_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
         assert (
-            "feature_version" not in joined_df.columns
+            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
+        )
+        assert (
+            "metaxy_feature_version" not in joined_df.columns
         )  # Not essential, dropped to avoid conflicts
         assert "custom_col1" not in joined_df.columns
         assert "custom_col2" not in joined_df.columns
@@ -216,7 +222,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -236,7 +242,9 @@ class TestColumnSelection:
 
         # Verify columns are renamed
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert (
+            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
+        )
         assert "upstream_col1" in joined_df.columns
         assert "upstream_col2" in joined_df.columns
         assert "custom_col1" not in joined_df.columns
@@ -274,7 +282,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -334,7 +342,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -346,7 +354,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -406,7 +414,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -418,7 +426,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -471,13 +479,13 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
-                "feature_version": ["v1", "v1", "v1"],
-                "snapshot_version": ["s1", "s1", "s1"],
+                "metaxy_feature_version": ["v1", "v1", "v1"],
+                "metaxy_snapshot_version": ["s1", "s1", "s1"],
                 "custom_col": ["a", "b", "c"],
                 "other_col": [10, 20, 30],
             }
@@ -493,10 +501,12 @@ class TestColumnSelection:
 
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert (
+            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
+        )
         # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
-        assert "feature_version" not in joined_df.columns
-        assert "snapshot_version" not in joined_df.columns
+        assert "metaxy_feature_version" not in joined_df.columns
+        assert "metaxy_snapshot_version" not in joined_df.columns
         # Verify selected column
         assert "custom_col" in joined_df.columns
         # Verify non-selected column is not present
@@ -527,7 +537,9 @@ class TestColumnSelection:
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={"old_col": "provenance_by_field"},  # Not allowed
+                            rename={
+                                "old_col": "metaxy_provenance_by_field"
+                            },  # Not allowed
                         )
                     ],
                 ),
@@ -547,7 +559,7 @@ class TestColumnSelection:
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={"old_col": "feature_version"},  # Not allowed
+                            rename={"old_col": "metaxy_feature_version"},  # Not allowed
                         )
                     ],
                 ),
@@ -656,7 +668,7 @@ class TestColumnSelection:
             {
                 "user_id": [1, 2, 3],
                 "session_id": ["a", "b", "c"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -753,7 +765,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -766,7 +778,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -779,7 +791,7 @@ class TestColumnSelection:
         upstream3_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h7"},
                     {"default": "h8"},
                     {"default": "h9"},
@@ -813,22 +825,28 @@ class TestColumnSelection:
         assert "excluded_col" not in joined_df.columns  # Not selected
 
         # Verify provenance_by_field columns
-        assert "__upstream_test/upstream1__provenance_by_field" in joined_df.columns
-        assert "__upstream_test/upstream2__provenance_by_field" in joined_df.columns
-        assert "__upstream_test/upstream3__provenance_by_field" in joined_df.columns
+        assert (
+            "__upstream_test/upstream1__metaxy_provenance_by_field" in joined_df.columns
+        )
+        assert (
+            "__upstream_test/upstream2__metaxy_provenance_by_field" in joined_df.columns
+        )
+        assert (
+            "__upstream_test/upstream3__metaxy_provenance_by_field" in joined_df.columns
+        )
 
         # Verify mapping
         assert (
             mapping["test/upstream1"]
-            == "__upstream_test/upstream1__provenance_by_field"
+            == "__upstream_test/upstream1__metaxy_provenance_by_field"
         )
         assert (
             mapping["test/upstream2"]
-            == "__upstream_test/upstream2__provenance_by_field"
+            == "__upstream_test/upstream2__metaxy_provenance_by_field"
         )
         assert (
             mapping["test/upstream3"]
-            == "__upstream_test/upstream3__provenance_by_field"
+            == "__upstream_test/upstream3__metaxy_provenance_by_field"
         )
 
     def test_custom_load_input_with_filtering(self):
@@ -872,7 +890,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4, 5],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -920,7 +938,8 @@ class TestColumnSelection:
 
         # Verify mapping
         assert (
-            mapping["test/upstream"] == "__upstream_test/upstream__provenance_by_field"
+            mapping["test/upstream"]
+            == "__upstream_test/upstream__metaxy_provenance_by_field"
         )
 
     def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph):
@@ -1213,7 +1232,7 @@ class TestColumnSelection:
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
                             rename={
-                                "old_version": "provenance_by_field",  # Not allowed - system column
+                                "old_version": "metaxy_provenance_by_field",  # Not allowed - system column
                             },
                         )
                     ],

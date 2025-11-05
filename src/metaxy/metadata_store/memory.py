@@ -180,7 +180,9 @@ class InMemoryMetadataStore(MetadataStore):
 
         # Apply feature_version filter
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
 
         # Apply generic Narwhals filters
         if filters is not None:

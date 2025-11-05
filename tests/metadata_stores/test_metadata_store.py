@@ -103,7 +103,7 @@ def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
                     {"frames": "hash_a2_frames", "audio": "hash_a2_audio"},
                     {"frames": "hash_a3_frames", "audio": "hash_a3_audio"},
@@ -130,7 +130,7 @@ def multi_env_stores(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "prod_hash1", "audio": "prod_hash1"},
                     {"frames": "prod_hash2", "audio": "prod_hash2"},
                     {"frames": "prod_hash3", "audio": "prod_hash3"},
@@ -152,7 +152,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash1", "audio": "hash1"},
                     {"frames": "hash2", "audio": "hash2"},
                     {"frames": "hash3", "audio": "hash3"},
@@ -166,7 +166,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
-        assert "provenance_by_field" in result.columns
+        assert "metaxy_provenance_by_field" in result.columns
 
 
 def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
@@ -179,7 +179,7 @@ def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
             }
         )
 
-        with pytest.raises(MetadataSchemaError, match="provenance_by_field"):
+        with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
             with empty_store.allow_cross_project_writes():
                 empty_store.write_metadata(UpstreamFeatureA, invalid_df)
 
@@ -190,7 +190,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -200,7 +200,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
         df2 = pl.DataFrame(
             {
                 "sample_uid": [3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
                 ],
@@ -234,11 +234,11 @@ def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> N
     with populated_store:
         result = collect_to_polars(
             populated_store.read_metadata(
-                UpstreamFeatureA, columns=["sample_uid", "provenance_by_field"]
+                UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"]
             )
         )
 
-        assert set(result.columns) == {"sample_uid", "provenance_by_field"}
+        assert set(result.columns) == {"sample_uid", "metaxy_provenance_by_field"}
         assert "path" not in result.columns
 
 
@@ -338,7 +338,10 @@ def test_write_to_dev_not_prod(
         new_data = pl.DataFrame(
             {
                 "sample_uid": [4, 5],
-                "provenance_by_field": [{"default": "hash4"}, {"default": "hash5"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash4"},
+                    {"default": "hash5"},
+                ],
             }
         )
 
@@ -363,7 +366,7 @@ def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
         assert "upstream/a" in upstream
         upstream_df = collect_to_polars(upstream["upstream/a"])
         assert len(upstream_df) == 3
-        assert "provenance_by_field" in upstream_df.columns
+        assert "metaxy_provenance_by_field" in upstream_df.columns
 
 
 def test_read_upstream_metadata_missing_dep(empty_store: InMemoryMetadataStore) -> None:
@@ -419,7 +422,7 @@ def test_store_not_open_write_raises(empty_store: InMemoryMetadataStore) -> None
     metadata = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"frames": "hash1", "audio": "hash1"},
                 {"frames": "hash2", "audio": "hash2"},
                 {"frames": "hash3", "audio": "hash3"},

@@ -299,16 +299,19 @@ def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) ->
 
         # Should contain feature_spec_version
         feature_data = snapshot_dict[feature_key_str]
-        assert "feature_spec_version" in feature_data
+        assert "metaxy_feature_spec_version" in feature_data
 
         # feature_spec_version should match the Feature's feature_spec_version
         assert (
-            feature_data["feature_spec_version"]
+            feature_data["metaxy_feature_spec_version"]
             == SnapshotFeature.spec().feature_spec_version
         )
 
         # feature_spec_version should be different from feature_version
-        assert feature_data["feature_spec_version"] != feature_data["feature_version"]
+        assert (
+            feature_data["metaxy_feature_spec_version"]
+            != feature_data["metaxy_feature_version"]
+        )
 
         # Snapshot the entire feature data for stability
         assert feature_data == snapshot
@@ -355,28 +358,33 @@ def test_feature_spec_version_recorded_in_metadata_store(
             assert len(features_df) == 1
 
             # Check that feature_spec_version column exists and has value
-            assert "feature_spec_version" in features_df.columns
+            assert "metaxy_feature_spec_version" in features_df.columns
 
             # Get row as dict
             feature_row = features_df.to_dicts()[0]
-            assert feature_row["feature_spec_version"] is not None
-            assert len(feature_row["feature_spec_version"]) == 64
+            assert feature_row["metaxy_feature_spec_version"] is not None
+            assert len(feature_row["metaxy_feature_spec_version"]) == 64
 
             # feature_spec_version should match the Feature's feature_spec_version
             assert (
-                feature_row["feature_spec_version"]
+                feature_row["metaxy_feature_spec_version"]
                 == RecordedFeature.spec().feature_spec_version
             )
 
             # feature_spec_version should be different from feature_version
-            assert feature_row["feature_spec_version"] != feature_row["feature_version"]
+            assert (
+                feature_row["metaxy_feature_spec_version"]
+                != feature_row["metaxy_feature_version"]
+            )
 
             # Snapshot for stability
             assert {
                 "feature_key": feature_row["feature_key"],
-                "feature_version": feature_row["feature_version"],
-                "feature_spec_version": feature_row["feature_spec_version"],
-                "snapshot_version": feature_row["snapshot_version"],
+                "metaxy_feature_version": feature_row["metaxy_feature_version"],
+                "metaxy_feature_spec_version": feature_row[
+                    "metaxy_feature_spec_version"
+                ],
+                "metaxy_snapshot_version": feature_row["metaxy_snapshot_version"],
             } == snapshot
 
 
@@ -412,7 +420,9 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
             assert not is_existing_1
 
             features_df_1 = store.read_features(current=True)
-            feature_spec_version_1 = features_df_1.to_dicts()[0]["feature_spec_version"]
+            feature_spec_version_1 = features_df_1.to_dicts()[0][
+                "metaxy_feature_spec_version"
+            ]
 
             # Second push (identical graph)
             result = store.record_feature_graph_snapshot()
@@ -424,7 +434,9 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
             features_df_2 = store.read_features(current=True)
-            feature_spec_version_2 = features_df_2.to_dicts()[0]["feature_spec_version"]
+            feature_spec_version_2 = features_df_2.to_dicts()[0][
+                "metaxy_feature_spec_version"
+            ]
 
             # feature_spec_version should be identical
             assert feature_spec_version_1 == feature_spec_version_2

@@ -37,11 +37,11 @@ def test_system_table_structure():
 
     # Check FeatureVersionsTable columns
     assert hasattr(FeatureVersionsTable, "feature_key")
-    assert hasattr(FeatureVersionsTable, "feature_version")
+    assert hasattr(FeatureVersionsTable, "metaxy_feature_version")
     assert hasattr(FeatureVersionsTable, "recorded_at")
     assert hasattr(FeatureVersionsTable, "feature_spec")
     assert hasattr(FeatureVersionsTable, "feature_class_path")
-    assert hasattr(FeatureVersionsTable, "snapshot_version")
+    assert hasattr(FeatureVersionsTable, "metaxy_snapshot_version")
 
     # Check MigrationEventsTable columns
     assert hasattr(MigrationEventsTable, "id")
@@ -66,7 +66,7 @@ def test_system_table_metadata():
     # Check table structure
     feature_versions = metadata.tables["metaxy-system__feature_versions"]
     assert "feature_key" in feature_versions.c
-    assert "feature_version" in feature_versions.c
+    assert "metaxy_feature_version" in feature_versions.c
 
     migration_events = metadata.tables["metaxy-system__migration_events"]
     assert "migration_id" in migration_events.c

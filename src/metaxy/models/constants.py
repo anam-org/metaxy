@@ -1,27 +1,92 @@
-"""Shared constants for system column names."""
+"""Shared constants for system-managed column names.
 
+All system columns use the metaxy_ prefix to avoid conflicts with user columns.
+"""
+
+from __future__ import annotations
+
+# Default code version for initial feature definitions
 DEFAULT_CODE_VERSION = "__metaxy_initial__"
 
-# Essential system columns that must always be preserved for joining/versioning
-# Note: ID columns are defined by BaseFeatureSpec.id_columns (default: ["sample_uid"])
-# provenance_by_field is always required for versioning (stored as metaxy_provenance_by_field in DB)
-ESSENTIAL_SYSTEM_COLUMNS = frozenset(
+# System column prefix
+SYSTEM_COLUMN_PREFIX = "metaxy_"
+
+# --- System Column Names -----------------------------------------------------------
+# All system columns that Metaxy manages internally. These columns are automatically
+# added to metadata DataFrames and should not be defined by users.
+
+METAXY_PROVENANCE_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}provenance_by_field"
+"""Field-level provenance hashes (struct column mapping field names to hashes)."""
+
+METAXY_FEATURE_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_version"
+"""Hash of the feature definition (dependencies + fields + code_versions)."""
+
+METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
+"""Hash of the entire feature graph snapshot (recorded during deployment)."""
+
+METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
+"""Hash of the complete feature specification (used for migration detection)."""
+
+METAXY_FEATURE_TRACKING_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_tracking_version"
+"""Hash of feature dependencies and ID columns (tracks structural changes)."""
+
+# --- System Column Sets ------------------------------------------------------------
+
+ALL_SYSTEM_COLUMNS = frozenset(
     {
-        "provenance_by_field",  # Always required for versioning (Python name)
-        "metaxy_provenance_by_field",  # Database storage name
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_FEATURE_VERSION,
+        METAXY_SNAPSHOT_VERSION,
+    }
+)
+"""All system-managed column names."""
+
+# Columns that should be dropped when joining upstream features (will be recalculated)
+_DROPPABLE_COLUMNS = frozenset(
+    {
+        METAXY_FEATURE_VERSION,
+        METAXY_SNAPSHOT_VERSION,
     }
 )
 
-# System columns that should be dropped to avoid conflicts when joining upstream features
-# These will be recalculated for the target feature, so keeping them from upstream causes conflicts
-DROPPABLE_SYSTEM_COLUMNS = frozenset(
-    {
-        "feature_version",
-        "snapshot_version",
-        "metaxy_feature_version",
-        "metaxy_snapshot_version",
-    }
-)
 
-# All system columns (essential + droppable)
-ALL_SYSTEM_COLUMNS = ESSENTIAL_SYSTEM_COLUMNS | DROPPABLE_SYSTEM_COLUMNS
+# --- Utility Functions -------------------------------------------------------------
+
+
+def is_system_column(name: str) -> bool:
+    """Check whether a column name is a system-managed column.
+
+    Args:
+        name: Column name to check
+
+    Returns:
+        True if the column is a system column, False otherwise
+
+    Examples:
+        >>> is_system_column("metaxy_feature_version")
+        True
+        >>> is_system_column("my_column")
+        False
+    """
+    return name in ALL_SYSTEM_COLUMNS
+
+
+def is_droppable_system_column(name: str) -> bool:
+    """Check whether a column should be dropped when joining upstream features.
+
+    Droppable columns (feature_version, snapshot_version) are recalculated for
+    each feature, so keeping them from upstream would cause conflicts.
+
+    Args:
+        name: Column name to check
+
+    Returns:
+        True if the column should be dropped during joins, False otherwise
+
+    Examples:
+        >>> is_droppable_system_column("metaxy_feature_version")
+        True
+        >>> is_droppable_system_column("metaxy_provenance_by_field")
+        False
+    """
+    return name in _DROPPABLE_COLUMNS

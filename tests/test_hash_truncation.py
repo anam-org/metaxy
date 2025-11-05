@@ -199,7 +199,7 @@ class TestNarwhalsFunctions:
         # Create test data with struct containing hash values
         df = pl.DataFrame(
             {
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field1": "a" * 64, "field2": "b" * 64},
                     {"field1": "c" * 64, "field2": "d" * 64},
                 ],
@@ -209,20 +209,20 @@ class TestNarwhalsFunctions:
 
         # No truncation when config is None
         MetaxyConfig.reset()
-        result_pl = truncate_struct_column(df, "provenance_by_field")
-        assert result_pl["provenance_by_field"][0]["field1"] == "a" * 64
+        result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
+        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 64
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=16)
         MetaxyConfig.set(config)
 
-        result_pl = truncate_struct_column(df, "provenance_by_field")
+        result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
 
         # Check struct values are truncated
-        assert result_pl["provenance_by_field"][0]["field1"] == "a" * 16
-        assert result_pl["provenance_by_field"][0]["field2"] == "b" * 16
-        assert result_pl["provenance_by_field"][1]["field1"] == "c" * 16
-        assert result_pl["provenance_by_field"][1]["field2"] == "d" * 16
+        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 16
+        assert result_pl["metaxy_provenance_by_field"][0]["field2"] == "b" * 16
+        assert result_pl["metaxy_provenance_by_field"][1]["field1"] == "c" * 16
+        assert result_pl["metaxy_provenance_by_field"][1]["field2"] == "d" * 16
 
         # Other columns unchanged
         assert result_pl["sample_uid"].to_list() == [1, 2]
@@ -244,13 +244,17 @@ class TestNarwhalsFunctions:
 
         # Empty DataFrame with struct column
         df = pl.DataFrame(
-            {"provenance_by_field": pl.Series([], dtype=pl.Struct({"field1": pl.Utf8}))}
+            {
+                "metaxy_provenance_by_field": pl.Series(
+                    [], dtype=pl.Struct({"field1": pl.Utf8})
+                )
+            }
         )
 
         # This may fail if schema inference doesn't work on empty structs
         # That's okay - it's an edge case
         try:
-            result_pl = truncate_struct_column(df, "provenance_by_field")
+            result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
             assert result_pl.height == 0
         except Exception:
             # Expected for empty struct handling
@@ -470,7 +474,7 @@ class TestMetadataStoreTruncation:
             metadata = pl.DataFrame(
                 {
                     "sample_uid": ["s1", "s2"],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "a" * 16},  # Already truncated
                         {"field1": "b" * 16},  # Already truncated
                     ],
@@ -486,7 +490,7 @@ class TestMetadataStoreTruncation:
 
             # Field provenance should be truncated
             for row in result_pl.iter_rows(named=True):
-                provenance_by_field = row["provenance_by_field"]
+                provenance_by_field = row["metaxy_provenance_by_field"]
                 assert len(provenance_by_field["field1"]) == 16
 
         # Clean up
@@ -615,7 +619,7 @@ class TestEndToEnd:
             parent_data = pl.DataFrame(
                 {
                     "sample_uid": ["s1", "s2"],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"value": "h" * 16},  # Truncated hash
                         {"value": "i" * 16},  # Truncated hash
                     ],
@@ -629,9 +633,9 @@ class TestEndToEnd:
             result_pl = result.to_polars()
 
             for row in result_pl.iter_rows(named=True):
-                assert len(row["feature_version"]) == 16
-                assert len(row["snapshot_version"]) == 16
-                assert len(row["provenance_by_field"]["value"]) == 16
+                assert len(row["metaxy_feature_version"]) == 16
+                assert len(row["metaxy_snapshot_version"]) == 16
+                assert len(row["metaxy_provenance_by_field"]["value"]) == 16
 
         # Clean up
         MetaxyConfig.reset()

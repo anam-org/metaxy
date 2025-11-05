@@ -36,7 +36,7 @@ class IbisMetadataStore(MetadataStore):
     - And other backends with struct support
 
     Note: Backends without native struct support (e.g., SQLite) are NOT supported.
-    The provenance_by_field field requires struct type support for proper storage.
+    The metaxy_provenance_by_field field requires struct type support for proper storage.
 
     Storage layout:
     - Each feature gets its own table: {namespace}__{feature_name}
@@ -382,7 +382,9 @@ class IbisMetadataStore(MetadataStore):
 
         # Apply feature_version filter (stays in SQL via Narwhals)
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
 
         # Apply generic Narwhals filters (stays in SQL)
         if filters is not None:

@@ -15,7 +15,18 @@ import narwhals as nw
 import polars as pl
 
 from metaxy.metadata_store._protocols import MetadataStoreProtocol
+from metaxy.models.constants import (
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_TRACKING_VERSION,
+    METAXY_FEATURE_VERSION,
+    METAXY_SNAPSHOT_VERSION,
+)
 from metaxy.models.types import FeatureKey
+
+FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
+FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
+SNAPSHOT_VERSION_COL = METAXY_SNAPSHOT_VERSION
 
 # System namespace
 SYSTEM_NAMESPACE = "metaxy-system"
@@ -34,7 +45,7 @@ _suppress_feature_version_warning: ContextVar[bool] = ContextVar(
 @contextmanager
 def allow_feature_version_override() -> Iterator[None]:
     """
-    Context manager to suppress warnings when writing metadata with pre-existing feature_version.
+    Context manager to suppress warnings when writing metadata with pre-existing metaxy_feature_version.
 
     This should only be used in migration code where writing historical feature versions
     is intentional and necessary.
@@ -42,7 +53,7 @@ def allow_feature_version_override() -> Iterator[None]:
     Example:
         ```py
         with allow_feature_version_override():
-            # DataFrame already has feature_version column from migration
+            # DataFrame already has metaxy_feature_version column from migration
             store.write_metadata(MyFeature, df_with_feature_version)
         ```
     """
@@ -54,17 +65,16 @@ def allow_feature_version_override() -> Iterator[None]:
 
 
 # Common Polars schemas for system tables
-# TODO: Migrate to use METAXY_*_COL constants instead of plain names
 FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
-    "feature_version": pl.String,  # TODO: Use METAXY_FEATURE_VERSION_COL
-    "feature_spec_version": pl.String,  # Hash of complete BaseFeatureSpec (all properties)
-    "feature_tracking_version": pl.String,  # Hash of feature_spec_version + project (for migration detection)
+    FEATURE_VERSION_COL: pl.String,
+    FEATURE_SPEC_VERSION_COL: pl.String,  # Hash of complete BaseFeatureSpec (all properties)
+    FEATURE_TRACKING_VERSION_COL: pl.String,  # Hash of feature_spec_version + project (for migration detection)
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,  # Full serialized BaseFeatureSpec
     "feature_class_path": pl.String,
-    "snapshot_version": pl.String,  # TODO: Use METAXY_SNAPSHOT_ID_COL
+    SNAPSHOT_VERSION_COL: pl.String,
 }
 
 MIGRATION_EVENTS_SCHEMA = {

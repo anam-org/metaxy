@@ -179,7 +179,7 @@ class GraphData(FrozenBaseModel):
 
         # Include snapshot_version if present
         if self.snapshot_version is not None:
-            result["snapshot_version"] = self.snapshot_version
+            result["metaxy_snapshot_version"] = self.snapshot_version
 
         # Include old_snapshot_version if present (for diffs)
         if self.old_snapshot_version is not None:
@@ -249,7 +249,7 @@ class GraphData(FrozenBaseModel):
             )
 
         # Extract snapshot_version if present
-        snapshot_version = struct_data.get("snapshot_version")
+        snapshot_version = struct_data.get("metaxy_snapshot_version")
 
         # Extract old_snapshot_version if present (for diffs)
         old_snapshot_version = struct_data.get("old_snapshot_version")

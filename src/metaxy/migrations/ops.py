@@ -171,7 +171,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_version") == from_snapshot_version)
+                    (nw.col("metaxy_snapshot_version") == from_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -184,7 +184,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_version") == to_snapshot_version)
+                    (nw.col("metaxy_snapshot_version") == to_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -201,7 +201,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             from_version_df = from_version_data.head(1).collect()
             if from_version_df.shape[0] > 0:
-                from_feature_version = str(from_version_df["feature_version"][0])
+                from_feature_version = str(from_version_df["metaxy_feature_version"][0])
             else:
                 from_version_data = None
 
@@ -209,7 +209,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             to_version_df = to_version_data.head(1).collect()
             if to_version_df.shape[0] > 0:
-                to_feature_version = str(to_version_df["feature_version"][0])
+                to_feature_version = str(to_version_df["metaxy_feature_version"][0])
             else:
                 to_version_data = None
 
@@ -230,7 +230,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             existing_metadata = store.read_metadata(
                 feature_cls,
                 current_only=False,
-                filters=[nw.col("feature_version") == from_feature_version],
+                filters=[nw.col("metaxy_feature_version") == from_feature_version],
                 allow_fallback=False,
             )
         except FeatureNotFoundError:
@@ -250,7 +250,12 @@ class DataVersionReconciliation(pydantic.BaseModel):
         user_columns = [
             c
             for c in existing_metadata_df.columns
-            if c not in ["provenance_by_field", "feature_version", "snapshot_version"]
+            if c
+            not in [
+                "metaxy_provenance_by_field",
+                "metaxy_feature_version",
+                "metaxy_snapshot_version",
+            ]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
@@ -266,7 +271,9 @@ class DataVersionReconciliation(pydantic.BaseModel):
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_provenance = changed_pl.select(["sample_uid", "provenance_by_field"])
+            new_provenance = changed_pl.select(
+                ["sample_uid", "metaxy_provenance_by_field"]
+            )
             df_to_write = sample_metadata_pl.join(
                 new_provenance, on="sample_uid", how="inner"
             )
@@ -279,8 +286,8 @@ class DataVersionReconciliation(pydantic.BaseModel):
         # Wrap in Narwhals for write_metadata
         df_to_write_nw = nw.from_native(df_to_write)
         df_to_write_nw = df_to_write_nw.with_columns(
-            nw.lit(to_feature_version).alias("feature_version"),
-            nw.lit(to_snapshot_version).alias("snapshot_version"),
+            nw.lit(to_feature_version).alias("metaxy_feature_version"),
+            nw.lit(to_snapshot_version).alias("metaxy_snapshot_version"),
         )
 
         with allow_feature_version_override():

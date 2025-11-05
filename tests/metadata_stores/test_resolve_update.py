@@ -438,7 +438,7 @@ def test_resolve_update_no_upstream(
     source_samples = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"field_a": "hash1"},
                 {"field_a": "hash2"},
                 {"field_a": "hash3"},
@@ -539,7 +539,7 @@ def test_resolve_update_no_upstream(
                     if isinstance(result.added, nw.DataFrame)
                     else result.added
                 ).sort("sample_uid")
-                versions = added_sorted["provenance_by_field"].to_list()
+                versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
                 results[(store_type, prefer_native, use_native_samples)] = {
                     "added": len(result.added),
@@ -625,7 +625,9 @@ def test_resolve_update_with_upstream(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
-            "provenance_by_field": make_provenance_by_field(root_feature, "manual"),
+            "metaxy_provenance_by_field": make_provenance_by_field(
+                root_feature, "manual"
+            ),
         }
     )
 
@@ -677,9 +679,9 @@ def test_resolve_update_with_upstream(
                                     }
                                 ).with_columns(
                                     pl.Series(
-                                        "provenance_by_field",
+                                        "metaxy_provenance_by_field",
                                         result.added.sort("sample_uid")[
-                                            "provenance_by_field"
+                                            "metaxy_provenance_by_field"
                                         ].to_list(),
                                     )
                                 )
@@ -709,7 +711,7 @@ def test_resolve_update_with_upstream(
                         if isinstance(result.added, nw.DataFrame)
                         else result.added
                     ).sort("sample_uid")
-                    versions = added_sorted["provenance_by_field"].to_list()
+                    versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
                     results[(store_type, prefer_native)] = {
                         "added": len(result.added),
@@ -780,7 +782,7 @@ def test_resolve_update_detects_changes(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2", "a3"],
-            "provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
+            "metaxy_provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
         }
     )
 
@@ -789,7 +791,7 @@ def test_resolve_update_detects_changes(
         {
             "sample_uid": [1, 2, 3],
             "value": ["a1", "a2_CHANGED", "a3"],  # Changed
-            "provenance_by_field": make_provenance_by_field(
+            "metaxy_provenance_by_field": make_provenance_by_field(
                 "v_new", [1, 2, 3]
             ),  # All changed to new version
         }
@@ -845,9 +847,9 @@ def test_resolve_update_detects_changes(
                                     }
                                 ).with_columns(
                                     pl.Series(
-                                        "provenance_by_field",
+                                        "metaxy_provenance_by_field",
                                         added_df.sort("sample_uid")[
-                                            "provenance_by_field"
+                                            "metaxy_provenance_by_field"
                                         ].to_list(),
                                     )
                                 )
@@ -873,8 +875,8 @@ def test_resolve_update_detects_changes(
                         }
                     ).with_columns(
                         pl.Series(
-                            "provenance_by_field",
-                            initial_versions["provenance_by_field"].to_list(),
+                            "metaxy_provenance_by_field",
+                            initial_versions["metaxy_provenance_by_field"].to_list(),
                         )
                     )
                     store.write_metadata(downstream_feature, downstream_data)
@@ -914,7 +916,9 @@ def test_resolve_update_detects_changes(
                                     ],
                                 }
                             ).join(
-                                updated.select(["sample_uid", "provenance_by_field"]),
+                                updated.select(
+                                    ["sample_uid", "metaxy_provenance_by_field"]
+                                ),
                                 on="sample_uid",
                                 how="left",
                             )
@@ -954,10 +958,10 @@ def test_resolve_update_detects_changes(
                     for sample_uid in changed_sample_uids:
                         new_version = changed_df_pl.filter(
                             pl.col("sample_uid") == sample_uid
-                        )["provenance_by_field"][0]
+                        )["metaxy_provenance_by_field"][0]
                         old_version = initial_versions.filter(
                             pl.col("sample_uid") == sample_uid
-                        )["provenance_by_field"][0]
+                        )["metaxy_provenance_by_field"][0]
                         version_changes.append(new_version != old_version)
 
                     results[(store_type, prefer_native)] = {
@@ -1057,11 +1061,11 @@ def test_resolve_update_feature_version_change_idempotency(
                     root_data_v1 = pl.DataFrame(
                         {
                             "sample_uid": [1, 2, 3],
-                            "provenance_by_field": root_provenance_dicts,
+                            "metaxy_provenance_by_field": root_provenance_dicts,
                         },
                         schema={
                             "sample_uid": pl.UInt32,
-                            "provenance_by_field": pl.Struct(
+                            "metaxy_provenance_by_field": pl.Struct(
                                 {fn: pl.Utf8 for fn in root_field_names}
                             ),
                         },
@@ -1099,7 +1103,7 @@ def test_resolve_update_feature_version_change_idempotency(
                     # Store results for comparison and snapshot
                     variant_key = f"{store_type}_native={prefer_native}"
                     results[variant_key] = {
-                        "feature_version": initial_leaf_version,
+                        "metaxy_feature_version": initial_leaf_version,
                         "first_run": first_run_stats,
                         "second_run": second_run_stats,
                     }

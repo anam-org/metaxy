@@ -86,7 +86,7 @@ def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: Feature
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
                     {"frames": "hash_v3", "audio": "hash_a3"},
@@ -115,7 +115,7 @@ def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: Feature
     assert mapping["video"] in result.columns
 
     # Verify provenance_by_field column was renamed
-    assert "__upstream_video__provenance_by_field" in result.columns
+    assert "__upstream_video__metaxy_provenance_by_field" in result.columns
 
 
 def test_polars_hash_calculator(
@@ -133,7 +133,7 @@ def test_polars_hash_calculator(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"},
                     {"frames": "hash_v2", "audio": "hash_a2"},
                 ],
@@ -141,7 +141,7 @@ def test_polars_hash_calculator(
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
+    upstream_mapping = {"video": "__upstream_video__metaxy_provenance_by_field"}
 
     # Calculate field provenances
     feature = features["ProcessedVideo"]
@@ -156,14 +156,14 @@ def test_polars_hash_calculator(
 
     # Verify result
     result = with_versions.collect()
-    assert "provenance_by_field" in result.columns
+    assert "metaxy_provenance_by_field" in result.columns
 
     # Convert to Polars to check schema type
     result_pl = result.to_native()
-    assert isinstance(result_pl.schema["provenance_by_field"], pl.Struct)
+    assert isinstance(result_pl.schema["metaxy_provenance_by_field"], pl.Struct)
 
     # Check provenance_by_field has 'default' field field
-    provenance_sample = result["provenance_by_field"][0]
+    provenance_sample = result["metaxy_provenance_by_field"][0]
     assert "default" in provenance_sample
 
 
@@ -175,14 +175,14 @@ def test_polars_hash_calculator_algorithms(
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "hash_v1", "audio": "hash_a1"}
                 ],
             }
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
+    upstream_mapping = {"video": "__upstream_video__metaxy_provenance_by_field"}
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
@@ -207,8 +207,8 @@ def test_polars_hash_calculator_algorithms(
     ).collect()
 
     # Different algorithms should produce different hashes
-    hash_xxhash = result_xxhash["provenance_by_field"][0]["default"]
-    hash_wyhash = result_wyhash["provenance_by_field"][0]["default"]
+    hash_xxhash = result_xxhash["metaxy_provenance_by_field"][0]["default"]
+    hash_wyhash = result_wyhash["metaxy_provenance_by_field"][0]["default"]
     assert hash_xxhash != hash_wyhash
 
 
@@ -220,7 +220,7 @@ def test_polars_diff_resolver_no_current() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -250,7 +250,7 @@ def test_polars_diff_resolver_with_changes() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},  # Unchanged
                     {"default": "hash2_new"},  # Changed
                     {"default": "hash3"},  # Unchanged
@@ -264,7 +264,7 @@ def test_polars_diff_resolver_with_changes() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 5],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},  # Same
                     {"default": "hash2_old"},  # Different
                     {"default": "hash3"},  # Same
@@ -307,7 +307,7 @@ def test_full_pipeline_integration(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -343,7 +343,7 @@ def test_full_pipeline_integration(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "old_hash1"},
                     {"default": "old_hash2"},
                 ],
@@ -385,7 +385,7 @@ def test_polars_joiner_multiple_upstream(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -398,7 +398,7 @@ def test_polars_joiner_multiple_upstream(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"waveform": "w1"},
                     {"waveform": "w2"},
                     {"waveform": "w3"},
@@ -439,7 +439,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "v1"},
                     {"frames": "v2"},
                     {"frames": "v3"},
@@ -453,7 +453,7 @@ def test_polars_joiner_partial_overlap(graph: FeatureGraph) -> None:
         pl.DataFrame(
             {
                 "sample_uid": [2, 3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"waveform": "w2"},
                     {"waveform": "w3"},
                     {"waveform": "w4"},
@@ -518,11 +518,11 @@ def test_polars_calculator_multiple_fields(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                 ],
-                "__upstream_audio__provenance_by_field": [
+                "__upstream_audio__metaxy_provenance_by_field": [
                     {"waveform": "w1"},
                     {"waveform": "w2"},
                 ],
@@ -531,8 +531,8 @@ def test_polars_calculator_multiple_fields(
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__provenance_by_field",
-        "audio": "__upstream_audio__provenance_by_field",
+        "video": "__upstream_video__metaxy_provenance_by_field",
+        "audio": "__upstream_audio__metaxy_provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
@@ -550,12 +550,12 @@ def test_polars_calculator_multiple_fields(
     # Should have provenance_by_field struct with both fields
     # Convert to Polars to access struct fields
     result_pl = result.to_native()
-    provenance_schema = result_pl.schema["provenance_by_field"]
+    provenance_schema = result_pl.schema["metaxy_provenance_by_field"]
     field_names = {f.name for f in provenance_schema.fields}
     assert field_names == {"fusion", "analysis"}
 
     # Different code versions should produce different hashes
-    sample_dv = result["provenance_by_field"][0]
+    sample_dv = result["metaxy_provenance_by_field"][0]
     assert sample_dv["fusion"] != sample_dv["analysis"]
 
 
@@ -569,7 +569,7 @@ def test_polars_calculator_unsupported_algorithm(
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__provenance_by_field": [{"frames": "v1"}],
+                "__upstream_video__metaxy_provenance_by_field": [{"frames": "v1"}],
             }
         ).lazy()
     )
@@ -586,7 +586,9 @@ def test_polars_calculator_unsupported_algorithm(
             joined_upstream=joined_upstream,
             feature_spec=feature.spec(),
             feature_plan=plan,
-            upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
+            upstream_column_mapping={
+                "video": "__upstream_video__metaxy_provenance_by_field"
+            },
             hash_algorithm=FakeAlgorithm(),  # pyright: ignore[reportArgumentType]
         )
 
@@ -602,7 +604,7 @@ def test_diff_resolver_all_unchanged() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -616,7 +618,7 @@ def test_diff_resolver_all_unchanged() -> None:
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -647,7 +649,7 @@ def test_joiner_deterministic_order(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"frames": "v1"}, {"frames": "v2"}],
+                "metaxy_provenance_by_field": [{"frames": "v1"}, {"frames": "v2"}],
             }
         ).lazy()
     )
@@ -656,7 +658,7 @@ def test_joiner_deterministic_order(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"waveform": "w1"}, {"waveform": "w2"}],
+                "metaxy_provenance_by_field": [{"waveform": "w1"}, {"waveform": "w2"}],
             }
         ).lazy()
     )
@@ -743,7 +745,7 @@ def test_feature_join_upstream_override(graph: FeatureGraph):
     joiner = NarwhalsJoiner()
     video_metadata = nw.from_native(
         pl.DataFrame(
-            {"sample_uid": [1], "provenance_by_field": [{"frames": "v1"}]}
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"frames": "v1"}]}
         ).lazy()
     )
 
@@ -801,14 +803,17 @@ def test_feature_resolve_diff_override(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "new1"}, {"default": "new2"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "new1"},
+                    {"default": "new2"},
+                ],
             }
         ).lazy()
     )
 
     current = nw.from_native(
         pl.DataFrame(
-            {"sample_uid": [1], "provenance_by_field": [{"default": "old1"}]}
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "old1"}]}
         ).lazy()
     )
 
@@ -844,7 +849,7 @@ def test_hash_output_snapshots(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "frame_hash_1", "audio": "audio_hash_1"},
                     {"frames": "frame_hash_2", "audio": "audio_hash_2"},
                     {"frames": "frame_hash_3", "audio": "audio_hash_3"},
@@ -853,7 +858,7 @@ def test_hash_output_snapshots(
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
+    upstream_mapping = {"video": "__upstream_video__metaxy_provenance_by_field"}
     feature = features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
 
@@ -866,7 +871,7 @@ def test_hash_output_snapshots(
     )
 
     result = with_versions.collect()
-    hashes = result["provenance_by_field"].struct.field("default").to_list()
+    hashes = result["metaxy_provenance_by_field"].struct.field("default").to_list()
 
     # Snapshot the hashes to detect algorithm changes
     assert hashes == snapshot
@@ -882,17 +887,17 @@ def test_multi_field_hash_snapshots(
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "v1", "audio": "a1"}
                 ],
-                "__upstream_audio__provenance_by_field": [{"waveform": "w1"}],
+                "__upstream_audio__metaxy_provenance_by_field": [{"waveform": "w1"}],
             }
         ).lazy()
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__provenance_by_field",
-        "audio": "__upstream_audio__provenance_by_field",
+        "video": "__upstream_video__metaxy_provenance_by_field",
+        "audio": "__upstream_audio__metaxy_provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
@@ -906,7 +911,7 @@ def test_multi_field_hash_snapshots(
     )
 
     result = with_versions.collect()
-    provenance_by_field = result["provenance_by_field"][0]
+    provenance_by_field = result["metaxy_provenance_by_field"][0]
 
     # Snapshot both field hashes
     field_hashes = {
@@ -943,7 +948,7 @@ def test_single_upstream_single_field_snapshots(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "v1", "audio": "a1"},
                     {"frames": "v2", "audio": "a2"},
                     {"frames": "v3", "audio": "a3"},
@@ -959,12 +964,14 @@ def test_single_upstream_single_field_snapshots(
         joined_upstream=joined_upstream,
         feature_spec=feature.spec(),
         feature_plan=plan,
-        upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
+        upstream_column_mapping={
+            "video": "__upstream_video__metaxy_provenance_by_field"
+        },
         hash_algorithm=hash_algorithm,
     )
 
     result = with_versions.collect()
-    hashes = result["provenance_by_field"].struct.field("default").to_list()
+    hashes = result["metaxy_provenance_by_field"].struct.field("default").to_list()
 
     assert hashes == snapshot
 
@@ -990,11 +997,11 @@ def test_multi_upstream_multi_field_snapshots(
         pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "__upstream_video__provenance_by_field": [
+                "__upstream_video__metaxy_provenance_by_field": [
                     {"frames": "frame1", "audio": "audio1"},
                     {"frames": "frame2", "audio": "audio2"},
                 ],
-                "__upstream_audio__provenance_by_field": [
+                "__upstream_audio__metaxy_provenance_by_field": [
                     {"waveform": "wave1"},
                     {"waveform": "wave2"},
                 ],
@@ -1003,8 +1010,8 @@ def test_multi_upstream_multi_field_snapshots(
     )
 
     upstream_mapping = {
-        "video": "__upstream_video__provenance_by_field",
-        "audio": "__upstream_audio__provenance_by_field",
+        "video": "__upstream_video__metaxy_provenance_by_field",
+        "audio": "__upstream_audio__metaxy_provenance_by_field",
     }
 
     feature = features["MultiUpstreamFeature"]
@@ -1023,7 +1030,7 @@ def test_multi_upstream_multi_field_snapshots(
     # Snapshot both field hashes for both samples
     field_provenance = []
     for i in range(len(result)):
-        dv = result["provenance_by_field"][i]
+        dv = result["metaxy_provenance_by_field"][i]
         field_provenance.append(
             {
                 "sample_uid": result["sample_uid"][i],
@@ -1043,12 +1050,12 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
         pl.DataFrame(
             {
                 "sample_uid": [1],
-                "__upstream_video__provenance_by_field": [{"frames": "v1"}],
+                "__upstream_video__metaxy_provenance_by_field": [{"frames": "v1"}],
             }
         ).lazy()
     )
 
-    upstream_mapping = {"video": "__upstream_video__provenance_by_field"}
+    upstream_mapping = {"video": "__upstream_video__metaxy_provenance_by_field"}
 
     # Same feature, different code versions
     versions_by_code_version = {}
@@ -1089,7 +1096,7 @@ def test_code_version_changes_snapshots(snapshot, graph: FeatureGraph):
         )
 
         result = with_versions.collect()
-        hash_value = result["provenance_by_field"][0]["default"]
+        hash_value = result["metaxy_provenance_by_field"][0]["default"]
         versions_by_code_version[f"code_v{code_version}"] = hash_value
 
     # Different code versions should produce different hashes
@@ -1138,7 +1145,7 @@ def test_upstream_data_changes_snapshots(snapshot, graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "sample_uid": [1],
-                    "__upstream_video__provenance_by_field": provenance_list,
+                    "__upstream_video__metaxy_provenance_by_field": provenance_list,
                 }
             ).lazy()
         )
@@ -1147,11 +1154,15 @@ def test_upstream_data_changes_snapshots(snapshot, graph: FeatureGraph):
             joined_upstream=joined_upstream,
             feature_spec=Processed.spec(),
             feature_plan=plan,
-            upstream_column_mapping={"video": "__upstream_video__provenance_by_field"},
+            upstream_column_mapping={
+                "video": "__upstream_video__metaxy_provenance_by_field"
+            },
         )
 
         result = with_versions.collect()
-        hashes_by_scenario[scenario_name] = result["provenance_by_field"][0]["default"]
+        hashes_by_scenario[scenario_name] = result["metaxy_provenance_by_field"][0][
+            "default"
+        ]
 
     # All scenarios should produce different hashes
     unique_hashes = set(hashes_by_scenario.values())
@@ -1170,7 +1181,7 @@ def test_diff_result_snapshots(snapshot):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4, 5],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_new_hash"},
                     {"default": "unchanged_hash2"},
@@ -1185,7 +1196,7 @@ def test_diff_result_snapshots(snapshot):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 6],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "unchanged_hash"},
                     {"default": "changed_old_hash"},
                     {"default": "unchanged_hash2"},

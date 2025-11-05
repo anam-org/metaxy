@@ -148,7 +148,7 @@ def history(
 
         # Add rows
         for row in snapshots_df.iter_rows(named=True):
-            snapshot_version = row["snapshot_version"]
+            snapshot_version = row["metaxy_snapshot_version"]
             recorded_at = row["recorded_at"].strftime("%Y-%m-%d %H:%M:%S")
             feature_count = str(row["feature_count"])
 
@@ -248,7 +248,7 @@ def describe(
 
         # Display summary table
         console.print()
-        table_title = f"Graph Snapshot: {info['snapshot_version']}"
+        table_title = f"Graph Snapshot: {info['metaxy_snapshot_version']}"
         if context.project:
             table_title += f" (Project: {context.project})"
 
@@ -538,7 +538,7 @@ def render(
                 snapshot_data[feature_key_str] = {
                     "feature_spec": json.loads(row["feature_spec"]),
                     "feature_class_path": row["feature_class_path"],
-                    "feature_version": row["feature_version"],
+                    "metaxy_feature_version": row["metaxy_feature_version"],
                 }
 
             # Reconstruct graph from snapshot

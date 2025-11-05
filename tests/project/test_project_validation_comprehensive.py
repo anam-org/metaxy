@@ -123,7 +123,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -163,7 +163,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -201,7 +201,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -252,7 +252,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field1": [10, 20, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field1": "hash1"},
                     {"field1": "hash2"},
                     {"field1": "hash3"},
@@ -263,7 +263,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field2": [100, 200, 300],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field2": "hash4"},
                     {"field2": "hash5"},
                     {"field2": "hash6"},
@@ -373,11 +373,11 @@ class TestProjectValidationComprehensive:
         df = pl.DataFrame(
             {
                 "project": ["user_project"],
-                "snapshot_version": ["snap1"],
+                "metaxy_snapshot_version": ["snap1"],
                 "feature_key": ["test/feature"],
-                "feature_version": ["v1"],
-                "feature_spec_version": ["spec1"],
-                "feature_tracking_version": ["track1"],
+                "metaxy_feature_version": ["v1"],
+                "metaxy_feature_spec_version": ["spec1"],
+                "metaxy_feature_tracking_version": ["track1"],
                 "recorded_at": [datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)],
                 "feature_spec": ["{}"],
                 "feature_class_path": ["test.TestFeature"],

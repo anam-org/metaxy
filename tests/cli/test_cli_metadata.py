@@ -35,7 +35,9 @@ def _write_sample_metadata(
         {
             "sample_uid": sample_uids,
             "value": [f"val_{i}" for i in sample_uids],
-            "provenance_by_field": [{"default": f"hash{i}"} for i in sample_uids],
+            "metaxy_provenance_by_field": [
+                {"default": f"hash{i}"} for i in sample_uids
+            ],
         }
     )
 

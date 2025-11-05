@@ -180,6 +180,7 @@ nav:
   - Examples:
     - Recompute: examples/recompute.md
   - CLI: reference/cli.md
+  - System Columns: reference/system-columns.md
   - API:
     - reference/api/index.md
     - Definitions:
