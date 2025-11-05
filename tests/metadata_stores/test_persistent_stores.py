@@ -1,7 +1,9 @@
 """Store-agnostic tests for persistent metadata stores.
 
-These tests run against all persistent store implementations
-(InMemoryMetadataStore, DuckDBMetadataStore, etc.) using pytest-cases parametrization.
+These tests exercise a representative subset of store implementations
+(InMemoryMetadataStore and DuckDBMetadataStore) so we cover both in-memory and
+persistent backends without paying the cost of running every combination.
+Store-specific behavior is covered in dedicated test modules.
 """
 
 from typing import Any

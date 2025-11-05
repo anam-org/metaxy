@@ -46,7 +46,331 @@ FeaturePlanOutput = tuple[
 ]
 
 
-# ============= FEATURE GRAPH CONFIGURATIONS =============
+def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyIncrement):
+    """Verify that lazy frames from IbisMetadataStore contain SQL and haven't been materialized.
+
+    Args:
+        store: The metadata store instance
+        lazy_result: LazyIncrement with lazy frames to verify
+    """
+    from metaxy.metadata_store.ibis import IbisMetadataStore
+
+    if not isinstance(store, IbisMetadataStore):
+        return  # Only check for Ibis-based stores
+
+    # Check each lazy frame in the result
+    for frame_name in ["added", "changed", "removed"]:
+        lazy_frame = getattr(lazy_result, frame_name)
+
+        # Get the native lazy frame
+        native_frame = lazy_frame.to_native()
+
+        # For Ibis-based stores, the native frame should be an Ibis expression
+        # that can be compiled to SQL
+        import ibis
+
+        if isinstance(native_frame, ibis.expr.types.Table):
+            # Verify we can get SQL from it
+            try:
+                sql = store.conn.compile(native_frame)
+                assert isinstance(sql, str), (
+                    f"{frame_name} lazy frame should have SQL representation"
+                )
+                # Check that it's actually SQL (contains SELECT, FROM, etc.)
+                assert any(keyword in sql.upper() for keyword in ["SELECT", "FROM"]), (
+                    f"{frame_name} should contain SQL keywords"
+                )
+            except Exception as e:
+                raise AssertionError(
+                    f"Failed to get SQL from {frame_name} lazy frame: {e}"
+                )
+
+
+def get_available_store_types() -> list[str]:
+    """Get list of available store types from StoreCases.
+
+    Dynamically discovers which store types are available by inspecting
+    the StoreCases class for case methods. This allows different branches
+    to have different store types without hardcoding the list while still
+    allowing us to limit default parametrization to a fast subset.
+    """
+    from .conftest import StoreCases  # type: ignore[import-not-found]
+
+    store_types = []
+    for attr_name in dir(StoreCases):
+        if attr_name.startswith("case_") and not attr_name.startswith("case__"):
+            # Extract store type name from case method (e.g., "case_duckdb" -> "duckdb")
+            store_type = attr_name[5:]  # Remove "case_" prefix
+            store_types.append(store_type)
+
+    preferred_order = ["inmemory", "duckdb"]
+    preferred_store_types = [st for st in preferred_order if st in store_types]
+
+    # Fall back to all discovered stores if preferred ones are not available
+    return preferred_store_types or store_types
+
+
+def create_store(
+    store_type: str,
+    prefer_native: bool,
+    hash_algorithm: HashAlgorithm,
+    params: dict[str, Any],
+) -> MetadataStore:
+    """Create a store instance for testing.
+
+    Args:
+        store_type: "inmemory", "duckdb", or "clickhouse"
+        prefer_native: Whether to prefer native field provenance calculations
+        hash_algorithm: Hash algorithm to use
+        params: Store-specific parameters dict containing:
+            - tmp_path: Temporary directory for file-based stores (duckdb)
+            - clickhouse_db: Connection string for ClickHouse (optional)
+
+    Returns:
+        Configured metadata store instance
+    """
+    tmp_path = params.get("tmp_path")
+
+    if store_type == "inmemory":
+        return InMemoryMetadataStore(
+            hash_algorithm=hash_algorithm, prefer_native=prefer_native
+        )
+    elif store_type == "duckdb":
+        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
+        db_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
+        )
+        extensions: list[str] = (
+            ["hashfuncs"]
+            if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]
+            else []
+        )
+        return DuckDBMetadataStore(
+            db_path,
+            hash_algorithm=hash_algorithm,
+            extensions=extensions,  # pyright: ignore[reportArgumentType]
+            prefer_native=prefer_native,
+        )
+    elif store_type == "duckdb_ducklake":
+        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
+        db_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
+        )
+        metadata_path = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_catalog.duckdb"
+        )
+        storage_dir = (
+            tmp_path
+            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_storage"
+        )
+
+        ducklake_config = {
+            "alias": "integration_lake",
+            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
+            "storage_backend": {"type": "local", "path": str(storage_dir)},
+        }
+
+        extensions_ducklake: list[str] = ["json"]
+        if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]:
+            extensions_ducklake.append("hashfuncs")
+
+        return DuckDBMetadataStore(
+            db_path,
+            hash_algorithm=hash_algorithm,
+            extensions=extensions_ducklake,  # pyright: ignore[reportArgumentType]
+            prefer_native=prefer_native,
+            ducklake=ducklake_config,
+        )
+    elif store_type == "clickhouse":
+        clickhouse_db = params.get("clickhouse_db")
+        if clickhouse_db is None:
+            raise ValueError(
+                "clickhouse_db parameter required for clickhouse store type"
+            )
+        # ClickHouse uses the same database but tables will be unique per feature
+        # However, prefer_native variants need isolation since they write to same tables
+        # We solve this by using the same connection - the fixture provides a clean database per test
+        # Each test gets its own database, so prefer_native variants within the same test share tables
+        # This is the root cause of duplicates - we need to drop tables between variants
+        return ClickHouseMetadataStore(
+            clickhouse_db,
+            hash_algorithm=hash_algorithm,
+            prefer_native=prefer_native,
+        )
+    else:
+        raise ValueError(f"Unknown store type: {store_type}")
+
+
+# ============= FEATURE LIBRARY =============
+# Define all features once, then add them to registries on demand
+
+
+# Root features (no dependencies)
+class RootA(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "root_a"]),
+        fields=[
+            FieldSpec(key=FieldKey(["default"]), code_version="1"),
+        ],
+    ),
+):
+    """Root feature with single default field."""
+
+    pass
+
+
+class MultiFieldRoot(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "multi_root"]),
+        fields=[
+            FieldSpec(key=FieldKey(["train"]), code_version="1"),
+            FieldSpec(key=FieldKey(["test"]), code_version="1"),
+        ],
+    ),
+):
+    """Root feature with multiple fields."""
+
+    pass
+
+
+# Intermediate features (depend on roots)
+class BranchB(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "branch_b"]),
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "root_a"]),
+                        fields=[FieldKey(["default"])],
+                    )
+                ],
+            ),
+        ],
+    ),
+):
+    """Branch depending on RootA."""
+
+    pass
+
+
+class BranchC(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "branch_c"]),
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "root_a"]),
+                        fields=[FieldKey(["default"])],
+                    )
+                ],
+            ),
+        ],
+    ),
+):
+    """Another branch depending on RootA."""
+
+    pass
+
+
+# Leaf features (converge multiple branches)
+class LeafSimple(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "leaf_simple"]),
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "root_a"]),
+                        fields=[FieldKey(["default"])],
+                    )
+                ],
+            ),
+        ],
+    ),
+):
+    """Simple leaf depending on single root."""
+
+    pass
+
+
+class LeafDiamond(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "leaf_diamond"]),
+        deps=[
+            FeatureDep(feature=FeatureKey(["resolve", "branch_b"]), columns=()),
+            FeatureDep(feature=FeatureKey(["resolve", "branch_c"]), columns=()),
+        ],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "branch_b"]),
+                        fields=[FieldKey(["default"])],
+                    ),
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "branch_c"]),
+                        fields=[FieldKey(["default"])],
+                    ),
+                ],
+            ),
+        ],
+    ),
+):
+    """Diamond leaf converging two branches."""
+
+    pass
+
+
+class LeafMultiField(
+    Feature,
+    spec=SampleFeatureSpec(
+        key=FeatureKey(["resolve", "leaf_multi"]),
+        deps=[FeatureDep(feature=FeatureKey(["resolve", "multi_root"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["resolve", "multi_root"]),
+                        fields=[
+                            FieldKey(["train"]),
+                            FieldKey(["test"]),
+                        ],
+                    )
+                ],
+            ),
+        ],
+    ),
+):
+    """Leaf depending on multi-field root."""
+
+    pass
+
+
+# ============= REGISTRY FIXTURES =============
 
 
 class FeatureGraphCases:
