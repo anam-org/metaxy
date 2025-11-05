@@ -5,6 +5,9 @@ ruff:
     uv run ruff check --fix
     uv run ruff format
 
+types:
+    uv run basedpyright --level error
+
 typecheck:
     uv run basedpyright --level error
 

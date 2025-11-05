@@ -97,6 +97,10 @@ docs = [
   "examples",
 ]
 
+delta = [
+  "deltalake>=0.20.0",
+]
+
 [tool.ruff]
 target-version = "py310"
 
