@@ -111,6 +111,6 @@ def get_system_metadata():
         # Use with Alembic target_metadata
         ```
     """
-    # All tables are automatically registered in SQLModel.metadata
-    # when their classes are defined with table=True
+    # SQLModel.metadata is a class variable that contains all registered tables
+    # The tables are automatically registered when the class is defined with table=True
     return SQLModel.metadata

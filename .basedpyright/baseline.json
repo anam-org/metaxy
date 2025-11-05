@@ -450,14 +450,6 @@
                 }
             },
             {
-                "code": "reportImplicitStringConcatenation",
-                "range": {
-                    "startColumn": 16,
-                    "endColumn": 83,
-                    "lineCount": 2
-                }
-            },
-            {
                 "code": "reportUnannotatedClassAttribute",
                 "range": {
                     "startColumn": 13,

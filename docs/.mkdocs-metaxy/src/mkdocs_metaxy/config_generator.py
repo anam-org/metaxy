@@ -23,10 +23,12 @@ def get_env_var_name(
         Environment variable name (e.g., "METAXY_EXT__SQLMODEL__ENABLE")
 
     Example:
-        >>> get_env_var_name(["store"], "METAXY_")
-        'METAXY_STORE'
-        >>> get_env_var_name(["ext", "sqlmodel", "enable"], "METAXY_")
-        'METAXY_EXT__SQLMODEL__ENABLE'
+        ```py
+        get_env_var_name(["store"], "METAXY_")
+        # 'METAXY_STORE'
+        get_env_var_name(["ext", "sqlmodel", "enable"], "METAXY_")
+        # 'METAXY_EXT__SQLMODEL__ENABLE'
+        ```
     """
     var_name = env_nested_delimiter.join(field_path)
     return f"{env_prefix}{var_name}".upper()
@@ -42,10 +44,12 @@ def get_toml_path(field_path: list[str]) -> str:
         TOML key path (e.g., "ext.sqlmodel.enable")
 
     Example:
-        >>> get_toml_path(["store"])
-        'store'
-        >>> get_toml_path(["ext", "sqlmodel", "enable"])
-        'ext.sqlmodel.enable'
+        ```py
+        get_toml_path(["store"])
+        # 'store'
+        get_toml_path(["ext", "sqlmodel", "enable"])
+        # 'ext.sqlmodel.enable'
+        ```
     """
     return ".".join(field_path)
 
@@ -61,16 +65,18 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
         Human-readable type string with optional links
 
     Example:
-        >>> format_field_type(field_info)
-        'str | None'
-        >>> format_field_type(field_info, add_links=True)
-        '[StoreConfig](#storeconfig) | None'
+        ```py
+        format_field_type(field_info)
+        # 'str | None'
+        format_field_type(field_info, add_links=True)
+        # '[StoreConfig](#storeconfig) | None'
+        ```
     """
+    # Handle type representation
     annotation = field_info.annotation
     if annotation is None:
         return "Any"
 
-    # Handle type representation
     type_str = str(annotation)
 
     # Clean up common patterns
@@ -146,9 +152,11 @@ def extract_field_info(
         - is_nested: Whether this represents a nested model
 
     Example:
-        >>> info = extract_field_info(MetaxyConfig)
-        >>> info[0]
-        {'name': 'store', 'path': ['store'], 'type': 'str', 'default': 'dev', ...}
+        ```py
+        info = extract_field_info(MetaxyConfig)
+        info[0]
+        # {'name': 'store', 'path': ['store'], 'type': 'str', 'default': 'dev', ...}
+        ```
     """
     path_prefix = path_prefix or []
     fields_info = []
@@ -238,11 +246,12 @@ def generate_toml_example(
         TOML configuration string
 
     Example:
-        >>> toml = generate_toml_example(fields, include_tool_section=True)
-        >>> print(toml)
-        [tool.metaxy]
-        store = "dev"
-        ...
+        ```py
+        toml = generate_toml_example(fields, include_tool_section=True)
+        print(toml)
+        # [tool.metaxy]
+        # store = "dev"
+        ```
     """
     lines = []
 

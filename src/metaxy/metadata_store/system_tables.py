@@ -33,8 +33,7 @@ _suppress_feature_version_warning: ContextVar[bool] = ContextVar(
 
 @contextmanager
 def allow_feature_version_override() -> Iterator[None]:
-    """
-    Context manager to suppress warnings when writing metadata with pre-existing feature_version.
+    """Context manager to suppress warnings when writing metadata with pre-existing feature_version.
 
     This should only be used in migration code where writing historical feature versions
     is intentional and necessary.
@@ -92,6 +91,7 @@ class SystemTableStorage:
 
         Args:
             store: Metadata store to use for system tables
+
         """
         self.store = store
 
@@ -107,6 +107,7 @@ class SystemTableStorage:
 
         Returns:
             List of migration IDs that have been started/executed
+
         """
         # First try to read without filter to check if table exists
         lazy = self.store.read_metadata_in_store(MIGRATION_EVENTS_KEY)
@@ -148,6 +149,7 @@ class SystemTableStorage:
             feature_key: Feature key (empty for migration-level events)
             rows_affected: Number of rows affected (for feature events)
             error_message: Error message (empty if no error)
+
         """
         record = pl.DataFrame(
             {
@@ -174,6 +176,7 @@ class SystemTableStorage:
 
         Returns:
             Lazy frame with events sorted by timestamp
+
         """
         # Read the table first without project filter
         lazy = self.store.read_metadata_in_store(
@@ -199,8 +202,8 @@ class SystemTableStorage:
 
         Returns:
             Status: "not_started", "in_progress", "completed", "failed"
-        """
 
+        """
         events_lazy = self.get_migration_events(migration_id, project=project)
         events_df = events_lazy.collect().to_polars()
 
@@ -232,6 +235,7 @@ class SystemTableStorage:
 
         Returns:
             True if feature completed without errors
+
         """
         events_lazy = self.get_migration_events(migration_id, project)
         events_df = (
@@ -257,6 +261,7 @@ class SystemTableStorage:
 
         Returns:
             List of feature keys
+
         """
         events_lazy = self.get_migration_events(migration_id, project=project)
         events_df = (
@@ -281,6 +286,7 @@ class SystemTableStorage:
 
         Returns:
             Dict mapping feature key to error message
+
         """
         events_lazy = self.get_migration_events(migration_id, project=project)
         events_df = (
@@ -311,6 +317,7 @@ class SystemTableStorage:
 
         Returns:
             Lazy frame with migration events
+
         """
         lazy = self.store.read_metadata_in_store(MIGRATION_EVENTS_KEY)
 
@@ -346,6 +353,7 @@ class SystemTableStorage:
             - completed_features: List of completed feature keys
             - failed_features: Dict of failed feature keys to error messages
             - total_rows_affected: Total rows affected across all features
+
         """
         # Get all migration IDs
         migration_ids = self.list_executed_migrations(project)
@@ -420,6 +428,7 @@ class SystemTableStorage:
             - completed_at: Timestamp when migration completed
             - features_count: Number of features affected
             - rows_affected: Total rows affected
+
         """
         lazy = self.store.read_metadata_in_store(MIGRATION_EVENTS_KEY)
 
