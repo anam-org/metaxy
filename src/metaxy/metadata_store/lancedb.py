@@ -69,14 +69,15 @@ class LanceDBMetadataStore(MetadataStore):
         """
         Initialize [LanceDB](https://lancedb.github.io/lancedb/) metadata store.
 
-        The database directory is created automatically if it doesn't exist.
+        The database directory is created automatically if it doesn't exist (local paths only).
         Tables are created on-demand when features are first written.
 
         Args:
-            database_path: Directory path for LanceDB tables. Can be:
+            database_path: Directory path or URI for LanceDB tables. Can be:
                 - Local path: `"./metadata"` or `Path("./metadata")`
                 - S3 URI: `"s3://bucket/path/to/db"` (requires AWS credentials)
-                - Any URI supported by LanceDB
+                - LanceDB Cloud: `"db://database-name"` (requires API key via LANCEDB_API_KEY env var)
+                - Remote URI: Any URI supported by LanceDB (http://, https://, gs://, etc.)
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
             **kwargs: Passed to [metaxy.metadata_store.base.MetadataStore][]
@@ -97,12 +98,18 @@ class LanceDBMetadataStore(MetadataStore):
                 hash_algorithm=HashAlgorithm.SHA256
             )
 
-            # With fallback to production store
-            prod = LanceDBMetadataStore("s3://prod/metadata")
+            # S3 backend (requires AWS credentials)
+            prod = LanceDBMetadataStore("s3://prod-bucket/metadata")
+
+            # LanceDB Cloud (requires LANCEDB_API_KEY environment variable)
+            cloud = LanceDBMetadataStore("db://my-database")
+
+            # Local with fallback to production
             dev = LanceDBMetadataStore("./dev", fallback_stores=[prod])
             ```
         """
-        self.database_path = Path(database_path)
+        # Store as string to handle both local paths and remote URIs
+        self.database_path = str(database_path)
         self._conn: Any | None = None
         super().__init__(fallback_stores=fallback_stores, **kwargs)
 
@@ -129,16 +136,22 @@ class LanceDBMetadataStore(MetadataStore):
     def open(self) -> None:
         """Open LanceDB connection.
 
-        Creates the database directory if it doesn't exist.
+        For local filesystem paths, creates the directory if it doesn't exist.
+        For remote URIs (S3, LanceDB Cloud, etc.), connects directly.
         Tables are created on-demand when features are first written.
 
         Raises:
             ImportError: If lancedb package is not installed
+            ConnectionError: If remote connection fails (e.g., invalid credentials)
         """
-        self.database_path.mkdir(parents=True, exist_ok=True)
         import lancedb
 
-        self._conn = lancedb.connect(str(self.database_path))
+        # Only create directory for local filesystem paths
+        # Remote URIs (s3://, db://, http://, https://, gs://, etc.) are handled by LanceDB
+        if not self._is_remote_uri(self.database_path):
+            Path(self.database_path).mkdir(parents=True, exist_ok=True)
+
+        self._conn = lancedb.connect(self.database_path)
 
     def close(self) -> None:
         """Close LanceDB connection.
@@ -167,6 +180,27 @@ class LanceDBMetadataStore(MetadataStore):
         return self._conn
 
     # Helpers -----------------------------------------------------------------
+
+    @staticmethod
+    def _is_remote_uri(path: str) -> bool:
+        """Check if path is a remote URI rather than local filesystem path.
+
+        Args:
+            path: Database path or URI
+
+        Returns:
+            True if path is a remote URI (s3://, db://, http://, etc.)
+        """
+        remote_prefixes = (
+            "s3://",  # S3 and S3-compatible storage
+            "db://",  # LanceDB Cloud
+            "http://",  # HTTP remote
+            "https://",  # HTTPS remote
+            "gs://",  # Google Cloud Storage
+            "az://",  # Azure Blob Storage
+            "file://",  # Explicit file URI
+        )
+        return path.startswith(remote_prefixes)
 
     def _table_name(self, feature_key: FeatureKey) -> str:
         return feature_key.table_name
