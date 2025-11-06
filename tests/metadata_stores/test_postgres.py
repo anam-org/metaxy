@@ -88,3 +88,41 @@ def test_postgres_display_with_connection_string() -> None:
 
     display = store.display()
     assert "connection_string=postgresql://user:pass@localhost:5432/metaxy" in display
+
+
+def test_postgres_default_hash_algorithm_is_md5() -> None:
+    """Test that default hash algorithm is MD5 (no extension required)."""
+    store = PostgresMetadataStore(host="localhost", database="metaxy")
+
+    assert store._get_default_hash_algorithm() == HashAlgorithm.MD5
+    # Default hash algorithm should be MD5 unless explicitly overridden
+    assert store.hash_algorithm == HashAlgorithm.MD5
+
+
+def test_postgres_enable_pgcrypto_parameter() -> None:
+    """Test that enable_pgcrypto parameter is stored correctly."""
+    store_with_pgcrypto = PostgresMetadataStore(
+        host="localhost", database="metaxy", enable_pgcrypto=True
+    )
+    store_without_pgcrypto = PostgresMetadataStore(
+        host="localhost", database="metaxy", enable_pgcrypto=False
+    )
+
+    assert store_with_pgcrypto.enable_pgcrypto is True
+    assert store_without_pgcrypto.enable_pgcrypto is False
+
+
+def test_postgres_sha256_with_explicit_hash_algorithm() -> None:
+    """Test that SHA256 can be explicitly set as hash algorithm."""
+    store = PostgresMetadataStore(
+        host="localhost",
+        database="metaxy",
+        hash_algorithm=HashAlgorithm.SHA256,
+    )
+
+    assert store.hash_algorithm == HashAlgorithm.SHA256
+    # Should have SHA256 generator
+    generators = store._get_hash_sql_generators()
+    assert HashAlgorithm.SHA256 in generators
+    # Should also have MD5 (inherited from base)
+    assert HashAlgorithm.MD5 in generators
