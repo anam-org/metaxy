@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import ibis.expr.types
     import ibis.expr.types.relations
 
-    from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
+    from metaxy.models.feature_spec import FeatureSpecWithIDColumns
     from metaxy.models.plan import FeaturePlan
 
 
@@ -96,7 +96,7 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "BaseFeatureSpecWithIDColumns",
+        feature_spec: "FeatureSpecWithIDColumns",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

@@ -8,14 +8,14 @@ from metaxy.data_versioning.calculators.polars import PolarsProvenanceByFieldCal
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
 def test_feature_spec_id_columns_default():
     """Test that id_columns defaults to None and is interpreted as ["sample_uid"]."""
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
     assert spec.id_columns == ["sample_uid"]
@@ -23,7 +23,7 @@ def test_feature_spec_id_columns_default():
 
 def test_feature_spec_id_columns_custom():
     """Test that custom id_columns can be specified."""
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
@@ -33,7 +33,7 @@ def test_feature_spec_id_columns_custom():
 def test_feature_spec_id_columns_validation():
     """Test that empty id_columns raises validation error."""
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
-        TestingFeatureSpec(
+        SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
         )
@@ -46,7 +46,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
     # Create feature with default ID columns
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
         ),
     ):
@@ -54,7 +54,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
         ),
@@ -99,7 +99,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
     # Create features with custom ID column
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],
         ),
@@ -108,7 +108,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["user_id"],
@@ -155,7 +155,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
     # Create features with composite key
     class Upstream1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream1"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -164,7 +164,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
     class Upstream2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream2"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -173,7 +173,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[
                 FeatureDep(feature=FeatureKey(["upstream1"])),
@@ -251,7 +251,7 @@ def test_narwhals_joiner_empty_upstream_custom_id(graph: FeatureGraph):
     # Create source feature with custom ID columns
     class SourceFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["entity_id", "timestamp"],
         ),
@@ -282,7 +282,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
     # Create features with custom ID columns
     class VideoFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             id_columns=["content_id"],
             fields=[
@@ -294,7 +294,7 @@ def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
 
     class ProcessedFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["processed"]),
             deps=[FeatureDep(feature=FeatureKey(["video"]))],
             id_columns=["content_id"],
@@ -382,12 +382,12 @@ def test_feature_spec_version_includes_id_columns():
     """Test that feature_spec_version changes when id_columns change."""
 
     # Create two specs with same everything except id_columns
-    spec1 = TestingFeatureSpec(
+    spec1 = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         # Uses default id_columns (None)
     )
 
-    spec2 = TestingFeatureSpec(
+    spec2 = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id"],  # Custom id_columns
     )
@@ -397,7 +397,7 @@ def test_feature_spec_version_includes_id_columns():
     assert spec1.feature_spec_version != spec2.feature_spec_version
 
     # But if we create another spec with same id_columns, versions should match
-    spec3 = TestingFeatureSpec(
+    spec3 = SampleFeatureSpec(
         key=FeatureKey(["test"]),  # Same key
         id_columns=["user_id"],  # Same id_columns as spec2
     )
@@ -416,7 +416,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
     # Create upstream with one set of ID columns
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],  # Upstream declares user_id
         ),
@@ -426,7 +426,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
     # Create target with different ID columns
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["user_id", "session_id"],  # Target needs both columns
@@ -492,7 +492,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
     # Scenario 3: With multiple upstreams, all must have required ID columns
     class Upstream2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream2"]),
             id_columns=["user_id"],
         ),
@@ -501,7 +501,7 @@ def test_mixed_id_columns_behavior(graph: FeatureGraph):
 
     class MultiUpstreamTarget(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=[
                 FeatureDep(feature=FeatureKey(["upstream"])),
@@ -554,7 +554,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
     # Create features with custom ID columns
     class UserFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["user"]),
             id_columns=["user_id"],
             fields=[
@@ -566,7 +566,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
 
     class SessionFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["session"]),
             deps=[FeatureDep(feature=FeatureKey(["user"]))],
             id_columns=["user_id", "session_id"],
@@ -636,7 +636,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     # Create feature with default ID columns
     class Feature1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             # id_columns=None (default)
@@ -647,7 +647,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     # Create identical feature but with explicit custom ID columns
     class Feature2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             id_columns=["user_id"],  # Custom ID columns
@@ -737,15 +737,15 @@ def test_snapshot_stability_with_id_columns(snapshot):
 
     # Create specs with different id_columns configurations
     specs = {
-        "default": TestingFeatureSpec(
+        "default": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             # id_columns=None (default)
         ),
-        "single_custom": TestingFeatureSpec(
+        "single_custom": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=["user_id"],
         ),
-        "composite": TestingFeatureSpec(
+        "composite": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -763,7 +763,7 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
 
     class TripleKeyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["triple"]),
             id_columns=["tenant_id", "user_id", "event_id"],
         ),
@@ -798,7 +798,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
     # Test Case 1: Upstream has extra ID columns (should work)
     class UpstreamWithExtra(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_extra"]),
             id_columns=["user_id", "session_id", "extra_id"],
         ),
@@ -807,7 +807,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
 
     class TargetFewerColumns(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target_fewer"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream_extra"]))],
             id_columns=["user_id", "session_id"],  # Doesn't require extra_id
@@ -846,7 +846,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
     # Test Case 2: Empty upstream refs (source feature) - should work
     class SourceWithCustomID(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["entity_id"],
         ),
@@ -868,7 +868,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
     # Test Case 3: Multiple upstreams with different missing columns
     class Upstream1Missing(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["up1"]),
             id_columns=["user_id"],  # Missing session_id
         ),
@@ -877,7 +877,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
 
     class Upstream2Missing(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["up2"]),
             id_columns=["session_id"],  # Missing user_id
         ),
@@ -886,7 +886,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
 
     class TargetNeedsBoth(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target_both"]),
             deps=[
                 FeatureDep(feature=FeatureKey(["up1"])),
@@ -940,7 +940,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
     # Test Case 4: Proper error message formatting
     class SingleMissing(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["single"]),
             id_columns=["id1"],
         ),
@@ -949,7 +949,7 @@ def test_id_column_validation_edge_cases(graph: FeatureGraph):
 
     class TargetMultipleIDs(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target_multi"]),
             deps=[FeatureDep(feature=FeatureKey(["single"]))],
             id_columns=["id1", "id2", "id3"],  # Multiple required
@@ -992,7 +992,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
     class LegacyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["legacy"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             # No id_columns specified - should default to ["sample_uid"]

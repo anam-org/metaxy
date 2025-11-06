@@ -35,7 +35,7 @@
       }),
       dict({
         'feature_key': 'upstream',
-        'metaxy_feature_spec_version': '8d13977172cfa9d37b0cd5e23e03496e9c94c27762af5678766b86d0fd3f4a42',
+        'metaxy_feature_spec_version': '774e87d7aab23f02404e2936d3787067ebf509c08918a55a64578ebad1a935f7',
         'metaxy_feature_version': '8a2ffeab8da447095c5ee7a77e5635a1e16e7f3605021732f50f7002fa258398',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),

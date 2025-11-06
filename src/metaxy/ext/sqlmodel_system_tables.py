@@ -54,7 +54,7 @@ class FeatureVersionsTable(SQLModel, table=True):
         sa_column_kwargs={"name": METAXY_FEATURE_VERSION},
     )
     metaxy_feature_spec_version: str = Field(
-        index=True,  # Hash of complete BaseFeatureSpec
+        index=True,  # Hash of complete FeatureSpec
         sa_column_kwargs={"name": METAXY_FEATURE_SPEC_VERSION},
     )
     metaxy_feature_tracking_version: str = Field(

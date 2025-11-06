@@ -1,7 +1,7 @@
 # Feature System
 
 Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
-It has been inspired by Software-Defined Assets in [Dagster](https://dagster.io/).
+It has been inspired by [Dagster](https://dagster.io/)'s Software-Defined Assets and [Nix](https://nixos.org/).
 
 Features represent tabular **metadata**, typically containing references to external multi-modal **data** such as files, images, or videos.
 But it can be just pure **metadata** as well.
@@ -24,59 +24,25 @@ Features live on a global `FeatureGraph` object (typically users do not need to 
 Features are bound to a specific Metaxy project, but can be moved between projects over time.
 Features must have unique (across all projects) `FeatureKey` associated with them.
 
-## Feature Specs
-
-Before we can define a `Feature`, we must first create a `FeatureSpec` object.
-But before we get to an example, it's necessary to understand the concept of ID columns.
-Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`.
-Very often these ID columns would stay the same across many feature specs, therefore it makes a lot of sense to define them on a shared base class.
-
-Some boilerplate with typing is involved (this is typically a good thing):
-
-```py
-from typing import TypeAlias
-
-from metaxy import BaseFeatureSpec
-
-
-VideoIds: TypeAlias = tuple[str]
-
-
-class VideoFeatureSpec(BaseFeatureSpec):
-    id_columns: VideoIds = ("video_id",)
-```
-
-`BaseFeatureSpec` is a [Pydantic](https://docs.pydantic.dev/latest/) model, so all normal Pydantic features apply.
-
-With our `VideoFeatureSpec` in place, we can proceed to defining features that would be using it.
-
 ## Feature Definitions
 
-Metaxy provides a `BaseFeature` class that can be extended to make user-defined features.
-It's a Pydantic model as well.
-User-defined `BaseFeature` classes must have fields matching ID columns of the `FeatureSpec` they are using.
-
-With respect to the same DRY principle, we can define a shared base class for features that use the `VideoFeatureSpec`.
+Metaxy provides a [`BaseFeature`][metaxy.BaseFeature] class that can be extended to create user-defined features.
+It's a [Pydantic](https://docs.pydantic.dev/latest/) model.
 
 ```py
-from metaxy import BaseFeature
+from metaxy import BaseFeature, FeatureSpec
 
 
-class BaseVideoFeature(
-    BaseFeature, spec=None
-):  # spec=None is important to tell Metaxy this is a base class
-    video_id: str
-```
-
-Now we are finally ready to define an actual feature.
-
-```py
-class VideoFeature(BaseVideoFeature, spec=VideoFeatureSpec(key="/raw/video")):
+class VideoFeature(
+    BaseFeature, spec=FeatureSpec(key="/raw/video", id_columns=["video_id"])
+):
     path: str
 ```
 
+Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your `FeatureSpec`.
+
 That's it!
-That's a root feature, it doesn't have any dependencies.
+Since it's a root feature, it doesn't have any dependencies.
 Easy.
 
 You may now use `VideoFeature.spec()` class method to access the original feature spec: it's bound to the class.
@@ -85,8 +51,8 @@ Now let's define a child feature.
 
 ```py
 class Transcript(
-    BaseVideoFeature,
-    spec=VideoFeatureSpec(key="/processed/transcript", deps=[VideoFeature]),
+    BaseFeature,
+    spec=FeatureSpec(key="/processed/transcript", id_columns=["video_id"] deps=[VideoFeature]),
 ):
     transcript_path: str
     speakers_json_path: str
@@ -112,21 +78,22 @@ For example, a `Video` feature -- an `.mp4` file -- may have `frames` and `audio
 Downstream features can depend on specific fields of upstream features.
 This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.
 
-At this point, careful readers have probably noticed that the `Transcript` feature from the [example](#feature-specs) above should not depend on the full video: it only needs the audio track in order to generate the transcript.
+At this point, careful readers have probably noticed that the `Transcript` feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
 Let's express that with Metaxy:
 
 ```py
 from metaxy import FieldDep, FieldSpec
 
-video_spec = VideoFeatureSpec(key="/raw/video", fields=["audio", "frames"])
+video_spec = FeatureSpec(key="/raw/video", fields=["audio", "frames"])
 
 
-class VideoFeature(BaseVideoFeature, spec=video_spec):
+class VideoFeature(BaseFeature, spec=video_spec):
     path: str
 
 
 transcript_spec = TranscriptFeatureSpec(
     key="/raw/transcript",
+    id_columns=["video_id"],
     fields=[
         FieldSpec(
             key="text",

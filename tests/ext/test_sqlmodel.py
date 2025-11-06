@@ -13,7 +13,6 @@ declarative_attr which the type checker doesn't fully understand.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from pathlib import Path
 
 import narwhals as nw
@@ -23,12 +22,12 @@ from sqlmodel import Field
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
-    BaseFeatureSpec,
     FeatureDep,
     FeatureKey,
     FieldDep,
     FieldKey,
     FieldSpec,
+    SampleFeatureSpec,
 )
 from metaxy._utils import collect_to_polars
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
@@ -36,10 +35,6 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Basic Creation and Registration Tests
-
-
-class FeatureSpec(BaseFeatureSpec):
-    id_columns: Sequence[str] = ["sample_id"]
 
 
 class SQLModelFeature(BaseSQLModelFeature):
@@ -59,7 +54,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
                 FieldSpec(
@@ -114,7 +109,7 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
     class MultiFieldFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "field"]),
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -150,7 +145,7 @@ def test_sqlmodel_custom_tablename() -> None:
     class CustomTableFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["custom", "table"]),
             fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
         ),
@@ -172,7 +167,7 @@ def test_automatic_tablename() -> None:
     class AutoTableFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["my", "auto", "feature"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
@@ -202,7 +197,7 @@ def test_sqlmodel_field_definitions() -> None:
     class AudioFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["audio"]),
             fields=[
                 FieldSpec(key=FieldKey(["waveform"]), code_version="1"),  # Logical data
@@ -248,7 +243,7 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     class VersionedFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["versioned"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
@@ -281,7 +276,7 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
     class DataVersionFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["data", "version"]),
             fields=[
                 FieldSpec(key=FieldKey(["processed_data"]), code_version="1"),
@@ -320,7 +315,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ParentFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
         ),
@@ -332,7 +327,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ChildFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
             fields=[FieldSpec(key=FieldKey(["child_data"]), code_version="1")],
@@ -373,7 +368,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -389,7 +384,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             fields=[
@@ -445,7 +440,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV1(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v1"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
@@ -461,7 +456,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV2(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
                 fields=[
                     FieldSpec(key=FieldKey(["data"]), code_version="2")
@@ -496,7 +491,7 @@ def test_custom_graph_context() -> None:
         class CustomGraphFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["custom", "graph"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -522,7 +517,7 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "test"]),
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
         ),
@@ -562,7 +557,7 @@ def test_downstream_dependency_tracking() -> None:
     class RootFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["root"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
@@ -574,7 +569,7 @@ def test_downstream_dependency_tracking() -> None:
     class MiddleFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["middle"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version="1")],
@@ -587,7 +582,7 @@ def test_downstream_dependency_tracking() -> None:
     class LeafFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(feature=FeatureKey(["middle"]))],
             fields=[FieldSpec(key=FieldKey(["final"]), code_version="1")],
@@ -625,7 +620,7 @@ def test_duplicate_key_raises() -> None:
     class Feature1(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["duplicate"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -641,7 +636,7 @@ def test_duplicate_key_raises() -> None:
         class Feature2(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["duplicate"]),  # Same key!
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -667,7 +662,7 @@ def test_inheritance_chain() -> None:
     class ConcreteFeature(
         BaseFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["concrete"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
@@ -703,7 +698,7 @@ def test_sqlmodel_feature_with_duckdb_store(
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["video", "processing"]),
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -774,7 +769,7 @@ def test_basic_custom_id_columns() -> None:
     class UserSessionFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["user", "session"]),
             id_columns=["user_id", "session_id"],
             fields=[
@@ -816,7 +811,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserActivityFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["user", "activity"]),
             id_columns=["user_id", "session_id"],
             fields=[
@@ -836,7 +831,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserSummaryFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["user", "summary"]),
             id_columns=["user_id", "session_id"],
             deps=[FeatureDep(feature=FeatureKey(["user", "activity"]))],
@@ -966,7 +961,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     class MultiKeyFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "key"]),
             id_columns=["user_id", "session_id", "timestamp"],
             fields=[
@@ -1014,7 +1009,7 @@ def test_parent_child_different_id_columns() -> None:
     class DetailedParentFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["detailed", "parent"]),
             id_columns=["user_id", "session_id", "device_id"],
             fields=[
@@ -1031,7 +1026,7 @@ def test_parent_child_different_id_columns() -> None:
     class AggregatedChildFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["aggregated", "child"]),
             id_columns=["user_id", "session_id"],  # Doesn't need device_id
             deps=[FeatureDep(feature=FeatureKey(["detailed", "parent"]))],
@@ -1080,7 +1075,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureA(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "a"]),
             id_columns=["user_id", "date"],
             fields=[
@@ -1096,7 +1091,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureB(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "b"]),
             id_columns=["user_id", "date"],
             fields=[
@@ -1113,7 +1108,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureC(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "c"]),
             id_columns=["user_id", "date"],
             deps=[
@@ -1226,7 +1221,7 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
         class InvalidFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["invalid"]),
                 id_columns=[],  # Empty list not allowed
                 fields=[
@@ -1249,7 +1244,7 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "ids"]),
             id_columns=["customer_id", "order_id"],
             fields=[
@@ -1301,7 +1296,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "rename"]),
             fields=[
                 FieldSpec(key=FieldKey(["content"]), code_version="1"),
@@ -1316,7 +1311,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "rename"]),
             deps=[
                 FeatureDep(
@@ -1359,7 +1354,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class WideUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["wide", "upstream"]),
             fields=[
                 FieldSpec(key=FieldKey(["data1"]), code_version="1"),
@@ -1378,7 +1373,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class SelectiveDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["selective", "downstream"]),
             deps=[
                 FeatureDep(
@@ -1418,7 +1413,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
         class BadFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["bad", "feature"]),
                 fields=[
                     FieldSpec(key=FieldKey(["content"]), code_version="1"),
@@ -1440,7 +1435,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class UpstreamWithStatus(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "status"]),
             fields=[
                 FieldSpec(key=FieldKey(["content"]), code_version="1"),
@@ -1455,7 +1450,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class DownstreamWithOwnStatus(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "status"]),
             deps=[
                 FeatureDep(
@@ -1490,7 +1485,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class ComplexUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["complex", "upstream"]),
             fields=[
                 FieldSpec(key=FieldKey(["raw_data"]), code_version="1"),
@@ -1508,7 +1503,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class OptimizedDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["optimized", "downstream"]),
             deps=[
                 FeatureDep(
@@ -1552,7 +1547,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class DataUpstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["data", "upstream"]),
             fields=[
                 FieldSpec(key=FieldKey(["values"]), code_version="1"),
@@ -1568,7 +1563,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class MinimalDownstreamFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["minimal", "downstream"]),
             deps=[
                 FeatureDep(
@@ -1606,7 +1601,7 @@ def test_sqlmodel_rename_validation_with_store(
     class SourceFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source", "feature"]),
             fields=[
                 FieldSpec(key=FieldKey(["source_data"]), code_version="1"),
@@ -1622,7 +1617,7 @@ def test_sqlmodel_rename_validation_with_store(
     class TargetFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target", "feature"]),
             deps=[
                 FeatureDep(
@@ -1714,7 +1709,7 @@ def test_sqlmodel_rejects_autoincrement_primary_key_id_columns() -> None:
         class BadAutoIncrementFeature(
             SQLModelFeature,
             table=True,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["bad", "autoincrement"]),
                 id_columns=["id"],
                 fields=[
@@ -1739,7 +1734,7 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
     class GoodClientIdFeature(
         SQLModelFeature,
         table=True,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["good", "client_id"]),
             id_columns=["user_id", "session_id"],
             fields=[

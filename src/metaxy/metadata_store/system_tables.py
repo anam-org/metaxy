@@ -69,10 +69,10 @@ FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
     FEATURE_VERSION_COL: pl.String,
-    FEATURE_SPEC_VERSION_COL: pl.String,  # Hash of complete BaseFeatureSpec (all properties)
+    FEATURE_SPEC_VERSION_COL: pl.String,  # Hash of complete FeatureSpec (all properties)
     FEATURE_TRACKING_VERSION_COL: pl.String,  # Hash of feature_spec_version + project (for migration detection)
     "recorded_at": pl.Datetime("us"),
-    "feature_spec": pl.String,  # Full serialized BaseFeatureSpec
+    "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_class_path": pl.String,
     SNAPSHOT_VERSION_COL: pl.String,
 }

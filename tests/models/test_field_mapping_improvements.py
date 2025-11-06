@@ -4,9 +4,9 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    SampleFeatureSpec,
 )
 from metaxy.models.fields_mapping import FieldsMapping
 
@@ -17,9 +17,8 @@ def test_default_fields_mapping_is_default():
     # Define upstream feature
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
                 FieldSpec(key=FieldKey(["video"]), code_version="1"),
@@ -32,7 +31,7 @@ def test_default_fields_mapping_is_default():
     # Should use DefaultFieldsMapping by default
     class DownstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
             fields=[
@@ -65,9 +64,8 @@ def test_exclude_fields():
     # Define upstream features with same field names
     class Upstream1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version="1"),
                 FieldSpec(key=FieldKey(["metadata"]), code_version="1"),
@@ -78,9 +76,8 @@ def test_exclude_fields():
 
     class Upstream2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version="2"),
                 FieldSpec(key=FieldKey(["metadata"]), code_version="2"),
@@ -92,7 +89,7 @@ def test_exclude_fields():
     # Use exclude_fields to prevent metadata from being mapped
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
                 FeatureDep(feature=Upstream1),
@@ -119,9 +116,8 @@ def test_backward_compat_with_explicit_all():
 
     class Upstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version="1"),
             ],
@@ -132,7 +128,7 @@ def test_backward_compat_with_explicit_all():
     # Explicitly use FieldsMapping.all()
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=Upstream, fields_mapping=FieldsMapping.all())],
             fields=[
@@ -158,9 +154,9 @@ def test_default_mapping_with_no_upstream_deps():
     # DefaultFieldsMapping should fallback to ALL behavior
     class RootFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "root"]),
-            deps=None,  # No dependencies
+            # No dependencies
             fields=[
                 FieldSpec(
                     key=FieldKey(["data"]),
@@ -183,9 +179,8 @@ def test_exclude_fields_with_suffix_matching():
 
     class Upstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio", "french"]), code_version="1"),
                 FieldSpec(key=FieldKey(["audio", "english"]), code_version="1"),
@@ -198,7 +193,7 @@ def test_exclude_fields_with_suffix_matching():
     # Exclude audio/french but allow video/french with suffix matching
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=Upstream)],
             fields=[

@@ -6,15 +6,15 @@ import pytest
 
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
 def test_feature_spec_id_columns_list_only():
-    """Test that TestingFeatureSpec only accepts list of column names."""
+    """Test that SampleFeatureSpec only accepts list of column names."""
     # List of columns (only supported format now)
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "timestamp"],
     )
@@ -25,7 +25,7 @@ def test_feature_spec_id_columns_list_only():
 def test_feature_spec_id_columns_backward_compat():
     """Test backward compatibility with list-based id_columns."""
     # List format
-    spec_list = TestingFeatureSpec(
+    spec_list = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
@@ -33,7 +33,7 @@ def test_feature_spec_id_columns_backward_compat():
     assert spec_list.id_columns == ["user_id", "session_id"]
 
     # None (default) - should use sample_uid
-    spec_none = TestingFeatureSpec(
+    spec_none = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
     assert spec_none.id_columns == ["sample_uid"]
@@ -42,7 +42,7 @@ def test_feature_spec_id_columns_backward_compat():
 def test_feature_spec_empty_list_validation():
     """Test that empty list for id_columns raises validation error."""
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
-        TestingFeatureSpec(
+        SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
         )
@@ -55,7 +55,7 @@ def test_narwhals_joiner_empty_upstream(graph: FeatureGraph):
     # Create source feature with custom ID columns (just names, no types)
     class SourceFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["user_uuid", "event_time", "score"],
         ),
@@ -89,7 +89,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
     # Feature with one set of ID columns
     class Feature1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             id_columns=["entity_id"],
         ),
@@ -99,7 +99,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
     # Feature with different ID columns
     class Feature2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -117,7 +117,7 @@ def test_composite_key(graph: FeatureGraph):
     # Create feature with composite key
     class CompositeKeyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["composite"]),
             id_columns=["tenant_id", "user_id", "timestamp", "is_active"],
         ),
@@ -149,7 +149,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
     # Create upstream with custom ID column
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["content_id"],
         ),
@@ -159,7 +159,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
     # Create target depending on upstream with same ID column
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["content_id"],
@@ -213,7 +213,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
     # Create feature with custom ID
     class CustomIDFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["custom_id"]),
             id_columns=["uuid"],
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],

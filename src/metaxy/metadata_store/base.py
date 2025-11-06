@@ -729,7 +729,7 @@ class MetadataStore(ABC):
             for feature_key_str in sorted(snapshot_dict.keys()):
                 feature_data = snapshot_dict[feature_key_str]
 
-                # Serialize complete BaseFeatureSpec
+                # Serialize complete FeatureSpec
                 feature_spec_json = json.dumps(feature_data["feature_spec"])
 
                 # Always record all features for this snapshot (don't skip based on feature_version alone)
@@ -783,7 +783,7 @@ class MetadataStore(ABC):
             for feature_key_str in features_with_spec_changes:
                 feature_data = snapshot_dict[feature_key_str]
 
-                # Serialize complete BaseFeatureSpec
+                # Serialize complete FeatureSpec
                 feature_spec_json = json.dumps(feature_data["feature_spec"])
 
                 records.append(

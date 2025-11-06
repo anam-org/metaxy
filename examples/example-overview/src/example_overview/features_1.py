@@ -21,6 +21,7 @@ class Video(
                 code_version="1",
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Video metadata feature (root)."""
@@ -57,6 +58,7 @@ class Crop(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     pass  # omit columns for the sake of simplicity
@@ -83,6 +85,7 @@ class FaceDetection(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     pass
@@ -109,6 +112,7 @@ class SpeechToText(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     pass

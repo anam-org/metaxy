@@ -22,7 +22,7 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
 from metaxy.data_versioning.diff import LazyIncrement
@@ -199,7 +199,7 @@ def create_store(
 # Root features (no dependencies)
 class RootA(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "root_a"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
@@ -213,7 +213,7 @@ class RootA(
 
 class MultiFieldRoot(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "multi_root"]),
         fields=[
             FieldSpec(key=FieldKey(["train"]), code_version="1"),
@@ -229,7 +229,7 @@ class MultiFieldRoot(
 # Intermediate features (depend on roots)
 class BranchB(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "branch_b"]),
         deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -253,7 +253,7 @@ class BranchB(
 
 class BranchC(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "branch_c"]),
         deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -278,7 +278,7 @@ class BranchC(
 # Leaf features (converge multiple branches)
 class LeafSimple(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "leaf_simple"]),
         deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
         fields=[
@@ -302,7 +302,7 @@ class LeafSimple(
 
 class LeafDiamond(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "leaf_diamond"]),
         deps=[
             FeatureDep(feature=FeatureKey(["resolve", "branch_b"]), columns=()),
@@ -333,7 +333,7 @@ class LeafDiamond(
 
 class LeafMultiField(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["resolve", "leaf_multi"]),
         deps=[FeatureDep(feature=FeatureKey(["resolve", "multi_root"]))],
         fields=[

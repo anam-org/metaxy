@@ -14,7 +14,7 @@ from metaxy.graph.diff.diff_models import (
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import TestingFeatureSpec
+from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -137,7 +137,7 @@ class TestSnapshotResolver:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -161,7 +161,7 @@ class TestSnapshotResolver:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -374,7 +374,7 @@ class TestGraphDiffer:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),

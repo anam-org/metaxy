@@ -17,7 +17,7 @@ from typing_extensions import Self
 from metaxy.models.types import FeatureKey, FieldKey
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
+    from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 
 
 class FieldsMappingType(str, Enum):
@@ -41,7 +41,7 @@ class FieldsMappingResolutionContext(BaseModel):
     field_key: FieldKey
     """The downstream field key being resolved."""
 
-    upstream_feature: BaseFeatureSpecWithIDColumns
+    upstream_feature: FeatureSpecWithIDColumns
     """The upstream feature spec being resolved against."""
 
     @property

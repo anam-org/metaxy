@@ -25,6 +25,7 @@ class ParentFeature(
                 code_version="1",  # Unchanged
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Parent feature (unchanged)."""
@@ -49,6 +50,7 @@ class ChildFeature(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Child feature with refactored code (same algorithm/output)."""
