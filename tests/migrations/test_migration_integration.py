@@ -546,7 +546,7 @@ def test_migration_dry_run(
         result = executor.execute(migration, store_v2, project="default", dry_run=True)
 
         assert result.status == "skipped"
-        assert result.rows_affected > 0  # Would affect rows for downstream, but skipped
+        assert result.rows_affected > 0
 
         # Verify data unchanged
         final_data = collect_to_polars(

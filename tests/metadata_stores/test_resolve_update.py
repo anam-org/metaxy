@@ -680,17 +680,19 @@ def test_resolve_update_with_upstream(
                             result = lazy_result.collect()
                             if len(result.added) > 0:
                                 # Write metadata with computed field provenances
-                                feature_data = pl.DataFrame(
-                                    {
-                                        "sample_uid": [1, 2, 3],
-                                        "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
-                                    }
-                                ).with_columns(
-                                    pl.Series(
-                                        "metaxy_provenance_by_field",
-                                        result.added.sort("sample_uid")[
-                                            "metaxy_provenance_by_field"
-                                        ].to_list(),
+                                feature_data = add_metaxy_provenance_column(
+                                    pl.DataFrame(
+                                        {
+                                            "sample_uid": [1, 2, 3],
+                                            "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
+                                        }
+                                    ).with_columns(
+                                        pl.Series(
+                                            "metaxy_provenance_by_field",
+                                            result.added.sort("sample_uid")[
+                                                "metaxy_provenance_by_field"
+                                            ].to_list(),
+                                        )
                                     )
                                 )
                                 store.write_metadata(feature, feature_data)
@@ -852,17 +854,19 @@ def test_resolve_update_detects_changes(
                                     if isinstance(result.added, nw.DataFrame)
                                     else result.added
                                 )
-                                feature_data = pl.DataFrame(
-                                    {
-                                        "sample_uid": [1, 2, 3],
-                                        "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
-                                    }
-                                ).with_columns(
-                                    pl.Series(
-                                        "metaxy_provenance_by_field",
-                                        added_df.sort("sample_uid")[
-                                            "metaxy_provenance_by_field"
-                                        ].to_list(),
+                                feature_data = add_metaxy_provenance_column(
+                                    pl.DataFrame(
+                                        {
+                                            "sample_uid": [1, 2, 3],
+                                            "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
+                                        }
+                                    ).with_columns(
+                                        pl.Series(
+                                            "metaxy_provenance_by_field",
+                                            added_df.sort("sample_uid")[
+                                                "metaxy_provenance_by_field"
+                                            ].to_list(),
+                                        )
                                     )
                                 )
                                 store.write_metadata(feature, feature_data)
@@ -880,15 +884,19 @@ def test_resolve_update_detects_changes(
                     initial_versions = initial_versions_nw.sort("sample_uid")
 
                     # Write downstream feature with these versions
-                    downstream_data = pl.DataFrame(
-                        {
-                            "sample_uid": [1, 2, 3],
-                            "feature_data": ["b1", "b2", "b3"],
-                        }
-                    ).with_columns(
-                        pl.Series(
-                            "metaxy_provenance_by_field",
-                            initial_versions["metaxy_provenance_by_field"].to_list(),
+                    downstream_data = add_metaxy_provenance_column(
+                        pl.DataFrame(
+                            {
+                                "sample_uid": [1, 2, 3],
+                                "feature_data": ["b1", "b2", "b3"],
+                            }
+                        ).with_columns(
+                            pl.Series(
+                                "metaxy_provenance_by_field",
+                                initial_versions[
+                                    "metaxy_provenance_by_field"
+                                ].to_list(),
+                            )
                         )
                     )
                     store.write_metadata(downstream_feature, downstream_data)
@@ -918,21 +926,23 @@ def test_resolve_update_detects_changes(
                                 if len(added_pl) > 0
                                 else changed_pl
                             )
-                            feature_data = pl.DataFrame(
-                                {
-                                    "sample_uid": [1, 2, 3],
-                                    "value": [
-                                        f"f{i}_1_new",
-                                        f"f{i}_2_new",
-                                        f"f{i}_3_new",
-                                    ],
-                                }
-                            ).join(
-                                updated.select(
-                                    ["sample_uid", "metaxy_provenance_by_field"]
-                                ),
-                                on="sample_uid",
-                                how="left",
+                            feature_data = add_metaxy_provenance_column(
+                                pl.DataFrame(
+                                    {
+                                        "sample_uid": [1, 2, 3],
+                                        "value": [
+                                            f"f{i}_1_new",
+                                            f"f{i}_2_new",
+                                            f"f{i}_3_new",
+                                        ],
+                                    }
+                                ).join(
+                                    updated.select(
+                                        ["sample_uid", "metaxy_provenance_by_field"]
+                                    ),
+                                    on="sample_uid",
+                                    how="left",
+                                )
                             )
                             store.write_metadata(feature, feature_data)
 

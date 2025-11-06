@@ -240,13 +240,38 @@ class DuckDBMetadataStore(IbisMetadataStore):
     def _create_hash_functions(self):
         """Create DuckDB-specific hash functions for Ibis expressions.
 
-        Overrides parent to add xxHash support when hashfuncs extension is loaded.
+        Implements MD5 and xxHash functions using DuckDB's native functions.
 
         Returns hash functions that take Ibis column expressions and return
         Ibis expressions that call DuckDB SQL functions.
         """
-        # Start with base implementation (MD5)
-        hash_functions = super()._create_hash_functions()
+        # Import ibis for wrapping built-in SQL functions
+        import ibis
+
+        hash_functions = {}
+
+        # DuckDB MD5 implementation
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:
+            """DuckDB MD5() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def HEX(x: str) -> str:
+            """DuckDB HEX() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def LOWER(x: str) -> str:
+            """DuckDB LOWER() function."""
+            ...
+
+        def md5_hash(col_expr):
+            """Hash a column using DuckDB's MD5() function."""
+            # MD5 returns binary data, convert to lowercase hex
+            return LOWER(HEX(MD5(col_expr.cast(str))))
+
+        hash_functions[HashAlgorithm.MD5] = md5_hash
 
         # Determine which extensions are available
         extension_names = []
@@ -258,9 +283,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         # Add xxHash functions if hashfuncs extension is loaded
         if "hashfuncs" in extension_names:
-            # Import ibis for wrapping built-in SQL functions
-            import ibis
-
             # Use Ibis's builtin UDF decorator to wrap DuckDB's xxhash functions
             # These functions already exist in DuckDB (via hashfuncs extension)
             # The decorator tells Ibis to call them directly in SQL

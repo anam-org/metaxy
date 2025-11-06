@@ -6,6 +6,7 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+from abc import abstractmethod
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -163,39 +164,17 @@ class IbisMetadataStore(MetadataStore):
             hash_functions=hash_functions,
         )
 
+    @abstractmethod
     def _create_hash_functions(self):
         """Create hash functions for Ibis expressions.
 
-        Base implementation only supports MD5 (universally available in SQL).
-        Subclasses override to add backend-specific hash functions.
+        Base implementation returns empty dict. Subclasses must override
+        to provide backend-specific hash function implementations.
 
         Returns:
             Dictionary mapping HashAlgorithm to Ibis expression functions
         """
-        import ibis
-
-        # Use Ibis's builtin UDF decorator to wrap MD5 SQL function
-        @ibis.udf.scalar.builtin
-        def MD5(x: str) -> str:
-            """SQL MD5() function."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:
-            """SQL HEX() function - converts binary to hex string."""
-            ...
-
-        @ibis.udf.scalar.builtin
-        def LOWER(x: str) -> str:
-            """SQL LOWER() function - converts to lowercase."""
-            ...
-
-        # MD5 is universally available in SQL databases
-        def md5_hash(col_expr):
-            # MD5 returns binary data in most databases, convert to lowercase hex
-            return LOWER(HEX(MD5(col_expr.cast(str))))
-
-        return {HashAlgorithm.MD5: md5_hash}
+        return {}
 
     def _validate_hash_algorithm_support(self) -> None:
         """Validate that the configured hash algorithm is supported by Ibis backend.

@@ -103,16 +103,22 @@ class ClickHouseMetadataStore(IbisMetadataStore):
     def _create_hash_functions(self):
         """Create ClickHouse-specific hash functions for Ibis expressions.
 
-        ClickHouse supports xxHash32/xxHash64 natively as built-in functions.
-        Note: ClickHouse's MD5() returns FixedString(16) binary, use lower(hex()) to convert.
+        Implements MD5 and xxHash functions using ClickHouse's native functions.
         """
         # Import ibis for wrapping built-in SQL functions
         import ibis
 
-        # ClickHouse MD5() returns FixedString(16) binary data
+        hash_functions = {}
+
+        # ClickHouse MD5 implementation
         @ibis.udf.scalar.builtin
         def MD5(x: str) -> str:
-            """ClickHouse MD5() function - returns FixedString(16)."""
+            """ClickHouse MD5() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def HEX(x: str) -> str:
+            """ClickHouse HEX() function."""
             ...
 
         @ibis.udf.scalar.builtin
@@ -120,13 +126,14 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             """ClickHouse lower() function."""
             ...
 
-        @ibis.udf.scalar.builtin
-        def HEX(x: str) -> str:
-            """ClickHouse HEX() function - converts binary to hex string."""
-            ...
+        def md5_hash(col_expr):
+            """Hash a column using ClickHouse's MD5() function."""
+            # MD5 returns binary FixedString(16), convert to lowercase hex
+            return lower(HEX(MD5(col_expr.cast(str))))
 
-        # Use Ibis's builtin UDF decorator to wrap ClickHouse's xxhash functions
-        # These functions are built-in to ClickHouse and return integers
+        hash_functions[HashAlgorithm.MD5] = md5_hash
+
+        # ClickHouse xxHash functions
         @ibis.udf.scalar.builtin
         def xxHash32(x: str) -> int:
             """ClickHouse xxHash32() function - returns UInt32."""
@@ -142,12 +149,6 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             """ClickHouse toString() function - converts integer to string."""
             ...
 
-        # Create hash functions that use these wrapped SQL functions
-        def md5_hash(col_expr):
-            """Hash a column using ClickHouse's MD5() function."""
-            # ClickHouse MD5 returns binary, use lower(HEX()) to convert to lowercase hex string
-            return lower(HEX(MD5(col_expr.cast(str))))
-
         def xxhash32_hash(col_expr):
             """Hash a column using ClickHouse's xxHash32() function."""
             # xxHash32 returns UInt32, convert to string
@@ -158,10 +159,7 @@ class ClickHouseMetadataStore(IbisMetadataStore):
             # xxHash64 returns UInt64, convert to string
             return toString(xxHash64(col_expr))
 
-        hash_functions = {
-            HashAlgorithm.MD5: md5_hash,
-            HashAlgorithm.XXHASH32: xxhash32_hash,
-            HashAlgorithm.XXHASH64: xxhash64_hash,
-        }
+        hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
+        hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
 
         return hash_functions
