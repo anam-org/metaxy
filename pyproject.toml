@@ -43,6 +43,9 @@ clickhouse = [
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",
 ]
+postgres = [
+  "ibis-framework[postgres]>=11.0.0",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"

@@ -1,5 +1,13 @@
-"""PostgreSQL metadata store - thin wrapper around IbisMetadataStore."""
+"""PostgreSQL metadata store - thin wrapper around IbisMetadataStore.
 
+Provides production-grade metadata storage using PostgreSQL with:
+- Full ACID compliance
+- Schema isolation
+- Extension support (pgcrypto for SHA256)
+- Connection pooling support
+"""
+
+import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -9,10 +17,27 @@ if TYPE_CHECKING:
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
+logger = logging.getLogger(__name__)
+
 
 class PostgresMetadataStore(IbisMetadataStore):
     """
     [PostgreSQL](https://www.postgresql.org/) metadata store using [Ibis](https://ibis-project.org/) backend.
+
+    Provides production-grade metadata storage with full ACID compliance, schema isolation,
+    and support for advanced hash algorithms via PostgreSQL extensions.
+
+    **Hash Algorithm Support:**
+
+    - **MD5** (default): Built-in, no extensions required
+    - **SHA256**: Requires `pgcrypto` extension (auto-enabled on open)
+
+    The store automatically enables `pgcrypto` when using SHA256 hashing.
+
+    **Schema Isolation:**
+
+    Use the `schema` parameter to isolate metadata in a dedicated schema.
+    If not specified, tables are created in the user's search_path (typically `public`).
 
     Example: Connection String
         ```py
@@ -27,18 +52,35 @@ class PostgresMetadataStore(IbisMetadataStore):
             user="ml",
             password="secret",
             database="metaxy",
-            schema="public",
+            schema="features",  # Optional schema isolation
         )
         ```
 
-    Example: Custom Hash Algorithm
+    Example: SHA256 Hash Algorithm
         ```py
-        # Requires pgcrypto extension for SHA256 support
+        # pgcrypto extension auto-enabled
         store = PostgresMetadataStore(
             "postgresql://user:pass@localhost:5432/metadata",
             hash_algorithm=HashAlgorithm.SHA256,
         )
         ```
+
+    Example: With Fallback Stores
+        ```py
+        # Read from prod, write to dev
+        prod_store = PostgresMetadataStore(
+            "postgresql://user:pass@prod:5432/metadata",
+        )
+        dev_store = PostgresMetadataStore(
+            "postgresql://user:pass@dev:5432/metadata",
+            fallback_stores=[prod_store],
+        )
+        ```
+
+    Warning:
+        SHA256 requires the `pgcrypto` extension. The store will attempt to enable it
+        automatically on open. Ensure your database user has CREATE EXTENSION privileges,
+        or have a DBA pre-create the extension.
     """
 
     def __init__(
@@ -53,6 +95,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         schema: str | None = None,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list["MetadataStore"] | None = None,
+        enable_pgcrypto: bool = True,
         **kwargs: Any,
     ):
         """
@@ -60,19 +103,31 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         Args:
             connection_string: PostgreSQL connection string.
-                Format: ``postgresql://user:pass@host:port/database``.
+                Format: `postgresql://user:pass@host:port/database`.
+                Supports additional parameters: `?options=-c%20statement_timeout=30s`.
             host: Server host (used when connection_string not provided).
             port: Server port (defaults to 5432 when omitted).
             user: Database user.
             password: Database password.
             database: Database name.
-            schema: Target schema (defaults to user's search_path when omitted).
-            connection_params: Additional Ibis PostgreSQL connection parameters.
-            fallback_stores: Ordered list of read-only fallback stores.
-            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][].
+            schema: Target schema for table isolation (defaults to search_path when omitted).
+                Recommended for production deployments.
+            connection_params: Additional Ibis PostgreSQL connection parameters
+                (e.g., `{"sslmode": "require", "connect_timeout": 10}`).
+            fallback_stores: Ordered list of read-only fallback stores for branch deployments.
+            enable_pgcrypto: Whether to auto-enable pgcrypto extension on open (default: True).
+                Set to False if pgcrypto is already enabled or if user lacks CREATE EXTENSION.
+            **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]
+                (e.g., `hash_algorithm`, `auto_create_tables`).
 
         Raises:
             ValueError: If neither connection_string nor connection parameters provided.
+            ImportError: If Ibis or psycopg2 driver not installed.
+
+        Note:
+            When using SHA256 hash algorithm, pgcrypto extension is required.
+            The store attempts to enable it automatically on open unless
+            `enable_pgcrypto=False`.
         """
         params: dict[str, Any] = dict(connection_params or {})
 
@@ -102,6 +157,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.port = params.get("port")
         self.database = params.get("database")
         self.schema = params.get("schema")
+        self.enable_pgcrypto = enable_pgcrypto
 
         super().__init__(
             connection_string=connection_string,
@@ -110,6 +166,55 @@ class PostgresMetadataStore(IbisMetadataStore):
             fallback_stores=fallback_stores,
             **kwargs,
         )
+
+    def _get_default_hash_algorithm(self) -> HashAlgorithm:
+        """Get default hash algorithm for PostgreSQL stores.
+
+        Uses MD5 as it's built-in and requires no extensions.
+        For SHA256 support, explicitly set hash_algorithm=HashAlgorithm.SHA256
+        and ensure pgcrypto extension is enabled.
+        """
+        return HashAlgorithm.MD5
+
+    def open(self) -> None:
+        """Open connection to PostgreSQL and enable required extensions.
+
+        If using SHA256 hash algorithm and enable_pgcrypto=True, attempts to
+        enable the pgcrypto extension. Logs a warning if extension cannot be enabled.
+
+        Raises:
+            ImportError: If psycopg2 driver not installed.
+            Various database errors: If connection fails.
+        """
+        super().open()
+
+        # Auto-enable pgcrypto if SHA256 is configured
+        if self.enable_pgcrypto and self.hash_algorithm == HashAlgorithm.SHA256:
+            self._ensure_pgcrypto_extension()
+
+    def _ensure_pgcrypto_extension(self) -> None:
+        """Ensure pgcrypto extension is enabled for SHA256 support.
+
+        Attempts to create the extension if it doesn't exist. Logs a warning
+        if the user lacks privileges rather than failing, as the extension
+        might already be enabled.
+        """
+        try:
+            # Use underlying connection to execute DDL (Ibis doesn't expose CREATE EXTENSION)
+            # For PostgreSQL backend, conn.con is the psycopg2 connection
+            raw_conn = self.conn.con  # pyright: ignore[reportAttributeAccessIssue]
+            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+                cursor.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+                raw_conn.commit()  # pyright: ignore[reportAttributeAccessIssue]
+            logger.debug("pgcrypto extension enabled successfully")
+        except Exception as e:
+            # Log warning but don't fail - extension might already be enabled
+            # or user might lack privileges but extension is globally enabled
+            logger.warning(
+                f"Could not enable pgcrypto extension: {e}. "
+                "If using SHA256 hash algorithm, ensure pgcrypto is enabled "
+                "or have a DBA run: CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+            )
 
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
         """Get hash SQL generators for PostgreSQL."""
