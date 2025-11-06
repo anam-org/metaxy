@@ -13,6 +13,13 @@ from narwhals.typing import FrameT
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
+from ibis import Expr as IbisExpr
+from typing import Protocol
+
+
+class IbisHashFn(Protocol):
+    def __call__(self, expr: IbisExpr) -> IbisExpr:
+        ...
 
 
 class IbisProvenanceTracker(ProvenanceTracker):
@@ -29,7 +36,7 @@ class IbisProvenanceTracker(ProvenanceTracker):
         self,
         plan: FeaturePlan,
         backend: Any,  # ibis.BaseBackend
-        hash_functions: dict[HashAlgorithm, Callable[[Any], Any]],
+        hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
         """Initialize the Ibis tracker.
 
@@ -41,7 +48,7 @@ class IbisProvenanceTracker(ProvenanceTracker):
         """
         super().__init__(plan)
         self.backend = backend
-        self.hash_functions = hash_functions
+        self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
     def hash_string_column(
         self,
@@ -49,7 +56,6 @@ class IbisProvenanceTracker(ProvenanceTracker):
         source_column: str,
         target_column: str,
         hash_algo: HashAlgorithm,
-        hash_length: int,
     ) -> FrameT:
         """Hash a string column using Ibis hash functions.
 
@@ -58,7 +64,6 @@ class IbisProvenanceTracker(ProvenanceTracker):
             source_column: Name of string column to hash
             target_column: Name for the new column containing the hash
             hash_algo: Hash algorithm to use
-            hash_length: Length to truncate hash to
 
         Returns:
             Narwhals DataFrame with new hashed column added, backed by Ibis.
@@ -86,8 +91,6 @@ class IbisProvenanceTracker(ProvenanceTracker):
         # Apply hash to source column
         # Hash functions are responsible for returning strings
         hashed = hash_fn(ibis_table[source_column])
-        if hash_length > 0:
-            hashed = hashed.substr(0, hash_length)
 
         # Add new column with the hash
         result_table = ibis_table.mutate(**{target_column: hashed})

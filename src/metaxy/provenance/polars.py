@@ -37,7 +37,6 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         source_column: str,
         target_column: str,
         hash_algo: HashAlgorithm,
-        hash_length: int,
     ) -> FrameT:
         """Hash a string column using polars_hash.
 
@@ -46,7 +45,6 @@ class PolarsProvenanceTracker(ProvenanceTracker):
             source_column: Name of string column to hash
             target_column: Name for the new column containing the hash
             hash_algo: Hash algorithm to use
-            hash_length: Length to truncate hash to
 
         Returns:
             Narwhals DataFrame with new hashed column added, backed by Polars.
@@ -68,7 +66,6 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         hashed = (
             hash_fn(polars_hash.col(source_column))
             .cast(pl.Utf8)
-            .str.slice(0, hash_length)
         )
 
         # Add new column with the hash

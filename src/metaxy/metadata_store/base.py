@@ -13,7 +13,7 @@ import narwhals as nw
 import polars as pl
 from typing_extensions import Self
 
-from metaxy.data_versioning.diff import Increment, LazyIncrement
+from metaxy.provenance.types import Increment, LazyIncrement
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -1699,18 +1699,32 @@ class MetadataStore(ABC):
                     feature, feature_version=feature.feature_version()
                 )
 
-            # Use diff resolver to compare samples with current
-            from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+            # Use provenance tracker to compare samples with current
+            tracker = self._create_provenance_tracker()
 
-            diff_resolver = NarwhalsDiffResolver()
-
-            lazy_result = diff_resolver.find_changes(
-                target_provenance=samples_lazy,
-                current_metadata=current_lazy,
-                id_columns=feature.spec().id_columns,  # Get ID columns from feature spec
+            # The tracker needs upstream parameter even though samples are provided
+            # For escape hatch scenario, we pass empty upstream since samples are pre-computed
+            added, changed, removed = tracker.resolve_increment_with_provenance(
+                current=current_lazy,
+                upstream={},  # Empty since samples are provided
+                hash_algorithm=self.hash_algorithm,
+                hash_length=self.hash_truncation_length,
+                filters={},
+                sample=samples_lazy,  # Pass pre-computed samples
             )
 
-            return lazy_result if lazy else lazy_result.collect()
+            if lazy:
+                return LazyIncrement(
+                    added=added if isinstance(added, nw.LazyFrame) else nw.from_native(added),
+                    changed=changed if isinstance(changed, nw.LazyFrame) else nw.from_native(changed),
+                    removed=removed if isinstance(removed, nw.LazyFrame) else nw.from_native(removed),
+                )
+            else:
+                return Increment(
+                    added=added.collect() if isinstance(added, nw.LazyFrame) else added,
+                    changed=changed.collect() if isinstance(changed, nw.LazyFrame) else changed,
+                    removed=removed.collect() if isinstance(removed, nw.LazyFrame) else removed,
+                )
 
         # Root features without samples: error (samples required)
         if not plan.deps:

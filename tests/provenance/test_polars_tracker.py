@@ -5,7 +5,7 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy.data_versioning import HashAlgorithm
+from metaxy.provenance.types import HashAlgorithm
 
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.provenance.polars import PolarsProvenanceTracker

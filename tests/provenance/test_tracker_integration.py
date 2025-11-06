@@ -11,7 +11,7 @@ from typing import cast
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy.data_versioning import HashAlgorithm
+from metaxy.provenance.types import HashAlgorithm
 
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec

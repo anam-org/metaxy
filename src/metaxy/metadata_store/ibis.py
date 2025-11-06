@@ -165,7 +165,8 @@ class IbisMetadataStore(MetadataStore):
         )
 
     @abstractmethod
-    def _create_hash_functions(self):
+    @classmethod
+    def _create_hash_functions(cls):
         """Create hash functions for Ibis expressions.
 
         Base implementation returns empty dict. Subclasses must override

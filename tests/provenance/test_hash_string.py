@@ -5,7 +5,7 @@ import narwhals as nw
 import pytest
 from narwhals.testing import assert_series_equal
 
-from metaxy import BaseFeature, FeatureGraph, FeatureKey, FeatureSpec
+from metaxy import BaseFeature, FeatureGraph, FeatureKey, FeatureSpec, FeatureDep
 from metaxy.provenance import ProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
@@ -32,8 +32,8 @@ class Result:
 class NarwhalsSeriesCollection:
     results: list[Result] = field(default_factory=list)
 
-    def add_result(self, name: str, series: Sequence[nw.Series]):
-        self.results.append(Result(name=name, value=series))
+    def add_result(self, name: str, value: nw.DataFrame):
+        self.results.append(Result(name=name, value=value))
 
     def assert_all_equal(self):
         for result1, result2 in zip(self.results, self.results[1:]):
@@ -42,14 +42,18 @@ class NarwhalsSeriesCollection:
             )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def features(graph: FeatureGraph) -> dict[str, type[BaseFeature]]:
     class Upstream(BaseFeature, spec=FeatureSpec(key="upstream", id_columns=["id"])):
         id: str
 
     class Downstream(
         BaseFeature,
-        spec=FeatureSpec(key="downstream", id_columns=["id"], deps=[Upstream]),
+        spec=FeatureSpec(
+            key="downstream",
+            id_columns=["id"],
+            deps=[FeatureDep(feature=FeatureKey("upstream"))],
+        ),
     ):
         id: str
 
@@ -70,15 +74,16 @@ def trackers(
 
 @pytest.fixture
 def results() -> NarwhalsSeriesCollection:
-    return NarwhalsSeriesCollection({})
+    return NarwhalsSeriesCollection()
 
 
 @pytest.fixture
 def df():
-    return nw.DataFrame({"id": ["a", "b", "c"]})
+    import polars as pl
+
+    return nw.from_native(pl.DataFrame({"id": ["a", "b", "c"]}))
 
 
-@pytest.mark.parametrize("hash_length", [4, 16])
 @pytest.mark.parametrize(
     "hash_algo",
     [
@@ -91,17 +96,40 @@ def df():
 def test_hash_string(
     df: nw.DataFrame,
     results: NarwhalsSeriesCollection,
-    hash_length: int,
     hash_algo: HashAlgorithm,
     features: dict[str, type[BaseFeature]],
     graph: FeatureGraph,
 ):
     for tracker in trackers(graph, features):
         results.add_result(
-            name=f"{hash_algo}_{hash_length}_{tracker.__class__.__name__}",
-            result=tracker.hash_string_column(
-                df, "id", "hash", hash_algo=hash_algo, hash_length=hash_length
+            name=f"{hash_algo}_{tracker.__class__.__name__}",
+            value=tracker.hash_string_column(
+                df, "id", "hash", hash_algo=hash_algo
             ),
         )
 
-    assert results.all_equal()
+    results.assert_all_equal()
+
+
+def test_build_struct_column(
+    df: nw.DataFrame,
+    results: NarwhalsSeriesCollection,
+    features: dict[str, type[BaseFeature]],
+    graph: FeatureGraph,
+):
+    """Test that build_struct_column creates a struct column from existing columns."""
+    # Add an extra column to create struct from
+    df_with_extra = df.with_columns(nw.col("id").str.to_uppercase().alias("id_upper"))
+
+    # Mapping from struct field names to column names
+    field_columns = {"original": "id", "uppercase": "id_upper"}
+
+    for tracker in trackers(graph, features):
+        results.add_result(
+            name=f"struct_{tracker.__class__.__name__}",
+            value=tracker.build_struct_column(
+                df_with_extra, "my_struct", field_columns
+            ),
+        )
+
+    results.assert_all_equal()
