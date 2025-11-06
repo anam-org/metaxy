@@ -20,9 +20,41 @@ from metaxy.models.types import FeatureKey
 
 class LanceDBMetadataStore(MetadataStore):
     """
-    LanceDB-backed metadata store.
+    [LanceDB](https://lancedb.github.io/lancedb/) metadata store for vector and structured data.
 
-    Stores each feature in its own Lance table inside a LanceDB database located at ``database_path``.
+    LanceDB is a columnar database optimized for vector search and multimodal data.
+    Each feature is stored in its own Lance table within the database directory.
+
+    Storage layout:
+    - Each feature gets its own table: {namespace}__{feature_name}
+    - System tables: metaxy-system__feature_versions, metaxy-system__migration_events
+    - Tables are stored as Lance format files in the database_path directory
+
+    Note: Uses Polars components for data processing (no native SQL execution).
+
+    Example: Local Directory
+        ```py
+        from pathlib import Path
+        store = LanceDBMetadataStore(Path("./lancedb"))
+        ```
+
+    Example: With Hash Algorithm
+        ```py
+        store = LanceDBMetadataStore(
+            "metadata.lance",
+            hash_algorithm=HashAlgorithm.XXHASH64
+        )
+        ```
+
+    Example: With Fallback Stores
+        ```py
+        # Local store with production fallback
+        prod_store = LanceDBMetadataStore("s3://prod-bucket/metadata")
+        dev_store = LanceDBMetadataStore(
+            "./dev-metadata",
+            fallback_stores=[prod_store]
+        )
+        ```
     """
 
     _should_warn_auto_create_tables = False
@@ -35,12 +67,40 @@ class LanceDBMetadataStore(MetadataStore):
         **kwargs: Any,
     ):
         """
-        Initialize LanceDB metadata store.
+        Initialize [LanceDB](https://lancedb.github.io/lancedb/) metadata store.
+
+        The database directory is created automatically if it doesn't exist.
+        Tables are created on-demand when features are first written.
 
         Args:
-            database_path: Directory containing LanceDB tables.
-            fallback_stores: Optional read-only fallback stores.
-            **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
+            database_path: Directory path for LanceDB tables. Can be:
+                - Local path: `"./metadata"` or `Path("./metadata")`
+                - S3 URI: `"s3://bucket/path/to/db"` (requires AWS credentials)
+                - Any URI supported by LanceDB
+            fallback_stores: Ordered list of read-only fallback stores.
+                Used when upstream features are not in this store.
+            **kwargs: Passed to [metaxy.metadata_store.base.MetadataStore][]
+                (e.g., hash_algorithm, hash_truncation_length, prefer_native)
+
+        Note:
+            Unlike SQL stores, LanceDB doesn't require explicit table creation.
+            Tables are created automatically when writing metadata.
+
+        Example:
+            ```py
+            # Local directory
+            store = LanceDBMetadataStore("./metadata")
+
+            # With custom hash algorithm
+            store = LanceDBMetadataStore(
+                "./metadata",
+                hash_algorithm=HashAlgorithm.SHA256
+            )
+
+            # With fallback to production store
+            prod = LanceDBMetadataStore("s3://prod/metadata")
+            dev = LanceDBMetadataStore("./dev", fallback_stores=[prod])
+            ```
         """
         self.database_path = Path(database_path)
         self._conn: Any | None = None
@@ -67,15 +127,44 @@ class LanceDBMetadataStore(MetadataStore):
         )
 
     def open(self) -> None:
-        """Open LanceDB connection."""
+        """Open LanceDB connection.
+
+        Creates the database directory if it doesn't exist.
+        Tables are created on-demand when features are first written.
+
+        Raises:
+            ImportError: If lancedb package is not installed
+        """
         self.database_path.mkdir(parents=True, exist_ok=True)
         import lancedb
 
         self._conn = lancedb.connect(str(self.database_path))
 
     def close(self) -> None:
-        """Close LanceDB connection."""
+        """Close LanceDB connection.
+
+        Releases resources by setting connection to None.
+        Safe to call multiple times (idempotent).
+        """
         self._conn = None
+
+    @property
+    def conn(self) -> Any:
+        """Get LanceDB connection.
+
+        Returns:
+            Active LanceDB connection
+
+        Raises:
+            StoreNotOpenError: If store is not open
+        """
+        from metaxy.metadata_store.exceptions import StoreNotOpenError
+
+        if self._conn is None:
+            raise StoreNotOpenError(
+                "LanceDB connection is not open. Store must be used as a context manager."
+            )
+        return self._conn
 
     # Helpers -----------------------------------------------------------------
 
@@ -97,7 +186,15 @@ class LanceDBMetadataStore(MetadataStore):
         feature_key: FeatureKey,
         df: pl.DataFrame,
     ) -> None:
-        """Append metadata to Lance table."""
+        """Append metadata to Lance table.
+
+        Creates the table if it doesn't exist, otherwise appends to existing table.
+        Uses Arrow format for efficient storage.
+
+        Args:
+            feature_key: Feature key to write to
+            df: DataFrame with metadata (already validated by base class)
+        """
         assert self._conn is not None, "Store must be open"
         table_name = self._table_name(feature_key)
 
@@ -110,7 +207,14 @@ class LanceDBMetadataStore(MetadataStore):
             self._conn.create_table(table_name, data=arrow_table)  # type: ignore[attr-defined]
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
-        """Drop Lance table for feature."""
+        """Drop Lance table for feature.
+
+        Permanently removes the Lance table from the database directory.
+        Safe to call even if table doesn't exist (no-op).
+
+        Args:
+            feature_key: Feature key to drop metadata for
+        """
         assert self._conn is not None, "Store must be open"
         table_name = self._table_name(feature_key)
         if self._table_exists(table_name):
@@ -124,7 +228,20 @@ class LanceDBMetadataStore(MetadataStore):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
-        """Read metadata from Lance table."""
+        """Read metadata from Lance table.
+
+        Loads data from Lance, converts to Polars, and returns as Narwhals LazyFrame.
+        Applies filters and column selection in memory.
+
+        Args:
+            feature: Feature to read
+            feature_version: Filter by specific feature_version
+            filters: List of Narwhals filter expressions
+            columns: Optional list of columns to select
+
+        Returns:
+            Narwhals LazyFrame with metadata, or None if table not found
+        """
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         table_name = self._table_name(feature_key)
@@ -137,7 +254,9 @@ class LanceDBMetadataStore(MetadataStore):
         nw_lazy = nw.from_native(df.lazy())
 
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
 
         if filters is not None:
             for expr in filters:
@@ -149,11 +268,19 @@ class LanceDBMetadataStore(MetadataStore):
         return nw_lazy
 
     def _list_features_local(self) -> list[FeatureKey]:
-        """List Lance tables stored locally."""
+        """List Lance tables stored locally (excluding system tables)."""
         if self._conn is None:
             return []
         names = self._conn.table_names()  # type: ignore[attr-defined]
-        return sorted(FeatureKey(name.split("__")) for name in names)
+
+        features = []
+        for name in names:
+            feature_key = FeatureKey(name.split("__"))
+            # Skip system tables
+            if not self._is_system_table(feature_key):
+                features.append(feature_key)
+
+        return sorted(features)
 
     # Display ------------------------------------------------------------------
 
