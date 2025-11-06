@@ -129,7 +129,9 @@ def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
         raise FilterParseError(msg) from exc
 
     if parsed is None:
-        raise FilterParseError("Failed to parse filter string into an expression.")
+        raise FilterParseError(
+            f"Failed to parse filter string into an expression for {filter_string}"
+        )
 
     return parsed
 
