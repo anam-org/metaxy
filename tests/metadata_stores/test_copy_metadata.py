@@ -7,6 +7,7 @@ import polars as pl
 import pytest
 
 from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy._testing.helpers import add_metaxy_provenance_column
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 
@@ -53,28 +54,32 @@ def test_copy_metadata_all_features(
     # Write to source store
     with source_store:
         # Write metadata to source store
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3"],
-                "field_a": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"field_a": "hash1"},
-                    {"field_a": "hash2"},
-                    {"field_a": "hash3"},
-                ],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "field_a": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                        {"field_a": "hash3"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2"],
-                "field_b": [10, 20],
-                "metaxy_provenance_by_field": [
-                    {"field_b": "hash10"},
-                    {"field_b": "hash20"},
-                ],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2"],
+                    "field_b": [10, 20],
+                    "metaxy_provenance_by_field": [
+                        {"field_b": "hash10"},
+                        {"field_b": "hash20"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
@@ -129,21 +134,25 @@ def test_copy_metadata_specific_features(
 
     # Write to source
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_a": [1],
-                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_a": [1],
+                    "metaxy_provenance_by_field": [{"field_a": "hash1"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_b": [10],
-                "metaxy_provenance_by_field": [{"field_b": "hash10"}],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_b": [10],
+                    "metaxy_provenance_by_field": [{"field_b": "hash10"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
@@ -194,33 +203,37 @@ def test_copy_metadata_with_snapshot_filter(
         # Write metadata with different snapshot versions
         with allow_feature_version_override():
             # Data with snapshot 1
-            data_snapshot_1 = pl.DataFrame(
-                {
-                    "sample_uid": ["s1", "s2"],
-                    "field_a": [1, 2],
-                    "metaxy_provenance_by_field": [
-                        {"field_a": "hash1"},
-                        {"field_a": "hash2"},
-                    ],
-                    "metaxy_feature_version": [FeatureA.feature_version()] * 2,
-                    "metaxy_snapshot_version": [snapshot_1] * 2,
-                }
+            data_snapshot_1 = add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": ["s1", "s2"],
+                        "field_a": [1, 2],
+                        "metaxy_provenance_by_field": [
+                            {"field_a": "hash1"},
+                            {"field_a": "hash2"},
+                        ],
+                        "metaxy_feature_version": [FeatureA.feature_version()] * 2,
+                        "metaxy_snapshot_version": [snapshot_1] * 2,
+                    }
+                )
             )
             source_store.write_metadata(FeatureA, data_snapshot_1)
 
             # Data with snapshot 2
-            data_snapshot_2 = pl.DataFrame(
-                {
-                    "sample_uid": ["s3", "s4", "s5"],
-                    "field_a": [3, 4, 5],
-                    "metaxy_provenance_by_field": [
-                        {"field_a": "hash3"},
-                        {"field_a": "hash4"},
-                        {"field_a": "hash5"},
-                    ],
-                    "metaxy_feature_version": [FeatureA.feature_version()] * 3,
-                    "metaxy_snapshot_version": [snapshot_2] * 3,
-                }
+            data_snapshot_2 = add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": ["s3", "s4", "s5"],
+                        "field_a": [3, 4, 5],
+                        "metaxy_provenance_by_field": [
+                            {"field_a": "hash3"},
+                            {"field_a": "hash4"},
+                            {"field_a": "hash5"},
+                        ],
+                        "metaxy_feature_version": [FeatureA.feature_version()] * 3,
+                        "metaxy_snapshot_version": [snapshot_2] * 3,
+                    }
+                )
             )
             source_store.write_metadata(FeatureA, data_snapshot_2)
 
@@ -279,12 +292,14 @@ def test_copy_metadata_missing_feature(
 
     # Write only FeatureA to source
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_a": [1],
-                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_a": [1],
+                    "metaxy_provenance_by_field": [{"field_a": "hash1"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
@@ -321,12 +336,14 @@ def test_copy_metadata_preserves_feature_version(
     # Write data to source
     with source_store:
         original_version = FeatureA.feature_version()
-        source_data = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_a": [1],
-                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
-            }
+        source_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_a": [1],
+                    "metaxy_provenance_by_field": [{"field_a": "hash1"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data)
 
@@ -374,12 +391,14 @@ def test_copy_metadata_preserves_snapshot_version(
 
     # Write data to source
     with source_store:
-        source_data = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_a": [1],
-                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
-            }
+        source_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_a": [1],
+                    "metaxy_provenance_by_field": [{"field_a": "hash1"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data)
 
@@ -417,12 +436,14 @@ def test_copy_metadata_no_rows_for_snapshot(
 
     # Write data to source
     with source_store:
-        source_data = pl.DataFrame(
-            {
-                "sample_uid": ["s1"],
-                "field_a": [1],
-                "metaxy_provenance_by_field": [{"field_a": "hash1"}],
-            }
+        source_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1"],
+                    "field_a": [1],
+                    "metaxy_provenance_by_field": [{"field_a": "hash1"}],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data)
 
@@ -450,30 +471,34 @@ def test_copy_metadata_with_global_filters(
 
     # Write metadata with different sample_uids
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3"],
-                "field_a": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"field_a": "hash1"},
-                    {"field_a": "hash2"},
-                    {"field_a": "hash3"},
-                ],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "field_a": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                        {"field_a": "hash3"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3", "s4"],
-                "field_b": [10, 20, 30, 40],
-                "metaxy_provenance_by_field": [
-                    {"field_b": "hash10"},
-                    {"field_b": "hash20"},
-                    {"field_b": "hash30"},
-                    {"field_b": "hash40"},
-                ],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3", "s4"],
+                    "field_b": [10, 20, 30, 40],
+                    "metaxy_provenance_by_field": [
+                        {"field_b": "hash10"},
+                        {"field_b": "hash20"},
+                        {"field_b": "hash30"},
+                        {"field_b": "hash40"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
@@ -525,29 +550,33 @@ def test_copy_metadata_with_per_feature_filters(
 
     # Write metadata
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3"],
-                "field_a": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"field_a": "hash1"},
-                    {"field_a": "hash2"},
-                    {"field_a": "hash3"},
-                ],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "field_a": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                        {"field_a": "hash3"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3"],
-                "field_b": [10, 20, 30],
-                "metaxy_provenance_by_field": [
-                    {"field_b": "hash10"},
-                    {"field_b": "hash20"},
-                    {"field_b": "hash30"},
-                ],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3"],
+                    "field_b": [10, 20, 30],
+                    "metaxy_provenance_by_field": [
+                        {"field_b": "hash10"},
+                        {"field_b": "hash20"},
+                        {"field_b": "hash30"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
@@ -605,31 +634,35 @@ def test_copy_metadata_with_mixed_filters(
 
     # Write metadata
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3", "s4"],
-                "field_a": [1, 2, 3, 4],
-                "metaxy_provenance_by_field": [
-                    {"field_a": "hash1"},
-                    {"field_a": "hash2"},
-                    {"field_a": "hash3"},
-                    {"field_a": "hash4"},
-                ],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3", "s4"],
+                    "field_a": [1, 2, 3, 4],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                        {"field_a": "hash3"},
+                        {"field_a": "hash4"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2", "s3", "s4"],
-                "field_b": [10, 20, 30, 40],
-                "metaxy_provenance_by_field": [
-                    {"field_b": "hash10"},
-                    {"field_b": "hash20"},
-                    {"field_b": "hash30"},
-                    {"field_b": "hash40"},
-                ],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2", "s3", "s4"],
+                    "field_b": [10, 20, 30, 40],
+                    "metaxy_provenance_by_field": [
+                        {"field_b": "hash10"},
+                        {"field_b": "hash20"},
+                        {"field_b": "hash30"},
+                        {"field_b": "hash40"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 
@@ -686,27 +719,31 @@ def test_copy_metadata_with_mixed_feature_types(
 
     # Write metadata
     with source_store:
-        source_data_a = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2"],
-                "field_a": [1, 2],
-                "metaxy_provenance_by_field": [
-                    {"field_a": "hash1"},
-                    {"field_a": "hash2"},
-                ],
-            }
+        source_data_a = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2"],
+                    "field_a": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"field_a": "hash1"},
+                        {"field_a": "hash2"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureA, source_data_a)
 
-        source_data_b = pl.DataFrame(
-            {
-                "sample_uid": ["s1", "s2"],
-                "field_b": [10, 20],
-                "metaxy_provenance_by_field": [
-                    {"field_b": "hash10"},
-                    {"field_b": "hash20"},
-                ],
-            }
+        source_data_b = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": ["s1", "s2"],
+                    "field_b": [10, 20],
+                    "metaxy_provenance_by_field": [
+                        {"field_b": "hash10"},
+                        {"field_b": "hash20"},
+                    ],
+                }
+            )
         )
         source_store.write_metadata(FeatureB, source_data_b)
 

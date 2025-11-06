@@ -1,4 +1,4 @@
-"""Tests for code_version field on SampleFeatureSpec."""
+"""Tests for code_version field on FeatureSpec."""
 
 from hypothesis import given
 from hypothesis import strategies as st
@@ -8,11 +8,11 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
+    FeatureSpec,
     FieldKey,
     FieldSpec,
 )
 from metaxy.models.feature import FeatureGraph
-from metaxy.models.feature_spec import SampleFeatureSpec
 
 
 def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
@@ -20,8 +20,9 @@ def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
 
     class SingleFieldFeature(
         Feature,
-        spec=SampleFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["test", "single_field"]),
+            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["default"]), code_version="1"),
             ],
@@ -55,8 +56,9 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
     class MultiFieldFeature(
         Feature,
-        spec=SampleFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["test", "multi_field"]),
+            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version="1"),
                 FieldSpec(key=FieldKey(["audio"]), code_version="2"),
@@ -89,8 +91,9 @@ def test_code_version_changes_with_field_code_version() -> None:
 
         class FeatureV1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["versioned", "test_v1"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
@@ -102,8 +105,9 @@ def test_code_version_changes_with_field_code_version() -> None:
 
         class FeatureV2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["versioned", "test_v2"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
                 ],
@@ -128,8 +132,9 @@ def test_code_version_independence_from_dependencies() -> None:
 
         class ParentV1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "parent_v1"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
@@ -139,7 +144,7 @@ def test_code_version_independence_from_dependencies() -> None:
 
         class ChildV1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "child_v1"]),
                 deps=[
                     FeatureDep(feature=FeatureKey(["independence_test", "parent_v1"]))
@@ -156,8 +161,9 @@ def test_code_version_independence_from_dependencies() -> None:
 
         class ParentV2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "parent_v2"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
                 ],
@@ -167,7 +173,7 @@ def test_code_version_independence_from_dependencies() -> None:
 
         class ChildV2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["independence_test", "child_v2"]),
                 deps=[
                     FeatureDep(feature=FeatureKey(["independence_test", "parent_v2"]))
@@ -196,8 +202,9 @@ def test_code_version_determinism() -> None:
 
     class TestFeature(
         Feature,
-        spec=SampleFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["determinism_test"]),
+            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["frames"]), code_version="1"),
                 FieldSpec(key=FieldKey(["audio"]), code_version="2"),
@@ -225,8 +232,9 @@ def test_code_version_field_order_invariance() -> None:
 
         class Feature1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["order_test", "feature1"]),
+                deps=None,
                 fields=[
                     FieldSpec(
                         key=FieldKey(["frames"]), code_version="1"
@@ -241,8 +249,9 @@ def test_code_version_field_order_invariance() -> None:
 
         class Feature2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["order_test", "feature2"]),
+                deps=None,
                 fields=[
                     FieldSpec(
                         key=FieldKey(["frames"]), code_version="1"
@@ -262,8 +271,9 @@ def test_code_version_no_dependencies_no_fields_edge_case() -> None:
 
     class MinimalFeature(
         Feature,
-        spec=SampleFeatureSpec(
+        spec=FeatureSpec(
             key=FeatureKey(["minimal"]),
+            deps=None,
             # Uses default field: [FieldSpec(key=FieldKey(["default"]), code_version="1")]
         ),
     ):
@@ -284,8 +294,9 @@ def test_code_version_complex_dependency_chain() -> None:
 
         class A(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["chain", "a"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version="1"),
                 ],
@@ -295,7 +306,7 @@ def test_code_version_complex_dependency_chain() -> None:
 
         class B(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["chain", "b"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "a"]))],
                 fields=[
@@ -307,7 +318,7 @@ def test_code_version_complex_dependency_chain() -> None:
 
         class C(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["chain", "c"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "b"]))],
                 fields=[
@@ -351,8 +362,9 @@ def test_property_code_version_deterministic(code_version: str) -> None:
 
         class TestFeature(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "deterministic"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=code_version),
                 ],
@@ -383,8 +395,9 @@ def test_property_code_version_changes_with_code(
 
         class Feature1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "changes", "f1"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=code_version1),
                 ],
@@ -396,8 +409,9 @@ def test_property_code_version_changes_with_code(
 
         class Feature2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "changes", "f2"]),
+                deps=None,
                 fields=[
                     FieldSpec(key=FieldKey(["default"]), code_version=code_version2),
                 ],
@@ -433,8 +447,9 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
 
         class TestFeature(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "multi"]),
+                deps=None,
                 fields=fields,
             ),
         ):
@@ -484,8 +499,9 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
 
         class Feature1(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "order1"]),
+                deps=None,
                 fields=fields1,
             ),
         ):
@@ -495,8 +511,9 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
 
         class Feature2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "order2"]),
+                deps=None,
                 fields=fields2,
             ),
         ):
@@ -520,8 +537,9 @@ def test_property_code_version_independent_of_parent(
 
         class Parent(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "parent"]),
+                deps=None,
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]), code_version=parent_code_version
@@ -533,7 +551,7 @@ def test_property_code_version_independent_of_parent(
 
         class Child(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "child"]),
                 deps=[FeatureDep(feature=FeatureKey(["property_test", "parent"]))],
                 fields=[
@@ -555,8 +573,9 @@ def test_property_code_version_independent_of_parent(
 
         class Parent2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "parent2"]),
+                deps=None,
                 fields=[
                     FieldSpec(
                         key=FieldKey(["default"]),
@@ -571,7 +590,7 @@ def test_property_code_version_independent_of_parent(
 
         class Child2(
             Feature,
-            spec=SampleFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["property_test", "child2"]),
                 deps=[FeatureDep(feature=FeatureKey(["property_test", "parent2"]))],
                 fields=[

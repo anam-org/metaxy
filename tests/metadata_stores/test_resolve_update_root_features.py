@@ -12,6 +12,7 @@ import polars as pl
 import pytest
 from pytest_cases import parametrize_with_cases
 
+from metaxy._testing import add_metaxy_provenance_column
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
@@ -85,15 +86,17 @@ class TestResolveUpdateRootFeatures:
             # User provides samples
             import narwhals as nw
 
-            user_samples = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
-                        {"embedding": "hash1"},
-                        {"embedding": "hash2"},
-                        {"embedding": "hash3"},
-                    ],
-                }
+            user_samples = add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2, 3],
+                        "metaxy_provenance_by_field": [
+                            {"embedding": "hash1"},
+                            {"embedding": "hash2"},
+                            {"embedding": "hash3"},
+                        ],
+                    }
+                )
             )
 
             result = store.resolve_update(
@@ -123,30 +126,34 @@ class TestResolveUpdateRootFeatures:
 
         with graph.use(), store:
             # Write initial metadata
-            initial_metadata = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
-                        {"embedding": "hash1"},
-                        {"embedding": "hash2"},
-                        {"embedding": "hash3"},
-                    ],
-                }
+            initial_metadata = add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2, 3],
+                        "metaxy_provenance_by_field": [
+                            {"embedding": "hash1"},
+                            {"embedding": "hash2"},
+                            {"embedding": "hash3"},
+                        ],
+                    }
+                )
             )
             store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
 
             # User provides updated samples
             import narwhals as nw
 
-            user_samples = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 4],
-                    "metaxy_provenance_by_field": [
-                        {"embedding": "hash1"},  # unchanged
-                        {"embedding": "hash2_updated"},  # changed
-                        {"embedding": "hash4"},  # new
-                    ],
-                }
+            user_samples = add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1, 2, 4],
+                        "metaxy_provenance_by_field": [
+                            {"embedding": "hash1"},  # unchanged
+                            {"embedding": "hash2_updated"},  # changed
+                            {"embedding": "hash4"},  # new
+                        ],
+                    }
+                )
             )
 
             result = store.resolve_update(

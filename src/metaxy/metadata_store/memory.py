@@ -6,10 +6,7 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
@@ -65,20 +62,44 @@ class InMemoryMetadataStore(MetadataStore):
         return tuple(feature_key)
 
     def _supports_native_components(self) -> bool:
-        """In-memory store only supports Polars components."""
+        """In-memory store only supports Polars provenance tracking."""
         return False
 
-    def _create_native_components(
-        self,
-    ) -> tuple[
-        UpstreamJoiner,
-        ProvenanceByFieldCalculator,
-        MetadataDiffResolver,
-    ]:
-        """Not supported - in-memory store only uses Polars components."""
-        raise NotImplementedError(
-            "InMemoryMetadataStore does not support native field provenance calculations"
-        )
+    def _create_provenance_tracker(self):
+        """Create provenance tracker for in-memory store.
+
+        Returns PolarsProvenanceTracker which uses polars_hash plugin for hashing.
+
+        Raises:
+            RuntimeError: If called without a graph (should not happen in normal usage)
+        """
+        # Get graph from active context
+        # This will be available during resolve_update() but not during store init
+        from metaxy.models.feature import FeatureGraph
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
+        graph = FeatureGraph.get_active()
+
+        return PolarsProvenanceTracker(graph=graph)
+
+    def _validate_hash_algorithm_support(self) -> None:
+        """Validate that the configured hash algorithm is supported by Polars tracker.
+
+        Raises:
+            ValueError: If hash algorithm is not supported
+        """
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
+        # Check if algorithm is supported by PolarsProvenanceTracker
+        # Use the class variable that maps algorithms to hash functions
+        supported = PolarsProvenanceTracker._HASH_FUNCTION_MAP.keys()
+
+        if self.hash_algorithm not in supported:
+            supported_names = [algo.value for algo in supported]
+            raise ValueError(
+                f"Hash algorithm '{self.hash_algorithm.value}' not supported by PolarsProvenanceTracker. "
+                f"Supported algorithms: {', '.join(supported_names)}"
+            )
 
     def _write_metadata_impl(
         self,

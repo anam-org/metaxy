@@ -1,1120 +1,4 @@
 # serializer version: 1
-# name: test_resolve_update_detects_changes[diamond_graph-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[diamond_graph-sha256]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[diamond_graph-wyhash]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[diamond_graph-xxhash32]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[diamond_graph-xxhash64]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 9,
-      'changed_sample_uids': list([
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        3,
-        3,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[multi_field-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[multi_field-sha256]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[multi_field-wyhash]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[multi_field-xxhash32]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[multi_field-xxhash64]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[simple_chain-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[simple_chain-sha256]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[simple_chain-wyhash]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[simple_chain-xxhash32]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
-# name: test_resolve_update_detects_changes[simple_chain-xxhash64]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 0,
-      'any_version_changed': True,
-      'changed': 3,
-      'changed_sample_uids': list([
-        1,
-        2,
-        3,
-      ]),
-      'removed': 0,
-    }),
-  })
-# ---
 # name: test_resolve_update_feature_version_change_idempotency[multi_field-md5]
   dict({
     'clickhouse_native=False': dict({
@@ -1125,7 +9,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1138,7 +22,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1151,7 +35,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1164,7 +48,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1177,7 +61,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1190,7 +74,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1207,7 +91,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1220,7 +104,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1237,7 +121,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1250,7 +134,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1267,7 +151,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1280,7 +164,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1293,7 +177,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1306,7 +190,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1319,7 +203,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1332,7 +216,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1349,7 +233,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1362,7 +246,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1375,7 +259,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1388,7 +272,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1401,7 +285,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1414,7 +298,7 @@
       }),
       'metaxy_feature_version': '70c6be12249631e16e814cba005c5653f999e7a659400ff3efc4ee7196f6370f',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1431,7 +315,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1444,7 +328,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1457,7 +341,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1470,7 +354,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1483,7 +367,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1496,7 +380,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1513,7 +397,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1526,7 +410,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1543,7 +427,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1556,7 +440,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1573,7 +457,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1586,7 +470,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1599,7 +483,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1612,7 +496,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1625,7 +509,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1638,7 +522,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1655,7 +539,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1668,7 +552,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1681,7 +565,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1694,7 +578,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1707,7 +591,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -1720,7 +604,7 @@
       }),
       'metaxy_feature_version': '41c074195bddc1d5004115b121467b9c46d466f4820a60be1cd0b89eacad512d',
       'second_run': dict({
-        'added': 0,
+        'added': 3,
         'changed': 0,
         'removed': 0,
       }),
@@ -4607,562 +3491,6 @@
     }),
   })
 # ---
-# name: test_resolve_update_with_upstream[diamond_graph-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': 'dbe64534abd5e364d1f4ca1a6869795a',
-        }),
-        dict({
-          'default': 'cb822ef624057e3b28ad202916ac71dd',
-        }),
-        dict({
-          'default': '2ce6657c9d962fc2fe2a2f593b8483f0',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[diamond_graph-sha256]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '406dd66c968d8c3d387fd4b4df6db41e7c8ba1a0b9e648a5e5dd7aa7afbc5622',
-        }),
-        dict({
-          'default': 'f8309593097668d4edead958395fd49b95893d2e9e7634503fa9f4b51fceca3b',
-        }),
-        dict({
-          'default': '2fa77b085ee491e7e97f72c247013f8478ba3cb4465444e3fcba320c8e7725f6',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '406dd66c968d8c3d387fd4b4df6db41e7c8ba1a0b9e648a5e5dd7aa7afbc5622',
-        }),
-        dict({
-          'default': 'f8309593097668d4edead958395fd49b95893d2e9e7634503fa9f4b51fceca3b',
-        }),
-        dict({
-          'default': '2fa77b085ee491e7e97f72c247013f8478ba3cb4465444e3fcba320c8e7725f6',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[diamond_graph-wyhash]
-  dict({
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '12037023440008030266',
-        }),
-        dict({
-          'default': '17837839317980491560',
-        }),
-        dict({
-          'default': '14558290314565373206',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '12037023440008030266',
-        }),
-        dict({
-          'default': '17837839317980491560',
-        }),
-        dict({
-          'default': '14558290314565373206',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[diamond_graph-xxhash32]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '3644544197',
-        }),
-        dict({
-          'default': '3150898318',
-        }),
-        dict({
-          'default': '3999303356',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[diamond_graph-xxhash64]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '4102418655400604945',
-        }),
-        dict({
-          'default': '4485303282459113117',
-        }),
-        dict({
-          'default': '16541571895607920915',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[multi_field-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '672f21cfef6762f70dcf94fa355db6b7',
-        }),
-        dict({
-          'default': 'e14fa6406edae92209947f24ee0dff64',
-        }),
-        dict({
-          'default': '72831a0fd08d2d33b5246095e906d6a4',
-        }),
-      ]),
-    }),
-  })
-# ---
 # name: test_resolve_update_with_upstream[multi_field-sha256]
   dict({
     tuple(
@@ -5174,13 +3502,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '35fcd771d351a6d304dba3a390d062ae21db346d55dc0c37e17a4fad927f1481',
+          'default': '9fabe6bbbbed85e8ee0c5f5abad25617a2797d9011843260ed4ae920635b0d3f',
         }),
         dict({
-          'default': 'bd3c7556de2f864ed50db24b4f05564fcd4458250e3c45d5af9b015fca4e51ff',
+          'default': '6f8fd6374c49b807ea350764577c091188d3204fb669adbe00c1f319fa240bcd',
         }),
         dict({
-          'default': '4e28090c2f0da85178a10f725e2ddcae0b19e6918c10b4e5eb8b0bb9c771ccbf',
+          'default': '5435184e637b701341d5f930bef6d101da89329682f50bf658cf5eb0092a5b2e',
         }),
       ]),
     }),
@@ -5193,13 +3521,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '35fcd771d351a6d304dba3a390d062ae21db346d55dc0c37e17a4fad927f1481',
+          'default': '9fabe6bbbbed85e8ee0c5f5abad25617a2797d9011843260ed4ae920635b0d3f',
         }),
         dict({
-          'default': 'bd3c7556de2f864ed50db24b4f05564fcd4458250e3c45d5af9b015fca4e51ff',
+          'default': '6f8fd6374c49b807ea350764577c091188d3204fb669adbe00c1f319fa240bcd',
         }),
         dict({
-          'default': '4e28090c2f0da85178a10f725e2ddcae0b19e6918c10b4e5eb8b0bb9c771ccbf',
+          'default': '5435184e637b701341d5f930bef6d101da89329682f50bf658cf5eb0092a5b2e',
         }),
       ]),
     }),
@@ -5216,13 +3544,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '14384979659561295483',
+          'default': '4887831902534074232',
         }),
         dict({
-          'default': '16393741906645701913',
+          'default': '10585603993434433875',
         }),
         dict({
-          'default': '1503451087436268925',
+          'default': '18277182166254846783',
         }),
       ]),
     }),
@@ -5235,13 +3563,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '14384979659561295483',
+          'default': '4887831902534074232',
         }),
         dict({
-          'default': '16393741906645701913',
+          'default': '10585603993434433875',
         }),
         dict({
-          'default': '1503451087436268925',
+          'default': '18277182166254846783',
         }),
       ]),
     }),
@@ -5258,13 +3586,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5277,13 +3605,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5296,13 +3624,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5315,13 +3643,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5334,13 +3662,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5353,13 +3681,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '3076203247',
+          'default': '1461775105',
         }),
         dict({
-          'default': '2996209608',
+          'default': '2382240293',
         }),
         dict({
-          'default': '1133952890',
+          'default': '28832373',
         }),
       ]),
     }),
@@ -5376,131 +3704,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '5703117408664097056',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '6708236814926810383',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-    tuple(
-      'clickhouse',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '5703117408664097056',
-        }),
-        dict({
-          'default': '6708236814926810383',
-        }),
-        dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '5703117408664097056',
-        }),
-        dict({
-          'default': '6708236814926810383',
-        }),
-        dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-    tuple(
-      'duckdb',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '5703117408664097056',
-        }),
-        dict({
-          'default': '6708236814926810383',
-        }),
-        dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '5703117408664097056',
-        }),
-        dict({
-          'default': '6708236814926810383',
-        }),
-        dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-    tuple(
-      'inmemory',
-      True,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '5703117408664097056',
-        }),
-        dict({
-          'default': '6708236814926810383',
-        }),
-        dict({
-          'default': '7678115697944854051',
-        }),
-      ]),
-    }),
-  })
-# ---
-# name: test_resolve_update_with_upstream[simple_chain-md5]
-  dict({
-    tuple(
-      'clickhouse',
-      False,
-    ): dict({
-      'added': 3,
-      'changed': 0,
-      'removed': 0,
-      'versions': list([
-        dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
-        }),
-        dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
-        }),
-        dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5513,13 +3723,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5532,13 +3742,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5551,13 +3761,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5570,13 +3780,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5589,13 +3799,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '0306c660f4a3dacc3ceb756ef5f3fc6c',
+          'default': '2974285457208488067',
         }),
         dict({
-          'default': '7e56c6df2f437a8885372d4cd1cd5a66',
+          'default': '12654974373045795122',
         }),
         dict({
-          'default': '82b916af3feb89882deb331e90c903d5',
+          'default': '10233537835565592250',
         }),
       ]),
     }),
@@ -5612,13 +3822,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2121e2490c3186daa2f01a15b0b1964870964899e34ea75ca7c2d5497fd12c21',
+          'default': '525b6d5368ed92bf7a3b29aa7248b505ccb787bdc66591619bfed49404ba48e3',
         }),
         dict({
-          'default': 'e06a446014c2fd4a83251e9f766a7059fac3e1be9adc75de7b8093042ba07f20',
+          'default': 'c1b47bcb7bc9f253ad3ad558000ddff009886fdfae550a72764e788969bcb783',
         }),
         dict({
-          'default': 'c007a95606c4aef5d55bd9ea8297df277ac7141bb7a698882307efe73110e2f8',
+          'default': '840a6285c91646438f8fab44e1c6c8adaa4cd1d3d477be51fcf9ce8e47f6407b',
         }),
       ]),
     }),
@@ -5631,13 +3841,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2121e2490c3186daa2f01a15b0b1964870964899e34ea75ca7c2d5497fd12c21',
+          'default': '525b6d5368ed92bf7a3b29aa7248b505ccb787bdc66591619bfed49404ba48e3',
         }),
         dict({
-          'default': 'e06a446014c2fd4a83251e9f766a7059fac3e1be9adc75de7b8093042ba07f20',
+          'default': 'c1b47bcb7bc9f253ad3ad558000ddff009886fdfae550a72764e788969bcb783',
         }),
         dict({
-          'default': 'c007a95606c4aef5d55bd9ea8297df277ac7141bb7a698882307efe73110e2f8',
+          'default': '840a6285c91646438f8fab44e1c6c8adaa4cd1d3d477be51fcf9ce8e47f6407b',
         }),
       ]),
     }),
@@ -5654,13 +3864,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '7390310183463134559',
+          'default': '4668216809693791590',
         }),
         dict({
-          'default': '9345967191715740243',
+          'default': '4857168970417459241',
         }),
         dict({
-          'default': '10240232034455902977',
+          'default': '1020151955873740869',
         }),
       ]),
     }),
@@ -5673,13 +3883,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '7390310183463134559',
+          'default': '4668216809693791590',
         }),
         dict({
-          'default': '9345967191715740243',
+          'default': '4857168970417459241',
         }),
         dict({
-          'default': '10240232034455902977',
+          'default': '1020151955873740869',
         }),
       ]),
     }),
@@ -5696,13 +3906,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5715,13 +3925,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5734,13 +3944,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5753,13 +3963,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5772,13 +3982,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5791,13 +4001,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '2923999235',
+          'default': '3792386664',
         }),
         dict({
-          'default': '2678760928',
+          'default': '1761693770',
         }),
         dict({
-          'default': '3500821944',
+          'default': '1814268731',
         }),
       ]),
     }),
@@ -5814,13 +4024,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),
@@ -5833,13 +4043,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),
@@ -5852,13 +4062,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),
@@ -5871,13 +4081,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),
@@ -5890,13 +4100,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),
@@ -5909,13 +4119,13 @@
       'removed': 0,
       'versions': list([
         dict({
-          'default': '10367360247745986975',
+          'default': '16698639220543966508',
         }),
         dict({
-          'default': '11278615146878285687',
+          'default': '586787157617226196',
         }),
         dict({
-          'default': '2591597587625471298',
+          'default': '12059215929306629396',
         }),
       ]),
     }),

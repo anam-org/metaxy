@@ -17,7 +17,7 @@ from metaxy import (
     InMemoryMetadataStore,
     SampleFeatureSpec,
 )
-from metaxy._testing import TempFeatureModule
+from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system_tables import SystemTableStorage
@@ -171,15 +171,17 @@ def test_basic_migration_flow(
 
     with simple_graph_v1.use(), store_v1:
         # Write data
-        data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"default": "h1"},
-                    {"default": "h2"},
-                    {"default": "h3"},
-                ],
-            }
+        data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                }
+            )
         )
         store_v1.write_metadata(SimpleV1, data)
 
@@ -274,15 +276,17 @@ def test_upstream_downstream_migration(
 
     with upstream_downstream_v1.use(), store_v1:
         # Write upstream (root feature)
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"default": "h1"},
-                    {"default": "h2"},
-                    {"default": "h3"},
-                ],
-            }
+        upstream_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                        {"default": "h3"},
+                    ],
+                }
+            )
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
@@ -328,15 +332,17 @@ def test_upstream_downstream_migration(
 
         # Step 5: Simulate user manually updating upstream (root feature)
         # This is what user must do when root features change
-        new_upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": [
-                    {"default": "new_h1"},
-                    {"default": "new_h2"},
-                    {"default": "new_h3"},
-                ],
-            }
+        new_upstream_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "metaxy_provenance_by_field": [
+                        {"default": "new_h1"},
+                        {"default": "new_h2"},
+                        {"default": "new_h3"},
+                    ],
+                }
+            )
         )
         store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
@@ -379,11 +385,16 @@ def test_migration_idempotency(
     ]
 
     with upstream_downstream_v1.use(), store_v1:
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2],
-                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
-            }
+        upstream_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                    ],
+                }
+            )
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
@@ -405,14 +416,16 @@ def test_migration_idempotency(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream manually
-        new_upstream = pl.DataFrame(
-            {
-                "sample_uid": [1, 2],
-                "metaxy_provenance_by_field": [
-                    {"default": "new_h1"},
-                    {"default": "new_h2"},
-                ],
-            }
+        new_upstream = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"default": "new_h1"},
+                        {"default": "new_h2"},
+                    ],
+                }
+            )
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
 
@@ -465,11 +478,16 @@ def test_migration_dry_run(
     ]
 
     with upstream_downstream_v1.use(), store_v1:
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1, 2],
-                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
-            }
+        upstream_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"default": "h1"},
+                        {"default": "h2"},
+                    ],
+                }
+            )
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
@@ -496,14 +514,16 @@ def test_migration_dry_run(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream
-        new_upstream = pl.DataFrame(
-            {
-                "sample_uid": [1, 2],
-                "metaxy_provenance_by_field": [
-                    {"default": "new_h1"},
-                    {"default": "new_h2"},
-                ],
-            }
+        new_upstream = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    "metaxy_provenance_by_field": [
+                        {"default": "new_h1"},
+                        {"default": "new_h2"},
+                    ],
+                }
+            )
         )
         store_v2.write_metadata(UpstreamV2, new_upstream)
 
@@ -607,11 +627,13 @@ def test_field_dependency_change(tmp_path):
 
     with graph_v1.use(), store_v1:
         # Write upstream with both fields
-        upstream_data = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "hf", "audio": "ha"}],
-            }
+        upstream_data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"frames": "hf", "audio": "ha"}],
+                }
+            )
         )
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
@@ -731,14 +753,24 @@ def test_feature_dependency_swap(tmp_path):
         # Write both upstreams
         store_v1.write_metadata(
             upstream_a_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
+            add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1],
+                        "metaxy_provenance_by_field": [{"default": "ha"}],
+                    }
+                )
             ),
         )
         store_v1.write_metadata(
             upstream_b_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
+            add_metaxy_provenance_column(
+                pl.DataFrame(
+                    {
+                        "sample_uid": [1],
+                        "metaxy_provenance_by_field": [{"default": "hb"}],
+                    }
+                )
             ),
         )
 
@@ -812,11 +844,13 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     ]
 
     with simple_graph_v1.use(), store_v1:
-        data = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"default": "h1"}],
-            }
+        data = add_metaxy_provenance_column(
+            pl.DataFrame(
+                {
+                    "sample_uid": [1],
+                    "metaxy_provenance_by_field": [{"default": "h1"}],
+                }
+            )
         )
         store_v1.write_metadata(SimpleV1, data)
         store_v1.record_feature_graph_snapshot()

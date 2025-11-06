@@ -11,11 +11,16 @@ from metaxy import (
     MetadataStore,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases, TempFeatureModule
+from metaxy._testing import (
+    HashAlgorithmCases,
+    TempFeatureModule,
+    add_metaxy_provenance_column,
+)
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
+assert add_metaxy_provenance_column is not None  # ensure the import is not removed
 
 
 def pytest_configure(config):

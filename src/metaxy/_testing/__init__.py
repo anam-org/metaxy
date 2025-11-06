@@ -3,9 +3,12 @@
 This is a private module (_testing) containing testing utilities organized into:
 - runbook: Runbook system for testing and documenting examples
 - metaxy_project: Project helpers for creating and managing temporary Metaxy projects
+- helpers: Test data helpers for creating properly formatted test DataFrames
 """
 
-# Runbook system
+# Test data helpers
+from metaxy._testing.helpers import add_metaxy_provenance_column
+
 # Metaxy project helpers
 from metaxy._testing.metaxy_project import (
     ExternalMetaxyProject,
@@ -15,6 +18,8 @@ from metaxy._testing.metaxy_project import (
     TempMetaxyProject,
     assert_all_results_equal,
 )
+
+# Runbook system
 from metaxy._testing.runbook import (
     ApplyPatchStep,
     AssertOutputStep,
@@ -43,4 +48,6 @@ __all__ = [
     "ExternalMetaxyProject",
     "TempMetaxyProject",
     "assert_all_results_equal",
+    # Test data helpers
+    "add_metaxy_provenance_column",
 ]

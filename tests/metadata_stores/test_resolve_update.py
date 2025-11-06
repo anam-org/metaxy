@@ -24,7 +24,11 @@ from metaxy import (
     FieldSpec,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy._testing import (
+    HashAlgorithmCases,
+    add_metaxy_provenance_column,
+    assert_all_results_equal,
+)
 from metaxy.data_versioning.diff import LazyIncrement
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
@@ -435,15 +439,17 @@ def test_resolve_update_no_upstream(
     root_feature = features[0]
 
     # 1. Source of truth: Polars DataFrame with sample data
-    source_samples = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "metaxy_provenance_by_field": [
-                {"field_a": "hash1"},
-                {"field_a": "hash2"},
-                {"field_a": "hash3"},
-            ],
-        }
+    source_samples = add_metaxy_provenance_column(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "hash1"},
+                    {"field_a": "hash2"},
+                    {"field_a": "hash3"},
+                ],
+            }
+        )
     )
 
     # Collect results from all stores
@@ -621,14 +627,16 @@ def test_resolve_update_with_upstream(
             ]
 
     # Create upstream data for root feature
-    upstream_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2", "a3"],
-            "metaxy_provenance_by_field": make_provenance_by_field(
-                root_feature, "manual"
-            ),
-        }
+    upstream_data = add_metaxy_provenance_column(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["a1", "a2", "a3"],
+                "metaxy_provenance_by_field": make_provenance_by_field(
+                    root_feature, "manual"
+                ),
+            }
+        )
     )
 
     # Iterate over store types and prefer_native variants
@@ -778,23 +786,27 @@ def test_resolve_update_detects_changes(
             ]
 
     # Initial upstream data
-    initial_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2", "a3"],
-            "metaxy_provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
-        }
+    initial_data = add_metaxy_provenance_column(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["a1", "a2", "a3"],
+                "metaxy_provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
+            }
+        )
     )
 
     # Changed upstream data (change sample 2)
-    changed_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2_CHANGED", "a3"],  # Changed
-            "metaxy_provenance_by_field": make_provenance_by_field(
-                "v_new", [1, 2, 3]
-            ),  # All changed to new version
-        }
+    changed_data = add_metaxy_provenance_column(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "value": ["a1", "a2_CHANGED", "a3"],  # Changed
+                "metaxy_provenance_by_field": make_provenance_by_field(
+                    "v_new", [1, 2, 3]
+                ),  # All changed to new version
+            }
+        )
     )
 
     # Iterate over store types and prefer_native variants
@@ -1058,17 +1070,19 @@ def test_resolve_update_feature_version_change_idempotency(
                         }
                         root_provenance_dicts.append(dv)
 
-                    root_data_v1 = pl.DataFrame(
-                        {
-                            "sample_uid": [1, 2, 3],
-                            "metaxy_provenance_by_field": root_provenance_dicts,
-                        },
-                        schema={
-                            "sample_uid": pl.UInt32,
-                            "metaxy_provenance_by_field": pl.Struct(
-                                {fn: pl.Utf8 for fn in root_field_names}
-                            ),
-                        },
+                    root_data_v1 = add_metaxy_provenance_column(
+                        pl.DataFrame(
+                            {
+                                "sample_uid": [1, 2, 3],
+                                "metaxy_provenance_by_field": root_provenance_dicts,
+                            },
+                            schema={
+                                "sample_uid": pl.UInt32,
+                                "metaxy_provenance_by_field": pl.Struct(
+                                    {fn: pl.Utf8 for fn in root_field_names}
+                                ),
+                            },
+                        )
                     )
                     store.write_metadata(RootFeature, root_data_v1)
 
