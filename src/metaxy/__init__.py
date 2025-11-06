@@ -33,12 +33,11 @@ from metaxy.models.feature import (
     graph,
 )
 from metaxy.models.feature_spec import (
-    BaseFeatureSpec,
-    BaseFeatureSpecWithIDColumns,
     FeatureDep,
     FeatureSpec,
+    FeatureSpecWithIDColumns,
     IDColumns,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy.models.field import (
     FieldDep,
@@ -83,12 +82,12 @@ __all__ = [
     "TestingFeature",
     "graph",
     "FeatureSpec",
-    "TestingFeatureSpec",
+    "SampleFeatureSpec",
     "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
-    "BaseFeatureSpec",
-    "BaseFeatureSpecWithIDColumns",
+    "FeatureSpec",
+    "FeatureSpecWithIDColumns",
     "AllFieldsMapping",
     "DefaultFieldsMapping",
     "FieldsMapping",

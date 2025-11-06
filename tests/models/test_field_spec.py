@@ -63,10 +63,10 @@ def test_field_spec_adapter_preserves_field_spec():
 
 
 def test_feature_spec_with_string_fields():
-    """Test that FeatureSpec can be initialized with string field keys."""
-    from metaxy.models.feature_spec import FeatureSpec
+    """Test that SampleFeatureSpec can be initialized with string field keys."""
+    from metaxy.models.feature_spec import SampleFeatureSpec
 
-    spec = FeatureSpec(key="test/feature", fields=["field1", "field2", "field3"])
+    spec = SampleFeatureSpec(key="test/feature", fields=["field1", "field2", "field3"])
 
     assert len(spec.fields) == 3
     assert spec.fields[0].key.to_string() == "field1"
@@ -79,10 +79,10 @@ def test_feature_spec_with_string_fields():
 
 
 def test_feature_spec_with_mixed_fields():
-    """Test that FeatureSpec can mix string fields and FieldSpec objects."""
-    from metaxy.models.feature_spec import FeatureSpec
+    """Test that SampleFeatureSpec can mix string fields and FieldSpec objects."""
+    from metaxy.models.feature_spec import SampleFeatureSpec
 
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key="test/feature",
         fields=[
             "simple_field",

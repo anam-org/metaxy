@@ -9,7 +9,7 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import BaseFeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
 
 
@@ -70,7 +70,7 @@ class ProvenanceByFieldCalculator(ABC):
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "BaseFeatureSpec",
+        feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

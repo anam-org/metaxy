@@ -10,7 +10,7 @@ import pytest
 from hypothesis import assume, given, settings
 from pydantic import BaseModel, ValidationError
 
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -340,18 +340,18 @@ class TestFieldKeyProperties:
 
 
 # ============================================================================
-# Property Tests for FeatureSpec
+# Property Tests for SampleFeatureSpec
 # ============================================================================
 
 
 class TestFeatureSpecProperties:
-    """Property tests for FeatureSpec accepting coercible keys."""
+    """Property tests for SampleFeatureSpec accepting coercible keys."""
 
     @given(key_data=coercible_to_feature_key())
     @settings(max_examples=100)
     def test_feature_spec_accepts_coercible_key(self, key_data: Any):
-        """Test that FeatureSpec accepts all coercible key formats."""
-        spec = FeatureSpec(key=key_data, deps=None)
+        """Test that SampleFeatureSpec accepts all coercible key formats."""
+        spec = SampleFeatureSpec(key=key_data)
 
         assert isinstance(spec.key, FeatureKey)
         assert isinstance(spec.key.parts, tuple)
@@ -362,15 +362,16 @@ class TestFeatureSpecProperties:
     )
     @settings(max_examples=50)
     def test_feature_spec_with_deps(self, key_data: Any, dep_keys: list[Any]):
-        """Test FeatureSpec with dependencies using coercible keys."""
-        deps = (
-            [FeatureDep(feature=dep_key) for dep_key in dep_keys] if dep_keys else None
-        )
-
-        spec = FeatureSpec(key=key_data, deps=deps)
+        """Test SampleFeatureSpec with dependencies using coercible keys."""
+        # Build deps list; omit parameter if empty (don't pass None)
+        if dep_keys:
+            deps = [FeatureDep(feature=dep_key) for dep_key in dep_keys]
+            spec = SampleFeatureSpec(key=key_data, deps=deps)
+        else:
+            spec = SampleFeatureSpec(key=key_data)
 
         assert isinstance(spec.key, FeatureKey)
-        if deps:
+        if dep_keys:
             assert spec.deps is not None
             for dep in spec.deps:
                 assert isinstance(dep.feature, FeatureKey)
@@ -383,7 +384,7 @@ class TestFeatureSpecProperties:
     def test_feature_spec_with_fields(
         self, key_data: Any, unique_parts: list[list[str]]
     ):
-        """Test FeatureSpec with fields using coercible keys."""
+        """Test SampleFeatureSpec with fields using coercible keys."""
         # Convert unique parts to various formats
         fields = []
         for i, parts in enumerate(unique_parts):
@@ -399,7 +400,7 @@ class TestFeatureSpecProperties:
                 FieldSpec(key=field_key, code_version="1", deps=SpecialFieldDep.ALL)
             )
 
-        spec = FeatureSpec(key=key_data, fields=fields)
+        spec = SampleFeatureSpec(key=key_data, fields=fields)
 
         assert isinstance(spec.key, FeatureKey)
         assert len(spec.fields) == len(fields)
@@ -409,8 +410,8 @@ class TestFeatureSpecProperties:
     @given(key_data=coercible_to_feature_key())
     @settings(max_examples=50)
     def test_feature_spec_json_serialization(self, key_data: Any):
-        """Test FeatureSpec JSON serialization with coercible keys."""
-        spec = FeatureSpec(key=key_data, deps=None)
+        """Test SampleFeatureSpec JSON serialization with coercible keys."""
+        spec = SampleFeatureSpec(key=key_data)
 
         # Serialize to JSON
         json_data = spec.model_dump(mode="json")
@@ -419,7 +420,7 @@ class TestFeatureSpecProperties:
         assert isinstance(json_data["key"], list)
 
         # Should be able to reconstruct
-        spec_restored = FeatureSpec(**json_data)
+        spec_restored = SampleFeatureSpec(**json_data)
         assert spec_restored.key == spec.key
 
 
@@ -576,21 +577,7 @@ class TestComplexIntegration:
     def test_complete_feature_spec_with_all_coercible_types(
         self, main_key: Any, dep_keys: list[Any], unique_field_parts: list[list[str]]
     ):
-        """Test complete FeatureSpec with all components using coercible types."""
-        # Build dependencies
-        deps = (
-            [
-                FeatureDep(
-                    feature=dep_key,
-                    columns=("col1",) if i % 2 == 0 else None,
-                    rename={"col1": f"dep{i}_col1"} if i % 3 == 0 else None,
-                )
-                for i, dep_key in enumerate(dep_keys)
-            ]
-            if dep_keys
-            else None
-        )
-
+        """Test complete SampleFeatureSpec with all components using coercible types."""
         # Build fields with unique keys
         fields = []
         for i, parts in enumerate(unique_field_parts):
@@ -608,12 +595,23 @@ class TestComplexIntegration:
                 )
             )
 
-        # Create the spec
-        spec = FeatureSpec(key=main_key, deps=deps, fields=fields)
+        # Build dependencies and create spec (omit deps if empty)
+        if dep_keys:
+            deps = [
+                FeatureDep(
+                    feature=dep_key,
+                    columns=("col1",) if i % 2 == 0 else None,
+                    rename={"col1": f"dep{i}_col1"} if i % 3 == 0 else None,
+                )
+                for i, dep_key in enumerate(dep_keys)
+            ]
+            spec = SampleFeatureSpec(key=main_key, deps=deps, fields=fields)
+        else:
+            spec = SampleFeatureSpec(key=main_key, fields=fields)
 
         # Verify structure
         assert isinstance(spec.key, FeatureKey)
-        if deps:
+        if dep_keys:
             assert spec.deps is not None
             for dep in spec.deps:
                 assert isinstance(dep.feature, FeatureKey)
@@ -623,7 +621,7 @@ class TestComplexIntegration:
         # Test JSON serialization roundtrip
         json_str = spec.model_dump_json()
         json_data = json.loads(json_str)
-        spec_restored = FeatureSpec(**json_data)
+        spec_restored = SampleFeatureSpec(**json_data)
 
         assert spec_restored.key == spec.key
         assert len(spec_restored.fields) == len(spec.fields)
@@ -644,7 +642,7 @@ class TestComplexIntegration:
             """A container model with nested models."""
 
             items: list[MyNestedModel]
-            main_feature: FeatureSpec
+            main_feature: SampleFeatureSpec
 
         # Generate data
         n_items = data.draw(st.integers(min_value=1, max_value=3))
@@ -658,7 +656,7 @@ class TestComplexIntegration:
                 )
             )
 
-        main_feature = FeatureSpec(key=data.draw(coercible_to_feature_key()), deps=None)
+        main_feature = SampleFeatureSpec(key=data.draw(coercible_to_feature_key()))
 
         # Create container
         container = MyContainerModel(items=items, main_feature=main_feature)

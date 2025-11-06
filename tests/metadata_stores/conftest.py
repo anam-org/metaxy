@@ -7,15 +7,7 @@ from typing import Any
 import pytest
 from pytest_cases import fixture, parametrize_with_cases
 
-from metaxy import (
-    FeatureDep,
-    FeatureKey,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-    TestingFeatureSpec,
-)
-from metaxy._testing import HashAlgorithmCases, TempFeatureModule
+from metaxy._testing import HashAlgorithmCases
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -194,95 +186,6 @@ def clickhouse_db(clickhouse_server):
         conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # type: ignore[attr-defined]
     except Exception:
         pass  # Best effort cleanup
-
-
-@pytest.fixture
-def test_graph():
-    """Create a clean FeatureGraph for testing with test features registered.
-
-    Returns a tuple of (graph, features_dict) where features_dict provides
-    easy access to feature classes by simple names.
-
-    Uses TempFeatureModule to make features importable for historical graph reconstruction.
-    """
-    temp_module = TempFeatureModule("test_stores_features")
-
-    # Define specs
-    upstream_a_spec = TestingFeatureSpec(
-        key=FeatureKey(["test_stores", "upstream_a"]),
-        fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
-            FieldSpec(key=FieldKey(["audio"]), code_version="1"),
-        ],
-    )
-
-    upstream_b_spec = TestingFeatureSpec(
-        key=FeatureKey(["test_stores", "upstream_b"]),
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version="1"),
-        ],
-    )
-
-    downstream_spec = TestingFeatureSpec(
-        key=FeatureKey(["test_stores", "downstream"]),
-        deps=[
-            FeatureDep(feature=FeatureKey(["test_stores", "upstream_a"])),
-        ],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["test_stores", "upstream_a"]),
-                        fields=[
-                            FieldKey(["frames"]),
-                            FieldKey(["audio"]),
-                        ],
-                    )
-                ],
-            ),
-        ],
-    )
-
-    # Write to temp module
-    temp_module.write_features(
-        {
-            "UpstreamFeatureA": upstream_a_spec,
-            "UpstreamFeatureB": upstream_b_spec,
-            "DownstreamFeature": downstream_spec,
-        }
-    )
-
-    # Get graph from module
-    graph = temp_module.graph
-
-    # Create features dict for easy access
-    features = {
-        "UpstreamFeatureA": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_a"])
-        ],
-        "UpstreamFeatureB": graph.features_by_key[
-            FeatureKey(["test_stores", "upstream_b"])
-        ],
-        "DownstreamFeature": graph.features_by_key[
-            FeatureKey(["test_stores", "downstream"])
-        ],
-    }
-
-    yield graph, features
-
-    temp_module.cleanup()
-
-
-@pytest.fixture
-def test_features(test_graph):
-    """Provide dict of test feature classes for easy access in tests.
-
-    This fixture extracts just the features dict from test_graph for convenience.
-    """
-    _, features = test_graph
-    return features
 
 
 @pytest.fixture

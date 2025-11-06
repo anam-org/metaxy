@@ -36,7 +36,7 @@ All formats produce equivalent keys, internally represented as a sequence of par
 
 ### Fields
 
-[FieldSpec][metaxy.FieldSpec] can be passed to [FeatureSpec][metaxy.BaseFeatureSpec] as a string that represents the field key:
+[`FieldSpec`][metaxy.FieldSpec] can be passed to [`FeatureSpec`][metaxy.FeatureSpec] as a string that represents the field key:
 
 ```python
 spec = FeatureSpec(

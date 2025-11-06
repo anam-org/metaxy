@@ -6,7 +6,7 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 
@@ -17,7 +17,7 @@ def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
 
     class FeatureA(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature_a"]),
             fields=[FieldSpec(key=FieldKey("field_a"), code_version="1")],
         ),
@@ -28,7 +28,7 @@ def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
 
     class FeatureB(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature_b"]),
             fields=[FieldSpec(key=FieldKey("field_b"), code_version="1")],
         ),

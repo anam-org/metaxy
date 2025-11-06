@@ -15,7 +15,7 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec, FieldSpec
+from metaxy.models.feature_spec import FeatureDep, FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
@@ -56,7 +56,7 @@ class TestProjectValidationComprehensive:
             # 1. Default case - uses global config (default project)
             class DefaultFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["default_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -72,7 +72,7 @@ class TestProjectValidationComprehensive:
 
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                 ),
@@ -89,7 +89,7 @@ class TestProjectValidationComprehensive:
 
             class CustomFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["custom_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field3"]), code_version="1")],
                 ),
@@ -109,7 +109,7 @@ class TestProjectValidationComprehensive:
             # Create a feature with the correct project
             class ValidFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["valid_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -148,7 +148,7 @@ class TestProjectValidationComprehensive:
 
             class FeatureA(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -186,7 +186,7 @@ class TestProjectValidationComprehensive:
 
             class FeatureA(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -230,7 +230,7 @@ class TestProjectValidationComprehensive:
 
             class RootFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -239,7 +239,7 @@ class TestProjectValidationComprehensive:
 
             class ChildFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                     deps=[FeatureDep(feature=RootFeature.spec().key)],
@@ -287,7 +287,7 @@ class TestProjectValidationComprehensive:
 
             class RootFeatureV2(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature_v2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -296,7 +296,7 @@ class TestProjectValidationComprehensive:
 
             class ChildFeatureV2(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature_v2"]),
                     fields=[
                         FieldSpec(key=FieldKey(["field2"]), code_version="2")
@@ -397,7 +397,7 @@ class TestProjectValidationComprehensive:
 
             class FixtureFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["fixture_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),

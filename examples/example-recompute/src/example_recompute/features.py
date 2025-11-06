@@ -21,6 +21,7 @@ class ParentFeature(
                 code_version="1",
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Parent feature that generates embeddings from raw data."""
@@ -45,6 +46,7 @@ class ChildFeature(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Child feature that uses parent embeddings to generate predictions."""

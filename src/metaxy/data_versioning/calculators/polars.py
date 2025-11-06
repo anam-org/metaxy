@@ -15,7 +15,7 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.utils.hashing import truncate_struct_column
 
 if TYPE_CHECKING:
-    from metaxy.models.feature_spec import BaseFeatureSpec
+    from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.plan import FeaturePlan
 
 
@@ -49,7 +49,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
     def calculate_provenance_by_field(
         self,
         joined_upstream: nw.LazyFrame[Any],
-        feature_spec: "BaseFeatureSpec",
+        feature_spec: "FeatureSpec",
         feature_plan: "FeaturePlan",
         upstream_column_mapping: dict[str, str],
         hash_algorithm: HashAlgorithm | None = None,

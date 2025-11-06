@@ -9,7 +9,7 @@ import pytest
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import FieldSpec, TestingFeatureSpec
+from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import (
     MIN_TRUNCATION_LENGTH,
@@ -273,7 +273,7 @@ class TestFeatureVersionTruncation:
         # Create feature without truncation
         class TestFeature1(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature1"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 # Root feature has no dependencies
@@ -290,7 +290,7 @@ class TestFeatureVersionTruncation:
 
         class TestFeature2(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature2"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 # Root feature has no dependencies
@@ -309,7 +309,7 @@ class TestFeatureVersionTruncation:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
             ),
@@ -336,7 +336,7 @@ class TestFeatureVersionTruncation:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[
                     FieldSpec(key=FieldKey(["field1"]), code_version="1"),
@@ -457,7 +457,7 @@ class TestMetadataStoreTruncation:
         # Create feature
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
             ),
@@ -510,7 +510,7 @@ class TestMigrationCompatibility:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
             ),
@@ -530,7 +530,7 @@ class TestMigrationCompatibility:
 
             class TestFeature(  # noqa: F811
                 TestingFeature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[
                         FieldSpec(key=FieldKey(["field1"]), code_version="2")
@@ -581,7 +581,7 @@ class TestEndToEnd:
         # Create features
         class ParentFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["parent"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -592,7 +592,7 @@ class TestEndToEnd:
 
         class ChildFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["child"]),
                 fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],
                 deps=[FeatureDep(feature=FeatureKey(["parent"]))],

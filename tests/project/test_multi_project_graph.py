@@ -8,7 +8,14 @@ from __future__ import annotations
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureDep, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+from metaxy import (
+    Feature,
+    FeatureDep,
+    FeatureKey,
+    FieldKey,
+    FieldSpec,
+    SampleFeatureSpec,
+)
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
@@ -23,7 +30,7 @@ def test_graph_contains_features_from_multiple_projects(
 
     class FeatureA1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["project_a", "feature1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -32,7 +39,7 @@ def test_graph_contains_features_from_multiple_projects(
 
     class FeatureA2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["project_a", "feature2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -45,7 +52,7 @@ def test_graph_contains_features_from_multiple_projects(
 
     class FeatureB1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["project_b", "feature1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -54,7 +61,7 @@ def test_graph_contains_features_from_multiple_projects(
 
     class FeatureB2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["project_b", "feature2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -90,7 +97,7 @@ def test_graph_snapshot_includes_all_projects(
 
     class FeatureA(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature_a"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -103,7 +110,7 @@ def test_graph_snapshot_includes_all_projects(
 
     class FeatureB(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature_b"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -134,7 +141,7 @@ def test_graph_snapshot_version_includes_all_projects(
 
     class FeatureA(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature_a"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -146,7 +153,7 @@ def test_graph_snapshot_version_includes_all_projects(
 
     class FeatureB(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["feature_b"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -168,7 +175,7 @@ def test_graph_snapshot_version_includes_all_projects(
 
         class FeatureSingle(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -195,7 +202,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
 
         class SnapshotFeatureA(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["restore", "feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -209,7 +216,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
 
         class SnapshotFeatureB(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["restore", "feature_b"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -255,7 +262,7 @@ def test_multi_project_dependency_graph(
 
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -268,7 +275,7 @@ def test_multi_project_dependency_graph(
 
     class DownstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -309,7 +316,7 @@ def test_get_downstream_features_across_projects(
 
     class RootFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["root"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
@@ -322,7 +329,7 @@ def test_get_downstream_features_across_projects(
 
     class MidFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["mid"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -336,7 +343,7 @@ def test_get_downstream_features_across_projects(
 
     class LeafFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(feature=FeatureKey(["mid"]))],
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -382,7 +389,7 @@ def test_graph_with_same_feature_key_different_projects() -> None:
 
         class FeatureInX(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["common", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -398,7 +405,7 @@ def test_graph_with_same_feature_key_different_projects() -> None:
 
         class FeatureInY(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["common", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),

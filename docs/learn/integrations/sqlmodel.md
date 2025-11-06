@@ -43,11 +43,11 @@ This will expose Metaxy's system tables to SQLAlchemy.
 First, as always with Metaxy features, we would have to define our ID columns:
 
 ```python
-from metaxy import BaseFeatureSpec
+from metaxy import FeatureSpec
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 
 
-class SampleFeatureSpec(BaseFeatureSpec):
+class SampleFeatureSpec(FeatureSpec):
     id_columns: tuple[str] = "sample_id"
 
 

@@ -20,7 +20,7 @@ from metaxy.models.constants import (
     SYSTEM_COLUMN_PREFIX,
 )
 from metaxy.models.feature import BaseFeature, MetaxyMeta
-from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
+from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 
 if TYPE_CHECKING:
     pass
@@ -54,13 +54,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     Example:
         ```py
         from metaxy.integrations.sqlmodel import SQLModelFeature
-        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
         class MyFeature(
             SQLModelFeature,
             table=True,
-            spec=BaseFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["my", "feature"]),
 
                 fields=[
@@ -84,7 +84,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
-        spec: BaseFeatureSpecWithIDColumns | None = None,
+        spec: FeatureSpecWithIDColumns | None = None,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Feature class.
@@ -93,7 +93,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             cls_name: Name of the class being created
             bases: Base classes
             namespace: Class namespace (attributes and methods)
-            spec: Metaxy BaseFeatureSpec (required for concrete features)
+            spec: Metaxy FeatureSpec (required for concrete features)
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -149,7 +149,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     @staticmethod
     def _validate_id_columns_not_server_defined(
         new_class: type[Any],
-        spec: BaseFeatureSpecWithIDColumns,
+        spec: FeatureSpecWithIDColumns,
     ) -> None:
         """Validate that primary key id_columns are not autoincrement.
 
@@ -158,7 +158,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         Args:
             new_class: The newly created SQLModel class
-            spec: The BaseFeatureSpec containing id_columns definition
+            spec: The FeatureSpec containing id_columns definition
 
         Raises:
             ValueError: If any id_column is an autoincrement primary key
@@ -221,13 +221,13 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     Example:
         ```py
         from metaxy.integrations.sqlmodel import SQLModelFeature
-        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
         class VideoFeature(
             SQLModelFeature,
             table=True,
-            spec=BaseFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["video"]),
                   # Root feature
                 fields=[

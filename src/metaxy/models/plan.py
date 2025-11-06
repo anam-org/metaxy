@@ -5,9 +5,9 @@ import pydantic
 
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.feature_spec import (
-    BaseFeatureSpecWithIDColumns,
     FeatureDep,
     FeatureKey,
+    FeatureSpecWithIDColumns,
 )
 from metaxy.models.field import (
     FieldDep,
@@ -17,7 +17,7 @@ from metaxy.models.field import (
 )
 from metaxy.models.fields_mapping import FieldsMappingResolutionContext
 
-# Rebuild the model now that BaseFeatureSpec is available
+# Rebuild the model now that FeatureSpec is available
 FieldsMappingResolutionContext.model_rebuild()
 
 
@@ -51,8 +51,8 @@ class FQFieldKey(FrozenBaseModel):
 class FeaturePlan(FrozenBaseModel):
     """Slice of the feature graph that includes a given feature and its parents"""
 
-    feature: pydantic.SkipValidation[BaseFeatureSpecWithIDColumns]
-    deps: pydantic.SkipValidation[list[BaseFeatureSpecWithIDColumns] | None]
+    feature: pydantic.SkipValidation[FeatureSpecWithIDColumns]
+    deps: pydantic.SkipValidation[list[FeatureSpecWithIDColumns] | None]
     feature_deps: list[FeatureDep] | None = (
         None  # The actual dependency specifications with field mappings
     )
@@ -60,7 +60,7 @@ class FeaturePlan(FrozenBaseModel):
     @cached_property
     def parent_features_by_key(
         self,
-    ) -> Mapping[FeatureKey, BaseFeatureSpecWithIDColumns]:
+    ) -> Mapping[FeatureKey, FeatureSpecWithIDColumns]:
         return {feature.key: feature for feature in self.deps or []}
 
     @cached_property

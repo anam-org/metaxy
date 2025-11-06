@@ -14,9 +14,8 @@ from metaxy.models.constants import (
     METAXY_FEATURE_VERSION,
 )
 from metaxy.models.feature_spec import (
-    BaseFeatureSpec,
-    BaseFeatureSpecWithIDColumns,
     FeatureSpec,
+    FeatureSpecWithIDColumns,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
@@ -70,7 +69,7 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
 class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
-        self.feature_specs_by_key: dict[FeatureKey, BaseFeatureSpecWithIDColumns] = {}
+        self.feature_specs_by_key: dict[FeatureKey, FeatureSpecWithIDColumns] = {}
 
     def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
@@ -97,9 +96,7 @@ class FeatureGraph:
         self.features_by_key[feature.spec().key] = feature
         self.feature_specs_by_key[feature.spec().key] = feature.spec()
 
-    def _validate_no_duplicate_columns(
-        self, spec: "BaseFeatureSpecWithIDColumns"
-    ) -> None:
+    def _validate_no_duplicate_columns(self, spec: "FeatureSpecWithIDColumns") -> None:
         """Validate that there are no duplicate column names across dependencies after renaming.
 
         This method checks that after all column selection and renaming operations,
@@ -669,7 +666,7 @@ class MetaxyMeta(ModelMetaclass):
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
-        spec: BaseFeatureSpecWithIDColumns | None = None,
+        spec: FeatureSpecWithIDColumns | None = None,
         **kwargs,
     ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
@@ -759,13 +756,13 @@ class _FeatureSpecDescriptor:
 
 
 class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
-    _spec: ClassVar[BaseFeatureSpec]
+    _spec: ClassVar[FeatureSpec]
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
 
     @classmethod
-    def spec(cls) -> BaseFeatureSpec:  # type: ignore[override]
+    def spec(cls) -> FeatureSpec:  # type: ignore[override]
         return cls._spec
 
     @classmethod
