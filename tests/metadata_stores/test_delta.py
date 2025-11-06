@@ -31,7 +31,7 @@ def test_delta_write_and_read(tmp_path, test_graph, test_features) -> None:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -66,7 +66,7 @@ def test_delta_persistence_across_instances(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -90,7 +90,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                 ],
             }
@@ -111,7 +111,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         fresh = pl.DataFrame(
             {
                 "sample_uid": [2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h2", "audio": "h2"},
                 ],
             }
@@ -139,7 +139,7 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                 ],
             }

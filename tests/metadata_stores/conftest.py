@@ -10,6 +10,7 @@ from pytest_cases import fixture, parametrize_with_cases
 from metaxy._testing import HashAlgorithmCases
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
+from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
@@ -258,6 +259,14 @@ class StoreCases:
         # Registry is accessed globally via FeatureGraph.get_active()
         # clickhouse_db provides a clean database connection string
         return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
+
+    def case_delta(
+        self, tmp_path: Path, test_graph: FeatureGraph
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
+        """Delta Lake store case."""
+        pytest.importorskip("deltalake")  # Skip if deltalake not installed
+        delta_path = tmp_path / "delta_store"
+        return (DeltaMetadataStore, {"root_path": delta_path})
 
 
 @fixture

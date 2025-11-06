@@ -43,6 +43,9 @@ clickhouse = [
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",
 ]
+delta = [
+  "deltalake>=1.2.1",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
@@ -94,10 +97,6 @@ docs = [
   "mkdocs-api-autonav>=0.4.0",
   "mkdocs-metaxy",
   "examples",
-]
-
-delta = [
-  "deltalake>=0.20.0",
 ]
 
 [tool.ruff]
