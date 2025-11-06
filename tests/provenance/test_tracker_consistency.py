@@ -11,8 +11,8 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
-
 from metaxy.data_versioning import HashAlgorithm
+
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.provenance.ibis import IbisProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker

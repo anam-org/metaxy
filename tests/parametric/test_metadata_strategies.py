@@ -3,6 +3,7 @@
 import polars as pl
 import pytest
 from hypothesis import given, settings
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 
 from metaxy import (
     Feature,

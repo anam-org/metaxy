@@ -13,6 +13,7 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy.data_versioning.diff import LazyIncrement
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -29,8 +30,6 @@ from metaxy._testing import (
     add_metaxy_provenance_column,
     assert_all_results_equal,
 )
-from metaxy.data_versioning.diff import LazyIncrement
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -39,6 +38,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
+from metaxy.provenance.types import HashAlgorithm
 
 # ============= STORE CONFIGURATION =============
 

@@ -6,10 +6,10 @@ from typing import Any
 import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 class InMemoryMetadataStore(MetadataStore):

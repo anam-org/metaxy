@@ -318,12 +318,6 @@ class ProvenanceTracker(ABC):
         if columns_to_drop:
             df = df.drop(*columns_to_drop)
 
-        # Drop version columns if present (they come from upstream and shouldn't be in the result)
-        version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
-        columns_to_drop = [col for col in version_columns if col in df.columns]
-        if columns_to_drop:
-            df = df.drop(*columns_to_drop)
-
         return df
 
     def resolve_increment_with_provenance(
@@ -363,6 +357,7 @@ class ProvenanceTracker(ABC):
             )
             expected = sample
 
+<<<<<<< HEAD
             # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
             cols = expected.collect_schema().names()
             if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
@@ -394,6 +389,41 @@ class ProvenanceTracker(ABC):
                 # Drop temporary column
                 expected = expected.drop("__sample_concat")
 
+||||||| parent of 5e7eb88 (drop metaxy.data_versioning)
+=======
+            # Auto-compute metaxy_provenance if missing but metaxy_provenance_by_field exists
+            cols = expected.collect_schema().names()
+            if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
+                warnings.warn(
+                    f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
+                )
+                # Compute sample-level provenance from field-level provenance
+                # Get all field names from the struct (we need feature spec for this)
+                field_names = sorted(
+                    [f.key.to_struct_key() for f in self.plan.feature.fields]
+                )
+
+                # Concatenate all field hashes with separator
+                sample_components = [
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
+                    for field_name in field_names
+                ]
+                sample_concat = nw.concat_str(sample_components, separator="|")
+                expected = expected.with_columns(sample_concat.alias("__sample_concat"))
+
+                # Hash the concatenation to produce final provenance hash
+                expected = self.hash_string_column(
+                    expected,
+                    "__sample_concat",
+                    METAXY_PROVENANCE,
+                    hash_algorithm,
+                    hash_length,
+                )
+
+                # Drop temporary column
+                expected = expected.drop("__sample_concat")
+
+>>>>>>> 5e7eb88 (drop metaxy.data_versioning)
             # Validate that root features provide both required provenance columns
             self._check_required_provenance_columns(
                 expected, "The `sample` DataFrame (must be provided to root features)"

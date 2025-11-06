@@ -14,7 +14,6 @@ import polars as pl
 from typing_extensions import Self
 
 from metaxy.data_versioning.diff import Increment, LazyIncrement
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -40,6 +39,7 @@ from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
 from metaxy.provenance.polars import PolarsProvenanceTracker
 from metaxy.provenance.tracker import ProvenanceTracker
+from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
     pass
