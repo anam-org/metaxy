@@ -1,4 +1,8 @@
-"""Data provenance module for sample-level field provenance calculation."""
+"""Data provenance module for sample-level field provenance calculation.
+
+NOTE: This module provides the old three-component system (joiners/calculators/diff) for
+backward compatibility with existing metadata stores. New code should use metaxy.provenance instead.
+"""
 
 from metaxy.data_versioning.calculators import (
     PolarsProvenanceByFieldCalculator,
@@ -6,6 +10,7 @@ from metaxy.data_versioning.calculators import (
 )
 from metaxy.data_versioning.diff import (
     Increment,
+    LazyIncrement,
     MetadataDiffResolver,
     NarwhalsDiffResolver,
 )
@@ -19,6 +24,7 @@ __all__ = [
     "ProvenanceByFieldCalculator",
     "PolarsProvenanceByFieldCalculator",
     "Increment",
+    "LazyIncrement",
     "MetadataDiffResolver",
     "NarwhalsDiffResolver",
 ]
