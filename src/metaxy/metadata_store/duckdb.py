@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store._ducklake_support import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,
@@ -19,6 +18,7 @@ from metaxy.metadata_store._ducklake_support import (
     ensure_extensions_with_plugins,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.provenance.types import HashAlgorithm
 
 
 class ExtensionSpec(BaseModel):

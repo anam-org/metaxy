@@ -14,6 +14,7 @@ import polars.testing as pl_testing
 import pytest
 import pytest_cases
 from hypothesis.errors import NonInteractiveExampleWarning
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -27,7 +28,6 @@ from metaxy import (
 from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy.config import MetaxyConfig
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,

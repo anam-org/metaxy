@@ -149,7 +149,7 @@ def test_clickhouse_hash_algorithms(
         test_features: Dict with test feature classes
     """
 
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     # Test each supported algorithm
     for algorithm in [
@@ -236,7 +236,7 @@ def test_clickhouse_config_with_hash_algorithm(
 ) -> None:
     """Test ClickHouse store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={

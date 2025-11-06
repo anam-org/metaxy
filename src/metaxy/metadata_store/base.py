@@ -20,7 +20,6 @@ from metaxy.data_versioning.calculators.polars import (
 from metaxy.data_versioning.diff import Increment, LazyIncrement
 from metaxy.data_versioning.diff.base import MetadataDiffResolver
 from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 from metaxy.metadata_store.exceptions import (
@@ -46,6 +45,7 @@ from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.field import FieldDep, SpecialFieldDep
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
+from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
     pass

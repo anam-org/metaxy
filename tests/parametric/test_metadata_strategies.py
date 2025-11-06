@@ -16,13 +16,13 @@ from metaxy._testing.parametric import (
     feature_metadata_strategy,
     upstream_metadata_strategy,
 )
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
+from metaxy.provenance.types import HashAlgorithm
 
 
 def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:

@@ -3,8 +3,8 @@
 import narwhals as nw
 import polars as pl
 import pytest
-
 from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec

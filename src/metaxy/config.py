@@ -464,7 +464,7 @@ class MetaxyConfig(BaseSettings):
             store = config.get_store()
             ```
         """
-        from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+        from metaxy.provenance.types import HashAlgorithm
 
         if len(self.stores) == 0:
             raise ValueError(
