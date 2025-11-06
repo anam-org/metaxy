@@ -1,32 +1,38 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import Mapping, Sequence
+from contextlib import AbstractContextManager
+from typing import TypeAlias, overload
 
-from metaxy.provenance.polars import PolarsProvenanceTracker
+import narwhals as nw
+import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
-from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.tracker import ProvenanceTracker
-import narwhals as nw
-from metaxy import BaseFeature, FeatureKey, FeatureSpec, FeatureGraph
-
-from typing import Sequence, overload, TypeAlias, TypeGuard, cast, Mapping
-from metaxy.provenance.types import Increment, LazyIncrement, HashAlgorithm
-import polars as pl
-from narwhals.typing import IntoFrameT, FrameT, Frame
+from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
 from metaxy.models.constants import METAXY_FEATURE_VERSION
+from metaxy.models.feature import BaseFeature, FeatureGraph
+from metaxy.models.feature_spec import FeatureSpec
+from metaxy.models.plan import FeaturePlan
+from metaxy.models.types import FeatureKey
+from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.provenance.tracker import ProvenanceTracker
+from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
 CoercibleToFeature: TypeAlias = type[BaseFeature] | FeatureSpec | FeatureKey
+
+__all__ = ["MetadataStore", "FEATURE_VERSIONS_KEY", "CoercibleToFeature"]
 
 
 class MetadataStore(ABC):
     def __init__(
         self,
         hash_algo: HashAlgorithm,
-        hash_length: int
+        hash_length: int,
+        auto_create_tables: bool = True,
     ):
         self.hash_algo = hash_algo
         self.hash_length = hash_length
+        self.auto_create_tables = auto_create_tables
 
     @overload
     def resolve_update(
@@ -65,7 +71,7 @@ class MetadataStore(ABC):
 
         feature = self.coerce_to_feature(feature)
         # feature = cast(type[BaseFeature], feature)
-        plan = feature.graph.get_feature_plan(feature.spec.key)
+        plan = feature.graph.get_feature_plan(feature.spec().key)
 
         # 1. Load upstream columns
         upstream = {
@@ -74,7 +80,7 @@ class MetadataStore(ABC):
         }
 
         # 2. Read current feature metadata
-        current = self.read_metadata(feature, filters=filters.get(feature.spec.key, []), current_version=True)
+        current = self.read_metadata(feature, filters=filters.get(feature.spec().key, []), current_version=True)
 
         # 3. Create tracker
         if self.supports_native_tracker():
@@ -88,7 +94,7 @@ class MetadataStore(ABC):
             upstream=upstream,
             current=current,
             hash_length=self.hash_length,
-            hash_algorithm=self.hash_algorithm,
+            hash_algorithm=self.hash_algo,
             filters=filters,
             sample=sample,
         )
@@ -113,15 +119,23 @@ class MetadataStore(ABC):
     def create_tracker(self, plan: FeaturePlan) -> ProvenanceTracker:
         raise NotImplementedError
 
-    def read_metadata(self, feature: type[BaseFeature] | FeatureKey, filters: Sequence[nw.Expr] | None = None, current_version: bool = True) -> Frame:
-        filters = filters or []
+    def read_metadata(self, feature: type[BaseFeature] | FeatureKey, filters: Sequence[nw.Expr] | None = None, current_version: bool = True) -> Frame | None:
+        filters_list = list(filters or [])
         feature = self.coerce_to_feature(feature)
+
         if current_version:
-            filters.append(nw.col(METAXY_FEATURE_VERSION) == feature.feature_version())
-        return self.read_metadata_impl(feature, filters)
+            # Check if the table exists and has the metaxy_feature_version column
+            # before adding the version filter
+            temp_df = self.read_metadata_impl(feature, filters=None)
+            if temp_df is not None:
+                schema = temp_df.collect_schema()
+                if METAXY_FEATURE_VERSION in schema.names():
+                    filters_list.append(nw.col(METAXY_FEATURE_VERSION) == feature.feature_version())
+
+        return self.read_metadata_impl(feature, filters_list)
 
     @abstractmethod
-    def read_metadata_impl(self, feature: type[BaseFeature] | FeatureKey, filters: Sequence[nw.Expr] | None = None) -> Frame:
+    def read_metadata_impl(self, feature: type[BaseFeature] | FeatureKey, filters: Sequence[nw.Expr] | None = None) -> Frame | None:
         ...
 
     @abstractmethod
@@ -129,9 +143,23 @@ class MetadataStore(ABC):
         ...
 
     @abstractmethod
-    def __enter__(self) -> Self:
-        pass
+    def open(self) -> AbstractContextManager[Self]:
+        """Open the metadata store connection.
 
-    @abstractmethod
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        pass
+        Returns:
+            A context manager that yields the store instance.
+
+        Example:
+            with store.open() as s:
+                s.write_metadata(feature, data)
+        """
+        ...
+
+    def __enter__(self) -> Self:
+        """Enter the context manager by opening the store."""
+        self._ctx = self.open()
+        return self._ctx.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool | None:
+        """Exit the context manager by closing the store."""
+        return self._ctx.__exit__(exc_type, exc_val, exc_tb)

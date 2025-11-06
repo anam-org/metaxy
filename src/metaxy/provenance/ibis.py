@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
-
+import ibis
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
@@ -35,7 +35,6 @@ class IbisProvenanceTracker(ProvenanceTracker):
     def __init__(
         self,
         plan: FeaturePlan,
-        backend: Any,  # ibis.BaseBackend
         hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
         """Initialize the Ibis tracker.
@@ -47,7 +46,6 @@ class IbisProvenanceTracker(ProvenanceTracker):
                 Each function takes an Ibis expression and returns an Ibis expression.
         """
         super().__init__(plan)
-        self.backend = backend
         self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
     def hash_string_column(

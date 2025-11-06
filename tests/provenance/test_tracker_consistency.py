@@ -18,34 +18,6 @@ from metaxy.provenance.ibis import IbisProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker
 
 
-@pytest.fixture
-def duckdb_backend():
-    """Create a DuckDB backend for Ibis tracker."""
-    import ibis
-
-    return ibis.duckdb.connect()
-
-
-@pytest.fixture
-def duckdb_hash_functions() -> dict[HashAlgorithm, Any]:
-    """Create hash functions for DuckDB backend.
-
-    Uses DuckDB's hash() function for consistency testing.
-    """
-
-    def xxhash64(col_expr):
-        # Use DuckDB hash() function - returns bigint, cast to string
-        return col_expr.cast(str).hash().cast(str)
-
-    def md5_hash(col_expr):
-        # Use DuckDB hash() function for consistency
-        return col_expr.cast(str).hash().cast(str)
-
-    return {
-        HashAlgorithm.XXHASH64: xxhash64,
-        HashAlgorithm.MD5: md5_hash,
-    }
-
 
 @pytest.mark.parametrize(
     "hash_algo",
@@ -56,8 +28,6 @@ def test_single_upstream_consistency(
     simple_features: dict[str, type[TestingFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
-    duckdb_backend,
-    duckdb_hash_functions: dict[HashAlgorithm, Any],
     hash_algo: HashAlgorithm,
 ) -> None:
     """Test that Polars and Ibis trackers produce identical provenance for single upstream."""
@@ -298,7 +268,7 @@ def test_resolve_increment_consistency(
     plan = graph.get_feature_plan(feature.spec().key)
 
     polars_tracker = PolarsProvenanceTracker(plan)
-    ibis_tracker = IbisProvenanceTracker(plan, duckdb_backend, duckdb_hash_functions)
+    ibis_tracker = IbisProvenanceTracker(plan, duckdb_hash_functions)
 
     # Prepare upstream for both
     polars_upstream = {FeatureKey(["video"]): upstream_video_metadata}
@@ -378,7 +348,7 @@ def test_end_to_end_consistency_snapshot(
     plan = graph.get_feature_plan(feature.spec().key)
 
     polars_tracker = PolarsProvenanceTracker(plan)
-    ibis_tracker = IbisProvenanceTracker(plan, duckdb_backend, duckdb_hash_functions)
+    ibis_tracker = IbisProvenanceTracker(plan, duckdb_hash_functions)
 
     # Polars computation
     polars_upstream = {FeatureKey(["video"]): upstream_video_metadata}
@@ -412,38 +382,7 @@ def test_end_to_end_consistency_snapshot(
     assert "metaxy_provenance" in ibis_df.columns
     assert "metaxy_provenance_by_field" in ibis_df.columns
 
-    # Verify field structure is consistent
-    for i in range(len(polars_df)):
-        polars_fields = set(polars_df["metaxy_provenance_by_field"][i].keys())
-        ibis_fields = set(ibis_df["metaxy_provenance_by_field"][i].keys())
-        assert polars_fields == ibis_fields
 
-        # Verify all values are non-empty strings (may be shorter than hash_length)
-        for field in polars_fields:
-            polars_val = polars_df["metaxy_provenance_by_field"][i][field]
-            ibis_val = ibis_df["metaxy_provenance_by_field"][i][field]
-            assert isinstance(polars_val, str) and len(polars_val) > 0
-            assert isinstance(ibis_val, str) and len(ibis_val) > 0
-            # Hash length should be at most the requested length
-            assert len(polars_val) <= hash_length
-            assert len(ibis_val) <= hash_length
+    import polars.testing as pl_test
 
-        # Verify sample provenance
-        assert isinstance(polars_df["metaxy_provenance"][i], str)
-        assert 0 < len(polars_df["metaxy_provenance"][i]) <= hash_length
-        assert isinstance(ibis_df["metaxy_provenance"][i], str)
-        assert 0 < len(ibis_df["metaxy_provenance"][i]) <= hash_length
-
-    # Extract provenance data for snapshot (use Polars as canonical)
-    polars_provenance = []
-    for i in range(len(polars_df)):
-        polars_provenance.append(
-            {
-                "sample_uid": polars_df["sample_uid"][i],
-                "field_provenance": polars_df["metaxy_provenance_by_field"][i],
-                "sample_provenance": polars_df["metaxy_provenance"][i],
-            }
-        )
-
-    # Snapshot only Polars result (canonical implementation)
-    assert polars_provenance == snapshot
+    pl_test.assert_frame_equal(polars_df, ibis_df)

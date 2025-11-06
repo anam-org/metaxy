@@ -1,6 +1,7 @@
 """In-memory metadata store implementation."""
 
 from collections.abc import Sequence
+from contextlib import contextmanager
 from typing import Any
 
 import narwhals as nw
@@ -246,23 +247,19 @@ class InMemoryMetadataStore(MetadataStore):
 
     # ========== Context Manager Implementation ==========
 
-    def open(self) -> None:
+    @contextmanager  # type: ignore[arg-type]
+    def open(self):
         """Open the in-memory store.
 
         For InMemoryMetadataStore, this is a no-op since no external
         resources need initialization. The auto_create_tables setting
         has no effect for in-memory stores (no tables to create).
+
+        Yields:
+            Self: The store instance
         """
         # No resources to initialize for in-memory storage
-        pass
-
-    def close(self) -> None:
-        """Close the in-memory store.
-
-        For InMemoryMetadataStore, this is a no-op since no external
-        resources need cleanup.
-        """
-        pass  # No resources to cleanup for in-memory storage
+        yield self
 
     def __repr__(self) -> str:
         """String representation."""
