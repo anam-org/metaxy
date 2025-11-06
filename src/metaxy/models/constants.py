@@ -18,6 +18,9 @@ SYSTEM_COLUMN_PREFIX = "metaxy_"
 METAXY_PROVENANCE_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}provenance_by_field"
 """Field-level provenance hashes (struct column mapping field names to hashes)."""
 
+METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
+"""Optional user-defined field-level version overrides."""
+
 METAXY_FEATURE_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_version"
 """Hash of the feature definition (dependencies + fields + code_versions)."""
 
@@ -35,6 +38,7 @@ METAXY_FEATURE_TRACKING_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_tracking_versi
 ALL_SYSTEM_COLUMNS = frozenset(
     {
         METAXY_PROVENANCE_BY_FIELD,
+        METAXY_DATA_VERSION_BY_FIELD,
         METAXY_FEATURE_VERSION,
         METAXY_SNAPSHOT_VERSION,
     }

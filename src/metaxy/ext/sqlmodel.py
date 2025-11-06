@@ -13,6 +13,7 @@ from sqlmodel.main import SQLModelMetaclass
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE_BY_FIELD,
@@ -259,6 +260,15 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         sa_type=JSON,
         sa_column_kwargs={
             "name": METAXY_PROVENANCE_BY_FIELD,
+            "nullable": True,
+        },
+    )
+
+    metaxy_data_version_by_field: str | None = Field(
+        default=None,
+        sa_type=JSON,
+        sa_column_kwargs={
+            "name": METAXY_DATA_VERSION_BY_FIELD,
             "nullable": True,
         },
     )

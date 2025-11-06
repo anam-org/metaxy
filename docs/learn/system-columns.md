@@ -13,6 +13,7 @@ user-defined feature fields. Only the prefixed forms are supported.
 | Canonical name                    | Description                                                             |
 | --------------------------------- | ----------------------------------------------------------------------- |
 | `metaxy_provenance_by_field`      | Struct capturing per-field provenance hashes. Sample level.             |
+| `metaxy_data_version_by_field`    | Optional struct overriding provenance exposed to downstream features.   |
 | `metaxy_feature_version`          | Version of the versioned graph upstream to the feature.                 |
 | `metaxy_snapshot_version`         | Version of the entire feature graph for the Metaxy project.             |
 | `metaxy_feature_spec_version`     | Version of the feature spec part responsible for graph topology.        |

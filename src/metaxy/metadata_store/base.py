@@ -36,6 +36,7 @@ from metaxy.metadata_store.system_tables import (
     allow_feature_version_override,
 )
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
@@ -73,6 +74,7 @@ def _is_using_polars_components(
 
 
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
+DATA_VERSION_BY_FIELD_COL = METAXY_DATA_VERSION_BY_FIELD
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 SNAPSHOT_VERSION_COL = METAXY_SNAPSHOT_VERSION
 FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
@@ -586,6 +588,13 @@ class MetadataStore(ABC):
             raise MetadataSchemaError(
                 f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
             )
+
+        if DATA_VERSION_BY_FIELD_COL in df.columns:
+            data_version_type = df.schema[DATA_VERSION_BY_FIELD_COL]
+            if not isinstance(data_version_type, pl.Struct):
+                raise MetadataSchemaError(
+                    f"'{DATA_VERSION_BY_FIELD_COL}' column must be pl.Struct when provided, got {data_version_type}"
+                )
 
         # Check for feature_version column
         if FEATURE_VERSION_COL not in df.columns:

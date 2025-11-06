@@ -57,8 +57,11 @@ class UpstreamJoiner(ABC):
         Returns:
             Tuple of (joined_ref, upstream_column_mapping):
             - joined_ref: Narwhals LazyFrame with all upstream data joined
-                Contains: ID columns, metaxy_provenance_by_field columns, and any user columns
-            - upstream_column_mapping: Maps upstream feature key -> metaxy_provenance_by_field column name
+                Contains: ID columns, metaxy_provenance_by_field columns, optional
+                metaxy_data_version_by_field columns, and any user columns
+            - upstream_column_mapping: Maps upstream feature key -> column name containing
+                the effective provenance struct (prefers metaxy_data_version_by_field when present,
+                otherwise metaxy_provenance_by_field).
                 Example: {"video": "__upstream_video__metaxy_provenance_by_field"}
 
         Note:
@@ -66,7 +69,8 @@ class UpstreamJoiner(ABC):
               features are included. This ensures we can compute valid field_provenance.
             - ID columns come from feature_spec.id_columns (default: ["sample_uid"])
             - Supports composite keys (multiple ID columns) for complex join scenarios
-            - System columns (ID columns, metaxy_provenance_by_field) are always preserved
+            - System columns (ID columns, metaxy_provenance_by_field, metaxy_data_version_by_field)
+              are always preserved
             - User columns are preserved based on columns parameter (default: all)
         """
         pass

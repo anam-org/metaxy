@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 import narwhals as nw
 
 from metaxy.data_versioning.calculators.base import (
+    DATA_VERSION_BY_FIELD_COL,
     PROVENANCE_BY_FIELD_COL,
     ProvenanceByFieldCalculator,
 )
@@ -170,9 +171,18 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
                     else "__".join(upstream_feature_key)
                 )
 
-                provenance_col_name = upstream_column_mapping.get(
+                override_col_name = upstream_column_mapping.get(
                     upstream_key_str, PROVENANCE_BY_FIELD_COL
                 )
+
+                data_version_col_name: str | None = None
+                provenance_col_name = override_col_name
+                if override_col_name.endswith(DATA_VERSION_BY_FIELD_COL):
+                    data_version_col_name = override_col_name
+                    # Remove the data_version suffix and replace with provenance suffix
+                    # More robust than .replace() which could affect feature key names
+                    prefix = override_col_name[: -len(DATA_VERSION_BY_FIELD_COL)]
+                    provenance_col_name = prefix + PROVENANCE_BY_FIELD_COL
 
                 for upstream_field in sorted(upstream_fields):
                     upstream_field_str = (
@@ -185,9 +195,16 @@ class IbisProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
                         ibis.literal(f"{upstream_key_str}/{upstream_field_str}")
                     )
                     # Access struct field for upstream field's hash
-                    components.append(
-                        ibis_table[provenance_col_name][upstream_field_str]
-                    )
+                    provenance_expr = ibis_table[provenance_col_name][
+                        upstream_field_str
+                    ]
+                    if data_version_col_name:
+                        override_expr = ibis_table[data_version_col_name][
+                            upstream_field_str
+                        ]
+                        components.append(override_expr.fillna(provenance_expr))
+                    else:
+                        components.append(provenance_expr)
 
             # Concatenate all components with separator
             concat_expr = components[0]

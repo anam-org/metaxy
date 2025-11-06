@@ -118,6 +118,48 @@ def test_polars_joiner(features: dict[str, type[TestingFeature]], graph: Feature
     assert "__upstream_video__metaxy_provenance_by_field" in result.columns
 
 
+def test_polars_joiner_prefers_data_version(
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
+) -> None:
+    """Joiner should prefer metaxy_data_version_by_field when available."""
+    joiner = NarwhalsJoiner()
+
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2],
+                "metaxy_provenance_by_field": [
+                    {"frames": "hash_v1", "audio": "hash_a1"},
+                    {"frames": "hash_v2", "audio": "hash_a2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"frames": "override_v", "audio": "override_a"},
+                    {"frames": "override_v", "audio": "override_a"},
+                ],
+            }
+        ).lazy()
+    )
+
+    feature = features["ProcessedVideo"]
+    plan = graph.get_feature_plan(feature.spec().key)
+
+    joined, mapping = joiner.join_upstream(
+        upstream_refs={"video": video_metadata},
+        feature_spec=feature.spec(),
+        feature_plan=plan,
+    )
+
+    joined_pl = joined.collect()
+
+    # Mapping should point to data_version column when available
+    expected_column = "__upstream_video__metaxy_data_version_by_field"
+    assert mapping["video"] == expected_column
+
+    # Both provenance and data_version columns should be preserved
+    assert expected_column in joined_pl.columns
+    assert "__upstream_video__metaxy_provenance_by_field" in joined_pl.columns
+
+
 def test_polars_hash_calculator(
     features: dict[str, type[TestingFeature]], graph: FeatureGraph
 ):
@@ -165,6 +207,150 @@ def test_polars_hash_calculator(
     # Check provenance_by_field has 'default' field field
     provenance_sample = result["metaxy_provenance_by_field"][0]
     assert "default" in provenance_sample
+
+
+def test_polars_calculator_uses_data_version_overrides(
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
+) -> None:
+    """Calculator should hash using data_version overrides when provided."""
+    calculator = PolarsProvenanceByFieldCalculator()
+    joiner = NarwhalsJoiner()
+
+    video_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"frames": "p1", "audio": "a1"},
+                    {"frames": "p2", "audio": "a2"},
+                    {"frames": "p3", "audio": "a3"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"frames": "override_common", "audio": "override_common"},
+                    {"frames": "override_common", "audio": "override_common"},
+                    None,  # Fallback to provenance for this sample
+                ],
+            }
+        ).lazy()
+    )
+
+    feature = features["ProcessedVideo"]
+    plan = graph.get_feature_plan(feature.spec().key)
+
+    joined, mapping = joiner.join_upstream(
+        upstream_refs={"video": video_metadata},
+        feature_spec=feature.spec(),
+        feature_plan=plan,
+    )
+
+    with_versions = calculator.calculate_provenance_by_field(
+        joined_upstream=joined,
+        feature_spec=feature.spec(),
+        feature_plan=plan,
+        upstream_column_mapping=mapping,
+    ).collect()
+
+    result_pl = with_versions.to_native()
+    hashes = [row["default"] for row in result_pl["metaxy_provenance_by_field"]]
+
+    # Rows with override should match
+    assert hashes[0] == hashes[1]
+    # Row without override should fall back to provenance and differ
+    assert hashes[0] != hashes[2]
+
+
+def test_update_detection_uses_provenance_not_data_version(
+    features: dict[str, type[TestingFeature]], graph: FeatureGraph
+) -> None:
+    """Update detection should always use provenance_by_field, never data_version_by_field.
+
+    This test verifies the key behavior:
+    - data_version_by_field affects downstream computation (what they see)
+    - provenance_by_field is used for update detection (what changed)
+
+    Scenario:
+    - Current metadata has both provenance and data_version (pinned to v1)
+    - Target has new provenance (v2) but same data_version (still v1)
+    - Result: Should detect NO changes because provenance matches
+    """
+    from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
+
+    resolver = NarwhalsDiffResolver()
+
+    # Current state: provenance=v2, data_version pinned to v1
+    current_metadata = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "prov_v2_1"},
+                    {"field_a": "prov_v2_2"},
+                    {"field_a": "prov_v2_3"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"field_a": "pinned_v1"},  # Pinned version for downstream
+                    {"field_a": "pinned_v1"},
+                    {"field_a": "pinned_v1"},
+                ],
+            }
+        ).lazy()
+    )
+
+    # Target state: Same provenance (v2), data_version still pinned to v1
+    # No real change - provenance hasn't changed
+    target_provenance = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "prov_v2_1"},  # Same as current
+                    {"field_a": "prov_v2_2"},
+                    {"field_a": "prov_v2_3"},
+                ],
+            }
+        ).lazy()
+    )
+
+    increment = resolver.find_changes(
+        target_provenance=target_provenance,
+        current_metadata=current_metadata,
+        id_columns=["sample_uid"],
+    )
+
+    # No changes should be detected - provenance_by_field matches
+    added = increment.added.collect()
+    changed = increment.changed.collect()
+    removed = increment.removed.collect()
+
+    assert len(added) == 0, "Should not detect additions when provenance matches"
+    assert len(changed) == 0, "Should not detect changes when provenance matches"
+    assert len(removed) == 0, "Should not detect removals"
+
+    # Now test the opposite: provenance changed but data_version stayed same
+    # This SHOULD trigger update detection
+    target_provenance_changed = nw.from_native(
+        pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"field_a": "prov_v3_1"},  # Different from current
+                    {"field_a": "prov_v3_2"},
+                    {"field_a": "prov_v3_3"},
+                ],
+            }
+        ).lazy()
+    )
+
+    increment_changed = resolver.find_changes(
+        target_provenance=target_provenance_changed,
+        current_metadata=current_metadata,
+        id_columns=["sample_uid"],
+    )
+
+    changed_rows = increment_changed.changed.collect()
+    assert len(changed_rows) == 3, (
+        "Should detect all 3 rows as changed when provenance differs"
+    )
 
 
 def test_polars_hash_calculator_algorithms(

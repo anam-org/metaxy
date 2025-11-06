@@ -9,6 +9,7 @@ import narwhals as nw
 
 from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE_BY_FIELD,
     is_droppable_system_column,
 )
@@ -93,7 +94,10 @@ class NarwhalsJoiner(UpstreamJoiner):
         # Use imported constants for system columns
         # Essential columns now include id_columns and metaxy_provenance_by_field
         id_columns_set = set(id_columns)
-        system_cols_canonical = id_columns_set | {METAXY_PROVENANCE_BY_FIELD}
+        system_cols_canonical = id_columns_set | {
+            METAXY_PROVENANCE_BY_FIELD,
+            METAXY_DATA_VERSION_BY_FIELD,
+        }
 
         def _is_essential(col: str) -> bool:
             return col in system_cols_canonical
@@ -153,6 +157,13 @@ class NarwhalsJoiner(UpstreamJoiner):
                 # Always rename provenance_by_field to avoid conflicts
                 new_name = f"__upstream_{first_key}__{METAXY_PROVENANCE_BY_FIELD}"
                 select_exprs.append(nw.col(col).alias(new_name))
+                # Use setdefault: won't override if data_version was already set
+                upstream_mapping.setdefault(first_key, new_name)
+            elif col == METAXY_DATA_VERSION_BY_FIELD:
+                new_name = f"__upstream_{first_key}__{METAXY_DATA_VERSION_BY_FIELD}"
+                select_exprs.append(nw.col(col).alias(new_name))
+                # Direct assignment: always overrides provenance_by_field in mapping
+                # This ensures data_version is preferred for downstream computation
                 upstream_mapping[first_key] = new_name
             elif col in first_renames_spec:
                 # Apply user-specified rename
@@ -231,6 +242,16 @@ class NarwhalsJoiner(UpstreamJoiner):
                     )
                     select_exprs.append(nw.col(col).alias(new_name))
                     join_cols.append(new_name)
+                    # Use setdefault: won't override if data_version was already set
+                    upstream_mapping.setdefault(upstream_key, new_name)
+                elif col == METAXY_DATA_VERSION_BY_FIELD:
+                    new_name = (
+                        f"__upstream_{upstream_key}__{METAXY_DATA_VERSION_BY_FIELD}"
+                    )
+                    select_exprs.append(nw.col(col).alias(new_name))
+                    join_cols.append(new_name)
+                    # Direct assignment: always overrides provenance_by_field in mapping
+                    # This ensures data_version is preferred for downstream computation
                     upstream_mapping[upstream_key] = new_name
                 elif col in renames_spec:
                     # Apply user-specified rename

@@ -43,7 +43,9 @@ These versions can be computed from Metaxy definitions (e.g. Python code or hist
 
 These versions are sample-level and require access to the metadata store in order to compute them.
 
-- **Provenance By Field** is computed from the upstream **Provenance By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields. This is a dictionary mapping sample field names to their respective versions. This is how this looks like in the metadata store (database):
+- **Provenance By Field** is computed from the upstream **Provenance By Fields** (with respect to defined [field-level dependencies](feature-definitions.md#field-level-dependencies) and the code versions of the current fields.
+  This is a dictionary mapping sample field names to their respective versions.
+  This is how this looks like in the metadata store (database):
 
 | sample_uid | provenance_by_field                           |
 | ---------- | --------------------------------------------- |
@@ -51,6 +53,42 @@ These versions are sample-level and require access to the metadata store in orde
 | video_002  | `{"audio": "d4b8e9c1", "frames": "f2a6d7b3"}` |
 | video_003  | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
 | video_004  | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
+
+- **Data Version By Field** is an optional user-provided struct column that overrides the version exposed to downstream features:
+
+  **Purpose**: Decouple change detection from downstream propagation.
+  Metaxy always computes `provenance_by_field` based on actual upstream data to detect when your feature needs updating.
+  But you can optionally provide `data_version_by_field` to control what version downstream features.
+
+  **Use Cases**:
+
+  1. **Version Pinning**: Pin downstream features to a stable version while you iterate on improvements
+     ```python
+     # Your feature has new provenance (due to upstream changes)
+     # But you want downstream to see the old stable version
+     metadata = {
+         "metaxy_provenance_by_field": {"field1": "new_hash_v2"},
+         "metaxy_data_version_by_field": {"field1": "stable_v1"},  # Pin to v1
+     }
+     ```
+
+  2. **Gradual Rollout**: Release new versions to downstream features gradually
+     ```python
+     # Sample 1-100: expose new version
+     # Sample 101-200: keep old version (safe rollback available)
+     for sample in samples:
+         if sample.id <= 100:
+             data_version = "v2_experimental"
+         else:
+             data_version = "v1_stable"
+     ```
+
+  3. **Breaking Change Management**: Make breaking changes without forcing immediate downstream updates
+
+  **Behavior**:
+  - When computing provenance for downstream features, Metaxy uses `data_version_by_field` (if present), otherwise falls back to `provenance_by_field`
+  - Update detection always uses `provenance_by_field` (never `data_version_by_field`) to determine if this feature needs recomputation
+  - Both columns are preserved in metadata for audit trail and debugging
 
 - **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
 

@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING, Any
 import narwhals as nw
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_PROVENANCE_BY_FIELD,
+)
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -14,6 +17,7 @@ if TYPE_CHECKING:
 
 
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
+DATA_VERSION_BY_FIELD_COL = METAXY_DATA_VERSION_BY_FIELD
 
 
 class ProvenanceByFieldCalculator(ABC):
