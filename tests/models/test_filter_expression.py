@@ -69,7 +69,7 @@ def test_serialization_round_trip() -> None:
     assert dumped["expression"] == "age <= 30 OR NOT is_active"
     assert dumped["source"] == "age <= 30 OR NOT is_active"
 
-    restored = NarwhalsFilter.model_validate(dumped)
+    restored = NarwhalsFilter.from_string(dumped["source"])
     assert isinstance(restored.to_expr(), nw.Expr)
 
 
