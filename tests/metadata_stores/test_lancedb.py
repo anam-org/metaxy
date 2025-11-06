@@ -250,3 +250,148 @@ def test_lancedb_with_fallback_stores(tmp_path, test_graph, test_features) -> No
 
             # But exists when checking fallback
             assert dev_store.has_feature(feature_cls, check_fallback=True)
+
+
+def test_lancedb_is_remote_uri() -> None:
+    """Test that _is_remote_uri correctly identifies remote URIs."""
+    # Remote URIs
+    assert LanceDBMetadataStore._is_remote_uri("s3://bucket/path")
+    assert LanceDBMetadataStore._is_remote_uri("db://database-name")
+    assert LanceDBMetadataStore._is_remote_uri("http://remote-server/db")
+    assert LanceDBMetadataStore._is_remote_uri("https://remote-server/db")
+    assert LanceDBMetadataStore._is_remote_uri("gs://bucket/path")
+    assert LanceDBMetadataStore._is_remote_uri("az://container/path")
+    assert LanceDBMetadataStore._is_remote_uri("file:///absolute/path")
+
+    # Local paths
+    assert not LanceDBMetadataStore._is_remote_uri("./local/path")
+    assert not LanceDBMetadataStore._is_remote_uri("/absolute/path")
+    assert not LanceDBMetadataStore._is_remote_uri("relative/path")
+    assert not LanceDBMetadataStore._is_remote_uri("C:\\Windows\\Path")
+
+
+def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
+    """Test that open() doesn't call mkdir for remote URIs."""
+    from pathlib import Path
+    from unittest.mock import MagicMock, Mock
+
+    # Track if mkdir was called
+    mkdir_called = []
+
+    def mock_mkdir(*args, **kwargs):
+        mkdir_called.append(True)
+
+    # Patch Path.mkdir to track calls
+    original_mkdir = Path.mkdir
+    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
+
+    # Mock lancedb.connect to avoid actual connection
+    mock_lancedb = Mock()
+    mock_conn = MagicMock()
+    mock_lancedb.connect = Mock(return_value=mock_conn)
+
+    # Test various remote URIs
+    remote_uris = [
+        "s3://prod-bucket/metadata",
+        "db://my-database",
+        "https://remote-server.com/lancedb",
+        "gs://gcs-bucket/data",
+    ]
+
+    for uri in remote_uris:
+        mkdir_called.clear()
+        store = LanceDBMetadataStore(uri)
+
+        # Manually set connection to simulate opening without lancedb
+        with monkeypatch.context() as m:
+            m.setattr("lancedb.connect", mock_lancedb.connect)
+            store.open()
+
+        # Verify mkdir was NOT called for remote URI
+        assert len(mkdir_called) == 0, (
+            f"mkdir should not be called for remote URI: {uri}"
+        )
+        assert store._conn is not None
+
+        store.close()
+
+    # Restore original mkdir
+    monkeypatch.setattr(Path, "mkdir", original_mkdir)
+
+
+def test_lancedb_local_path_calls_mkdir(tmp_path, monkeypatch) -> None:
+    """Test that open() calls mkdir for local filesystem paths."""
+    from pathlib import Path
+    from unittest.mock import Mock
+
+    # Track mkdir calls
+    mkdir_calls = []
+
+    # Save original mkdir before patching
+    original_mkdir = Path.mkdir
+
+    def mock_mkdir(self, *args, **kwargs):
+        mkdir_calls.append((str(self), args, kwargs))
+        # Call the original mkdir to actually create the directory
+        return original_mkdir(self, *args, **kwargs)
+
+    # Patch Path.mkdir
+    monkeypatch.setattr(Path, "mkdir", mock_mkdir)
+
+    # Mock lancedb.connect
+    mock_lancedb = Mock()
+    mock_conn = Mock()
+    mock_lancedb.connect = Mock(return_value=mock_conn)
+
+    local_path = tmp_path / "local_lancedb"
+    store = LanceDBMetadataStore(str(local_path))
+
+    with monkeypatch.context() as m:
+        m.setattr("lancedb.connect", mock_lancedb.connect)
+        store.open()
+
+    # Verify mkdir WAS called for local path
+    assert len(mkdir_calls) == 1, "mkdir should be called once for local path"
+    assert str(local_path) in mkdir_calls[0][0]
+    assert mkdir_calls[0][2].get("parents") is True
+    assert mkdir_calls[0][2].get("exist_ok") is True
+
+    store.close()
+
+
+def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
+    """Test that database_path is correctly passed to lancedb.connect."""
+    from unittest.mock import Mock
+
+    mock_lancedb = Mock()
+    connect_calls = []
+
+    def mock_connect(uri):
+        connect_calls.append(uri)
+        return Mock()
+
+    mock_lancedb.connect = mock_connect
+
+    test_uris = [
+        "s3://bucket/path",
+        "db://my-db",
+        str(tmp_path / "local"),
+        "./relative/path",
+    ]
+
+    for uri in test_uris:
+        connect_calls.clear()
+        store = LanceDBMetadataStore(uri)
+
+        with monkeypatch.context() as m:
+            m.setattr("lancedb.connect", mock_connect)
+            try:
+                store.open()
+            except Exception:
+                pass  # Ignore errors from mock connection
+
+        # Verify correct URI was passed to connect
+        assert len(connect_calls) == 1
+        assert connect_calls[0] == uri
+
+        store.close()
