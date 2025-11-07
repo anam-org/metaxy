@@ -34,6 +34,7 @@
           clickhouse
           graphviz
           nodejs_22  # so basedpyright runs against it
+          postgresql_18
           (mermaid-ascii.packages.${system}.default or null)
         ];
 
@@ -53,6 +54,7 @@
               pkgs.duckdb.lib
               pkgs.clickhouse
               pkgs.graphviz
+              pkgs.postgresql_18.lib
               python
             ] ++ lib.optionals isLinux [
               pkgs.gcc-unwrapped.lib
