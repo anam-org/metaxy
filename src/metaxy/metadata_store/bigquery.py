@@ -3,7 +3,6 @@
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -256,74 +255,63 @@ class BigQueryMetadataStore(IbisMetadataStore):
         """BigQuery stores support native field provenance calculations when connection is open."""
         return self._conn is not None
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
-        """Get hash SQL generators for BigQuery.
+    def _create_hash_functions(self):
+        """Create BigQuery-specific hash functions for Ibis expressions.
 
-        BigQuery supports:
-        - FARMHASH: Fast FARM_FINGERPRINT() function returning INT64 (BigQuery-specific)
-        - MD5: Built-in MD5() function returning hex string
-        - SHA256: Built-in SHA256() function returning bytes (needs TO_HEX)
-
-        Returns:
-            Dictionary mapping HashAlgorithm to SQL generator functions
+        BigQuery supports FARM_FINGERPRINT, MD5, and SHA256 natively.
         """
+        # Import ibis for wrapping built-in SQL functions
+        import ibis
 
-        def farmhash_generator(table, concat_columns: dict[str, str]) -> str:
-            """Generate SQL to compute FARMHASH in BigQuery.
+        # Use Ibis's builtin UDF decorator to wrap BigQuery's hash functions
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:
+            """BigQuery MD5() function."""
+            ...
 
-            BigQuery's FARM_FINGERPRINT() returns an INT64 value.
-            We cast it to STRING for consistent string-based hashing across stores.
-            """
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # FARM_FINGERPRINT() returns INT64, cast to STRING for consistency
-                hash_expr = f"CAST(FARM_FINGERPRINT({concat_col}) AS STRING)"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        @ibis.udf.scalar.builtin
+        def FARM_FINGERPRINT(x: str) -> str:
+            """BigQuery FARM_FINGERPRINT() function."""
+            ...
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        @ibis.udf.scalar.builtin
+        def SHA256(x: str) -> str:
+            """BigQuery SHA256() function."""
+            ...
 
-        def md5_generator(table, concat_columns: dict[str, str]) -> str:
-            """Generate SQL to compute MD5 hashes in BigQuery.
+        @ibis.udf.scalar.builtin
+        def TO_HEX(x: str) -> str:
+            """BigQuery TO_HEX() function."""
+            ...
 
-            BigQuery's MD5() returns a hex string directly (lowercase).
-            """
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # MD5() in BigQuery returns hex string directly
-                hash_expr = f"MD5({concat_col})"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        @ibis.udf.scalar.builtin
+        def LOWER(x: str) -> str:
+            """BigQuery LOWER() function."""
+            ...
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        # Create hash functions that use these wrapped SQL functions
+        def md5_hash(col_expr):
+            """Hash a column using BigQuery's MD5() function."""
+            # MD5 returns bytes, convert to lowercase hex string
+            return LOWER(TO_HEX(MD5(col_expr.cast(str))))
 
-        def sha256_generator(table, concat_columns: dict[str, str]) -> str:
-            """Generate SQL to compute SHA256 hashes in BigQuery.
+        def farmhash_hash(col_expr):
+            """Hash a column using BigQuery's FARM_FINGERPRINT() function."""
+            # FARM_FINGERPRINT returns INT64, cast to string
+            return FARM_FINGERPRINT(col_expr).cast(str)
 
-            BigQuery's SHA256() returns bytes, so we convert to hex string.
-            """
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # SHA256() returns bytes, convert to hex string
-                hash_expr = f"TO_HEX(SHA256({concat_col}))"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        def sha256_hash(col_expr):
+            """Hash a column using BigQuery's SHA256() function."""
+            # SHA256 returns bytes, convert to lowercase hex string
+            return LOWER(TO_HEX(SHA256(col_expr)))
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-        result = {
-            HashAlgorithm.FARMHASH: farmhash_generator,
-            HashAlgorithm.MD5: md5_generator,
-            HashAlgorithm.SHA256: sha256_generator,
+        hash_functions = {
+            HashAlgorithm.MD5: md5_hash,
+            HashAlgorithm.FARMHASH: farmhash_hash,
+            HashAlgorithm.SHA256: sha256_hash,
         }
 
-        return result
+        return hash_functions
 
     def display(self) -> str:
         """Display string for this store."""

@@ -28,12 +28,11 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
-    from metaxy.data_versioning.diff import (
-        Increment,
-        LazyIncrement,
-        MetadataDiffResolver,
-    )
-    from metaxy.data_versioning.joiners import UpstreamJoiner
+    from metaxy.provenance.types import Increment, LazyIncrement
+    
+    # TODO: These are no longer used - remove after refactoring
+    # from metaxy.data_versioning.diff import MetadataDiffResolver
+    # from metaxy.data_versioning.joiners import UpstreamJoiner
 
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
@@ -987,7 +986,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
 
         # Materialize to Increment if lazy=False
         if not lazy:
-            from metaxy.data_versioning.diff import Increment
+            from metaxy.provenance.types import Increment
 
             return Increment(
                 added=lazy_result.added.collect(),

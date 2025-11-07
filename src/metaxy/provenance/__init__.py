@@ -20,8 +20,12 @@ from metaxy.provenance.tracker import (
     ProvenanceTracker,
     RenamedDataFrame,
 )
+from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
 __all__ = [
     "ProvenanceTracker",
     "RenamedDataFrame",
+    "HashAlgorithm",
+    "Increment",
+    "LazyIncrement",
 ]

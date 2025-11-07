@@ -3,7 +3,6 @@
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -101,54 +100,66 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """ClickHouse stores support native field provenance calculations when connection is open."""
         return self._conn is not None
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
-        """Get hash SQL generators for ClickHouse.
+    def _create_hash_functions(self):
+        """Create ClickHouse-specific hash functions for Ibis expressions.
 
-        ClickHouse supports:
-        - MD5: Always available (built-in)
-        - XXHASH32, XXHASH64: Always available (built-in xxHash32/xxHash64 functions)
-
-        Returns:
-            Dictionary mapping HashAlgorithm to SQL generator functions
+        Implements MD5 and xxHash functions using ClickHouse's native functions.
         """
+        # Import ibis for wrapping built-in SQL functions
+        import ibis
 
-        def md5_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # MD5() in ClickHouse returns FixedString(16) binary, convert to lowercase hex string
-                # Use lower(hex(MD5(...))) to match DuckDB's md5() lowercase hex output
-                hash_expr = f"lower(hex(MD5({concat_col})))"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        hash_functions = {}
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        # ClickHouse MD5 implementation
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:
+            """ClickHouse MD5() function."""
+            ...
 
-        def xxhash32_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                hash_expr = f"CAST(xxHash32({concat_col}) AS String)"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        @ibis.udf.scalar.builtin
+        def HEX(x: str) -> str:
+            """ClickHouse HEX() function."""
+            ...
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        @ibis.udf.scalar.builtin
+        def lower(x: str) -> str:
+            """ClickHouse lower() function."""
+            ...
 
-        def xxhash64_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                hash_expr = f"CAST(xxHash64({concat_col}) AS String)"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        def md5_hash(col_expr):
+            """Hash a column using ClickHouse's MD5() function."""
+            # MD5 returns binary FixedString(16), convert to lowercase hex
+            return lower(HEX(MD5(col_expr.cast(str))))
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+        hash_functions[HashAlgorithm.MD5] = md5_hash
 
-        return {
-            HashAlgorithm.MD5: md5_generator,
-            HashAlgorithm.XXHASH32: xxhash32_generator,
-            HashAlgorithm.XXHASH64: xxhash64_generator,
-        }
+        # ClickHouse xxHash functions
+        @ibis.udf.scalar.builtin
+        def xxHash32(x: str) -> int:
+            """ClickHouse xxHash32() function - returns UInt32."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def xxHash64(x: str) -> int:
+            """ClickHouse xxHash64() function - returns UInt64."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def toString(x: int) -> str:
+            """ClickHouse toString() function - converts integer to string."""
+            ...
+
+        def xxhash32_hash(col_expr):
+            """Hash a column using ClickHouse's xxHash32() function."""
+            # xxHash32 returns UInt32, convert to string
+            return toString(xxHash32(col_expr))
+
+        def xxhash64_hash(col_expr):
+            """Hash a column using ClickHouse's xxHash64() function."""
+            # xxHash64 returns UInt64, convert to string
+            return toString(xxHash64(col_expr))
+
+        hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
+        hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
+
+        return hash_functions

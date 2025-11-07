@@ -3,6 +3,7 @@
 import narwhals as nw
 import polars as pl
 import pytest
+from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
 from metaxy import (
     Feature,
@@ -11,7 +12,6 @@ from metaxy import (
     FeatureKey,
     SampleFeatureSpec,
 )
-from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
 
 class TestColumnSelection:

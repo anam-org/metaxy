@@ -8,9 +8,12 @@ from typing import cast
 import narwhals as nw
 from narwhals.typing import FrameT
 
+from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
+    METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
@@ -119,7 +122,21 @@ class ProvenanceTracker(ABC):
             for k, df in upstream.items()
         }
 
-        # Validate no column collisions (except ID columns)
+        # Drop system columns that aren't needed for provenance calculation
+        # Keep only METAXY_PROVENANCE and METAXY_PROVENANCE_BY_FIELD
+        # Drop METAXY_FEATURE_VERSION and METAXY_SNAPSHOT_VERSION to avoid collisions
+        columns_to_drop = [METAXY_FEATURE_VERSION, METAXY_SNAPSHOT_VERSION]
+        
+        for feature_key, renamed_df in dfs.items():
+            cols = renamed_df.df.collect_schema().names()
+            cols_to_drop = [col for col in columns_to_drop if col in cols]
+            if cols_to_drop:
+                dfs[feature_key] = RenamedDataFrame(
+                    df=renamed_df.df.drop(*cols_to_drop),
+                    id_columns=renamed_df.id_columns,
+                )
+
+        # Validate no column collisions (except ID columns and required system columns)
         if len(dfs) > 1:
             all_columns: dict[str, list[FeatureKey]] = {}
             for feature_key, renamed_df in dfs.items():
@@ -129,18 +146,22 @@ class ProvenanceTracker(ABC):
                         all_columns[col] = []
                     all_columns[col].append(feature_key)
 
-            # Find columns that appear in multiple features but aren't ID columns
+            # System columns that are allowed to collide (needed for provenance calculation)
+            allowed_system_columns = {
+                METAXY_PROVENANCE,
+                METAXY_PROVENANCE_BY_FIELD,
+            }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [
                 col
                 for col, features in all_columns.items()
-                if len(features) > 1 and col not in id_cols
+                if len(features) > 1 and col not in id_cols and col not in allowed_system_columns
             ]
 
             if colliding_columns:
                 raise ValueError(
                     f"Found additional shared columns across upstream features: {colliding_columns}. "
-                    f"Only ID columns {list(id_cols)} should be shared. "
+                    f"Only ID columns {list(id_cols)} and required system columns {list(allowed_system_columns)} should be shared. "
                     f"Please add explicit renames in your FeatureDep to avoid column collisions."
                 )
 
@@ -224,7 +245,6 @@ class ProvenanceTracker(ABC):
         self,
         upstream: dict[FeatureKey, FrameT],
         hash_algo: HashAlgorithm,
-        hash_length: int,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
     ) -> FrameT:
         """Compute the provenance of the given feature.
@@ -233,12 +253,17 @@ class ProvenanceTracker(ABC):
             key: Feature key to compute provenance for
             upstream: Dictionary of upstream dataframes
             hash_algo: Hash algorithm to use
-            hash_length: Length to truncate hash to
             filters: Optional filters to apply to upstream data
 
         Returns:
             DataFrame with metaxy_provenance_by_field and metaxy_provenance columns added
+        
+        Note:
+            Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
         """
+        # Read hash truncation length from global config
+        hash_length = MetaxyConfig.get().hash_truncation_length or 64
+        
         # Prepare upstream: filter, rename, select, join
         df = self.prepare_upstream(upstream, filters=filters)
 
@@ -325,7 +350,6 @@ class ProvenanceTracker(ABC):
         current: FrameT | None,
         upstream: dict[FeatureKey, FrameT],
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
         filters: Mapping[FeatureKey, Sequence[nw.Expr]],
         sample: FrameT | None,
     ) -> tuple[FrameT, FrameT | None, FrameT | None]:
@@ -335,7 +359,6 @@ class ProvenanceTracker(ABC):
             current: Current metadata for this feature, if available.
             upstream: A dictionary of upstream data frames.
             hash_algorithm: The hash algorithm to use.
-            hash_length: The length of the hash.
             filters: A mapping of feature keys to sequences of expressions.
             sample: For root features this is used instead of the upstream dataframe.
                 Must contain both metaxy_provenance_by_field (struct of field hashes)
@@ -345,9 +368,15 @@ class ProvenanceTracker(ABC):
         Returns:
             tuple[FrameT, FrameT | None, FrameT | None]
                 New samples appearing in upstream, samples with changed provenance (mismatch between expected and current state), and samples that have been removed from upstream but are in the current state. New samples DataFrame is never None, but may be empty. changed and removed DataFrames may be None (for the first increment on the feature).
+        
+        Note:
+            Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
         """
         feature_spec = self.plan.feature
         id_columns = list(feature_spec.id_columns)
+        
+        # Read hash truncation length from global config
+        hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
         # Handle root feature case
         if sample is not None:
@@ -397,7 +426,6 @@ class ProvenanceTracker(ABC):
             expected = self.load_upstream_with_provenance(
                 upstream,
                 hash_algo=hash_algorithm,
-                hash_length=hash_length,
                 filters=filters,
             )
 

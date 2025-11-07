@@ -19,9 +19,11 @@ from polars.testing.parametric import column, dataframes
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
+from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -101,7 +103,7 @@ def calculate_provenance_by_field_polars(
     Example:
         ```python
         from metaxy.data_versioning.calculators.polars import calculate_provenance_by_field_polars
-        from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+        from metaxy.provenance.types import HashAlgorithm
 
         result = calculate_provenance_by_field_polars(
             joined_df,
@@ -298,6 +300,30 @@ def feature_metadata_strategy(
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
         pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
     )
+
+    # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
+    # Get field names from the struct in sorted order for determinism
+    field_names = sorted([f.key.to_struct_key() for f in feature_spec.fields])
+    
+    # Concatenate all field hashes with separator
+    sample_components = [
+        pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
+        for field_name in field_names
+    ]
+    sample_concat = plh.concat_str(*sample_components, separator="|")
+    
+    # Hash the concatenation using the same algorithm as the test
+    hash_fn = _HASH_FUNCTION_MAP.get(HashAlgorithm.XXHASH64)
+    if hash_fn is None:
+        raise ValueError(f"Hash algorithm {HashAlgorithm.XXHASH64} not supported")
+    
+    sample_hash = hash_fn(sample_concat).cast(pl.Utf8)
+    
+    # Apply truncation if specified
+    if hash_truncation_length is not None:
+        sample_hash = sample_hash.str.slice(0, hash_truncation_length)
+    
+    df = df.with_columns(sample_hash.alias(METAXY_PROVENANCE))
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
     if id_columns_df is not None:
@@ -567,53 +593,28 @@ def downstream_metadata_strategy(
         )
         return ({}, downstream_df)
 
-    # Join upstream DataFrames on ID columns
-    # Get all ID columns from the downstream feature
-    id_columns = list(feature_plan.feature.id_columns)
+    # Use the new PolarsProvenanceTracker to calculate provenance
+    import narwhals as nw
 
-    # Start with the first upstream DataFrame
-    joined_df = list(upstream_data.values())[0].select(
-        id_columns + [METAXY_PROVENANCE_BY_FIELD]
-    )
-
-    # Join with remaining upstream DataFrames
-    for upstream_key, upstream_df in list(upstream_data.items())[1:]:
-        # Rename provenance column to avoid conflicts
-        renamed_provenance = f"__upstream_{upstream_key}__{METAXY_PROVENANCE_BY_FIELD}"
-        upstream_renamed = upstream_df.select(
-            id_columns + [pl.col(METAXY_PROVENANCE_BY_FIELD).alias(renamed_provenance)]
-        )
-        joined_df = joined_df.join(upstream_renamed, on=id_columns, how="inner")
-
-    # Build upstream column mapping for calculator
-    if len(upstream_data) == 1:
-        # Single upstream - no renaming needed
-        upstream_column_mapping = {
-            list(upstream_data.keys())[0]: METAXY_PROVENANCE_BY_FIELD
-        }
-    else:
-        # Multiple upstreams - use renamed columns
-        upstream_column_mapping = {
-            upstream_key: f"__upstream_{upstream_key}__{METAXY_PROVENANCE_BY_FIELD}"
-            for upstream_key in list(upstream_data.keys())[1:]
-        }
-        # First one keeps original name
-        upstream_column_mapping[list(upstream_data.keys())[0]] = (
-            METAXY_PROVENANCE_BY_FIELD
-        )
-
-    # Calculate correct provenance using the Polars calculator
-    # Read hash truncation length from global config
-    hash_truncation_length = MetaxyConfig.get().hash_truncation_length
-
-    downstream_df = calculate_provenance_by_field_polars(
-        joined_df,
-        feature_plan.feature,
-        feature_plan,
-        upstream_column_mapping,
-        hash_algorithm=hash_algorithm,
-        hash_truncation_length=hash_truncation_length,
-    )
+    from metaxy.provenance.polars import PolarsProvenanceTracker
+    
+    # Create tracker (only accepts plan parameter)
+    tracker = PolarsProvenanceTracker(plan=feature_plan)
+    
+    # Convert upstream_data keys from strings to FeatureKey objects and wrap in Narwhals
+    # Keys are simple strings like "parent", "child" that need to be wrapped in a list
+    # DataFrames need to be converted to LazyFrames and wrapped in Narwhals
+    upstream_dict = {
+        FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
+    }
+    
+    # Load upstream with provenance calculation
+    # Note: hash_length is read from MetaxyConfig.get().hash_truncation_length internally
+    downstream_df = tracker.load_upstream_with_provenance(
+        upstream=upstream_dict,
+        hash_algo=hash_algorithm,
+        filters=None,
+    ).collect()
 
     # Add downstream feature version and snapshot version
     downstream_feature_key = feature_plan.feature.key.to_string()
@@ -623,9 +624,13 @@ def downstream_metadata_strategy(
             f"Available keys: {list(feature_versions.keys())}"
         )
 
+    # Use Narwhals lit since downstream_df is a Narwhals DataFrame
     downstream_df = downstream_df.with_columns(
-        pl.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
-        pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
+        nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
     )
 
-    return (upstream_data, downstream_df)
+    # Convert back to native Polars DataFrame for the return type
+    downstream_df_polars = downstream_df.to_native()
+
+    return (upstream_data, downstream_df_polars)

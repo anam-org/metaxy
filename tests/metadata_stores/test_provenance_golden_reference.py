@@ -14,7 +14,6 @@ import polars.testing as pl_testing
 import pytest
 import pytest_cases
 from hypothesis.errors import NonInteractiveExampleWarning
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
@@ -36,6 +35,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
+from metaxy.provenance.types import HashAlgorithm
 
 FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan

@@ -6,7 +6,9 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
+from abc import abstractmethod
 from collections.abc import Sequence
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
@@ -20,8 +22,6 @@ from metaxy.provenance.types import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
-
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
 
 
 class IbisMetadataStore(MetadataStore):
@@ -133,66 +133,73 @@ class IbisMetadataStore(MetadataStore):
         return HashAlgorithm.MD5
 
     def _supports_native_components(self) -> bool:
-        """Ibis stores support native (Ibis-based) components when connection is open."""
+        """Ibis stores support native (Ibis-based) provenance tracking when connection is open."""
         return self._conn is not None
 
-    def _create_native_components(self):
-        """Create components for native SQL execution via Ibis."""
-        from metaxy.data_versioning.calculators.ibis import (
-            IbisProvenanceByFieldCalculator,
-        )
-        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
-        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create provenance tracker for Ibis backend as a context manager.
+
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            IbisProvenanceTracker with backend-specific hash functions.
+            
+        Note:
+            Base implementation only supports MD5 (universally available).
+            Subclasses can override _create_hash_functions() for backend-specific hashes.
+        """
+        from metaxy.provenance.ibis import IbisProvenanceTracker
 
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create native field provenance calculations: store is not open. "
+                "Cannot create provenance tracker: store is not open. "
                 "Ensure store is used as context manager."
             )
 
-        # All components accept/return Narwhals LazyFrames
-        # IbisProvenanceByFieldCalculator converts to Ibis internally for SQL hash generation
-        joiner = NarwhalsJoiner()
-        calculator = IbisProvenanceByFieldCalculator(
-            backend=self._conn,
-            hash_sql_generators=self._get_hash_sql_generators(),
+        # Create hash functions for Ibis expressions
+        hash_functions = self._create_hash_functions()
+
+        # Create tracker (only accepts plan and hash_functions)
+        tracker = IbisProvenanceTracker(
+            plan=plan,
+            hash_functions=hash_functions,
         )
-        diff_resolver = NarwhalsDiffResolver()
+        
+        try:
+            yield tracker
+        finally:
+            # No cleanup needed for Ibis tracker
+            pass
 
-        return joiner, calculator, diff_resolver
+    @abstractmethod
+    def _create_hash_functions(self):
+        """Create hash functions for Ibis expressions.
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
-        """Get hash SQL generators for this backend.
-
-        Base implementation only supports MD5 (universally available in SQL).
-        Subclasses override to add backend-specific hash functions.
+        Base implementation returns empty dict. Subclasses must override
+        to provide backend-specific hash function implementations.
 
         Returns:
-            Dictionary mapping HashAlgorithm to SQL generator functions
+            Dictionary mapping HashAlgorithm to Ibis expression functions
         """
+        return {}
 
-        def md5_generator(table, concat_columns: dict[str, str]) -> str:
-            """Generate SQL to compute MD5 hashes (universal SQL support).
+    def _validate_hash_algorithm_support(self) -> None:
+        """Validate that the configured hash algorithm is supported by Ibis backend.
 
-            Note: This generic implementation assumes MD5() returns a hex string.
-            Subclasses should override if their backend returns binary or different format.
-            For example, ClickHouse returns binary and needs lower(hex(MD5(...))).
-            """
-            # Build SELECT clause with hash columns
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                # Use MD5 function (universally available in SQL databases)
-                # WARNING: Different databases return different formats (hex string vs binary)
-                # This generic version assumes hex string output
-                hash_expr = f"MD5({concat_col})"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
+        Raises:
+            ValueError: If hash algorithm is not supported
+        """
+        # Create hash functions to check what's supported
+        hash_functions = self._create_hash_functions()
 
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-        return {HashAlgorithm.MD5: md5_generator}
+        if self.hash_algorithm not in hash_functions:
+            supported = [algo.value for algo in hash_functions.keys()]
+            raise ValueError(
+                f"Hash algorithm '{self.hash_algorithm.value}' not supported. "
+                f"Supported algorithms: {', '.join(supported)}"
+            )
 
     @property
     def ibis_conn(self) -> "ibis.BaseBackend":
