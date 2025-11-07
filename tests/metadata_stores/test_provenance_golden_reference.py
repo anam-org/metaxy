@@ -183,11 +183,6 @@ def setup_store_with_data(
     return empty_store, feature_plan_config, golden_downstream
 
 
-# Removed: EmptyStoreCases with hash algorithm parametrization
-# Now using simplified fixtures from conftest.py
-# Hash algorithm × store combinations are tested in test_hash_algorithms.py
-
-
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_store_resolve_update_matches_golden_provenance(
     any_store: MetadataStore,
