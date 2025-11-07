@@ -206,13 +206,16 @@ def setup_store_with_data(
 
 class EmptyStoreCases:
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path):
+    def case_duckdb(
+        self, hash_algorithm: HashAlgorithm, tmp_path, metaxy_config: MetaxyConfig
+    ):
         try:
             return DuckDBMetadataStore(
                 tmp_path / "db.duckdb",
                 hash_algorithm=hash_algorithm,
                 extensions=["hashfuncs"],
                 prefer_native=True,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
@@ -220,12 +223,18 @@ class EmptyStoreCases:
             )
 
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_clickhouse(self, hash_algorithm: HashAlgorithm, clickhouse_db: str):
+    def case_clickhouse(
+        self,
+        hash_algorithm: HashAlgorithm,
+        clickhouse_db: str,
+        metaxy_config: MetaxyConfig,
+    ):
         try:
             return ClickHouseMetadataStore(
                 connection_string=clickhouse_db,
                 hash_algorithm=hash_algorithm,
                 prefer_native=True,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
@@ -248,12 +257,15 @@ class EmptyStoreCases:
             )
 
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_lancedb(self, hash_algorithm: HashAlgorithm, tmp_path):
+    def case_lancedb(
+        self, hash_algorithm: HashAlgorithm, tmp_path, metaxy_config: MetaxyConfig
+    ):
         pytest.importorskip("lancedb")
         try:
             return LanceDBMetadataStore(
                 tmp_path / "lancedb",
                 hash_algorithm=hash_algorithm,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
