@@ -1,5 +1,8 @@
 """Common fixtures for metadata store tests."""
 
+import shutil
+import socket
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
@@ -16,6 +19,14 @@ from metaxy.models.feature import FeatureGraph
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
+def _find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    return port
+
+
 @pytest.fixture(scope="session")
 def clickhouse_server(tmp_path_factory):
     """Start a ClickHouse server for testing (session-scoped).
@@ -25,10 +36,6 @@ def clickhouse_server(tmp_path_factory):
 
     Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
     """
-    import shutil
-    import socket
-    import subprocess
-
     # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
     if not clickhouse_bin:
@@ -40,16 +47,8 @@ def clickhouse_server(tmp_path_factory):
     except ImportError:
         pytest.skip("ibis-clickhouse not installed")
 
-    # Find a free port
-    def find_free_port():
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
-            s.listen(1)
-            port = s.getsockname()[1]
-        return port
-
-    port = find_free_port()
-    http_port = find_free_port()
+    port = _find_free_port()
+    http_port = _find_free_port()
 
     # Create temporary directories for ClickHouse
     base_dir = tmp_path_factory.mktemp("clickhouse")
@@ -186,6 +185,141 @@ def clickhouse_db(clickhouse_server):
         conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # type: ignore[attr-defined]
     except Exception:
         pass  # Best effort cleanup
+
+
+@pytest.fixture(scope="session")
+def postgres_server(tmp_path_factory):
+    """Start a PostgreSQL server for testing (session-scoped)."""
+    initdb_bin = shutil.which("initdb")
+    postgres_bin = shutil.which("postgres")
+
+    if not initdb_bin or not postgres_bin:
+        pytest.skip("PostgreSQL binaries (initdb/postgres) not found in PATH")
+
+    try:
+        import ibis.backends.postgres  # noqa: F401
+    except ImportError:
+        pytest.skip("ibis-postgres not installed")
+
+    try:
+        import psycopg  # type: ignore[import]
+    except ImportError:
+        pytest.skip("psycopg (required for Postgres tests) not installed")
+
+    base_dir = tmp_path_factory.mktemp("postgres")
+    data_dir = base_dir / "data"
+    log_file = base_dir / "postgres.log"
+
+    init_cmd = [
+        initdb_bin,
+        "-D",
+        str(data_dir),
+        "-U",
+        "postgres",
+        "--encoding=UTF8",
+        "--auth=trust",
+    ]
+
+    try:
+        subprocess.run(
+            init_cmd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        pytest.skip(f"Failed to initialize Postgres cluster: {exc.stderr.strip()}")
+
+    port = _find_free_port()
+
+    with log_file.open("w") as lf:
+        process = subprocess.Popen(  # type: ignore[assignment]
+            [
+                postgres_bin,
+                "-D",
+                str(data_dir),
+                "-p",
+                str(port),
+                "-F",
+            ],
+            stdout=lf,
+            stderr=subprocess.STDOUT,
+        )
+
+    # Wait for Postgres to become ready
+    ready = False
+    last_error: Exception | None = None
+    admin_dsn = f"postgresql://postgres@127.0.0.1:{port}/postgres"
+
+    for _ in range(60):
+        if process.poll() is not None:
+            process.wait()
+            log_output = log_file.read_text() if log_file.exists() else ""
+            pytest.skip(
+                "Postgres server terminated unexpectedly "
+                f"with exit code {process.returncode}. Log:\n{log_output[-500:]}"
+            )
+        try:
+            with psycopg.connect(admin_dsn, autocommit=True):
+                ready = True
+                break
+        except psycopg.OperationalError as exc:
+            last_error = exc
+            time.sleep(1)
+
+    if not ready:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+        pytest.skip(f"Postgres server not ready: {last_error}")
+
+    yield {
+        "host": "127.0.0.1",
+        "port": port,
+        "user": "postgres",
+        "dsn": admin_dsn,
+        "psycopg": psycopg,
+        "process": process,
+    }
+
+    process.terminate()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
+@pytest.fixture
+def postgres_db(postgres_server):
+    """Create a clean PostgreSQL database for each test (function-scoped)."""
+    import uuid
+
+    psycopg = postgres_server["psycopg"]
+    admin_dsn = postgres_server["dsn"]
+    host = postgres_server["host"]
+    port = postgres_server["port"]
+    user = postgres_server["user"]
+
+    db_name = f"test_{uuid.uuid4().hex[:8]}"
+
+    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'CREATE DATABASE "{db_name}"')
+
+    test_conn_string = f"postgresql://{user}@{host}:{port}/{db_name}"
+
+    yield test_conn_string
+
+    try:
+        with psycopg.connect(admin_dsn, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+    except Exception:
+        pass
 
 
 @pytest.fixture

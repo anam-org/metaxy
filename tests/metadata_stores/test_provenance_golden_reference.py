@@ -34,6 +34,7 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.types import HashAlgorithm
 
@@ -244,6 +245,19 @@ class EmptyStoreCases:
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_postgres(self, hash_algorithm: HashAlgorithm, postgres_db: str):
+        try:
+            return PostgresMetadataStore(
+                connection_string=postgres_db,
+                hash_algorithm=hash_algorithm,
+                prefer_native=True,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {PostgresMetadataStore}"
             )
 
 
