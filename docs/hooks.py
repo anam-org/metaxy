@@ -8,6 +8,8 @@ from pathlib import Path
 
 from mkdocs.structure.files import Files
 
+from metaxy.config import MetaxyConfig
+
 log = logging.getLogger("mkdocs")
 
 SLIDES_DIR = Path(__file__).parent / "slides"
@@ -19,6 +21,15 @@ EXCLUDED_DOCS = {
     "slides/README.md",
     f"slides/{SLIDES_ENTRY}",
 }
+
+
+def _ensure_metaxy_config() -> None:
+    """Ensure MkDocs runs with a configured MetaxyConfig to silence warnings."""
+    if not MetaxyConfig.is_set():
+        MetaxyConfig.set(MetaxyConfig(project="docs"))
+
+
+_ensure_metaxy_config()
 
 
 def _run(command: list[str]) -> None:

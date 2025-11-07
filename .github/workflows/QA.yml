@@ -200,7 +200,7 @@ jobs:
         run: cd docs/slides && bun run build -- slides-introduction.md --out dist --base ./
       - name: Build Docs
         id: docs
-        run: METAXY_SKIP_SLIDEV=1 uv run mkdocs build --strict
+        run: uv run mkdocs build --strict
       - name: Cleanup on failure
         if: always()
         run: bash .github/scripts/restore-env.sh
