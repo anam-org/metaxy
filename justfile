@@ -11,6 +11,10 @@ typecheck:
 sync:
     uv sync --all-extras --all-groups
 
+sync-upgrade:
+    uv sync --all-extras --all-groups --upgrade
+
+
 new-worktree branch:
     #!/usr/bin/env bash
     set -euxo pipefail

@@ -92,6 +92,7 @@ dev = [
   "duckdb>=1.4.1",
   "pytest>=8.4.2",
   "pytest-cases>=3.9.1",
+  "pytest-postgresql>=7.0.2",
   "hypothesis>=6.142.4",
   "ruff>=0.13.1",
   "syrupy>=5.0.0",
