@@ -37,8 +37,8 @@ By encoding features as static graphs with field-level dependencies, the library
 This advance keeps GPU experimentation lean by scheduling only the samples whose metadata actually changed, trimming both energy usage and iteration time.
 
 Metaxy packages its approach as a permissive Python library with a CLI and documentation for applied researchers and practitioners.
-The project integrates with lakehouse storage, more than twenty SQL backends through Ibis [@ibis], and backend-agnostic data frames via Narwhals [@narwhals] to keep deployments vendor-neutral.
-The possibility of coupling with orchestrators such as Dagster [@dagster] and Ray [@ray] allows teams to feed version diffs directly into smart compute management policies, deferring GPU work that is not justified by metadata change.
+The project integrates with lakehouse storage, more than twenty SQL backends through Ibis (@ibis), and backend-agnostic data frames via Narwhals (@narwhals) to keep deployments vendor-neutral.
+The possibility of coupling with orchestrators such as Dagster (@dagster) and Ray (@ray) allows teams to feed version diffs directly into smart compute management policies, deferring GPU work that is not justified by metadata change.
 An automated test suite protects version stability and ensures precise change propagation, making the tool reliable in production-like workflows.
 
 # Statement of Need
@@ -53,7 +53,7 @@ By unifying metadata capture across prototyping laptops and production clusters,
 
 # System Overview
 
-Metaxy encodes features as declarative Pydantic models [@pydantic] bound to a global feature graph.
+Metaxy encodes features as declarative Pydantic models (@pydantic) bound to a global feature graph.
 Each feature declares its identifiers, fields, and dependencies, enabling the graph to determine downstream impacts of every change before execution.
 Deterministic hashes summarize field, feature, and snapshot state, creating a reproducible contract between experimentation and deployment.
 
@@ -61,7 +61,7 @@ Metadata persistence is provided by pluggable stores, including DuckDB, ClickHou
 By computing dependency-aware versions entirely inside the configured store, Metaxy keeps metadata close to the data and avoids shuttling large intermediate tables.
 The append-only design preserves historical lineage so users can audit experiments long after data has shifted.
 
-Developers interact through a Python API, a CLI for graph visualization and inspection, and in the future integrations with orchestrators such as Dagster [@dagster] and Ray [@ray].
+Developers interact through a Python API, a CLI for graph visualization and inspection, and in the future integrations with orchestrators such as Dagster (@dagster) and Ray (@ray).
 In these environments, Metaxy diffs can be ingested as scheduling inputs so that compute graphs prioritize samples with the highest impact, gracefully throttling or cancelling redundant GPU jobs.
 Syntactic sugar for feature definitions, comprehensive type hints, and testing helpers keep authoring friction low, allowing teams to onboard quickly without sacrificing rigor.
 
