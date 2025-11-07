@@ -16,6 +16,11 @@ from hypothesis import strategies as st
 from hypothesis.strategies import composite
 from polars.testing.parametric import column, dataframes
 
+from metaxy.config import MetaxyConfig
+from metaxy.data_versioning.calculators.polars import (
+    calculate_provenance_by_field_polars,
+)
+from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.models.constants import (
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE_BY_FIELD,
@@ -118,13 +123,17 @@ def feature_metadata_strategy(
     ]
 
     # Create strategy that generates non-empty hash-like strings
+    # Read hash truncation length from global config
+    hash_truncation_length = MetaxyConfig.get().hash_truncation_length or 64
+
+    # Generate fixed-length strings matching the truncation length
     hash_string_strategy = st.text(
         alphabet=st.characters(
             whitelist_categories=("Ll", "Nd"),
             whitelist_characters="abcdef0123456789",
         ),
-        min_size=1,  # At least 1 character, no empty strings
-        max_size=64,
+        min_size=hash_truncation_length,
+        max_size=hash_truncation_length,
     )
 
     cols.append(
@@ -309,3 +318,176 @@ def upstream_metadata_strategy(
         result[feature_key_str] = df
 
     return result
+
+
+@composite
+def downstream_metadata_strategy(
+    draw: st.DrawFn,
+    feature_plan: FeaturePlan,
+    feature_versions: dict[str, str],
+    snapshot_version: str,
+    hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH64,
+    hash_truncation_length: int | None = None,
+    min_rows: int = 1,
+    max_rows: int = 100,
+) -> tuple[dict[str, pl.DataFrame], pl.DataFrame]:
+    """Generate upstream metadata AND correctly calculated downstream metadata.
+
+    This strategy generates upstream metadata using upstream_metadata_strategy,
+    then calculates the "golden" downstream metadata with correctly computed
+    metaxy_provenance_by_field values using the Polars calculator.
+
+    This is useful for testing that:
+    - Provenance calculations are correct
+    - Joins work properly
+    - Hash algorithms produce expected results
+    - Hash truncation works correctly
+
+    Args:
+        draw: Hypothesis draw function (provided by @composite decorator)
+        feature_plan: FeaturePlan containing the feature and its upstream dependencies
+        feature_versions: Dict mapping feature key strings to their feature_version hashes
+            (must include the downstream feature itself)
+        snapshot_version: The snapshot version hash to use for all features
+        hash_algorithm: Hash algorithm to use for provenance calculation (default: XXHASH64)
+        hash_truncation_length: Optional length to truncate hashes to (default: None)
+        min_rows: Minimum number of rows to generate per upstream feature (default: 1)
+        max_rows: Maximum number of rows to generate per upstream feature (default: 100)
+
+    Returns:
+        Tuple of (upstream_metadata, downstream_metadata):
+        - upstream_metadata: Dict mapping upstream feature keys to DataFrames
+        - downstream_metadata: DataFrame with correctly calculated provenance_by_field
+
+    Example:
+        ```python
+        from hypothesis import given
+        from metaxy import FeatureGraph, FeatureKey
+        from metaxy._testing.parametric import downstream_metadata_strategy
+        from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+
+        graph = FeatureGraph()
+        # ... define features ...
+
+        plan = graph.get_feature_plan(FeatureKey(["child"]))
+
+        # Get versions from graph
+        feature_versions = {
+            "parent": graph.get_feature_by_key(FeatureKey(["parent"])).feature_version(),
+            "child": graph.get_feature_by_key(FeatureKey(["child"])).feature_version(),
+        }
+        snapshot_version = graph.snapshot_version()
+
+        @given(downstream_metadata_strategy(
+            plan,
+            feature_versions=feature_versions,
+            snapshot_version=snapshot_version,
+            hash_algorithm=HashAlgorithm.SHA256,
+            hash_truncation_length=16,
+        ))
+        def test_provenance_calculation(data):
+            upstream_data, downstream_df = data
+            # Test that downstream_df has correctly calculated provenance
+            assert "metaxy_provenance_by_field" in downstream_df.columns
+        ```
+
+    Note:
+        - The downstream feature's feature_version must be in feature_versions dict
+        - Provenance is calculated using the actual Polars calculator
+        - Hash algorithm and truncation settings are applied consistently
+    """
+    # Generate upstream metadata first
+    upstream_data = draw(
+        upstream_metadata_strategy(
+            feature_plan,
+            feature_versions={
+                k: v
+                for k, v in feature_versions.items()
+                if k != feature_plan.feature.key.to_string()
+            },
+            snapshot_version=snapshot_version,
+            min_rows=min_rows,
+            max_rows=max_rows,
+        )
+    )
+
+    # If there are no upstream features, return empty upstream and just the downstream
+    if not upstream_data:
+        # Generate standalone downstream metadata
+        downstream_feature_key = feature_plan.feature.key.to_string()
+        if downstream_feature_key not in feature_versions:
+            raise ValueError(
+                f"Feature version for downstream feature '{downstream_feature_key}' not found. "
+                f"Available keys: {list(feature_versions.keys())}"
+            )
+
+        downstream_df = draw(
+            feature_metadata_strategy(
+                feature_plan.feature,
+                feature_version=feature_versions[downstream_feature_key],
+                snapshot_version=snapshot_version,
+                min_rows=min_rows,
+                max_rows=max_rows,
+            )
+        )
+        return ({}, downstream_df)
+
+    # Join upstream DataFrames on ID columns
+    # Get all ID columns from the downstream feature
+    id_columns = list(feature_plan.feature.id_columns)
+
+    # Start with the first upstream DataFrame
+    joined_df = list(upstream_data.values())[0].select(
+        id_columns + [METAXY_PROVENANCE_BY_FIELD]
+    )
+
+    # Join with remaining upstream DataFrames
+    for upstream_key, upstream_df in list(upstream_data.items())[1:]:
+        # Rename provenance column to avoid conflicts
+        renamed_provenance = f"__upstream_{upstream_key}__{METAXY_PROVENANCE_BY_FIELD}"
+        upstream_renamed = upstream_df.select(
+            id_columns + [pl.col(METAXY_PROVENANCE_BY_FIELD).alias(renamed_provenance)]
+        )
+        joined_df = joined_df.join(upstream_renamed, on=id_columns, how="inner")
+
+    # Build upstream column mapping for calculator
+    if len(upstream_data) == 1:
+        # Single upstream - no renaming needed
+        upstream_column_mapping = {
+            list(upstream_data.keys())[0]: METAXY_PROVENANCE_BY_FIELD
+        }
+    else:
+        # Multiple upstreams - use renamed columns
+        upstream_column_mapping = {
+            upstream_key: f"__upstream_{upstream_key}__{METAXY_PROVENANCE_BY_FIELD}"
+            for upstream_key in list(upstream_data.keys())[1:]
+        }
+        # First one keeps original name
+        upstream_column_mapping[list(upstream_data.keys())[0]] = (
+            METAXY_PROVENANCE_BY_FIELD
+        )
+
+    # Calculate correct provenance using the Polars calculator
+    downstream_df = calculate_provenance_by_field_polars(
+        joined_df,
+        feature_plan.feature,
+        feature_plan,
+        upstream_column_mapping,
+        hash_algorithm=hash_algorithm,
+        hash_truncation_length=hash_truncation_length,
+    )
+
+    # Add downstream feature version and snapshot version
+    downstream_feature_key = feature_plan.feature.key.to_string()
+    if downstream_feature_key not in feature_versions:
+        raise ValueError(
+            f"Feature version for downstream feature '{downstream_feature_key}' not found. "
+            f"Available keys: {list(feature_versions.keys())}"
+        )
+
+    downstream_df = downstream_df.with_columns(
+        pl.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
+        pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+    )
+
+    return (upstream_data, downstream_df)
