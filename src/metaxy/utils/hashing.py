@@ -5,7 +5,7 @@ storage requirements and improve readability. Hash truncation is configured
 through the global MetaxyConfig.
 """
 
-from typing import Any, TypeVar, overload
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -142,20 +142,39 @@ def truncate_string_column(
     return df.with_columns(nw.col(column_name).str.slice(0, length).alias(column_name))
 
 
-PolarsFrameT = TypeVar("PolarsFrameT", pl.DataFrame, pl.LazyFrame)
+def _truncate_struct_column_polars(
+    df: Any, struct_column: str, length: int
+) -> Any:
+    """Helper that truncates struct fields on Polars DataFrame/LazyFrame."""
+    if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+        return df
+
+    schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+    if struct_column not in schema:
+        return df
+
+    dtype = schema[struct_column]
+    if not isinstance(dtype, pl.Struct):
+        return df
+
+    field_names = [field.name for field in dtype.fields]
+    if not field_names:
+        return df
+
+    truncated_struct = pl.struct(
+        [
+            pl.col(struct_column)
+            .struct.field(field_name)
+            .str.slice(0, length)
+            .alias(field_name)
+            for field_name in field_names
+        ]
+    ).alias(struct_column)
+
+    return df.with_columns(truncated_struct)
 
 
-@overload
-def truncate_struct_column(df: pl.DataFrame, struct_column: str) -> pl.DataFrame: ...
-
-
-@overload
-def truncate_struct_column(df: pl.LazyFrame, struct_column: str) -> pl.LazyFrame: ...
-
-
-def truncate_struct_column(
-    df: pl.DataFrame | pl.LazyFrame, struct_column: str
-) -> pl.DataFrame | pl.LazyFrame:
+def truncate_struct_column(df: Any, struct_column: str) -> Any:
     """Truncate hash values within a struct column.
 
     Uses the global hash truncation setting from MetaxyConfig.
@@ -184,47 +203,14 @@ def truncate_struct_column(
     if length is None:
         return df
 
-    import polars as pl
+    if isinstance(df, nw.LazyFrame):
+        native = df.to_native()
+        truncated = _truncate_struct_column_polars(native, struct_column, length)
+        return nw.from_native(truncated, eager_only=False)
 
-    # Only handle Polars DataFrames and LazyFrames (structs are Polars-only)
-    if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
-        raise TypeError(
-            f"truncate_struct_column only supports Polars DataFrame/LazyFrame, got {type(df)}"
-        )
+    if isinstance(df, nw.DataFrame):
+        native = df.to_native()
+        truncated = _truncate_struct_column_polars(native, struct_column, length)
+        return nw.from_native(truncated, eager_only=True)
 
-    # For LazyFrame, we need to collect once to get field names
-    if isinstance(df, pl.LazyFrame):
-        temp_df = df.limit(1).collect()
-    else:
-        temp_df = df
-
-    # Get field names from the struct column
-    if temp_df.height == 0:
-        return df
-
-    struct_val = temp_df[struct_column][0]
-    if struct_val is None:
-        return df
-
-    field_names = list(struct_val.keys())
-
-    # Create expressions to extract and truncate each field
-    field_exprs = []
-    for field_name in field_names:
-        field_exprs.append(
-            pl.col(struct_column)
-            .struct.field(field_name)
-            .str.slice(0, length)
-            .alias(field_name)
-        )
-
-    # Extract and truncate fields as separate columns
-    df_with_fields = df.with_columns(field_exprs)
-
-    # Recreate the struct from truncated fields
-    struct_expr = pl.struct([pl.col(fn) for fn in field_names])
-    result = df_with_fields.with_columns(struct_expr.alias(struct_column))
-
-    # Drop temporary columns
-    result = result.drop(field_names)
-    return result
+    return _truncate_struct_column_polars(df, struct_column, length)
