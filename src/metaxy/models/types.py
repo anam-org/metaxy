@@ -211,6 +211,14 @@ class _Key(BaseModel):
         """Convert to string representation with "/" separator."""
         return KEY_SEPARATOR.join(self.parts)
 
+    def to_struct_key(self) -> str:
+        """Convert to a name that can be used as struct key in databases"""
+        return "_".join(self.parts)
+
+    def to_column_suffix(self) -> str:
+        """Convert to a suffix usable for database column names (typically temporary)."""
+        return "__" + "_".join(self.parts)
+
     def __repr__(self) -> str:
         """Return string representation."""
         return self.to_string()

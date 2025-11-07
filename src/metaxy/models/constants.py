@@ -39,7 +39,7 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_SNAPSHOT_VERSION,
     }
 )
-"""All system-managed column names."""
+"""All Metaxy-managed column names that are injected into feature tables."""
 
 # Columns that should be dropped when joining upstream features (will be recalculated)
 _DROPPABLE_COLUMNS = frozenset(
