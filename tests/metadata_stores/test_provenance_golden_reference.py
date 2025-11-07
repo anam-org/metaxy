@@ -605,6 +605,19 @@ def setup_store_with_data(
 # Now using simplified fixtures from conftest.py
 # Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_postgres(self, hash_algorithm: HashAlgorithm, postgres_db: str):
+        try:
+            return PostgresMetadataStore(
+                connection_string=postgres_db,
+                hash_algorithm=hash_algorithm,
+                prefer_native=True,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {PostgresMetadataStore}"
+            )
+
 
 def assert_increment_matches_golden(
     actual: Increment,
