@@ -99,7 +99,6 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
     result = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -526,7 +525,6 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
     processed_a_result = processed_a_tracker.load_upstream_with_provenance(
         upstream={FeatureKey(["raw_a"]): raw_a_metadata},
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -536,7 +534,6 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
     processed_b_result = processed_b_tracker.load_upstream_with_provenance(
         upstream={FeatureKey(["raw_b"]): raw_b_metadata},
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -549,7 +546,6 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
             FeatureKey(["processed_b"]): processed_b_result,
         },
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 

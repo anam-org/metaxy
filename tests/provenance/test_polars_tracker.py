@@ -39,7 +39,6 @@ def test_compute_provenance_single_upstream(
     result = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -94,7 +93,6 @@ def test_compute_provenance_multiple_upstreams(
     result = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -146,7 +144,6 @@ def test_compute_provenance_selective_field_deps(
     result = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -195,7 +192,6 @@ def test_resolve_increment_no_current(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
         sample=None,
     )
@@ -233,7 +229,6 @@ def test_resolve_increment_with_changes(
     expected = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
     expected_df = expected.collect()
@@ -265,7 +260,6 @@ def test_resolve_increment_with_changes(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
         sample=None,
     )
@@ -306,7 +300,6 @@ def test_resolve_increment_all_unchanged(
     expected = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
     )
 
@@ -317,7 +310,6 @@ def test_resolve_increment_all_unchanged(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
-        hash_length=32,
         filters={},
         sample=None,
     )
@@ -359,7 +351,6 @@ def test_compute_provenance_different_algorithms_snapshot(
     result = tracker.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=hash_algo,
-        hash_length=32,
         filters={},
     )
 

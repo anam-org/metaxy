@@ -115,12 +115,17 @@ class FeatureDepTransformer:
             List of column names to select, or None to select all columns
         """
 
-        # If no specific columns requested, return None to keep all columns
-        if not self.dep.columns:
+        # If no specific columns requested (None), return None to keep all columns
+        # If empty tuple, return only ID columns and system columns
+        if self.dep.columns is None:
             return None
         else:
+            # Apply renames to the selected columns since selection happens after renaming
+            renamed_selected_cols = [
+                self.renames.get(col, col) for col in self.dep.columns
+            ]
             return [
                 *self.renamed_id_columns,
-                *(self.dep.columns or []),
+                *renamed_selected_cols,
                 *self.renamed_metaxy_cols,
             ]

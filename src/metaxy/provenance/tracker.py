@@ -126,7 +126,7 @@ class ProvenanceTracker(ABC):
         # Keep only METAXY_PROVENANCE and METAXY_PROVENANCE_BY_FIELD
         # Drop METAXY_FEATURE_VERSION and METAXY_SNAPSHOT_VERSION to avoid collisions
         columns_to_drop = [METAXY_FEATURE_VERSION, METAXY_SNAPSHOT_VERSION]
-        
+
         for feature_key, renamed_df in dfs.items():
             cols = renamed_df.df.collect_schema().names()
             cols_to_drop = [col for col in columns_to_drop if col in cols]
@@ -155,7 +155,9 @@ class ProvenanceTracker(ABC):
             colliding_columns = [
                 col
                 for col, features in all_columns.items()
-                if len(features) > 1 and col not in id_cols and col not in allowed_system_columns
+                if len(features) > 1
+                and col not in id_cols
+                and col not in allowed_system_columns
             ]
 
             if colliding_columns:
@@ -257,13 +259,13 @@ class ProvenanceTracker(ABC):
 
         Returns:
             DataFrame with metaxy_provenance_by_field and metaxy_provenance columns added
-        
+
         Note:
             Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
         """
         # Read hash truncation length from global config
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
-        
+
         # Prepare upstream: filter, rename, select, join
         df = self.prepare_upstream(upstream, filters=filters)
 
@@ -368,13 +370,13 @@ class ProvenanceTracker(ABC):
         Returns:
             tuple[FrameT, FrameT | None, FrameT | None]
                 New samples appearing in upstream, samples with changed provenance (mismatch between expected and current state), and samples that have been removed from upstream but are in the current state. New samples DataFrame is never None, but may be empty. changed and removed DataFrames may be None (for the first increment on the feature).
-        
+
         Note:
             Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
         """
         feature_spec = self.plan.feature
         id_columns = list(feature_spec.id_columns)
-        
+
         # Read hash truncation length from global config
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 

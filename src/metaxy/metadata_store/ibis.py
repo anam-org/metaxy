@@ -6,7 +6,7 @@ Supports any SQL database that Ibis supports:
 - And 20+ other backends
 """
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
@@ -15,6 +15,7 @@ import narwhals as nw
 import polars as pl
 
 from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
@@ -24,23 +25,18 @@ if TYPE_CHECKING:
     import ibis.expr.types
 
 
-class IbisMetadataStore(MetadataStore):
+class IbisMetadataStore(MetadataStore, ABC):
     """
     Generic SQL metadata store using Ibis.
 
-    Supports any Ibis backend that supports struct types:
-    - DuckDB: Fast local analytical database
-    - PostgreSQL: Production-grade RDBMS
-    - MySQL: Popular RDBMS
-    - ClickHouse: High-performance analytical database
-    - And other backends with struct support
+    Supports any Ibis backend that supports struct types, such as: DuckDB, PostgreSQL, ClickHouse, and others.
 
-    Note: Backends without native struct support (e.g., SQLite) are NOT supported.
-    The metaxy_provenance_by_field field requires struct type support for proper storage.
+    Warning:
+        Backends without native struct support (e.g., SQLite) are NOT supported.
 
     Storage layout:
-    - Each feature gets its own table: {namespace}__{feature_name}
-    - System tables: __metaxy__feature_versions, __metaxy__migrations
+    - Each feature gets its own table: {feature}__{key}
+    - System tables: metaxy__system__feature_versions, metaxy__system__migrations
     - Uses Ibis for cross-database compatibility
 
     Note: Uses MD5 hash by default for cross-database compatibility.
@@ -145,7 +141,7 @@ class IbisMetadataStore(MetadataStore):
 
         Yields:
             IbisProvenanceTracker with backend-specific hash functions.
-            
+
         Note:
             Base implementation only supports MD5 (universally available).
             Subclasses can override _create_hash_functions() for backend-specific hashes.
@@ -166,7 +162,7 @@ class IbisMetadataStore(MetadataStore):
             plan=plan,
             hash_functions=hash_functions,
         )
-        
+
         try:
             yield tracker
         finally:
@@ -196,7 +192,7 @@ class IbisMetadataStore(MetadataStore):
 
         if self.hash_algorithm not in hash_functions:
             supported = [algo.value for algo in hash_functions.keys()]
-            raise ValueError(
+            raise HashAlgorithmNotSupportedError(
                 f"Hash algorithm '{self.hash_algorithm.value}' not supported. "
                 f"Supported algorithms: {', '.join(supported)}"
             )

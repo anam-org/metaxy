@@ -1,9 +1,10 @@
 """Tests for column selection and renaming in feature dependencies."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
-from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
 
 from metaxy import (
     Feature,
@@ -12,6 +13,69 @@ from metaxy import (
     FeatureKey,
     SampleFeatureSpec,
 )
+from metaxy.models.plan import FeaturePlan
+from metaxy.provenance.polars import PolarsProvenanceTracker
+
+
+# Helper function to add metaxy_provenance column to test data
+def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
+    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
+    # For tests, we just use a simple hash-like string based on the provenance_by_field
+    # In real usage, this would be calculated by the ProvenanceTracker
+    df = df.with_columns(
+        pl.col("metaxy_provenance_by_field")
+        .map_elements(lambda x: f"hash_{x['default']}", return_dtype=pl.String)
+        .alias("metaxy_provenance")
+    )
+    return df
+
+
+# Simple test joiner that uses ProvenanceTracker
+class TestJoiner:
+    """Test utility that wraps PolarsProvenanceTracker for column selection tests."""
+
+    def join_upstream(
+        self,
+        upstream_refs: dict[str, "nw.LazyFrame[Any]"],
+        feature_spec: Any,
+        feature_plan: FeaturePlan,
+        upstream_columns: dict[str, tuple[str, ...] | None],
+        upstream_renames: dict[str, dict[str, str] | None],
+    ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
+        """Join upstream feature metadata using PolarsProvenanceTracker.
+
+        This is a test utility that mimics the old NarwhalsJoiner interface
+        but uses the new PolarsProvenanceTracker internally.
+        """
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+
+        # Create a PolarsProvenanceTracker for this feature
+        tracker = PolarsProvenanceTracker(plan=feature_plan)
+
+        # Convert string keys back to FeatureKey objects and ensure data is materialized
+        upstream_by_key = {}
+        for k, v in upstream_refs.items():
+            # Materialize the lazy frame and ensure it has metaxy_provenance
+            df = v.collect().to_polars()
+            if "metaxy_provenance" not in df.columns:
+                df = add_metaxy_provenance(df)
+            upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
+
+        # Prepare upstream (handles filtering, selecting, renaming, and joining)
+        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+
+        # Build the mapping of upstream_key -> provenance_by_field column name
+        # The new naming convention is: {column_name}{feature_key.to_column_suffix()}
+        mapping = {}
+        for upstream_key_str in upstream_refs.keys():
+            upstream_key = FeatureKey(upstream_key_str)
+            # The provenance_by_field column is renamed using to_column_suffix()
+            provenance_col_name = (
+                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
+            )
+            mapping[upstream_key_str] = provenance_col_name
+
+        return joined, mapping
 
 
 class TestColumnSelection:
@@ -54,7 +118,7 @@ class TestColumnSelection:
         )
 
         # Join upstream
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -64,9 +128,7 @@ class TestColumnSelection:
 
         # Verify all columns are present
         assert "sample_uid" in joined_df.columns
-        assert (
-            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" in joined_df.columns
         assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
@@ -112,7 +174,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -122,9 +184,7 @@ class TestColumnSelection:
 
         # Verify only selected columns are present
         assert "sample_uid" in joined_df.columns
-        assert (
-            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" not in joined_df.columns
         assert "custom_col3" not in joined_df.columns
@@ -169,7 +229,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -181,9 +241,7 @@ class TestColumnSelection:
         # Note: feature_version and snapshot_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
-        assert (
-            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert (
             "metaxy_feature_version" not in joined_df.columns
         )  # Not essential, dropped to avoid conflicts
@@ -232,7 +290,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -242,9 +300,7 @@ class TestColumnSelection:
 
         # Verify columns are renamed
         assert "sample_uid" in joined_df.columns
-        assert (
-            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "upstream_col1" in joined_df.columns
         assert "upstream_col2" in joined_df.columns
         assert "custom_col1" not in joined_df.columns
@@ -293,7 +349,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -363,14 +419,16 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
         }
 
         # Should raise error about column conflict
-        with pytest.raises(ValueError, match="Column name conflict.*conflict_col"):
+        with pytest.raises(
+            ValueError, match="Found additional shared columns.*conflict_col"
+        ):
             DownstreamFeature.load_input(joiner, upstream_refs)
 
     def test_column_conflict_resolved_with_rename(self):
@@ -435,7 +493,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
@@ -491,7 +549,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -501,9 +559,7 @@ class TestColumnSelection:
 
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
-        assert (
-            "__upstream_test/upstream__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
         assert "metaxy_feature_version" not in joined_df.columns
         assert "metaxy_snapshot_version" not in joined_df.columns
@@ -677,7 +733,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -802,7 +858,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
@@ -825,29 +881,14 @@ class TestColumnSelection:
         assert "excluded_col" not in joined_df.columns  # Not selected
 
         # Verify provenance_by_field columns
-        assert (
-            "__upstream_test/upstream1__metaxy_provenance_by_field" in joined_df.columns
-        )
-        assert (
-            "__upstream_test/upstream2__metaxy_provenance_by_field" in joined_df.columns
-        )
-        assert (
-            "__upstream_test/upstream3__metaxy_provenance_by_field" in joined_df.columns
-        )
+        assert "metaxy_provenance_by_field__test_upstream1" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream2" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream3" in joined_df.columns
 
         # Verify mapping
-        assert (
-            mapping["test/upstream1"]
-            == "__upstream_test/upstream1__metaxy_provenance_by_field"
-        )
-        assert (
-            mapping["test/upstream2"]
-            == "__upstream_test/upstream2__metaxy_provenance_by_field"
-        )
-        assert (
-            mapping["test/upstream3"]
-            == "__upstream_test/upstream3__metaxy_provenance_by_field"
-        )
+        assert mapping["test/upstream1"] == "metaxy_provenance_by_field__test_upstream1"
+        assert mapping["test/upstream2"] == "metaxy_provenance_by_field__test_upstream2"
+        assert mapping["test/upstream3"] == "metaxy_provenance_by_field__test_upstream3"
 
     def test_custom_load_input_with_filtering(self):
         """Test overriding load_input with custom filtering logic."""
@@ -915,7 +956,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -937,10 +978,7 @@ class TestColumnSelection:
         assert joined_df["upstream_value"].to_list() == [10, 30, 50]
 
         # Verify mapping
-        assert (
-            mapping["test/upstream"]
-            == "__upstream_test/upstream__metaxy_provenance_by_field"
-        )
+        assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
 
     def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""

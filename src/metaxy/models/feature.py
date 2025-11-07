@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     import narwhals as nw
 
     from metaxy.provenance.types import Increment, LazyIncrement
-    
+
     # TODO: These are no longer used - remove after refactoring
     # from metaxy.data_versioning.diff import MetadataDiffResolver
     # from metaxy.data_versioning.joiners import UpstreamJoiner
@@ -896,7 +896,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     @classmethod
     def load_input(
         cls,
-        joiner: "UpstreamJoiner",
+        joiner: Any,
         upstream_refs: dict[str, "nw.LazyFrame[Any]"],
     ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
         """Join upstream feature metadata.
@@ -937,7 +937,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     @classmethod
     def resolve_data_version_diff(
         cls,
-        diff_resolver: "MetadataDiffResolver",
+        diff_resolver: Any,
         target_provenance: "nw.LazyFrame[Any]",
         current_metadata: "nw.LazyFrame[Any] | None",
         *,

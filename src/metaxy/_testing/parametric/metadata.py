@@ -304,25 +304,25 @@ def feature_metadata_strategy(
     # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
     # Get field names from the struct in sorted order for determinism
     field_names = sorted([f.key.to_struct_key() for f in feature_spec.fields])
-    
+
     # Concatenate all field hashes with separator
     sample_components = [
         pl.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
         for field_name in field_names
     ]
     sample_concat = plh.concat_str(*sample_components, separator="|")
-    
+
     # Hash the concatenation using the same algorithm as the test
     hash_fn = _HASH_FUNCTION_MAP.get(HashAlgorithm.XXHASH64)
     if hash_fn is None:
         raise ValueError(f"Hash algorithm {HashAlgorithm.XXHASH64} not supported")
-    
+
     sample_hash = hash_fn(sample_concat).cast(pl.Utf8)
-    
+
     # Apply truncation if specified
     if hash_truncation_length is not None:
         sample_hash = sample_hash.str.slice(0, hash_truncation_length)
-    
+
     df = df.with_columns(sample_hash.alias(METAXY_PROVENANCE))
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
@@ -597,17 +597,17 @@ def downstream_metadata_strategy(
     import narwhals as nw
 
     from metaxy.provenance.polars import PolarsProvenanceTracker
-    
+
     # Create tracker (only accepts plan parameter)
     tracker = PolarsProvenanceTracker(plan=feature_plan)
-    
+
     # Convert upstream_data keys from strings to FeatureKey objects and wrap in Narwhals
     # Keys are simple strings like "parent", "child" that need to be wrapped in a list
     # DataFrames need to be converted to LazyFrames and wrapped in Narwhals
     upstream_dict = {
         FeatureKey([k]): nw.from_native(v.lazy()) for k, v in upstream_data.items()
     }
-    
+
     # Load upstream with provenance calculation
     # Note: hash_length is read from MetaxyConfig.get().hash_truncation_length internally
     downstream_df = tracker.load_upstream_with_provenance(

@@ -22,6 +22,7 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -133,6 +134,7 @@ class DownstreamFeature(
 @pytest.mark.parametrize(
     "fallback_store_type", ["inmemory"]
 )  # Parametrized for future expansion
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_warning_issued(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
@@ -170,67 +172,63 @@ def test_fallback_store_warning_issued(
 
     results = {}
 
-    try:
-        # Setup: Write root feature to fallback store
-        with fallback_store, graph.use():
-            fallback_store.write_metadata(RootFeature, root_data)
+    # Setup: Write root feature to fallback store
+    with fallback_store, graph.use():
+        fallback_store.write_metadata(RootFeature, root_data)
 
-        # Test with prefer_native=True and prefer_native=False
-        for prefer_native in [True, False]:
-            # Create primary store with native component support and fallback configured
-            primary_store = create_store_for_fallback(
-                primary_store_type,
-                prefer_native=prefer_native,
-                hash_algorithm=hash_algorithm,
-                params=store_params,
-                suffix=f"primary_native{prefer_native}",
-                fallback_stores=[fallback_store],
-            )
+    # Test with prefer_native=True and prefer_native=False
+    for prefer_native in [True, False]:
+        # Create primary store with native component support and fallback configured
+        primary_store = create_store_for_fallback(
+            primary_store_type,
+            prefer_native=prefer_native,
+            hash_algorithm=hash_algorithm,
+            params=store_params,
+            suffix=f"primary_native{prefer_native}",
+            fallback_stores=[fallback_store],
+        )
 
-            # Test: Resolve downstream feature with primary store that has fallback
-            with primary_store, fallback_store, graph.use():
-                import logging
+        # Test: Resolve downstream feature with primary store that has fallback
+        with primary_store, fallback_store, graph.use():
+            import logging
 
-                caplog.clear()
-                with caplog.at_level(logging.WARNING):
-                    result = primary_store.resolve_update(DownstreamFeature)
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                result = primary_store.resolve_update(DownstreamFeature)
 
-                # Verify warning was issued only when prefer_native=True
-                fallback_warnings = [
-                    record
-                    for record in caplog.records
-                    if "upstream dependencies in fallback stores" in record.message
-                    and "Falling back to in-memory Polars processing" in record.message
-                ]
+            # Verify warning was issued only when prefer_native=True
+            fallback_warnings = [
+                record
+                for record in caplog.records
+                if "upstream dependencies in fallback stores" in record.message
+                and "Falling back to in-memory Polars processing" in record.message
+            ]
 
-                if prefer_native:
-                    assert len(fallback_warnings) == 1, (
-                        f"Expected exactly 1 fallback warning for {primary_store_type} with prefer_native=True, "
-                        f"but got {len(fallback_warnings)}: {[r.message for r in fallback_warnings]}"
-                    )
-                else:
-                    # prefer_native=False means we intentionally use Polars, not a fallback
-                    assert len(fallback_warnings) == 0, (
-                        f"Unexpected fallback warning for {primary_store_type} with prefer_native=False"
-                    )
+            if prefer_native:
+                assert len(fallback_warnings) == 1, (
+                    f"Expected exactly 1 fallback warning for {primary_store_type} with prefer_native=True, "
+                    f"but got {len(fallback_warnings)}: {[r.message for r in fallback_warnings]}"
+                )
+            else:
+                # prefer_native=False means we intentionally use Polars, not a fallback
+                assert len(fallback_warnings) == 0, (
+                    f"Unexpected fallback warning for {primary_store_type} with prefer_native=False"
+                )
 
-                # Collect field provenances for comparison
-                added_sorted = (
-                    result.added.to_polars()
-                    if isinstance(result.added, nw.DataFrame)
-                    else result.added
-                ).sort("sample_uid")
-                versions = added_sorted["metaxy_provenance_by_field"].to_list()
+            # Collect field provenances for comparison
+            added_sorted = (
+                result.added.to_polars()
+                if isinstance(result.added, nw.DataFrame)
+                else result.added
+            ).sort("sample_uid")
+            versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
-                results[(primary_store_type, fallback_store_type, prefer_native)] = {
-                    "added": len(result.added),
-                    "changed": len(result.changed),
-                    "removed": len(result.removed),
-                    "versions": versions,
-                }
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
+            results[(primary_store_type, fallback_store_type, prefer_native)] = {
+                "added": len(result.added),
+                "changed": len(result.changed),
+                "removed": len(result.removed),
+                "versions": versions,
+            }
 
     # All variants should produce identical results (including field provenances)
     assert_all_results_equal(results, snapshot)
@@ -247,6 +245,7 @@ def test_fallback_store_warning_issued(
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_no_fallback_warning_when_all_local(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
@@ -272,53 +271,50 @@ def test_no_fallback_warning_when_all_local(
         suffix="single",
     )
 
-    try:
-        with store, graph.use():
-            # Write root feature to same store
-            root_data = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
-                        {"default": "hash1"},
-                        {"default": "hash2"},
-                        {"default": "hash3"},
-                    ],
-                }
-            )
-            store.write_metadata(RootFeature, root_data)
+    with store, graph.use():
+        # Write root feature to same store
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        )
+        store.write_metadata(RootFeature, root_data)
 
-            # Resolve downstream feature - all upstream is local
-            import logging
+        # Resolve downstream feature - all upstream is local
+        import logging
 
-            caplog.clear()
-            with caplog.at_level(logging.WARNING):
-                result = store.resolve_update(DownstreamFeature)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = store.resolve_update(DownstreamFeature)
 
-            # Verify NO fallback warning was issued
-            fallback_warnings = [
-                record
-                for record in caplog.records
-                if "upstream dependencies in fallback stores" in record.message
-                or "Falling back to in-memory Polars processing" in record.message
-            ]
+        # Verify NO fallback warning was issued
+        fallback_warnings = [
+            record
+            for record in caplog.records
+            if "upstream dependencies in fallback stores" in record.message
+            or "Falling back to in-memory Polars processing" in record.message
+        ]
 
-            assert len(fallback_warnings) == 0, (
-                f"Unexpected fallback warning for {store_type} when all upstream is local: "
-                f"{[r.message for r in fallback_warnings]}"
-            )
+        assert len(fallback_warnings) == 0, (
+            f"Unexpected fallback warning for {store_type} when all upstream is local: "
+            f"{[r.message for r in fallback_warnings]}"
+        )
 
-            # Verify results are still correct
-            assert len(result.added) == 3
-            assert len(result.changed) == 0
-            assert len(result.removed) == 0
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
+        # Verify results are still correct
+        assert len(result.added) == 3
+        assert len(result.changed) == 0
+        assert len(result.removed) == 0
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("primary_store_type", get_available_store_types_for_fallback())
 @pytest.mark.parametrize("fallback_store_type", ["inmemory"])
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_fallback_store_switches_to_polars_components(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
@@ -362,42 +358,35 @@ def test_fallback_store_switches_to_polars_components(
         suffix="all_local",
     )
 
-    try:
-        with store_all_local, graph.use():
-            store_all_local.write_metadata(RootFeature, root_data)
+    with store_all_local, graph.use():
+        store_all_local.write_metadata(RootFeature, root_data)
 
-            import logging
+        import logging
 
-            caplog.clear()
-            with caplog.at_level(logging.WARNING):
-                result_local = store_all_local.resolve_update(DownstreamFeature)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_local = store_all_local.resolve_update(DownstreamFeature)
 
-            # Should be no warnings
-            warnings_local = [
-                r for r in caplog.records if "fallback" in r.message.lower()
-            ]
-            assert len(warnings_local) == 0
+        # Should be no warnings
+        warnings_local = [r for r in caplog.records if "fallback" in r.message.lower()]
+        assert len(warnings_local) == 0
 
-            # Collect field provenances from result
-            added_local = (
-                result_local.added.to_polars()
-                if isinstance(result_local.added, nw.DataFrame)
-                else result_local.added
-            )
-            versions_local = added_local.sort("sample_uid")[
-                "metaxy_provenance_by_field"
-            ].to_list()
+        # Collect field provenances from result
+        added_local = (
+            result_local.added.to_polars()
+            if isinstance(result_local.added, nw.DataFrame)
+            else result_local.added
+        )
+        versions_local = added_local.sort("sample_uid")[
+            "metaxy_provenance_by_field"
+        ].to_list()
 
-            results[(primary_store_type, fallback_store_type, "all_local")] = {
-                "added": len(result_local.added),
-                "changed": len(result_local.changed),
-                "removed": len(result_local.removed),
-                "versions": versions_local,
-            }
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
-        return
+        results[(primary_store_type, fallback_store_type, "all_local")] = {
+            "added": len(result_local.added),
+            "changed": len(result_local.changed),
+            "removed": len(result_local.removed),
+            "versions": versions_local,
+        }
 
     # Scenario 2: Upstream in fallback (Polars components)
     # Use InMemory for fallback (realistic - simple store from previous deployment)
@@ -465,6 +454,7 @@ def test_fallback_store_switches_to_polars_components(
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
 def test_prefer_native_false_no_warning_even_without_fallback(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
@@ -490,34 +480,30 @@ def test_prefer_native_false_no_warning_even_without_fallback(
         suffix="no_native",
     )
 
-    try:
-        with store, graph.use():
-            root_data = pl.DataFrame(
-                {
-                    "sample_uid": [1, 2, 3],
-                    "metaxy_provenance_by_field": [
-                        {"default": "hash1"},
-                        {"default": "hash2"},
-                        {"default": "hash3"},
-                    ],
-                }
-            )
-            store.write_metadata(RootFeature, root_data)
+    with store, graph.use():
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        )
+        store.write_metadata(RootFeature, root_data)
 
-            import logging
+        import logging
 
-            caplog.clear()
-            with caplog.at_level(logging.WARNING):
-                result = store.resolve_update(DownstreamFeature)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result = store.resolve_update(DownstreamFeature)
 
-            # Should be no warnings - prefer_native=False is intentional, not a fallback
-            warnings = [r for r in caplog.records]
-            assert len(warnings) == 0, (
-                f"Unexpected warnings with prefer_native=False: {[r.message for r in warnings]}"
-            )
+        # Should be no warnings - prefer_native=False is intentional, not a fallback
+        warnings = [r for r in caplog.records]
+        assert len(warnings) == 0, (
+            f"Unexpected warnings with prefer_native=False: {[r.message for r in warnings]}"
+        )
 
-            # Verify results are correct
-            assert len(result.added) == 3
-
-    except HashAlgorithmNotSupportedError:
-        pytest.skip(f"Hash algorithm {hash_algorithm} not supported")
+        # Verify results are correct
+        assert len(result.added) == 3

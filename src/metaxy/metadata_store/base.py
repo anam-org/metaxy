@@ -25,6 +25,7 @@ from metaxy.metadata_store.system_tables import (
     _suppress_feature_version_warning,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.utils import empty_frame_like
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
@@ -38,7 +39,6 @@ from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
 from metaxy.provenance import ProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
@@ -530,8 +530,64 @@ class MetadataStore(ABC):
                 ]
             )
 
-        # Validate schema
+        # Validate schema first (must have metaxy_provenance_by_field)
         self._validate_schema(df)
+
+        # TODO: drop this, it should be an invariant
+        # Auto-compute metaxy_provenance if missing
+        if "metaxy_provenance" not in df.columns:
+            # Get feature spec to determine field names
+            if isinstance(feature, type) and issubclass(feature, BaseFeature):
+                feature_spec = feature.spec()
+            else:
+                from metaxy.models.feature import FeatureGraph
+
+                graph = FeatureGraph.get_active()
+                feature_cls = graph.features_by_key[feature_key]
+                feature_spec = feature_cls.spec()
+
+            # Get sorted field names
+            field_names = sorted([f.key.to_struct_key() for f in feature_spec.fields])
+
+            # Concatenate all field hashes with separator
+            sample_components_exprs = [
+                pl.col(PROVENANCE_BY_FIELD_COL).struct.field(field_name)
+                for field_name in field_names
+            ]
+            if sample_components_exprs:
+                sample_concat = pl.concat_str(sample_components_exprs, separator="|")
+                df = df.with_columns(sample_concat.alias("__sample_concat"))
+
+                # Hash the concatenation using PolarsProvenanceTracker
+                # Convert to Narwhals, hash, then back to Polars
+                from metaxy.provenance.polars import PolarsProvenanceTracker
+
+                # Create a minimal plan just for hashing (we don't need full plan)
+                # We're just using the tracker's hash_string_column method
+                df_nw = nw.from_native(df.lazy(), eager_only=False)
+
+                # Use a dummy plan - we only need the hash function
+                from metaxy.models.plan import FeaturePlan
+
+                plan = FeaturePlan(feature=feature_spec, deps=[])
+                tracker = PolarsProvenanceTracker(plan=plan)
+
+                # Hash using the tracker's method
+                df_nw = tracker.hash_string_column(
+                    df_nw,
+                    "__sample_concat",
+                    "metaxy_provenance",
+                    self.hash_algorithm,
+                )
+
+                # Apply hash truncation
+                hash_length = self.hash_truncation_length or 64
+                df_nw = df_nw.with_columns(
+                    nw.col("metaxy_provenance").str.slice(0, hash_length)
+                )
+
+                # Convert back to Polars and drop temp column
+                df = df_nw.collect().to_polars().drop("__sample_concat")
 
         # Write metadata
         self._write_metadata_impl(feature_key, df)
@@ -560,6 +616,8 @@ class MetadataStore(ABC):
             raise MetadataSchemaError(
                 f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
             )
+
+        # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
         if FEATURE_VERSION_COL not in df.columns:
@@ -1623,8 +1681,8 @@ class MetadataStore(ABC):
             filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
                 Applied when reading upstream metadata to filter samples at the source.
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If `True`, return [metaxy.data_versioning.diff.LazyIncrement][] with lazy Narwhals LazyFrames.
-                If `False`, return [metaxy.data_versioning.diff.Increment][] with eager Narwhals DataFrames.
+            lazy: If `True`, return [metaxy.provenance.types.LazyIncrement][] with lazy Narwhals LazyFrames.
+                If `False`, return [metaxy.provenance.types.Increment][] with eager Narwhals DataFrames.
             **kwargs: Backend-specific parameters
 
         Raises:
@@ -1678,9 +1736,13 @@ class MetadataStore(ABC):
             samples_native = samples_lazy.to_native()
             is_polars_samples = isinstance(samples_native, (pl.DataFrame, pl.LazyFrame))
 
+            # Determine which tracker to use
+            use_polars_tracker = False
             if is_polars_samples and self._supports_native_components():
                 # User provided Polars samples but store uses native (SQL) backend
                 # Need to materialize current metadata to Polars for compatibility
+                # and use Polars tracker
+                use_polars_tracker = True
                 logger.warning(
                     f"Feature {feature.spec().key}: samples parameter is Polars-backed but store uses native SQL backend. "
                     f"Materializing current metadata to Polars for diff comparison. "
@@ -1703,19 +1765,65 @@ class MetadataStore(ABC):
                     feature, feature_version=feature.feature_version()
                 )
 
-            # TODO: Update this to use ProvenanceTracker
-            # Use diff resolver to compare samples with current
-            # from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
-            # diff_resolver = NarwhalsDiffResolver()
-            raise NotImplementedError("resolve_update for root features needs refactoring to use ProvenanceTracker")
+            # Use ProvenanceTracker to compare samples with current metadata
+            # For root features (or when samples are explicitly provided), we pass the samples
+            # to the tracker which will validate and diff them
+            # Use Polars tracker if samples are Polars-backed and we converted current to Polars
+            if use_polars_tracker:
+                from metaxy.provenance.polars import PolarsProvenanceTracker
 
-            lazy_result = diff_resolver.find_changes(
-                target_provenance=samples_lazy,
-                current_metadata=current_lazy,
-                id_columns=feature.spec().id_columns,  # Get ID columns from feature spec
-            )
+                # Polars tracker doesn't need context manager - direct instantiation
+                tracker = PolarsProvenanceTracker(plan=plan)
+                tracker_cm = None
+            else:
+                # Native tracker needs context manager
+                tracker_cm = self._create_provenance_tracker(plan)
+                tracker = tracker_cm.__enter__()
 
-            return lazy_result if lazy else lazy_result.collect()
+            try:
+                added, changed, removed = tracker.resolve_increment_with_provenance(
+                    current=current_lazy,
+                    upstream={},  # No upstream for root features
+                    hash_algorithm=self.hash_algorithm,
+                    filters={},  # No filters for root features
+                    sample=samples_lazy,  # User-provided samples with provenance
+                )
+
+                # Convert None to empty DataFrames
+                if changed is None:
+                    changed = empty_frame_like(added)
+                if removed is None:
+                    removed = empty_frame_like(added)
+
+                # Return as LazyIncrement or materialize to Increment
+                if lazy:
+                    return LazyIncrement(
+                        added=added
+                        if isinstance(added, nw.LazyFrame)
+                        else nw.from_native(added),
+                        changed=changed
+                        if isinstance(changed, nw.LazyFrame)
+                        else nw.from_native(changed),
+                        removed=removed
+                        if isinstance(removed, nw.LazyFrame)
+                        else nw.from_native(removed),
+                    )
+                else:
+                    return Increment(
+                        added=added.collect()
+                        if isinstance(added, nw.LazyFrame)
+                        else added,
+                        changed=changed.collect()
+                        if isinstance(changed, nw.LazyFrame)
+                        else changed,
+                        removed=removed.collect()
+                        if isinstance(removed, nw.LazyFrame)
+                        else removed,
+                    )
+            finally:
+                # Clean up tracker if it was created via context manager
+                if tracker_cm is not None:
+                    tracker_cm.__exit__(None, None, None)
 
         # Root features without samples: error (samples required)
         if not plan.deps:
@@ -1829,6 +1937,12 @@ class MetadataStore(ABC):
                 sample=None,  # We don't support sample filtering yet
             )
 
+            # Convert None to empty DataFrames
+            if changed is None:
+                changed = empty_frame_like(added)
+            if removed is None:
+                removed = empty_frame_like(added)
+
             # Return as LazyIncrement or materialize to Increment
             if lazy:
                 return LazyIncrement(
@@ -1901,8 +2015,11 @@ class MetadataStore(ABC):
             if filters and upstream_key_str in filters:
                 filters_by_key[upstream_key] = list(filters[upstream_key_str])
 
+        # Get feature plan
+        plan = feature.graph.get_feature_plan(feature.spec().key)
+
         # Use Polars provenance tracker (since data spans multiple stores)
-        tracker = PolarsProvenanceTracker(plan=feature.graph.get_feature_plan(feature.spec.key))
+        tracker = PolarsProvenanceTracker(plan=plan)
         logger.debug(
             f"Using Polars provenance tracker for cross-store scenario: {feature.spec().key}"
         )
@@ -1915,14 +2032,18 @@ class MetadataStore(ABC):
         # Use ProvenanceTracker to compute provenance and resolve increment
         # This internally handles: joining, hashing, and diffing
         added, changed, removed = tracker.resolve_increment_with_provenance(
-            key=feature.spec().key,
             current=current_lazy,
             upstream=upstream,
             hash_algorithm=self.hash_algorithm,
-            hash_length=self.hash_truncation_length,
             filters=filters_by_key,
             sample=None,  # We don't support sample filtering yet
         )
+
+        # Convert None to empty DataFrames
+        if changed is None:
+            changed = empty_frame_like(added)
+        if removed is None:
+            removed = empty_frame_like(added)
 
         # Return as LazyIncrement or materialize to Increment
         if lazy:

@@ -204,7 +204,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
 
         Yields:
             IbisProvenanceTracker with DuckDB-specific hash functions.
-            
+
         Note:
             Extensions are loaded lazily when tracker is created.
         """

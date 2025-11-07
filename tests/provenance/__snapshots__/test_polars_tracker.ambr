@@ -8,9 +8,9 @@
 # ---
 # name: test_compute_provenance_different_algorithms_snapshot[sha256]
   list([
-    'b350736a6ded457c73fa059ba2af4f39',
-    'df352a9c87bfc29cb8bcfd098974973e',
-    '67f17dc0c111e7dc004766e65864d18b',
+    'b350736a6ded457c73fa059ba2af4f39f94d6d28c2461c4b28d02f8f0ea26ecd',
+    'df352a9c87bfc29cb8bcfd098974973e88057f01c1a74595eb157c9faf13f6a9',
+    '67f17dc0c111e7dc004766e65864d18b8dfc1c6ef59b58818aede8b2b76a6a81',
   ])
 # ---
 # name: test_compute_provenance_different_algorithms_snapshot[xxhash64]
