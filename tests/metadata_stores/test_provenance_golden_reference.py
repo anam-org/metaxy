@@ -186,6 +186,19 @@ def setup_store_with_data(
 # Now using simplified fixtures from conftest.py
 # Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_lancedb(self, hash_algorithm: HashAlgorithm, tmp_path):
+        pytest.importorskip("lancedb")
+        try:
+            return LanceDBMetadataStore(
+                tmp_path / "lancedb",
+                hash_algorithm=hash_algorithm,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {LanceDBMetadataStore}"
+            )
+
 
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_store_resolve_update_matches_golden_provenance(
