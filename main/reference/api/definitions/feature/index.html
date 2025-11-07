@@ -1108,6 +1108,24 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy.FeatureKey.to_struct_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_struct_key
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.FeatureKey.to_column_suffix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_column_suffix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy.FeatureKey.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__repr__
@@ -1901,6 +1919,24 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy.FeatureKey.to_struct_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_struct_key
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.FeatureKey.to_column_suffix" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;to_column_suffix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy.FeatureKey.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__repr__
@@ -2360,9 +2396,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
                   <details class="quote">
                     <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a><a href="#__codelineno-0-324"><span class="linenos" data-linenos="324 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">_CoercibleToKey</span> <span class="o">|</span> <span class="n">Self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><a href="#__codelineno-0-325"><span class="linenos" data-linenos="325 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize FeatureKey from various input types.&quot;&quot;&quot;</span>
-</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><a href="#__codelineno-0-326"><span class="linenos" data-linenos="326 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><a href="#__codelineno-0-332"><span class="linenos" data-linenos="332 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">_CoercibleToKey</span> <span class="o">|</span> <span class="n">Self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize FeatureKey from various input types.&quot;&quot;&quot;</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </span></code></pre></div>
                   </details>
 
@@ -2432,6 +2468,60 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="metaxy.FeatureKey.to_struct_key" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_struct_key</span>
+
+
+<a href="#metaxy.FeatureKey.to_struct_key" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_struct_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert to a name that can be used as struct key in databases</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><a href="#__codelineno-0-214"><span class="linenos" data-linenos="214 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_struct_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a><a href="#__codelineno-0-215"><span class="linenos" data-linenos="215 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to a name that can be used as struct key in databases&quot;&quot;&quot;</span>
+</span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a><a href="#__codelineno-0-216"><span class="linenos" data-linenos="216 "></span></a>    <span class="k">return</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+</span></code></pre></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="metaxy.FeatureKey.to_column_suffix" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">to_column_suffix</span>
+
+
+<a href="#metaxy.FeatureKey.to_column_suffix" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_column_suffix</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert to a suffix usable for database column names (typically temporary).</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a><a href="#__codelineno-0-218"><span class="linenos" data-linenos="218 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">to_column_suffix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a><a href="#__codelineno-0-219"><span class="linenos" data-linenos="219 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert to a suffix usable for database column names (typically temporary).&quot;&quot;&quot;</span>
+</span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><a href="#__codelineno-0-220"><span class="linenos" data-linenos="220 "></span></a>    <span class="k">return</span> <span class="s2">&quot;__&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+</span></code></pre></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="metaxy.FeatureKey.__repr__" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__repr__</span>
 
@@ -2447,9 +2537,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><a href="#__codelineno-0-214"><span class="linenos" data-linenos="214 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a><a href="#__codelineno-0-215"><span class="linenos" data-linenos="215 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return string representation.&quot;&quot;&quot;</span>
-</span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a><a href="#__codelineno-0-216"><span class="linenos" data-linenos="216 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a><a href="#__codelineno-0-222"><span class="linenos" data-linenos="222 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a><a href="#__codelineno-0-223"><span class="linenos" data-linenos="223 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return string representation.&quot;&quot;&quot;</span>
+</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a><a href="#__codelineno-0-224"><span class="linenos" data-linenos="224 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2474,9 +2564,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a><a href="#__codelineno-0-218"><span class="linenos" data-linenos="218 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a><a href="#__codelineno-0-219"><span class="linenos" data-linenos="219 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return string representation.&quot;&quot;&quot;</span>
-</span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><a href="#__codelineno-0-220"><span class="linenos" data-linenos="220 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><a href="#__codelineno-0-226"><span class="linenos" data-linenos="226 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a><a href="#__codelineno-0-227"><span class="linenos" data-linenos="227 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return string representation.&quot;&quot;&quot;</span>
+</span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><a href="#__codelineno-0-228"><span class="linenos" data-linenos="228 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2501,11 +2591,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a><a href="#__codelineno-0-222"><span class="linenos" data-linenos="222 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a><a href="#__codelineno-0-223"><span class="linenos" data-linenos="223 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Less than comparison for sorting.&quot;&quot;&quot;</span>
-</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a><a href="#__codelineno-0-224"><span class="linenos" data-linenos="224 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
-</span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a><a href="#__codelineno-0-225"><span class="linenos" data-linenos="225 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><a href="#__codelineno-0-226"><span class="linenos" data-linenos="226 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a><a href="#__codelineno-0-230"><span class="linenos" data-linenos="230 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><a href="#__codelineno-0-231"><span class="linenos" data-linenos="231 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Less than comparison for sorting.&quot;&quot;&quot;</span>
+</span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a><a href="#__codelineno-0-232"><span class="linenos" data-linenos="232 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+</span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a><a href="#__codelineno-0-233"><span class="linenos" data-linenos="233 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="__span-0-234"><a id="__codelineno-0-234" name="__codelineno-0-234"></a><a href="#__codelineno-0-234"><span class="linenos" data-linenos="234 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2530,11 +2620,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><a href="#__codelineno-0-228"><span class="linenos" data-linenos="228 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><a href="#__codelineno-0-229"><span class="linenos" data-linenos="229 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Less than or equal comparison for sorting.&quot;&quot;&quot;</span>
-</span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a><a href="#__codelineno-0-230"><span class="linenos" data-linenos="230 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
-</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><a href="#__codelineno-0-231"><span class="linenos" data-linenos="231 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a><a href="#__codelineno-0-232"><span class="linenos" data-linenos="232 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a><a href="#__codelineno-0-236"><span class="linenos" data-linenos="236 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a><a href="#__codelineno-0-237"><span class="linenos" data-linenos="237 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Less than or equal comparison for sorting.&quot;&quot;&quot;</span>
+</span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><a href="#__codelineno-0-238"><span class="linenos" data-linenos="238 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+</span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a><a href="#__codelineno-0-239"><span class="linenos" data-linenos="239 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a><a href="#__codelineno-0-240"><span class="linenos" data-linenos="240 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2559,11 +2649,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-234"><a id="__codelineno-0-234" name="__codelineno-0-234"></a><a href="#__codelineno-0-234"><span class="linenos" data-linenos="234 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-235"><a id="__codelineno-0-235" name="__codelineno-0-235"></a><a href="#__codelineno-0-235"><span class="linenos" data-linenos="235 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Greater than comparison for sorting.&quot;&quot;&quot;</span>
-</span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a><a href="#__codelineno-0-236"><span class="linenos" data-linenos="236 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
-</span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a><a href="#__codelineno-0-237"><span class="linenos" data-linenos="237 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a><a href="#__codelineno-0-238"><span class="linenos" data-linenos="238 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a><a href="#__codelineno-0-242"><span class="linenos" data-linenos="242 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><a href="#__codelineno-0-243"><span class="linenos" data-linenos="243 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Greater than comparison for sorting.&quot;&quot;&quot;</span>
+</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><a href="#__codelineno-0-244"><span class="linenos" data-linenos="244 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+</span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a><a href="#__codelineno-0-245"><span class="linenos" data-linenos="245 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><a href="#__codelineno-0-246"><span class="linenos" data-linenos="246 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2588,11 +2678,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a><a href="#__codelineno-0-240"><span class="linenos" data-linenos="240 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a><a href="#__codelineno-0-241"><span class="linenos" data-linenos="241 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Greater than or equal comparison for sorting.&quot;&quot;&quot;</span>
-</span><span id="__span-0-242"><a id="__codelineno-0-242" name="__codelineno-0-242"></a><a href="#__codelineno-0-242"><span class="linenos" data-linenos="242 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
-</span><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><a href="#__codelineno-0-243"><span class="linenos" data-linenos="243 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><a href="#__codelineno-0-244"><span class="linenos" data-linenos="244 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a><a href="#__codelineno-0-248"><span class="linenos" data-linenos="248 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><a href="#__codelineno-0-249"><span class="linenos" data-linenos="249 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Greater than or equal comparison for sorting.&quot;&quot;&quot;</span>
+</span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a><a href="#__codelineno-0-250"><span class="linenos" data-linenos="250 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+</span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><a href="#__codelineno-0-251"><span class="linenos" data-linenos="251 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><a href="#__codelineno-0-252"><span class="linenos" data-linenos="252 "></span></a>    <span class="k">return</span> <span class="bp">NotImplemented</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2617,9 +2707,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><a href="#__codelineno-0-246"><span class="linenos" data-linenos="246 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>  <span class="c1"># pyright: ignore[reportIncompatibleMethodOverride]</span>
-</span><span id="__span-0-247"><a id="__codelineno-0-247" name="__codelineno-0-247"></a><a href="#__codelineno-0-247"><span class="linenos" data-linenos="247 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return iterator over parts.&quot;&quot;&quot;</span>
-</span><span id="__span-0-248"><a id="__codelineno-0-248" name="__codelineno-0-248"></a><a href="#__codelineno-0-248"><span class="linenos" data-linenos="248 "></span></a>    <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a><a href="#__codelineno-0-254"><span class="linenos" data-linenos="254 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>  <span class="c1"># pyright: ignore[reportIncompatibleMethodOverride]</span>
+</span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><a href="#__codelineno-0-255"><span class="linenos" data-linenos="255 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return iterator over parts.&quot;&quot;&quot;</span>
+</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><a href="#__codelineno-0-256"><span class="linenos" data-linenos="256 "></span></a>    <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2644,9 +2734,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><a href="#__codelineno-0-256"><span class="linenos" data-linenos="256 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><a href="#__codelineno-0-257"><span class="linenos" data-linenos="257 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get part by index.&quot;&quot;&quot;</span>
-</span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><a href="#__codelineno-0-258"><span class="linenos" data-linenos="258 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><a href="#__codelineno-0-264"><span class="linenos" data-linenos="264 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><a href="#__codelineno-0-265"><span class="linenos" data-linenos="265 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get part by index.&quot;&quot;&quot;</span>
+</span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><a href="#__codelineno-0-266"><span class="linenos" data-linenos="266 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2671,9 +2761,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><a href="#__codelineno-0-260"><span class="linenos" data-linenos="260 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a><a href="#__codelineno-0-261"><span class="linenos" data-linenos="261 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get number of parts.&quot;&quot;&quot;</span>
-</span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><a href="#__codelineno-0-262"><span class="linenos" data-linenos="262 "></span></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><a href="#__codelineno-0-268"><span class="linenos" data-linenos="268 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><a href="#__codelineno-0-269"><span class="linenos" data-linenos="269 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get number of parts.&quot;&quot;&quot;</span>
+</span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a><a href="#__codelineno-0-270"><span class="linenos" data-linenos="270 "></span></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2698,9 +2788,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><a href="#__codelineno-0-264"><span class="linenos" data-linenos="264 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><a href="#__codelineno-0-265"><span class="linenos" data-linenos="265 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if part is in key.&quot;&quot;&quot;</span>
-</span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><a href="#__codelineno-0-266"><span class="linenos" data-linenos="266 "></span></a>    <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-272"><a id="__codelineno-0-272" name="__codelineno-0-272"></a><a href="#__codelineno-0-272"><span class="linenos" data-linenos="272 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-273"><a id="__codelineno-0-273" name="__codelineno-0-273"></a><a href="#__codelineno-0-273"><span class="linenos" data-linenos="273 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if part is in key.&quot;&quot;&quot;</span>
+</span><span id="__span-0-274"><a id="__codelineno-0-274" name="__codelineno-0-274"></a><a href="#__codelineno-0-274"><span class="linenos" data-linenos="274 "></span></a>    <span class="k">return</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2725,9 +2815,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><a href="#__codelineno-0-268"><span class="linenos" data-linenos="268 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__reversed__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-0-269"><a id="__codelineno-0-269" name="__codelineno-0-269"></a><a href="#__codelineno-0-269"><span class="linenos" data-linenos="269 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return reversed iterator over parts.&quot;&quot;&quot;</span>
-</span><span id="__span-0-270"><a id="__codelineno-0-270" name="__codelineno-0-270"></a><a href="#__codelineno-0-270"><span class="linenos" data-linenos="270 "></span></a>    <span class="k">return</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-276"><a id="__codelineno-0-276" name="__codelineno-0-276"></a><a href="#__codelineno-0-276"><span class="linenos" data-linenos="276 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__reversed__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-0-277"><a id="__codelineno-0-277" name="__codelineno-0-277"></a><a href="#__codelineno-0-277"><span class="linenos" data-linenos="277 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return reversed iterator over parts.&quot;&quot;&quot;</span>
+</span><span id="__span-0-278"><a id="__codelineno-0-278" name="__codelineno-0-278"></a><a href="#__codelineno-0-278"><span class="linenos" data-linenos="278 "></span></a>    <span class="k">return</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2756,10 +2846,10 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><a href="#__codelineno-0-328"><span class="linenos" data-linenos="328 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><a href="#__codelineno-0-329"><span class="linenos" data-linenos="329 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">__get_validators__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><a href="#__codelineno-0-330"><span class="linenos" data-linenos="330 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic validator for when used as a field type.&quot;&quot;&quot;</span>
-</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><a href="#__codelineno-0-331"><span class="linenos" data-linenos="331 "></span></a>    <span class="k">yield</span> <span class="bp">cls</span><span class="o">.</span><span class="n">validate</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><a href="#__codelineno-0-337"><span class="linenos" data-linenos="337 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">__get_validators__</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic validator for when used as a field type.&quot;&quot;&quot;</span>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a>    <span class="k">yield</span> <span class="bp">cls</span><span class="o">.</span><span class="n">validate</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2793,12 +2883,12 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureKey</span><span class="p">:</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><a href="#__codelineno-0-335"><span class="linenos" data-linenos="335 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert various inputs to FeatureKey.&quot;&quot;&quot;</span>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
-</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><a href="#__codelineno-0-337"><span class="linenos" data-linenos="337 "></span></a>        <span class="k">return</span> <span class="n">value</span>
-</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a>    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureKey</span><span class="p">:</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert various inputs to FeatureKey.&quot;&quot;&quot;</span>
+</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a><a href="#__codelineno-0-344"><span class="linenos" data-linenos="344 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a><a href="#__codelineno-0-345"><span class="linenos" data-linenos="345 "></span></a>        <span class="k">return</span> <span class="n">value</span>
+</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a><a href="#__codelineno-0-346"><span class="linenos" data-linenos="346 "></span></a>    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2823,11 +2913,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><a href="#__codelineno-0-340"><span class="linenos" data-linenos="340 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">model_dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize to list format for backward compatibility.&quot;&quot;&quot;</span>
-</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a>    <span class="c1"># When serializing this key, return it as a list of parts</span>
-</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a>    <span class="c1"># instead of the full Pydantic model structure</span>
-</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a><a href="#__codelineno-0-344"><span class="linenos" data-linenos="344 "></span></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><a href="#__codelineno-0-348"><span class="linenos" data-linenos="348 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">model_dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><a href="#__codelineno-0-349"><span class="linenos" data-linenos="349 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize to list format for backward compatibility.&quot;&quot;&quot;</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a><a href="#__codelineno-0-350"><span class="linenos" data-linenos="350 "></span></a>    <span class="c1"># When serializing this key, return it as a list of parts</span>
+</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><a href="#__codelineno-0-351"><span class="linenos" data-linenos="351 "></span></a>    <span class="c1"># instead of the full Pydantic model structure</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><a href="#__codelineno-0-352"><span class="linenos" data-linenos="352 "></span></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2852,9 +2942,9 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><a href="#__codelineno-0-351"><span class="linenos" data-linenos="351 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><a href="#__codelineno-0-352"><span class="linenos" data-linenos="352 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return hash for use as dict keys.&quot;&quot;&quot;</span>
-</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><a href="#__codelineno-0-353"><span class="linenos" data-linenos="353 "></span></a>    <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><a href="#__codelineno-0-359"><span class="linenos" data-linenos="359 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a><a href="#__codelineno-0-360"><span class="linenos" data-linenos="360 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return hash for use as dict keys.&quot;&quot;&quot;</span>
+</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><a href="#__codelineno-0-361"><span class="linenos" data-linenos="361 "></span></a>    <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parts</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2879,11 +2969,11 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/models/types.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><a href="#__codelineno-0-355"><span class="linenos" data-linenos="355 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><a href="#__codelineno-0-356"><span class="linenos" data-linenos="356 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check equality with another instance.&quot;&quot;&quot;</span>
-</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a><a href="#__codelineno-0-357"><span class="linenos" data-linenos="357 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
-</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><a href="#__codelineno-0-358"><span class="linenos" data-linenos="358 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
-</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><a href="#__codelineno-0-359"><span class="linenos" data-linenos="359 "></span></a>    <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a><a href="#__codelineno-0-363"><span class="linenos" data-linenos="363 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a><a href="#__codelineno-0-364"><span class="linenos" data-linenos="364 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check equality with another instance.&quot;&quot;&quot;</span>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><a href="#__codelineno-0-365"><span class="linenos" data-linenos="365 "></span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a><a href="#__codelineno-0-366"><span class="linenos" data-linenos="366 "></span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parts</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">parts</span>
+</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><a href="#__codelineno-0-367"><span class="linenos" data-linenos="367 "></span></a>    <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
