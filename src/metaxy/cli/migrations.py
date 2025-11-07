@@ -145,7 +145,7 @@ def apply(
         cyclopts.Parameter(help="Preview changes without executing"),
     ] = False,
 ):
-    """Apply migration(s) from YAML files.
+    """Apply migration(s) from YAML or Python files.
 
     Reads migration definitions from .metaxy/migrations/ directory (git).
     Follows parent chain to ensure correct order.
@@ -166,7 +166,7 @@ def apply(
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.executor import MigrationExecutor
-    from metaxy.migrations.loader import build_migration_chain
+    from metaxy.migrations.loader import build_migration_chain, find_migration_file
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
@@ -234,13 +234,36 @@ def apply(
 
         app.console.print(f"Applying {len(to_apply)} migration(s) in chain order:")
         for m in to_apply:
-            app.console.print(f"  • {m.migration_id}")
+            # Show file type for each migration in the list
+            try:
+                migration_file = find_migration_file(m.migration_id, migrations_dir)
+                if migration_file.suffix == ".py":
+                    file_type_badge = "[cyan][Python][/cyan]"
+                else:
+                    file_type_badge = "[green][YAML][/green]"
+            except FileNotFoundError:
+                file_type_badge = ""
+            app.console.print(f"  • {m.migration_id} {file_type_badge}")
         app.console.print()
 
         executor = MigrationExecutor(storage)
 
         for migration in to_apply:
-            app.console.print(f"[bold]Applying: {migration.migration_id}[/bold]")
+            # Determine file type for this migration
+            try:
+                migration_file = find_migration_file(
+                    migration.migration_id, migrations_dir
+                )
+                if migration_file.suffix == ".py":
+                    file_type_badge = "[cyan][Python][/cyan]"
+                else:
+                    file_type_badge = "[green][YAML][/green]"
+            except FileNotFoundError:
+                file_type_badge = ""
+
+            app.console.print(
+                f"[bold]Applying: {migration.migration_id}[/bold] {file_type_badge}"
+            )
             app.console.print(
                 f"  Affecting {len(migration.get_affected_features(metadata_store, project))} feature(s)"
             )
@@ -281,7 +304,7 @@ def apply(
 def status():
     """Show migrations and execution status.
 
-    Reads migration definitions from YAML files (git).
+    Reads migration definitions from YAML and Python files (git).
     Shows execution status from database events.
     Displays the parent chain in order.
 
@@ -290,11 +313,11 @@ def status():
 
         Migration:
         ────────────────────────────────────────────
-        ✓ 20250110_120000 (parent: initial)
+        ✓ 20250110_120000 (parent: initial) [YAML]
           Status: COMPLETED
           Features: 5/5 completed
 
-        ○ 20250113_103000 (parent: 20250110_120000)
+        ○ 20250113_103000 (parent: 20250110_120000) [Python]
           Status: NOT STARTED
           Features: 3 affected
 
@@ -304,7 +327,7 @@ def status():
 
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system import SystemTableStorage
-    from metaxy.migrations.loader import build_migration_chain
+    from metaxy.migrations.loader import build_migration_chain, find_migration_file
 
     context = AppContext.get()
 
@@ -354,25 +377,35 @@ def status():
             else:
                 total_affected = total_processed
 
+            # Determine file type
+            try:
+                migration_file = find_migration_file(migration_id, migrations_dir)
+                if migration_file.suffix == ".py":
+                    file_type_badge = "[cyan][Python][/cyan]"
+                else:
+                    file_type_badge = "[green][YAML][/green]"
+            except FileNotFoundError:
+                file_type_badge = "[red][Unknown][/red]"
+
             # Print status icon
             if migration_status == MigrationStatus.COMPLETED:
                 app.console.print(
-                    f"[green]✓[/green] {migration_id} (parent: {migration.parent})"
+                    f"[green]✓[/green] {migration_id} (parent: {migration.parent}) {file_type_badge}"
                 )
                 app.console.print("  Status: [green]COMPLETED[/green]")
             elif migration_status == MigrationStatus.FAILED:
                 app.console.print(
-                    f"[red]✗[/red] {migration_id} (parent: {migration.parent})"
+                    f"[red]✗[/red] {migration_id} (parent: {migration.parent}) {file_type_badge}"
                 )
                 app.console.print("  Status: [red]FAILED[/red]")
             elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print(
-                    f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent})"
+                    f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent}) {file_type_badge}"
                 )
                 app.console.print("  Status: [yellow]IN PROGRESS[/yellow]")
             else:
                 app.console.print(
-                    f"[blue]○[/blue] {migration_id} (parent: {migration.parent})"
+                    f"[blue]○[/blue] {migration_id} (parent: {migration.parent}) {file_type_badge}"
                 )
                 app.console.print("  Status: [blue]NOT STARTED[/blue]")
 
@@ -401,20 +434,20 @@ def status():
 def list_migrations():
     """List all migrations in chain order as defined in code.
 
-    Displays a simple table showing migration ID, creation time, and operations.
+    Displays a simple table showing migration ID, creation time, operations, and file type.
 
     Example:
         $ metaxy migrations list
 
-        20250110_120000  2025-01-10 12:00  DataVersionReconciliation
-        20250113_103000  2025-01-13 10:30  DataVersionReconciliation
+        20250110_120000  2025-01-10 12:00  DataVersionReconciliation  YAML
+        20250113_103000  2025-01-13 10:30  CustomBackfill             Python
     """
     from pathlib import Path
 
     from rich.table import Table
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.loader import build_migration_chain
+    from metaxy.migrations.loader import build_migration_chain, find_migration_file
 
     AppContext.get()
     migrations_dir = Path(".metaxy/migrations")
@@ -439,9 +472,10 @@ def list_migrations():
         padding=(0, 2),
         header_style="bold blue",
     )
-    table.add_column("ID", style="bold", no_wrap=False, overflow="fold")
+    table.add_column("ID", style="bold", no_wrap=True, overflow="fold")
     table.add_column("Created", style="dim", no_wrap=False, overflow="fold")
-    table.add_column("Operations", no_wrap=False, overflow="fold")
+    table.add_column("Operations", no_wrap=True, overflow="fold")
+    table.add_column("Type", no_wrap=False, overflow="fold")
 
     for migration in chain:
         # Format created_at - simpler format without seconds
@@ -460,7 +494,17 @@ def list_migrations():
 
         ops_str = ", ".join(op_names)
 
-        table.add_row(migration.migration_id, created_str, ops_str)
+        # Determine file type
+        try:
+            migration_file = find_migration_file(migration.migration_id, migrations_dir)
+            if migration_file.suffix == ".py":
+                file_type = "[cyan]Python[/cyan]"
+            else:
+                file_type = "[green]YAML[/green]"
+        except FileNotFoundError:
+            file_type = "[red]Unknown[/red]"
+
+        table.add_row(migration.migration_id, created_str, ops_str, file_type)
 
     app.console.print()
     app.console.print(table)
@@ -475,10 +519,15 @@ def explain(
             help="Migration ID to explain (explains latest if not specified)"
         ),
     ] = None,
+    *,
+    show_source: Annotated[
+        bool,
+        cyclopts.Parameter(help="Show Python source code for Python migrations"),
+    ] = False,
 ):
     """Show detailed diff for a migration.
 
-    Reads migration from YAML file.
+    Reads migration from YAML or Python file.
     Computes and displays the GraphDiff between the two snapshots on-demand.
 
     Examples:
@@ -487,14 +536,17 @@ def explain(
 
         # Explain specific migration
         $ metaxy migrations explain 20250113_103000
+
+        # Show Python source code for Python migration
+        $ metaxy migrations explain 20250113_103000 --show-source
     """
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
     from metaxy.migrations.loader import (
         find_latest_migration,
-        find_migration_yaml,
-        load_migration_from_yaml,
+        find_migration_file,
+        load_migration_from_file,
     )
 
     context = AppContext.get()
@@ -518,10 +570,10 @@ def explain(
                 app.console.print("Run 'metaxy migrations generate' first")
                 return
 
-        # Load migration from YAML
+        # Load migration from file (YAML or Python)
         try:
-            yaml_path = find_migration_yaml(migration_id, migrations_dir)
-            migration = load_migration_from_yaml(yaml_path)
+            migration_file = find_migration_file(migration_id, migrations_dir)
+            migration = load_migration_from_file(migration_file)
         except FileNotFoundError as e:
             app.console.print(f"[red]✗[/red] {e}")
             raise SystemExit(1)
@@ -538,11 +590,38 @@ def explain(
             )
             raise SystemExit(1)
 
+        # Determine file type
+        if migration_file.suffix == ".py":
+            file_type_badge = "[cyan][Python][/cyan]"
+        else:
+            file_type_badge = "[green][YAML][/green]"
+
         # Print header
-        app.console.print(f"\n[bold]Migration: {migration_id}[/bold]")
+        app.console.print(f"\n[bold]Migration: {migration_id}[/bold] {file_type_badge}")
+        app.console.print(f"File: {migration_file}")
         app.console.print(f"From: {migration.from_snapshot_version}")
         app.console.print(f"To:   {migration.to_snapshot_version}")
         app.console.print()
+
+        # Show Python source if requested and migration is Python
+        if show_source and migration_file.suffix == ".py":
+            app.console.print("[bold]Python Source:[/bold]")
+            app.console.print("─" * 60)
+            try:
+                with open(migration_file) as f:
+                    source_code = f.read()
+                    # Show first 50 lines or all if shorter
+                    lines = source_code.split("\n")
+                    if len(lines) > 50:
+                        for line in lines[:50]:
+                            app.console.print(f"  {line}")
+                        app.console.print(f"  ... ({len(lines) - 50} more lines)")
+                    else:
+                        for line in lines:
+                            app.console.print(f"  {line}")
+            except Exception as e:
+                app.console.print(f"[red]✗[/red] Failed to read source: {e}")
+            app.console.print()
 
         # Compute diff on-demand
         try:
@@ -669,6 +748,72 @@ def explain(
 
 
 @app.command
+def export(
+    migration_id: Annotated[
+        str,
+        cyclopts.Parameter(help="Migration ID to export"),
+    ],
+    output: Annotated[
+        str | None,
+        cyclopts.Parameter(help="Output file path (prints to stdout if not specified)"),
+    ] = None,
+):
+    """Export migration to YAML format for documentation and review.
+
+    Loads a migration (from YAML or Python file) and exports it to YAML format.
+    This is useful for:
+    - Documenting Python migrations in version control
+    - Creating readable migration specifications for review
+    - Converting between migration formats
+
+    Examples:
+        # Export to stdout
+        $ metaxy migrations export 20250101_120000
+
+        # Export to file
+        $ metaxy migrations export 20250101_120000 --output /tmp/migration.yaml
+
+        # Export Python migration to YAML for review
+        $ metaxy migrations export 20250101_130000_custom --output review.yaml
+    """
+    from pathlib import Path
+
+    from metaxy.migrations.loader import find_migration_file, load_migration_from_file
+
+    migrations_dir = Path(".metaxy/migrations")
+
+    # Find and load the migration
+    try:
+        migration_file = find_migration_file(migration_id, migrations_dir)
+        migration = load_migration_from_file(migration_file)
+    except FileNotFoundError as e:
+        app.console.print(f"[red]✗[/red] {e}")
+        raise SystemExit(1)
+    except Exception as e:
+        app.console.print(f"[red]✗[/red] Failed to load migration: {e}")
+        raise SystemExit(1)
+
+    # Export to YAML
+    try:
+        if output is None:
+            # Print to stdout (data console for scripting)
+            yaml_str = migration.to_yaml()
+            data_console.print(yaml_str)
+            error_console.print(
+                f"\n[green]✓[/green] Exported migration {migration_id} to YAML format"
+            )
+        else:
+            # Write to file
+            yaml_str = migration.to_yaml(output)
+            app.console.print(f"[green]✓[/green] Exported migration to: {output}")
+            app.console.print(f"  Migration ID: {migration_id}")
+            app.console.print(f"  Size: {len(yaml_str)} bytes")
+    except Exception as e:
+        app.console.print(f"[red]✗[/red] Failed to export migration: {e}")
+        raise SystemExit(1)
+
+
+@app.command
 def describe(
     migration_ids: Annotated[
         list[str],
@@ -684,7 +829,7 @@ def describe(
     """Show verbose description of migration(s).
 
     Displays detailed information about what the migration will do:
-    - Migration metadata (ID, parent, snapshots, created timestamp)
+    - Migration metadata (ID, parent, snapshots, created timestamp, file type)
     - Operations to execute
     - Affected features with row counts
     - Execution status if already run
@@ -705,8 +850,8 @@ def describe(
     from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import (
         build_migration_chain,
-        find_migration_yaml,
-        load_migration_from_yaml,
+        find_migration_file,
+        load_migration_from_file,
     )
 
     context = AppContext.get()
@@ -737,8 +882,8 @@ def describe(
             migrations_to_describe = []
             for migration_id in migration_ids:
                 try:
-                    yaml_path = find_migration_yaml(migration_id, migrations_dir)
-                    migration_obj = load_migration_from_yaml(yaml_path)
+                    migration_file = find_migration_file(migration_id, migrations_dir)
+                    migration_obj = load_migration_from_file(migration_file)
                     migrations_to_describe.append(migration_obj)
                 except FileNotFoundError as e:
                     app.console.print(f"[red]✗[/red] {e}")
@@ -749,18 +894,30 @@ def describe(
             if i > 0:
                 app.console.print("\n")  # Separator between migrations
 
-            # Find YAML path for display
-            yaml_path = find_migration_yaml(migration_obj.migration_id, migrations_dir)
+            # Find migration file for display
+            migration_file = find_migration_file(
+                migration_obj.migration_id, migrations_dir
+            )
+
+            # Determine file type
+            if migration_file.suffix == ".py":
+                file_type = "Python"
+                file_type_badge = "[cyan][Python][/cyan]"
+            else:
+                file_type = "YAML"
+                file_type_badge = "[green][YAML][/green]"
 
             # Print header
             app.console.print("\n[bold]Migration Description[/bold]")
             app.console.print("─" * 60)
-            app.console.print(f"[bold]ID:[/bold] {migration_obj.migration_id}")
+            app.console.print(
+                f"[bold]ID:[/bold] {migration_obj.migration_id} {file_type_badge}"
+            )
             app.console.print(
                 f"[bold]Created:[/bold] {migration_obj.created_at.isoformat()}"
             )
             app.console.print(f"[bold]Parent:[/bold] {migration_obj.parent}")
-            app.console.print(f"[bold]YAML:[/bold] {yaml_path}")
+            app.console.print(f"[bold]File:[/bold] {migration_file} ({file_type})")
             app.console.print()
 
             # Snapshots (for DiffMigration)
