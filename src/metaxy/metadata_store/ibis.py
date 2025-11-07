@@ -132,6 +132,10 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Ibis stores support native (Ibis-based) provenance tracking when connection is open."""
         return self._conn is not None
 
+    def native_implementation(self) -> nw.Implementation:
+        """Get native implementation for Ibis-based stores."""
+        return nw.Implementation.IBIS
+
     @contextmanager
     def _create_provenance_tracker(self, plan):
         """Create provenance tracker for Ibis backend as a context manager.
