@@ -7,7 +7,9 @@ Refactored migration system using:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from collections.abc import Callable
+from datetime import datetime
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Literal
 
 import pydantic
 from pydantic import AliasChoices, TypeAdapter
@@ -223,6 +225,94 @@ class Migration(pydantic.BaseModel, ABC):
 
         return operations
 
+    def to_yaml(self, output_path: str | None = None) -> str:
+        """Export migration to YAML format.
+
+        Serializes the migration to a YAML string suitable for documentation,
+        review, and loading back via load_migration_from_yaml().
+
+        Args:
+            output_path: Optional file path to write YAML to. If None, returns YAML string.
+
+        Returns:
+            YAML string representation of the migration
+
+        Example:
+            ```py
+            # Export to string
+            yaml_str = migration.to_yaml()
+            print(yaml_str)
+
+            # Export to file
+            migration.to_yaml("/tmp/migration.yaml")
+            ```
+        """
+        import yaml
+
+        # Convert to dict, exclude migration_type (internal field)
+        data = self.model_dump(mode="python")
+
+        # Rename migration_id to id for YAML format compatibility
+        if "migration_id" in data:
+            data["id"] = data.pop("migration_id")
+
+        # Convert datetime to ISO format string
+        if "created_at" in data:
+            data["created_at"] = data["created_at"].isoformat()
+
+        # Handle nested datetime fields (for custom migrations)
+        for key, value in data.items():
+            if isinstance(value, datetime):
+                data[key] = value.isoformat()
+
+        # Serialize to YAML with readable formatting
+        yaml_str = yaml.safe_dump(data, sort_keys=False, default_flow_style=False)
+
+        # Write to file if output_path provided
+        if output_path is not None:
+            from pathlib import Path
+
+            output_file = Path(output_path)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_file, "w") as f:
+                f.write(yaml_str)
+
+        return yaml_str
+
+    @staticmethod
+    def from_storage_dict(data: dict[str, Any]) -> "Migration":
+        """Deserialize migration from storage dict.
+
+        Args:
+            data: Dict with migration_type and other fields
+
+        Returns:
+            Migration instance of appropriate subclass
+
+        Raises:
+            ValueError: If migration_type is invalid or class not found
+        """
+        migration_type = data.get("migration_type")
+        if not migration_type:
+            raise ValueError("Missing migration_type field")
+
+        # Dynamically import the class
+        try:
+            module_path, class_name = migration_type.rsplit(".", 1)
+            module = __import__(module_path, fromlist=[class_name])
+            cls = getattr(module, class_name)
+
+            if not issubclass(cls, Migration):
+                raise TypeError(
+                    f"{migration_type} must be a subclass of Migration, got {cls}"
+                )
+
+            return cls.model_validate(data)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to load migration class {migration_type}: {e}"
+            ) from e
+
 
 class DiffMigration(Migration):
     """Migration based on graph diff between two snapshots.
@@ -403,6 +493,78 @@ class DiffMigration(Migration):
         storage = SystemTableStorage(store)
         executor = MigrationExecutor(storage)
         return executor._execute_diff_migration(self, store, project, dry_run)
+
+
+class PythonMigration(DiffMigration):
+    """Base class for Python-defined diff migrations.
+
+    Subclasses can implement either:
+    - a `build_operations()` method, or
+    - a plain `operations()` method (without @property)
+
+    The returned Python operation objects are serialized to the `ops` field,
+    keeping parity with YAML migrations.
+    """
+
+    ops: list[dict[str, Any]] = pydantic.Field(default_factory=list)
+    _python_operations_factory: ClassVar[
+        Callable[["PythonMigration"], list[Any]] | None
+    ] = None
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Capture user-defined operations() without breaking the base property."""
+        super().__init_subclass__(**kwargs)
+        user_defined = cls.__dict__.get("operations")
+        if user_defined is not None and not isinstance(user_defined, property):
+            cls._python_operations_factory = user_defined
+            # Restore the DiffMigration.operations property so callers still
+            # access operation instances via the normal property.
+            setattr(cls, "operations", DiffMigration.__dict__["operations"])
+
+    def build_operations(self) -> list[Any]:
+        """Return Python operation objects for this migration."""
+        return []
+
+    @pydantic.model_validator(mode="after")
+    def _populate_ops_from_operations(self) -> "PythonMigration":
+        """Populate ops from the Python operations() definition if not provided."""
+        if self.ops:
+            return self
+
+        python_ops: list[Any] = []
+        factory = getattr(type(self), "_python_operations_factory", None)
+        if factory is not None:
+            python_ops = factory(self)
+        else:
+            python_ops = self.build_operations()
+
+        if not python_ops:
+            raise ValueError(
+                f"{self.__class__.__name__} must define operations() "
+                "or set the 'ops' field explicitly."
+            )
+
+        self.ops = [self._serialize_python_operation(op) for op in python_ops]
+        return self
+
+    @staticmethod
+    def _serialize_python_operation(op: Any) -> dict[str, Any]:
+        """Convert Python operation objects into serialized dicts."""
+        if isinstance(op, dict):
+            if "type" not in op:
+                raise ValueError("Operation dict must include 'type'")
+            return dict(op)
+
+        if isinstance(op, pydantic.BaseModel):
+            data = op.model_dump(mode="python")
+            if not data.get("type"):
+                data["type"] = f"{op.__class__.__module__}.{op.__class__.__name__}"
+            return data
+
+        raise TypeError(
+            "Unsupported operation type for PythonMigration. "
+            f"Expected dict or Pydantic model, got {type(op)!r}"
+        )
 
 
 class FullGraphMigration(Migration):
