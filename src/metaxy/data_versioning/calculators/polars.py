@@ -84,11 +84,7 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
         field_exprs = {}
 
         for field in feature_spec.fields:
-            field_key_str = (
-                field.key.to_string()
-                if hasattr(field.key, "to_string")
-                else "_".join(field.key)
-            )
+            field_key_str = field.key.to_struct_key()
 
             field_deps = feature_plan.field_dependencies.get(field.key, {})
 
@@ -101,22 +97,14 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             # Add upstream provenance values in deterministic order
             for upstream_feature_key in sorted(field_deps.keys()):
                 upstream_fields = field_deps[upstream_feature_key]
-                upstream_key_str = (
-                    upstream_feature_key.to_string()
-                    if hasattr(upstream_feature_key, "to_string")
-                    else "_".join(upstream_feature_key)
-                )
+                upstream_key_str = upstream_feature_key.to_string()
 
                 provenance_col_name = upstream_column_mapping.get(
                     upstream_key_str, PROVENANCE_BY_FIELD_COL
                 )
 
                 for upstream_field in sorted(upstream_fields):
-                    upstream_field_str = (
-                        upstream_field.to_string()
-                        if hasattr(upstream_field, "to_string")
-                        else "_".join(upstream_field)
-                    )
+                    upstream_field_str = upstream_field.to_struct_key()
 
                     components.append(
                         pl.lit(f"{upstream_key_str}/{upstream_field_str}")
