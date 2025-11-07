@@ -16,6 +16,7 @@ from metaxy.migrations import (
     Migration,
     MigrationExecutor,
     MigrationResult,
+    PythonMigration,
     SystemTableStorage,
     detect_migration,
 )
@@ -102,6 +103,7 @@ __all__ = [
     "Migration",
     "DiffMigration",
     "FullGraphMigration",
+    "PythonMigration",
     "MigrationResult",
     "MigrationExecutor",
     "SystemTableStorage",
