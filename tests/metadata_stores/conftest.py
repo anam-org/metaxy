@@ -188,14 +188,8 @@ def clickhouse_db(clickhouse_server):
 
 
 @pytest.fixture(scope="session")
-def postgres_server(tmp_path_factory):
-    """Start a PostgreSQL server for testing (session-scoped)."""
-    initdb_bin = shutil.which("initdb")
-    postgres_bin = shutil.which("postgres")
-
-    if not initdb_bin or not postgres_bin:
-        pytest.skip("PostgreSQL binaries (initdb/postgres) not found in PATH")
-
+def postgres_server(postgresql_proc: Any):
+    """Expose connection details for the pytest-postgresql server."""
     try:
         import ibis.backends.postgres  # noqa: F401
     except ImportError:
@@ -206,91 +200,20 @@ def postgres_server(tmp_path_factory):
     except ImportError:
         pytest.skip("psycopg (required for Postgres tests) not installed")
 
-    base_dir = tmp_path_factory.mktemp("postgres")
-    data_dir = base_dir / "data"
-    log_file = base_dir / "postgres.log"
+    dsn_params = postgresql_proc.dsn()
+    host = dsn_params["host"]
+    port = dsn_params["port"]
+    user = dsn_params["user"]
+    admin_db = dsn_params["dbname"]
+    admin_dsn = f"postgresql://{user}@{host}:{port}/{admin_db}"
 
-    init_cmd = [
-        initdb_bin,
-        "-D",
-        str(data_dir),
-        "-U",
-        "postgres",
-        "--encoding=UTF8",
-        "--auth=trust",
-    ]
-
-    try:
-        subprocess.run(
-            init_cmd,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        pytest.skip(f"Failed to initialize Postgres cluster: {exc.stderr.strip()}")
-
-    port = _find_free_port()
-
-    with log_file.open("w") as lf:
-        process = subprocess.Popen(  # type: ignore[assignment]
-            [
-                postgres_bin,
-                "-D",
-                str(data_dir),
-                "-p",
-                str(port),
-                "-F",
-            ],
-            stdout=lf,
-            stderr=subprocess.STDOUT,
-        )
-
-    # Wait for Postgres to become ready
-    ready = False
-    last_error: Exception | None = None
-    admin_dsn = f"postgresql://postgres@127.0.0.1:{port}/postgres"
-
-    for _ in range(60):
-        if process.poll() is not None:
-            process.wait()
-            log_output = log_file.read_text() if log_file.exists() else ""
-            pytest.skip(
-                "Postgres server terminated unexpectedly "
-                f"with exit code {process.returncode}. Log:\n{log_output[-500:]}"
-            )
-        try:
-            with psycopg.connect(admin_dsn, autocommit=True):
-                ready = True
-                break
-        except psycopg.OperationalError as exc:
-            last_error = exc
-            time.sleep(1)
-
-    if not ready:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
-        pytest.skip(f"Postgres server not ready: {last_error}")
-
-    yield {
-        "host": "127.0.0.1",
+    return {
+        "host": host,
         "port": port,
-        "user": "postgres",
+        "user": user,
         "dsn": admin_dsn,
         "psycopg": psycopg,
-        "process": process,
     }
-
-    process.terminate()
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait()
 
 
 @pytest.fixture
