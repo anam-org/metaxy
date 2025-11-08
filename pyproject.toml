@@ -64,7 +64,6 @@ dagster = [
 ]
 postgres = [
   "ibis-framework[postgres]>=11.0.0",
-  "psycopg2>=2.9.11",
 ]
 
 lancedb = [
