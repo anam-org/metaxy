@@ -457,7 +457,10 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: nw.DataFrame[Any] | pl.DataFrame,
+        df: nw.DataFrame[Any]
+        | nw.LazyFrame[Any]
+        | pl.DataFrame
+        | pl.LazyFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -468,7 +471,7 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to write metadata for
-            df: Narwhals DataFrame or Polars DataFrame containing metadata.
+            df: Narwhals/Polars (lazy or eager) frame containing metadata.
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
                 May optionally contain `metaxy_feature_version` and `metaxy_snapshot_version` (for migrations).
 
@@ -493,6 +496,12 @@ class MetadataStore(ABC):
         # Validate project for non-system tables
         if not is_system_table:
             self._validate_project_write(feature)
+
+        # Sink lazy frames to eager DataFrames
+        if isinstance(df, nw.LazyFrame):
+            df = df.collect()
+        if isinstance(df, pl.LazyFrame):
+            df = df.collect()
 
         # Convert Narwhals to Polars if needed
         if isinstance(df, nw.DataFrame):

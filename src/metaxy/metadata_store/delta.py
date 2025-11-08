@@ -27,8 +27,7 @@ from metaxy.metadata_store.system_tables import (
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 
-if TYPE_CHECKING:
-    from obstore.store import ObjectStore
+from obstore import store as obstore_store
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -254,12 +253,10 @@ class DeltaMetadataStore(MetadataStore):
         if local_table_path is not None:
             local_table_path.mkdir(parents=True, exist_ok=True)
 
-        arrow_table = df.to_arrow()
-
         try:
             deltalake.write_deltalake(
                 table_uri,
-                arrow_table,
+                df,
                 mode="append",
                 schema_mode="merge",
                 storage_options=self._storage_options_payload(),
@@ -299,13 +296,6 @@ class DeltaMetadataStore(MetadataStore):
             msg = "Object store access requested for a non-remote DeltaMetadataStore"
             raise RuntimeError(msg)
         if self._object_store is None:
-            try:
-                from obstore import store as obstore_store
-            except ImportError as exc:  # pragma: no cover - handled at runtime
-                raise RuntimeError(
-                    "obstore is required for remote DeltaMetadataStore paths. "
-                    "Install metaxy[delta] to include the dependency."
-                ) from exc
 
             self._object_store = obstore_store.from_url(
                 self._root_uri,

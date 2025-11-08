@@ -38,7 +38,7 @@ def test_delta_write_and_read(tmp_path, test_graph, test_features) -> None:
                     {"frames": "h3", "audio": "h3"},
                 ],
             }
-        )
+        ).lazy()
 
         with store.allow_cross_project_writes():
             store.write_metadata(feature_cls, metadata)
