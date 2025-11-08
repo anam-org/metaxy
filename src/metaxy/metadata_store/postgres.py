@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
+from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 logger = logging.getLogger(__name__)
@@ -176,6 +177,13 @@ class PostgresMetadataStore(IbisMetadataStore):
             fallback_stores=fallback_stores,
             **kwargs,
         )
+
+        supported_algorithms = {HashAlgorithm.MD5, HashAlgorithm.SHA256}
+        if self.hash_algorithm not in supported_algorithms:
+            raise HashAlgorithmNotSupportedError(
+                f"PostgresMetadataStore supports only MD5 and SHA256 hash algorithms. "
+                f"Requested: {self.hash_algorithm}"
+            )
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for PostgreSQL stores.
