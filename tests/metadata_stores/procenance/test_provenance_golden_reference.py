@@ -31,6 +31,7 @@ from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import HashAlgorithmNotSupportedError, MetadataStore
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.plan import FeaturePlan
 
 FeaturePlanOutput: TypeAlias = tuple[
@@ -180,7 +181,6 @@ def setup_store_with_data(
             feature_versions=feature_versions,
             snapshot_version=graph.snapshot_version,
             hash_algorithm=empty_store.hash_algorithm,
-            hash_truncation_length=hash_truncation_length,
             min_rows=5,
             max_rows=20,
         ).example()
@@ -227,6 +227,21 @@ class EmptyStoreCases:
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {hash_algorithm} not supported by {ClickHouseMetadataStore}"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_inmemory(
+        self,
+        hash_algorithm: HashAlgorithm,
+    ) -> InMemoryMetadataStore:
+        """InMemory store case."""
+        try:
+            return InMemoryMetadataStore(
+                hash_algorithm=hash_algorithm,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
             )
 
 
