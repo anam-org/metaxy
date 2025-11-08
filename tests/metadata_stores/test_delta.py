@@ -12,6 +12,7 @@ from deltalake import DeltaTable
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.delta import DeltaMetadataStore
+from metaxy.models.types import FeatureKey
 
 
 def _delta_log_versions(path) -> set[str]:
@@ -47,7 +48,7 @@ def test_delta_write_and_read(tmp_path, test_graph, test_features) -> None:
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
         # Delta log should contain version 0 after initial write
-        feature_path = store._feature_path(feature_key)
+        feature_path = store._feature_local_path(feature_key)
         assert "00000000000000000000.json" in _delta_log_versions(feature_path)
 
         delta_table = DeltaTable(str(feature_path))
@@ -98,7 +99,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         with store.allow_cross_project_writes():
             store.write_metadata(feature_cls, metadata)
 
-        feature_path = store._feature_path(feature_key)
+        feature_path = store._feature_local_path(feature_key)
         assert (feature_path / "_delta_log").exists()
 
         store.drop_feature_metadata(feature_cls)
@@ -123,7 +124,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         assert result["sample_uid"].to_list() == [2]
 
         # Delta log recreated with new version 0
-        feature_path = store._feature_path(feature_key)
+        feature_path = store._feature_local_path(feature_key)
         assert "00000000000000000000.json" in _delta_log_versions(feature_path)
 
 
@@ -163,3 +164,94 @@ def test_delta_display(tmp_path) -> None:
     with store:
         open_display = store.display()
         assert "features=0" in open_display
+
+
+class _StubListStream:
+    def __init__(self, batches: list[list[dict[str, str]]]):
+        self._batches = batches
+
+    def __iter__(self):
+        return iter(self._batches)
+
+
+class _StubObjectStore:
+    def __init__(
+        self,
+        *,
+        prefixes: list[str] | None = None,
+        objects: dict[str, list[list[dict[str, str]]]] | None = None,
+    ) -> None:
+        self.prefixes = prefixes or []
+        self.objects = objects or {}
+        self.deleted: list[str] = []
+        self.list_calls: list[str | None] = []
+
+    def list_with_delimiter(self, prefix: str | None = None, *, return_arrow: bool = False):
+        assert prefix is None
+        return {"common_prefixes": self.prefixes, "objects": []}
+
+    def list(
+        self,
+        prefix: str | None = None,
+        *,
+        offset: str | None = None,
+        chunk_size: int = 50,
+        return_arrow: bool = False,
+    ) -> _StubListStream:
+        self.list_calls.append(prefix)
+        batches = self.objects.get(prefix or "", [])
+        return _StubListStream(batches)
+
+    def delete(self, paths) -> None:
+        if isinstance(paths, str):
+            self.deleted.append(paths)
+        else:
+            self.deleted.extend(paths)
+
+
+def test_delta_remote_lists_features_filters_invalid(monkeypatch) -> None:
+    """Remote stores rely on object store listings and Delta table existence."""
+    store = DeltaMetadataStore("s3://bucket/root", auto_create_tables=False)
+    stub_store = _StubObjectStore(
+        prefixes=[
+            "ns__valid_feature/",
+            "ns__invalid_feature/",
+            "metaxy-system__feature_versions/",
+        ]
+    )
+    monkeypatch.setattr(store, "_get_object_store", lambda: stub_store, raising=False)
+    monkeypatch.setattr(
+        store,
+        "_table_exists",
+        lambda uri: not uri.endswith("invalid_feature"),
+        raising=False,
+    )
+
+    with store:
+        features = store.list_features()
+
+    assert features == [FeatureKey("ns/valid_feature")]
+
+
+def test_delta_remote_drop_feature(monkeypatch) -> None:
+    """Dropping a remote feature deletes all objects under its prefix."""
+    store = DeltaMetadataStore("s3://bucket/root", auto_create_tables=False)
+    stub_store = _StubObjectStore(
+        prefixes=[],
+        objects={
+            "ns__feature_x/": [
+                [{"path": "ns__feature_x/_delta_log/00000000000000000000.json"}],
+                [{"path": "ns__feature_x/part-0.parquet"}],
+            ]
+        },
+    )
+    monkeypatch.setattr(store, "_get_object_store", lambda: stub_store, raising=False)
+
+    with store:
+        store.drop_feature_metadata(FeatureKey("ns/feature_x"))
+
+    assert stub_store.list_calls == ["ns__feature_x/"]
+    assert stub_store.deleted == [
+        "ns__feature_x/_delta_log/00000000000000000000.json",
+        "ns__feature_x/part-0.parquet",
+    ]
