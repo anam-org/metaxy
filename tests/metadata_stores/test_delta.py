@@ -38,7 +38,7 @@ def test_delta_write_and_read(tmp_path, test_graph, test_features) -> None:
                     {"frames": "h3", "audio": "h3"},
                 ],
             }
-        )
+        ).lazy()
 
         with store.allow_cross_project_writes():
             store.write_metadata(feature_cls, metadata)
@@ -100,6 +100,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
             store.write_metadata(feature_cls, metadata)
 
         feature_path = store._feature_local_path(feature_key)
+        assert feature_path is not None
         assert (feature_path / "_delta_log").exists()
 
         store.drop_feature_metadata(feature_cls)
@@ -107,7 +108,7 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
 
     # Fresh instance should see no data
     with DeltaMetadataStore(store_path) as store:
-        assert store.list_features() == []
+        assert store._list_features_local() == []
 
         fresh = pl.DataFrame(
             {
@@ -135,7 +136,7 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
     feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
 
     with DeltaMetadataStore(store_path) as store:
-        assert store.list_features() == []
+        assert store._list_features_local() == []
 
         metadata = pl.DataFrame(
             {
@@ -148,7 +149,7 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
         with store.allow_cross_project_writes():
             store.write_metadata(feature_cls, metadata)
 
-        assert store.list_features() == [feature_key]
+        assert store._list_features_local() == [feature_key]
 
 
 def test_delta_display(tmp_path) -> None:
@@ -186,7 +187,9 @@ class _StubObjectStore:
         self.deleted: list[str] = []
         self.list_calls: list[str | None] = []
 
-    def list_with_delimiter(self, prefix: str | None = None, *, return_arrow: bool = False):
+    def list_with_delimiter(
+        self, prefix: str | None = None, *, return_arrow: bool = False
+    ):
         assert prefix is None
         return {"common_prefixes": self.prefixes, "objects": []}
 
@@ -227,10 +230,11 @@ def test_delta_remote_lists_features_filters_invalid(monkeypatch) -> None:
         raising=False,
     )
 
+    features = []
     with store:
-        features = store.list_features()
+        features = store._list_features_local()
 
-    assert features == [FeatureKey("ns/valid_feature")]
+    assert features == [FeatureKey(["ns", "valid_feature"])]
 
 
 def test_delta_remote_drop_feature(monkeypatch) -> None:
