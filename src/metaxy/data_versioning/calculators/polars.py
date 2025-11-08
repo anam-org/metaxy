@@ -210,9 +210,8 @@ class PolarsProvenanceByFieldCalculator(ProvenanceByFieldCalculator):
             hash_truncation_length=None,  # Apply truncation separately
         )
 
-        # Convert back to Narwhals LazyFrame and apply truncation
-        result_nw_lazy = nw.from_native(result_pl.lazy(), eager_only=False)
+        # Apply truncation to the Polars frame (truncate_struct_column only handles Polars)
+        result_pl_truncated = truncate_struct_column(result_pl, PROVENANCE_BY_FIELD_COL)
 
-        # Use truncate_struct_column to apply hash truncation if configured
-        # This needs to be eager for the truncation function
-        return truncate_struct_column(result_nw_lazy, PROVENANCE_BY_FIELD_COL)
+        # Convert back to Narwhals LazyFrame
+        return nw.from_native(result_pl_truncated.lazy(), eager_only=False)

@@ -151,7 +151,6 @@ def metaxy_config(hash_truncation_length: int | None):
 def setup_store_with_data(
     empty_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
-    hash_truncation_length: int | None,
 ) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
     """Internal helper that does the actual setup work."""
     # Unpack feature plan configuration
@@ -180,7 +179,6 @@ def setup_store_with_data(
             feature_versions=feature_versions,
             snapshot_version=graph.snapshot_version,
             hash_algorithm=empty_store.hash_algorithm,
-            hash_truncation_length=hash_truncation_length,
             min_rows=5,
             max_rows=20,
         ).example()
@@ -258,7 +256,6 @@ def test_store_resolve_update_matches_golden_provenance(
         setup_store_with_data(
             empty_store,
             feature_plan_config,
-            hash_truncation_length=metaxy_config.hash_truncation_length,
         )
     )
 
