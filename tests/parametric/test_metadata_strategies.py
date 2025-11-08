@@ -419,7 +419,6 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
-            hash_truncation_length=16,
             min_rows=3,
             max_rows=5,
         )
@@ -514,7 +513,6 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.SHA256,
-            hash_truncation_length=32,
             min_rows=5,
             max_rows=10,
         )
@@ -586,7 +584,6 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
-            hash_truncation_length=None,  # No truncation
             min_rows=2,
             max_rows=5,
         )

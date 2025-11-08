@@ -327,7 +327,6 @@ def downstream_metadata_strategy(
     feature_versions: dict[str, str],
     snapshot_version: str,
     hash_algorithm: HashAlgorithm = HashAlgorithm.XXHASH64,
-    hash_truncation_length: int | None = None,
     min_rows: int = 1,
     max_rows: int = 100,
 ) -> tuple[dict[str, pl.DataFrame], pl.DataFrame]:
@@ -350,7 +349,6 @@ def downstream_metadata_strategy(
             (must include the downstream feature itself)
         snapshot_version: The snapshot version hash to use for all features
         hash_algorithm: Hash algorithm to use for provenance calculation (default: XXHASH64)
-        hash_truncation_length: Optional length to truncate hashes to (default: None)
         min_rows: Minimum number of rows to generate per upstream feature (default: 1)
         max_rows: Maximum number of rows to generate per upstream feature (default: 100)
 
@@ -383,7 +381,6 @@ def downstream_metadata_strategy(
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.SHA256,
-            hash_truncation_length=16,
         ))
         def test_provenance_calculation(data):
             upstream_data, downstream_df = data
@@ -468,6 +465,9 @@ def downstream_metadata_strategy(
         )
 
     # Calculate correct provenance using the Polars calculator
+    # Read hash truncation length from global config
+    hash_truncation_length = MetaxyConfig.get().hash_truncation_length
+
     downstream_df = calculate_provenance_by_field_polars(
         joined_df,
         feature_plan.feature,
