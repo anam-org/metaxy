@@ -1,5 +1,6 @@
 """Common fixtures for metadata store tests."""
 
+import os
 import shutil
 import socket
 import subprocess
@@ -24,6 +25,14 @@ assert HashAlgorithmCases is not None  # ensure the import is not removed
 # Configure pytest-postgresql to find pg_ctl without using pg_config
 # (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
 _pg_ctl_path = shutil.which("pg_ctl")
+_pg_unix_socket_dir = Path(
+    os.environ.get("METAXY_PG_SOCKET_DIR", "/tmp/metaxy-pg-sockets")
+)
+try:
+    _pg_unix_socket_dir.mkdir(parents=True, exist_ok=True)
+except Exception:
+    # Fall back to default tmp if directory creation fails
+    _pg_unix_socket_dir = Path("/tmp")
 
 if _pg_ctl_path is None:
 
@@ -35,8 +44,24 @@ if _pg_ctl_path is None:
         )
 
 else:
-    # Use upstream factory directly when pg_ctl is present
-    postgresql_proc = cast(Any, factories.postgresql_proc(executable=_pg_ctl_path))
+    _postgresql_proc_fixture = factories.postgresql_proc(
+        executable=_pg_ctl_path,
+        unixsocketdir=str(_pg_unix_socket_dir),
+    )
+
+    @pytest.fixture(scope="session")
+    def postgresql_proc(request: Any, tmp_path_factory: Any):
+        """Start PostgreSQL for tests, skipping gracefully if the daemon cannot start."""
+        from mirakuru.exceptions import ProcessExitedWithError
+
+        fixture_func = getattr(_postgresql_proc_fixture, "_fixture_function", None)
+        if fixture_func is None:
+            fixture_func = cast(Any, _postgresql_proc_fixture)
+
+        try:
+            yield from fixture_func(request, tmp_path_factory)
+        except ProcessExitedWithError as exc:
+            pytest.skip(f"Failed to start PostgreSQL test server: {exc}")
 
 
 def _find_free_port() -> int:
