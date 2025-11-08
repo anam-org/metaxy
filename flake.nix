@@ -42,11 +42,19 @@
         mkPythonShell = python: pkgs.mkShell {
           buildInputs = with pkgs; [
             stdenv.cc.cc.lib
+            postgresql_18  # Ensure pg_config is available at build time
           ] ++ lib.optionals isLinux [
             gcc-unwrapped.lib
             glibc
           ];
           packages = commonPackages ++ [python];
+
+          # Ensure pg_config is in PATH and set environment variables for psycopg2 build
+          shellHook = ''
+            export PG_CONFIG="${pkgs.postgresql_18}/bin/pg_config"
+            export PATH="${pkgs.postgresql_18}/bin:$PATH"
+          '';
+
           LD_LIBRARY_PATH = lib.makeLibraryPath (
             [
               pkgs.stdenv.cc.cc.lib
