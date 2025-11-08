@@ -33,14 +33,6 @@ from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
     from obstore.store import ObjectStore
-else:
-    try:
-        from obstore import store as obstore_store
-
-        ObjectStore = obstore_store.ObjectStore  # type: ignore[misc]
-    except ImportError:
-        obstore_store = None  # type: ignore[assignment]
-        ObjectStore = None  # type: ignore[assignment, misc]
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -137,8 +129,12 @@ class DeltaMetadataStore(MetadataStore):
     def _create_provenance_tracker(self, plan):
         """Create Polars provenance tracker for Delta Lake store.
 
-        Args:
-            plan: Feature plan for the feature we're tracking provenance for
+    def open(self) -> None:
+        """Ensure root directory exists and create system tables if needed."""
+        if self._local_root_path is not None:
+            self._local_root_path.mkdir(parents=True, exist_ok=True)
+        else:
+            self._ensure_remote_root_accessible()
 
         Yields:
             PolarsProvenanceTracker instance
@@ -302,18 +298,13 @@ class DeltaMetadataStore(MetadataStore):
         if local_table_path is not None:
             local_table_path.mkdir(parents=True, exist_ok=True)
 
-        try:
-            deltalake.write_deltalake(
-                table_uri,
-                df_polars,
-                mode="append",
-                schema_mode="merge",
-                storage_options=self._storage_options_payload(),
-            )
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to write metadata for feature {feature_key.to_string()}: {e}"
-            ) from e
+        deltalake.write_deltalake(
+            table_uri,
+            df,
+            mode="append",
+            schema_mode="merge",
+            storage_options=self._storage_options_payload(),
+        )
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature."""
@@ -339,22 +330,32 @@ class DeltaMetadataStore(MetadataStore):
             if paths:
                 store.delete(paths)
 
+    def _ensure_remote_root_accessible(self) -> None:
+        if not self._is_remote:
+            return
+
+        store = self._get_object_store()
+        from obstore.exceptions import BaseError  # type: ignore[import-not-found]
+        try:
+            store.list_with_delimiter()
+        except BaseError as exc:  # pragma: no cover - depends on backend failures
+            raise RuntimeError(
+                f"Unable to access remote DeltaMetadataStore root {self._root_uri}: {exc}"
+            ) from exc
+
     def _get_object_store(self) -> ObjectStore:
         """Instantiate (lazily) an obstore client for remote roots."""
         if not self._is_remote:
             msg = "Object store access requested for a non-remote DeltaMetadataStore"
             raise RuntimeError(msg)
         if self._object_store is None:
-            # Check if obstore is available
-            if TYPE_CHECKING:
-                from obstore import store as obstore_store
-            else:
-                # At runtime, obstore_store is set by the try/except block at module level
-                if obstore_store is None:  # type: ignore[used-before-def]
-                    raise ImportError(
-                        "obstore is required for remote Delta Lake stores. "
-                        "Install it with: pip install obstore"
-                    )
+            try:
+                from obstore import store as obstore_store  # type: ignore[import-not-found]
+            except ImportError as exc:  # pragma: no cover - handled at runtime
+                raise RuntimeError(
+                    "obstore is required for remote DeltaMetadataStore paths. "
+                    "Install metaxy[delta] to include the dependency."
+                ) from exc
 
             self._object_store = obstore_store.from_url(  # type: ignore[union-attr]
                 self._root_uri,
@@ -381,43 +382,38 @@ class DeltaMetadataStore(MetadataStore):
         if not self._table_exists(table_uri):
             return None
 
-        try:
-            delta_table = deltalake.DeltaTable(
-                table_uri,
-                storage_options=self._storage_options_payload(),
+        delta_table = deltalake.DeltaTable(
+            table_uri,
+            storage_options=self._storage_options_payload(),
+        )
+
+        # Use column projection for efficiency if columns are specified
+        if columns is not None:
+            # Need to ensure system columns are included for filtering
+            cols_to_read = set(columns)
+            if feature_version is not None:
+                cols_to_read.add("metaxy_feature_version")
+            arrow_table = delta_table.to_pyarrow_table(columns=list(cols_to_read))
+        else:
+            arrow_table = delta_table.to_pyarrow_table()
+
+        df = cast(pl.DataFrame, pl.from_arrow(arrow_table))
+        lf = df.lazy()
+        nw_lazy = nw.from_native(lf)
+
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
             )
 
-            # Use column projection for efficiency if columns are specified
-            if columns is not None:
-                # Need to ensure system columns are included for filtering
-                cols_to_read = set(columns)
-                if feature_version is not None:
-                    cols_to_read.add("metaxy_feature_version")
-                arrow_table = delta_table.to_pyarrow_table(columns=list(cols_to_read))
-            else:
-                arrow_table = delta_table.to_pyarrow_table()
+        if filters is not None:
+            for expr in filters:
+                nw_lazy = nw_lazy.filter(expr)
 
-            df = cast(pl.DataFrame, pl.from_arrow(arrow_table))
-            lf = df.lazy()
-            nw_lazy = nw.from_native(lf)
+        if columns is not None:
+            nw_lazy = nw_lazy.select(columns)
 
-            if feature_version is not None:
-                nw_lazy = nw_lazy.filter(
-                    nw.col("metaxy_feature_version") == feature_version
-                )
-
-            if filters is not None:
-                for expr in filters:
-                    nw_lazy = nw_lazy.filter(expr)
-
-            if columns is not None:
-                nw_lazy = nw_lazy.select(columns)
-
-            return nw_lazy
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to read metadata for feature {feature_key}: {e}"
-            ) from e
+        return nw_lazy
 
     def _list_features_local(self) -> list[FeatureKey]:
         """List all features that have Delta tables in this store.
@@ -440,9 +436,9 @@ class DeltaMetadataStore(MetadataStore):
                     feature_key = self._table_name_to_feature_key(child.name)
                     if not self._is_system_table(feature_key):
                         feature_keys.append(feature_key)
-                except Exception as e:
+                except ValueError as exc:
                     warnings.warn(
-                        f"Could not parse Delta table name '{child.name}' as FeatureKey: {e}",
+                        f"Could not parse Delta table name '{child.name}' as FeatureKey: {exc}",
                         UserWarning,
                         stacklevel=2,
                     )
@@ -450,12 +446,7 @@ class DeltaMetadataStore(MetadataStore):
 
     def _list_features_from_object_store(self) -> list[FeatureKey]:
         store = self._get_object_store()
-        try:
-            result = store.list_with_delimiter()
-        except Exception as exc:
-            raise RuntimeError(
-                f"Failed to list features under {self._root_uri}: {exc}"
-            ) from exc
+        result = store.list_with_delimiter()
 
         prefixes = getattr(result, "common_prefixes", None) or []
         feature_keys: list[FeatureKey] = []
@@ -465,7 +456,7 @@ class DeltaMetadataStore(MetadataStore):
                 continue
             try:
                 feature_key = self._table_name_to_feature_key(table_name)
-            except Exception as exc:
+            except ValueError as exc:
                 warnings.warn(
                     f"Could not parse Delta table name '{table_name}' as FeatureKey: {exc}",
                     UserWarning,
