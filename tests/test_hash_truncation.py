@@ -3,7 +3,6 @@
 import hashlib
 from contextvars import copy_context
 
-import narwhals as nw
 import polars as pl
 import pytest
 
@@ -225,9 +224,9 @@ class TestNarwhalsFunctions:
         config = MetaxyConfig(hash_truncation_length=10)
         MetaxyConfig.set(config)
 
-        lazy_nw = nw.from_native(df.lazy(), eager_only=False)
-        result_lazy = truncate_struct_column(lazy_nw, "metaxy_provenance_by_field")
-        result_df = result_lazy.collect().to_polars()
+        lazy_pl = df.lazy()
+        result_lazy = truncate_struct_column(lazy_pl, "metaxy_provenance_by_field")
+        result_df = result_lazy.collect()
 
         assert result_df["metaxy_provenance_by_field"][0]["field1"] == "a" * 10
         assert result_df["metaxy_provenance_by_field"][1]["field1"] == "b" * 10

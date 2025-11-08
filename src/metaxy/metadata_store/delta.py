@@ -2,33 +2,45 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import warnings
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 from urllib.request import url2pathname
-import warnings
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame
+from typing_extensions import Self
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.base import MetadataDiffResolver
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import TableNotFoundError
-from metaxy.metadata_store.system_tables import (
+from metaxy.metadata_store.system import (
+    EVENTS_KEY as MIGRATION_EVENTS_KEY,
+)
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
-    MIGRATION_EVENTS_KEY,
-    MIGRATION_EVENTS_SCHEMA,
 )
+from metaxy.metadata_store.system.events import EVENTS_SCHEMA as MIGRATION_EVENTS_SCHEMA
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
     from obstore.store import ObjectStore
+else:
+    try:
+        from obstore import store as obstore_store
+
+        ObjectStore = obstore_store.ObjectStore  # type: ignore[misc]
+    except ImportError:
+        obstore_store = None  # type: ignore[assignment]
+        ObjectStore = None  # type: ignore[assignment, misc]
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -117,35 +129,66 @@ class DeltaMetadataStore(MetadataStore):
         """Use XXHASH64 by default to match other non-SQL stores."""
         return HashAlgorithm.XXHASH64
 
-    def _supports_native_components(self) -> bool:
-        """DeltaLake store relies on Polars components for provenance calculations."""
-        return False
+    def native_implementation(self) -> nw.Implementation:
+        """Get native implementation for Delta Lake store."""
+        return nw.Implementation.POLARS
 
-    def _create_native_components(
-        self,
-    ) -> tuple[
-        UpstreamJoiner,
-        ProvenanceByFieldCalculator,
-        MetadataDiffResolver,
-    ]:
-        """Delta Lake store does not provide native SQL execution."""
-        raise NotImplementedError(
-            "DeltaMetadataStore does not support native field provenance calculations"
-        )
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create Polars provenance tracker for Delta Lake store.
 
-    def open(self) -> None:
-        """Ensure root directory exists and create system tables if needed."""
-        if self._local_root_path is not None:
-            self._local_root_path.mkdir(parents=True, exist_ok=True)
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
 
-        # Auto-create system tables if enabled (warning is handled in base class)
-        if self.auto_create_tables:
-            self._create_system_tables()
+        Yields:
+            PolarsProvenanceTracker instance
+        """
+        # Create tracker (only accepts plan parameter)
+        tracker = PolarsProvenanceTracker(plan=plan)
 
-    def close(self) -> None:
-        """No persistent resources to release."""
-        # delta-rs is used in one-shot write/read calls, so nothing to close.
-        pass
+        try:
+            yield tracker
+        finally:
+            # No cleanup needed for Polars tracker
+            pass
+
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open the Delta Lake store.
+
+        Args:
+            mode: Access mode for this connection session.
+
+        Yields:
+            Self: The store instance with connection open
+        """
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
+
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                # Ensure root directory exists if local
+                if self._local_root_path is not None:
+                    self._local_root_path.mkdir(parents=True, exist_ok=True)
+
+                # Auto-create system tables if enabled (warning is handled in base class)
+                if self.auto_create_tables:
+                    self._create_system_tables()
+
+                # Mark store as open and validate
+                self._is_open = True
+                self._validate_after_open()
+
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                # delta-rs is used in one-shot write/read calls, so nothing to close
+                self._is_open = False
 
     # ===== Internal helpers =====
 
@@ -162,13 +205,13 @@ class DeltaMetadataStore(MetadataStore):
         feature_versions_uri = self._feature_uri(FEATURE_VERSIONS_KEY)
         if not self._table_exists(feature_versions_uri):
             empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self._write_metadata_impl(FEATURE_VERSIONS_KEY, empty_df)
+            self.write_metadata_to_store(FEATURE_VERSIONS_KEY, nw.from_native(empty_df))
 
         # Check and create migration_events table
         migration_events_uri = self._feature_uri(MIGRATION_EVENTS_KEY)
         if not self._table_exists(migration_events_uri):
             empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self._write_metadata_impl(MIGRATION_EVENTS_KEY, empty_df)
+            self.write_metadata_to_store(MIGRATION_EVENTS_KEY, nw.from_native(empty_df))
 
     def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
         """Convert table name back to feature key.
@@ -223,10 +266,10 @@ class DeltaMetadataStore(MetadataStore):
 
     # ===== Storage operations =====
 
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """Append metadata to the Delta table for a feature.
 
@@ -238,6 +281,11 @@ class DeltaMetadataStore(MetadataStore):
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
         import deltalake  # pyright: ignore[reportMissingImports]
+
+        from metaxy._utils import collect_to_polars
+
+        # Convert Narwhals DataFrame to Polars for delta-rs
+        df_polars = collect_to_polars(df)
 
         table_uri = self._feature_uri(feature_key)
         table_exists = self._table_exists(table_uri)
@@ -254,12 +302,10 @@ class DeltaMetadataStore(MetadataStore):
         if local_table_path is not None:
             local_table_path.mkdir(parents=True, exist_ok=True)
 
-        arrow_table = df.to_arrow()
-
         try:
             deltalake.write_deltalake(
                 table_uri,
-                arrow_table,
+                df_polars,
                 mode="append",
                 schema_mode="merge",
                 storage_options=self._storage_options_payload(),
@@ -299,15 +345,18 @@ class DeltaMetadataStore(MetadataStore):
             msg = "Object store access requested for a non-remote DeltaMetadataStore"
             raise RuntimeError(msg)
         if self._object_store is None:
-            try:
+            # Check if obstore is available
+            if TYPE_CHECKING:
                 from obstore import store as obstore_store
-            except ImportError as exc:  # pragma: no cover - handled at runtime
-                raise RuntimeError(
-                    "obstore is required for remote DeltaMetadataStore paths. "
-                    "Install metaxy[delta] to include the dependency."
-                ) from exc
+            else:
+                # At runtime, obstore_store is set by the try/except block at module level
+                if obstore_store is None:  # type: ignore[used-before-def]
+                    raise ImportError(
+                        "obstore is required for remote Delta Lake stores. "
+                        "Install it with: pip install obstore"
+                    )
 
-            self._object_store = obstore_store.from_url(
+            self._object_store = obstore_store.from_url(  # type: ignore[union-attr]
                 self._root_uri,
                 **self._object_store_kwargs,
             )
