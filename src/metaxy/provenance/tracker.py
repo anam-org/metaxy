@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import narwhals as nw
 from narwhals.typing import FrameT
@@ -15,11 +17,15 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
+from metaxy.models.lineage import LineageRelationshipType
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.provenance.feature_dep_transformer import FeatureDepTransformer
 from metaxy.provenance.renamed_df import RenamedDataFrame
 from metaxy.provenance.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    from metaxy.provenance.lineage_handler import LineageHandler
 
 
 class ProvenanceTracker(ABC):
@@ -212,6 +218,36 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def aggregate_with_string_concat(
+        self,
+        df: FrameT,
+        group_by_columns: list[str],
+        concat_column: str,
+        concat_separator: str,
+        exclude_columns: list[str],
+    ) -> FrameT:
+        """Aggregate DataFrame by grouping and concatenating strings.
+
+        Used for N:1 aggregation lineage where multiple upstream rows
+        are aggregated into one downstream row. The concat_column strings
+        are concatenated with a separator, and other columns take their
+        first value within each group.
+
+        Args:
+            df: Narwhals DataFrame to aggregate
+            group_by_columns: Columns to group by
+            concat_column: Column containing strings to concatenate within groups
+            concat_separator: Separator to use when concatenating strings
+            exclude_columns: Columns to exclude from aggregation (typically system columns
+                that will be recalculated after aggregation)
+
+        Returns:
+            Narwhals DataFrame with one row per group, with concat_column containing
+            concatenated strings and other columns taking their first value.
+        """
+        raise NotImplementedError()
+
     def get_renamed_provenance_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed provenance_by_field column name for an upstream feature."""
         return self.feature_transformers_by_key[
@@ -374,9 +410,6 @@ class ProvenanceTracker(ABC):
         Note:
             Hash truncation length is read from MetaxyConfig.get().hash_truncation_length
         """
-        feature_spec = self.plan.feature
-        id_columns = list(feature_spec.id_columns)
-
         # Read hash truncation length from global config
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
@@ -442,6 +475,12 @@ class ProvenanceTracker(ABC):
             current, "The `current` DataFrame loaded from the metadata store"
         )
 
+        # Handle different lineage relationships before comparison
+        lineage_handler = create_lineage_handler(self.plan, self)
+        expected, current, join_columns = lineage_handler.normalize_for_comparison(
+            expected, current, hash_algorithm, hash_length
+        )
+
         current = current.rename(
             {
                 METAXY_PROVENANCE: f"__current_{METAXY_PROVENANCE}",
@@ -452,8 +491,8 @@ class ProvenanceTracker(ABC):
         added = cast(
             FrameT,
             expected.join(
-                cast(FrameT, current.select(id_columns)),
-                on=id_columns,
+                cast(FrameT, current.select(join_columns)),
+                on=join_columns,
                 how="anti",
             ),
         )
@@ -463,9 +502,9 @@ class ProvenanceTracker(ABC):
             expected.join(
                 cast(
                     FrameT,
-                    current.select(*id_columns, f"__current_{METAXY_PROVENANCE}"),
+                    current.select(*join_columns, f"__current_{METAXY_PROVENANCE}"),
                 ),
-                on=id_columns,
+                on=join_columns,
                 how="inner",
             ).filter(
                 nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
@@ -479,8 +518,8 @@ class ProvenanceTracker(ABC):
         removed = cast(
             FrameT,
             current.join(
-                cast(FrameT, expected.select(id_columns)),
-                on=id_columns,
+                cast(FrameT, expected.select(join_columns)),
+                on=join_columns,
                 how="anti",
             ).rename(
                 {
@@ -507,3 +546,36 @@ class ProvenanceTracker(ABC):
                 f"'{METAXY_PROVENANCE}' column. Root features must provide both provenance "
                 f"columns, with {METAXY_PROVENANCE} being a string representing the combined provenance of all the fields on this feature."
             )
+
+
+def create_lineage_handler(
+    feature_plan: FeaturePlan,
+    tracker: ProvenanceTracker,
+) -> LineageHandler:
+    """Factory function to create appropriate lineage handler.
+
+    Args:
+        feature_plan: The feature plan containing lineage information
+        tracker: The provenance tracker instance
+
+    Returns:
+        Appropriate LineageHandler instance based on lineage type
+    """
+    # Import handler classes at runtime to avoid circular import
+    from metaxy.provenance.lineage_handler import (
+        AggregationLineageHandler,
+        ExpansionLineageHandler,
+        IdentityLineageHandler,
+    )
+
+    lineage = feature_plan.feature.lineage
+    relationship_type = lineage.relationship.type
+
+    if relationship_type == LineageRelationshipType.IDENTITY:
+        return IdentityLineageHandler(feature_plan, tracker)
+    elif relationship_type == LineageRelationshipType.AGGREGATION:
+        return AggregationLineageHandler(feature_plan, tracker)
+    elif relationship_type == LineageRelationshipType.EXPANSION:
+        return ExpansionLineageHandler(feature_plan, tracker)
+    else:
+        raise ValueError(f"Unknown lineage relationship type: {relationship_type}")

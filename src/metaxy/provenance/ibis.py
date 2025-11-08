@@ -131,3 +131,58 @@ class IbisProvenanceTracker(ProvenanceTracker):
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
+
+    def aggregate_with_string_concat(
+        self,
+        df: FrameT,
+        group_by_columns: list[str],
+        concat_column: str,
+        concat_separator: str,
+        exclude_columns: list[str],
+    ) -> FrameT:
+        """Aggregate DataFrame by grouping and concatenating strings.
+
+        Args:
+            df: Narwhals DataFrame backed by Ibis
+            group_by_columns: Columns to group by
+            concat_column: Column containing strings to concatenate within groups
+            concat_separator: Separator to use when concatenating strings
+            exclude_columns: Columns to exclude from aggregation
+
+        Returns:
+            Narwhals DataFrame with one row per group.
+        """
+        # Import ibis lazily
+        import ibis
+        import ibis.expr.types
+
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Build aggregation expressions
+        agg_exprs = {}
+
+        # Concatenate the concat_column with separator
+        agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
+            concat_separator
+        )
+
+        # Take first value for all other columns (except group_by and exclude)
+        all_columns = set(ibis_table.columns)
+        columns_to_aggregate = (
+            all_columns - set(group_by_columns) - {concat_column} - set(exclude_columns)
+        )
+
+        for col in columns_to_aggregate:
+            agg_exprs[col] = ibis_table[
+                col
+            ].arbitrary()  # Take any value (like first())
+
+        # Perform groupby and aggregate
+        result_table = ibis_table.group_by(group_by_columns).aggregate(**agg_exprs)
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
