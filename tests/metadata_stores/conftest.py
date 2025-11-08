@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy._testing import HashAlgorithmCases
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
@@ -17,6 +18,13 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
+
+
+# Configure pytest-postgresql to find pg_ctl without using pg_config
+# (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
+postgresql_proc = factories.postgresql_proc(
+    executable=shutil.which("pg_ctl") or "pg_ctl",
+)
 
 
 def _find_free_port() -> int:
