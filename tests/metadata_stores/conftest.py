@@ -10,6 +10,7 @@ import boto3
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
