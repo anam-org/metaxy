@@ -28,7 +28,11 @@ from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy.config import MetaxyConfig
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.metadata_store import HashAlgorithmNotSupportedError, MetadataStore
+from metaxy.metadata_store import (
+    HashAlgorithmNotSupportedError,
+    InMemoryMetadataStore,
+    MetadataStore,
+)
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
@@ -225,6 +229,21 @@ class EmptyStoreCases:
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {hash_algorithm} not supported by {ClickHouseMetadataStore}"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_inmemory(
+        self,
+        hash_algorithm: HashAlgorithm,
+    ) -> InMemoryMetadataStore:
+        """InMemory store case."""
+        try:
+            return InMemoryMetadataStore(
+                hash_algorithm=hash_algorithm,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
             )
 
 
