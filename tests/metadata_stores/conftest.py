@@ -7,7 +7,8 @@ import time
 import uuid
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from urllib.parse import quote_plus
 
 import boto3
 import ibis
@@ -42,9 +43,20 @@ def find_free_port() -> int:
 
 # Configure pytest-postgresql to find pg_ctl without using pg_config
 # (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
-postgresql_proc = factories.postgresql_proc(
-    executable=shutil.which("pg_ctl") or "pg_ctl",
-)
+_pg_ctl_path = shutil.which("pg_ctl")
+
+if _pg_ctl_path is None:
+
+    @pytest.fixture(scope="session")
+    def postgresql_proc():
+        """Skip PostgreSQL-dependent tests when pg_ctl is unavailable."""
+        pytest.skip(
+            "pg_ctl not found in PATH; skipping PostgreSQL-backed metadata tests."
+        )
+
+else:
+    # Use upstream factory directly when pg_ctl is present
+    postgresql_proc = cast(Any, factories.postgresql_proc(executable=_pg_ctl_path))
 
 
 def _find_free_port() -> int:
@@ -53,6 +65,25 @@ def _find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
+
+
+def _format_pg_connection_string(
+    *,
+    user: str,
+    host: str,
+    port: int,
+    database: str,
+    password: str | None = None,
+    options: str | None = None,
+) -> str:
+    """Build a PostgreSQL connection URI with proper escaping."""
+    auth = quote_plus(user)
+    if password:
+        auth = f"{quote_plus(user)}:{quote_plus(password)}"
+    uri = f"postgresql://{auth}@{host}:{port}/{database}"
+    if options:
+        uri = f"{uri}?options={quote_plus(options)}"
+    return uri
 
 
 @pytest.fixture(scope="session")
@@ -213,20 +244,51 @@ def postgres_server(postgresql_proc: Any):
 
     try:
         import psycopg  # type: ignore[import]
+        from psycopg import conninfo as psycopg_conninfo  # type: ignore[attr-defined]
     except ImportError:
         pytest.skip("psycopg (required for Postgres tests) not installed")
 
-    dsn_params = postgresql_proc.dsn()
-    host = dsn_params["host"]
-    port = dsn_params["port"]
-    user = dsn_params["user"]
-    admin_db = dsn_params["dbname"]
-    admin_dsn = f"postgresql://{user}@{host}:{port}/{admin_db}"
+    host = postgresql_proc.host
+    port = postgresql_proc.port
+    user = postgresql_proc.user
+    password = postgresql_proc.password
+    admin_db = postgresql_proc.dbname
+    options = postgresql_proc.options
+
+    def build_conninfo(dbname: str) -> str:
+        return psycopg_conninfo.make_conninfo(
+            host=host,
+            port=str(port),
+            user=user,
+            password=password or None,
+            dbname=dbname,
+            options=options or None,
+        )
+
+    admin_dsn = ""
+    last_error: Exception | None = None
+    for candidate in filter(None, [admin_db, "postgres"]):
+        try:
+            admin_dsn = build_conninfo(candidate)
+            with psycopg.connect(admin_dsn):
+                pass
+        except psycopg.OperationalError as exc:
+            last_error = exc
+            continue
+        admin_db = candidate
+        break
+    else:
+        raise RuntimeError(
+            "Unable to connect to Postgres admin database"
+        ) from last_error
 
     return {
         "host": host,
         "port": port,
         "user": user,
+        "dbname": admin_db,
+        "password": password,
+        "options": options,
         "dsn": admin_dsn,
         "psycopg": psycopg,
     }
@@ -242,6 +304,8 @@ def postgres_db(postgres_server):
     host = postgres_server["host"]
     port = postgres_server["port"]
     user = postgres_server["user"]
+    password = postgres_server["password"]
+    options = postgres_server.get("options")
 
     db_name = f"test_{uuid.uuid4().hex[:8]}"
 
@@ -249,7 +313,14 @@ def postgres_db(postgres_server):
         with conn.cursor() as cur:
             cur.execute(f'CREATE DATABASE "{db_name}"')
 
-    test_conn_string = f"postgresql://{user}@{host}:{port}/{db_name}"
+    test_conn_string = _format_pg_connection_string(
+        user=user,
+        host=host,
+        port=port,
+        database=db_name,
+        password=password,
+        options=options,
+    )
 
     yield test_conn_string
 

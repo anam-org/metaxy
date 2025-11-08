@@ -7,14 +7,24 @@ Provides production-grade metadata storage using PostgreSQL with:
 - Connection pooling support
 """
 
+from __future__ import annotations
+
+import json
 import logging
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, cast
+
+import narwhals as nw
+import polars as pl
 
 if TYPE_CHECKING:
     from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.feature import BaseFeature
+    from metaxy.models.types import FeatureKey
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 logger = logging.getLogger(__name__)
@@ -94,7 +104,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         database: str | None = None,
         schema: str | None = None,
         connection_params: dict[str, Any] | None = None,
-        fallback_stores: list["MetadataStore"] | None = None,
+        fallback_stores: list[MetadataStore] | None = None,
         enable_pgcrypto: bool = True,
         **kwargs: Any,
     ):
@@ -188,6 +198,19 @@ class PostgresMetadataStore(IbisMetadataStore):
         """
         super().open()
 
+        if not self._has_native_struct_support():
+            # Postgres + current Ibis/sqlglot versions cannot create STRUCT columns.
+            # Fall back to JSON serialization + in-memory Narwhals/Polars processing.
+            self._struct_compat_mode = True
+            logger.warning(
+                "PostgreSQL backend lacks native STRUCT type support in this environment. "
+                "Falling back to JSON serialization and in-memory projections. "
+                "For better performance, upgrade to a version of Ibis/sqlglot that "
+                "supports STRUCT types on Postgres."
+            )
+        else:
+            self._struct_compat_mode = False
+
         # Auto-enable pgcrypto if SHA256 is configured
         if self.enable_pgcrypto and self.hash_algorithm == HashAlgorithm.SHA256:
             self._ensure_pgcrypto_extension()
@@ -216,7 +239,7 @@ class PostgresMetadataStore(IbisMetadataStore):
                 "or have a DBA run: CREATE EXTENSION IF NOT EXISTS pgcrypto;"
             )
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, "HashSQLGenerator"]:
+    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
         """Get hash SQL generators for PostgreSQL."""
         generators = super()._get_hash_sql_generators()
 
@@ -233,6 +256,60 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         generators[HashAlgorithm.SHA256] = sha256_generator
         return generators
+
+    def _supports_native_components(self) -> bool:
+        """Disable native components when running in struct-compatibility mode."""
+        return super()._supports_native_components() and not self._struct_compat_mode
+
+    def _write_metadata_impl(
+        self,
+        feature_key: FeatureKey,
+        df: pl.DataFrame,
+    ) -> None:
+        """Serialize struct columns when Postgres lacks STRUCT support."""
+        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
+            df = self._serialize_provenance_column(df)
+        super()._write_metadata_impl(feature_key, df)
+
+    def read_metadata_in_store(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read metadata, deserializing provenance structs when needed."""
+        lazy_frame = super().read_metadata_in_store(
+            feature,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+        )
+
+        if not self._struct_compat_mode or lazy_frame is None:
+            return lazy_frame
+
+        native = lazy_frame.to_native()
+        execute = getattr(native, "execute", None)
+        if execute is None:
+            # Unexpected backend (already materialized) - return as-is
+            return lazy_frame
+
+        native_result = execute()
+        if isinstance(native_result, pl.DataFrame):
+            polars_df: pl.DataFrame = native_result
+        else:
+            try:
+                polars_df = cast(
+                    pl.DataFrame,
+                    pl.from_arrow(native_result),  # pyarrow.Table or RecordBatchReader
+                )
+            except Exception:
+                polars_df = pl.from_pandas(native_result)
+
+        polars_df = self._deserialize_provenance_column(polars_df)
+        return nw.from_native(polars_df.lazy(), eager_only=False)
 
     def read_metadata_in_store(self, feature, **kwargs):
         """Ensure dependency data_version_by_field columns exist after unpack."""
@@ -335,3 +412,47 @@ class PostgresMetadataStore(IbisMetadataStore):
         if self.connection_string:
             return f"PostgresMetadataStore(connection_string={self.connection_string})"
         return "PostgresMetadataStore()"
+
+    def _has_native_struct_support(self) -> bool:
+        """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
+        try:
+            from sqlglot import exp
+        except Exception:  # pragma: no cover - only triggered if sqlglot missing
+            return False
+
+        dialect = getattr(self.conn, "dialect", None)
+        type_mapping = getattr(dialect, "TYPE_TO_EXPRESSIONS", None)
+        if not type_mapping:
+            return False
+
+        data_type_cls = getattr(exp, "DataType", None)
+        type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
+        struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
+        if struct_type is None:
+            return False
+
+        return struct_type in type_mapping
+
+    @staticmethod
+    def _serialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
+        """Convert struct provenance column to canonical JSON for storage."""
+        column = df.get_column(PROVENANCE_BY_FIELD_COL)
+        serialized = [
+            json.dumps(value, sort_keys=True) if value is not None else None
+            for value in column.to_list()
+        ]
+        return df.with_columns(
+            pl.Series(name=PROVENANCE_BY_FIELD_COL, values=serialized, dtype=pl.String)
+        )
+
+    @staticmethod
+    def _deserialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
+        """Restore struct provenance column from JSON text."""
+        if PROVENANCE_BY_FIELD_COL not in df.columns:
+            return df
+        column = df.get_column(PROVENANCE_BY_FIELD_COL)
+        decoded = [
+            json.loads(value) if value is not None else None
+            for value in column.to_list()
+        ]
+        return df.with_columns(pl.Series(name=PROVENANCE_BY_FIELD_COL, values=decoded))
