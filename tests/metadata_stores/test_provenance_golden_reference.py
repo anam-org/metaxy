@@ -28,7 +28,11 @@ from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy.config import MetaxyConfig
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.metadata_store import HashAlgorithmNotSupportedError, MetadataStore
+from metaxy.metadata_store import (
+    HashAlgorithmNotSupportedError,
+    InMemoryMetadataStore,
+    MetadataStore,
+)
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
@@ -151,7 +155,6 @@ def metaxy_config(hash_truncation_length: int | None):
 def setup_store_with_data(
     empty_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
-    hash_truncation_length: int | None,
 ) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
     """Internal helper that does the actual setup work."""
     # Unpack feature plan configuration
@@ -180,7 +183,6 @@ def setup_store_with_data(
             feature_versions=feature_versions,
             snapshot_version=graph.snapshot_version,
             hash_algorithm=empty_store.hash_algorithm,
-            hash_truncation_length=hash_truncation_length,
             min_rows=5,
             max_rows=20,
         ).example()
@@ -229,6 +231,21 @@ class EmptyStoreCases:
                 f"Hash algorithm {hash_algorithm} not supported by {ClickHouseMetadataStore}"
             )
 
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_inmemory(
+        self,
+        hash_algorithm: HashAlgorithm,
+    ) -> InMemoryMetadataStore:
+        """InMemory store case."""
+        try:
+            return InMemoryMetadataStore(
+                hash_algorithm=hash_algorithm,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
+            )
+
 
 @parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
@@ -258,7 +275,6 @@ def test_store_resolve_update_matches_golden_provenance(
         setup_store_with_data(
             empty_store,
             feature_plan_config,
-            hash_truncation_length=metaxy_config.hash_truncation_length,
         )
     )
 

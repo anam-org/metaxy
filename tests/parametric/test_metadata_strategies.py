@@ -419,7 +419,6 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
-            hash_truncation_length=16,
             min_rows=3,
             max_rows=5,
         )
@@ -448,9 +447,6 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert "child_field" in provenance
             assert isinstance(provenance["child_field"], str)
-            assert len(provenance["child_field"]) <= 16, (
-                "Hash should be truncated to 16 chars"
-            )
             assert len(provenance["child_field"]) > 0, "Hash should not be empty"
 
         # Check version columns
@@ -514,7 +510,6 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.SHA256,
-            hash_truncation_length=32,
             min_rows=5,
             max_rows=10,
         )
@@ -545,7 +540,6 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         for row in downstream_df.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert len(provenance["result"]) > 0
-            assert len(provenance["result"]) <= 32  # SHA256 truncated to 32
 
     property_test()
 
@@ -586,7 +580,6 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
             feature_versions=feature_versions,
             snapshot_version=snapshot_version,
             hash_algorithm=HashAlgorithm.XXHASH64,
-            hash_truncation_length=None,  # No truncation
             min_rows=2,
             max_rows=5,
         )
