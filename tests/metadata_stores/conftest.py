@@ -14,6 +14,7 @@ import ibis
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
@@ -37,6 +38,13 @@ def find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
+
+
+# Configure pytest-postgresql to find pg_ctl without using pg_config
+# (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
+postgresql_proc = factories.postgresql_proc(
+    executable=shutil.which("pg_ctl") or "pg_ctl",
+)
 
 
 def _find_free_port() -> int:
