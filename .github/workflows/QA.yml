@@ -116,7 +116,7 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
         with:
-           # use devshell for Python 3.10
+          # use devshell for specific Python version
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
@@ -177,6 +177,9 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
+        with:
+          # use devshell for Python 3.10 (docs)
+          arguments: "'.#\"python3.10\"'"
       - name: Sync dependencies
         run: uv python pin 3.10 && uv sync --all-extras --all-groups
       - name: Build Docs
