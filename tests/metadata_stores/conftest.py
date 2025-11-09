@@ -1,5 +1,6 @@
 """Common fixtures for metadata store tests."""
 
+import logging
 import os
 import shutil
 import socket
@@ -25,6 +26,8 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
+
+logger = logging.getLogger(__name__)
 
 
 # Configure pytest-postgresql to find pg_ctl without using pg_config
@@ -325,8 +328,8 @@ def postgres_db(postgres_server):
         with psycopg.connect(admin_dsn, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
-    except Exception:
-        pass
+    except psycopg.Error as exc:
+        logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
 
 @pytest.fixture
