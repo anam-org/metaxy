@@ -230,6 +230,7 @@ def test_store_resolve_update_matches_golden_provenance(
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
+            added_df = increment.added.lazy().collect().to_polars()
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
