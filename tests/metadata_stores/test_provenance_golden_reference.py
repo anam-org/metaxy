@@ -233,10 +233,7 @@ class EmptyStoreCases:
             )
 
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_inmemory(
-        self,
-        hash_algorithm: HashAlgorithm,
-    ) -> InMemoryMetadataStore:
+    def case_inmemory(self, hash_algorithm: HashAlgorithm):
         """InMemory store case."""
         try:
             return InMemoryMetadataStore(
@@ -307,6 +304,7 @@ def test_store_resolve_update_matches_golden_provenance(
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
+            added_df = increment.added.lazy().collect().to_polars()
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
