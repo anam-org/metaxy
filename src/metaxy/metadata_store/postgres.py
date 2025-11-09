@@ -359,7 +359,7 @@ class PostgresMetadataStore(IbisMetadataStore):
                     pl.DataFrame,
                     pl.from_arrow(native_result),  # pyarrow.Table or RecordBatchReader
                 )
-            except Exception:
+            except (TypeError, ValueError, AttributeError):
                 polars_df = pl.from_pandas(native_result)
 
         polars_df = self._deserialize_provenance_column(polars_df)
@@ -471,7 +471,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
         try:
             from sqlglot import exp
-        except Exception:  # pragma: no cover - only triggered if sqlglot missing
+        except ImportError:  # pragma: no cover - only triggered if sqlglot missing
             return False
 
         dialect = getattr(self.conn, "dialect", None)
