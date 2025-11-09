@@ -261,17 +261,6 @@ def clickhouse_db(clickhouse_server):
 @pytest.fixture(scope="session")
 def postgres_server(postgresql_proc: Any):
     """Expose connection details for the pytest-postgresql server."""
-    try:
-        import ibis.backends.postgres  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-postgres not installed")
-
-    try:
-        import psycopg  # type: ignore[import]
-        from psycopg import conninfo as psycopg_conninfo  # type: ignore[attr-defined]
-    except ImportError:
-        pytest.skip("psycopg (required for Postgres tests) not installed")
-
     host = postgresql_proc.host
     port = postgresql_proc.port
     user = postgresql_proc.user
@@ -321,8 +310,6 @@ def postgres_server(postgresql_proc: Any):
 @pytest.fixture
 def postgres_db(postgres_server):
     """Create a clean PostgreSQL database for each test (function-scoped)."""
-    import uuid
-
     psycopg = postgres_server["psycopg"]
     admin_dsn = postgres_server["dsn"]
     host = postgres_server["host"]
