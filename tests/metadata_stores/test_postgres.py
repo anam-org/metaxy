@@ -2,16 +2,9 @@
 
 from typing import cast
 
-import pytest
-
-pytest.importorskip("ibis")
-
-try:
-    import ibis.backends.postgres  # noqa: F401
-except ImportError:
-    pytest.skip("ibis-postgres not installed", allow_module_level=True)
-
 import ibis
+import ibis.backends.postgres
+import pytest
 
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
