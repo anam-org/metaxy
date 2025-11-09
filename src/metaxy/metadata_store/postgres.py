@@ -106,7 +106,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         schema: str | None = None,
         connection_params: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
-        enable_pgcrypto: bool = True,
+        enable_pgcrypto: bool = False,
         **kwargs: Any,
     ):
         """
