@@ -48,11 +48,6 @@
           ];
           packages = commonPackages ++ [python];
 
-          # Ensure PostgreSQL binaries are in PATH for pytest-postgresql
-          # (avoiding pg_config which can fail in some environments)
-          shellHook = ''
-            export PATH="${pkgs.postgresql_18}/bin:$PATH"
-          '';
 
           LD_LIBRARY_PATH = lib.makeLibraryPath (
             [
