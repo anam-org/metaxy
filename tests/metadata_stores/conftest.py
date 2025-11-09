@@ -40,6 +40,8 @@ def find_free_port() -> int:
         port = s.getsockname()[1]
     return port
 
+logger = logging.getLogger(__name__)
+
 
 # Configure pytest-postgresql to find pg_ctl without using pg_config
 # (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
@@ -339,8 +341,8 @@ def postgres_db(postgres_server):
         with psycopg.connect(admin_dsn, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
-    except Exception:
-        pass
+    except psycopg.Error as exc:
+        logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
 
 @pytest.fixture
