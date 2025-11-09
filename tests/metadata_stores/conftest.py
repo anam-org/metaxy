@@ -1,17 +1,16 @@
 """Common fixtures for metadata store tests."""
 
+import logging
 import socket
 import uuid
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any, cast
-from urllib.parse import quote_plus
+from typing import Any
 
 import boto3
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
-from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
@@ -39,6 +38,7 @@ def find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
+
 
 logger = logging.getLogger(__name__)
 

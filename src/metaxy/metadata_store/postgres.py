@@ -18,18 +18,21 @@ import narwhals as nw
 import polars as pl
 
 if TYPE_CHECKING:
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
     from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
 
 from psycopg import Error as _PsycopgError
 
-from metaxy.data_versioning.diff import Increment, LazyIncrement
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.types import CoercibleToFeatureKey
+from metaxy.versioning.flat_engine import IbisFlatVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
+
+# Alias for backwards compatibility
+PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
 
 logger = logging.getLogger(__name__)
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
@@ -204,7 +207,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         """
         return HashAlgorithm.MD5
 
-    def open(self) -> None:
+    def open(self) -> None:  # ty: ignore[invalid-method-override]
         """Open connection to PostgreSQL and perform capability checks.
 
         Raises:
@@ -258,7 +261,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         try:
             # Use underlying connection to execute DDL (Ibis doesn't expose CREATE EXTENSION)
             # For PostgreSQL backend, conn.con is the psycopg2 connection
-            raw_conn = self.conn.con  # pyright: ignore[reportAttributeAccessIssue]
+            raw_conn = self.conn.con  # ty: ignore[unresolved-attribute]  # pyright: ignore[reportAttributeAccessIssue]
             with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
                 cursor.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
                 raw_conn.commit()  # pyright: ignore[reportAttributeAccessIssue]
@@ -287,15 +290,15 @@ class PostgresMetadataStore(IbisMetadataStore):
     ) -> Increment | LazyIncrement:
         """Ensure pgcrypto is available before delegating to base implementation."""
         self._ensure_pgcrypto_ready_for_native_provenance()
-        return super()._resolve_update_native(
+        return super()._resolve_update_native(  # ty: ignore[unresolved-attribute]
             feature,
             filters=filters,
             lazy=lazy,
         )
 
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
+    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, Any]:
         """Get hash SQL generators for PostgreSQL."""
-        generators = super()._get_hash_sql_generators()
+        generators = super()._get_hash_sql_generators()  # ty: ignore[unresolved-attribute]
 
         def sha256_generator(table, concat_columns: dict[str, str]) -> str:
             hash_selects: list[str] = []
@@ -313,7 +316,7 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _supports_native_components(self) -> bool:
         """Disable native components when running in struct-compatibility mode."""
-        return super()._supports_native_components() and not self._struct_compat_mode
+        return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
 
     def _write_metadata_impl(
         self,
@@ -323,81 +326,63 @@ class PostgresMetadataStore(IbisMetadataStore):
         """Serialize struct columns when Postgres lacks STRUCT support."""
         if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
             df = self._serialize_provenance_column(df)
-        super()._write_metadata_impl(feature_key, df)
+        super()._write_metadata_impl(feature_key, df)  # ty: ignore[unresolved-attribute]
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """Read metadata, deserializing provenance structs when needed."""
-        lazy_frame = super().read_metadata_in_store(
-            feature,
-            feature_version=feature_version,
-            filters=filters,
-            columns=columns,
-        )
-
-        if not self._struct_compat_mode or lazy_frame is None:
-            return lazy_frame
-
-        native = lazy_frame.to_native()
-        execute = getattr(native, "execute", None)
-        if execute is None:
-            # Unexpected backend (already materialized) - return as-is
-            return lazy_frame
-
-        native_result = execute()
-        if isinstance(native_result, pl.DataFrame):
-            polars_df: pl.DataFrame = native_result
-        else:
-            try:
-                polars_df = cast(
-                    pl.DataFrame,
-                    pl.from_arrow(native_result),  # pyarrow.Table or RecordBatchReader
-                )
-            except (TypeError, ValueError, AttributeError):
-                polars_df = pl.from_pandas(native_result)
-
-        polars_df = self._deserialize_provenance_column(polars_df)
-        return nw.from_native(polars_df.lazy(), eager_only=False)
-
-    def read_metadata_in_store(self, feature, **kwargs):
-        """Ensure dependency data_version_by_field columns exist after unpack."""
-
         from metaxy.models.constants import (
             METAXY_DATA_VERSION,
             METAXY_PROVENANCE,
         )
 
-        lf = super().read_metadata_in_store(feature, **kwargs)
-        if lf is None:
-            return lf
+        lazy_frame = super().read_metadata_in_store(
+            feature,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+            **kwargs,
+        )
 
+        if lazy_frame is None:
+            return lazy_frame
+
+        # Ensure flattened provenance/data_version columns exist for this feature's fields
         feature_key = self._resolve_feature_key(feature)
         plan = self._resolve_feature_plan(feature_key)
 
-        # Ensure flattened provenance/data_version columns exist for this feature's fields
         expected_fields = [field.key.to_struct_key() for field in plan.feature.fields]
         for field_name in expected_fields:
             prov_flat = f"{METAXY_PROVENANCE_BY_FIELD}__{field_name}"
-            if prov_flat not in lf.columns:
-                if METAXY_PROVENANCE in lf.columns:
-                    lf = lf.with_columns(nw.col(METAXY_PROVENANCE).alias(prov_flat))
+            if prov_flat not in lazy_frame.columns:
+                if METAXY_PROVENANCE in lazy_frame.columns:
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.col(METAXY_PROVENANCE).alias(prov_flat)
+                    )
                 else:
-                    lf = lf.with_columns(nw.lit(None, dtype=nw.String).alias(prov_flat))
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.lit(None, dtype=nw.String).alias(prov_flat)
+                    )
 
             data_flat = f"{METAXY_DATA_VERSION_BY_FIELD}__{field_name}"
-            if data_flat not in lf.columns:
-                if METAXY_DATA_VERSION in lf.columns:
-                    lf = lf.with_columns(nw.col(METAXY_DATA_VERSION).alias(data_flat))
+            if data_flat not in lazy_frame.columns:
+                if METAXY_DATA_VERSION in lazy_frame.columns:
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.col(METAXY_DATA_VERSION).alias(data_flat)
+                    )
                 else:
-                    lf = lf.with_columns(nw.lit(None, dtype=nw.String).alias(data_flat))
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.lit(None, dtype=nw.String).alias(data_flat)
+                    )
 
-        return lf
+        return lazy_frame
 
     def write_metadata_to_store(self, feature_key: FeatureKey, df, **kwargs):
         """Ensure string-typed materialization_id before delegating write."""
@@ -458,7 +443,7 @@ class PostgresMetadataStore(IbisMetadataStore):
             details.append(f"port={self.port}")
 
         if self._is_open:
-            details.append(f"features={len(self._list_features_local())}")
+            details.append(f"features={len(self._list_features_local())}")  # ty: ignore[unresolved-attribute]
 
         detail_str = ", ".join(details)
         if detail_str:
