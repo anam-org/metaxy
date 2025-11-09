@@ -40,6 +40,8 @@ def find_free_port() -> int:
         port = s.getsockname()[1]
     return port
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture
 def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
