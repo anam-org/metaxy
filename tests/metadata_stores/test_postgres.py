@@ -4,13 +4,12 @@ from typing import Any, cast
 
 import ibis
 import ibis.backends.postgres
-import polars.testing as pl_testing
 import pytest
 
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.feature import BaseFeature
+from metaxy.versioning.types import HashAlgorithm
 
 
 def test_postgres_initialization_with_params(postgres_server: dict[str, Any]) -> None:
