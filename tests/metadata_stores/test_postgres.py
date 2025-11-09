@@ -1,6 +1,6 @@
 """PostgreSQL-specific tests that don't apply to other stores."""
 
-from typing import cast
+from typing import Any, cast
 
 import ibis
 import ibis.backends.postgres
@@ -13,23 +13,30 @@ from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.feature import BaseFeature
 
 
-def test_postgres_initialization_with_params() -> None:
+def test_postgres_initialization_with_params(postgres_server: dict[str, Any]) -> None:
     """Test initialization with explicit connection parameters."""
+    dbname = postgres_server["dbname"]
+    store_host = postgres_server["host"]
+    store_port = postgres_server["port"]
+    store_user = postgres_server["user"]
+    store_password = postgres_server["password"]
+
     store = PostgresMetadataStore(
-        host="localhost",
-        database="metaxy",
-        user="ml",
-        password="secret",
+        host=store_host,
+        port=store_port,
+        database=dbname,
+        user=store_user,
+        password=store_password,
     )
 
-    assert store.host == "localhost"
-    assert store.port == 5432
-    assert store.database == "metaxy"
+    assert store.host == store_host
+    assert store.port == store_port
+    assert store.database == dbname
     assert store.schema is None
 
     display = store.display()
     assert "PostgresMetadataStore" in display
-    assert "database=metaxy" in display
+    assert f"database={dbname}" in display
 
 
 def test_postgres_requires_configuration() -> None:
