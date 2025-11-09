@@ -5,11 +5,16 @@ import shutil
 import socket
 import subprocess
 import time
+import uuid
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import quote_plus
 
+import ibis
+import ibis.backends.postgres
+import psycopg
 import pytest
+from psycopg import conninfo as psycopg_conninfo
 from pytest_cases import fixture, parametrize_with_cases
 from pytest_postgresql import factories
 
@@ -105,12 +110,6 @@ def clickhouse_server(tmp_path_factory):
     if not clickhouse_bin:
         pytest.skip("ClickHouse binary not found in PATH")
 
-    # Check if ibis-clickhouse is installed
-    try:
-        import ibis.backends.clickhouse  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-clickhouse not installed")
-
     port = _find_free_port()
     http_port = _find_free_port()
 
@@ -189,9 +188,6 @@ def clickhouse_server(tmp_path_factory):
             f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
         )
 
-    # Now try to connect with Ibis (using HTTP port)
-    import ibis
-
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:
         conn: Any = ibis.connect(connection_string)  # type: ignore[assignment]
@@ -222,9 +218,6 @@ def clickhouse_db(clickhouse_server):
 
     Creates a unique database, yields connection string, then drops the database.
     """
-    import uuid
-
-    import ibis
 
     host = clickhouse_server["host"]
     port = clickhouse_server["port"]
@@ -254,17 +247,6 @@ def clickhouse_db(clickhouse_server):
 @pytest.fixture(scope="session")
 def postgres_server(postgresql_proc: Any):
     """Expose connection details for the pytest-postgresql server."""
-    try:
-        import ibis.backends.postgres  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-postgres not installed")
-
-    try:
-        import psycopg  # type: ignore[import]
-        from psycopg import conninfo as psycopg_conninfo  # type: ignore[attr-defined]
-    except ImportError:
-        pytest.skip("psycopg (required for Postgres tests) not installed")
-
     host = postgresql_proc.host
     port = postgresql_proc.port
     user = postgresql_proc.user
@@ -314,8 +296,6 @@ def postgres_server(postgresql_proc: Any):
 @pytest.fixture
 def postgres_db(postgres_server):
     """Create a clean PostgreSQL database for each test (function-scoped)."""
-    import uuid
-
     psycopg = postgres_server["psycopg"]
     admin_dsn = postgres_server["dsn"]
     host = postgres_server["host"]
