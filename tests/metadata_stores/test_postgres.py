@@ -11,8 +11,12 @@ try:
 except ImportError:
     pytest.skip("ibis-postgres not installed", allow_module_level=True)
 
+import ibis
+
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.postgres import PostgresMetadataStore
+from metaxy.models.feature import BaseFeature
 
 
 def test_postgres_initialization_with_params() -> None:
@@ -126,3 +130,89 @@ def test_postgres_sha256_with_explicit_hash_algorithm() -> None:
     assert HashAlgorithm.SHA256 in generators
     # Should also have MD5 (inherited from base)
     assert HashAlgorithm.MD5 in generators
+
+
+def test_postgres_pgcrypto_enabled_during_native_resolve(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensure pgcrypto extension is enabled lazily when native resolve runs."""
+    store = PostgresMetadataStore(
+        host="localhost",
+        database="metaxy",
+        enable_pgcrypto=True,
+        hash_algorithm=HashAlgorithm.SHA256,
+    )
+    dummy_backend = cast(ibis.BaseBackend, object())
+    store._conn = dummy_backend  # Pretend connection is open
+
+    enable_calls: list[bool] = []
+
+    def fake_enable(self: PostgresMetadataStore) -> None:
+        enable_calls.append(True)
+
+    monkeypatch.setattr(
+        PostgresMetadataStore,
+        "_ensure_pgcrypto_extension",
+        fake_enable,
+    )
+
+    def fake_resolve(
+        self: MetadataStore,
+        feature: type[BaseFeature],
+        *,
+        filters=None,
+        lazy=False,
+    ) -> str:
+        return "ok"
+
+    monkeypatch.setattr(MetadataStore, "_resolve_update_native", fake_resolve)
+
+    dummy_feature = cast(type[BaseFeature], object())
+    first = store._resolve_update_native(dummy_feature)
+    second = store._resolve_update_native(dummy_feature)
+
+    assert first == "ok"
+    assert second == "ok"
+    assert enable_calls == [True]
+
+
+def test_postgres_pgcrypto_not_enabled_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ensure pgcrypto is skipped when enable_pgcrypto flag is False."""
+
+    store = PostgresMetadataStore(
+        host="localhost",
+        database="metaxy",
+        enable_pgcrypto=False,
+        hash_algorithm=HashAlgorithm.SHA256,
+    )
+    dummy_backend = cast(ibis.BaseBackend, object())
+    store._conn = dummy_backend
+
+    def fake_enable(
+        self: PostgresMetadataStore,
+    ) -> None:  # pragma: no cover - should not run
+        raise AssertionError("pgcrypto should not be enabled when flag is False")
+
+    monkeypatch.setattr(
+        PostgresMetadataStore,
+        "_ensure_pgcrypto_extension",
+        fake_enable,
+    )
+
+    def fake_resolve(
+        self: MetadataStore,
+        feature: type[BaseFeature],
+        *,
+        filters=None,
+        lazy=False,
+    ) -> str:
+        return "ok"
+
+    monkeypatch.setattr(MetadataStore, "_resolve_update_native", fake_resolve)
+
+    dummy_feature = cast(type[BaseFeature], object())
+    result = store._resolve_update_native(dummy_feature)
+
+    assert result == "ok"
