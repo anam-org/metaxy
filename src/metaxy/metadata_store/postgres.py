@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
@@ -23,12 +23,16 @@ if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
 
+from psycopg import Error as _PsycopgError
+
+from metaxy.data_versioning.diff import Increment, LazyIncrement
 from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
 
 logger = logging.getLogger(__name__)
+_PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -41,9 +45,11 @@ class PostgresMetadataStore(IbisMetadataStore):
     **Hash Algorithm Support:**
 
     - **MD5** (default): Built-in, no extensions required
-    - **SHA256**: Requires `pgcrypto` extension (auto-enabled on open)
+    - **SHA256**: Requires `pgcrypto` extension (auto-enabled before native hashing runs)
 
-    The store automatically enables `pgcrypto` when using SHA256 hashing.
+    The store automatically enables `pgcrypto` (when configured) the first time
+    it needs to compute SHA256 hashes during `resolve_update()`. This avoids
+    running `CREATE EXTENSION` during store initialization.
 
     **Schema Isolation:**
 
@@ -69,7 +75,7 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     Example: SHA256 Hash Algorithm
         ```py
-        # pgcrypto extension auto-enabled
+        # pgcrypto extension auto-enabled during resolve_update()
         store = PostgresMetadataStore(
             "postgresql://user:pass@localhost:5432/metadata",
             hash_algorithm=HashAlgorithm.SHA256,
@@ -90,8 +96,8 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     Warning:
         SHA256 requires the `pgcrypto` extension. The store will attempt to enable it
-        automatically on open. Ensure your database user has CREATE EXTENSION privileges,
-        or have a DBA pre-create the extension.
+        automatically the first time native SHA256 hashing runs. Ensure your database user has
+        CREATE EXTENSION privileges or have a DBA pre-create the extension.
     """
 
     def __init__(
@@ -126,8 +132,9 @@ class PostgresMetadataStore(IbisMetadataStore):
             connection_params: Additional Ibis PostgreSQL connection parameters
                 (e.g., `{"sslmode": "require", "connect_timeout": 10}`).
             fallback_stores: Ordered list of read-only fallback stores for branch deployments.
-            enable_pgcrypto: Whether to auto-enable pgcrypto extension on open (default: True).
-                Set to False if pgcrypto is already enabled or if user lacks CREATE EXTENSION.
+            enable_pgcrypto: Whether to auto-enable pgcrypto extension before native SHA256 hashing runs (default: False).
+                Set to True if you want Metaxy to manage pgcrypto automatically; leave False if pgcrypto is already enabled
+                or your database user lacks CREATE EXTENSION privileges.
             **kwargs: Passed to [metaxy.metadata_store.ibis.IbisMetadataStore][]
                 (e.g., `hash_algorithm`, `auto_create_tables`).
 
@@ -137,7 +144,8 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         Note:
             When using SHA256 hash algorithm, pgcrypto extension is required.
-            The store attempts to enable it automatically on open unless
+            The store attempts to enable it automatically the first time
+            SHA256 hashing runs inside `resolve_update()` unless
             `enable_pgcrypto=False`.
         """
         params: dict[str, Any] = dict(connection_params or {})
@@ -169,6 +177,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.database = params.get("database")
         self.schema = params.get("schema")
         self.enable_pgcrypto = enable_pgcrypto
+        self._pgcrypto_extension_checked = False
 
         super().__init__(
             connection_string=connection_string,
@@ -191,20 +200,20 @@ class PostgresMetadataStore(IbisMetadataStore):
         Uses MD5 as it's built-in and requires no extensions.
         For SHA256 support, explicitly set hash_algorithm=HashAlgorithm.SHA256
         and ensure pgcrypto extension is enabled.
+        For production you must self-install the necessary posgres extensions.
         """
         return HashAlgorithm.MD5
 
     def open(self) -> None:
-        """Open connection to PostgreSQL and enable required extensions.
-
-        If using SHA256 hash algorithm and enable_pgcrypto=True, attempts to
-        enable the pgcrypto extension. Logs a warning if extension cannot be enabled.
+        """Open connection to PostgreSQL and perform capability checks.
 
         Raises:
             ImportError: If psycopg2 driver not installed.
             Various database errors: If connection fails.
         """
         super().open()
+        # Reset pgcrypto check for the new connection
+        self._pgcrypto_extension_checked = False
 
         if not self._has_native_struct_support():
             # Postgres + current Ibis/sqlglot versions cannot create STRUCT columns.
@@ -219,9 +228,25 @@ class PostgresMetadataStore(IbisMetadataStore):
         else:
             self._struct_compat_mode = False
 
-        # Auto-enable pgcrypto if SHA256 is configured
-        if self.enable_pgcrypto and self.hash_algorithm == HashAlgorithm.SHA256:
+    def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
+        """Enable pgcrypto before running native SHA256 provenance tracking."""
+        if self._pgcrypto_extension_checked:
+            return
+
+        if (
+            not self.enable_pgcrypto
+            or self.hash_algorithm != HashAlgorithm.SHA256
+            or self._struct_compat_mode
+            or not self._supports_native_components()
+        ):
+            return
+
+        try:
             self._ensure_pgcrypto_extension()
+        finally:
+            # Avoid repeated attempts (CREATE EXTENSION IF NOT EXISTS is idempotent,
+            # but we only need to try once per connection)
+            self._pgcrypto_extension_checked = True
 
     def _ensure_pgcrypto_extension(self) -> None:
         """Ensure pgcrypto extension is enabled for SHA256 support.
@@ -238,14 +263,35 @@ class PostgresMetadataStore(IbisMetadataStore):
                 cursor.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
                 raw_conn.commit()  # pyright: ignore[reportAttributeAccessIssue]
             logger.debug("pgcrypto extension enabled successfully")
-        except Exception as e:
-            # Log warning but don't fail - extension might already be enabled
-            # or user might lack privileges but extension is globally enabled
-            logger.warning(
-                f"Could not enable pgcrypto extension: {e}. "
-                "If using SHA256 hash algorithm, ensure pgcrypto is enabled "
-                "or have a DBA run: CREATE EXTENSION IF NOT EXISTS pgcrypto;"
-            )
+        except _PGCRYPTO_ERROR_TYPES as err:
+            self._log_pgcrypto_warning(err)
+        except AttributeError as err:
+            # Ibis backend may not expose .con or cursor()
+            self._log_pgcrypto_warning(err)
+
+    @staticmethod
+    def _log_pgcrypto_warning(error: Exception) -> None:
+        logger.warning(
+            "Could not enable pgcrypto extension: %s. "
+            "If using SHA256 hash algorithm, ensure pgcrypto is enabled "
+            "or have a DBA run: CREATE EXTENSION IF NOT EXISTS pgcrypto;",
+            error,
+        )
+
+    def _resolve_update_native(
+        self,
+        feature: type[BaseFeature],
+        *,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        lazy: bool = False,
+    ) -> Increment | LazyIncrement:
+        """Ensure pgcrypto is available before delegating to base implementation."""
+        self._ensure_pgcrypto_ready_for_native_provenance()
+        return super()._resolve_update_native(
+            feature,
+            filters=filters,
+            lazy=lazy,
+        )
 
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
         """Get hash SQL generators for PostgreSQL."""
