@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from metaxy.config import MetaxyConfig
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import (
     FeatureSpecWithIDColumns,
 )
+from metaxy.provenance.types import HashAlgorithm
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 

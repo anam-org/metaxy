@@ -25,8 +25,6 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
-from metaxy.data_versioning.diff import LazyIncrement
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -35,6 +33,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
+from metaxy.provenance.types import HashAlgorithm, LazyIncrement
 
 # ============= STORE CONFIGURATION =============
 
@@ -435,14 +434,21 @@ def test_resolve_update_no_upstream(
     root_feature = features[0]
 
     # 1. Source of truth: Polars DataFrame with sample data
+    # Get field names from root feature spec
+    field_names = [f.key.to_struct_key() for f in root_feature.spec().fields]
+
+    # Create provenance structs with all fields
+    provenance_structs = []
+    for i in range(1, 4):
+        struct_data = {
+            field_name: f"hash{i}_{field_name}" for field_name in field_names
+        }
+        provenance_structs.append(struct_data)
+
     source_samples = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "metaxy_provenance_by_field": [
-                {"field_a": "hash1"},
-                {"field_a": "hash2"},
-                {"field_a": "hash3"},
-            ],
+            "metaxy_provenance_by_field": provenance_structs,
         }
     )
 
@@ -580,11 +586,14 @@ def test_resolve_update_no_upstream(
         assert len(reference["versions"]) == 3
         assert all(isinstance(v, dict) for v in reference["versions"])
         # All versions should match the source (user provided them manually)
-        assert reference["versions"] == [
-            {"field_a": "hash1"},
-            {"field_a": "hash2"},
-            {"field_a": "hash3"},
-        ]
+        # Build expected versions based on actual field names from the feature
+        expected_versions = []
+        for i in range(1, 4):
+            struct_data = {
+                field_name: f"hash{i}_{field_name}" for field_name in field_names
+            }
+            expected_versions.append(struct_data)
+        assert reference["versions"] == expected_versions
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)

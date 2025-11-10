@@ -1,0 +1,25 @@
+# serializer version: 1
+# name: test_feature_dep_renames
+  list([
+    dict({
+      'field_provenance': dict({
+        'default': '11045469579419104296',
+      }),
+      'sample_provenance': '17349733036152179338',
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_provenance': dict({
+        'default': '5655355725504109707',
+      }),
+      'sample_provenance': '17208330944384832911',
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_feature_graph_integration_with_provenance_by_field
+  dict({
+    'field_a': '4086c66ae16cbea1e3d2a7243527ce423a20a1d04d1084e39cfbc122fc4fc3aa',
+    'field_b': '7c343b7bf86ffb2c65b888cd9fef2dab7a49cf83ca3678ead24e018ae91f7952',
+  })
+# ---
