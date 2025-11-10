@@ -45,6 +45,8 @@
           ];
 
           LD_LIBRARY_PATH = lib.makeLibraryPath [
+             # For C++ extensions in pip packages (e.g., duckdb)
+            pkgs.stdenv.cc.cc.lib
             pkgs.duckdb.lib
             pkgs.clickhouse
             pkgs.graphviz
