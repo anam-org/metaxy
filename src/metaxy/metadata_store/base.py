@@ -162,6 +162,15 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
+    def native_implementation(self) -> nw.Implementation:
+        """Get the native Narwhals implementation for this store's backend.
+
+        Returns:
+            nw.Implementation.POLARS for Polars-backed stores (InMemory, etc.)
+            nw.Implementation.IBIS for SQL-backed stores (DuckDB, ClickHouse, etc.)
+        """
+        pass
+
     @abstractmethod
     @contextmanager
     def _create_provenance_tracker(

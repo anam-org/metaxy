@@ -65,6 +65,10 @@ class InMemoryMetadataStore(MetadataStore):
     def _supports_native_components(self) -> bool:
         return False
 
+    def native_implementation(self) -> nw.Implementation:
+        """Get native implementation for in-memory store."""
+        return nw.Implementation.POLARS
+
     @contextmanager
     def _create_provenance_tracker(self, plan):
         """Create Polars provenance tracker for in-memory store.

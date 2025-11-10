@@ -1,30 +1,35 @@
-"""Test resolve_update across different stores and hash algorithms.
+"""Test resolve_update across different stores and feature graph configurations.
 
-Tests that resolve_update (which orchestrates joiner/calculator/diff components)
-produces consistent results across store types and hash algorithms.
+This test suite verifies that resolve_update produces correct and consistent results
+across different metadata store backends, hash algorithms, and feature graph topologies.
 
-With Narwhals integration, all stores use a unified Narwhals-based path that works
-with any backend (Polars in-memory, Ibis/SQL for databases). Backend-specific
-optimizations (e.g., staying in SQL vs pulling to memory) are handled transparently.
+The tests use the parametric metadata generation utilities from metaxy._testing.parametric
+to avoid manual data construction and ensure correctness.
 """
 
-from typing import Any
+import warnings
+from collections.abc import Mapping
 
-import narwhals as nw
-import polars as pl
+import polars.testing as pl_testing
 import pytest
+import pytest_cases
+from hypothesis.errors import NonInteractiveExampleWarning
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
+    BaseFeature,
     Feature,
     FeatureDep,
+    FeatureGraph,
     FeatureKey,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy._testing import HashAlgorithmCases
+from metaxy._testing.parametric import (
+    downstream_metadata_strategy,
+    feature_metadata_strategy,
+)
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -32,1112 +37,749 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.models.feature import FeatureGraph
-from metaxy.provenance.types import HashAlgorithm, LazyIncrement
+from metaxy.models.plan import FeaturePlan
+from metaxy.provenance.types import HashAlgorithm
 
-# ============= STORE CONFIGURATION =============
-
-
-def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyIncrement):
-    """Verify that lazy frames from IbisMetadataStore contain SQL and haven't been materialized.
-
-    Args:
-        store: The metadata store instance
-        lazy_result: LazyIncrement with lazy frames to verify
-    """
-    from metaxy.metadata_store.ibis import IbisMetadataStore
-
-    if not isinstance(store, IbisMetadataStore):
-        return  # Only check for Ibis-based stores
-
-    # Check each lazy frame in the result
-    for frame_name in ["added", "changed", "removed"]:
-        lazy_frame = getattr(lazy_result, frame_name)
-
-        # Get the native lazy frame
-        native_frame = lazy_frame.to_native()
-
-        # For Ibis-based stores, the native frame should be an Ibis expression
-        # that can be compiled to SQL
-        import ibis
-
-        if isinstance(native_frame, ibis.expr.types.Table):
-            # Verify we can get SQL from it
-            try:
-                sql = store.conn.compile(native_frame)
-                assert isinstance(sql, str), (
-                    f"{frame_name} lazy frame should have SQL representation"
-                )
-                # Check that it's actually SQL (contains SELECT, FROM, etc.)
-                assert any(keyword in sql.upper() for keyword in ["SELECT", "FROM"]), (
-                    f"{frame_name} should contain SQL keywords"
-                )
-            except Exception as e:
-                raise AssertionError(
-                    f"Failed to get SQL from {frame_name} lazy frame: {e}"
-                )
+# Type alias for feature plan output
+FeaturePlanOutput = tuple[
+    FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
+]
 
 
-def get_available_store_types() -> list[str]:
-    """Get list of available store types from StoreCases.
-
-    Dynamically discovers which store types are available by inspecting
-    the StoreCases class for case methods. This allows different branches
-    to have different store types without hardcoding the list.
-    """
-    from .conftest import StoreCases  # type: ignore[import-not-found]
-
-    store_types = []
-    for attr_name in dir(StoreCases):
-        if attr_name.startswith("case_") and not attr_name.startswith("case__"):
-            # Extract store type name from case method (e.g., "case_duckdb" -> "duckdb")
-            store_type = attr_name[5:]  # Remove "case_" prefix
-            store_types.append(store_type)
-
-    return store_types
-
-
-def create_store(
-    store_type: str,
-    prefer_native: bool,
-    hash_algorithm: HashAlgorithm,
-    params: dict[str, Any],
-) -> MetadataStore:
-    """Create a store instance for testing.
-
-    Args:
-        store_type: "inmemory", "duckdb", or "clickhouse"
-        prefer_native: Whether to prefer native field provenance calculations
-        hash_algorithm: Hash algorithm to use
-        params: Store-specific parameters dict containing:
-            - tmp_path: Temporary directory for file-based stores (duckdb)
-            - clickhouse_db: Connection string for ClickHouse (optional)
-
-    Returns:
-        Configured metadata store instance
-    """
-    tmp_path = params.get("tmp_path")
-
-    if store_type == "inmemory":
-        return InMemoryMetadataStore(
-            hash_algorithm=hash_algorithm, prefer_native=prefer_native
-        )
-    elif store_type == "duckdb":
-        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-        db_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
-        )
-        extensions: list[str] = (
-            ["hashfuncs"]
-            if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]
-            else []
-        )
-        return DuckDBMetadataStore(
-            db_path,
-            hash_algorithm=hash_algorithm,
-            extensions=extensions,  # pyright: ignore[reportArgumentType]
-            prefer_native=prefer_native,
-        )
-    elif store_type == "duckdb_ducklake":
-        assert tmp_path is not None, f"tmp_path parameter required for {store_type}"
-        db_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}.duckdb"
-        )
-        metadata_path = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_catalog.duckdb"
-        )
-        storage_dir = (
-            tmp_path
-            / f"test_{store_type}_{hash_algorithm.value}_{prefer_native}_storage"
-        )
-
-        ducklake_config = {
-            "alias": "integration_lake",
-            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
-            "storage_backend": {"type": "local", "path": str(storage_dir)},
-        }
-
-        extensions_ducklake: list[str] = ["json"]
-        if hash_algorithm in [HashAlgorithm.XXHASH32, HashAlgorithm.XXHASH64]:
-            extensions_ducklake.append("hashfuncs")
-
-        return DuckDBMetadataStore(
-            db_path,
-            hash_algorithm=hash_algorithm,
-            extensions=extensions_ducklake,  # pyright: ignore[reportArgumentType]
-            prefer_native=prefer_native,
-            ducklake=ducklake_config,
-        )
-    elif store_type == "clickhouse":
-        clickhouse_db = params.get("clickhouse_db")
-        if clickhouse_db is None:
-            raise ValueError(
-                "clickhouse_db parameter required for clickhouse store type"
-            )
-        # ClickHouse uses the same database but tables will be unique per feature
-        # However, prefer_native variants need isolation since they write to same tables
-        # We solve this by using the same connection - the fixture provides a clean database per test
-        # Each test gets its own database, so prefer_native variants within the same test share tables
-        # This is the root cause of duplicates - we need to drop tables between variants
-        return ClickHouseMetadataStore(
-            clickhouse_db,
-            hash_algorithm=hash_algorithm,
-            prefer_native=prefer_native,
-        )
-    else:
-        raise ValueError(f"Unknown store type: {store_type}")
-
-
-# ============= FEATURE LIBRARY =============
-# Define all features once, then add them to registries on demand
-
-
-# Root features (no dependencies)
-class RootA(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "root_a"]),
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version="1"),
-        ],
-    ),
-):
-    """Root feature with single default field."""
-
-    pass
-
-
-class MultiFieldRoot(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "multi_root"]),
-        fields=[
-            FieldSpec(key=FieldKey(["train"]), code_version="1"),
-            FieldSpec(key=FieldKey(["test"]), code_version="1"),
-        ],
-    ),
-):
-    """Root feature with multiple fields."""
-
-    pass
-
-
-# Intermediate features (depend on roots)
-class BranchB(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "branch_b"]),
-        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "root_a"]),
-                        fields=[FieldKey(["default"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    """Branch depending on RootA."""
-
-    pass
-
-
-class BranchC(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "branch_c"]),
-        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "root_a"]),
-                        fields=[FieldKey(["default"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    """Another branch depending on RootA."""
-
-    pass
-
-
-# Leaf features (converge multiple branches)
-class LeafSimple(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "leaf_simple"]),
-        deps=[FeatureDep(feature=FeatureKey(["resolve", "root_a"]))],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "root_a"]),
-                        fields=[FieldKey(["default"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    """Simple leaf depending on single root."""
-
-    pass
-
-
-class LeafDiamond(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "leaf_diamond"]),
-        deps=[
-            FeatureDep(feature=FeatureKey(["resolve", "branch_b"]), columns=()),
-            FeatureDep(feature=FeatureKey(["resolve", "branch_c"]), columns=()),
-        ],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "branch_b"]),
-                        fields=[FieldKey(["default"])],
-                    ),
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "branch_c"]),
-                        fields=[FieldKey(["default"])],
-                    ),
-                ],
-            ),
-        ],
-    ),
-):
-    """Diamond leaf converging two branches."""
-
-    pass
-
-
-class LeafMultiField(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["resolve", "leaf_multi"]),
-        deps=[FeatureDep(feature=FeatureKey(["resolve", "multi_root"]))],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["resolve", "multi_root"]),
-                        fields=[
-                            FieldKey(["train"]),
-                            FieldKey(["test"]),
-                        ],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    """Leaf depending on multi-field root."""
-
-    pass
-
-
-# ============= REGISTRY FIXTURES =============
+# ============= FEATURE GRAPH CONFIGURATIONS =============
 
 
 class FeatureGraphCases:
-    """Different feature graph configurations with various dependency graphs."""
+    """Different feature graph topologies for testing."""
 
-    def case_simple_chain(self) -> tuple[FeatureGraph, list[type[Feature]]]:
-        """Simple dependency chain: A → B."""
-        graph = FeatureGraph()
-        graph.add_feature(RootA)
-        graph.add_feature(LeafSimple)
-        return (graph, [RootA, LeafSimple])
+    def case_simple_chain(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Simple two-feature chain: Root -> Leaf.
 
-    def case_diamond_graph(self) -> tuple[FeatureGraph, list[type[Feature]]]:
-        """Diamond dependency graph: A → B, A → C, B → D, C → D."""
-        graph = FeatureGraph()
-        graph.add_feature(RootA)
-        graph.add_feature(BranchB)
-        graph.add_feature(BranchC)
-        graph.add_feature(LeafDiamond)
-        return (graph, [RootA, BranchB, BranchC, LeafDiamond])
+        Returns:
+            (graph, upstream_features, leaf_plan)
+        """
 
-    def case_multi_field(self) -> tuple[FeatureGraph, list[type[Feature]]]:
-        """Feature with multiple fields: A (train + test) → B."""
-        graph = FeatureGraph()
-        graph.add_feature(MultiFieldRoot)
-        graph.add_feature(LeafMultiField)
-        return (graph, [MultiFieldRoot, LeafMultiField])
+        class RootFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="root",
+                fields=["value"],
+            ),
+        ):
+            pass
+
+        class LeafFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="leaf",
+                deps=[FeatureDep(feature=RootFeature)],
+                fields=["result"],
+            ),
+        ):
+            pass
+
+        leaf_plan = graph.get_feature_plan(LeafFeature.spec().key)
+        upstream_features = {RootFeature.spec().key: RootFeature}
+
+        return graph, upstream_features, leaf_plan
+
+    def case_diamond_graph(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Diamond dependency graph: Root -> BranchA,BranchB -> Leaf.
+
+        Returns:
+            (graph, upstream_features, leaf_plan)
+        """
+
+        class RootFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="root",
+                fields=["value"],
+            ),
+        ):
+            pass
+
+        class BranchAFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="branch_a",
+                deps=[FeatureDep(feature=RootFeature)],
+                fields=["a_result"],
+            ),
+        ):
+            pass
+
+        class BranchBFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="branch_b",
+                deps=[FeatureDep(feature=RootFeature)],
+                fields=["b_result"],
+            ),
+        ):
+            pass
+
+        class LeafFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="leaf",
+                deps=[
+                    FeatureDep(feature=BranchAFeature),
+                    FeatureDep(feature=BranchBFeature),
+                ],
+                fields=["final_result"],
+            ),
+        ):
+            pass
+
+        leaf_plan = graph.get_feature_plan(LeafFeature.spec().key)
+        upstream_features = {
+            RootFeature.spec().key: RootFeature,
+            BranchAFeature.spec().key: BranchAFeature,
+            BranchBFeature.spec().key: BranchBFeature,
+        }
+
+        return graph, upstream_features, leaf_plan
+
+    def case_multi_field(self, graph: FeatureGraph) -> FeaturePlanOutput:
+        """Features with multiple fields to test field-level provenance.
+
+        Returns:
+            (graph, upstream_features, leaf_plan)
+        """
+
+        class RootFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="root",
+                fields=["field_a", "field_b", "field_c"],
+            ),
+        ):
+            pass
+
+        class LeafFeature(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="leaf",
+                deps=[FeatureDep(feature=RootFeature)],
+                fields=["result_x", "result_y"],
+            ),
+        ):
+            pass
+
+        leaf_plan = graph.get_feature_plan(LeafFeature.spec().key)
+        upstream_features = {RootFeature.spec().key: RootFeature}
+
+        return graph, upstream_features, leaf_plan
 
 
-@pytest.fixture
-def simple_chain_graph():
-    """Simple chain graph fixture for tests that don't need parametrization."""
-    cases = FeatureGraphCases()
-    graph, features = cases.case_simple_chain()
+class RootFeatureCases:
+    """Root features (no upstream dependencies) for testing sample-based resolve_update."""
 
-    with graph.use():
-        # Return dict with named features for backwards compatibility
-        # features = [RootA, LeafSimple]
-        yield {"UpstreamA": features[0], "DownstreamB": features[1]}
+    def case_simple_root(self, graph: FeatureGraph) -> type[BaseFeature]:
+        """Single-field root feature."""
+
+        class SimpleRoot(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="simple_root",
+                fields=["value"],
+            ),
+        ):
+            pass
+
+        return SimpleRoot
+
+    def case_multi_field_root(self, graph: FeatureGraph) -> type[BaseFeature]:
+        """Multi-field root feature."""
+
+        class MultiFieldRoot(
+            Feature,
+            spec=SampleFeatureSpec(
+                key="multi_root",
+                fields=["field_a", "field_b", "field_c"],
+            ),
+        ):
+            pass
+
+        return MultiFieldRoot
 
 
-# ============= TESTS =============
+# ============= STORE CONFIGURATIONS =============
 
 
-@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
-@pytest.mark.parametrize("prefer_native", [True, False])
-@pytest.mark.parametrize("use_native_samples", [True, False])
-def test_resolve_update_no_upstream(
-    store_params: dict[str, Any],
-    graph_config: tuple[FeatureGraph, list[type[Feature]]],
-    hash_algorithm: HashAlgorithm,
-    prefer_native: bool,
-    use_native_samples: bool,
-    snapshot,
-    caplog,
+class StoreCases:
+    """Different metadata store backend configurations."""
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_inmemory(self, hash_algorithm: HashAlgorithm) -> MetadataStore:
+        """In-memory Polars-based store."""
+        try:
+            return InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by InMemoryMetadataStore"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path) -> MetadataStore:
+        """DuckDB SQL-based store."""
+        store = DuckDBMetadataStore(
+            tmp_path / "test.duckdb",
+            hash_algorithm=hash_algorithm,
+            extensions=["hashfuncs"],
+            prefer_native=True,
+        )
+        # Check if hash algorithm is supported before opening
+        try:
+            with store:
+                pass  # Just validate
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by DuckDBMetadataStore"
+            )
+        return store
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_clickhouse(
+        self, hash_algorithm: HashAlgorithm, clickhouse_db: str
+    ) -> MetadataStore:
+        """ClickHouse SQL-based store."""
+        store = ClickHouseMetadataStore(
+            connection_string=clickhouse_db,
+            hash_algorithm=hash_algorithm,
+            prefer_native=True,
+        )
+        # Check if hash algorithm is supported before opening
+        try:
+            with store:
+                pass  # Just validate
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by ClickHouseMetadataStore"
+            )
+        return store
+
+
+class TruncationCases:
+    """Hash truncation length configurations."""
+
+    def case_none(self):
+        """No truncation."""
+        return None
+
+    def case_16(self):
+        """Truncate to 16 characters."""
+        return 16
+
+
+# ============= FIXTURES =============
+
+
+@pytest_cases.fixture
+@parametrize_with_cases("hash_truncation_length", cases=TruncationCases)
+def metaxy_config(hash_truncation_length: int | None):
+    """Configure hash truncation length for tests."""
+    old = MetaxyConfig.get()
+    cfg_struct = old.model_dump()
+    cfg_struct["hash_truncation_length"] = hash_truncation_length
+    new = MetaxyConfig.model_validate(cfg_struct)
+    MetaxyConfig.set(new)
+    yield new
+    MetaxyConfig.set(old)
+
+
+# ============= TEST: ROOT FEATURES (NO UPSTREAM) =============
+
+
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("root_feature", cases=RootFeatureCases)
+def test_resolve_update_root_feature_requires_samples(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    root_feature: type[BaseFeature],
 ):
-    """Test resolve_update for root features with samples parameter.
+    """Test that resolve_update raises ValueError for root features without samples.
 
-    Root features have no upstream dependencies, so users must provide samples
-    with manually computed provenance_by_field. This test verifies:
-    1. ValueError raised when samples not provided
-    2. Correct increment when samples provided
-    3. Warning issued when Polars samples provided to SQL store (use_native_samples=False)
-    4. No warning when samples match store backend (use_native_samples=True)
-    5. Results are consistent across all stores and prefer_native settings
+    Root features have no upstream dependencies, so provenance cannot be computed
+    from upstream metadata. Users must provide samples with manually computed
+    provenance_by_field.
     """
+    with store:
+        with pytest.raises(ValueError, match="root feature"):
+            store.resolve_update(root_feature, lazy=True)
+
+
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("root_feature", cases=RootFeatureCases)
+def test_resolve_update_root_feature_with_samples(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    root_feature: type[BaseFeature],
+    graph: FeatureGraph,
+):
+    """Test resolve_update for root features with provided samples.
+
+    When samples are provided, resolve_update should:
+    - Accept the samples with user-provided provenance_by_field
+    - Return all samples as "added" (first write)
+    - Compute correct metaxy_provenance from the field provenances
+    """
+    # Generate sample data using the parametric strategy
+    feature_spec = root_feature.spec()
+    feature_version = root_feature.feature_version()
+    snapshot_version = graph.snapshot_version
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        samples_df = feature_metadata_strategy(
+            feature_spec=feature_spec,
+            feature_version=feature_version,
+            snapshot_version=snapshot_version,
+            min_rows=5,
+            max_rows=10,
+        ).example()
+
+    # Select only required columns for samples (drop system columns that will be added)
+    id_columns = list(feature_spec.id_columns)
+    samples_df = samples_df.select(id_columns + ["metaxy_provenance_by_field"])
+
+    # Convert to Narwhals
     import narwhals as nw
-    import polars as pl
 
-    graph, features = graph_config
+    samples_nw = nw.from_native(samples_df.lazy())
 
-    # Test the first feature (root/upstream with no dependencies)
-    root_feature = features[0]
+    # Call resolve_update with samples
+    with store, graph.use():
+        try:
+            increment = store.resolve_update(
+                root_feature, samples=samples_nw, lazy=True
+            ).collect()
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
 
-    # 1. Source of truth: Polars DataFrame with sample data
-    # Get field names from root feature spec
-    field_names = [f.key.to_struct_key() for f in root_feature.spec().fields]
+    # Verify all samples are added (first write)
+    assert len(increment.added) == len(samples_df)
+    assert len(increment.changed) == 0
+    assert len(increment.removed) == 0
 
-    # Create provenance structs with all fields
-    provenance_structs = []
-    for i in range(1, 4):
-        struct_data = {
-            field_name: f"hash{i}_{field_name}" for field_name in field_names
-        }
-        provenance_structs.append(struct_data)
+    # Verify provenance_by_field structure matches input
+    added_df = increment.added.lazy().collect().to_polars().sort(id_columns)
+    samples_sorted = samples_df.sort(id_columns)
 
-    source_samples = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "metaxy_provenance_by_field": provenance_structs,
-        }
+    pl_testing.assert_series_equal(
+        added_df["metaxy_provenance_by_field"],
+        samples_sorted["metaxy_provenance_by_field"],
+        check_names=False,
     )
 
-    # Collect results from all stores
-    results = {}
 
-    for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
+# ============= TEST: DOWNSTREAM FEATURES (WITH UPSTREAM) =============
 
-        store = create_store(
-            store_type,
-            prefer_native,
-            hash_algorithm,
-            params=store_params,
-        )
 
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
+def test_resolve_update_downstream_feature(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
+):
+    """Test resolve_update for downstream features with upstream dependencies.
+
+    This test verifies that:
+    - Upstream metadata is correctly joined
+    - Field provenance is computed from upstream dependencies
+    - Results match the golden reference implementation
+    - Behavior is consistent across all store backends
+    """
+    graph, upstream_features, child_plan = feature_plan_config
+
+    # Get feature versions
+    child_key = child_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
+
+    feature_versions = {
+        feat_key.to_string(): feat_class.feature_version()
+        for feat_key, feat_class in upstream_features.items()
+    }
+    feature_versions[child_key.to_string()] = child_version
+
+    # Generate test data using golden reference strategy
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        upstream_data, golden_downstream = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=store.hash_algorithm,
+            min_rows=5,
+            max_rows=15,
+        ).example()
+
+    # Write upstream metadata to store
+    with store, graph.use():
         try:
-            with store, graph.use():
-                # For ClickHouse, drop feature metadata to ensure clean state
-                if store_type == "clickhouse":
-                    store.drop_feature_metadata(root_feature)
+            # Write all upstream data (includes transitive dependencies)
+            for feat_key_str, upstream_df in upstream_data.items():
+                feat_key = FeatureKey([feat_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
 
-                # First verify that resolve_update raises ValueError without samples
-                try:
-                    store.resolve_update(root_feature, lazy=True)
-                    pytest.fail("Expected ValueError for root feature without samples")
-                except ValueError as e:
-                    assert "root feature" in str(e)
+            # Call resolve_update to compute child metadata
+            increment = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
 
-                # 2. Adapt samples based on use_native_samples parameter
-                temp_table_name: str | None = None
-                if use_native_samples and store._supports_native_components():
-                    # Convert to Ibis for SQL stores to match backend
-                    # Write samples to temp table and read back as Ibis table
-                    from metaxy.metadata_store.ibis import IbisMetadataStore
+    # Get computed metadata
+    added_df = increment.added.lazy().collect().to_polars()
 
-                    assert isinstance(store, IbisMetadataStore), (
-                        "Native stores must be Ibis-based"
-                    )
-                    temp_table_name = f"_test_samples_{root_feature.spec().key[-1]}"
-                    store.conn.create_table(
-                        temp_table_name, source_samples.to_arrow(), overwrite=True
-                    )
-                    ibis_samples = store.conn.table(temp_table_name)
-                    adapted_samples = nw.from_native(ibis_samples)
-                    should_warn = False
-                else:
-                    # Use Polars directly (either in-memory store or testing warning path)
-                    adapted_samples = nw.from_native(source_samples)
-                    # Should warn if SQL store but using Polars samples
-                    should_warn = store._supports_native_components()
+    # Sort both for comparison
+    id_columns = list(child_plan.feature.id_columns)
+    added_sorted = added_df.sort(id_columns)
+    golden_sorted = golden_downstream.sort(id_columns)
 
-                # 3. Call resolve_update with adapted samples and capture logs
-                import logging
+    # Compare provenance columns
+    common_columns = [
+        col for col in added_sorted.columns if col in golden_sorted.columns
+    ]
+    added_selected = added_sorted.select(common_columns)
+    golden_selected = golden_sorted.select(common_columns)
 
-                with caplog.at_level(logging.WARNING):
-                    lazy_result = store.resolve_update(
-                        root_feature, samples=adapted_samples, lazy=True
-                    )
+    pl_testing.assert_frame_equal(
+        added_selected,
+        golden_selected,
+        check_row_order=True,
+        check_column_order=False,
+    )
 
-                    # Verify lazy frames for IbisMetadataStore before collect
-                    verify_lazy_sql_frames(store, lazy_result)
 
-                    # Now collect the lazy result
-                    result = lazy_result.collect()
+# ============= TEST: INCREMENTAL UPDATES =============
 
-                # 4. Verify warning behavior matches expectation
-                polars_warnings = [
-                    record
-                    for record in caplog.records
-                    if "Polars-backed but store uses native SQL backend"
-                    in record.message
-                ]
-                if should_warn:
-                    assert len(polars_warnings) == 1, (
-                        f"Expected Polars fallback warning for {store_type} with "
-                        f"use_native_samples={use_native_samples}, but got {len(polars_warnings)} warnings"
-                    )
-                else:
-                    assert len(polars_warnings) == 0, (
-                        f"Unexpected Polars fallback warning for {store_type} with "
-                        f"use_native_samples={use_native_samples}: {[r.message for r in polars_warnings]}"
-                    )
 
-                caplog.clear()
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
+def test_resolve_update_detects_changes(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
+):
+    """Test that resolve_update correctly detects added/changed/removed samples.
 
-                # 5. Record results for comparison - include field provenances
-                # Convert Narwhals to Polars for manipulation
-                added_sorted = (
-                    result.added.to_polars()
-                    if isinstance(result.added, nw.DataFrame)
-                    else result.added
-                ).sort("sample_uid")
-                versions = added_sorted["metaxy_provenance_by_field"].to_list()
+    This test:
+    1. Writes initial upstream metadata
+    2. Computes and writes child metadata
+    3. Modifies upstream metadata (add/change/remove samples)
+    4. Verifies resolve_update detects all changes correctly
+    """
+    graph, upstream_features, child_plan = feature_plan_config
 
-                results[(store_type, prefer_native, use_native_samples)] = {
-                    "added": len(result.added),
-                    "changed": len(result.changed),
-                    "removed": len(result.removed),
-                    "versions": versions,
-                }
+    # Get feature versions
+    child_key = child_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
 
-                # Clean up temp table for SQL stores if created
-                if (
-                    temp_table_name is not None
-                    and use_native_samples
-                    and store._supports_native_components()
-                ):
-                    from metaxy.metadata_store.ibis import IbisMetadataStore
+    feature_versions = {
+        feat_key.to_string(): feat_class.feature_version()
+        for feat_key, feat_class in upstream_features.items()
+    }
+    feature_versions[child_key.to_string()] = child_version
 
-                    assert isinstance(store, IbisMetadataStore), (
-                        "Native stores must be Ibis-based"
-                    )
-                    store.conn.drop_table(temp_table_name)
+    # Generate initial test data
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        initial_upstream, initial_downstream = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=store.hash_algorithm,
+            min_rows=10,
+            max_rows=10,
+        ).example()
+
+    # Write initial data
+    with store, graph.use():
+        try:
+            # Write all upstream data (includes transitive dependencies)
+            for feat_key_str, upstream_df in initial_upstream.items():
+                feat_key = FeatureKey([feat_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
+
+            # Write initial child metadata
+            store.write_metadata(ChildFeature, initial_downstream)
+
+            # Generate new upstream data (simulating changes)
+            # The easiest way to test change detection is to generate completely new data
+            modified_upstream, modified_downstream = downstream_metadata_strategy(
+                child_plan,
+                feature_versions=feature_versions,
+                snapshot_version=graph.snapshot_version,
+                hash_algorithm=store.hash_algorithm,
+                min_rows=8,  # Different number of rows
+                max_rows=8,
+            ).example()
+
+            # Write modified upstream data
+            for feat_key_str, upstream_df in modified_upstream.items():
+                feat_key = FeatureKey([feat_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
+
+            # Call resolve_update - should detect all changes
+            increment = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
 
         except HashAlgorithmNotSupportedError:
-            # Hash algorithm not supported by this store - continue with other stores
-            continue
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
 
-    # 6. Ensure results from all stores are correct and consistent
-    if results:
-        # All variants should produce identical results (including field provenances)
-        assert_all_results_equal(results, snapshot)
+    # Verify changes were detected
+    # With completely new data (8 samples vs 10 initial), we expect:
+    # - Some samples added (new ones)
+    # - Some samples removed (old ones not in new data)
+    # - Possibly some changed (if IDs overlap but provenance differs)
 
-        # Verify expected behavior: all samples are new (added)
-        reference = list(results.values())[0]
-        assert reference["added"] == 3
-        assert reference["changed"] == 0
-        assert reference["removed"] == 0
-
-        # Verify versions structure
-        assert len(reference["versions"]) == 3
-        assert all(isinstance(v, dict) for v in reference["versions"])
-        # All versions should match the source (user provided them manually)
-        # Build expected versions based on actual field names from the feature
-        expected_versions = []
-        for i in range(1, 4):
-            struct_data = {
-                field_name: f"hash{i}_{field_name}" for field_name in field_names
-            }
-            expected_versions.append(struct_data)
-        assert reference["versions"] == expected_versions
+    total_changes = (
+        len(increment.added) + len(increment.changed) + len(increment.removed)
+    )
+    assert total_changes > 0, (
+        "Expected resolve_update to detect some changes when upstream data changes"
+    )
 
 
-@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
-def test_resolve_update_with_upstream(
-    store_params: dict[str, Any],
-    graph_config: tuple[FeatureGraph, list[type[Feature]]],
-    hash_algorithm: HashAlgorithm,
-    snapshot,
-    recwarn,
+# ============= TEST: LAZY EXECUTION =============
+
+
+@parametrize_with_cases("store", cases=StoreCases)
+def test_resolve_update_lazy_execution(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    graph: FeatureGraph,
 ):
-    """Test resolve_update calculates field provenances from upstream.
+    """Test resolve_update with lazy=True returns lazy frames with correct implementation.
 
-    Verifies that prefer_native=True and prefer_native=False produce identical results
-    across all store types and different feature graphs.
+    This test verifies that:
+    - lazy=True returns LazyIncrement with lazy frames
+    - Lazy frames have correct implementation (POLARS for InMemory, IBIS for SQL stores)
+    - Lazy frames can be collected to produce results
+    - Results match eager execution
     """
-    graph, features = graph_config
 
-    # Get root feature (first) and a downstream feature (last)
-    root_feature = features[0]
-    downstream_feature = features[-1]
+    # Create a feature graph with multiple parents (realistic scenario)
+    class Parent1(
+        Feature,
+        spec=SampleFeatureSpec(
+            key="parent1",
+            fields=["field_a", "field_b"],
+        ),
+    ):
+        pass
 
-    # Helper to create provenance_by_field dicts for a feature's fields
-    def make_provenance_by_field(
-        feature: type[Feature], prefix: str
-    ) -> list[dict[str, Any]]:
-        fields = [c.key for c in feature.spec().fields]
-        if len(fields) == 1:
-            field_name = "_".join(fields[0])
-            return [{field_name: f"{prefix}_{i}"} for i in [1, 2, 3]]
-        else:
-            return [
-                {"_".join(ck): f"{prefix}_{i}_{ck}" for ck in fields} for i in [1, 2, 3]
-            ]
+    class Parent2(
+        Feature,
+        spec=SampleFeatureSpec(
+            key="parent2",
+            fields=["field_c"],
+        ),
+    ):
+        pass
 
-    # Create upstream data for root feature
-    upstream_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2", "a3"],
-            "metaxy_provenance_by_field": make_provenance_by_field(
-                root_feature, "manual"
-            ),
-        }
-    )
+    class Child(
+        Feature,
+        spec=SampleFeatureSpec(
+            key="child",
+            deps=[
+                FeatureDep(feature=Parent1),
+                FeatureDep(feature=Parent2),
+            ],
+            fields=["result_x", "result_y"],
+        ),
+    ):
+        pass
 
-    # Iterate over store types and prefer_native variants
-    results = {}
+    child_plan = graph.get_feature_plan(Child.spec().key)
 
-    for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
+    # Get feature versions
+    feature_versions = {
+        "parent1": Parent1.feature_version(),
+        "parent2": Parent2.feature_version(),
+        "child": Child.feature_version(),
+    }
 
-        for prefer_native in [True, False]:
-            store = create_store(
-                store_type,
-                prefer_native,
-                hash_algorithm,
-                params=store_params,
+    # Generate test data
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        upstream_data, golden_downstream = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=store.hash_algorithm,
+            min_rows=10,
+            max_rows=10,
+        ).example()
+
+    with store, graph.use():
+        try:
+            # Write upstream metadata
+            for feat_key_str, upstream_df in upstream_data.items():
+                feat_key = FeatureKey([feat_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
+
+            # Call resolve_update with lazy=True
+            lazy_increment = store.resolve_update(
+                Child,
+                target_version=Child.feature_version(),
+                snapshot_version=graph.snapshot_version,
+                lazy=True,
             )
 
-            # Try to open store - will fail validation if hash algorithm not supported
-            try:
-                with store, graph.use():
-                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
-                    # since they share the same database (unlike DuckDB which uses separate files)
-                    if store_type == "clickhouse":
-                        for feature in features:
-                            store.drop_feature_metadata(feature)
+            # Verify we got a LazyIncrement
+            from metaxy.provenance.types import LazyIncrement
 
-                    recwarn.clear()
+            assert isinstance(lazy_increment, LazyIncrement), (
+                f"Expected LazyIncrement with lazy=True, got {type(lazy_increment)}"
+            )
 
-                    # Write metadata for all features except the last one
-                    # This simulates a realistic scenario where all upstream features have been computed
-                    for i, feature in enumerate(features[:-1]):
-                        if i == 0:
-                            # Root feature - use manual data
-                            store.write_metadata(feature, upstream_data)
-                        else:
-                            # Intermediate features - resolve and write their field provenances
-                            lazy_result = store.resolve_update(feature, lazy=True)
-                            verify_lazy_sql_frames(store, lazy_result)
-                            result = lazy_result.collect()
-                            if len(result.added) > 0:
-                                # Write metadata with computed field provenances
-                                feature_data = pl.DataFrame(
-                                    {
-                                        "sample_uid": [1, 2, 3],
-                                        "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
-                                    }
-                                ).with_columns(
-                                    pl.Series(
-                                        "metaxy_provenance_by_field",
-                                        result.added.sort("sample_uid")[
-                                            "metaxy_provenance_by_field"
-                                        ].to_list(),
-                                    )
-                                )
-                                store.write_metadata(feature, feature_data)
+            # Verify lazy frames have correct implementation
+            expected_impl = store.native_implementation()
 
-                    # Now resolve update for the final downstream feature
-                    lazy_result = store.resolve_update(downstream_feature, lazy=True)
-                    verify_lazy_sql_frames(store, lazy_result)
-                    result = lazy_result.collect()
+            for frame_name in ["added", "changed", "removed"]:
+                lazy_frame = getattr(lazy_increment, frame_name)
+                actual_impl = lazy_frame.implementation
 
-                    # Assert no warning when prefer_native=True for stores that support native field provenance calculations
-                    if prefer_native and store._supports_native_components():
-                        prefer_native_warnings = [
-                            w
-                            for w in recwarn
-                            if "prefer_native=True but using Polars" in str(w.message)
-                        ]
-                        assert len(prefer_native_warnings) == 0, (
-                            f"Unexpected warning with prefer_native=True for {store_type}: "
-                            f"{[str(w.message) for w in prefer_native_warnings]}"
-                        )
+                assert actual_impl == expected_impl, (
+                    f"Expected {frame_name} to have implementation {expected_impl}, "
+                    f"but got {actual_impl} for store type {type(store).__name__}"
+                )
 
-                    # Collect field provenances
-                    # Convert Narwhals to Polars for manipulation
-                    added_sorted = (
-                        result.added.to_polars()
-                        if isinstance(result.added, nw.DataFrame)
-                        else result.added
-                    ).sort("sample_uid")
-                    versions = added_sorted["metaxy_provenance_by_field"].to_list()
+            # Collect lazy result
+            eager_increment = lazy_increment.collect()
 
-                    results[(store_type, prefer_native)] = {
-                        "added": len(result.added),
-                        "changed": len(result.changed),
-                        "removed": len(result.removed),
-                        "versions": versions,
-                    }
-            except HashAlgorithmNotSupportedError:
-                # Hash algorithm not supported by this store - skip
-                continue
+            # Also get eager result for comparison
+            eager_increment_direct = store.resolve_update(
+                Child,
+                target_version=Child.feature_version(),
+                snapshot_version=graph.snapshot_version,
+                lazy=False,
+            )
 
-    # All variants should produce identical results
-    assert_all_results_equal(results, snapshot)
+            # Verify both approaches produce same results
+            id_columns = list(child_plan.feature.id_columns)
 
-    # Verify expected behavior
-    if results:
-        reference = list(results.values())[0]
-        assert reference["added"] == 3, "All 3 samples should be added"
-        assert reference["changed"] == 0
-        assert reference["removed"] == 0
-        assert all(isinstance(v, dict) for v in reference["versions"])
-        # Verify versions contain expected field keys
-        downstream_fields = [c.key for c in downstream_feature.spec().fields]
-        for version_dict in reference["versions"]:
-            for field_key in downstream_fields:
-                field_name = "_".join(field_key)
-                assert field_name in version_dict
+            # Compare added frames
+            lazy_added = (
+                eager_increment.added.lazy().collect().to_polars().sort(id_columns)
+            )
+            eager_added = (
+                eager_increment_direct.added.lazy()
+                .collect()
+                .to_polars()
+                .sort(id_columns)
+            )
+
+            pl_testing.assert_frame_equal(lazy_added, eager_added)
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
 
 
-@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
-def test_resolve_update_detects_changes(
-    store_params: dict[str, Any],
-    graph_config: tuple[FeatureGraph, list[type[Feature]]],
-    hash_algorithm: HashAlgorithm,
-    snapshot,
-    recwarn,
+# ============= TEST: IDEMPOTENCY =============
+
+
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
+def test_resolve_update_idempotency(
+    store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
 ):
-    """Test resolve_update detects changed field provenances.
+    """Test that calling resolve_update multiple times is idempotent.
 
-    Verifies that prefer_native=True and prefer_native=False produce identical results
-    across all store types and different feature graphs.
+    After writing the increment from first resolve_update, calling it again
+    should return empty increments (no changes).
     """
-    graph, features = graph_config
+    graph, upstream_features, child_plan = feature_plan_config
 
-    # Get root feature (first) and a downstream feature (last)
-    root_feature = features[0]
-    downstream_feature = features[-1]
+    child_key = child_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
 
-    # Determine which fields to use
-    root_fields = [c.key for c in root_feature.spec().fields]
+    feature_versions = {
+        feat_key.to_string(): feat_class.feature_version()
+        for feat_key, feat_class in upstream_features.items()
+    }
+    feature_versions[child_key.to_string()] = child_version
 
-    # Create field provenance dicts for fields
-    def make_provenance_by_field(
-        version_prefix: str, sample_uids: list[int]
-    ) -> list[dict[str, Any]]:
-        if len(root_fields) == 1:
-            field_name = "_".join(root_fields[0])
-            return [{field_name: f"{version_prefix}{i}"} for i in sample_uids]
-        else:
-            return [
-                {"_".join(ck): f"{version_prefix}{i}_{ck}" for ck in root_fields}
-                for i in sample_uids
-            ]
+    # Generate test data
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        upstream_data, golden_downstream = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=store.hash_algorithm,
+            min_rows=5,
+            max_rows=10,
+        ).example()
 
-    # Initial upstream data
-    initial_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2", "a3"],
-            "metaxy_provenance_by_field": make_provenance_by_field("v", [1, 2, 3]),
-        }
-    )
+    with store, graph.use():
+        try:
+            # Write all upstream data (includes transitive dependencies)
+            for feat_key_str, upstream_df in upstream_data.items():
+                feat_key = FeatureKey([feat_key_str])
+                feat_class = graph.features_by_key[feat_key]
+                store.write_metadata(feat_class, upstream_df)
 
-    # Changed upstream data (change sample 2)
-    changed_data = pl.DataFrame(
-        {
-            "sample_uid": [1, 2, 3],
-            "value": ["a1", "a2_CHANGED", "a3"],  # Changed
-            "metaxy_provenance_by_field": make_provenance_by_field(
-                "v_new", [1, 2, 3]
-            ),  # All changed to new version
-        }
-    )
-
-    # Iterate over store types and prefer_native variants
-    results = {}
-
-    for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
-        for prefer_native in [True, False]:
-            store = create_store(
-                store_type,
-                prefer_native,
-                hash_algorithm,
-                params=store_params,
+            # First resolve_update
+            increment1 = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
             )
 
-            # Try to open store - will fail validation if hash algorithm not supported
-            try:
-                with store, graph.use():
-                    # Drop all feature metadata to ensure clean state between prefer_native variants
-                    for feature in features:
-                        store.drop_feature_metadata(feature)
-
-                    recwarn.clear()
-
-                    # Write metadata for all features except the last one with initial data
-                    for i, feature in enumerate(features[:-1]):
-                        if i == 0:
-                            # Root feature - use initial data
-                            store.write_metadata(feature, initial_data)
-                        else:
-                            # Intermediate features - resolve and write their field provenances
-                            lazy_result = store.resolve_update(feature, lazy=True)
-                            verify_lazy_sql_frames(store, lazy_result)
-                            result = lazy_result.collect()
-                            if len(result.added) > 0:
-                                # Convert Narwhals to Polars for manipulation
-                                added_df = (
-                                    result.added.to_polars()
-                                    if isinstance(result.added, nw.DataFrame)
-                                    else result.added
-                                )
-                                feature_data = pl.DataFrame(
-                                    {
-                                        "sample_uid": [1, 2, 3],
-                                        "value": [f"f{i}_1", f"f{i}_2", f"f{i}_3"],
-                                    }
-                                ).with_columns(
-                                    pl.Series(
-                                        "metaxy_provenance_by_field",
-                                        added_df.sort("sample_uid")[
-                                            "metaxy_provenance_by_field"
-                                        ].to_list(),
-                                    )
-                                )
-                                store.write_metadata(feature, feature_data)
-
-                    # First resolve - get initial field provenances for downstream
-                    lazy_result1 = store.resolve_update(downstream_feature, lazy=True)
-                    verify_lazy_sql_frames(store, lazy_result1)
-                    result1 = lazy_result1.collect()
-                    # Convert to Polars for easier manipulation in test
-                    initial_versions_nw = (
-                        result1.added.to_polars()
-                        if isinstance(result1.added, nw.DataFrame)
-                        else result1.added
-                    )
-                    initial_versions = initial_versions_nw.sort("sample_uid")
-
-                    # Write downstream feature with these versions
-                    downstream_data = pl.DataFrame(
-                        {
-                            "sample_uid": [1, 2, 3],
-                            "feature_data": ["b1", "b2", "b3"],
-                        }
-                    ).with_columns(
-                        pl.Series(
-                            "metaxy_provenance_by_field",
-                            initial_versions["metaxy_provenance_by_field"].to_list(),
-                        )
-                    )
-                    store.write_metadata(downstream_feature, downstream_data)
-
-                    # Now change upstream root feature and propagate through intermediate features
-                    store.write_metadata(root_feature, changed_data)
-
-                    # Update intermediate features with new field provenances
-                    for i, feature in enumerate(features[1:-1], start=1):
-                        lazy_result = store.resolve_update(feature, lazy=True)
-                        verify_lazy_sql_frames(store, lazy_result)
-                        result = lazy_result.collect()
-                        if len(result.changed) > 0 or len(result.added) > 0:
-                            # Convert Narwhals to Polars and combine changed and added
-                            changed_pl = (
-                                result.changed.to_polars()
-                                if isinstance(result.changed, nw.DataFrame)
-                                else result.changed
-                            )
-                            added_pl = (
-                                result.added.to_polars()
-                                if isinstance(result.added, nw.DataFrame)
-                                else result.added
-                            )
-                            updated = (
-                                pl.concat([changed_pl, added_pl])
-                                if len(added_pl) > 0
-                                else changed_pl
-                            )
-                            feature_data = pl.DataFrame(
-                                {
-                                    "sample_uid": [1, 2, 3],
-                                    "value": [
-                                        f"f{i}_1_new",
-                                        f"f{i}_2_new",
-                                        f"f{i}_3_new",
-                                    ],
-                                }
-                            ).join(
-                                updated.select(
-                                    ["sample_uid", "metaxy_provenance_by_field"]
-                                ),
-                                on="sample_uid",
-                                how="left",
-                            )
-                            store.write_metadata(feature, feature_data)
-
-                    # Resolve update again for downstream - should detect changes
-                    lazy_result2 = store.resolve_update(downstream_feature, lazy=True)
-                    verify_lazy_sql_frames(store, lazy_result2)
-                    result2 = lazy_result2.collect()
-
-                    # Assert no warning when prefer_native=True for stores that support native field provenance calculations
-                    if prefer_native and store._supports_native_components():
-                        prefer_native_warnings = [
-                            w
-                            for w in recwarn
-                            if "prefer_native=True but using Polars" in str(w.message)
-                        ]
-                        assert len(prefer_native_warnings) == 0, (
-                            f"Unexpected warning with prefer_native=True for {store_type}: "
-                            f"{[str(w.message) for w in prefer_native_warnings]}"
-                        )
-
-                    # Collect results - convert Narwhals to Polars for easier manipulation
-                    changed_df_pl = (
-                        result2.changed.to_polars()
-                        if isinstance(result2.changed, nw.DataFrame)
-                        else result2.changed
-                    )
-
-                    if len(changed_df_pl) > 0:
-                        changed_sample_uids = changed_df_pl["sample_uid"].to_list()
-                    else:
-                        changed_sample_uids = []
-
-                    # Check if any versions changed
-                    version_changes = []
-                    for sample_uid in changed_sample_uids:
-                        new_version = changed_df_pl.filter(
-                            pl.col("sample_uid") == sample_uid
-                        )["metaxy_provenance_by_field"][0]
-                        old_version = initial_versions.filter(
-                            pl.col("sample_uid") == sample_uid
-                        )["metaxy_provenance_by_field"][0]
-                        version_changes.append(new_version != old_version)
-
-                    results[(store_type, prefer_native)] = {
-                        "added": len(result2.added),
-                        "changed": len(result2.changed),
-                        "removed": len(result2.removed),
-                        "changed_sample_uids": sorted(changed_sample_uids),
-                        "any_version_changed": any(version_changes)
-                        if version_changes
-                        else False,
-                    }
-            except HashAlgorithmNotSupportedError:
-                # Hash algorithm not supported by this store - skip
-                continue
-
-    # All variants should produce identical results
-    assert_all_results_equal(results, snapshot)
-
-    # Verify expected behavior
-    if results:
-        reference = list(results.values())[0]
-        assert reference["added"] == 0, "No new samples"
-        assert reference["changed"] >= 1, "Should detect at least 1 changed sample"
-        assert reference["removed"] == 0, "No removed samples"
-        assert len(reference["changed_sample_uids"]) >= 1, (
-            "At least one sample should change"
-        )
-        assert reference["any_version_changed"], "Field provenance should have changed"
-
-
-@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-@parametrize_with_cases("graph_config", cases=FeatureGraphCases)
-def test_resolve_update_feature_version_change_idempotency(
-    store_params: dict[str, Any],
-    graph_config: tuple[FeatureGraph, list[type[Feature]]],
-    hash_algorithm: HashAlgorithm,
-    snapshot,
-):
-    """Test that resolve_update is idempotent after writing changed metadata."""
-    graph, features = graph_config
-
-    # Use simple chain for clarity (RootA -> LeafSimple)
-    if len(graph.features_by_key) != 2:
-        pytest.skip("Test requires simple chain graph")
-
-    # Identify root and leaf features
-    root_keys = [k for k, v in graph.features_by_key.items() if not v.spec().deps]
-    leaf_keys = [k for k, v in graph.features_by_key.items() if v.spec().deps]
-
-    if len(root_keys) != 1 or len(leaf_keys) != 1:
-        pytest.skip("Test requires exactly 1 root and 1 leaf")
-
-    root_key = root_keys[0]
-    leaf_key = leaf_keys[0]
-    RootFeature = graph.features_by_key[root_key]
-    LeafFeature = graph.features_by_key[leaf_key]
-
-    # Get initial feature versions
-    initial_leaf_version = LeafFeature.feature_version()
-
-    results = {}
-
-    for store_type in get_available_store_types():
-        # Skip duckdb_ducklake - it's a storage format that shouldn't affect
-        # field provenance computations. Tested separately in test_duckdb.py::test_duckdb_ducklake_integration
-        if store_type == "duckdb_ducklake":
-            continue
-
-        for prefer_native in [True, False]:
-            store = create_store(
-                store_type,
-                prefer_native,
-                hash_algorithm,
-                params=store_params,
+            assert len(increment1.added) > 0, (
+                "Expected resolve_update to detect added samples"
             )
 
-            try:
-                with store, graph.use():
-                    # For ClickHouse, drop feature metadata to ensure clean state between prefer_native variants
-                    if store_type == "clickhouse":
-                        for feature in features:
-                            store.drop_feature_metadata(feature)
+            # Write the increment
+            added_df = increment1.added.lazy().collect().to_polars()
+            store.write_metadata(ChildFeature, added_df)
 
-                    # === PHASE 1: Write root metadata (upstream) ===
-                    # Write root metadata - handle multiple fields
-                    root_field_names = {
-                        field.key[0] for field in RootFeature.spec().fields
-                    }
-                    root_provenance_dicts = []
-                    for i in range(1, 4):
-                        dv = {
-                            field_name: f"v1_{i}_{field_name}"
-                            for field_name in root_field_names
-                        }
-                        root_provenance_dicts.append(dv)
+            # Second resolve_update - should be empty
+            increment2 = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
 
-                    root_data_v1 = pl.DataFrame(
-                        {
-                            "sample_uid": [1, 2, 3],
-                            "metaxy_provenance_by_field": root_provenance_dicts,
-                        },
-                        schema={
-                            "sample_uid": pl.UInt32,
-                            "metaxy_provenance_by_field": pl.Struct(
-                                {fn: pl.Utf8 for fn in root_field_names}
-                            ),
-                        },
-                    )
-                    store.write_metadata(RootFeature, root_data_v1)
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
 
-                    # === PHASE 2: First resolve_update (should detect 3 new samples) ===
-                    lazy_result_first = store.resolve_update(LeafFeature, lazy=True)
-                    verify_lazy_sql_frames(store, lazy_result_first)
-                    result_first = lazy_result_first.collect()
-
-                    first_run_stats = {
-                        "added": len(result_first.added),
-                        "changed": len(result_first.changed),
-                        "removed": len(result_first.removed),
-                    }
-
-                    # === PHASE 3: Write the computed metadata ===
-                    if len(result_first.added) > 0:
-                        store.write_metadata(LeafFeature, result_first.added)
-                    if len(result_first.changed) > 0:
-                        store.write_metadata(LeafFeature, result_first.changed)
-
-                    # === PHASE 4: Second resolve_update (should be idempotent - no changes) ===
-                    lazy_result_second = store.resolve_update(LeafFeature, lazy=True)
-                    verify_lazy_sql_frames(store, lazy_result_second)
-                    result_second = lazy_result_second.collect()
-
-                    second_run_stats = {
-                        "added": len(result_second.added),
-                        "changed": len(result_second.changed),
-                        "removed": len(result_second.removed),
-                    }
-
-                    # Store results for comparison and snapshot
-                    variant_key = f"{store_type}_native={prefer_native}"
-                    results[variant_key] = {
-                        "metaxy_feature_version": initial_leaf_version,
-                        "first_run": first_run_stats,
-                        "second_run": second_run_stats,
-                    }
-
-            except HashAlgorithmNotSupportedError:
-                # Hash algorithm not supported by this store - skip
-                continue
-
-    # All variants should produce identical results
-    assert_all_results_equal(results, snapshot)
-
-    # Verify expected behavior
-    if results:
-        reference = list(results.values())[0]
-
-        # First run should detect new samples (leaf hasn't been computed yet)
-        assert reference["first_run"]["added"] == 3, "Should detect 3 new samples"
-        assert reference["first_run"]["changed"] == 0, "No changes yet"
-        assert reference["first_run"]["removed"] == 0, "No removed samples"
-
-        # Second run should be idempotent (no changes)
-        assert reference["second_run"]["added"] == 0, (
-            "Second run should detect 0 new samples (idempotent)"
-        )
-        assert reference["second_run"]["changed"] == 0, (
-            "Second run should detect 0 changes (idempotent) - this was the bug!"
-        )
-        assert reference["second_run"]["removed"] == 0, "No removed samples"
+    # Verify second call is idempotent
+    assert len(increment2.added) == 0, (
+        "Second resolve_update should have no added samples"
+    )
+    assert len(increment2.changed) == 0, (
+        "Second resolve_update should have no changed samples"
+    )
+    assert len(increment2.removed) == 0, (
+        "Second resolve_update should have no removed samples"
+    )
