@@ -272,6 +272,66 @@ class PostgresMetadataStore(IbisMetadataStore):
             # Ibis backend may not expose .con or cursor()
             self._log_pgcrypto_warning(err)
 
+    def _get_current_schema(self, raw_conn: Any) -> str:
+        """Get the current schema from the search_path."""
+        try:
+            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+                cursor.execute("SHOW search_path")
+                result = cursor.fetchone()
+        except Exception:
+            logger.debug(
+                "Could not determine current schema; defaulting to public",
+                exc_info=True,
+            )
+            return "public"
+
+        search_path = result[0] if result else ""
+        if not search_path:
+            return "public"
+
+        for raw_path in str(search_path).split(","):
+            trimmed = raw_path.strip()
+            if not trimmed:
+                continue
+            unquoted = trimmed.strip('"')
+            if unquoted == "$user" or not unquoted:
+                continue
+            return unquoted
+        return "public"
+
+    def _list_tables_robustly(self) -> list[str]:
+        """
+        Robustly list tables using a raw DBAPI query to avoid bytes vs string issues.
+        """
+        raw_conn = getattr(self.conn, "con", None)  # pyright: ignore[reportAttributeAccessIssue]
+        if raw_conn is None:
+            return self.conn.list_tables()
+
+        try:
+            schema_to_query = (self.schema or self._get_current_schema(raw_conn)).strip(
+                '"'
+            )
+            if not schema_to_query:
+                schema_to_query = "public"
+
+            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+                cursor.execute(
+                    "SELECT tablename FROM pg_tables WHERE schemaname = %s",
+                    (schema_to_query,),
+                )
+                tables = [
+                    row[0].decode() if isinstance(row[0], bytes) else str(row[0])
+                    for row in cursor.fetchall()
+                ]
+            return tables
+        except Exception:
+            logger.warning(
+                "Robust table listing failed, falling back to Ibis.list_tables(). "
+                "This may cause bytes vs. string errors in some environments.",
+                exc_info=True,
+            )
+            return self.conn.list_tables()
+
     @staticmethod
     def _log_pgcrypto_warning(error: Exception) -> None:
         logger.warning(
@@ -347,10 +407,38 @@ class PostgresMetadataStore(IbisMetadataStore):
         feature_key: FeatureKey,
         df: pl.DataFrame,
     ) -> None:
-        """Serialize struct columns when Postgres lacks STRUCT support."""
+        """
+        Serialize struct columns when Postgres lacks STRUCT support and use robust table checks.
+        """
+        table_name = feature_key.table_name
+
         if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
             df = self._serialize_provenance_column(df)
-        super()._write_metadata_impl(feature_key, df)  # ty: ignore[unresolved-attribute]
+
+        if table_name not in self._list_tables_robustly():
+            if not self.auto_create_tables:
+                from metaxy.metadata_store.exceptions import TableNotFoundError
+
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
+                    f"Enable auto_create_tables=True or create the table manually."
+                )
+
+            df_typed = df
+            for col in df.columns:
+                if df[col].dtype == pl.Null:
+                    df_typed = df_typed.with_columns(pl.col(col).cast(pl.Utf8))
+            self.conn.create_table(table_name, obj=df_typed)
+        else:
+            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+
+        super().write_metadata_to_store(feature_key, df, **kwargs)
+
+    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+        """Override to ensure table existence checks use robust listing."""
+        table_name = feature_key.table_name
+        if table_name in self._list_tables_robustly():
+            self.conn.drop_table(table_name)
 
     def read_metadata_in_store(
         self,
@@ -367,19 +455,29 @@ class PostgresMetadataStore(IbisMetadataStore):
             METAXY_PROVENANCE,
         )
 
-        lazy_frame = super().read_metadata_in_store(
-            feature,
-            feature_version=feature_version,
-            filters=filters,
-            columns=columns,
-            **kwargs,
-        )
+        # Use robust table checking
+        feature_key = self._resolve_feature_key(feature)
+        table_name = feature_key.table_name
 
-        if lazy_frame is None:
-            return lazy_frame
+        if table_name not in self._list_tables_robustly():
+            return None
+
+        table = self.conn.table(table_name)
+        lazy_frame: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
+
+        if feature_version is not None:
+            lazy_frame = lazy_frame.filter(
+                nw.col("metaxy_feature_version") == feature_version  # ty: ignore[invalid-argument-type]
+            )
+
+        if filters is not None:
+            for filter_expr in filters:
+                lazy_frame = lazy_frame.filter(filter_expr)  # ty: ignore[invalid-argument-type]
+
+        if columns is not None:
+            lazy_frame = lazy_frame.select(columns)
 
         # Ensure flattened provenance/data_version columns exist for this feature's fields
-        feature_key = self._resolve_feature_key(feature)
         plan = self._resolve_feature_plan(feature_key)
 
         expected_fields = [field.key.to_struct_key() for field in plan.feature.fields]

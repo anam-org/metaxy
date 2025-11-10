@@ -1,24 +1,3 @@
-# ruff: noqa: E402
-# At the VERY TOP of tests/metadata_stores/conftest.py
-
-# ======================= START: THE DEFINITIVE FIX =======================
-# This block MUST run before any other code to patch sqlglot.
-# In complex test environments (like CI on Linux), database drivers can return
-# identifiers as `bytes`. Sqlglot expects `str`, causing a ValueError.
-#
-# We patch this here in conftest.py because it's the earliest execution point
-# in pytest. This prevents libraries like `ibis` from importing and "capturing"
-# a reference to the original, unpatched sqlglot function before our patch can
-# be applied.
-try:
-    print(">>> Applying sqlglot compatibility patch from conftest.py...")
-    from metaxy._compat import sqlglot  # noqa: F401
-
-    print(">>> sqlglot patch applied successfully.")
-except ImportError as e:
-    print(f">>> WARNING: Failed to apply sqlglot patch: {e}")
-# ======================== END: THE DEFINITIVE FIX ========================
-
 """Common fixtures for metadata store tests."""
 
 import logging
