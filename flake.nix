@@ -24,7 +24,7 @@
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
         isLinux = lib.hasInfix "linux" system;
-        postgresql = pkgs.postgresql_18;
+        postgresql = pkgs.postgresql;
         postgresqlPgConfig =
           if postgresql ? pg_config then
             postgresql.pg_config
