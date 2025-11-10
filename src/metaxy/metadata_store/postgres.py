@@ -402,11 +402,12 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _create_system_tables(self) -> None:
         """
-        Override to use our robust table listing and idempotent creation.
+        Override to use our robust table listing and public creation APIs.
 
-        This version uses `CREATE TABLE IF NOT EXISTS` via `conn.sql()`
-        to prevent DuplicateTable errors that can occur in complex test
-        harnesses where tables might be created by multiple mechanisms.
+        This provides a self-contained, idempotent way to create system tables.
+        It uses `_list_tables_robustly()` to avoid the original bytes vs. string
+        bug, and then checks for existence before calling the public `create_table()`
+        API to avoid `DuplicateTable` errors. This method uses no private APIs.
         """
         from metaxy.metadata_store.system_tables import (
             FEATURE_VERSIONS_KEY,
@@ -415,37 +416,22 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        # Get the Ibis dialect to generate the correct SQL for column types
-        dialect = getattr(self.conn, "dialect", None)
-        if not dialect:
-            # Fallback to the original, less robust method if we can't get a dialect
-            return super()._create_system_tables()
+        # 1. Use the robust method we already built to get a clean list of strings.
+        existing_tables = self._list_tables_robustly()
 
-        # --- Create feature_versions table ---
+        # --- Create feature_versions table IF IT DOESN'T EXIST ---
         feature_versions_table = FEATURE_VERSIONS_KEY.table_name
-        empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-        # Use Ibis to generate the "CREATE TABLE" SQL string
-        create_sql_fv = self.conn.compile(
-            self.conn.create_table(feature_versions_table, obj=empty_df_fv, temp=False)
-        )
-        # Modify the SQL to be idempotent
-        idempotent_sql_fv = str(create_sql_fv).replace(
-            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
-        )
-        self._execute_sql(idempotent_sql_fv)
+        if feature_versions_table not in existing_tables:
+            # 2. Use the public, working Ibis API to create the table.
+            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+            self.conn.create_table(feature_versions_table, obj=empty_df_fv)
 
-        # --- Create migration_events table ---
+        # --- Create migration_events table IF IT DOESN'T EXIST ---
         migration_events_table = MIGRATION_EVENTS_KEY.table_name
-        empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-        # Use Ibis to generate the "CREATE TABLE" SQL string
-        create_sql_me = self.conn.compile(
-            self.conn.create_table(migration_events_table, obj=empty_df_me, temp=False)
-        )
-        # Modify the SQL to be idempotent
-        idempotent_sql_me = str(create_sql_me).replace(
-            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
-        )
-        self._execute_sql(idempotent_sql_me)
+        if migration_events_table not in existing_tables:
+            # 3. Use the public, working Ibis API again.
+            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
+            self.conn.create_table(migration_events_table, obj=empty_df_me)
 
     def _execute_sql(self, sql: str) -> None:
         """Execute raw SQL via Ibis backend or underlying DBAPI connection."""
