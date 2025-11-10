@@ -296,15 +296,39 @@ class PostgresMetadataStore(IbisMetadataStore):
             lazy=lazy,
         )
 
+    @staticmethod
+    def _ensure_string_identifier(value: str | bytes) -> str:
+        """Ensure identifier is a string, not bytes.
+
+        PostgreSQL identifiers must be strings. Hash functions may return bytes
+        on some platforms, so we normalize them here.
+
+        Args:
+            value: Identifier value (string or bytes)
+
+        Returns:
+            String identifier safe for use in SQL
+        """
+        if isinstance(value, bytes):
+            return value.hex()
+        return str(value)
+
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, Any]:
         """Get hash SQL generators for PostgreSQL."""
         generators = super()._get_hash_sql_generators()  # ty: ignore[unresolved-attribute]
 
+        # Store reference to the static method for use in closure
+        ensure_str = self._ensure_string_identifier
+
         def sha256_generator(table, concat_columns: dict[str, str]) -> str:
             hash_selects: list[str] = []
             for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                hash_expr = f"ENCODE(DIGEST({concat_col}, 'sha256'), 'hex')"
+                # Ensure field_key is a string, not bytes
+                field_key_str = ensure_str(field_key)
+                concat_col_str = ensure_str(concat_col)
+
+                hash_col = f"__hash_{field_key_str}"
+                hash_expr = f"ENCODE(DIGEST({concat_col_str}, 'sha256'), 'hex')"
                 hash_selects.append(f"{hash_expr} as {hash_col}")
 
             hash_clause = ", ".join(hash_selects)
