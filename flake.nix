@@ -57,11 +57,11 @@
         };
       in {
         default = mkPythonShell pkgs.python310;
-        python310 = mkPythonShell pkgs.python310;
-        python311 = mkPythonShell pkgs.python311;
-        python312 = mkPythonShell pkgs.python312;
-        python313 = mkPythonShell pkgs.python313;
-        python314 = mkPythonShell pkgs.python314;
+        python3.10 = mkPythonShell pkgs.python310;
+        python3.11 = mkPythonShell pkgs.python311;
+        python3.12 = mkPythonShell pkgs.python312;
+        python3.13 = mkPythonShell pkgs.python313;
+        python3.14 = mkPythonShell pkgs.python314;
       });
   };
 }
