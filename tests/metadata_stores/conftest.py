@@ -15,6 +15,7 @@ import ibis
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import executor as pytest_postgresql_executor
 from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
@@ -41,6 +42,34 @@ def find_free_port() -> int:
     return port
 
 logger = logging.getLogger(__name__)
+
+
+def _detect_postgres_locale(preferred: tuple[str, ...]) -> str:
+    """Return a locale usable by pytest-postgresql."""
+    try:
+        output = subprocess.check_output(
+            ["locale", "-a"], text=True, stderr=subprocess.STDOUT
+        )
+        available = {line.strip() for line in output.splitlines()}
+    except Exception as exc:  # pragma: no cover - best effort only
+        logger.debug("Unable to enumerate locales: %s", exc)
+        available = set()
+
+    for locale_name in preferred:
+        if locale_name in available:
+            return locale_name
+    return "C"
+
+
+_preferred_locales = ("C.UTF-8", "en_US.UTF-8", "C")
+_chosen_locale = _detect_postgres_locale(_preferred_locales)
+if _chosen_locale != pytest_postgresql_executor._LOCALE:
+    logger.info(
+        "Using %s for PostgreSQL tests (preferred %s not available)",
+        _chosen_locale,
+        pytest_postgresql_executor._LOCALE,
+    )
+    pytest_postgresql_executor._LOCALE = _chosen_locale
 
 
 # Configure pytest-postgresql to find pg_ctl without using pg_config
