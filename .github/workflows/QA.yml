@@ -118,12 +118,23 @@ jobs:
         with:
           # use devshell for specific Python version
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
+      - name: Debug postgres toolchain
+        run: |
+          set -xeuo pipefail
+          which pg_ctl
+          pg_ctl --version
+          which initdb
+          initdb --version
+          ls -l "$(dirname "$(which pg_ctl)")"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
+      - name: log stuff
+        run: |
+          which initdb
       - name: Run Tests
         id: pytest
         run: >
-          uv run pytest tests/metadata_stores/test_provenance_golden_reference.py 
+          uv run pytest tests/metadata_stores/test_provenance_golden_reference.py
           # uv run pytest
           # --cov=src/metaxy
           # --cov-report=term-missing
