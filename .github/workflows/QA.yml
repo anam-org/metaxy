@@ -123,8 +123,8 @@ jobs:
       - name: Run Tests
         id: pytest
         run: >
+          uv run pytest tests/metadata_stores/test_provenance_golden_reference.py
           uv run pytest
-          -vv
           --cov=src/metaxy
           --cov-report=term-missing
           --cov-report=xml

@@ -59,6 +59,14 @@ if _chosen_locale != pytest_postgresql_executor._LOCALE:
     pytest_postgresql_executor._LOCALE = _chosen_locale
 
 
+def _decode_stream(data: bytes | str | None) -> str:
+    if data is None:
+        return ""
+    if isinstance(data, bytes):
+        return data.decode("utf-8", errors="replace")
+    return data
+
+
 # Configure pytest-postgresql to find pg_ctl without using pg_config
 # (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
 _pg_ctl_path = shutil.which("pg_ctl")
@@ -99,6 +107,17 @@ else:
             yield from fixture_func(request, tmp_path_factory)
         except ProcessExitedWithError as exc:
             pytest.skip(f"Failed to start PostgreSQL test server: {exc}")
+        except subprocess.CalledProcessError as exc:
+            stdout = _decode_stream(getattr(exc, "output", None))
+            stderr = _decode_stream(getattr(exc, "stderr", None))
+            logger.error(
+                "pg_ctl invocation %s failed with code %s\nstdout:\n%s\nstderr:\n%s",
+                exc.cmd if hasattr(exc, "cmd") else exc.args,
+                exc.returncode,
+                stdout or "<empty>",
+                stderr or "<empty>",
+            )
+            raise
 
 
 def _find_free_port() -> int:
