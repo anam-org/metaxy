@@ -541,63 +541,6 @@ class MetadataStore(ABC):
 
         # Validate schema first (must have metaxy_provenance_by_field)
         self._validate_schema(df)
-
-        # TODO: drop this, it should be an invariant
-        # Auto-compute metaxy_provenance if missing
-        if "metaxy_provenance" not in df.columns:
-            # Get feature spec to determine field names
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                feature_spec = feature.spec()
-            else:
-                from metaxy.models.feature import FeatureGraph
-
-                graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                feature_spec = feature_cls.spec()
-
-            # Get sorted field names
-            field_names = sorted([f.key.to_struct_key() for f in feature_spec.fields])
-
-            # Concatenate all field hashes with separator
-            sample_components_exprs = [
-                pl.col(PROVENANCE_BY_FIELD_COL).struct.field(field_name)
-                for field_name in field_names
-            ]
-            if sample_components_exprs:
-                sample_concat = pl.concat_str(sample_components_exprs, separator="|")
-                df = df.with_columns(sample_concat.alias("__sample_concat"))
-
-                # Hash the concatenation using PolarsProvenanceTracker
-                # Convert to Narwhals, hash, then back to Polars
-                from metaxy.provenance.polars import PolarsProvenanceTracker
-
-                # Create a minimal plan just for hashing (we don't need full plan)
-                # We're just using the tracker's hash_string_column method
-                df_nw = nw.from_native(df.lazy(), eager_only=False)
-
-                # Use a dummy plan - we only need the hash function
-                from metaxy.models.plan import FeaturePlan
-
-                plan = FeaturePlan(feature=feature_spec, deps=[])
-                tracker = PolarsProvenanceTracker(plan=plan)
-
-                # Hash using the tracker's method
-                df_nw = tracker.hash_string_column(
-                    df_nw,
-                    "__sample_concat",
-                    "metaxy_provenance",
-                    self.hash_algorithm,
-                )
-
-                # Apply hash truncation
-                hash_length = self.hash_truncation_length or 64
-                df_nw = df_nw.with_columns(
-                    nw.col("metaxy_provenance").str.slice(0, hash_length)
-                )
-
-                # Convert back to Polars and drop temp column
-                df = df_nw.collect().to_polars().drop("__sample_concat")
-
         # Write metadata
         self._write_metadata_impl(feature_key, df)
 
@@ -1729,21 +1672,10 @@ class MetadataStore(ABC):
         if samples is not None:
             import logging
 
-            import polars as pl
-
             logger = logging.getLogger(__name__)
 
-            # Convert samples to lazy if needed
-            if isinstance(samples, nw.LazyFrame):
-                samples_lazy = samples
-            elif isinstance(samples, nw.DataFrame):
-                samples_lazy = samples.lazy()
-            else:
-                samples_lazy = nw.from_native(samples).lazy()
-
-            # Check if samples are Polars-backed (common case for escape hatch)
-            samples_native = samples_lazy.to_native()
-            is_polars_samples = isinstance(samples_native, (pl.DataFrame, pl.LazyFrame))
+            # Check if samples are Polars-backed
+            is_polars_samples = samples.implementation == nw.Implementation.POLARS
 
             # Determine which tracker to use
             use_polars_tracker = False
@@ -1790,12 +1722,15 @@ class MetadataStore(ABC):
                 tracker = tracker_cm.__enter__()
 
             try:
+                samples = tracker.add_provenance_column(
+                    nw.from_native(samples), hash_algorithm=self.hash_algorithm
+                )
                 added, changed, removed = tracker.resolve_increment_with_provenance(
                     current=current_lazy,
                     upstream={},  # No upstream for root features
                     hash_algorithm=self.hash_algorithm,
                     filters={},  # No filters for root features
-                    sample=samples_lazy,  # User-provided samples with provenance
+                    sample=samples.lazy(),
                 )
 
                 # Convert None to empty DataFrames

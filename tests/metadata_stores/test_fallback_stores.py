@@ -21,7 +21,11 @@ from metaxy import (
     FieldSpec,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases, assert_all_results_equal
+from metaxy._testing import (
+    HashAlgorithmCases,
+    add_metaxy_provenance_column,
+    assert_all_results_equal,
+)
 from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
@@ -174,6 +178,7 @@ def test_fallback_store_warning_issued(
 
     # Setup: Write root feature to fallback store
     with fallback_store, graph.use():
+        root_data = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write_metadata(RootFeature, root_data)
 
     # Test with prefer_native=True and prefer_native=False
@@ -283,6 +288,7 @@ def test_no_fallback_warning_when_all_local(
                 ],
             }
         )
+        root_data = add_metaxy_provenance_column(root_data, RootFeature)
         store.write_metadata(RootFeature, root_data)
 
         # Resolve downstream feature - all upstream is local
@@ -359,7 +365,8 @@ def test_fallback_store_switches_to_polars_components(
     )
 
     with store_all_local, graph.use():
-        store_all_local.write_metadata(RootFeature, root_data)
+        root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
+        store_all_local.write_metadata(RootFeature, root_data_with_prov)
 
         import logging
 
@@ -394,7 +401,8 @@ def test_fallback_store_switches_to_polars_components(
 
     # Write root to fallback store
     with fallback_store, graph.use():
-        fallback_store.write_metadata(RootFeature, root_data)
+        root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
+        fallback_store.write_metadata(RootFeature, root_data_with_prov)
 
     # Create primary store with fallback configured
     primary_store = create_store_for_fallback(
@@ -491,6 +499,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
                 ],
             }
         )
+        root_data = add_metaxy_provenance_column(root_data, RootFeature)
         store.write_metadata(RootFeature, root_data)
 
         import logging

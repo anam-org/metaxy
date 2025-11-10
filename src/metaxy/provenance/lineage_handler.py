@@ -14,6 +14,7 @@ from narwhals.typing import FrameT
 
 from metaxy.models.constants import METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.lineage import ExpansionRelationship
+from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.models.plan import FeaturePlan
@@ -41,7 +42,6 @@ class LineageHandler(ABC):
         expected: FrameT,
         current: FrameT,
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """Normalize expected and current DataFrames for provenance comparison.
 
@@ -68,7 +68,6 @@ class IdentityLineageHandler(LineageHandler):
         expected: FrameT,
         current: FrameT,
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """No normalization needed for identity relationships."""
         id_columns = list(self.feature_spec.id_columns)
@@ -89,7 +88,6 @@ class AggregationLineageHandler(LineageHandler):
         expected: FrameT,
         current: FrameT,
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """Aggregate expected provenance by grouping."""
         id_columns = list(self.feature_spec.id_columns)
@@ -100,9 +98,7 @@ class AggregationLineageHandler(LineageHandler):
         agg_columns = list(agg_result)
 
         # Aggregate expected provenance
-        expected_agg = self._aggregate_provenance(
-            expected, agg_columns, hash_algorithm, hash_length
-        )
+        expected_agg = self._aggregate_provenance(expected, agg_columns, hash_algorithm)
 
         return expected_agg, current, agg_columns
 
@@ -111,7 +107,6 @@ class AggregationLineageHandler(LineageHandler):
         expected: FrameT,
         agg_columns: list[str],
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
     ) -> FrameT:
         """Aggregate provenance for N:1 relationships.
 
@@ -154,7 +149,7 @@ class AggregationLineageHandler(LineageHandler):
             {"__hashed_prov": METAXY_PROVENANCE}
         )
         hashed = hashed.with_columns(
-            nw.col(METAXY_PROVENANCE).str.slice(0, hash_length)
+            nw.col(METAXY_PROVENANCE).str.slice(0, get_hash_truncation_length())
         )
 
         # Create placeholder provenance_by_field struct using tracker's method
@@ -190,14 +185,21 @@ class ExpansionLineageHandler(LineageHandler):
         expected: FrameT,
         current: FrameT,
         hash_algorithm: HashAlgorithm,
-        hash_length: int,
     ) -> tuple[FrameT, FrameT, list[str]]:
         """Group current by parent ID columns."""
         # Access the ExpansionRelationship to get the .on attribute
         assert isinstance(self.feature_spec.lineage.relationship, ExpansionRelationship)
         parent_columns = list(self.feature_spec.lineage.relationship.on)
 
-        # Group current by parent columns and take min of all other columns
-        current_grouped = current.group_by(*parent_columns).agg(nw.all().min())
+        # Group current by parent columns and take any representative row
+        current_grouped = (
+            current.with_columns(nw.lit(True).alias("_dummy"))
+            .filter(
+                nw.col("_dummy")
+                .is_first_distinct()
+                .over(*parent_columns, order_by="_dummy")
+            )
+            .drop("_dummy")
+        )
 
         return expected, current_grouped, parent_columns

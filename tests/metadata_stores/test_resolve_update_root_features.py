@@ -12,6 +12,7 @@ import polars as pl
 import pytest
 from pytest_cases import parametrize_with_cases
 
+from metaxy._testing import add_metaxy_provenance_column
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
@@ -132,6 +133,9 @@ class TestResolveUpdateRootFeatures:
                         {"embedding": "hash3"},
                     ],
                 }
+            )
+            initial_metadata = add_metaxy_provenance_column(
+                initial_metadata, VideoEmbeddingsFeature
             )
             store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
 
