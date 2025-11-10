@@ -1412,7 +1412,6 @@ mermaid = [
 ]
 postgres = [
     { name = "ibis-framework", extra = ["postgres"] },
-    { name = "psycopg2" },
 ]
 sqlmodel = [
     { name = "sqlmodel" },
@@ -1475,7 +1474,6 @@ requires-dist = [
     { name = "platformdirs", specifier = ">=4.5.0" },
     { name = "polars", specifier = ">=1.33.1" },
     { name = "polars-hash", specifier = ">=0.5.1" },
-    { name = "psycopg2", marker = "extra == 'postgres'", specifier = ">=2.9.11" },
     { name = "pyarrow", marker = "extra == 'ibis'", specifier = ">=18.0.0" },
     { name = "pydantic", specifier = ">=2.11.9" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
