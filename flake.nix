@@ -26,8 +26,8 @@
         isLinux = lib.hasInfix "linux" system;
         postgresql = pkgs.postgresql_18;
         postgresqlPgConfig =
-          if postgresql ? pkgs && postgresql.pkgs ? pg_config then
-            postgresql.pkgs.pg_config
+          if postgresql ? pg_config then
+            postgresql.pg_config
           else
             pkgs.writeShellScriptBin "pg_config" ''
               exec ${postgresql}/bin/pg_config "$@"
