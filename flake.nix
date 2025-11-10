@@ -24,19 +24,32 @@
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
         isLinux = lib.hasInfix "linux" system;
+        postgresql = pkgs.postgresql_18;
+        postgresqlPgConfig =
+          if postgresql ? pkgs && postgresql.pkgs ? pg_config then
+            postgresql.pkgs.pg_config
+          else
+            pkgs.writeShellScriptBin "pg_config" ''
+              exec ${postgresql}/bin/pg_config "$@"
+            '';
+        mermaidAscii = mermaid-ascii.packages.${system}.default or null;
 
         # Common packages for all shells
-        commonPackages = with pkgs; [
-          stdenv.cc
-          uv
-          duckdb
-          git
-          clickhouse
-          graphviz
-          nodejs_22  # so basedpyright runs against it
-          postgresql_18
-          (mermaid-ascii.packages.${system}.default or null)
-        ];
+        commonPackages =
+          lib.filter (pkg: pkg != null) (
+            [
+              pkgs.stdenv.cc
+              pkgs.uv
+              pkgs.duckdb
+              pkgs.git
+              pkgs.clickhouse
+              pkgs.graphviz
+              pkgs.nodejs_22  # so basedpyright runs against it
+              postgresql
+              postgresqlPgConfig
+              mermaidAscii
+            ]
+          );
 
         # Function to create a dev shell for a specific Python version
         mkPythonShell = python: pkgs.mkShell {
@@ -46,7 +59,10 @@
             gcc-unwrapped.lib
             glibc
           ];
-          packages = commonPackages ++ [python];
+          packages =
+            commonPackages
+            ++ lib.optionals isLinux [ pkgs.glibc pkgs.glibcLocales ]
+            ++ [python];
 
 
           LD_LIBRARY_PATH = lib.makeLibraryPath (
@@ -56,13 +72,16 @@
               pkgs.duckdb.lib
               pkgs.clickhouse
               pkgs.graphviz
-              pkgs.postgresql_18.lib
+              postgresql.lib
               python
             ] ++ lib.optionals isLinux [
               pkgs.gcc-unwrapped.lib
               pkgs.glibc
             ]
           );
+          shellHook = lib.optionalString isLinux ''
+            export LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive
+          '';
         };
       in {
         # Default shell with Python 3.10
