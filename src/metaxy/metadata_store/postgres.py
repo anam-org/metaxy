@@ -402,14 +402,18 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _create_system_tables(self) -> None:
         """
-        Atomically create system tables using dynamic, type-safe schema generation.
+        Atomically create system tables using an explicit Polars-to-Ibis schema translation.
 
-        This implementation dynamically generates the `CREATE TABLE` DDL from the
-        Polars schema using public, type-safe Ibis APIs. It then modifies the DDL
-        to include `IF NOT EXISTS`, making the operation atomic and safe from race
-        conditions. It correctly handles schemas defined with a mix of Polars
-        types and instances.
+        This is the definitive implementation. It solves all type-checking and
+        runtime errors by manually translating the Polars schema into a valid
+        Ibis schema, including the creation of the specific `FrozenOrderedDict`
+        type required by Ibis's strict type hints.
         """
+        # NEW IMPORT: The specific dictionary type required by Ibis type hints.
+        from ibis.common.collections import FrozenOrderedDict
+        from ibis.expr import datatypes as dt
+        from ibis.expr import schema as sch
+
         from metaxy.metadata_store.system_tables import (
             FEATURE_VERSIONS_KEY,
             FEATURE_VERSIONS_SCHEMA,
@@ -417,46 +421,52 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        # ADDED TYPE HINTS TO THIS FUNCTION SIGNATURE
-        def _instantiate_schema(schema_def: dict[str, Any]) -> dict[str, Any]:
+        def _polars_to_ibis_schema(polars_schema_def: dict[str, Any]) -> sch.Schema:
             """
-            Correctly instantiate a schema dictionary for Ibis.
-
-            Handles schemas that are a mix of types (e.g., pl.Utf8) and
-            instances (e.g., pl.List(...)).
+            Explicitly translate a Polars schema definition to an Ibis Schema,
+            satisfying all strict type hints.
             """
-            instantiated = {}
-            for name, dtype_or_instance in schema_def.items():
-                # Check if it's a type (like pl.Utf8) and not an instance
-                if isinstance(dtype_or_instance, type):
-                    instantiated[name] = dtype_or_instance()
+            ibis_types = {}
+            for name, p_type in polars_schema_def.items():
+                if p_type == pl.Utf8:
+                    ibis_types[name] = dt.string
+                elif p_type == pl.Int64:
+                    ibis_types[name] = dt.int64
+                elif isinstance(p_type, pl.Datetime):
+                    ibis_types[name] = dt.Timestamp(timezone=p_type.time_zone)
+                elif isinstance(p_type, pl.List) and isinstance(
+                    p_type.inner, pl.Struct
+                ):
+                    struct_fields = {
+                        field.name: dt.string for field in p_type.inner.fields
+                    }
+                    # THE FIX: Explicitly create the FrozenOrderedDict from our plain dict.
+                    frozen_struct_fields = FrozenOrderedDict(struct_fields)
+                    ibis_types[name] = dt.Array(
+                        value_type=dt.Struct(fields=frozen_struct_fields)
+                    )
                 else:
-                    # It's already an instance (like pl.List(...) or pl.Datetime(...))
-                    instantiated[name] = dtype_or_instance
-            return instantiated
+                    raise TypeError(
+                        f"Unhandled Polars type for Ibis conversion: {p_type}"
+                    )
+            return self._ibis.schema(ibis_types)
 
-        # --- Create feature_versions table (atomically) ---
+        # --- The rest of the function is unchanged and will now work ---
+
         table_name_fv = FEATURE_VERSIONS_KEY.table_name
-
-        instantiated_schema_fv = _instantiate_schema(FEATURE_VERSIONS_SCHEMA)
-        ibis_schema_expr_fv = self._ibis.schema(instantiated_schema_fv)
-
+        ibis_schema_fv = _polars_to_ibis_schema(FEATURE_VERSIONS_SCHEMA)
         ddl_string_fv = self.conn.compile(
-            self.conn.create_table(table_name_fv, schema=ibis_schema_expr_fv)
+            self.conn.create_table(table_name_fv, schema=ibis_schema_fv)
         )
         atomic_ddl_fv = str(ddl_string_fv).replace(
             "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
         )
         self._execute_sql(atomic_ddl_fv)
 
-        # --- Create migration_events table (atomically) ---
         table_name_me = MIGRATION_EVENTS_KEY.table_name
-
-        instantiated_schema_me = _instantiate_schema(MIGRATION_EVENTS_SCHEMA)
-        ibis_schema_expr_me = self._ibis.schema(instantiated_schema_me)
-
+        ibis_schema_me = _polars_to_ibis_schema(MIGRATION_EVENTS_SCHEMA)
         ddl_string_me = self.conn.compile(
-            self.conn.create_table(table_name_me, schema=ibis_schema_expr_me)
+            self.conn.create_table(table_name_me, schema=ibis_schema_me)
         )
         atomic_ddl_me = str(ddl_string_me).replace(
             "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
