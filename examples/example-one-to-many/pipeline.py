@@ -1,3 +1,4 @@
+import os
 import random
 
 import narwhals as nw
@@ -9,6 +10,9 @@ from metaxy import init_metaxy
 
 
 def main():
+    # Set random seed from environment if provided (for deterministic testing)
+    if seed_str := os.environ.get("RANDOM_SEED"):
+        random.seed(int(seed_str))
     cfg = init_metaxy()
     store = cfg.get_store("dev")
 

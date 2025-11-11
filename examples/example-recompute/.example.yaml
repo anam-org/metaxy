@@ -6,7 +6,8 @@ scenarios:
   - name: "Setup upstream data"
     description: "Create initial upstream data for the pipeline"
     steps:
-      - type: "run_command"
+      - name: "setup_data"
+        type: "run_command"
         command: "python -m example_recompute.setup_data"
         description: "Generate raw data samples"
         capture_output: false
@@ -15,7 +16,8 @@ scenarios:
   - name: "Initial pipeline run"
     description: "First execution with version 1 features"
     steps:
-      - type: "run_command"
+      - name: "initial_run"
+        type: "run_command"
         command: "python -m example_recompute.pipeline"
         description: "Run pipeline with initial feature definitions"
         capture_output: true
@@ -31,7 +33,8 @@ scenarios:
   - name: "Idempotent rerun"
     description: "Second execution should detect no changes"
     steps:
-      - type: "run_command"
+      - name: "idempotent_run"
+        type: "run_command"
         command: "python -m example_recompute.pipeline"
         description: "Rerun pipeline without any code changes"
         capture_output: true
@@ -46,11 +49,13 @@ scenarios:
   - name: "Code evolution"
     description: "Apply patch to change parent feature code_version from 1 to 2, triggering child recomputation"
     steps:
-      - type: "apply_patch"
+      - name: "update_parent_version"
+        type: "apply_patch"
         patch_path: "patches/01_update_parent_algorithm.patch"
         description: "Change parent embedding code_version from 1 to 2"
 
-      - type: "run_command"
+      - name: "recompute_after_change"
+        type: "run_command"
         command: "python -m example_recompute.pipeline"
         description: "Run pipeline with updated parent feature"
         capture_output: true
