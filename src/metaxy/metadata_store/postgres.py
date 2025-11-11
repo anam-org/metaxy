@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
 
+import threading
+
 from ibis.backends.postgres import Backend as PostgresIbisBackend
 from psycopg import Error as _PsycopgError
 
@@ -45,83 +47,79 @@ SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 _original_ibis_execute = PostgresIbisBackend.__init__
 
 
-def create_postgres_init_patch(original_init_func):
+_ibis_patched = False
+_patch_lock = threading.Lock()
+
+
+def _apply_ibis_postgres_patch():
     """
-    A factory that creates a patched __init__ method for the Ibis Postgres Backend.
-
-    This is the correct approach because:
-    1. `self.client` is created inside `__init__`, so we must patch `__init__`.
-    2. This robust closure pattern avoids the `NameError` and does not interfere
-       with Ibis's connection dispatcher, thus avoiding the `ValueError`.
+    Applies a monkey-patch to the Ibis PostgreSQL backend's __init__ method.
+    This is the only reliable way to fix the bytes-vs-str issue that occurs
+    on some platforms (e.g., Linux CI) due to low-level library behavior.
     """
+    global _ibis_patched
+    if _ibis_patched:
+        return
 
-    def _patched_backend_init(self, *args, **kwargs):
-        """
-        This is the new `__init__` method. It runs the original `__init__`
-        first, then patches the `execute` method on the new `self.client`.
-        """
-        # 1. Run the original __init__ to let Ibis build the object completely.
-        #    After this call, `self.client` is guaranteed to exist.
-        original_init_func(self, *args, **kwargs)
-
-        # 2. Defensive check: a sanity check for future Ibis versions.
-        if not hasattr(self, "client"):
-            logger.warning(
-                "Ibis patch could not find 'self.client' after __init__. Aborting patch."
-            )
+    with _patch_lock:
+        # Double-check inside the lock to prevent race conditions.
+        if _ibis_patched:
             return
 
-        # 3. Get a reference to the original `execute` method on this instance.
-        original_execute = self.client.execute
+        logger.info("Applying lazy monkey-patch to Ibis Postgres Backend __init__...")
 
-        # 4. Define our new sanitizing `execute` logic.
-        def patched_execute_logic(query, params=(), **kwargs):
-            if not params:
-                return original_execute(query, params=params, **kwargs)
+        original_init_func = PostgresIbisBackend.__init__
 
-            def decoder(byte_value):
-                return byte_value.decode("utf-8", "replace")
+        def _patched_backend_init(self, *args, **kwargs):
+            original_init_func(self, *args, **kwargs)
 
-            if isinstance(params, dict):
-                sanitized_params = {}
-                for key, value in params.items():
-                    if isinstance(value, bytes):
-                        sanitized_params[key] = decoder(value)
-                    elif (
-                        isinstance(value, list)
-                        and value
-                        and isinstance(value[0], bytes)
-                    ):
-                        sanitized_params[key] = [
-                            decoder(item) if isinstance(item, bytes) else item
-                            for item in value
-                        ]
-                    else:
-                        sanitized_params[key] = value
-            elif isinstance(params, (tuple, list)):
-                sanitized_params = tuple(
-                    decoder(p) if isinstance(p, bytes) else p for p in params
+            if not hasattr(self, "client"):
+                logger.warning(
+                    "Ibis patch: 'self.client' not found after __init__. Aborting instance patch."
                 )
-            else:
-                sanitized_params = params
+                return
 
-            # 5. Call the original instance's execute method with sanitized params.
-            return original_execute(query, params=sanitized_params, **kwargs)
+            original_execute = self.client.execute
 
-        # 6. Replace the `execute` method on the client instance with our new logic.
-        self.client.execute = types.MethodType(patched_execute_logic, self.client)
-        logger.debug("Successfully patched Ibis Postgres client instance via __init__.")
+            def patched_execute_logic(query, params=(), **kwargs):
+                if not params:
+                    return original_execute(query, params=params, **kwargs)
 
-    return _patched_backend_init
+                def decoder(byte_value):
+                    return byte_value.decode("utf-8", "replace")
 
+                if isinstance(params, dict):
+                    sanitized_params = {}
+                    for key, value in params.items():
+                        if isinstance(value, bytes):
+                            sanitized_params[key] = decoder(value)
+                        elif (
+                            isinstance(value, list)
+                            and value
+                            and isinstance(value[0], bytes)
+                        ):
+                            sanitized_params[key] = [
+                                decoder(item) if isinstance(item, bytes) else item
+                                for item in value
+                            ]
+                        else:
+                            sanitized_params[key] = value
+                elif isinstance(params, (tuple, list)):
+                    sanitized_params = tuple(
+                        decoder(p) if isinstance(p, bytes) else p for p in params
+                    )
+                else:
+                    sanitized_params = params
 
-# --- Apply the patch ---
-_original_init = PostgresIbisBackend.__init__
-PostgresIbisBackend.__init__ = create_postgres_init_patch(_original_init)
+                return original_execute(query, params=sanitized_params, **kwargs)
 
-logger.info(
-    "Applied robust monkey-patch to Ibis Postgres Backend __init__ to fix bytes vs. str issues."
-)
+            self.client.execute = types.MethodType(patched_execute_logic, self.client)
+            logger.debug("Successfully patched Ibis Postgres client instance.")
+
+        PostgresIbisBackend.__init__ = _patched_backend_init
+        _ibis_patched = True
+        logger.info("Ibis Postgres Backend patch applied successfully.")
+
 
 # --- END: Ibis PostgreSQL Backend Monkey-Patch ---
 
@@ -239,6 +237,8 @@ class PostgresMetadataStore(IbisMetadataStore):
             SHA256 hashing runs inside `resolve_update()` unless
             `enable_pgcrypto=False`.
         """
+        _apply_ibis_postgres_patch()
+
         params: dict[str, Any] = dict(connection_params or {})
 
         explicit_params = {
