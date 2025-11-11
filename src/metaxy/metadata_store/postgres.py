@@ -181,6 +181,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.schema = params.get("schema")
         self.enable_pgcrypto = enable_pgcrypto
         self._pgcrypto_extension_checked = False
+        self._system_tables_created = False
 
         super().__init__(
             connection_string=connection_string,
@@ -217,6 +218,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         super().open()
         # Reset pgcrypto check for the new connection
         self._pgcrypto_extension_checked = False
+        self._system_tables_created = False
 
         if not self._has_native_struct_support():
             # Postgres + current Ibis/sqlglot versions cannot create STRUCT columns.
@@ -403,41 +405,18 @@ class PostgresMetadataStore(IbisMetadataStore):
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
 
-    def _execute_raw_ddl(self, sql: str) -> None:
-        """
-        Executes a DDL statement using the raw DBAPI connection.
-
-        This bypasses the Ibis `conn.sql()` helper, which has side effects
-        (schema inference) that can trigger bytes-vs-string bugs in some
-        environments. This method is "dumber" and safer for DDL.
-        """
-        raw_conn = getattr(self.conn, "con", None)
-        if raw_conn is None:
-            raise RuntimeError(
-                "Postgres backend does not expose a raw 'con' attribute, "
-                "cannot execute DDL directly."
-            )
-
-        # DDL statements should be run with autocommit to avoid issues
-        # with transaction blocks.
-        original_autocommit = raw_conn.autocommit
-        try:
-            raw_conn.autocommit = True
-            with raw_conn.cursor() as cursor:
-                cursor.execute(sql)
-        finally:
-            raw_conn.autocommit = original_autocommit
-
     def _create_system_tables(self) -> None:
         """
-        Atomically create system tables using an explicit Polars-to-Ibis schema translation.
+        Idempotently create system tables using a robust check.
 
-        This is the definitive implementation. It uses a raw DDL executor to bypass
-        problematic Ibis helpers and prevent all race conditions and type errors.
+        This uses `_list_tables_robustly()` to avoid bytes-vs-string bugs
+        and includes a guard (`_system_tables_created`) to ensure it only
+        runs once per connection, preventing `DuplicateTable` errors caused
+        by multiple calls within the same test.
         """
-        from ibis.common.collections import FrozenOrderedDict
-        from ibis.expr import datatypes as dt
-        from ibis.expr import schema as sch
+        # THE GUARD: If we've already run this, do nothing.
+        if self._system_tables_created:
+            return
 
         from metaxy.metadata_store.system_tables import (
             FEATURE_VERSIONS_KEY,
@@ -446,56 +425,20 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        def _polars_to_ibis_schema(polars_schema_def: dict[str, Any]) -> sch.Schema:
-            ibis_types = {}
-            for name, p_type in polars_schema_def.items():
-                if p_type == pl.Utf8:
-                    ibis_types[name] = dt.string
-                elif p_type == pl.Int64:
-                    ibis_types[name] = dt.int64
-                elif isinstance(p_type, pl.Datetime):
-                    ibis_types[name] = dt.Timestamp(timezone=p_type.time_zone)
-                elif isinstance(p_type, pl.List) and isinstance(
-                    p_type.inner, pl.Struct
-                ):
-                    struct_fields = {
-                        field.name: dt.string for field in p_type.inner.fields
-                    }
-                    frozen_struct_fields = FrozenOrderedDict(struct_fields)
-                    ibis_types[name] = dt.Array(
-                        value_type=dt.Struct(fields=frozen_struct_fields)
-                    )
-                else:
-                    raise TypeError(
-                        f"Unhandled Polars type for Ibis conversion: {p_type}"
-                    )
-            return self._ibis.schema(ibis_types)
+        # Use the robust method we built that works.
+        existing_tables = self._list_tables_robustly()
 
-        # --- Create feature_versions table (atomically) ---
-        table_name_fv = FEATURE_VERSIONS_KEY.table_name
-        ibis_schema_fv = _polars_to_ibis_schema(FEATURE_VERSIONS_SCHEMA)
-        ddl_string_fv = self.conn.compile(
-            self.conn.create_table(table_name_fv, schema=ibis_schema_fv)
-        )
-        atomic_ddl_fv = str(ddl_string_fv).replace(
-            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
-        )
+        # Simple, non-atomic check is fine because we only run this code block ONCE.
+        if FEATURE_VERSIONS_KEY.table_name not in existing_tables:
+            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+            self.conn.create_table(FEATURE_VERSIONS_KEY.table_name, obj=empty_df_fv)
 
-        # USE THE NEW, SAFE HELPER
-        self._execute_raw_ddl(atomic_ddl_fv)
+        if MIGRATION_EVENTS_KEY.table_name not in existing_tables:
+            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
+            self.conn.create_table(MIGRATION_EVENTS_KEY.table_name, obj=empty_df_me)
 
-        # --- Create migration_events table (atomically) ---
-        table_name_me = MIGRATION_EVENTS_KEY.table_name
-        ibis_schema_me = _polars_to_ibis_schema(MIGRATION_EVENTS_SCHEMA)
-        ddl_string_me = self.conn.compile(
-            self.conn.create_table(table_name_me, schema=ibis_schema_me)
-        )
-        atomic_ddl_me = str(ddl_string_me).replace(
-            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
-        )
-
-        # USE THE NEW, SAFE HELPER
-        self._execute_raw_ddl(atomic_ddl_me)
+        # Set the guard to true after successful execution.
+        self._system_tables_created = True
 
     def _write_metadata_impl(
         self,
