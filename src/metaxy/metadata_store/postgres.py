@@ -180,6 +180,13 @@ class PostgresMetadataStore(IbisMetadataStore):
         # explicit_params["schema"] = self._ensure_string_identifier(explicit_params["schema"])
         # print(explicit_params["schema"], file=sys.stderr)
         # print("*********************", file=sys.stderr)
+        try:
+            import locale
+
+            current_locale = locale.getlocale()
+            logger.info(f"Locale diagnosis: current_locale={current_locale}, ")
+        except Exception as e:
+            logger.warning(f"Could not perform locale diagnosis: {e}")
 
         for key, value in explicit_params.items():
             if value is not None:
