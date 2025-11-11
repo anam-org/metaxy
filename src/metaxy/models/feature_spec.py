@@ -23,6 +23,7 @@ from typing_extensions import Self
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
     CoercibleToFeatureKey,
     FeatureKey,
@@ -234,6 +235,10 @@ class FeatureSpec(FrozenBaseModel):
             )
         ],
     )
+    lineage: LineageRelationship = pydantic.Field(
+        default_factory=LineageRelationship.identity,
+        description="Lineage relationship of this feature.",
+    )
     metadata: dict[str, JsonValue] = pydantic.Field(
         default_factory=dict,
         description="Metadata attached to this feature.",
@@ -248,6 +253,7 @@ class FeatureSpec(FrozenBaseModel):
         id_columns: IDColumns,
         deps: list[FeatureDep] | None = None,
         fields: Sequence[str | FieldSpec] | None = None,
+        lineage: LineageRelationship | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
         **kwargs: Any,
     ) -> None: ...
@@ -260,6 +266,7 @@ class FeatureSpec(FrozenBaseModel):
         id_columns: IDColumns,
         deps: list[FeatureDep] | None = None,
         fields: Sequence[str | FieldSpec] | None = None,
+        lineage: LineageRelationship | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
         **kwargs: Any,
     ) -> None: ...
@@ -272,6 +279,7 @@ class FeatureSpec(FrozenBaseModel):
         id_columns: IDColumns,
         deps: list[FeatureDep] | None = None,
         fields: Sequence[str | FieldSpec] | None = None,
+        lineage: LineageRelationship | None = None,
         metadata: Mapping[str, JsonValue] | None = None,
         **kwargs: Any,
     ) -> None: ...

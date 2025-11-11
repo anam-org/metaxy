@@ -15,8 +15,8 @@ try:
 except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.models.feature import TestingFeature
+from metaxy.provenance.types import HashAlgorithm
 
 
 @pytest.fixture
@@ -136,50 +136,6 @@ def test_bigquery_display_string():
     assert "test_dataset" in display
 
 
-def test_bigquery_hash_sql_generators():
-    """Test that hash SQL generators produce correct SQL for BigQuery."""
-    store = BigQueryMetadataStore(
-        project_id="test-project",
-        dataset_id="test_dataset",
-    )
-
-    # Mock table for testing
-    mock_table = Mock()
-    mock_table.compile.return_value = "SELECT * FROM test_table"
-
-    generators = store._get_hash_sql_generators()
-
-    # Test FARMHASH generator (should be available)
-    assert HashAlgorithm.FARMHASH in generators
-    farmhash_sql = generators[HashAlgorithm.FARMHASH](
-        mock_table, {"field1": "col1", "field2": "col2"}
-    )
-    assert "FARM_FINGERPRINT(col1)" in farmhash_sql
-    assert "FARM_FINGERPRINT(col2)" in farmhash_sql
-    assert "CAST(" in farmhash_sql
-    assert "AS STRING)" in farmhash_sql
-    assert "__hash_field1" in farmhash_sql
-    assert "__hash_field2" in farmhash_sql
-
-    # Test MD5 generator
-    assert HashAlgorithm.MD5 in generators
-    md5_sql = generators[HashAlgorithm.MD5](
-        mock_table, {"field1": "col1", "field2": "col2"}
-    )
-    assert "MD5(col1)" in md5_sql
-    assert "MD5(col2)" in md5_sql
-    assert "__hash_field1" in md5_sql
-    assert "__hash_field2" in md5_sql
-
-    # Test SHA256 generator if available
-    if HashAlgorithm.SHA256 in generators:
-        sha_sql = generators[HashAlgorithm.SHA256](
-            mock_table, {"field1": "col1", "field2": "col2"}
-        )
-        assert "TO_HEX(SHA256(col1))" in sha_sql
-        assert "TO_HEX(SHA256(col2))" in sha_sql
-
-
 def test_bigquery_location_parameter():
     """Test BigQuery store with location parameter."""
     store = BigQueryMetadataStore(
@@ -249,11 +205,8 @@ def test_bigquery_config_with_hash_algorithm():
 
     store_default = config_default.get_store("bigquery_store")
     assert isinstance(store_default, BigQueryMetadataStore)
-    assert (
-        store_default.hash_algorithm == HashAlgorithm.XXHASH64
-    )  # Config system default
+    assert store_default.hash_algorithm == HashAlgorithm.MD5  # Config system default
 
-    # Test explicit FARMHASH (BigQuery's preferred algorithm)
     config_farmhash = MetaxyConfig(
         stores={
             "bigquery_store": StoreConfig(

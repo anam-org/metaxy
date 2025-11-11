@@ -1,0 +1,9 @@
+project = "example-one-to-many"
+entrypoints = ["example_one_to_many.features"]
+auto_create_tables = true # Enable for development/examples
+
+[stores.dev]
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+database = "/tmp/example_one_to_many.db"

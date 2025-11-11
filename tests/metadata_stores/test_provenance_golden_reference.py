@@ -27,7 +27,6 @@ from metaxy import (
 from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy.config import MetaxyConfig
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -36,6 +35,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
+from metaxy.provenance.types import HashAlgorithm
 
 FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan

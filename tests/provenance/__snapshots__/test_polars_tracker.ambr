@@ -1,0 +1,97 @@
+# serializer version: 1
+# name: test_compute_provenance_different_algorithms_snapshot[md5]
+  list([
+    'd50d88fd3d1ad41f1d3714a5aa23c79c',
+    '1d7aa08f0a332e06f8605ef832e02f5c',
+    '54fed8a73442b0e0aebdce27be450068',
+  ])
+# ---
+# name: test_compute_provenance_different_algorithms_snapshot[sha256]
+  list([
+    'b350736a6ded457c73fa059ba2af4f39f94d6d28c2461c4b28d02f8f0ea26ecd',
+    'df352a9c87bfc29cb8bcfd098974973e88057f01c1a74595eb157c9faf13f6a9',
+    '67f17dc0c111e7dc004766e65864d18b8dfc1c6ef59b58818aede8b2b76a6a81',
+  ])
+# ---
+# name: test_compute_provenance_different_algorithms_snapshot[xxhash64]
+  list([
+    '9646593030270266913',
+    '6309806401145978549',
+    '7283469191670294049',
+  ])
+# ---
+# name: test_compute_provenance_multiple_upstreams
+  list([
+    dict({
+      'field_provenance': dict({
+        'analysis': '10273147899655370020',
+        'fusion': '5767734328397652203',
+      }),
+      'sample_provenance': '11675900630111014137',
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_provenance': dict({
+        'analysis': '5315454459231616598',
+        'fusion': '8886426756138384020',
+      }),
+      'sample_provenance': '3175030173905165270',
+      'sample_uid': 2,
+    }),
+    dict({
+      'field_provenance': dict({
+        'analysis': '14706124725987283391',
+        'fusion': '16196686875512432820',
+      }),
+      'sample_provenance': '6776557309608549078',
+      'sample_uid': 3,
+    }),
+  ])
+# ---
+# name: test_compute_provenance_selective_field_deps
+  list([
+    dict({
+      'field_provenance': dict({
+        'audio_only': '2856157952309333848',
+        'mixed': '10222597324592578965',
+        'visual': '12627517670119441224',
+      }),
+      'sample_provenance': '12148635275416889877',
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_provenance': dict({
+        'audio_only': '11464889122778443160',
+        'mixed': '801933507718024355',
+        'visual': '9135604594216093019',
+      }),
+      'sample_provenance': '15111289332061365305',
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_compute_provenance_single_upstream
+  list([
+    dict({
+      'field_provenance': dict({
+        'default': '9646593030270266913',
+      }),
+      'sample_provenance': '6638786295627243269',
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_provenance': dict({
+        'default': '6309806401145978549',
+      }),
+      'sample_provenance': '15747888698225521992',
+      'sample_uid': 2,
+    }),
+    dict({
+      'field_provenance': dict({
+        'default': '7283469191670294049',
+      }),
+      'sample_provenance': '10060091228839426467',
+      'sample_uid': 3,
+    }),
+  ])
+# ---

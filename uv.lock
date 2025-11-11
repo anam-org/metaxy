@@ -13,6 +13,7 @@ resolution-markers = [
 members = [
     "example-ducklake",
     "example-migration",
+    "example-one-to-many",
     "example-overview",
     "example-recompute",
     "examples",
@@ -537,6 +538,23 @@ dependencies = [
 requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
 
 [[package]]
+name = "example-one-to-many"
+version = "0.1.0"
+source = { editable = "examples/example-one-to-many" }
+dependencies = [
+    { name = "duckdb" },
+    { name = "ibis-framework", extra = ["duckdb"] },
+    { name = "metaxy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "duckdb" },
+    { name = "ibis-framework", extras = ["duckdb"] },
+    { name = "metaxy", editable = "." },
+]
+
+[[package]]
 name = "example-overview"
 version = "0.1.0"
 source = { editable = "examples/example-overview" }
@@ -565,6 +583,7 @@ source = { editable = "examples" }
 dependencies = [
     { name = "example-ducklake" },
     { name = "example-migration" },
+    { name = "example-one-to-many" },
     { name = "example-overview" },
     { name = "example-recompute" },
 ]
@@ -573,6 +592,7 @@ dependencies = [
 requires-dist = [
     { name = "example-ducklake", editable = "examples/example-ducklake" },
     { name = "example-migration", editable = "examples/example-migration" },
+    { name = "example-one-to-many", editable = "examples/example-one-to-many" },
     { name = "example-overview", editable = "examples/example-overview" },
     { name = "example-recompute", editable = "examples/example-recompute" },
 ]

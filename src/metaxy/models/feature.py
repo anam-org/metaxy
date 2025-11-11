@@ -28,12 +28,11 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
-    from metaxy.data_versioning.diff import (
-        Increment,
-        LazyIncrement,
-        MetadataDiffResolver,
-    )
-    from metaxy.data_versioning.joiners import UpstreamJoiner
+    from metaxy.provenance.types import Increment, LazyIncrement
+
+    # TODO: These are no longer used - remove after refactoring
+    # from metaxy.data_versioning.diff import MetadataDiffResolver
+    # from metaxy.data_versioning.joiners import UpstreamJoiner
 
 # Context variable for active graph (module-level)
 _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
@@ -897,7 +896,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     @classmethod
     def load_input(
         cls,
-        joiner: "UpstreamJoiner",
+        joiner: Any,
         upstream_refs: dict[str, "nw.LazyFrame[Any]"],
     ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
         """Join upstream feature metadata.
@@ -938,7 +937,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     @classmethod
     def resolve_data_version_diff(
         cls,
-        diff_resolver: "MetadataDiffResolver",
+        diff_resolver: Any,
         target_provenance: "nw.LazyFrame[Any]",
         current_metadata: "nw.LazyFrame[Any] | None",
         *,
@@ -987,7 +986,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
 
         # Materialize to Increment if lazy=False
         if not lazy:
-            from metaxy.data_versioning.diff import Increment
+            from metaxy.provenance.types import Increment
 
             return Increment(
                 added=lazy_result.added.collect(),

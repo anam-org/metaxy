@@ -1,0 +1,51 @@
+import metaxy as mx
+
+
+class Video(
+    mx.Feature,
+    spec=mx.FeatureSpec(
+        key="video/raw",
+        id_columns=["video_id"],
+        fields=[
+            mx.FieldSpec(key="audio", code_version="1"),
+            "frames",
+        ],
+    ),
+):
+    video_id: str
+    path: str  # where the video is stored
+
+
+class VideoChunk(
+    mx.Feature,
+    spec=mx.FeatureSpec(
+        key=["video", "chunk"],
+        id_columns=["video_chunk_id"],
+        deps=[mx.FeatureDep(feature=Video)],
+        fields=["audio", "frames"],
+        lineage=mx.LineageRelationship.expansion(on=["video_id"]),
+    ),
+):
+    video_id: str  # points to the parent video
+    video_chunk_id: str
+    path: str  # where the video chunk is stored
+
+
+class FaceRecognition(
+    mx.Feature,
+    spec=mx.FeatureSpec(
+        key=["video", "faces"],
+        id_columns=["video_chunk_id"],
+        deps=[
+            mx.FeatureDep(
+                feature=VideoChunk,
+                fields_mapping=mx.FieldsMapping.specific(
+                    mapping={mx.FieldKey("faces"): {mx.FieldKey("frames")}}
+                ),
+            )
+        ],
+        fields=["faces"],
+    ),
+):
+    video_chunk_id: str
+    num_faces: int  # number of faces detected

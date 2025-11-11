@@ -1,4 +1,4 @@
-project = "exampl-_migration"
+project = "example-_migration"
 entrypoints = ["example_migration.__entrypoint__"]
 auto_create_tables = true # Enable for development/examples
 
