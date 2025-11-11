@@ -355,7 +355,7 @@ def postgres_db(postgres_server):
     password = postgres_server["password"]
     options = postgres_server.get("options")
 
-    db_name = f"test_{uuid.uuid4().hex[:8]}"
+    db_name = f"test_{uuid.uuid4().hex}"
 
     with psycopg.connect(admin_dsn, autocommit=True) as conn:
         with conn.cursor() as cur:
@@ -375,7 +375,7 @@ def postgres_db(postgres_server):
     try:
         with psycopg.connect(admin_dsn, autocommit=True) as conn:
             with conn.cursor() as cur:
-                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)')
     except psycopg.Error as exc:
         logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
