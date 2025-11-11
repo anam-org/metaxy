@@ -64,12 +64,12 @@ def test_parse_boolean_and_null_literals(
 
 
 def test_serialization_round_trip() -> None:
-    filter_model = NarwhalsFilter.from_string("age <= 30 OR NOT is_active")
+    filter_model = NarwhalsFilter.model_validate("age <= 30 OR NOT is_active")
     dumped = filter_model.model_dump()
     assert dumped["expression"] == "age <= 30 OR NOT is_active"
     assert dumped["source"] == "age <= 30 OR NOT is_active"
 
-    restored = NarwhalsFilter.from_string(dumped["source"])
+    restored = NarwhalsFilter.model_validate(dumped["source"])
     assert isinstance(restored.to_expr(), nw.Expr)
 
 
@@ -79,8 +79,111 @@ def test_unsupported_expression_raises() -> None:
 
 
 def test_dotted_column_name_preserved() -> None:
-    filter_model = NarwhalsFilter.from_string("metadata.owner = 'alice'")
+    filter_model = NarwhalsFilter.model_validate("metadata.owner = 'alice'")
     expression = filter_model.expression
     assert isinstance(expression, sqlglot.exp.EQ)
     assert isinstance(expression.this, sqlglot.exp.Column)
     assert expression.this.sql() == "metadata.owner"
+
+
+# Direct expression comparison tests - asserting parsed expression structure
+def test_parsed_expression_equals_narwhals_expression_simple() -> None:
+    """Test that parsed expression matches manually constructed Narwhals expression."""
+    parsed = parse_filter_string("age > 25")
+    expected = nw.col("age") > 25
+
+    # Verify they produce the same results
+    df = pl.DataFrame({"age": [20, 25, 30, 35]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["age"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["age"].to_list()
+
+    assert parsed_result == expected_result == [30, 35]
+
+
+def test_parsed_expression_equals_narwhals_expression_compound() -> None:
+    """Test compound expression with AND operator."""
+    parsed = parse_filter_string("age > 25 AND status = 'active'")
+    expected = (nw.col("age") > 25) & (nw.col("status") == "active")
+
+    df = pl.DataFrame(
+        {"age": [20, 30, 30, 40], "status": ["active", "active", "inactive", "active"]}
+    )
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["age"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["age"].to_list()
+
+    assert parsed_result == expected_result == [30, 40]
+
+
+def test_parsed_expression_equals_narwhals_expression_or() -> None:
+    """Test compound expression with OR operator."""
+    parsed = parse_filter_string("age < 20 OR age > 30")
+    expected = (nw.col("age") < 20) | (nw.col("age") > 30)
+
+    df = pl.DataFrame({"age": [15, 20, 25, 30, 35]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["age"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["age"].to_list()
+
+    assert parsed_result == expected_result == [15, 35]
+
+
+def test_parsed_expression_equals_narwhals_expression_not() -> None:
+    """Test NOT operator."""
+    parsed = parse_filter_string("NOT is_active")
+    expected = ~nw.col("is_active")
+
+    df = pl.DataFrame({"is_active": [True, False, True, False]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = lf.filter(parsed).collect().to_native()["is_active"].to_list()
+    expected_result = lf.filter(expected).collect().to_native()["is_active"].to_list()
+
+    assert parsed_result == expected_result == [False, False]
+
+
+def test_parsed_expression_equals_narwhals_expression_null() -> None:
+    """Test NULL comparison with IS NULL."""
+    parsed = parse_filter_string("deleted_at = NULL")
+    expected = nw.col("deleted_at").is_null()
+
+    df = pl.DataFrame({"deleted_at": [None, "2024-01-01", None, "2024-02-01"]})
+    lf = nw.from_native(df.lazy())
+
+    parsed_result = (
+        lf.filter(parsed).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+    expected_result = (
+        lf.filter(expected).collect().to_native()["deleted_at"].is_null().to_list()
+    )
+
+    assert parsed_result == expected_result == [True, True]
+
+
+def test_parsed_expression_equals_narwhals_expression_all_comparisons() -> None:
+    """Test all comparison operators."""
+    test_cases = [
+        ("x = 5", nw.col("x") == 5, [5]),
+        ("x != 5", nw.col("x") != 5, [3, 7, 10]),
+        ("x > 5", nw.col("x") > 5, [7, 10]),
+        ("x < 5", nw.col("x") < 5, [3]),
+        ("x >= 5", nw.col("x") >= 5, [5, 7, 10]),
+        ("x <= 5", nw.col("x") <= 5, [3, 5]),
+    ]
+
+    df = pl.DataFrame({"x": [3, 5, 7, 10]})
+    lf = nw.from_native(df.lazy())
+
+    for filter_string, expected_expr, expected_values in test_cases:
+        parsed = parse_filter_string(filter_string)
+
+        parsed_result = lf.filter(parsed).collect().to_native()["x"].to_list()
+        expected_result = lf.filter(expected_expr).collect().to_native()["x"].to_list()
+
+        assert parsed_result == expected_result == expected_values, (
+            f"Failed for: {filter_string}"
+        )

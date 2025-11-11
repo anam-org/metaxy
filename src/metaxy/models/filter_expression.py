@@ -8,12 +8,12 @@ returns a Narwhals expression that can be fed directly into
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any, NamedTuple
 
 import narwhals as nw
 import sqlglot
 from pydantic import field_serializer, model_validator
+from sqlglot import exp
 from sqlglot.errors import ParseError
 
 from metaxy.models.bases import FrozenBaseModel
@@ -23,30 +23,6 @@ LiteralValue = bool | int | float | str | None
 
 class FilterParseError(ValueError):
     """Raised when a filter string cannot be parsed into a supported expression."""
-
-
-class ComparisonOperator(str, Enum):
-    EQ = "="
-    NEQ = "!="
-    GT = ">"
-    LT = "<"
-    GTE = ">="
-    LTE = "<="
-
-    def apply(self, left: nw.Expr, right: nw.Expr) -> nw.Expr:
-        if self is ComparisonOperator.EQ:
-            return left == right
-        if self is ComparisonOperator.NEQ:
-            return left != right
-        if self is ComparisonOperator.GT:
-            return left > right
-        if self is ComparisonOperator.LT:
-            return left < right
-        if self is ComparisonOperator.GTE:
-            return left >= right
-        if self is ComparisonOperator.LTE:
-            return left <= right
-        raise FilterParseError(f"Unsupported comparison operator: {self.value}")
 
 
 class OperandInfo(NamedTuple):
@@ -84,38 +60,10 @@ class NarwhalsFilter(FrozenBaseModel):
         """Convert the stored expression into a Narwhals ``Expr``."""
         return _expression_to_narwhals(self.expression)
 
-    @classmethod
-    def from_string(cls, filter_string: str) -> NarwhalsFilter:
-        """Parse a SQL WHERE-like string into a ``NarwhalsFilter`` instance."""
-        return cls.model_validate(filter_string)
-
 
 def parse_filter_string(filter_string: str) -> nw.Expr:
     """Parse a SQL WHERE-like string into a Narwhals expression."""
-    return NarwhalsFilter.from_string(filter_string).to_expr()
-
-
-_COMPARISON_NODE_MAP: dict[type[sqlglot.exp.Expression], ComparisonOperator] = {}
-
-_COMPARISON_NODE_ALIASES: dict[ComparisonOperator, tuple[str, ...]] = {
-    ComparisonOperator.EQ: ("EQ",),
-    ComparisonOperator.NEQ: ("NEQ",),
-    ComparisonOperator.GT: ("Gt", "GT"),
-    ComparisonOperator.LT: ("Lt", "LT"),
-    ComparisonOperator.GTE: ("GTE", "GE", "GTOrEq"),
-    ComparisonOperator.LTE: ("LTE", "LE", "LTOrEq"),
-}
-
-# SQLGlot publishes both legacy CamelCase comparison classes (``Gt``, ``Lt``)
-# and uppercase aliases (``GT``, ``LT``). Some dialect-specific rewrites still
-# emit older names like ``GTOrEq``. Register every known alias but keep the
-# first match so we do not overwrite identical mappings repeatedly.
-for operator, class_names in _COMPARISON_NODE_ALIASES.items():
-    for class_name in class_names:
-        cls = getattr(sqlglot.exp, class_name, None)
-        if not isinstance(cls, type) or cls in _COMPARISON_NODE_MAP:
-            continue
-        _COMPARISON_NODE_MAP[cls] = operator
+    return NarwhalsFilter.model_validate(filter_string).to_expr()
 
 
 def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
@@ -136,49 +84,67 @@ def _parse_to_sqlglot_expression(filter_string: str) -> sqlglot.exp.Expression:
     return parsed
 
 
-def _expression_to_narwhals(node: sqlglot.exp.Expression) -> nw.Expr:
+def _expression_to_narwhals(node: exp.Expression) -> nw.Expr:
+    """Convert a SQLGlot expression AST node to a Narwhals expression."""
     node = _strip_parens(node)
 
-    if isinstance(node, sqlglot.exp.Not):
+    # Logical operators
+    if isinstance(node, exp.Not):
         operand = node.this
         if operand is None:
             raise FilterParseError("NOT operator requires an operand.")
         return ~_expression_to_narwhals(operand)
 
-    if isinstance(node, sqlglot.exp.And):
+    if isinstance(node, exp.And):
         return _expression_to_narwhals(node.this) & _expression_to_narwhals(
             node.expression
         )
 
-    if isinstance(node, sqlglot.exp.Or):
+    if isinstance(node, exp.Or):
         return _expression_to_narwhals(node.this) | _expression_to_narwhals(
             node.expression
         )
 
-    operator = _COMPARISON_NODE_MAP.get(type(node))
-    if operator:
+    # Comparison operators - direct mapping to Narwhals operations
+    if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.LT, exp.GTE, exp.LTE)):
         left = getattr(node, "this", None)
         right = getattr(node, "expression", None)
         if left is None or right is None:
             raise FilterParseError(
-                f"Comparison operator {operator.value} requires two operands."
+                f"Comparison operator {type(node).__name__} requires two operands."
             )
         left_operand = _operand_info(left)
         right_operand = _operand_info(right)
-        null_comparison = _maybe_null_comparison(left_operand, right_operand, operator)
+
+        # Handle NULL comparisons with IS NULL / IS NOT NULL
+        null_comparison = _maybe_null_comparison(left_operand, right_operand, node)
         if null_comparison is not None:
             return null_comparison
-        return operator.apply(left_operand.expr, right_operand.expr)
 
+        # Apply the appropriate Narwhals operator
+        if isinstance(node, exp.EQ):
+            return left_operand.expr == right_operand.expr
+        elif isinstance(node, exp.NEQ):
+            return left_operand.expr != right_operand.expr
+        elif isinstance(node, exp.GT):
+            return left_operand.expr > right_operand.expr
+        elif isinstance(node, exp.LT):
+            return left_operand.expr < right_operand.expr
+        elif isinstance(node, exp.GTE):
+            return left_operand.expr >= right_operand.expr
+        elif isinstance(node, exp.LTE):
+            return left_operand.expr <= right_operand.expr
+
+    # Terminal nodes (operands)
     if isinstance(
         node,
         (
-            sqlglot.exp.Column,
-            sqlglot.exp.Identifier,
-            sqlglot.exp.Boolean,
-            sqlglot.exp.Literal,
-            sqlglot.exp.Null,
-            sqlglot.exp.Neg,
+            exp.Column,
+            exp.Identifier,
+            exp.Boolean,
+            exp.Literal,
+            exp.Null,
+            exp.Neg,
         ),
     ):
         return _operand_info(node).expr
@@ -186,10 +152,11 @@ def _expression_to_narwhals(node: sqlglot.exp.Expression) -> nw.Expr:
     raise FilterParseError(f"Unsupported expression: {node.sql()}")
 
 
-def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
+def _operand_info(node: exp.Expression) -> OperandInfo:
+    """Extract operand information from a SQLGlot expression node."""
     node = _strip_parens(node)
 
-    if isinstance(node, sqlglot.exp.Column):
+    if isinstance(node, exp.Column):
         return OperandInfo(
             expr=nw.col(_column_name(node)),
             is_literal=False,
@@ -197,7 +164,7 @@ def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
             is_column=True,
         )
 
-    if isinstance(node, sqlglot.exp.Identifier):
+    if isinstance(node, exp.Identifier):
         return OperandInfo(
             expr=nw.col(_column_name(node)),
             is_literal=False,
@@ -205,7 +172,7 @@ def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
             is_column=True,
         )
 
-    if isinstance(node, sqlglot.exp.Neg):
+    if isinstance(node, exp.Neg):
         inner = node.this
         if inner is None:
             raise FilterParseError("Unary minus requires an operand.")
@@ -219,19 +186,19 @@ def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, sqlglot.exp.Literal):
+    if isinstance(node, exp.Literal):
         value = _literal_to_python(node)
         return OperandInfo(
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, sqlglot.exp.Boolean):
+    if isinstance(node, exp.Boolean):
         value = _literal_to_python(node)
         return OperandInfo(
             expr=nw.lit(value), is_literal=True, literal_value=value, is_column=False
         )
 
-    if isinstance(node, sqlglot.exp.Null):
+    if isinstance(node, exp.Null):
         return OperandInfo(
             expr=nw.lit(None), is_literal=True, literal_value=None, is_column=False
         )
@@ -242,34 +209,36 @@ def _operand_info(node: sqlglot.exp.Expression) -> OperandInfo:
 def _maybe_null_comparison(
     left: OperandInfo,
     right: OperandInfo,
-    operator: ComparisonOperator,
+    node: exp.Expression,
 ) -> nw.Expr | None:
+    """Handle SQL NULL comparisons, converting to IS NULL / IS NOT NULL."""
     if left.is_literal and left.literal_value is None and right.is_column:
         column_expr = right.expr
-        if operator is ComparisonOperator.EQ:
+        if isinstance(node, exp.EQ):
             return column_expr.is_null()
-        if operator is ComparisonOperator.NEQ:
+        if isinstance(node, exp.NEQ):
             return ~column_expr.is_null()
         return None
 
     if right.is_literal and right.literal_value is None and left.is_column:
         column_expr = left.expr
-        if operator is ComparisonOperator.EQ:
+        if isinstance(node, exp.EQ):
             return column_expr.is_null()
-        if operator is ComparisonOperator.NEQ:
+        if isinstance(node, exp.NEQ):
             return ~column_expr.is_null()
         return None
 
     return None
 
 
-def _literal_to_python(node: sqlglot.exp.Expression) -> LiteralValue:
+def _literal_to_python(node: exp.Expression) -> LiteralValue:
+    """Convert a SQLGlot literal node to a Python value."""
     match node:
-        case sqlglot.exp.Null():
+        case exp.Null():
             return None
-        case sqlglot.exp.Boolean():
+        case exp.Boolean():
             return node.this is True or str(node.this).lower() == "true"
-        case sqlglot.exp.Literal():
+        case exp.Literal():
             literal = node
             if literal.is_string:
                 return literal.name
@@ -282,28 +251,31 @@ def _literal_to_python(node: sqlglot.exp.Expression) -> LiteralValue:
             raise FilterParseError(f"Unsupported literal: {node.sql()}")
 
 
-def _strip_parens(node: sqlglot.exp.Expression) -> sqlglot.exp.Expression:
+def _strip_parens(node: exp.Expression) -> exp.Expression:
+    """Remove surrounding parentheses from an expression."""
     current = node
-    while isinstance(current, sqlglot.exp.Paren) and current.this is not None:
+    while isinstance(current, exp.Paren) and current.this is not None:
         current = current.this
     return current
 
 
-def _identifier_part_to_string(part: sqlglot.exp.Expression | str) -> str:
-    if isinstance(part, sqlglot.exp.Identifier):
+def _identifier_part_to_string(part: exp.Expression | str) -> str:
+    """Convert a column identifier part to a string."""
+    if isinstance(part, exp.Identifier):
         return part.name
-    if isinstance(part, sqlglot.exp.Star):
+    if isinstance(part, exp.Star):
         return "*"
-    if isinstance(part, sqlglot.exp.Expression):
+    if isinstance(part, exp.Expression):
         return part.sql(dialect="")
     return str(part)
 
 
-def _column_name(node: sqlglot.exp.Expression) -> str:
-    if isinstance(node, sqlglot.exp.Column):
+def _column_name(node: exp.Expression) -> str:
+    """Extract the column name from a Column or Identifier node."""
+    if isinstance(node, exp.Column):
         parts = [_identifier_part_to_string(part) for part in node.parts or ()]
         name = ".".join(part for part in parts if part)
-    elif isinstance(node, sqlglot.exp.Identifier):
+    elif isinstance(node, exp.Identifier):
         name = node.name
     else:
         name = node.sql(dialect="")
@@ -315,7 +287,6 @@ def _column_name(node: sqlglot.exp.Expression) -> str:
 
 
 __all__ = [
-    "ComparisonOperator",
     "FilterParseError",
     "NarwhalsFilter",
     "parse_filter_string",
