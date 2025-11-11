@@ -7,6 +7,8 @@ import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy.utils.hashing import get_hash_truncation_length
+
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.provenance.types import HashAlgorithm
@@ -23,7 +25,7 @@ def add_metaxy_provenance_column(
     Args:
         df: Polars DataFrame with metaxy_provenance_by_field column
         feature: Feature class to get the feature plan from
-        hash_algorithm: Hash algorithm to use. If None, uses store default.
+        hash_algorithm: Hash algorithm to use. If None, uses XXHASH64.
 
     Returns:
         Polars DataFrame with metaxy_provenance column added
@@ -43,8 +45,14 @@ def add_metaxy_provenance_column(
     # Convert to Narwhals, add provenance column, convert back
     df_nw = nw.from_native(df.lazy())
     df_nw = tracker.add_provenance_column(df_nw, hash_algorithm=hash_algorithm)
+    result_df = df_nw.collect().to_native()
 
-    return df_nw.collect().to_native()
+    # Apply hash truncation if specified
+    result_df = result_df.with_columns(
+        pl.col("metaxy_provenance").str.slice(0, get_hash_truncation_length())
+    )
+
+    return result_df
 
 
 def skip_exception(exception: type[Exception], reason: str):

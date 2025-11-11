@@ -73,7 +73,7 @@ class BaseFieldsMapping(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultiple
 
         This method should be overridden by concrete implementations.
 
-        Args:
+        Arguments:
             context: The resolution context containing field key and upstream feature.
 
         Returns:
@@ -83,19 +83,7 @@ class BaseFieldsMapping(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultiple
 
 
 class SpecificFieldsMapping(BaseFieldsMapping):
-    """Field mapping that explicitly depends on specific upstream fields.
-
-    Arguments:
-        type: Always "SPECIFIC" for discriminated union serialization
-        mapping: Mapping of downstream field keys to their corresponding upstream field keys.
-
-    Examples:
-        >>> # Explicitly depend on specific upstream fields
-        >>> SpecificFieldsMapping({""downstream": {"upstream_1", "upstream_2"}})
-
-        >>> # Or use the classmethod
-        >>> FieldsMapping.specific({"field1", "field2"})
-    """
+    """Field mapping that explicitly depends on specific upstream fields."""
 
     type: Literal[FieldsMappingType.SPECIFIC] = FieldsMappingType.SPECIFIC
     mapping: dict[FieldKey, set[FieldKey]]
@@ -109,15 +97,7 @@ class SpecificFieldsMapping(BaseFieldsMapping):
 
 
 class AllFieldsMapping(BaseFieldsMapping):
-    """Field mapping that explicitly depends on all upstream features and all their fields.
-
-    Examples:
-        >>> # Explicitly depend on all upstream fields
-        >>> AllFieldsMapping()
-
-        >>> # Or use the classmethod
-        >>> FieldsMapping.all()
-    """
+    """Field mapping that explicitly depends on all upstream fields."""
 
     type: Literal[FieldsMappingType.ALL] = FieldsMappingType.ALL
 
@@ -146,19 +126,8 @@ class DefaultFieldsMapping(BaseFieldsMapping):
     When used, automatically maps fields to matching upstream fields based on field keys.
 
     Attributes:
-        type: Always "DEFAULT" for discriminated union serialization
         match_suffix: If True, allows suffix matching (e.g., "french" matches "audio/french")
         exclude_fields: List of field keys to exclude from auto-mapping
-
-    Examples:
-        >>> # Exact match only (default)
-        >>> DefaultFieldsMapping()
-
-        >>> # Enable suffix matching
-        >>> DefaultFieldsMapping(match_suffix=True)
-
-        >>> # Exclude specific fields from being auto-mapped
-        >>> DefaultFieldsMapping(exclude_fields=[FieldKey(["metadata"])])
     """
 
     type: Literal[FieldsMappingType.DEFAULT] = FieldsMappingType.DEFAULT
@@ -308,7 +277,7 @@ class FieldsMapping(BaseModel):
     def none(cls) -> Self:
         """Create a field mapping that explicitly depends on no upstream fields.
 
-        This is typically useful when explicitly defining [FieldSpec.deps][metaxy.models.field.FieldSpec.deps] instead.
+        This is typically useful when explicitly defining [FieldSpec.deps][metaxy.models.field.FieldSpec] instead.
 
         Returns:
             Configured FieldsMapping instance.

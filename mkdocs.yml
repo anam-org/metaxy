@@ -174,12 +174,13 @@ nav:
     - Versioning: learn/data-versioning.md
     - Feature Discovery: learn/feature-discovery.md
     - Syntactic Sugar: learn/syntactic-sugar.md
+    - Lineage Relationship: learn/relationship.md
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
     - Integrations:
         - SQLModel: learn/integrations/sqlmodel.md
   - Examples:
-    - Recompute: examples/recompute.md
+    - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
   - API:
     - reference/api/index.md
@@ -188,6 +189,8 @@ nav:
       - Feature Spec: reference/api/definitions/feature-spec.md
       - Feature: reference/api/definitions/feature.md
       - Field: reference/api/definitions/field.md
+      - Fields Mapping: reference/api/definitions/fields-mapping.md
+      - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
     - Metadata Stores:
       - reference/api/metadata-stores/index.md

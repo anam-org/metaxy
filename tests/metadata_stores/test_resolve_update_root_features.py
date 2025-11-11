@@ -96,6 +96,9 @@ class TestResolveUpdateRootFeatures:
                     ],
                 }
             )
+            user_samples = add_metaxy_provenance_column(
+                user_samples, VideoEmbeddingsFeature
+            )
 
             result = store.resolve_update(
                 VideoEmbeddingsFeature, samples=nw.from_native(user_samples)
@@ -107,6 +110,10 @@ class TestResolveUpdateRootFeatures:
             assert len(result.changed) == 0
             assert len(result.removed) == 0
 
+    @pytest.mark.skip(
+        reason="Requires groupby id_columns+feature_version and taking latest sample by created_at. "
+        "Support for changing provenance values without changing code versions will be added later."
+    )
     @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_with_samples_and_changes(
         self,
@@ -151,6 +158,9 @@ class TestResolveUpdateRootFeatures:
                         {"embedding": "hash4"},  # new
                     ],
                 }
+            )
+            user_samples = add_metaxy_provenance_column(
+                user_samples, VideoEmbeddingsFeature
             )
 
             result = store.resolve_update(

@@ -444,14 +444,14 @@ def render(
 
     # Apply presets if specified (overrides display settings but preserves filtering)
     if minimal:
-        preset = RenderConfig.minimal()
+        preset = RenderConfig.minimal(show_projects=render_config.show_projects)
         # Preserve filtering parameters from original config
         preset.feature = render_config.feature
         preset.up = render_config.up
         preset.down = render_config.down
         render_config = preset
     elif verbose:
-        preset = RenderConfig.verbose()
+        preset = RenderConfig.verbose(show_projects=render_config.show_projects)
         # Preserve filtering parameters from original config
         preset.feature = render_config.feature
         preset.up = render_config.up
@@ -551,9 +551,6 @@ def render(
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
                 console.print(
                     "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
-                )
-                console.print(
-                    "[yellow]Hint:[/yellow] Use --store to ensure feature code is available at recorded paths."
                 )
                 raise SystemExit(1)
             except Exception as e:
