@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 import narwhals as nw
@@ -43,23 +43,24 @@ _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
 try:
-    # Use a unique attribute name to check if the patch has been applied.
-    if not getattr(PsycopgCursor, "_metaxy_patched", False):
+    # Use a unique attribute name to ensure this block runs only once per process.
+    if not getattr(PsycopgCursor, "_metaxy_compat_patched", False):
         logger.info(
-            "Applying final, comprehensive, brute-force patch to psycopg.Cursor..."
+            "Applying psycopg compatibility shim for pure-Python fallback support."
         )
 
-        # Store original methods
+        # Store original methods to be called by our patched versions.
         _original_execute = PsycopgCursor.execute
         _original_fetchone = PsycopgCursor.fetchone
         _original_fetchall = PsycopgCursor.fetchall
         _original_iter = PsycopgCursor.__iter__
 
+        # A safe decoder that will not crash on invalid byte sequences.
         def _decoder(byte_value):
             return byte_value.decode("utf-8", "replace")
 
-        # 1. Patch `execute` (for input)
         def _patched_execute(self, query, params=None, *args, **kwargs):
+            """Patches `execute` to sanitize parameters on the way IN to the database."""
             sanitized_params = params
             if params:
                 if isinstance(params, dict):
@@ -70,6 +71,7 @@ try:
                             and value
                             and isinstance(value[0], bytes)
                         ):
+                            # Fixes `name = bytea` error from `{'dbs': [b'public', ...]}`
                             sanitized_params[key] = [_decoder(item) for item in value]
                         elif isinstance(value, bytes):
                             sanitized_params[key] = _decoder(value)
@@ -81,43 +83,44 @@ try:
                     )
             return _original_execute(self, query, sanitized_params, *args, **kwargs)
 
-        # 2. Create a universal row sanitizer
-        def _sanitize_row(row: tuple[Any, ...] | None) -> tuple[Any, ...] | None:
-            if row is None:
-                return None
+        def _sanitize_row(row: tuple[Any, ...]) -> tuple[Any, ...]:
+            """Decode any bytes in a non-null result row."""
             return tuple(
                 _decoder(item) if isinstance(item, bytes) else item for item in row
             )
 
-        # 3. Patch ALL output methods
-        def _patched_fetchone(self):
-            return _sanitize_row(_original_fetchone(self))
+        def _sanitize_optional_row(
+            row: tuple[Any, ...] | None,
+        ) -> tuple[Any, ...] | None:
+            if row is None:
+                return None
+            return _sanitize_row(row)
 
-        def _patched_fetchall(self):
+        # Patch all three result-fetching methods to be safe.
+        def _patched_fetchone(self) -> tuple[Any, ...] | None:
+            return _sanitize_optional_row(_original_fetchone(self))
+
+        def _patched_fetchall(self) -> list[tuple[Any, ...]]:
             rows = _original_fetchall(self)
-            return [
-                cast(tuple[Any, ...], _sanitize_row(row))
-                for row in rows
-                if row is not None
-            ]
+            return [_sanitize_row(row) for row in rows]
 
-        def _patched_iter(self):
+        def _patched_iter(self) -> Iterator[tuple[Any, ...]]:
             for row in _original_iter(self):
-                sanitized = _sanitize_row(row)
-                if sanitized is not None:
-                    yield sanitized
+                yield _sanitize_row(row)
 
-        # 4. Apply all patches to the class itself.
+        # Atomically replace the methods on the class.
         PsycopgCursor.execute = cast(Any, _patched_execute)
         PsycopgCursor.fetchone = cast(Any, _patched_fetchone)
         PsycopgCursor.fetchall = cast(Any, _patched_fetchall)
         PsycopgCursor.__iter__ = cast(Any, _patched_iter)
 
-        # Mark the class as patched so this code only ever runs once.
-        setattr(PsycopgCursor, "_metaxy_patched", True)
-        logger.info("Final, comprehensive psycopg patch applied successfully.")
+        # Mark the class as patched to prevent this from ever running again.
+        setattr(PsycopgCursor, "_metaxy_compat_patched", True)
+        logger.info("Psycopg compatibility shim applied successfully.")
+
 except Exception as e:
-    logger.error(f"Failed to apply psycopg patch: {e}")
+    # Log any failure during the patching process.
+    logger.error(f"Failed to apply psycopg compatibility shim: {e}", exc_info=True)
 
 
 class PostgresMetadataStore(IbisMetadataStore):
