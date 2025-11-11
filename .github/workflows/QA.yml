@@ -120,6 +120,7 @@ jobs:
           nix_path: nixpkgs=channel:nixpkgs-unstable
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
@@ -130,7 +131,6 @@ jobs:
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
         run: >
           uv run pytest -s --log-cli-level=INFO tests/metadata_stores/test_provenance_golden_reference.py
           # uv run pytest
