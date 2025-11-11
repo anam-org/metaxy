@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 
 import narwhals as nw
 import polars as pl
+from polars.datatypes import DataType as PolarsDataType
+from polars.datatypes import DataTypeClass as PolarsDataTypeClass
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -37,6 +39,7 @@ PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
 
 logger = logging.getLogger(__name__)
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
+SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -182,7 +185,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.schema = params.get("schema")
         self.enable_pgcrypto = enable_pgcrypto
         self._pgcrypto_extension_checked = False
-        self._system_tables_created = False
 
         super().__init__(
             connection_string=connection_string,
@@ -407,17 +409,9 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _create_system_tables(self) -> None:
         """
-        Idempotently create system tables using a robust check.
-
-        This uses `_list_tables_robustly()` to avoid bytes-vs-string bugs
-        and includes a guard (`_system_tables_created`) to ensure it only
-        runs once per connection, preventing `DuplicateTable` errors caused
-        by multiple calls within the same test.
+        Atomically create system tables using `CREATE TABLE IF NOT EXISTS`.
+        Uses raw SQL to avoid Ibis limitations and ensure proper schema generation.
         """
-        # THE GUARD: If we've already run this, do nothing.
-        if self._system_tables_created:
-            return
-
         from metaxy.metadata_store.system_tables import (
             FEATURE_VERSIONS_KEY,
             FEATURE_VERSIONS_SCHEMA,
@@ -425,20 +419,65 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        # Use the robust method we built that works.
-        existing_tables = self._list_tables_robustly()
+        def get_postgres_type(
+            dtype: PolarsDataType | PolarsDataTypeClass,
+        ) -> str:
+            """Convert Polars dtype to PostgreSQL type."""
 
-        # Simple, non-atomic check is fine because we only run this code block ONCE.
-        if FEATURE_VERSIONS_KEY.table_name not in existing_tables:
-            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self.conn.create_table(FEATURE_VERSIONS_KEY.table_name, obj=empty_df_fv)
+            if dtype == pl.String:
+                return "VARCHAR"
+            elif dtype == pl.Int64:
+                return "BIGINT"
+            elif dtype == pl.Int32:
+                return "INTEGER"
+            elif dtype == pl.Float64:
+                return "DOUBLE PRECISION"
+            elif dtype == pl.Boolean:
+                return "BOOLEAN"
+            elif dtype == pl.Datetime:
+                return "TIMESTAMP(6)"
+            elif dtype == pl.Date:
+                return "DATE"
+            else:
+                # Fallback for complex types
+                return "VARCHAR"
 
-        if MIGRATION_EVENTS_KEY.table_name not in existing_tables:
-            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self.conn.create_table(MIGRATION_EVENTS_KEY.table_name, obj=empty_df_me)
+        def create_table_ddl(table_name: str, schema: SchemaMapping) -> str:
+            """Generate CREATE TABLE IF NOT EXISTS DDL from Polars schema."""
+            columns = []
+            for col_name, dtype in schema.items():
+                pg_type = get_postgres_type(dtype)
+                # Properly quote column names that might be keywords or contain special chars
+                columns.append(f'"{col_name}" {pg_type}')
 
-        # Set the guard to true after successful execution.
-        self._system_tables_created = True
+            columns_sql = ", ".join(columns)
+            # Properly quote table name
+            return f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns_sql})'
+
+        def execute_ddl(ddl: str):
+            """Execute DDL with proper connection handling."""
+            raw_conn = self.conn.con  # pyright: ignore[reportAttributeAccessIssue]
+            original_autocommit = raw_conn.autocommit
+            try:
+                raw_conn.autocommit = True
+                with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+                    cursor.execute(ddl)
+            finally:
+                raw_conn.autocommit = original_autocommit
+
+        # Create feature_versions table
+        ddl_fv = create_table_ddl(
+            FEATURE_VERSIONS_KEY.table_name,
+            cast(SchemaMapping, FEATURE_VERSIONS_SCHEMA),
+        )
+        execute_ddl(ddl_fv)
+
+        # Create migration_events table
+        ddl_me = create_table_ddl(
+            MIGRATION_EVENTS_KEY.table_name,
+            cast(SchemaMapping, MIGRATION_EVENTS_SCHEMA),
+        )
+        execute_ddl(ddl_me)
 
     def _write_metadata_impl(
         self,
@@ -477,7 +516,6 @@ class PostgresMetadataStore(IbisMetadataStore):
             self.conn.create_table(table_name, obj=df_typed)
         else:
             self.conn.insert(table_name, obj=df_to_write)  # pyright: ignore[reportAttributeAccessIssue]
-
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
