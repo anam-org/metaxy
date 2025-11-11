@@ -1,14 +1,14 @@
 # serializer version: 1
 # name: test_feature_spec_version_deterministic
-  '2ba05b92158fe23361915ead3857425de35b65ea9e5276562843d2d37144f4ad'
+  'eded67864d72c8aa6a753ec90f12371feb7c2200747672aaa80cb5d404a5324f'
 # ---
 # name: test_feature_spec_version_includes_all_properties
-  '1e512589810ef79a0a799ea2c1d3883cbaa13a881ccb3131148d8310b083d433'
+  '58b32de79482ec371a16fce9eabe07c9a9ec4d248a3b733b53f57038cab91fc8'
 # ---
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'metaxy_feature_spec_version': 'a63b318fc2b22e91efd9a1ed08c555358ea7ce351783ddb7c44e724a3956fbe4',
+    'metaxy_feature_spec_version': '72471e8bfba84439e4814b65bee1589a56f702592f4068ef30c61167bb6781aa',
     'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
     'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
@@ -36,18 +36,23 @@
         'snapshot',
         'test',
       ]),
+      'lineage': dict({
+        'relationship': dict({
+          'type': '1:1',
+        }),
+      }),
       'metadata': dict({
       }),
     }),
-    'metaxy_feature_spec_version': 'd03a54f131ed6a265d968847078dcd7bbdc63f75593b041cd5b908984107e0ed',
-    'metaxy_feature_tracking_version': '9f2968a378e64f5a3d1f1d85d55a9c9e887a66faee768ea72c961d02957d0c40',
+    'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
+    'metaxy_feature_tracking_version': 'ee1b86858b228d4b2c24968d5be349eba7d4baaedcb9737bd15f1909f124089e',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })
 # ---
 # name: test_feature_spec_version_with_column_selection_and_rename
-  '3bb050c2694b2dd47bcdfecf503a040723bcd2f126051cd57716db41d8a508ec'
+  'b24bb3d39be8d573d61c273a13e4fa63c4646fd7ba1fa9fc6a51fe5dcbb1cd03'
 # ---
 # name: test_feature_spec_version_with_multiple_complex_deps
-  'b32a4a2ced5d085de20d7b3c80615f9d6bcc12b9f7c4d22e70dd9559bd9402e0'
+  '59732ad1dd1c7112e7de0de495426bbf2e423a68d548246b9382a33aba899341'
 # ---
