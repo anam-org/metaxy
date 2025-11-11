@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from metaxy.models.types import FeatureKey
 
 from psycopg import Error as _PsycopgError
+from sqlglot import exp
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -181,7 +182,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.schema = params.get("schema")
         self.enable_pgcrypto = enable_pgcrypto
         self._pgcrypto_extension_checked = False
-        self._system_tables_created = False
 
         super().__init__(
             connection_string=connection_string,
@@ -218,7 +218,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         super().open()
         # Reset pgcrypto check for the new connection
         self._pgcrypto_extension_checked = False
-        self._system_tables_created = False
 
         if not self._has_native_struct_support():
             # Postgres + current Ibis/sqlglot versions cannot create STRUCT columns.
@@ -405,41 +404,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
 
-    def _create_system_tables(self) -> None:
-        """
-        Idempotently create system tables using a robust check.
-
-        This uses `_list_tables_robustly()` to avoid bytes-vs-string bugs
-        and includes a guard (`_system_tables_created`) to ensure it only
-        runs once per connection, preventing `DuplicateTable` errors caused
-        by multiple calls within the same test.
-        """
-        # THE GUARD: If we've already run this, do nothing.
-        if self._system_tables_created:
-            return
-
-        from metaxy.metadata_store.system_tables import (
-            FEATURE_VERSIONS_KEY,
-            FEATURE_VERSIONS_SCHEMA,
-            MIGRATION_EVENTS_KEY,
-            MIGRATION_EVENTS_SCHEMA,
-        )
-
-        # Use the robust method we built that works.
-        existing_tables = self._list_tables_robustly()
-
-        # Simple, non-atomic check is fine because we only run this code block ONCE.
-        if FEATURE_VERSIONS_KEY.table_name not in existing_tables:
-            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self.conn.create_table(FEATURE_VERSIONS_KEY.table_name, obj=empty_df_fv)
-
-        if MIGRATION_EVENTS_KEY.table_name not in existing_tables:
-            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self.conn.create_table(MIGRATION_EVENTS_KEY.table_name, obj=empty_df_me)
-
-        # Set the guard to true after successful execution.
-        self._system_tables_created = True
-
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
@@ -447,11 +411,18 @@ class PostgresMetadataStore(IbisMetadataStore):
     ) -> None:
         """
         Serialize struct columns when Postgres lacks STRUCT support and use robust table checks.
+
+        This is the definitive fix for the `SyntaxError`. It ensures that if we are
+        in struct compatibility mode, the DataFrame's struct columns are ALWAYS
+        serialized to JSON strings *before* being passed to any Ibis method
+        (`create_table` or `insert`), which prevents Ibis from ever seeing a
+        `Struct` type it cannot handle.
         """
         table_name = feature_key.table_name
 
-        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
-            df = self._serialize_provenance_column(df)
+        df_to_write = df
+        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df_to_write.columns:
+            df_to_write = self._serialize_provenance_column(df_to_write)
 
         if table_name not in self._list_tables_robustly():
             if not self.auto_create_tables:
@@ -462,13 +433,14 @@ class PostgresMetadataStore(IbisMetadataStore):
                     f"Enable auto_create_tables=True or create the table manually."
                 )
 
-            df_typed = df
-            for col in df.columns:
-                if df[col].dtype == pl.Null:
+            df_typed = df_to_write
+            for col in df_typed.columns:
+                if df_typed[col].dtype == pl.Null:
                     df_typed = df_typed.with_columns(pl.col(col).cast(pl.Utf8))
+
             self.conn.create_table(table_name, obj=df_typed)
         else:
-            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+            self.conn.insert(table_name, obj=df_to_write)  # pyright: ignore[reportAttributeAccessIssue]
 
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
@@ -614,11 +586,6 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _has_native_struct_support(self) -> bool:
         """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
-        try:
-            from sqlglot import exp
-        except ImportError:  # pragma: no cover - only triggered if sqlglot missing
-            return False
-
         dialect = getattr(self.conn, "dialect", None)
         type_mapping = getattr(dialect, "TYPE_TO_EXPRESSIONS", None)
         if not type_mapping:
