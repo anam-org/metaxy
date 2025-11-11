@@ -402,12 +402,13 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _create_system_tables(self) -> None:
         """
-        Override to use our robust table listing and public creation APIs.
+        Atomically create system tables using dynamic, type-safe schema generation.
 
-        This provides a self-contained, idempotent way to create system tables.
-        It uses `_list_tables_robustly()` to avoid the original bytes vs. string
-        bug, and then checks for existence before calling the public `create_table()`
-        API to avoid `DuplicateTable` errors. This method uses no private APIs.
+        This implementation dynamically generates the `CREATE TABLE` DDL from the
+        Polars schema using public, type-safe Ibis APIs. It then modifies the DDL
+        to include `IF NOT EXISTS`, making the operation atomic and safe from race
+        conditions. It correctly handles schemas defined with a mix of Polars
+        types and instances.
         """
         from metaxy.metadata_store.system_tables import (
             FEATURE_VERSIONS_KEY,
@@ -416,22 +417,51 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        # 1. Use the robust method we already built to get a clean list of strings.
-        existing_tables = self._list_tables_robustly()
+        # ADDED TYPE HINTS TO THIS FUNCTION SIGNATURE
+        def _instantiate_schema(schema_def: dict[str, Any]) -> dict[str, Any]:
+            """
+            Correctly instantiate a schema dictionary for Ibis.
 
-        # --- Create feature_versions table IF IT DOESN'T EXIST ---
-        feature_versions_table = FEATURE_VERSIONS_KEY.table_name
-        if feature_versions_table not in existing_tables:
-            # 2. Use the public, working Ibis API to create the table.
-            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self.conn.create_table(feature_versions_table, obj=empty_df_fv)
+            Handles schemas that are a mix of types (e.g., pl.Utf8) and
+            instances (e.g., pl.List(...)).
+            """
+            instantiated = {}
+            for name, dtype_or_instance in schema_def.items():
+                # Check if it's a type (like pl.Utf8) and not an instance
+                if isinstance(dtype_or_instance, type):
+                    instantiated[name] = dtype_or_instance()
+                else:
+                    # It's already an instance (like pl.List(...) or pl.Datetime(...))
+                    instantiated[name] = dtype_or_instance
+            return instantiated
 
-        # --- Create migration_events table IF IT DOESN'T EXIST ---
-        migration_events_table = MIGRATION_EVENTS_KEY.table_name
-        if migration_events_table not in existing_tables:
-            # 3. Use the public, working Ibis API again.
-            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self.conn.create_table(migration_events_table, obj=empty_df_me)
+        # --- Create feature_versions table (atomically) ---
+        table_name_fv = FEATURE_VERSIONS_KEY.table_name
+
+        instantiated_schema_fv = _instantiate_schema(FEATURE_VERSIONS_SCHEMA)
+        ibis_schema_expr_fv = self._ibis.schema(instantiated_schema_fv)
+
+        ddl_string_fv = self.conn.compile(
+            self.conn.create_table(table_name_fv, schema=ibis_schema_expr_fv)
+        )
+        atomic_ddl_fv = str(ddl_string_fv).replace(
+            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
+        )
+        self._execute_sql(atomic_ddl_fv)
+
+        # --- Create migration_events table (atomically) ---
+        table_name_me = MIGRATION_EVENTS_KEY.table_name
+
+        instantiated_schema_me = _instantiate_schema(MIGRATION_EVENTS_SCHEMA)
+        ibis_schema_expr_me = self._ibis.schema(instantiated_schema_me)
+
+        ddl_string_me = self.conn.compile(
+            self.conn.create_table(table_name_me, schema=ibis_schema_expr_me)
+        )
+        atomic_ddl_me = str(ddl_string_me).replace(
+            "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
+        )
+        self._execute_sql(atomic_ddl_me)
 
     def _execute_sql(self, sql: str) -> None:
         """Execute raw SQL via Ibis backend or underlying DBAPI connection."""
