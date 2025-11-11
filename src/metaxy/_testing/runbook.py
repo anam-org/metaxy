@@ -18,7 +18,6 @@ from contextlib import contextmanager
 # ============================================================================
 # Runbook Execution State Models
 # ============================================================================
-from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -28,51 +27,66 @@ from pydantic import BaseModel, ConfigDict, PrivateAttr
 from pydantic import Field as PydanticField
 
 
-@dataclass(frozen=True)
-class GraphPushed:
+class GraphPushed(BaseModel):
     """Event recorded when a graph snapshot is pushed."""
 
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["graph_pushed"] = "graph_pushed"
     snapshot_version: str
     timestamp: datetime
     scenario_name: str | None = None
+    step_name: str | None = None
 
 
-@dataclass(frozen=True)
-class PatchApplied:
+class PatchApplied(BaseModel):
     """Event recorded when a patch is applied."""
 
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["patch_applied"] = "patch_applied"
     patch_path: str
     before_snapshot: str | None
     after_snapshot: str | None
     timestamp: datetime
     scenario_name: str | None = None
+    step_name: str | None = None
 
 
-@dataclass(frozen=True)
-class CommandExecuted:
+class CommandExecuted(BaseModel):
     """Event recorded when a command is executed."""
 
+    model_config = ConfigDict(frozen=True)
+
+    type: Literal["command_executed"] = "command_executed"
     command: str
     returncode: int
     stdout: str
     stderr: str
     timestamp: datetime
     scenario_name: str | None = None
+    step_name: str | None = None
 
 
 # Type alias for all event types
 RunbookEvent = GraphPushed | PatchApplied | CommandExecuted
 
 
-@dataclass(frozen=True)
-class RunbookExecutionState:
+class RunbookExecutionState(BaseModel):
     """Captured state from a runbook execution.
 
     This preserves all events that occurred during the runbook run,
     allowing for later analysis, documentation generation, etc.
     """
 
-    events: list[GraphPushed | PatchApplied | CommandExecuted]
+    model_config = ConfigDict(frozen=True)
+
+    events: list[
+        Annotated[
+            GraphPushed | PatchApplied | CommandExecuted,
+            PydanticField(discriminator="type"),
+        ]
+    ]
 
     def get_patch_snapshots(self) -> dict[str, tuple[str | None, str | None]]:
         """Extract patch snapshots from the event stream.
@@ -98,6 +112,32 @@ class RunbookExecutionState:
         return None
 
 
+class SavedRunbookResult(BaseModel):
+    """Complete saved result from a runbook execution.
+
+    This is the top-level model for .example.result.json files.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    runbook_name: str
+    package_name: str
+    description: str | None = None
+    execution_state: RunbookExecutionState
+
+    @classmethod
+    def from_json_file(cls, path: Path) -> SavedRunbookResult:
+        """Load saved result from a JSON file.
+
+        Args:
+            path: Path to .example.result.json file.
+
+        Returns:
+            Parsed SavedRunbookResult instance.
+        """
+        return cls.model_validate_json(path.read_text())
+
+
 # ============================================================================
 # Runbook Models
 # ============================================================================
@@ -118,6 +158,9 @@ class BaseStep(BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritan
     """
 
     model_config = ConfigDict(frozen=True)
+
+    name: str | None = None
+    """Optional unique name for this step, used for referencing in documentation."""
 
     description: str | None = None
     """Optional human-readable description of this step."""
@@ -370,6 +413,28 @@ class Runbook(BaseModel):
             data = self.model_dump(mode="json")
             yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
 
+    def save_execution_state(self, path: Path) -> None:
+        """Save raw execution state to JSON file.
+
+        This saves the complete event stream with actual timestamps and output,
+        used for documentation generation.
+
+        Args:
+            path: Path where the .example.result.json file should be written.
+        """
+        if self._execution_state is None:
+            raise RuntimeError("No execution state available. Run the runbook first.")
+
+        # Create SavedRunbookResult and use Pydantic's JSON serialization
+        result = SavedRunbookResult(
+            runbook_name=self.name,
+            package_name=self.package_name,
+            description=self.description,
+            execution_state=self._execution_state,
+        )
+
+        path.write_text(result.model_dump_json(indent=2))
+
 
 # ============================================================================
 # Runbook Runner
@@ -450,11 +515,14 @@ class RunbookRunner:
 
         return env
 
-    def push_graph_snapshot(self) -> str | None:
+    def push_graph_snapshot(self, step_name: str | None = None) -> str | None:
         """Push the current graph snapshot using metaxy graph push.
 
         This is called automatically after the initial load and after each patch,
         unless disabled via auto_push_graph=False in the runbook.
+
+        Args:
+            step_name: Optional name of the step that triggered this push.
 
         Returns:
             The snapshot version hash from the push, or None if push was skipped.
@@ -490,6 +558,7 @@ class RunbookRunner:
                         GraphPushed(
                             timestamp=datetime.now(),
                             scenario_name=self._current_scenario,
+                            step_name=step_name,
                             snapshot_version=next_line,
                         )
                     )
@@ -551,6 +620,19 @@ class RunbookRunner:
             stderr=result.stderr if step.capture_output else "",
         )
 
+        # Record the CommandExecuted event
+        self._events.append(
+            CommandExecuted(
+                timestamp=datetime.now(),
+                scenario_name=self._current_scenario,
+                step_name=step.name,
+                command=step.command,
+                returncode=self.last_result.returncode,
+                stdout=self.last_result.stdout,
+                stderr=self.last_result.stderr,
+            )
+        )
+
         return self.last_result
 
     def apply_patch(self, step: ApplyPatchStep, scenario_name: str) -> None:
@@ -595,7 +677,7 @@ class RunbookRunner:
         # Push graph snapshot after applying patch if requested
         after_snapshot = None
         if step.push_graph:
-            after_snapshot = self.push_graph_snapshot()
+            after_snapshot = self.push_graph_snapshot(step_name=step.name)
             if after_snapshot:
                 self._last_pushed_snapshot = after_snapshot
 
@@ -604,6 +686,7 @@ class RunbookRunner:
             PatchApplied(
                 timestamp=datetime.now(),
                 scenario_name=self._current_scenario,
+                step_name=step.name,
                 patch_path=step.patch_path,
                 before_snapshot=before_snapshot,
                 after_snapshot=after_snapshot,

@@ -21,6 +21,13 @@ This module provides a markdown preprocessor that handles directives like:
         example: recompute
         path: patches/01_update_parent_algorithm.patch
     :::
+
+    ::: metaxy-example output
+        example: recompute
+        scenario: "Initial pipeline run"
+        step: "run_pipeline"
+        event_type: command
+    :::
 """
 
 from __future__ import annotations
@@ -212,6 +219,8 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             return self._render_file(example_name, params)
         if directive_type == "patch":
             return self._render_patch(example_name, params)
+        if directive_type == "output":
+            return self._render_output(example_name, params)
         raise ValueError(f"Unknown directive type: {directive_type}")
 
     def _render_scenarios(self, example_name: str) -> str:
@@ -333,6 +342,74 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             show_line_numbers=True,
             hl_lines=None,
         )
+
+    def _render_output(self, example_name: str, params: dict[str, Any]) -> str:
+        """Render execution output from saved result.
+
+        Args:
+            example_name: Name of the example.
+            params: Directive parameters (scenario, step, event_type, etc.).
+
+        Returns:
+            Markdown string with execution output.
+
+        Raises:
+            ValueError: If required parameters are missing or invalid.
+        """
+        from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
+
+        # Load execution result
+        try:
+            result = self.loader.load_execution_result(example_name)
+        except FileNotFoundError as e:
+            return self.renderer.render_error(
+                f"Execution result not found for example '{example_name}'",
+                details=str(e),
+            )
+
+        # Filter events by scenario if specified
+        scenario_name = params.get("scenario")
+        events = result.execution_state.events
+        if scenario_name:
+            events = [e for e in events if e.scenario_name == scenario_name]
+
+        # Filter by step name if specified
+        step_name = params.get("step")
+        if step_name:
+            events = [e for e in events if e.step_name == step_name]
+
+        # Filter by event type if specified
+        event_type = params.get("event_type")
+        if event_type:
+            if event_type == "command":
+                events = [e for e in events if isinstance(e, CommandExecuted)]
+            elif event_type == "patch":
+                events = [e for e in events if isinstance(e, PatchApplied)]
+            elif event_type == "graph_push":
+                events = [e for e in events if isinstance(e, GraphPushed)]
+            else:
+                raise ValueError(f"Unknown event_type: {event_type}")
+
+        # Render all matching events
+        md_parts = []
+        for event in events:
+            if isinstance(event, CommandExecuted):
+                show_command = params.get("show_command", True)
+                md_parts.append(
+                    self.renderer.render_command_output(event, show_command)
+                )
+            elif isinstance(event, PatchApplied):
+                md_parts.append(self.renderer.render_patch_applied(event))
+            elif isinstance(event, GraphPushed):
+                md_parts.append(self.renderer.render_graph_pushed(event))
+
+        if not md_parts:
+            return self.renderer.render_error(
+                "No events matched the specified criteria",
+                details=f"scenario={scenario_name}, step={step_name}, event_type={event_type}",
+            )
+
+        return "\n".join(md_parts)
 
 
 class MetaxyExamplesExtension(Extension):

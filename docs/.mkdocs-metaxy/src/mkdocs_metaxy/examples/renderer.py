@@ -4,11 +4,14 @@ This module provides rendering utilities for:
 - Scenario lists with descriptions
 - Source code in markdown code blocks
 - Diff patches in markdown code blocks
+- Execution events (commands, patches, graph pushes)
 """
 
 from __future__ import annotations
 
 from typing import Any
+
+from metaxy._testing import CommandExecuted, GraphPushed, PatchApplied
 
 
 class ExampleRenderer:
@@ -268,3 +271,75 @@ flowchart TD
 
         except Exception:
             return None
+
+    def render_command_output(
+        self, event: CommandExecuted, show_command: bool = True
+    ) -> str:
+        """Render command execution output as markdown.
+
+        Args:
+            event: CommandExecuted event from execution state.
+            show_command: Whether to show the command that was executed.
+
+        Returns:
+            Markdown string with command output.
+        """
+        md_parts = []
+
+        if show_command:
+            md_parts.append(f"```shell\n$ {event.command}\n```")
+            md_parts.append("")
+
+        # Show stdout if present
+        if event.stdout:
+            md_parts.append("```")
+            md_parts.append(event.stdout.rstrip())
+            md_parts.append("```")
+            md_parts.append("")
+
+        # Show stderr if present (as a warning admonition)
+        if event.stderr:
+            md_parts.append('!!! warning "Warnings/Errors"')
+            md_parts.append("    ```")
+            for line in event.stderr.rstrip().split("\n"):
+                md_parts.append(f"    {line}")
+            md_parts.append("    ```")
+            md_parts.append("")
+
+        return "\n".join(md_parts)
+
+    def render_patch_applied(self, event: PatchApplied) -> str:
+        """Render patch application event as markdown.
+
+        Args:
+            event: PatchApplied event from execution state.
+
+        Returns:
+            Markdown string describing the patch application.
+        """
+        md_parts = []
+
+        md_parts.append(f"**Applied patch:** `{event.patch_path}`")
+        md_parts.append("")
+
+        if event.before_snapshot and event.after_snapshot:
+            before_short = event.before_snapshot[:8]
+            after_short = event.after_snapshot[:8]
+            md_parts.append(
+                f"Graph snapshot changed: `{before_short}...` → `{after_short}...`"
+            )
+            md_parts.append("")
+
+        return "\n".join(md_parts)
+
+    def render_graph_pushed(self, event: GraphPushed) -> str:
+        """Render graph push event as markdown.
+
+        Args:
+            event: GraphPushed event from execution state.
+
+        Returns:
+            Markdown string describing the graph push.
+        """
+        snapshot_short = event.snapshot_version[:8]
+        return f"**Graph snapshot recorded:** `{snapshot_short}...`\n\n"
