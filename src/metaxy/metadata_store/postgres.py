@@ -221,19 +221,23 @@ class PostgresMetadataStore(IbisMetadataStore):
         super().open()
         # Reset pgcrypto check for the new connection
         self._pgcrypto_extension_checked = False
+        import sys
 
         if not self._has_native_struct_support():
-            # Postgres + current Ibis/sqlglot versions cannot create STRUCT columns.
-            # Fall back to JSON serialization + in-memory Narwhals/Polars processing.
             self._struct_compat_mode = True
+            message = (
+                "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. "
+                "Falling back to JSON serialization compatibility mode. !!!"
+            )
+            print(message, file=sys.stderr)
             logger.warning(
-                "PostgreSQL backend lacks native STRUCT type support in this environment. "
-                "Falling back to JSON serialization and in-memory projections. "
-                "For better performance, upgrade to a version of Ibis/sqlglot that "
-                "supports STRUCT types on Postgres."
+                message.replace("!!! Metaxy WARNING: ", "").replace("!!!", "")
             )
         else:
             self._struct_compat_mode = False
+            message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
+            print(message, file=sys.stderr)
+            logger.info(message.replace("!!! Metaxy INFO: ", "").replace("!!!", ""))
 
     def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
         """Enable pgcrypto before running native SHA256 provenance tracking."""
@@ -666,18 +670,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
         struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
         if struct_type is None:
-            message = "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. Falling back to JSON serialization compatibility mode. !!!"
-            import sys
-
-            print(message, file=sys.stderr)
-            logger.info(message.replace("!!! Metaxy INFO: ", ""))
             return False
-
-        message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
-        import sys
-
-        print(message, file=sys.stderr)
-        logger.info(message.replace("!!! Metaxy INFO: ", ""))
         return struct_type in type_mapping
 
     @staticmethod
