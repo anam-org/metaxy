@@ -106,3 +106,41 @@ class PolarsProvenanceTracker(ProvenanceTracker):
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
+
+    def aggregate_with_string_concat(
+        self,
+        df: FrameT,
+        group_by_columns: list[str],
+        concat_column: str,
+        concat_separator: str,
+        exclude_columns: list[str],
+    ) -> FrameT:
+        """Aggregate DataFrame by grouping and concatenating strings.
+
+        Args:
+            df: Narwhals DataFrame backed by Polars
+            group_by_columns: Columns to group by
+            concat_column: Column containing strings to concatenate within groups
+            concat_separator: Separator to use when concatenating strings
+            exclude_columns: Columns to exclude from aggregation
+
+        Returns:
+            Narwhals DataFrame with one row per group.
+        """
+        assert df.implementation == nw.Implementation.POLARS, (
+            "Only Polars DataFrames are accepted"
+        )
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+
+        # Group and aggregate: concatenate concat_column, take first for others
+        grouped = df_pl.group_by(group_by_columns).agg(
+            [
+                pl.col(concat_column).str.join(concat_separator),
+                pl.exclude(
+                    group_by_columns + [concat_column] + exclude_columns
+                ).first(),
+            ]
+        )
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(grouped))
