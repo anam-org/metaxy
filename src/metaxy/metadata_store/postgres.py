@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
 
-import threading
 
 from psycopg import Error as _PsycopgError
 from psycopg.cursor import Cursor as PsycopgCursor
@@ -43,73 +42,55 @@ logger = logging.getLogger(__name__)
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
-_psycopg_patched = False
-_patch_lock = threading.Lock()
+_original_execute = PsycopgCursor.execute
+_original_iter = PsycopgCursor.__iter__
 
 
-def _apply_final_psycopg_patch():
-    global _psycopg_patched
-    if _psycopg_patched:
-        return
+def _decoder(byte_value):
+    return byte_value.decode("utf-8", "replace")
 
-    with _patch_lock:
-        if _psycopg_patched:
-            return
 
-        logger.info("Applying final, refined, brute-force patch to psycopg.Cursor...")
+def _patched_execute(self, query, params=None, *args, **kwargs):
+    """
+    Patched `execute` to sanitize parameters on the way IN to the database.
+    This fixes the `name = bytea` error.
+    """
+    sanitized_params = params
+    if params:
+        if isinstance(params, dict):
+            sanitized_params = {}
+            for key, value in params.items():
+                if isinstance(value, list) and value and isinstance(value[0], bytes):
+                    sanitized_params[key] = [_decoder(item) for item in value]
+                elif isinstance(value, bytes):
+                    sanitized_params[key] = _decoder(value)
+                else:
+                    sanitized_params[key] = value
+        elif isinstance(params, (tuple, list)):
+            sanitized_params = tuple(
+                _decoder(p) if isinstance(p, bytes) else p for p in params
+            )
 
-        # --- 1. Patch on the way IN (`execute`) ---
-        original_execute = PsycopgCursor.execute
+    return _original_execute(self, query, sanitized_params, *args, **kwargs)
 
-        def decoder(byte_value):
-            return byte_value.decode("utf-8", "replace")
 
-        def patched_execute(self, query, params=None, *args, **kwargs):
-            sanitized_params = params
-            if params:
-                if isinstance(params, dict):
-                    sanitized_params = {}
-                    for key, value in params.items():
-                        if (
-                            isinstance(value, list)
-                            and value
-                            and isinstance(value[0], bytes)
-                        ):
-                            # This is the specific fix for the `name = bytea` error.
-                            # We ONLY decode the list of bytes.
-                            sanitized_params[key] = [decoder(item) for item in value]
-                        elif isinstance(value, bytes):
-                            sanitized_params[key] = decoder(value)
-                        else:
-                            sanitized_params[key] = value
-                elif isinstance(params, (tuple, list)):
-                    sanitized_params = tuple(
-                        decoder(p) if isinstance(p, bytes) else p for p in params
-                    )
+def _patched_iter(self):
+    """
+    Patched `__iter__` to sanitize results on the way OUT of the database.
+    This fixes the `TypeError: startswith` error.
+    """
+    # Wrap the original iterator in a new generator that decodes each row.
+    for row in _original_iter(self):
+        yield tuple(_decoder(item) if isinstance(item, bytes) else item for item in row)
 
-            return original_execute(self, query, sanitized_params, *args, **kwargs)
 
-        # --- 2. Patch on the way OUT (`__iter__`) ---
-        # Instead of patching fetchone/fetchall, we patch the iterator.
-        # This is more fundamental and catches all result-fetching methods.
-        original_iter = PsycopgCursor.__iter__
+# 3. Apply the patches to the PsycopgCursor class.
+PsycopgCursor.execute = _patched_execute
+PsycopgCursor.__iter__ = _patched_iter
 
-        def patched_iter(self):
-            # We call the original iterator and wrap it in our own generator
-            # that sanitizes each row as it is yielded.
-            for row in original_iter(self):
-                # A row is a tuple. We create a new one with decoded values.
-                # This fixes the `TypeError: startswith` for data type names.
-                yield tuple(
-                    decoder(item) if isinstance(item, bytes) else item for item in row
-                )
-
-        # 3. Apply all patches to the class.
-        PsycopgCursor.execute = patched_execute
-        PsycopgCursor.__iter__ = patched_iter
-
-        _psycopg_patched = True
-        logger.info("Final, refined psycopg patch applied successfully.")
+logger.info(
+    "Applied final, global, brute-force patch to psycopg.Cursor at module load time."
+)
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -225,7 +206,7 @@ class PostgresMetadataStore(IbisMetadataStore):
             SHA256 hashing runs inside `resolve_update()` unless
             `enable_pgcrypto=False`.
         """
-        _apply_final_psycopg_patch()
+        kwargs.setdefault("versioning_engine", "polars")
         params: dict[str, Any] = dict(connection_params or {})
 
         explicit_params = {
