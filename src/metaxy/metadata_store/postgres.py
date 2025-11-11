@@ -403,16 +403,38 @@ class PostgresMetadataStore(IbisMetadataStore):
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
 
+    def _execute_raw_ddl(self, sql: str) -> None:
+        """
+        Executes a DDL statement using the raw DBAPI connection.
+
+        This bypasses the Ibis `conn.sql()` helper, which has side effects
+        (schema inference) that can trigger bytes-vs-string bugs in some
+        environments. This method is "dumber" and safer for DDL.
+        """
+        raw_conn = getattr(self.conn, "con", None)
+        if raw_conn is None:
+            raise RuntimeError(
+                "Postgres backend does not expose a raw 'con' attribute, "
+                "cannot execute DDL directly."
+            )
+
+        # DDL statements should be run with autocommit to avoid issues
+        # with transaction blocks.
+        original_autocommit = raw_conn.autocommit
+        try:
+            raw_conn.autocommit = True
+            with raw_conn.cursor() as cursor:
+                cursor.execute(sql)
+        finally:
+            raw_conn.autocommit = original_autocommit
+
     def _create_system_tables(self) -> None:
         """
         Atomically create system tables using an explicit Polars-to-Ibis schema translation.
 
-        This is the definitive implementation. It solves all type-checking and
-        runtime errors by manually translating the Polars schema into a valid
-        Ibis schema, including the creation of the specific `FrozenOrderedDict`
-        type required by Ibis's strict type hints.
+        This is the definitive implementation. It uses a raw DDL executor to bypass
+        problematic Ibis helpers and prevent all race conditions and type errors.
         """
-        # NEW IMPORT: The specific dictionary type required by Ibis type hints.
         from ibis.common.collections import FrozenOrderedDict
         from ibis.expr import datatypes as dt
         from ibis.expr import schema as sch
@@ -425,10 +447,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         )
 
         def _polars_to_ibis_schema(polars_schema_def: dict[str, Any]) -> sch.Schema:
-            """
-            Explicitly translate a Polars schema definition to an Ibis Schema,
-            satisfying all strict type hints.
-            """
             ibis_types = {}
             for name, p_type in polars_schema_def.items():
                 if p_type == pl.Utf8:
@@ -443,7 +461,6 @@ class PostgresMetadataStore(IbisMetadataStore):
                     struct_fields = {
                         field.name: dt.string for field in p_type.inner.fields
                     }
-                    # THE FIX: Explicitly create the FrozenOrderedDict from our plain dict.
                     frozen_struct_fields = FrozenOrderedDict(struct_fields)
                     ibis_types[name] = dt.Array(
                         value_type=dt.Struct(fields=frozen_struct_fields)
@@ -454,8 +471,7 @@ class PostgresMetadataStore(IbisMetadataStore):
                     )
             return self._ibis.schema(ibis_types)
 
-        # --- The rest of the function is unchanged and will now work ---
-
+        # --- Create feature_versions table (atomically) ---
         table_name_fv = FEATURE_VERSIONS_KEY.table_name
         ibis_schema_fv = _polars_to_ibis_schema(FEATURE_VERSIONS_SCHEMA)
         ddl_string_fv = self.conn.compile(
@@ -464,8 +480,11 @@ class PostgresMetadataStore(IbisMetadataStore):
         atomic_ddl_fv = str(ddl_string_fv).replace(
             "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
         )
-        self._execute_sql(atomic_ddl_fv)
 
+        # USE THE NEW, SAFE HELPER
+        self._execute_raw_ddl(atomic_ddl_fv)
+
+        # --- Create migration_events table (atomically) ---
         table_name_me = MIGRATION_EVENTS_KEY.table_name
         ibis_schema_me = _polars_to_ibis_schema(MIGRATION_EVENTS_SCHEMA)
         ddl_string_me = self.conn.compile(
@@ -474,24 +493,9 @@ class PostgresMetadataStore(IbisMetadataStore):
         atomic_ddl_me = str(ddl_string_me).replace(
             "CREATE TABLE", "CREATE TABLE IF NOT EXISTS", 1
         )
-        self._execute_sql(atomic_ddl_me)
 
-    def _execute_sql(self, sql: str) -> None:
-        """Execute raw SQL via Ibis backend or underlying DBAPI connection."""
-        executor: Callable[[str], Any] | None = getattr(self.conn, "sql", None)
-        if callable(executor):
-            executor(sql)
-            return
-
-        raw_conn = getattr(self.conn, "con", None)  # pyright: ignore[reportAttributeAccessIssue]
-        if raw_conn is None:
-            raise RuntimeError(
-                "Postgres backend connection does not expose sql() or con"
-            )
-
-        with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
-            cursor.execute(sql)
-            raw_conn.commit()  # pyright: ignore[reportAttributeAccessIssue]
+        # USE THE NEW, SAFE HELPER
+        self._execute_raw_ddl(atomic_ddl_me)
 
     def _write_metadata_impl(
         self,
