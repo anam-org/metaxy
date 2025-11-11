@@ -1,0 +1,242 @@
+# serializer version: 1
+# name: test_example_snapshot[example-one-to-many]
+  dict({
+    'events': list([
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'stderr': '''
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+          Feature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+  
+        ''',
+        'stdout': '''
+          Found 3 new videos
+          Found 3 videos and 0 videos that need chunking
+          Processing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v1', 'frames': 'v1'}, 'metaxy_provenance__video_raw': 'c0e1a00f0a117623634caf2ae3bca98d', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339'}
+          Writing 5 chunks for video 1
+          Processing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v2', 'frames': 'v2'}, 'metaxy_provenance__video_raw': '6086bb90a046bc4b8a66aae64458f905', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591'}
+          Writing 3 chunks for video 2
+          Processing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v3', 'frames': 'v3'}, 'metaxy_provenance__video_raw': 'ba24e4a269e9b58c00414bc3dd8ca9f5', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46'}
+          Writing 3 chunks for video 3
+          Found 11 video chunks and 0 video chunks that need face recognition
+          Writing face recognition results for 11 chunks
+  
+        ''',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'stderr': '''
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+          Feature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+  
+        ''',
+        'stdout': '''
+          Found 0 videos and 0 videos that need chunking
+          Found 0 video chunks and 0 video chunks that need face recognition
+  
+        ''',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'after_snapshot': None,
+        'before_snapshot': None,
+        'patch_path': 'patches/01_update_video_code_version.patch',
+        'scenario_name': 'Code change - audio field only',
+        'step_name': 'update_audio_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Code change - audio field only',
+        'stderr': '''
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+          Feature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+  
+        ''',
+        'stdout': '''
+          Found 3 new videos
+          Found 3 videos and 0 videos that need chunking
+          Processing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v1', 'frames': 'v1'}, 'metaxy_provenance__video_raw': 'c0e1a00f0a117623634caf2ae3bca98d', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339'}
+          Writing 5 chunks for video 1
+          Processing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v2', 'frames': 'v2'}, 'metaxy_provenance__video_raw': '6086bb90a046bc4b8a66aae64458f905', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591'}
+          Writing 3 chunks for video 2
+          Processing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v3', 'frames': 'v3'}, 'metaxy_provenance__video_raw': 'ba24e4a269e9b58c00414bc3dd8ca9f5', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46'}
+          Writing 3 chunks for video 3
+          Found 0 video chunks and 0 video chunks that need face recognition
+  
+        ''',
+        'step_name': 'recompute_after_audio_change',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Final idempotent check',
+        'stderr': '''
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+          Feature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.
+          /home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+            main()
+  
+        ''',
+        'stdout': '''
+          Found 0 videos and 0 videos that need chunking
+          Found 0 video chunks and 0 video chunks that need face recognition
+  
+        ''',
+        'step_name': 'final_idempotent_check',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
+# name: test_example_snapshot[example-recompute]
+  dict({
+    'events': list([
+      dict({
+        'command': 'python -m example_recompute.setup_data',
+        'returncode': 0,
+        'scenario_name': 'Setup upstream data',
+        'stderr': '',
+        'stdout': '',
+        'step_name': 'setup_data',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'stderr': '''
+          sys:1: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+  
+        ''',
+        'stdout': '''
+          Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82
+          Written 3 rows for feature examples/parent
+          Pipeline
+          ============================================================
+          
+          [1/2] Computing parent feature...
+          
+          [2/2] Computing child feature...
+          Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82
+          
+          📊 Computing examples/child...
+            feature_version: 440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f
+          Identified: 3 new samples, 0 samples with new provenance_by_field
+          ✓ Materialized 3 new samples
+          
+          📋 Child provenance_by_field:
+            sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}
+            sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}
+            sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}
+          
+          
+          ✅ Pipeline complete!
+  
+        ''',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'stderr': '''
+          sys:1: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+  
+        ''',
+        'stdout': '''
+          Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82
+          Metadata already exists for feature examples/parent (feature_version: 0aad9b8a2ea055cd...)
+          Skipping write to avoid duplicates
+          Pipeline
+          ============================================================
+          
+          [1/2] Computing parent feature...
+          
+          [2/2] Computing child feature...
+          Graph snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82
+          
+          📊 Computing examples/child...
+            feature_version: 440ffb028aaa5cb21b155c4ef21debd81f283f99aa91ef58cbe541d71164b44f
+          Identified: 0 new samples, 0 samples with new provenance_by_field
+          
+          📋 Child provenance_by_field:
+            sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}
+            sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}
+            sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}
+          
+          No changes detected (idempotent)
+          
+          ✅ Pipeline complete!
+  
+        ''',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'after_snapshot': None,
+        'before_snapshot': None,
+        'patch_path': 'patches/01_update_parent_algorithm.patch',
+        'scenario_name': 'Code evolution',
+        'step_name': 'update_parent_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Code evolution',
+        'stderr': '''
+          sys:1: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.
+  
+        ''',
+        'stdout': '''
+          Graph snapshot_version: 31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477
+          Written 3 rows for feature examples/parent
+          Pipeline
+          ============================================================
+          
+          [1/2] Computing parent feature...
+          
+          [2/2] Computing child feature...
+          Graph snapshot_version: 31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477
+          
+          📊 Computing examples/child...
+            feature_version: 7251e21c32d2d8e35a8ba389a8ce1b597663f206dee0ff55e542a3af1f1665cd
+          Identified: 3 new samples, 0 samples with new provenance_by_field
+          ✓ Materialized 3 new samples
+          
+          📋 Child provenance_by_field:
+            sample_uid=1: {'predictions': '55e4ad342b7f3a680eb3093b18394e05'}
+            sample_uid=2: {'predictions': '722b2b91a6e10ddaab5ab3115efcee45'}
+            sample_uid=3: {'predictions': '07f06ce7547de41903dfe1b3239acd04'}
+          
+          
+          ✅ Pipeline complete!
+  
+        ''',
+        'step_name': 'recompute_after_change',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---

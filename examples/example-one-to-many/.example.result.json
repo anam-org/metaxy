@@ -1,0 +1,58 @@
+{
+  "runbook_name": "One-to-Many Expansion Example",
+  "package_name": "example_one_to_many",
+  "description": "Demonstrates 1:N expansion relationships and field-level provenance tracking",
+  "execution_state": {
+    "events": [
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v1', 'frames': 'v1'}, 'metaxy_provenance__video_raw': 'c0e1a00f0a117623634caf2ae3bca98d', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339'}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v2', 'frames': 'v2'}, 'metaxy_provenance__video_raw': '6086bb90a046bc4b8a66aae64458f905', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591'}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v3', 'frames': 'v3'}, 'metaxy_provenance__video_raw': 'ba24e4a269e9b58c00414bc3dd8ca9f5', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46'}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
+        "stderr": "/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\nFeature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.\n/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2025-11-11T20:01:21.702103",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\nFeature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.\n/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2025-11-11T20:01:23.193091",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      },
+      {
+        "type": "patch_applied",
+        "patch_path": "patches/01_update_video_code_version.patch",
+        "before_snapshot": null,
+        "after_snapshot": null,
+        "timestamp": "2025-11-11T20:01:24.386038",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "update_audio_version"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v1', 'frames': 'v1'}, 'metaxy_provenance__video_raw': 'c0e1a00f0a117623634caf2ae3bca98d', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339'}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v2', 'frames': 'v2'}, 'metaxy_provenance__video_raw': '6086bb90a046bc4b8a66aae64458f905', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591'}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field__video_raw': {'audio': 'v3', 'frames': 'v3'}, 'metaxy_provenance__video_raw': 'ba24e4a269e9b58c00414bc3dd8ca9f5', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46'}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\nFeature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.\n/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2025-11-11T20:01:25.969737",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "recompute_after_audio_change"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\nFeature video/raw: samples parameter is Polars-backed but store uses native SQL backend. Materializing current metadata to Polars for diff comparison. For better performance, consider using samples with backend matching the store's backend.\n/home/dan/code/github/anam-org/metaxy/examples/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled for IbisMetadataStore(backend=duckdb) - do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2025-11-11T20:01:27.463343",
+        "scenario_name": "Final idempotent check",
+        "step_name": "final_idempotent_check"
+      }
+    ]
+  }
+}

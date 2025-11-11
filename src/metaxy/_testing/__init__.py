@@ -23,9 +23,14 @@ from metaxy._testing.runbook import (
     ApplyPatchStep,
     AssertOutputStep,
     BaseStep,
+    CommandExecuted,
+    GraphPushed,
+    PatchApplied,
     Runbook,
+    RunbookExecutionState,
     RunbookRunner,
     RunCommandStep,
+    SavedRunbookResult,
     Scenario,
     StepType,
 )
@@ -40,6 +45,12 @@ __all__ = [
     "AssertOutputStep",
     "StepType",
     "RunbookRunner",
+    # Runbook execution state
+    "RunbookExecutionState",
+    "SavedRunbookResult",
+    "GraphPushed",
+    "PatchApplied",
+    "CommandExecuted",
     # Metaxy project helpers
     "TempFeatureModule",
     "HashAlgorithmCases",
