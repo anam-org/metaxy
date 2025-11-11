@@ -1,0 +1,72 @@
+{
+  "runbook_name": "One-to-Many Expansion Example",
+  "package_name": "example_one_to_many",
+  "description": "Demonstrates 1:N expansion relationships and field-level provenance tracking",
+  "execution_state": {
+    "events": [
+      {
+        "type": "graph_pushed",
+        "snapshot_version": "39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512",
+        "timestamp": "2026-01-08T08:12:10.434205",
+        "scenario_name": "Initial pipeline run",
+        "step_name": null
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 11 video chunks and 0 video chunks that need face recognition\nWriting face recognition results for 11 chunks\n",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__raw'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__chunk'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:116: UserWarning: AUTO_CREATE_TABLES is enabled - automatically creating table 'video__faces'. Do not use in production! Use proper database migration tools like Alembic for production deployments.\n  main()\n",
+        "timestamp": "2026-01-08T08:12:12.044728",
+        "scenario_name": "Initial pipeline run",
+        "step_name": "initial_run"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T08:12:13.633217",
+        "scenario_name": "Idempotent rerun",
+        "step_name": "idempotent_run"
+      },
+      {
+        "type": "graph_pushed",
+        "snapshot_version": "9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83",
+        "timestamp": "2026-01-08T08:12:14.891808",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "update_audio_version"
+      },
+      {
+        "type": "patch_applied",
+        "patch_path": "patches/01_update_video_code_version.patch",
+        "before_snapshot": "39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512",
+        "after_snapshot": "9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83",
+        "timestamp": "2026-01-08T08:12:14.891832",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "update_audio_version"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 3 new videos\nFound 3 videos and 0 videos that need chunking\nProcessing video: {'video_id': 1, 'path': 'video1.mp4', 'metaxy_provenance_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}, 'metaxy_provenance': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version': 'b70689cc645b36a1043cfac8ac279339', 'metaxy_data_version_by_field': {'audio': '4d4f04548ded52073a3e1acdc174119b', 'frames': '7543ba636a8491695e298d97b6f5d76e'}}\nWriting 5 chunks for video 1\nProcessing video: {'video_id': 2, 'path': 'video2.mp4', 'metaxy_provenance_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}, 'metaxy_provenance': '727b940f16e01d887661376f5b172591', 'metaxy_data_version': '727b940f16e01d887661376f5b172591', 'metaxy_data_version_by_field': {'audio': 'a79c4b1dd347aa59a478b59db84fb501', 'frames': '141f827b4c92e423b34cdec12a517c1b'}}\nWriting 3 chunks for video 2\nProcessing video: {'video_id': 3, 'path': 'video3.mp4', 'metaxy_provenance_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}, 'metaxy_provenance': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version': '256503a3e5370c25696f88e2ac802d46', 'metaxy_data_version_by_field': {'audio': 'd7bb40cd544c105f2e2fbaccf6538b8d', 'frames': 'b09c343e918fff13153559bb0a09f82d'}}\nWriting 3 chunks for video 3\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T08:12:16.610561",
+        "scenario_name": "Code change - audio field only",
+        "step_name": "recompute_after_audio_change"
+      },
+      {
+        "type": "command_executed",
+        "command": "python pipeline.py",
+        "returncode": 0,
+        "stdout": "Found 0 videos and 0 videos that need chunking\nFound 0 video chunks and 0 video chunks that need face recognition\n",
+        "stderr": "/tmp/nix-shell.D1X7TE/tmp27rd23y8/example-one-to-many/pipeline.py:34: PolarsMaterializationWarning: Narwhals implementation mismatch: native is ibis, got polars. This will lead to materialization into an eager Polars frame. Provided `samples` have implementation polars. Using Polars for resolving the increment instead.\n  diff = store.resolve_update(Video, samples=nw.from_native(samples))\n",
+        "timestamp": "2026-01-08T08:12:18.205414",
+        "scenario_name": "Final idempotent check",
+        "step_name": "final_idempotent_check"
+      }
+    ]
+  }
+}

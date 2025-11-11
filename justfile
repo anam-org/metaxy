@@ -86,3 +86,21 @@ version-bump:
 publish-dev:
     uv build
     uv publish "./dist/metaxy-$(uv version --short)-py3-none-any.whl"
+
+# Update snapshots for all examples or specific examples
+example-snapshot-update *EXAMPLES:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{EXAMPLES}}" ]; then
+        # Update all examples
+        uv run pytest tests/examples/test_example_snapshots.py --snapshot-update -v
+    else
+        # Update specific examples by using -k pattern matching
+        for example in {{EXAMPLES}}; do
+            uv run pytest tests/examples/test_example_snapshots.py -k "${example}" --snapshot-update -v
+        done
+    fi
+
+# Run example snapshot tests
+test-example-snapshots:
+    uv run pytest tests/examples/test_example_snapshots.py -v

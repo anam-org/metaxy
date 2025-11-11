@@ -1,0 +1,184 @@
+# serializer version: 1
+# name: test_example_snapshot[example-aggregation]
+  dict({
+    'events': list([
+      dict({
+        'scenario_name': 'Initial pipeline run',
+        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': None,
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': None,
+        'type': 'command_executed',
+      }),
+      dict({
+        'scenario_name': 'Update one audio - only affected speaker recomputed',
+        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'before_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'patch_path': 'patches/01_update_audio_provenance.patch',
+        'scenario_name': 'Update one audio - only affected speaker recomputed',
+        'step_name': None,
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Update one audio - only affected speaker recomputed',
+        'step_name': None,
+        'type': 'command_executed',
+      }),
+      dict({
+        'scenario_name': 'Add new audio - only affected speaker recomputed',
+        'snapshot_version': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'before_snapshot': 'd20c6813866c39ff989eee8e5d45f93f061943fe13f5a65311ff987fc7f1d7cc',
+        'patch_path': 'patches/02_add_audio.patch',
+        'scenario_name': 'Add new audio - only affected speaker recomputed',
+        'step_name': None,
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Add new audio - only affected speaker recomputed',
+        'step_name': None,
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Final idempotent check',
+        'step_name': None,
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
+# name: test_example_snapshot[example-one-to-many]
+  dict({
+    'events': list([
+      dict({
+        'scenario_name': 'Initial pipeline run',
+        'snapshot_version': '39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'scenario_name': 'Code change - audio field only',
+        'snapshot_version': '9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83',
+        'step_name': 'update_audio_version',
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_snapshot': '9f349eecf490e4d105c15621be4f048ea7e163ac97298d695948cffb9e31ce83',
+        'before_snapshot': '39a7f29e64ae839c4711dbc8bc55c4dd35daf0cd33663934d4ef7049e02b2512',
+        'patch_path': 'patches/01_update_video_code_version.patch',
+        'scenario_name': 'Code change - audio field only',
+        'step_name': 'update_audio_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Code change - audio field only',
+        'step_name': 'recompute_after_audio_change',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python pipeline.py',
+        'returncode': 0,
+        'scenario_name': 'Final idempotent check',
+        'step_name': 'final_idempotent_check',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
+# name: test_example_snapshot[example-recompute]
+  dict({
+    'events': list([
+      dict({
+        'scenario_name': 'Setup upstream data',
+        'snapshot_version': 'd49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82',
+        'step_name': None,
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'command': 'python -m example_recompute.setup_data',
+        'returncode': 0,
+        'scenario_name': 'Setup upstream data',
+        'step_name': 'setup_data',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Initial pipeline run',
+        'step_name': 'initial_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Idempotent rerun',
+        'step_name': 'idempotent_run',
+        'type': 'command_executed',
+      }),
+      dict({
+        'scenario_name': 'Code evolution',
+        'snapshot_version': '31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477',
+        'step_name': 'update_parent_version',
+        'type': 'graph_pushed',
+      }),
+      dict({
+        'after_snapshot': '31195f21044a744b4ea70c1ffe6432182e989ede74ed92a8c99e8cd269f14477',
+        'before_snapshot': 'd49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82',
+        'patch_path': 'patches/01_update_parent_algorithm.patch',
+        'scenario_name': 'Code evolution',
+        'step_name': 'update_parent_version',
+        'type': 'patch_applied',
+      }),
+      dict({
+        'command': 'python -m example_recompute.pipeline',
+        'returncode': 0,
+        'scenario_name': 'Code evolution',
+        'step_name': 'recompute_after_change',
+        'type': 'command_executed',
+      }),
+    ]),
+  })
+# ---
