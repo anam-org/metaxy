@@ -182,6 +182,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.schema = params.get("schema")
         self.enable_pgcrypto = enable_pgcrypto
         self._pgcrypto_extension_checked = False
+        self._system_tables_created = False
 
         super().__init__(
             connection_string=connection_string,
@@ -403,6 +404,41 @@ class PostgresMetadataStore(IbisMetadataStore):
         """Disable native components when running in struct-compatibility mode."""
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
         return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
+
+    def _create_system_tables(self) -> None:
+        """
+        Idempotently create system tables using a robust check.
+
+        This uses `_list_tables_robustly()` to avoid bytes-vs-string bugs
+        and includes a guard (`_system_tables_created`) to ensure it only
+        runs once per connection, preventing `DuplicateTable` errors caused
+        by multiple calls within the same test.
+        """
+        # THE GUARD: If we've already run this, do nothing.
+        if self._system_tables_created:
+            return
+
+        from metaxy.metadata_store.system_tables import (
+            FEATURE_VERSIONS_KEY,
+            FEATURE_VERSIONS_SCHEMA,
+            MIGRATION_EVENTS_KEY,
+            MIGRATION_EVENTS_SCHEMA,
+        )
+
+        # Use the robust method we built that works.
+        existing_tables = self._list_tables_robustly()
+
+        # Simple, non-atomic check is fine because we only run this code block ONCE.
+        if FEATURE_VERSIONS_KEY.table_name not in existing_tables:
+            empty_df_fv = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+            self.conn.create_table(FEATURE_VERSIONS_KEY.table_name, obj=empty_df_fv)
+
+        if MIGRATION_EVENTS_KEY.table_name not in existing_tables:
+            empty_df_me = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
+            self.conn.create_table(MIGRATION_EVENTS_KEY.table_name, obj=empty_df_me)
+
+        # Set the guard to true after successful execution.
+        self._system_tables_created = True
 
     def _write_metadata_impl(
         self,
