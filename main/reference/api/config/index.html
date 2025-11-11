@@ -285,7 +285,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../examples/recompute/" class="md-tabs__link">
+        <a href="../../../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -439,6 +439,8 @@
   
     
     
+      
+        
       
         
       
@@ -616,6 +618,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../learn/relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../learn/testing/" class="md-nav__link">
         
   
@@ -681,10 +706,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_9" >
         
           
-          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
             
   
   
@@ -697,8 +722,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_9">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -798,12 +823,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/recompute/" class="md-nav__link">
+      <a href="../../../examples/one-to-many/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Recompute
+    One To Many
     
   </span>
   
@@ -927,6 +952,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1034,6 +1063,52 @@
   
   <span class="md-ellipsis">
     Field
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../definitions/fields-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Fields Mapping
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../definitions/relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
     
   </span>
   
@@ -2418,49 +2493,52 @@ have different hash algorithms than the parent store</p>
 </span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a><a href="#__codelineno-0-496"><span class="linenos" data-linenos="496 "></span></a>            <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="p">(</span><span class="n">configured_hash_algorithm</span><span class="p">)</span>
 </span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a><a href="#__codelineno-0-497"><span class="linenos" data-linenos="497 "></span></a>            <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
 </span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a><a href="#__codelineno-0-498"><span class="linenos" data-linenos="498 "></span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a><a href="#__codelineno-0-499"><span class="linenos" data-linenos="499 "></span></a>        <span class="c1"># Use default</span>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a><a href="#__codelineno-0-500"><span class="linenos" data-linenos="500 "></span></a>        <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="n">HashAlgorithm</span><span class="o">.</span><span class="n">XXHASH64</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a><a href="#__codelineno-0-501"><span class="linenos" data-linenos="501 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_algorithm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">configured_hash_algorithm</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a><a href="#__codelineno-0-502"><span class="linenos" data-linenos="502 "></span></a>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a><a href="#__codelineno-0-503"><span class="linenos" data-linenos="503 "></span></a>    <span class="c1"># Get hash_truncation_length from global config (unless overridden in store config)</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a><a href="#__codelineno-0-504"><span class="linenos" data-linenos="504 "></span></a>    <span class="k">if</span> <span class="p">(</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a><a href="#__codelineno-0-505"><span class="linenos" data-linenos="505 "></span></a>        <span class="s2">&quot;hash_truncation_length&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a><a href="#__codelineno-0-506"><span class="linenos" data-linenos="506 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><a href="#__codelineno-0-507"><span class="linenos" data-linenos="507 "></span></a>    <span class="p">):</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><a href="#__codelineno-0-508"><span class="linenos" data-linenos="508 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><a href="#__codelineno-0-509"><span class="linenos" data-linenos="509 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a>    <span class="c1"># Get auto_create_tables from global config (unless overridden in store config)</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>    <span class="k">if</span> <span class="p">(</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="s2">&quot;auto_create_tables&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
-</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>    <span class="p">):</span>
-</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
-</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><a href="#__codelineno-0-517"><span class="linenos" data-linenos="517 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;auto_create_tables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span>
-</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a><a href="#__codelineno-0-518"><span class="linenos" data-linenos="518 "></span></a>
-</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><a href="#__codelineno-0-519"><span class="linenos" data-linenos="519 "></span></a>    <span class="c1"># Build fallback stores recursively</span>
-</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><a href="#__codelineno-0-520"><span class="linenos" data-linenos="520 "></span></a>    <span class="n">fallback_stores</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a><a href="#__codelineno-0-521"><span class="linenos" data-linenos="521 "></span></a>    <span class="k">for</span> <span class="n">fallback_name</span> <span class="ow">in</span> <span class="n">fallback_store_names</span><span class="p">:</span>
-</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><a href="#__codelineno-0-522"><span class="linenos" data-linenos="522 "></span></a>        <span class="n">fallback_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="n">fallback_name</span><span class="p">)</span>
-</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><a href="#__codelineno-0-523"><span class="linenos" data-linenos="523 "></span></a>        <span class="n">fallback_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fallback_store</span><span class="p">)</span>
-</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><a href="#__codelineno-0-524"><span class="linenos" data-linenos="524 "></span></a>
-</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><a href="#__codelineno-0-525"><span class="linenos" data-linenos="525 "></span></a>    <span class="c1"># Instantiate store with config + fallback_stores</span>
-</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><a href="#__codelineno-0-526"><span class="linenos" data-linenos="526 "></span></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">store_class</span><span class="p">(</span>
-</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><a href="#__codelineno-0-527"><span class="linenos" data-linenos="527 "></span></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
-</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><a href="#__codelineno-0-528"><span class="linenos" data-linenos="528 "></span></a>        <span class="o">**</span><span class="n">config_copy</span><span class="p">,</span>
-</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a><a href="#__codelineno-0-529"><span class="linenos" data-linenos="529 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a><a href="#__codelineno-0-530"><span class="linenos" data-linenos="530 "></span></a>
-</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a><a href="#__codelineno-0-531"><span class="linenos" data-linenos="531 "></span></a>    <span class="c1"># Verify the store actually uses the hash algorithm we configured</span>
-</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><a href="#__codelineno-0-532"><span class="linenos" data-linenos="532 "></span></a>    <span class="c1"># (in case a store subclass overrides the default or ignores the parameter)</span>
-</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a><a href="#__codelineno-0-533"><span class="linenos" data-linenos="533 "></span></a>    <span class="k">if</span> <span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span> <span class="o">!=</span> <span class="n">configured_hash_algorithm</span><span class="p">:</span>
-</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><a href="#__codelineno-0-534"><span class="linenos" data-linenos="534 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a><a href="#__codelineno-0-535"><span class="linenos" data-linenos="535 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">store_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">) was configured with &quot;</span>
-</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a><a href="#__codelineno-0-536"><span class="linenos" data-linenos="536 "></span></a>            <span class="sa">f</span><span class="s2">&quot;hash_algorithm=&#39;</span><span class="si">{</span><span class="n">configured_hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; but is using &quot;</span>
-</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><a href="#__codelineno-0-537"><span class="linenos" data-linenos="537 "></span></a>            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;. The store class may have overridden &quot;</span>
-</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a><a href="#__codelineno-0-538"><span class="linenos" data-linenos="538 "></span></a>            <span class="sa">f</span><span class="s2">&quot;the hash algorithm. All stores must use the same hash algorithm.&quot;</span>
-</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a><a href="#__codelineno-0-539"><span class="linenos" data-linenos="539 "></span></a>        <span class="p">)</span>
-</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a><a href="#__codelineno-0-540"><span class="linenos" data-linenos="540 "></span></a>
-</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a><a href="#__codelineno-0-541"><span class="linenos" data-linenos="541 "></span></a>    <span class="k">return</span> <span class="n">store</span>
+</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a><a href="#__codelineno-0-499"><span class="linenos" data-linenos="499 "></span></a>        <span class="c1"># Don&#39;t set a default here - let the store choose its own default</span>
+</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a><a href="#__codelineno-0-500"><span class="linenos" data-linenos="500 "></span></a>        <span class="n">configured_hash_algorithm</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a><a href="#__codelineno-0-501"><span class="linenos" data-linenos="501 "></span></a>
+</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a><a href="#__codelineno-0-502"><span class="linenos" data-linenos="502 "></span></a>    <span class="c1"># Get hash_truncation_length from global config (unless overridden in store config)</span>
+</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a><a href="#__codelineno-0-503"><span class="linenos" data-linenos="503 "></span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a><a href="#__codelineno-0-504"><span class="linenos" data-linenos="504 "></span></a>        <span class="s2">&quot;hash_truncation_length&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
+</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a><a href="#__codelineno-0-505"><span class="linenos" data-linenos="505 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a><a href="#__codelineno-0-506"><span class="linenos" data-linenos="506 "></span></a>    <span class="p">):</span>
+</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><a href="#__codelineno-0-507"><span class="linenos" data-linenos="507 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
+</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><a href="#__codelineno-0-508"><span class="linenos" data-linenos="508 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;hash_truncation_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash_truncation_length</span>
+</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><a href="#__codelineno-0-509"><span class="linenos" data-linenos="509 "></span></a>
+</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a>    <span class="c1"># Get auto_create_tables from global config (unless overridden in store config)</span>
+</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>        <span class="s2">&quot;auto_create_tables&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config_copy</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a>    <span class="p">):</span>
+</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>        <span class="c1"># Use global setting from MetaxyConfig if not specified per-store</span>
+</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a>        <span class="n">config_copy</span><span class="p">[</span><span class="s2">&quot;auto_create_tables&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span>
+</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><a href="#__codelineno-0-517"><span class="linenos" data-linenos="517 "></span></a>
+</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a><a href="#__codelineno-0-518"><span class="linenos" data-linenos="518 "></span></a>    <span class="c1"># Build fallback stores recursively</span>
+</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><a href="#__codelineno-0-519"><span class="linenos" data-linenos="519 "></span></a>    <span class="n">fallback_stores</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><a href="#__codelineno-0-520"><span class="linenos" data-linenos="520 "></span></a>    <span class="k">for</span> <span class="n">fallback_name</span> <span class="ow">in</span> <span class="n">fallback_store_names</span><span class="p">:</span>
+</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a><a href="#__codelineno-0-521"><span class="linenos" data-linenos="521 "></span></a>        <span class="n">fallback_store</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="n">fallback_name</span><span class="p">)</span>
+</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><a href="#__codelineno-0-522"><span class="linenos" data-linenos="522 "></span></a>        <span class="n">fallback_stores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fallback_store</span><span class="p">)</span>
+</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><a href="#__codelineno-0-523"><span class="linenos" data-linenos="523 "></span></a>
+</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><a href="#__codelineno-0-524"><span class="linenos" data-linenos="524 "></span></a>    <span class="c1"># Instantiate store with config + fallback_stores</span>
+</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><a href="#__codelineno-0-525"><span class="linenos" data-linenos="525 "></span></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">store_class</span><span class="p">(</span>
+</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><a href="#__codelineno-0-526"><span class="linenos" data-linenos="526 "></span></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
+</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><a href="#__codelineno-0-527"><span class="linenos" data-linenos="527 "></span></a>        <span class="o">**</span><span class="n">config_copy</span><span class="p">,</span>
+</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><a href="#__codelineno-0-528"><span class="linenos" data-linenos="528 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a><a href="#__codelineno-0-529"><span class="linenos" data-linenos="529 "></span></a>
+</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a><a href="#__codelineno-0-530"><span class="linenos" data-linenos="530 "></span></a>    <span class="c1"># Verify the store actually uses the hash algorithm we configured</span>
+</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a><a href="#__codelineno-0-531"><span class="linenos" data-linenos="531 "></span></a>    <span class="c1"># (in case a store subclass overrides the default or ignores the parameter)</span>
+</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><a href="#__codelineno-0-532"><span class="linenos" data-linenos="532 "></span></a>    <span class="c1"># Only check if we explicitly configured a hash algorithm</span>
+</span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a><a href="#__codelineno-0-533"><span class="linenos" data-linenos="533 "></span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><a href="#__codelineno-0-534"><span class="linenos" data-linenos="534 "></span></a>        <span class="n">configured_hash_algorithm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a><a href="#__codelineno-0-535"><span class="linenos" data-linenos="535 "></span></a>        <span class="ow">and</span> <span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span> <span class="o">!=</span> <span class="n">configured_hash_algorithm</span>
+</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a><a href="#__codelineno-0-536"><span class="linenos" data-linenos="536 "></span></a>    <span class="p">):</span>
+</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><a href="#__codelineno-0-537"><span class="linenos" data-linenos="537 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a><a href="#__codelineno-0-538"><span class="linenos" data-linenos="538 "></span></a>            <span class="sa">f</span><span class="s2">&quot;Store &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">store_class</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">) was configured with &quot;</span>
+</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a><a href="#__codelineno-0-539"><span class="linenos" data-linenos="539 "></span></a>            <span class="sa">f</span><span class="s2">&quot;hash_algorithm=&#39;</span><span class="si">{</span><span class="n">configured_hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39; but is using &quot;</span>
+</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a><a href="#__codelineno-0-540"><span class="linenos" data-linenos="540 "></span></a>            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">store</span><span class="o">.</span><span class="n">hash_algorithm</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;. The store class may have overridden &quot;</span>
+</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a><a href="#__codelineno-0-541"><span class="linenos" data-linenos="541 "></span></a>            <span class="sa">f</span><span class="s2">&quot;the hash algorithm. All stores must use the same hash algorithm.&quot;</span>
+</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a><a href="#__codelineno-0-542"><span class="linenos" data-linenos="542 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a><a href="#__codelineno-0-543"><span class="linenos" data-linenos="543 "></span></a>
+</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a><a href="#__codelineno-0-544"><span class="linenos" data-linenos="544 "></span></a>    <span class="k">return</span> <span class="n">store</span>
 </span></code></pre></div>
             </details>
     </div>

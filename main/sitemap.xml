@@ -5,7 +5,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/examples/recompute/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/examples/one-to-many/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -22,6 +22,10 @@
     </url>
     <url>
          <loc>https://anam-org.github.io/metaxy/main/learn/metadata-stores/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/learn/relationship/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -81,7 +85,15 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/definitions/fields-mapping/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/definitions/graph/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/definitions/relationship/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>

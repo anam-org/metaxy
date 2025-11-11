@@ -285,7 +285,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../examples/recompute/" class="md-tabs__link">
+        <a href="../../../../../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -439,6 +439,8 @@
   
     
     
+      
+        
       
         
       
@@ -616,6 +618,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../../learn/relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../../learn/testing/" class="md-nav__link">
         
   
@@ -681,10 +706,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_9" >
         
           
-          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
             
   
   
@@ -697,8 +722,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_9">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -798,12 +823,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../examples/recompute/" class="md-nav__link">
+      <a href="../../../../../examples/one-to-many/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Recompute
+    One To Many
     
   </span>
   
@@ -927,6 +952,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1034,6 +1063,52 @@
   
   <span class="md-ellipsis">
     Field
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../definitions/fields-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Fields Mapping
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../definitions/relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
     
   </span>
   
@@ -2345,28 +2420,29 @@ before initializing the store.</p>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><a href="#__codelineno-0-161"><span class="linenos" data-linenos="161 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span> <span class="o">=</span> <span class="n">base_extensions</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><a href="#__codelineno-0-162"><span class="linenos" data-linenos="162 "></span></a>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><a href="#__codelineno-0-163"><span class="linenos" data-linenos="163 "></span></a>    <span class="c1"># Auto-add hashfuncs extension if not present (needed for default XXHASH64)</span>
-</span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><a href="#__codelineno-0-164"><span class="linenos" data-linenos="164 "></span></a>    <span class="n">extension_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><a href="#__codelineno-0-165"><span class="linenos" data-linenos="165 "></span></a>    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="p">:</span>
-</span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a><a href="#__codelineno-0-166"><span class="linenos" data-linenos="166 "></span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ext</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a><a href="#__codelineno-0-167"><span class="linenos" data-linenos="167 "></span></a>            <span class="n">extension_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
-</span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a><a href="#__codelineno-0-168"><span class="linenos" data-linenos="168 "></span></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ext</span><span class="p">,</span> <span class="n">ExtensionSpec</span><span class="p">):</span>
-</span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a><a href="#__codelineno-0-169"><span class="linenos" data-linenos="169 "></span></a>            <span class="n">extension_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><a href="#__codelineno-0-170"><span class="linenos" data-linenos="170 "></span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><a href="#__codelineno-0-171"><span class="linenos" data-linenos="171 "></span></a>            <span class="c1"># After _normalise_extensions, this should not happen</span>
-</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><a href="#__codelineno-0-172"><span class="linenos" data-linenos="172 "></span></a>            <span class="c1"># But keep defensive check for type safety</span>
-</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><a href="#__codelineno-0-173"><span class="linenos" data-linenos="173 "></span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-</span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a><a href="#__codelineno-0-174"><span class="linenos" data-linenos="174 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Extension must be str or ExtensionSpec after normalization; got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a><a href="#__codelineno-0-175"><span class="linenos" data-linenos="175 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-176"><a id="__codelineno-0-176" name="__codelineno-0-176"></a><a href="#__codelineno-0-176"><span class="linenos" data-linenos="176 "></span></a>    <span class="k">if</span> <span class="s2">&quot;hashfuncs&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">extension_names</span><span class="p">:</span>
-</span><span id="__span-0-177"><a id="__codelineno-0-177" name="__codelineno-0-177"></a><a href="#__codelineno-0-177"><span class="linenos" data-linenos="177 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;hashfuncs&quot;</span><span class="p">)</span>
-</span><span id="__span-0-178"><a id="__codelineno-0-178" name="__codelineno-0-178"></a><a href="#__codelineno-0-178"><span class="linenos" data-linenos="178 "></span></a>
-</span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><a href="#__codelineno-0-179"><span class="linenos" data-linenos="179 "></span></a>    <span class="c1"># Initialize Ibis store with DuckDB backend</span>
-</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><a href="#__codelineno-0-180"><span class="linenos" data-linenos="180 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><a href="#__codelineno-0-181"><span class="linenos" data-linenos="181 "></span></a>        <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;duckdb&quot;</span><span class="p">,</span>
-</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><a href="#__codelineno-0-182"><span class="linenos" data-linenos="182 "></span></a>        <span class="n">connection_params</span><span class="o">=</span><span class="n">connection_params</span><span class="p">,</span>
-</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><a href="#__codelineno-0-183"><span class="linenos" data-linenos="183 "></span></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
-</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><a href="#__codelineno-0-184"><span class="linenos" data-linenos="184 "></span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a><a href="#__codelineno-0-185"><span class="linenos" data-linenos="185 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><a href="#__codelineno-0-164"><span class="linenos" data-linenos="164 "></span></a>    <span class="c1"># But we&#39;ll fall back to MD5 if hashfuncs is not available</span>
+</span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><a href="#__codelineno-0-165"><span class="linenos" data-linenos="165 "></span></a>    <span class="n">extension_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a><a href="#__codelineno-0-166"><span class="linenos" data-linenos="166 "></span></a>    <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="p">:</span>
+</span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a><a href="#__codelineno-0-167"><span class="linenos" data-linenos="167 "></span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ext</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a><a href="#__codelineno-0-168"><span class="linenos" data-linenos="168 "></span></a>            <span class="n">extension_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
+</span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a><a href="#__codelineno-0-169"><span class="linenos" data-linenos="169 "></span></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ext</span><span class="p">,</span> <span class="n">ExtensionSpec</span><span class="p">):</span>
+</span><span id="__span-0-170"><a id="__codelineno-0-170" name="__codelineno-0-170"></a><a href="#__codelineno-0-170"><span class="linenos" data-linenos="170 "></span></a>            <span class="n">extension_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><a href="#__codelineno-0-171"><span class="linenos" data-linenos="171 "></span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><a href="#__codelineno-0-172"><span class="linenos" data-linenos="172 "></span></a>            <span class="c1"># After _normalise_extensions, this should not happen</span>
+</span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><a href="#__codelineno-0-173"><span class="linenos" data-linenos="173 "></span></a>            <span class="c1"># But keep defensive check for type safety</span>
+</span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a><a href="#__codelineno-0-174"><span class="linenos" data-linenos="174 "></span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+</span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a><a href="#__codelineno-0-175"><span class="linenos" data-linenos="175 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Extension must be str or ExtensionSpec after normalization; got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-176"><a id="__codelineno-0-176" name="__codelineno-0-176"></a><a href="#__codelineno-0-176"><span class="linenos" data-linenos="176 "></span></a>            <span class="p">)</span>
+</span><span id="__span-0-177"><a id="__codelineno-0-177" name="__codelineno-0-177"></a><a href="#__codelineno-0-177"><span class="linenos" data-linenos="177 "></span></a>    <span class="k">if</span> <span class="s2">&quot;hashfuncs&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">extension_names</span><span class="p">:</span>
+</span><span id="__span-0-178"><a id="__codelineno-0-178" name="__codelineno-0-178"></a><a href="#__codelineno-0-178"><span class="linenos" data-linenos="178 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;hashfuncs&quot;</span><span class="p">)</span>
+</span><span id="__span-0-179"><a id="__codelineno-0-179" name="__codelineno-0-179"></a><a href="#__codelineno-0-179"><span class="linenos" data-linenos="179 "></span></a>
+</span><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><a href="#__codelineno-0-180"><span class="linenos" data-linenos="180 "></span></a>    <span class="c1"># Initialize Ibis store with DuckDB backend</span>
+</span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><a href="#__codelineno-0-181"><span class="linenos" data-linenos="181 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a><a href="#__codelineno-0-182"><span class="linenos" data-linenos="182 "></span></a>        <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;duckdb&quot;</span><span class="p">,</span>
+</span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><a href="#__codelineno-0-183"><span class="linenos" data-linenos="183 "></span></a>        <span class="n">connection_params</span><span class="o">=</span><span class="n">connection_params</span><span class="p">,</span>
+</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><a href="#__codelineno-0-184"><span class="linenos" data-linenos="184 "></span></a>        <span class="n">fallback_stores</span><span class="o">=</span><span class="n">fallback_stores</span><span class="p">,</span>
+</span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a><a href="#__codelineno-0-185"><span class="linenos" data-linenos="185 "></span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="__span-0-186"><a id="__codelineno-0-186" name="__codelineno-0-186"></a><a href="#__codelineno-0-186"><span class="linenos" data-linenos="186 "></span></a>    <span class="p">)</span>
 </span></code></pre></div>
                   </details>
 
@@ -2550,17 +2626,17 @@ before initializing the store.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/metadata_store/duckdb.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><a href="#__codelineno-0-326"><span class="linenos" data-linenos="326 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><a href="#__codelineno-0-327"><span class="linenos" data-linenos="327 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open DuckDB connection and configure optional DuckLake attachment.&quot;&quot;&quot;</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><a href="#__codelineno-0-328"><span class="linenos" data-linenos="328 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
-</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><a href="#__codelineno-0-329"><span class="linenos" data-linenos="329 "></span></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ducklake_attachment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><a href="#__codelineno-0-330"><span class="linenos" data-linenos="330 "></span></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><a href="#__codelineno-0-331"><span class="linenos" data-linenos="331 "></span></a>            <span class="n">duckdb_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duckdb_raw_connection</span><span class="p">()</span>
-</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><a href="#__codelineno-0-332"><span class="linenos" data-linenos="332 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_ducklake_attachment</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">duckdb_conn</span><span class="p">)</span>
-</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a>            <span class="c1"># Ensure connection is closed if DuckLake configuration fails</span>
-</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><a href="#__codelineno-0-335"><span class="linenos" data-linenos="335 "></span></a>            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a>            <span class="k">raise</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><a href="#__codelineno-0-329"><span class="linenos" data-linenos="329 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><a href="#__codelineno-0-330"><span class="linenos" data-linenos="330 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open DuckDB connection and configure optional DuckLake attachment.&quot;&quot;&quot;</span>
+</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><a href="#__codelineno-0-331"><span class="linenos" data-linenos="331 "></span></a>    <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><a href="#__codelineno-0-332"><span class="linenos" data-linenos="332 "></span></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ducklake_attachment</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a>        <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a>            <span class="n">duckdb_conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_duckdb_raw_connection</span><span class="p">()</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><a href="#__codelineno-0-335"><span class="linenos" data-linenos="335 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_ducklake_attachment</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">duckdb_conn</span><span class="p">)</span>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><a href="#__codelineno-0-337"><span class="linenos" data-linenos="337 "></span></a>            <span class="c1"># Ensure connection is closed if DuckLake configuration fails</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a>            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a>            <span class="k">raise</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2585,9 +2661,9 @@ before initializing the store.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/metaxy/metadata_store/duckdb.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">preview_ducklake_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return DuckLake attachment SQL if configured.&quot;&quot;&quot;</span>
-</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><a href="#__codelineno-0-340"><span class="linenos" data-linenos="340 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ducklake_attachment</span><span class="o">.</span><span class="n">preview_sql</span><span class="p">()</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">preview_ducklake_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return DuckLake attachment SQL if configured.&quot;&quot;&quot;</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ducklake_attachment</span><span class="o">.</span><span class="n">preview_sql</span><span class="p">()</span>
 </span></code></pre></div>
             </details>
     </div>

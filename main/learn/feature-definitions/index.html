@@ -287,7 +287,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/recompute/" class="md-tabs__link">
+        <a href="../../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -458,6 +458,8 @@
       
         
       
+        
+      
     
     
     
@@ -601,20 +603,14 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Attaching user-defined metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fully-qualified-field-key" class="md-nav__link">
     <span class="md-ellipsis">
       Fully Qualified Field Key
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -703,6 +699,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../testing/" class="md-nav__link">
         
   
@@ -771,10 +790,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_9" >
         
           
-          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="">
             
   
   
@@ -787,8 +806,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_9">
             <span class="md-nav__icon md-icon"></span>
             Integrations
           </label>
@@ -888,12 +907,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/recompute/" class="md-nav__link">
+      <a href="../../examples/one-to-many/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Recompute
+    One To Many
     
   </span>
   
@@ -1014,6 +1033,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1118,6 +1141,52 @@
   
   <span class="md-ellipsis">
     Field
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/definitions/fields-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Fields Mapping
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/api/definitions/relationship/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lineage Relationship
     
   </span>
   
@@ -1509,20 +1578,14 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Attaching user-defined metadata">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fully-qualified-field-key" class="md-nav__link">
     <span class="md-ellipsis">
       Fully Qualified Field Key
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1643,7 +1706,7 @@ See <a href="../syntactic-sugar/">syntactic sugar</a> for more details.</p>
 <h2 id="attaching-user-defined-metadata">Attaching user-defined metadata<a class="headerlink" href="#attaching-user-defined-metadata" title="Permanent link">&para;</a></h2>
 <p>Users can <a href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.</p>
-<h3 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h3>
+<h2 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h2>
 <p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
 It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
 
