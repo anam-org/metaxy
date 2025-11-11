@@ -47,50 +47,39 @@ _psycopg_patched = False
 _patch_lock = threading.Lock()
 
 
-def _apply_psycopg_patch():
-    """
-    Applies a monkey-patch to psycopg.Cursor.execute to fix a low-level,
-    environment-specific bug where schema names are returned as `bytes` instead
-    of `str`, causing Ibis to fail. This is the final and only reliable fix.
-    """
+def _apply_final_psycopg_patch():
     global _psycopg_patched
     if _psycopg_patched:
         return
 
     with _patch_lock:
-        # Double-check inside the lock to prevent race conditions.
         if _psycopg_patched:
             return
 
-        logger.info("Applying lazy monkey-patch to psycopg.Cursor.execute...")
+        logger.info("Applying final, refined, brute-force patch to psycopg.Cursor...")
 
-        # 1. Get a reference to the ORIGINAL `execute` method on the class.
-        original_execute_func = PsycopgCursor.execute
+        # --- 1. Patch on the way IN (`execute`) ---
+        original_execute = PsycopgCursor.execute
 
-        # 2. Define our new `execute` method.
-        def _patched_psycopg_execute(self, query, params=None, *args, **kwargs):
-            # This is the new method that will replace the original.
+        def decoder(byte_value):
+            return byte_value.decode("utf-8", "replace")
+
+        def patched_execute(self, query, params=None, *args, **kwargs):
             sanitized_params = params
             if params:
-
-                def decoder(byte_value):
-                    return byte_value.decode("utf-8", "replace")
-
                 if isinstance(params, dict):
                     sanitized_params = {}
                     for key, value in params.items():
-                        if isinstance(value, bytes):
-                            sanitized_params[key] = decoder(value)
-                        elif (
+                        if (
                             isinstance(value, list)
                             and value
                             and isinstance(value[0], bytes)
                         ):
-                            # This handles the exact failing case: {'dbs': [b'public', ...]}
-                            sanitized_params[key] = [
-                                decoder(item) if isinstance(item, bytes) else item
-                                for item in value
-                            ]
+                            # This is the specific fix for the `name = bytea` error.
+                            # We ONLY decode the list of bytes.
+                            sanitized_params[key] = [decoder(item) for item in value]
+                        elif isinstance(value, bytes):
+                            sanitized_params[key] = decoder(value)
                         else:
                             sanitized_params[key] = value
                 elif isinstance(params, (tuple, list)):
@@ -98,13 +87,29 @@ def _apply_psycopg_patch():
                         decoder(p) if isinstance(p, bytes) else p for p in params
                     )
 
-            # 3. Call the original method with the now-sanitized parameters.
-            return original_execute_func(self, query, sanitized_params, *args, **kwargs)
+            return original_execute(self, query, sanitized_params, *args, **kwargs)
 
-        # 4. Replace the method on the class itself.
-        PsycopgCursor.execute = _patched_psycopg_execute
+        # --- 2. Patch on the way OUT (`__iter__`) ---
+        # Instead of patching fetchone/fetchall, we patch the iterator.
+        # This is more fundamental and catches all result-fetching methods.
+        original_iter = PsycopgCursor.__iter__
+
+        def patched_iter(self):
+            # We call the original iterator and wrap it in our own generator
+            # that sanitizes each row as it is yielded.
+            for row in original_iter(self):
+                # A row is a tuple. We create a new one with decoded values.
+                # This fixes the `TypeError: startswith` for data type names.
+                yield tuple(
+                    decoder(item) if isinstance(item, bytes) else item for item in row
+                )
+
+        # 3. Apply all patches to the class.
+        PsycopgCursor.execute = patched_execute
+        PsycopgCursor.__iter__ = patched_iter
+
         _psycopg_patched = True
-        logger.info("Psycopg patch applied successfully.")
+        logger.info("Final, refined psycopg patch applied successfully.")
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -220,8 +225,7 @@ class PostgresMetadataStore(IbisMetadataStore):
             SHA256 hashing runs inside `resolve_update()` unless
             `enable_pgcrypto=False`.
         """
-        _apply_psycopg_patch()
-
+        _apply_final_psycopg_patch()
         params: dict[str, Any] = dict(connection_params or {})
 
         explicit_params = {
