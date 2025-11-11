@@ -291,13 +291,17 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         )
 
     def _render_patch(self, example_name: str, params: dict[str, Any]) -> str:
-        """Render a patch file."""
+        """Render a patch file, optionally with graph diff in tabs."""
         if self.loader is None or self.renderer is None or self.generated_dir is None:
             return ""
 
         patch_path = params.get("path")
         if not patch_path:
             return self.renderer.render_error("Missing required parameter: path")
+
+        # Load patch snapshots cache if available
+        patch_snapshots = self.loader.get_patch_snapshots(example_name)
+        snapshots = patch_snapshots.get(patch_path)
 
         content = self.loader.read_patch(example_name, patch_path)
 
@@ -308,8 +312,30 @@ class MetaxyExamplesPlugin(BasePlugin[MetaxyExamplesPluginConfig]):
         generated_file.write_text(content)
 
         snippets_path = f".generated/{patch_path}"
-        return self.renderer.render_snippet(
+        patch_render = self.renderer.render_snippet(
             path=snippets_path,
             show_line_numbers=True,
             hl_lines=None,
         )
+
+        # Check if we have graph diff snapshots and they are different
+        if snapshots and snapshots[0] and snapshots[1] and snapshots[0] != snapshots[1]:
+            # Create tabbed output with patch and graph diff
+            graph_diff = self.renderer.render_graph_diff(
+                snapshots[0], snapshots[1], example_name
+            )
+
+            if graph_diff:
+                # Use pymdownx.tabbed for tabs
+                return f"""
+=== "Patch"
+
+{patch_render}
+
+=== "Graph Diff"
+
+{graph_diff}
+"""
+
+        # No graph diff available, just return the patch
+        return patch_render
