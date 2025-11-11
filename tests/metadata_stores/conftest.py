@@ -214,7 +214,7 @@ def clickhouse_db(clickhouse_server):
     try:
         conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # type: ignore[attr-defined]
     except Exception:
-        pass  # Best effort cleanup
+        logger.warning("Failed to drop test database %s: %s", db_name)
 
 
 @pytest.fixture(scope="session")
