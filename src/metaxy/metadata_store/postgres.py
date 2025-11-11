@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import logging
-import types
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, cast
 
@@ -27,8 +26,8 @@ if TYPE_CHECKING:
 
 import threading
 
-from ibis.backends.postgres import Backend as PostgresIbisBackend
 from psycopg import Error as _PsycopgError
+from psycopg.cursor import Cursor as PsycopgCursor
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -44,46 +43,35 @@ logger = logging.getLogger(__name__)
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
-_original_ibis_execute = PostgresIbisBackend.__init__
-
-
-_ibis_patched = False
+_psycopg_patched = False
 _patch_lock = threading.Lock()
 
 
-def _apply_ibis_postgres_patch():
+def _apply_psycopg_patch():
     """
-    Applies a monkey-patch to the Ibis PostgreSQL backend's __init__ method.
-    This is the only reliable way to fix the bytes-vs-str issue that occurs
-    on some platforms (e.g., Linux CI) due to low-level library behavior.
+    Applies a monkey-patch to psycopg.Cursor.execute to fix a low-level,
+    environment-specific bug where schema names are returned as `bytes` instead
+    of `str`, causing Ibis to fail. This is the final and only reliable fix.
     """
-    global _ibis_patched
-    if _ibis_patched:
+    global _psycopg_patched
+    if _psycopg_patched:
         return
 
     with _patch_lock:
         # Double-check inside the lock to prevent race conditions.
-        if _ibis_patched:
+        if _psycopg_patched:
             return
 
-        logger.info("Applying lazy monkey-patch to Ibis Postgres Backend __init__...")
+        logger.info("Applying lazy monkey-patch to psycopg.Cursor.execute...")
 
-        original_init_func = PostgresIbisBackend.__init__
+        # 1. Get a reference to the ORIGINAL `execute` method on the class.
+        original_execute_func = PsycopgCursor.execute
 
-        def _patched_backend_init(self, *args, **kwargs):
-            original_init_func(self, *args, **kwargs)
-
-            if not hasattr(self, "client"):
-                logger.warning(
-                    "Ibis patch: 'self.client' not found after __init__. Aborting instance patch."
-                )
-                return
-
-            original_execute = self.client.execute
-
-            def patched_execute_logic(query, params=(), **kwargs):
-                if not params:
-                    return original_execute(query, params=params, **kwargs)
+        # 2. Define our new `execute` method.
+        def _patched_psycopg_execute(self, query, params=None, *args, **kwargs):
+            # This is the new method that will replace the original.
+            sanitized_params = params
+            if params:
 
                 def decoder(byte_value):
                     return byte_value.decode("utf-8", "replace")
@@ -98,6 +86,7 @@ def _apply_ibis_postgres_patch():
                             and value
                             and isinstance(value[0], bytes)
                         ):
+                            # This handles the exact failing case: {'dbs': [b'public', ...]}
                             sanitized_params[key] = [
                                 decoder(item) if isinstance(item, bytes) else item
                                 for item in value
@@ -108,20 +97,14 @@ def _apply_ibis_postgres_patch():
                     sanitized_params = tuple(
                         decoder(p) if isinstance(p, bytes) else p for p in params
                     )
-                else:
-                    sanitized_params = params
 
-                return original_execute(query, params=sanitized_params, **kwargs)
+            # 3. Call the original method with the now-sanitized parameters.
+            return original_execute_func(self, query, sanitized_params, *args, **kwargs)
 
-            self.client.execute = types.MethodType(patched_execute_logic, self.client)
-            logger.debug("Successfully patched Ibis Postgres client instance.")
-
-        PostgresIbisBackend.__init__ = _patched_backend_init
-        _ibis_patched = True
-        logger.info("Ibis Postgres Backend patch applied successfully.")
-
-
-# --- END: Ibis PostgreSQL Backend Monkey-Patch ---
+        # 4. Replace the method on the class itself.
+        PsycopgCursor.execute = _patched_psycopg_execute
+        _psycopg_patched = True
+        logger.info("Psycopg patch applied successfully.")
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -237,7 +220,7 @@ class PostgresMetadataStore(IbisMetadataStore):
             SHA256 hashing runs inside `resolve_update()` unless
             `enable_pgcrypto=False`.
         """
-        _apply_ibis_postgres_patch()
+        _apply_psycopg_patch()
 
         params: dict[str, Any] = dict(connection_params or {})
 
