@@ -162,8 +162,10 @@ class PostgresMetadataStore(IbisMetadataStore):
             "user": user,
             "password": password,
             "database": database,
-            "schema": schema,
+            # "schema": schema,
         }
+        if "schema" in params and params["schema"] is not None:
+            params["schema"] = self._ensure_string_identifier(params["schema"])
         for key, value in explicit_params.items():
             if value is not None:
                 params.setdefault(key, value)
