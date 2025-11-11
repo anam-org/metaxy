@@ -162,10 +162,25 @@ class PostgresMetadataStore(IbisMetadataStore):
             "user": user,
             "password": password,
             "database": database,
-            # "schema": schema,
+            "schema": schema,
         }
-        if "schema" in params and params["schema"] is not None:
-            params["schema"] = self._ensure_string_identifier(params["schema"])
+        # if "schema" in params and params["schema"] is not None:
+        # import sys
+
+        # print("*********************", file=sys.stderr)
+        # print(params["schema"], file=sys.stderr)
+        # params["schema"] = self._ensure_string_identifier(params["schema"])
+        # print(params["schema"], file=sys.stderr)
+        # print("*********************", file=sys.stderr)
+
+        # import sys
+
+        # print("*********************", file=sys.stderr)
+        # print(explicit_params["schema"], file=sys.stderr)
+        # explicit_params["schema"] = self._ensure_string_identifier(explicit_params["schema"])
+        # print(explicit_params["schema"], file=sys.stderr)
+        # print("*********************", file=sys.stderr)
+
         for key, value in explicit_params.items():
             if value is not None:
                 params.setdefault(key, value)
@@ -287,6 +302,11 @@ class PostgresMetadataStore(IbisMetadataStore):
             with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
                 cursor.execute("SHOW search_path")
                 result = cursor.fetchone()
+            logger.info(
+                "Schema detected from search_path: %s",
+                result,
+                exc_info=True,
+            )
         except Exception:
             logger.debug(
                 "Could not determine current schema; defaulting to public",
@@ -294,7 +314,19 @@ class PostgresMetadataStore(IbisMetadataStore):
             )
             return "public"
 
-        search_path = result[0] if result else ""
+        search_path_raw = result[0] if result else ""
+        if isinstance(search_path_raw, bytes):
+            try:
+                # Try to decode using UTF-8, which is almost always correct for search_path.
+                search_path = search_path_raw.decode("utf-8")
+            except UnicodeDecodeError:
+                # If decoding fails, fall back to a safe default.
+                logger.warning(
+                    "Could not decode search_path from bytes; defaulting to public."
+                )
+                return "public"
+        else:
+            search_path = str(search_path_raw)
         if not search_path:
             return "public"
 
