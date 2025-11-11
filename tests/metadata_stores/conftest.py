@@ -7,7 +7,7 @@ import time
 import uuid
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from urllib.parse import quote_plus
 
 import boto3
@@ -15,8 +15,6 @@ import ibis
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
-from pytest_postgresql import executor as pytest_postgresql_executor
-from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
@@ -42,95 +40,6 @@ def find_free_port() -> int:
     return port
 
 logger = logging.getLogger(__name__)
-
-
-def _detect_postgres_locale(preferred: tuple[str, ...]) -> str:
-    """Return a locale usable by pytest-postgresql."""
-    try:
-        output = subprocess.check_output(
-            ["locale", "-a"], text=True, stderr=subprocess.STDOUT
-        )
-        available = {line.strip() for line in output.splitlines()}
-    except Exception as exc:  # pragma: no cover - best effort only
-        logger.debug("Unable to enumerate locales: %s", exc)
-        available = set()
-
-    for locale_name in preferred:
-        if locale_name in available:
-            return locale_name
-    return "C"
-
-
-_preferred_locales = ("C.UTF-8", "en_US.UTF-8", "C")
-_chosen_locale = _detect_postgres_locale(_preferred_locales)
-if _chosen_locale != pytest_postgresql_executor._LOCALE:
-    logger.info(
-        "Using %s for PostgreSQL tests (preferred %s not available)",
-        _chosen_locale,
-        pytest_postgresql_executor._LOCALE,
-    )
-    pytest_postgresql_executor._LOCALE = _chosen_locale
-
-
-def _decode_stream(data: bytes | str | None) -> str:
-    if data is None:
-        return ""
-    if isinstance(data, bytes):
-        return data.decode("utf-8", errors="replace")
-    return data
-
-
-# Configure pytest-postgresql to find pg_ctl without using pg_config
-# (which can fail in Nix environments). Use shutil.which to find pg_ctl in PATH.
-_pg_ctl_path = shutil.which("pg_ctl")
-_pg_unix_socket_dir = Path(
-    os.environ.get("METAXY_PG_SOCKET_DIR", "/tmp/metaxy-pg-sockets")
-)
-try:
-    _pg_unix_socket_dir.mkdir(parents=True, exist_ok=True)
-except Exception:
-    # Fall back to default tmp if directory creation fails
-    _pg_unix_socket_dir = Path("/tmp")
-
-if _pg_ctl_path is None:
-
-    @pytest.fixture(scope="session")
-    def postgresql_proc():
-        """Skip PostgreSQL-dependent tests when pg_ctl is unavailable."""
-        pytest.skip(
-            "pg_ctl not found in PATH; skipping PostgreSQL-backed metadata tests."
-        )
-
-else:
-    _postgresql_proc_fixture = factories.postgresql_proc(
-        executable=_pg_ctl_path,
-        unixsocketdir=str(_pg_unix_socket_dir),
-    )
-
-    @pytest.fixture(scope="session")
-    def postgresql_proc(request: Any, tmp_path_factory: Any):
-        """Start PostgreSQL for tests, skipping gracefully if the daemon cannot start."""
-        from mirakuru.exceptions import ProcessExitedWithError
-
-        fixture_func = getattr(_postgresql_proc_fixture, "_fixture_function", None)
-        if fixture_func is None:
-            fixture_func = cast(Any, _postgresql_proc_fixture)
-
-        try:
-            yield from fixture_func(request, tmp_path_factory)
-        except ProcessExitedWithError as exc:
-            pytest.skip(f"Failed to start PostgreSQL test server: {exc}")
-        except subprocess.CalledProcessError as exc:
-            stdout = _decode_stream(getattr(exc, "output", None))
-            stderr = _decode_stream(getattr(exc, "stderr", None))
-            logger.error(
-                "pg_ctl invocation %s failed with code %s\nstdout:\n%s\nstderr:\n%s",
-                exc.cmd if hasattr(exc, "cmd") else exc.args,
-                exc.returncode,
-                stdout or "<empty>",
-                stderr or "<empty>",
-            )
-            raise
 
 
 def _find_free_port() -> int:
