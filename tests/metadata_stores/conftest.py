@@ -1,10 +1,12 @@
 """Common fixtures for metadata store tests."""
 
+import locale
 import logging
 import os
 import shutil
 import socket
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -470,3 +472,68 @@ def persistent_store(
     """
     store_type, config = store_config
     return store_type(**config)  # type: ignore[abstract]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def fix_ci_locale():
+    """
+    A session-scoped fixture to automatically diagnose and fix locale issues in CI.
+
+    Minimal environments (like some Docker containers or CI runners) may default
+    to a 'POSIX' or 'C' locale, which can cause libraries like psycopg3 to return
+    `bytes` instead of `str`, leading to application errors.
+
+    This fixture attempts to set a UTF-8 locale for the entire test session
+    to ensure consistent string handling.
+    """
+    try:
+        # --- 1. Log the initial state ---
+        current_locale = locale.getlocale()
+        print("\n--- Initial Locale Diagnosis ---", file=sys.stderr)
+        print(f"Current locale before change: {current_locale}", file=sys.stderr)
+
+        # A tuple like (None, None) means the locale is the default "C" locale.
+        # This is the most likely cause of the problem.
+        if current_locale == (None, None):
+            print(
+                "WARNING: Default 'C' locale detected. This is a likely cause of bytes vs. str issues.",
+                file=sys.stderr,
+            )
+
+        # --- 2. Attempt to fix the locale ---
+        # List of common UTF-8 locales to try, in order of preference.
+        # 'C.UTF-8' is a modern, portable standard for this exact problem.
+        # 'en_US.UTF-8' is a very common fallback.
+        utf8_locales = ["C.UTF-8", "en_US.UTF-8"]
+
+        for loc in utf8_locales:
+            try:
+                locale.setlocale(locale.LC_ALL, loc)
+                print(f"Successfully set locale to: {loc}", file=sys.stderr)
+
+                # --- 3. Log the final state ---
+                final_locale = locale.getlocale()
+                print(f"Current locale after change: {final_locale}", file=sys.stderr)
+                print("--- End Locale Diagnosis ---\n", file=sys.stderr)
+
+                # If we successfully set a locale, we're done.
+                return
+            except locale.Error:
+                # This locale is not supported by the OS, try the next one.
+                print(
+                    f"INFO: Locale '{loc}' not supported, trying next...",
+                    file=sys.stderr,
+                )
+
+        # If the loop completes without returning, we failed.
+        print("\nCRITICAL WARNING: Could not set a UTF-8 locale.", file=sys.stderr)
+        print("The test environment lacks 'C.UTF-8' or 'en_US.UTF-8'.", file=sys.stderr)
+        print("Bytes vs. str errors are highly likely to occur.", file=sys.stderr)
+        print("--- End Locale Diagnosis ---\n", file=sys.stderr)
+
+    except Exception as e:
+        print(
+            f"\nCRITICAL WARNING: An unexpected error occurred during locale setup: {e}",
+            file=sys.stderr,
+        )
+        print("--- End Locale Diagnosis ---\n", file=sys.stderr)
