@@ -144,17 +144,6 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         final_text = "".join(result_lines)
         final_lines = final_text.split("\n")
-
-        # DEBUG: Print a section of the output
-        for i, line in enumerate(final_lines):
-            if "Initial Code" in line and i < len(final_lines) - 10:
-                print(
-                    f"\nDEBUG: Lines around 'Initial Code' ({i} to {i + 10}):"
-                )  # DEBUG
-                for j in range(i, min(i + 10, len(final_lines))):
-                    print(f"  {j}: {repr(final_lines[j])}")  # DEBUG
-                break
-
         return final_lines
 
     def _get_patch_enumeration(self, example_name: str) -> dict[str, int]:
@@ -306,14 +295,11 @@ class MetaxyExamplesPreprocessor(Preprocessor):
             snippets_path = f".generated/{filename}"
 
         # Use pymdownx.snippets for all files
-        result = self.renderer.render_snippet(
+        return self.renderer.render_snippet(
             path=snippets_path,
             show_line_numbers=show_linenos,
             hl_lines=hl_lines,
         )
-        print(f"DEBUG: render_snippet for {file_path} returned:")  # DEBUG
-        print(repr(result))  # DEBUG
-        return result
 
     def _render_patch(self, example_name: str, params: dict[str, Any]) -> str:
         """Render a patch file.

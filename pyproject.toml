@@ -157,6 +157,7 @@ skip_covered = false
 reportAny = "none"
 reportExplicitAny = "none"
 reportUnnecessaryCast = "error"
+reportImportCycles = "none"
 include = [
   "src/metaxy",
   "tests",

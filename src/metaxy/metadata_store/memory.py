@@ -1,18 +1,16 @@
 """In-memory metadata store implementation."""
 
 from collections.abc import Sequence
+from contextlib import contextmanager
 from typing import Any
 
 import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.base import MetadataDiffResolver
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 class InMemoryMetadataStore(MetadataStore):
@@ -65,20 +63,32 @@ class InMemoryMetadataStore(MetadataStore):
         return tuple(feature_key)
 
     def _supports_native_components(self) -> bool:
-        """In-memory store only supports Polars components."""
         return False
 
-    def _create_native_components(
-        self,
-    ) -> tuple[
-        UpstreamJoiner,
-        ProvenanceByFieldCalculator,
-        MetadataDiffResolver,
-    ]:
-        """Not supported - in-memory store only uses Polars components."""
-        raise NotImplementedError(
-            "InMemoryMetadataStore does not support native field provenance calculations"
-        )
+    def native_implementation(self) -> nw.Implementation:
+        """Get native implementation for in-memory store."""
+        return nw.Implementation.POLARS
+
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create Polars provenance tracker for in-memory store.
+
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            PolarsProvenanceTracker instance
+        """
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
+        # Create tracker (only accepts plan parameter)
+        tracker = PolarsProvenanceTracker(plan=plan)
+
+        try:
+            yield tracker
+        finally:
+            # No cleanup needed for Polars tracker
+            pass
 
     def _write_metadata_impl(
         self,

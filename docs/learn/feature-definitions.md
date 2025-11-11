@@ -120,7 +120,7 @@ The [Data Versioning](data-versioning.md) docs explain more about how Metaxy cal
 Users can [attach](../reference/api/definitions/feature-spec.md#metaxy.FeatureSpec.metadata) arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
 This metadata does not influence graph topology or the versioning system.
 
-### Fully Qualified Field Key
+## Fully Qualified Field Key
 
 A **fully qualified field key (FQFK)** is an identifier that uniquely identifies a field within the whole feature graph.
 It consists of the **feature key** and the **field key**, separated by a colon, for example: `/raw/video:frames`, `/raw/video:audio/english`.

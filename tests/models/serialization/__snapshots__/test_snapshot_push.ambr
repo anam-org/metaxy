@@ -29,19 +29,19 @@
     'versions': list([
       dict({
         'feature_key': 'downstream',
-        'metaxy_feature_spec_version': 'f711385e888578277342919aac5844fad044bb2de368c237af91b14be1fe244e',
+        'metaxy_feature_spec_version': '7afbb10181081ac830bb44ed1d018a79979f9a56ee5bd8b2d912f56da8cf3a41',
         'metaxy_feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),
       dict({
         'feature_key': 'upstream',
-        'metaxy_feature_spec_version': '774e87d7aab23f02404e2936d3787067ebf509c08918a55a64578ebad1a935f7',
+        'metaxy_feature_spec_version': 'be58694e7398104f76d33fc257c74f73a10acd90451fde582e09e84584b3cc66',
         'metaxy_feature_version': '8a2ffeab8da447095c5ee7a77e5635a1e16e7f3605021732f50f7002fa258398',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),
       dict({
         'feature_key': 'downstream',
-        'metaxy_feature_spec_version': 'd1a25f4af92623aa1f9b11d9537e50c3aca320ae5dfbb20790ef1fb9dea6aade',
+        'metaxy_feature_spec_version': 'dfa97fc7c4de79aace405ae721ecbe5900ab90ca542e7b13d9b9e9d26ba26a39',
         'metaxy_feature_version': '7b8e38a11f800fb93c18c0e04c4609d7b52ec12b62177ba8355531d363f01751',
         'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
       }),

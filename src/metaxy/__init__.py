@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from metaxy.config import MetaxyConfig, StoreConfig
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.entrypoints import (
     load_features,
     load_module_entrypoint,
@@ -50,7 +49,9 @@ from metaxy.models.fields_mapping import (
     FieldsMapping,
     FieldsMappingType,
 )
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 def init_metaxy(
@@ -118,4 +119,5 @@ __all__ = [
     "init_metaxy",
     "IDColumns",
     "HashAlgorithm",
+    "LineageRelationship",
 ]

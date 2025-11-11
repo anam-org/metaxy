@@ -259,7 +259,7 @@ def test_duckdb_config_with_extensions() -> None:
 def test_duckdb_config_with_hash_algorithm() -> None:
     """Test DuckDB store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={

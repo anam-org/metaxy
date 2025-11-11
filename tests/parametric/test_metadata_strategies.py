@@ -16,13 +16,13 @@ from metaxy._testing.parametric import (
     feature_metadata_strategy,
     upstream_metadata_strategy,
 )
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
+from metaxy.provenance.types import HashAlgorithm
 
 
 def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
@@ -443,6 +443,7 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
         assert field_names == {"child_field"}
 
         # Check that provenance values are correctly truncated
+        # Note: xxhash64 as decimal can be up to 20 chars, test uses hash_truncation_length
         for row in downstream_df.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert "child_field" in provenance
@@ -537,6 +538,7 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         assert field_names == {"result"}
 
         # Verify provenance is calculated (non-empty hashes)
+        # Note: SHA256 produces 64 hex chars (256 bits)
         for row in downstream_df.iter_rows(named=True):
             provenance = row[METAXY_PROVENANCE_BY_FIELD]
             assert len(provenance["result"]) > 0

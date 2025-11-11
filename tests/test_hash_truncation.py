@@ -98,9 +98,9 @@ class TestHashTruncationUtils:
 
     def test_global_truncation_setting(self):
         """Test global hash truncation via MetaxyConfig."""
-        # Initial state - no truncation
+        # Initial state - default truncation (64)
         MetaxyConfig.reset()
-        assert get_hash_truncation_length() is None
+        assert get_hash_truncation_length() == 64
 
         # Set truncation length via config
         config = MetaxyConfig(hash_truncation_length=16)
@@ -113,7 +113,7 @@ class TestHashTruncationUtils:
 
         # Reset to None
         MetaxyConfig.reset()
-        assert get_hash_truncation_length() is None
+        assert get_hash_truncation_length() == 64
         assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_minimum_validation(self):
@@ -415,9 +415,9 @@ class TestMetadataStoreTruncation:
 
     def test_store_truncation_property(self):
         """Test that stores have hash_truncation_length property."""
-        # No global truncation
+        # Default truncation (64)
         with InMemoryMetadataStore() as store:
-            assert store.hash_truncation_length is None
+            assert store.hash_truncation_length == 64
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)

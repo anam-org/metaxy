@@ -17,7 +17,7 @@ from metaxy import (
     InMemoryMetadataStore,
     SampleFeatureSpec,
 )
-from metaxy._testing import TempFeatureModule
+from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system_tables import SystemTableStorage
@@ -181,6 +181,7 @@ def test_basic_migration_flow(
                 ],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store_v1.write_metadata(SimpleV1, data)
 
         # Record v1 snapshot
@@ -284,6 +285,8 @@ def test_upstream_downstream_migration(
                 ],
             }
         )
+        # Add metaxy_provenance column using the helper
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
@@ -338,6 +341,7 @@ def test_upstream_downstream_migration(
                 ],
             }
         )
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
         store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Step 6: Execute migration (will reconcile downstream)
@@ -385,6 +389,7 @@ def test_migration_idempotency(
                 "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
@@ -405,7 +410,7 @@ def test_migration_idempotency(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream manually
-        new_upstream = pl.DataFrame(
+        new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
                 "metaxy_provenance_by_field": [
@@ -414,7 +419,8 @@ def test_migration_idempotency(
                 ],
             }
         )
-        store_v2.write_metadata(UpstreamV2, new_upstream)
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
+        store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Create downstream-only migration (detect before recording v2 snapshot)
         migration = detect_migration(
@@ -471,6 +477,7 @@ def test_migration_dry_run(
                 "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
@@ -496,7 +503,7 @@ def test_migration_dry_run(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream
-        new_upstream = pl.DataFrame(
+        new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
                 "metaxy_provenance_by_field": [
@@ -505,7 +512,8 @@ def test_migration_dry_run(
                 ],
             }
         )
-        store_v2.write_metadata(UpstreamV2, new_upstream)
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
+        store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Detect and execute with dry_run=True (detect before recording v2 snapshot)
         migration = detect_migration(
@@ -613,6 +621,7 @@ def test_field_dependency_change(tmp_path):
                 "metaxy_provenance_by_field": [{"frames": "hf", "audio": "ha"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream
@@ -729,18 +738,17 @@ def test_feature_dependency_swap(tmp_path):
 
     with graph_v1.use(), store_v1:
         # Write both upstreams
-        store_v1.write_metadata(
-            upstream_a_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
-            ),
+        data_a = pl.DataFrame(
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
         )
-        store_v1.write_metadata(
-            upstream_b_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
-            ),
+        data_a = add_metaxy_provenance_column(data_a, upstream_a_v1)
+        store_v1.write_metadata(upstream_a_v1, data_a)
+
+        data_b = pl.DataFrame(
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
         )
+        data_b = add_metaxy_provenance_column(data_b, upstream_b_v1)
+        store_v1.write_metadata(upstream_b_v1, data_b)
 
         # Write downstream (depends on A in v1)
         # Let system auto-load upstream and calculate provenance_by_field
@@ -789,6 +797,7 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
                 "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store.write_metadata(SimpleV1, data)
         store.record_feature_graph_snapshot()
 
@@ -818,6 +827,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
                 "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store_v1.write_metadata(SimpleV1, data)
         store_v1.record_feature_graph_snapshot()
 

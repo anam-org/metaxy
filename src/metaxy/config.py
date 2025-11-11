@@ -464,7 +464,7 @@ class MetaxyConfig(BaseSettings):
             store = config.get_store()
             ```
         """
-        from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+        from metaxy.provenance.types import HashAlgorithm
 
         if len(self.stores) == 0:
             raise ValueError(
@@ -496,9 +496,8 @@ class MetaxyConfig(BaseSettings):
                 configured_hash_algorithm = HashAlgorithm(configured_hash_algorithm)
                 config_copy["hash_algorithm"] = configured_hash_algorithm
         else:
-            # Use default
-            configured_hash_algorithm = HashAlgorithm.XXHASH64
-            config_copy["hash_algorithm"] = configured_hash_algorithm
+            # Don't set a default here - let the store choose its own default
+            configured_hash_algorithm = None
 
         # Get hash_truncation_length from global config (unless overridden in store config)
         if (
@@ -530,7 +529,11 @@ class MetaxyConfig(BaseSettings):
 
         # Verify the store actually uses the hash algorithm we configured
         # (in case a store subclass overrides the default or ignores the parameter)
-        if store.hash_algorithm != configured_hash_algorithm:
+        # Only check if we explicitly configured a hash algorithm
+        if (
+            configured_hash_algorithm is not None
+            and store.hash_algorithm != configured_hash_algorithm
+        ):
             raise ValueError(
                 f"Store '{name}' ({store_class.__name__}) was configured with "
                 f"hash_algorithm='{configured_hash_algorithm.value}' but is using "

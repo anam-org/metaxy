@@ -106,14 +106,15 @@ class RenderConfig:
             return FeatureKey(self.feature.split("__"))
 
     @classmethod
-    def minimal(cls) -> "RenderConfig":
+    def minimal(cls, show_projects: bool = True) -> "RenderConfig":
         """Preset: minimal information (structure only)."""
         return cls(
-            show_fields=False,
+            show_fields=True,
             show_feature_versions=False,
             show_field_versions=False,
             show_code_versions=False,
             show_snapshot_version=False,
+            show_projects=show_projects,
         )
 
     @classmethod
@@ -129,7 +130,7 @@ class RenderConfig:
         )
 
     @classmethod
-    def verbose(cls) -> "RenderConfig":
+    def verbose(cls, show_projects: bool = True) -> "RenderConfig":
         """Preset: maximum information (everything)."""
         return cls(
             show_fields=True,
@@ -138,6 +139,7 @@ class RenderConfig:
             show_code_versions=True,
             show_snapshot_version=True,
             hash_length=0,  # Full hashes
+            show_projects=show_projects,
         )
 
 

@@ -1,6 +1,7 @@
 """DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
 from collections.abc import Iterable, Mapping, Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -9,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store._ducklake_support import (
     DuckDBPyConnection,
     DuckLakeAttachmentConfig,
@@ -19,6 +19,7 @@ from metaxy.metadata_store._ducklake_support import (
     ensure_extensions_with_plugins,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.provenance.types import HashAlgorithm
 
 
 class ExtensionSpec(BaseModel):
@@ -160,6 +161,7 @@ class DuckDBMetadataStore(IbisMetadataStore):
         self.extensions = base_extensions
 
         # Auto-add hashfuncs extension if not present (needed for default XXHASH64)
+        # But we'll fall back to MD5 if hashfuncs is not available
         extension_names: list[str] = []
         for ext in self.extensions:
             if isinstance(ext, str):
@@ -186,42 +188,142 @@ class DuckDBMetadataStore(IbisMetadataStore):
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for DuckDB stores.
 
-        Uses XXHASH64 which requires the hashfuncs extension (lazily loaded).
+        Uses XXHASH64 if hashfuncs extension is available, otherwise falls back to MD5.
         """
-        return HashAlgorithm.XXHASH64
+        # Default to MD5 which is always available
+        # If hashfuncs loads successfully, the calculator will support XXHASH64 too
+        return HashAlgorithm.MD5
 
     def _supports_native_components(self) -> bool:
-        """DuckDB stores support native field provenance calculations when connection is open."""
+        """DuckDB stores support native provenance tracking when connection is open."""
         return self._conn is not None
 
-    def _create_native_components(self):
-        """Create components for native SQL execution with DuckDB.
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create provenance tracker for DuckDB backend as a context manager.
 
-        Uses DuckDBProvenanceByFieldCalculator which handles extension loading lazily.
-        Extensions are loaded when the calculator is created (on-demand), not on store open.
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            IbisProvenanceTracker with DuckDB-specific hash functions.
+
+        Note:
+            Extensions are loaded lazily when tracker is created.
         """
-        from metaxy.data_versioning.calculators.duckdb import (
-            DuckDBProvenanceByFieldCalculator,
-        )
-        from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
-        from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+        # Load extensions first (if connection is open)
+        if self._conn is not None:
+            self._load_extensions()
 
-        if self._conn is None:
-            raise RuntimeError(
-                "Cannot create native field provenance calculations: store is not open. "
-                "Ensure store is used as context manager."
-            )
+        # Call parent implementation (which calls our _create_hash_functions)
+        with super()._create_provenance_tracker(plan) as tracker:
+            yield tracker
 
-        # All components accept/return Narwhals LazyFrames
-        # DuckDBProvenanceByFieldCalculator loads extensions and generates SQL for hashing
-        joiner = NarwhalsJoiner()
-        calculator = DuckDBProvenanceByFieldCalculator(
-            backend=self._conn,
-            extensions=self.extensions,
-        )
-        diff_resolver = NarwhalsDiffResolver()
+    def _load_extensions(self) -> None:
+        """Load DuckDB extensions if not already loaded."""
+        if not self.extensions:
+            return
 
-        return joiner, calculator, diff_resolver
+        # Get raw DuckDB connection
+        duckdb_conn = self._duckdb_raw_connection()
+
+        for ext_spec in self.extensions:
+            # Extract name and repository
+            if isinstance(ext_spec, str):
+                ext_name = ext_spec
+                ext_repo = "community"
+            elif isinstance(ext_spec, ExtensionSpec):
+                ext_name = ext_spec.name
+                ext_repo = ext_spec.repository or "community"
+            else:
+                raise TypeError(
+                    f"Extension must be str or ExtensionSpec; got {type(ext_spec)}"
+                )
+
+            # Install and load the extension
+            if ext_repo == "community":
+                duckdb_conn.execute(f"INSTALL {ext_name} FROM community")
+            else:
+                duckdb_conn.execute(f"SET custom_extension_repository='{ext_repo}'")
+                duckdb_conn.execute(f"INSTALL {ext_name}")
+
+            duckdb_conn.execute(f"LOAD {ext_name}")
+
+    def _create_hash_functions(self):
+        """Create DuckDB-specific hash functions for Ibis expressions.
+
+        Implements MD5 and xxHash functions using DuckDB's native functions.
+
+        Returns hash functions that take Ibis column expressions and return
+        Ibis expressions that call DuckDB SQL functions.
+        """
+        # Import ibis for wrapping built-in SQL functions
+        import ibis
+
+        hash_functions = {}
+
+        # DuckDB MD5 implementation
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:
+            """DuckDB MD5() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def HEX(x: str) -> str:
+            """DuckDB HEX() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def LOWER(x: str) -> str:
+            """DuckDB LOWER() function."""
+            ...
+
+        def md5_hash(col_expr):
+            """Hash a column using DuckDB's MD5() function."""
+            # MD5 already returns hex string, just convert to lowercase
+            return LOWER(MD5(col_expr.cast(str)))
+
+        hash_functions[HashAlgorithm.MD5] = md5_hash
+
+        # Determine which extensions are available
+        extension_names = []
+        for ext in self.extensions:
+            if isinstance(ext, str):
+                extension_names.append(ext)
+            elif isinstance(ext, ExtensionSpec):
+                extension_names.append(ext.name)
+
+        # Add xxHash functions if hashfuncs extension is loaded
+        if "hashfuncs" in extension_names:
+            # Use Ibis's builtin UDF decorator to wrap DuckDB's xxhash functions
+            # These functions already exist in DuckDB (via hashfuncs extension)
+            # The decorator tells Ibis to call them directly in SQL
+            # NOTE: xxh32/xxh64 return integers in DuckDB, not strings
+            @ibis.udf.scalar.builtin
+            def xxh32(x: str) -> int:
+                """DuckDB xxh32() hash function from hashfuncs extension."""
+                ...
+
+            @ibis.udf.scalar.builtin
+            def xxh64(x: str) -> int:
+                """DuckDB xxh64() hash function from hashfuncs extension."""
+                ...
+
+            # Create hash functions that use these wrapped SQL functions
+            def xxhash32_hash(col_expr):
+                """Hash a column using DuckDB's xxh32() function."""
+                # Cast to string and then cast result to string (xxh32 returns integer in DuckDB)
+                return xxh32(col_expr.cast(str)).cast(str)
+
+            def xxhash64_hash(col_expr):
+                """Hash a column using DuckDB's xxh64() function."""
+                # Cast to string and then cast result to string (xxh64 returns integer in DuckDB)
+                return xxh64(col_expr.cast(str)).cast(str)
+
+            hash_functions[HashAlgorithm.XXHASH32] = xxhash32_hash
+            hash_functions[HashAlgorithm.XXHASH64] = xxhash64_hash
+
+        return hash_functions
 
     # ------------------------------------------------------------------ DuckLake
     def open(self) -> None:
