@@ -131,8 +131,8 @@ jobs:
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
+        # uv run pytest -s --log-cli-level=INFO tests/metadata_stores/test_provenance_golden_reference.py
         run: >
-          # uv run pytest -s --log-cli-level=INFO tests/metadata_stores/test_provenance_golden_reference.py
           uv run pytest
           --cov=src/metaxy
           --cov-report=term-missing
