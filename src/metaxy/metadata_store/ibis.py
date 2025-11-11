@@ -9,7 +9,7 @@ Supports any SQL database that Ibis supports:
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 import narwhals as nw
 import polars as pl
@@ -28,6 +28,14 @@ from metaxy.provenance.types import HashAlgorithm
 if TYPE_CHECKING:
     import ibis
     import ibis.expr.types
+
+
+class HashSQLGenerator(Protocol):
+    """Protocol for backend-specific hash SQL generation."""
+
+    def __call__(
+        self, table: "ibis.expr.types.Table", concat_columns: dict[str, str]
+    ) -> str: ...
 
 
 class IbisMetadataStore(MetadataStore, ABC):
@@ -177,6 +185,32 @@ class IbisMetadataStore(MetadataStore, ABC):
         finally:
             # No cleanup needed for Ibis tracker
             pass
+
+    @staticmethod
+    def _ensure_string_identifier(value: str | bytes) -> str:
+        """Ensure SQL identifier inputs are plain strings."""
+        if isinstance(value, bytes):
+            return value.hex()
+        return str(value)
+
+    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
+        """Return SQL generators for backend hash calculations."""
+        ensure_str = self._ensure_string_identifier
+
+        def md5_generator(table, concat_columns: dict[str, str]) -> str:
+            hash_selects: list[str] = []
+            for field_key, concat_col in concat_columns.items():
+                field_key_str = ensure_str(field_key)
+                concat_col_str = ensure_str(concat_col)
+                hash_col = f"__hash_{field_key_str}"
+                hash_expr = f"MD5({concat_col_str})"
+                hash_selects.append(f"{hash_expr} as {hash_col}")
+
+            hash_clause = ", ".join(hash_selects)
+            table_sql = table.compile()
+            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
+
+        return {HashAlgorithm.MD5: md5_generator}
 
     @abstractmethod
     def _create_hash_functions(self):

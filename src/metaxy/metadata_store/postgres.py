@@ -27,14 +27,12 @@ from polars.datatypes import DataTypeClass as PolarsDataTypeClass
 from psycopg import Error as _PsycopgError
 from psycopg.cursor import Cursor as PsycopgCursor
 
-from metaxy.data_versioning.diff import Increment, LazyIncrement
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.ibis import HashSQLGenerator, IbisMetadataStore
+from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
-    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
     from metaxy.metadata_store.base import MetadataStore
     from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
@@ -227,6 +225,46 @@ class PostgresMetadataStore(IbisMetadataStore):
         For production you must self-install the necessary posgres extensions.
         """
         return HashAlgorithm.MD5
+
+    def _create_hash_functions(self):
+        """Create PostgreSQL-specific hash functions for Ibis expressions."""
+        import ibis
+
+        hash_functions = {}
+
+        @ibis.udf.scalar.builtin
+        def MD5(x: str) -> str:
+            """PostgreSQL MD5() function."""
+            ...
+
+        def md5_hash(col_expr):
+            return MD5(col_expr.cast(str))
+
+        hash_functions[HashAlgorithm.MD5] = md5_hash
+
+        @ibis.udf.scalar.builtin
+        def digest(value: str, algorithm: str) -> bytes:
+            """pgcrypto digest() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def encode(value: bytes, fmt: str) -> str:
+            """PostgreSQL encode() function."""
+            ...
+
+        @ibis.udf.scalar.builtin
+        def lower(value: str) -> str:
+            """PostgreSQL lower() function."""
+            ...
+
+        def sha256_hash(col_expr):
+            digest_expr = digest(col_expr.cast(str), ibis.literal("sha256"))
+            encoded = encode(digest_expr, ibis.literal("hex"))
+            return lower(encoded)
+
+        hash_functions[HashAlgorithm.SHA256] = sha256_hash
+
+        return hash_functions
 
     def open(self) -> None:
         """Open connection to PostgreSQL and perform capability checks.
