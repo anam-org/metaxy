@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from metaxy.models.types import FeatureKey
 
 from psycopg import Error as _PsycopgError
-from sqlglot import exp
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
@@ -659,19 +658,28 @@ class PostgresMetadataStore(IbisMetadataStore):
             return f"PostgresMetadataStore(connection_string={self.connection_string})"
         return "PostgresMetadataStore()"
 
-    def _has_native_struct_support(self) -> bool:
-        """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
-        dialect = getattr(self.conn, "dialect", None)
-        type_mapping = getattr(dialect, "TYPE_TO_EXPRESSIONS", None)
-        if not type_mapping:
-            return False
+    # def _has_native_struct_support(self) -> bool:
+    #     """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
+    #     dialect = getattr(self.conn, "dialect", None)
+    #     type_mapping = getattr(dialect, "TYPE_TO_EXPRESSIONS", None)
+    #     if not type_mapping:
+    #         return False
 
-        data_type_cls = getattr(exp, "DataType", None)
-        type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
-        struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
-        if struct_type is None:
-            return False
-        return struct_type in type_mapping
+    #     data_type_cls = getattr(exp, "DataType", None)
+    #     type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
+    #     struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
+    #     if struct_type is None:
+    #         return False
+    #     return struct_type in type_mapping
+    def _has_native_struct_support(self) -> bool:
+        """
+        Detect whether current Ibis/sqlglot stack can compile STRUCT types.
+
+        NOTE: Native struct support for PostgreSQL in the Ibis/sqlglot stack has proven
+        unreliable across different environments. We are temporarily disabling it
+        to enforce the more stable JSON serialization path.
+        """
+        return False
 
     @staticmethod
     def _serialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
