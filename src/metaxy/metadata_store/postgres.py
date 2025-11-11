@@ -1,12 +1,18 @@
-"""PostgreSQL metadata store - thin wrapper around IbisMetadataStore.
-
-Provides production-grade metadata storage using PostgreSQL with:
-- Full ACID compliance
-- Schema isolation
-- Extension support (pgcrypto for SHA256)
-- Connection pooling support
-"""
-
+# ==============================================================================
+# Psycopg Compatibility Shim
+#
+# REASON: In some CI/Linux environments, psycopg's pure-Python fallback is
+# installed instead of the C-optimized version. The pure-Python version has a
+# different default behavior: it returns `bytes` for certain metadata query
+# results (like schema names and data types), whereas the C version correctly
+# decodes them to `str`. This inconsistency breaks upstream libraries like Ibis.
+#
+# SOLUTION: This code block acts as a compatibility shim. It monkey-patches the
+# `psycopg.Cursor` class to normalize the data flow. It ensures that both
+# query parameters (on the way in) and query results (on the way out) are
+# consistently strings, regardless of which `psycopg` implementation is in use.
+# This patch is applied globally and exactly once when this module is imported.
+# ==============================================================================
 from __future__ import annotations
 
 import json
@@ -18,13 +24,6 @@ import narwhals as nw
 import polars as pl
 from polars.datatypes import DataType as PolarsDataType
 from polars.datatypes import DataTypeClass as PolarsDataTypeClass
-
-if TYPE_CHECKING:
-    from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import BaseFeature
-    from metaxy.models.types import FeatureKey
-
-
 from psycopg import Error as _PsycopgError
 from psycopg.cursor import Cursor as PsycopgCursor
 
@@ -38,29 +37,34 @@ from metaxy.versioning.types import HashAlgorithm
 # Alias for backwards compatibility
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from metaxy.data_versioning.calculators.ibis import HashSQLGenerator
+    from metaxy.metadata_store.base import MetadataStore
+    from metaxy.models.feature import BaseFeature
+    from metaxy.models.types import FeatureKey
+
+
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
+logger = logging.getLogger(__name__)
+SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
+SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
+
 try:
-    # Use a unique attribute name to ensure this block runs only once per process.
     if not getattr(PsycopgCursor, "_metaxy_compat_patched", False):
         logger.info(
             "Applying psycopg compatibility shim for pure-Python fallback support."
         )
-
-        # Store original methods to be called by our patched versions.
         _original_execute = PsycopgCursor.execute
         _original_fetchone = PsycopgCursor.fetchone
         _original_fetchall = PsycopgCursor.fetchall
         _original_iter = PsycopgCursor.__iter__
 
-        # A safe decoder that will not crash on invalid byte sequences.
         def _decoder(byte_value):
             return byte_value.decode("utf-8", "replace")
 
         def _patched_execute(self, query, params=None, *args, **kwargs):
-            """Patches `execute` to sanitize parameters on the way IN to the database."""
             sanitized_params = params
             if params:
                 if isinstance(params, dict):
@@ -71,7 +75,6 @@ try:
                             and value
                             and isinstance(value[0], bytes)
                         ):
-                            # Fixes `name = bytea` error from `{'dbs': [b'public', ...]}`
                             sanitized_params[key] = [_decoder(item) for item in value]
                         elif isinstance(value, bytes):
                             sanitized_params[key] = _decoder(value)
@@ -84,108 +87,46 @@ try:
             return _original_execute(self, query, sanitized_params, *args, **kwargs)
 
         def _sanitize_row(row: tuple[Any, ...]) -> tuple[Any, ...]:
-            """Decode any bytes in a non-null result row."""
             return tuple(
                 _decoder(item) if isinstance(item, bytes) else item for item in row
             )
 
-        def _sanitize_optional_row(
-            row: tuple[Any, ...] | None,
-        ) -> tuple[Any, ...] | None:
+        def _patched_fetchone(self) -> tuple[Any, ...] | None:
+            row = _original_fetchone(self)
             if row is None:
                 return None
             return _sanitize_row(row)
 
-        # Patch all three result-fetching methods to be safe.
-        def _patched_fetchone(self) -> tuple[Any, ...] | None:
-            return _sanitize_optional_row(_original_fetchone(self))
-
         def _patched_fetchall(self) -> list[tuple[Any, ...]]:
-            rows = _original_fetchall(self)
+            rows: Sequence[tuple[Any, ...]] = cast(
+                Sequence[tuple[Any, ...]], _original_fetchall(self)
+            )
             return [_sanitize_row(row) for row in rows]
 
         def _patched_iter(self) -> Iterator[tuple[Any, ...]]:
             for row in _original_iter(self):
                 yield _sanitize_row(row)
 
-        # Atomically replace the methods on the class.
         PsycopgCursor.execute = cast(Any, _patched_execute)
         PsycopgCursor.fetchone = cast(Any, _patched_fetchone)
         PsycopgCursor.fetchall = cast(Any, _patched_fetchall)
         PsycopgCursor.__iter__ = cast(Any, _patched_iter)
-
-        # Mark the class as patched to prevent this from ever running again.
         setattr(PsycopgCursor, "_metaxy_compat_patched", True)
         logger.info("Psycopg compatibility shim applied successfully.")
-
 except Exception as e:
-    # Log any failure during the patching process.
     logger.error(f"Failed to apply psycopg compatibility shim: {e}", exc_info=True)
+# ==============================================================================
+# End of Psycopg Compatibility Shim
+# ==============================================================================
 
 
 class PostgresMetadataStore(IbisMetadataStore):
     """
-    [PostgreSQL](https://www.postgresql.org/) metadata store using [Ibis](https://ibis-project.org/) backend.
+    [PostgreSQL](https://www.postgresql.org/) metadata store - thin wrapper around IbisMetadataStore.
 
-    Provides production-grade metadata storage with full ACID compliance, schema isolation,
-    and support for advanced hash algorithms via PostgreSQL extensions.
-
-    **Hash Algorithm Support:**
-
-    - **MD5** (default): Built-in, no extensions required
-    - **SHA256**: Requires `pgcrypto` extension (auto-enabled before native hashing runs)
-
-    The store automatically enables `pgcrypto` (when configured) the first time
-    it needs to compute SHA256 hashes during `resolve_update()`. This avoids
-    running `CREATE EXTENSION` during store initialization.
-
-    **Schema Isolation:**
-
-    Use the `schema` parameter to isolate metadata in a dedicated schema.
-    If not specified, tables are created in the user's search_path (typically `public`).
-
-    Example: Connection String
-        ```py
-        store = PostgresMetadataStore("postgresql://user:pass@localhost:5432/metadata")
-        ```
-
-    Example: Connection Parameters
-        ```py
-        store = PostgresMetadataStore(
-            host="localhost",
-            port=5432,
-            user="ml",
-            password="secret",
-            database="metaxy",
-            schema="features",  # Optional schema isolation
-        )
-        ```
-
-    Example: SHA256 Hash Algorithm
-        ```py
-        # pgcrypto extension auto-enabled during resolve_update()
-        store = PostgresMetadataStore(
-            "postgresql://user:pass@localhost:5432/metadata",
-            hash_algorithm=HashAlgorithm.SHA256,
-        )
-        ```
-
-    Example: With Fallback Stores
-        ```py
-        # Read from prod, write to dev
-        prod_store = PostgresMetadataStore(
-            "postgresql://user:pass@prod:5432/metadata",
-        )
-        dev_store = PostgresMetadataStore(
-            "postgresql://user:pass@dev:5432/metadata",
-            fallback_stores=[prod_store],
-        )
-        ```
-
-    Warning:
-        SHA256 requires the `pgcrypto` extension. The store will attempt to enable it
-        automatically the first time native SHA256 hashing runs. Ensure your database user has
-        CREATE EXTENSION privileges or have a DBA pre-create the extension.
+    Provides production-grade metadata storage using PostgreSQL with:
+    - Full ACID compliance
+    - Extension support (pgcrypto for SHA256)
     """
 
     def __init__(
@@ -228,7 +169,7 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         Raises:
             ValueError: If neither connection_string nor connection parameters provided.
-            ImportError: If Ibis or psycopg2 driver not installed.
+            ImportError: If Ibis or psycopg driver not installed.
 
         Note:
             When using SHA256 hash algorithm, pgcrypto extension is required.
@@ -247,30 +188,6 @@ class PostgresMetadataStore(IbisMetadataStore):
             "database": database,
             "schema": schema,
         }
-        # if "schema" in params and params["schema"] is not None:
-        # import sys
-
-        # print("*********************", file=sys.stderr)
-        # print(params["schema"], file=sys.stderr)
-        # params["schema"] = self._ensure_string_identifier(params["schema"])
-        # print(params["schema"], file=sys.stderr)
-        # print("*********************", file=sys.stderr)
-
-        # import sys
-
-        # print("*********************", file=sys.stderr)
-        # print(explicit_params["schema"], file=sys.stderr)
-        # explicit_params["schema"] = self._ensure_string_identifier(explicit_params["schema"])
-        # print(explicit_params["schema"], file=sys.stderr)
-        # print("*********************", file=sys.stderr)
-        try:
-            import locale
-
-            current_locale = locale.getlocale()
-            logger.info(f"Locale diagnosis: current_locale={current_locale}, ")
-        except Exception as e:
-            logger.warning(f"Could not perform locale diagnosis: {e}")
-
         for key, value in explicit_params.items():
             if value is not None:
                 params.setdefault(key, value)
@@ -321,7 +238,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         """Open connection to PostgreSQL and perform capability checks.
 
         Raises:
-            ImportError: If psycopg2 driver not installed.
+            ImportError: If psycopg driver not installed.
             Various database errors: If connection fails.
         """
         super().open()
@@ -361,8 +278,6 @@ class PostgresMetadataStore(IbisMetadataStore):
         try:
             self._ensure_pgcrypto_extension()
         finally:
-            # Avoid repeated attempts (CREATE EXTENSION IF NOT EXISTS is idempotent,
-            # but we only need to try once per connection)
             self._pgcrypto_extension_checked = True
 
     def _ensure_pgcrypto_extension(self) -> None:
@@ -374,29 +289,23 @@ class PostgresMetadataStore(IbisMetadataStore):
         """
         try:
             # Use underlying connection to execute DDL (Ibis doesn't expose CREATE EXTENSION)
-            # For PostgreSQL backend, conn.con is the psycopg2 connection
-            raw_conn = self.conn.con  # ty: ignore[unresolved-attribute]  # pyright: ignore[reportAttributeAccessIssue]
-            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+            raw_conn = cast(Any, self.conn).con
+            with raw_conn.cursor() as cursor:
                 cursor.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
-                raw_conn.commit()  # pyright: ignore[reportAttributeAccessIssue]
+            raw_conn.commit()
             logger.debug("pgcrypto extension enabled successfully")
         except _PGCRYPTO_ERROR_TYPES as err:
             self._log_pgcrypto_warning(err)
         except AttributeError as err:
-            # Ibis backend may not expose .con or cursor()
             self._log_pgcrypto_warning(err)
 
     def _get_current_schema(self, raw_conn: Any) -> str:
         """Get the current schema from the search_path."""
+        # This method is simpler because the patch guarantees `result` contains strings.
         try:
-            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+            with raw_conn.cursor() as cursor:
                 cursor.execute("SHOW search_path")
                 result = cursor.fetchone()
-            logger.info(
-                "Schema detected from search_path: %s",
-                result,
-                exc_info=True,
-            )
         except Exception:
             logger.debug(
                 "Could not determine current schema; defaulting to public",
@@ -404,23 +313,11 @@ class PostgresMetadataStore(IbisMetadataStore):
             )
             return "public"
 
-        search_path_raw = result[0] if result else ""
-        if isinstance(search_path_raw, bytes):
-            try:
-                # Try to decode using UTF-8, which is almost always correct for search_path.
-                search_path = search_path_raw.decode("utf-8")
-            except UnicodeDecodeError:
-                # If decoding fails, fall back to a safe default.
-                logger.warning(
-                    "Could not decode search_path from bytes; defaulting to public."
-                )
-                return "public"
-        else:
-            search_path = str(search_path_raw)
+        search_path = result[0] if result else ""
         if not search_path:
             return "public"
 
-        for raw_path in str(search_path).split(","):
+        for raw_path in search_path.split(","):
             trimmed = raw_path.strip()
             if not trimmed:
                 continue
@@ -434,7 +331,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         """
         Robustly list tables using a raw DBAPI query to avoid bytes vs string issues.
         """
-        raw_conn = getattr(self.conn, "con", None)  # pyright: ignore[reportAttributeAccessIssue]
+        raw_conn = getattr(self.conn, "con", None)
         if raw_conn is None:
             return self.conn.list_tables()
 
@@ -445,16 +342,14 @@ class PostgresMetadataStore(IbisMetadataStore):
             if not schema_to_query:
                 schema_to_query = "public"
 
-            with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+            with raw_conn.cursor() as cursor:
                 cursor.execute(
                     "SELECT tablename FROM pg_tables WHERE schemaname = %s",
                     (schema_to_query,),
                 )
-                tables = [
-                    row[0].decode() if isinstance(row[0], bytes) else str(row[0])
-                    for row in cursor.fetchall()
-                ]
-            return tables
+                # The patch guarantees results are strings, so a simple cast is safe.
+                tables = [str(row[0]) for row in cursor.fetchall()]
+                return tables
         except Exception:
             logger.warning(
                 "Robust table listing failed, falling back to Ibis.list_tables(). "
@@ -481,43 +376,25 @@ class PostgresMetadataStore(IbisMetadataStore):
     ) -> Increment | LazyIncrement:
         """Ensure pgcrypto is available before delegating to base implementation."""
         self._ensure_pgcrypto_ready_for_native_provenance()
-        return super()._resolve_update_native(  # ty: ignore[unresolved-attribute]
-            feature,
-            filters=filters,
-            lazy=lazy,
-        )
+        return super()._resolve_update_native(feature, filters=filters, lazy=lazy)
 
     @staticmethod
     def _ensure_string_identifier(value: str | bytes) -> str:
-        """Ensure identifier is a string, not bytes.
-
-        PostgreSQL identifiers must be strings. Hash functions may return bytes
-        on some platforms, so we normalize them here.
-
-        Args:
-            value: Identifier value (string or bytes)
-
-        Returns:
-            String identifier safe for use in SQL
-        """
+        """Ensure identifier is a string, not bytes."""
         if isinstance(value, bytes):
             return value.hex()
         return str(value)
 
     def _get_hash_sql_generators(self) -> dict[HashAlgorithm, Any]:
         """Get hash SQL generators for PostgreSQL."""
-        generators = super()._get_hash_sql_generators()  # ty: ignore[unresolved-attribute]
-
-        # Store reference to the static method for use in closure
+        generators = super()._get_hash_sql_generators()
         ensure_str = self._ensure_string_identifier
 
         def sha256_generator(table, concat_columns: dict[str, str]) -> str:
             hash_selects: list[str] = []
             for field_key, concat_col in concat_columns.items():
-                # Ensure field_key is a string, not bytes
                 field_key_str = ensure_str(field_key)
                 concat_col_str = ensure_str(concat_col)
-
                 hash_col = f"__hash_{field_key_str}"
                 hash_expr = f"ENCODE(DIGEST({concat_col_str}, 'sha256'), 'hex')"
                 hash_selects.append(f"{hash_expr} as {hash_col}")
@@ -531,8 +408,7 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _supports_native_components(self) -> bool:
         """Disable native components when running in struct-compatibility mode."""
-        return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
-        return super()._supports_native_components() and not self._struct_compat_mode  # ty: ignore[unresolved-attribute]
+        return super()._supports_native_components() and not self._struct_compat_mode
 
     def _create_system_tables(self) -> None:
         """
@@ -546,11 +422,8 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        def get_postgres_type(
-            dtype: PolarsDataType | PolarsDataTypeClass,
-        ) -> str:
+        def get_postgres_type(dtype: PolarsDataType | PolarsDataTypeClass) -> str:
             """Convert Polars dtype to PostgreSQL type."""
-
             if dtype == pl.String:
                 return "VARCHAR"
             elif dtype == pl.Int64:
@@ -566,40 +439,34 @@ class PostgresMetadataStore(IbisMetadataStore):
             elif dtype == pl.Date:
                 return "DATE"
             else:
-                # Fallback for complex types
                 return "VARCHAR"
 
         def create_table_ddl(table_name: str, schema: SchemaMapping) -> str:
             """Generate CREATE TABLE IF NOT EXISTS DDL from Polars schema."""
-            columns = []
-            for col_name, dtype in schema.items():
-                pg_type = get_postgres_type(dtype)
-                # Properly quote column names that might be keywords or contain special chars
-                columns.append(f'"{col_name}" {pg_type}')
-
+            columns = [
+                f'"{col_name}" {get_postgres_type(dtype)}'
+                for col_name, dtype in schema.items()
+            ]
             columns_sql = ", ".join(columns)
-            # Properly quote table name
             return f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns_sql})'
 
         def execute_ddl(ddl: str):
             """Execute DDL with proper connection handling."""
-            raw_conn = self.conn.con  # pyright: ignore[reportAttributeAccessIssue]
+            raw_conn = cast(Any, self.conn).con
             original_autocommit = raw_conn.autocommit
             try:
                 raw_conn.autocommit = True
-                with raw_conn.cursor() as cursor:  # pyright: ignore[reportAttributeAccessIssue]
+                with raw_conn.cursor() as cursor:
                     cursor.execute(ddl)
             finally:
                 raw_conn.autocommit = original_autocommit
 
-        # Create feature_versions table
         ddl_fv = create_table_ddl(
             FEATURE_VERSIONS_KEY.table_name,
             cast(SchemaMapping, FEATURE_VERSIONS_SCHEMA),
         )
         execute_ddl(ddl_fv)
 
-        # Create migration_events table
         ddl_me = create_table_ddl(
             MIGRATION_EVENTS_KEY.table_name,
             cast(SchemaMapping, MIGRATION_EVENTS_SCHEMA),
@@ -635,10 +502,8 @@ class PostgresMetadataStore(IbisMetadataStore):
                     )
 
             conn.create_table(table_name, obj=df_for_creation)
-            # After creating the table with a safe schema, insert the data (which is already serialized)
-            if len(df_to_write) > 0:
-                conn.insert(table_name, obj=df_to_write)
-        else:
+
+        if len(df_to_write) > 0:
             conn.insert(table_name, obj=df_to_write)
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
@@ -782,23 +647,8 @@ class PostgresMetadataStore(IbisMetadataStore):
             return f"PostgresMetadataStore(connection_string={self.connection_string})"
         return "PostgresMetadataStore()"
 
-    # def _has_native_struct_support(self) -> bool:
-    #     """Detect whether current Ibis/sqlglot stack can compile STRUCT types."""
-    #     dialect = getattr(self.conn, "dialect", None)
-    #     type_mapping = getattr(dialect, "TYPE_TO_EXPRESSIONS", None)
-    #     if not type_mapping:
-    #         return False
-
-    #     data_type_cls = getattr(exp, "DataType", None)
-    #     type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
-    #     struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
-    #     if struct_type is None:
-    #         return False
-    #     return struct_type in type_mapping
     def _has_native_struct_support(self) -> bool:
         """
-        Detect whether current Ibis/sqlglot stack can compile STRUCT types.
-
         NOTE: Native struct support for PostgreSQL in the Ibis/sqlglot stack has proven
         unreliable across different environments. We are temporarily disabling it
         to enforce the more stable JSON serialization path.
