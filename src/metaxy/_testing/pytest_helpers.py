@@ -1,6 +1,50 @@
-from functools import wraps
+from __future__ import annotations
 
+from functools import wraps
+from typing import TYPE_CHECKING
+
+import narwhals as nw
+import polars as pl
 import pytest
+
+if TYPE_CHECKING:
+    from metaxy.models.feature import BaseFeature
+    from metaxy.provenance.types import HashAlgorithm
+
+
+def add_metaxy_provenance_column(
+    df: pl.DataFrame,
+    feature: type[BaseFeature],
+    hash_algorithm: HashAlgorithm | None = None,
+) -> pl.DataFrame:
+    """Add metaxy_provenance column to a DataFrame based on metaxy_provenance_by_field.
+
+
+    Args:
+        df: Polars DataFrame with metaxy_provenance_by_field column
+        feature: Feature class to get the feature plan from
+        hash_algorithm: Hash algorithm to use. If None, uses store default.
+
+    Returns:
+        Polars DataFrame with metaxy_provenance column added
+    """
+    from metaxy.provenance.polars import PolarsProvenanceTracker
+    from metaxy.provenance.types import HashAlgorithm as HashAlgo
+
+    if hash_algorithm is None:
+        hash_algorithm = HashAlgo.XXHASH64
+
+    # Get the feature plan from the active graph
+    plan = feature.graph.get_feature_plan(feature.spec().key)
+
+    # Create tracker
+    tracker = PolarsProvenanceTracker(plan=plan)
+
+    # Convert to Narwhals, add provenance column, convert back
+    df_nw = nw.from_native(df.lazy())
+    df_nw = tracker.add_provenance_column(df_nw, hash_algorithm=hash_algorithm)
+
+    return df_nw.collect().to_native()
 
 
 def skip_exception(exception: type[Exception], reason: str):

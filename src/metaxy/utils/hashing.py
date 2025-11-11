@@ -52,11 +52,11 @@ def truncate_hash(hash_str: str) -> str:
     return hash_str[:length]
 
 
-def get_hash_truncation_length() -> int | None:
+def get_hash_truncation_length() -> int:
     """Get the current global hash truncation length from MetaxyConfig.
 
     Returns:
-        Current truncation length, or None if no truncation is configured
+        Current truncation length, or 64 if no truncation is configured
 
     Example:
         ```py
@@ -68,7 +68,7 @@ def get_hash_truncation_length() -> int | None:
     from metaxy.config import MetaxyConfig
 
     config = MetaxyConfig.get()
-    return config.hash_truncation_length
+    return config.hash_truncation_length or 64
 
 
 def ensure_hash_compatibility(hash1: str, hash2: str) -> bool:
