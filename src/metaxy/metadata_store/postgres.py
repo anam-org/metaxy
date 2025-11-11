@@ -479,43 +479,40 @@ class PostgresMetadataStore(IbisMetadataStore):
         )
         execute_ddl(ddl_me)
 
-    def _write_metadata_impl(
-        self,
-        feature_key: FeatureKey,
-        df: pl.DataFrame,
-    ) -> None:
-        """
-        Serialize struct columns when Postgres lacks STRUCT support and use robust table checks.
-
-        This is the definitive fix for the `SyntaxError`. It ensures that if we are
-        in struct compatibility mode, the DataFrame's struct columns are ALWAYS
-        serialized to JSON strings *before* being passed to any Ibis method
-        (`create_table` or `insert`), which prevents Ibis from ever seeing a
-        `Struct` type it cannot handle.
-        """
+    def _write_metadata_impl(self, feature_key: FeatureKey, df: pl.DataFrame) -> None:
         table_name = feature_key.table_name
-
         df_to_write = df
-        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df_to_write.columns:
+        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
             df_to_write = self._serialize_provenance_column(df_to_write)
+
+        conn = cast(Any, self.conn)
 
         if table_name not in self._list_tables_robustly():
             if not self.auto_create_tables:
                 from metaxy.metadata_store.exceptions import TableNotFoundError
 
-                raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
-                    f"Enable auto_create_tables=True or create the table manually."
-                )
+                raise TableNotFoundError(f"Table '{table_name}' does not exist.")
 
-            df_typed = df_to_write
-            for col in df_typed.columns:
-                if df_typed[col].dtype == pl.Null:
-                    df_typed = df_typed.with_columns(pl.col(col).cast(pl.Utf8))
+            df_for_creation = df_to_write
+            if self._struct_compat_mode:
+                sanitized_schema = {
+                    k: (pl.String if isinstance(v, (pl.Struct, pl.List)) else v)
+                    for k, v in df_for_creation.schema.items()
+                }
+                df_for_creation = pl.DataFrame(schema=sanitized_schema)
 
-            self.conn.create_table(table_name, obj=df_typed)
+            for col in df_for_creation.columns:
+                if df_for_creation[col].dtype == pl.Null:
+                    df_for_creation = df_for_creation.with_columns(
+                        pl.col(col).cast(pl.Utf8)
+                    )
+
+            conn.create_table(table_name, obj=df_for_creation)
+            # After creating the table with a safe schema, insert the data (which is already serialized)
+            if len(df_to_write) > 0:
+                conn.insert(table_name, obj=df_to_write)
         else:
-            self.conn.insert(table_name, obj=df_to_write)  # pyright: ignore[reportAttributeAccessIssue]
+            conn.insert(table_name, obj=df_to_write)
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
@@ -669,8 +666,18 @@ class PostgresMetadataStore(IbisMetadataStore):
         type_enum = getattr(data_type_cls, "Type", None) if data_type_cls else None
         struct_type = getattr(type_enum, "STRUCT", None) if type_enum else None
         if struct_type is None:
+            message = "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. Falling back to JSON serialization compatibility mode. !!!"
+            import sys
+
+            print(message, file=sys.stderr)
+            logger.info(message.replace("!!! Metaxy INFO: ", ""))
             return False
 
+        message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
+        import sys
+
+        print(message, file=sys.stderr)
+        logger.info(message.replace("!!! Metaxy INFO: ", ""))
         return struct_type in type_mapping
 
     @staticmethod
