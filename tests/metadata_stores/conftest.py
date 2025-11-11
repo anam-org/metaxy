@@ -4,15 +4,13 @@ import socket
 import uuid
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from urllib.parse import quote_plus
 
 import boto3
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
-from pytest_postgresql import executor as pytest_postgresql_executor
-from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
