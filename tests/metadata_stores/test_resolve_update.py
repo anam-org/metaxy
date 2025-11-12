@@ -9,6 +9,7 @@ to avoid manual data construction and ensure correctness.
 
 import warnings
 from collections.abc import Mapping
+from typing import Any
 
 import polars.testing as pl_testing
 import pytest
@@ -22,6 +23,9 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
+    FieldDep,
+    FieldKey,
+    FieldSpec,
     SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases
@@ -38,7 +42,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.provenance.types import HashAlgorithm, LazyIncrement
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[
