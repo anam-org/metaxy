@@ -21,7 +21,7 @@
         pkgs = import nixpkgs { inherit system; };
         lib = pkgs.lib;
         isLinux = lib.hasInfix "linux" system;
-        postgresql = pkgs.postgresql_18;
+        postgresql = pkgs.postgresql;
         mermaidAscii = mermaid-ascii.packages.${system}.default or null;
 
         # Function to create a dev shell for a specific Python version
