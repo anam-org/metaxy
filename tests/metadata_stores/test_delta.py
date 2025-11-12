@@ -4,10 +4,6 @@ from __future__ import annotations
 
 import polars as pl
 import pytest
-
-pytest.importorskip("pyarrow")
-pytest.importorskip("deltalake")
-
 from deltalake import DeltaTable
 
 from metaxy._utils import collect_to_polars
