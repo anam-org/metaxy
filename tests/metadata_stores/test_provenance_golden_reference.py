@@ -226,13 +226,8 @@ def test_store_resolve_update_matches_golden_provenance(
         golden_sorted = golden_downstream.sort(id_columns)
 
         # Select only the columns that exist in both (resolve_update may not return all metadata columns)
-        # Exclude metaxy_created_at since it's a timestamp that differs between generation times
-        from metaxy.models.constants import METAXY_CREATED_AT
-
         common_columns = [
-            col
-            for col in added_sorted.columns
-            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+            col for col in added_sorted.columns if col in golden_sorted.columns
         ]
         added_selected = added_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)

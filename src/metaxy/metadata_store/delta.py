@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import warnings
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
-from urllib.parse import urlparse
-from urllib.request import url2pathname
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -19,20 +18,16 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import TableNotFoundError
 from metaxy.metadata_store.system import (
     EVENTS_KEY as MIGRATION_EVENTS_KEY,
-)
-from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
 )
 from metaxy.metadata_store.system.events import EVENTS_SCHEMA as MIGRATION_EVENTS_SCHEMA
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
+from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.provenance import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
-
-if TYPE_CHECKING:
-    from obstore.store import ObjectStore
 
 
 class DeltaMetadataStore(MetadataStore):
@@ -62,7 +57,6 @@ class DeltaMetadataStore(MetadataStore):
         root_path: str | Path,
         *,
         storage_options: dict[str, Any] | None = None,
-        object_store_kwargs: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -71,46 +65,34 @@ class DeltaMetadataStore(MetadataStore):
 
         Args:
             root_path: Base directory or URI where feature tables are stored.
-            storage_options: Optional storage backend options passed to delta-rs.
-                Example: {"AWS_REGION": "us-west-2"}
-            object_store_kwargs: Keyword arguments forwarded to ``obstore.store.from_url``
-                when ``root_path`` is remote. Useful for passing ``config`` or
-                ``client_options`` dictionaries directly to obstore.
+                Supports local paths (/path/to/dir), s3:// URLs, and other object store URIs.
+            storage_options: Storage backend options passed to delta-rs.
+                Example: {"AWS_REGION": "us-west-2", "AWS_ACCESS_KEY_ID": "...", ...}
+                For S3: AWS_* environment variables
+                For Azure: AZURE_* environment variables
+                For GCS: GOOGLE_* environment variables
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
         """
         self.storage_options = storage_options or {}
-        self._object_store_kwargs = dict(object_store_kwargs or {})
         self._display_root = str(root_path)
-        self._local_root_path: Path | None
-        self._root_uri: str
-        self._is_remote = False
-        self._object_store: ObjectStore | None = None
 
-        if isinstance(root_path, Path):
-            local_path = root_path.expanduser()
+        # Simplified path handling - let Delta handle the complexity
+        root_str = str(root_path)
+        self._is_remote = "://" in root_str and not root_str.startswith("file://")
+
+        if self._is_remote:
+            # Remote path (S3, Azure, GCS, etc.)
+            self._local_root_path = None
+            self._root_uri = root_str.rstrip("/")
+        else:
+            # Local path (including file:// URLs)
+            if root_str.startswith("file://"):
+                # Strip file:// prefix
+                root_str = root_str[7:]
+            local_path = Path(root_str).expanduser().resolve()
             self._local_root_path = local_path
             self._root_uri = str(local_path)
-        else:
-            root_str = str(root_path)
-            if "://" not in root_str:
-                local_path = Path(root_str).expanduser()
-                self._local_root_path = local_path
-                self._root_uri = str(local_path)
-            else:
-                parsed = urlparse(root_str)
-                if parsed.scheme.lower() == "file":
-                    local_path_str = url2pathname(parsed.path)
-                    if parsed.netloc and parsed.netloc not in {"", "localhost"}:
-                        local_path_str = f"//{parsed.netloc}{local_path_str}"
-                    local_path = Path(local_path_str).expanduser()
-                    self._local_root_path = local_path
-                    self._root_uri = str(local_path)
-                else:
-                    self._local_root_path = None
-                    sanitized = root_str.rstrip("/")
-                    self._root_uri = sanitized
-                    self._is_remote = True
 
         self.root_path = self._local_root_path
         super().__init__(fallback_stores=fallback_stores, **kwargs)
@@ -121,24 +103,28 @@ class DeltaMetadataStore(MetadataStore):
         """Use XXHASH64 by default to match other non-SQL stores."""
         return HashAlgorithm.XXHASH64
 
+    def _supports_native_components(self) -> bool:
+        """DeltaLake store relies on Polars components for provenance calculations."""
+        return False
+
     def native_implementation(self) -> nw.Implementation:
-        """Get native implementation for Delta Lake store."""
+        """Get native implementation for Delta store."""
         return nw.Implementation.POLARS
 
     @contextmanager
-    def _create_provenance_tracker(self, plan):
-        """Create Polars provenance tracker for Delta Lake store.
+    def _create_provenance_tracker(
+        self, plan: FeaturePlan
+    ) -> Iterator[ProvenanceTracker]:
+        """Create Polars provenance tracker for Delta store.
 
-    def open(self) -> None:
-        """Ensure root directory exists and create system tables if needed."""
-        if self._local_root_path is not None:
-            self._local_root_path.mkdir(parents=True, exist_ok=True)
-        else:
-            self._ensure_remote_root_accessible()
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
             PolarsProvenanceTracker instance
         """
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
         # Create tracker (only accepts plan parameter)
         tracker = PolarsProvenanceTracker(plan=plan)
 
@@ -164,10 +150,6 @@ class DeltaMetadataStore(MetadataStore):
         try:
             # Only perform actual open on first entry
             if self._context_depth == 1:
-                # Ensure root directory exists if local
-                if self._local_root_path is not None:
-                    self._local_root_path.mkdir(parents=True, exist_ok=True)
-
                 # Auto-create system tables if enabled (warning is handled in base class)
                 if self.auto_create_tables:
                     self._create_system_tables()
@@ -191,23 +173,36 @@ class DeltaMetadataStore(MetadataStore):
     def _create_system_tables(self) -> None:
         """Create system tables if they don't exist.
 
-        Creates empty system tables with proper schemas:
-        - metaxy-system__feature_versions: Tracks feature versions and graph snapshots
-        - metaxy-system__migration_events: Tracks migration execution events
-
-        This method is idempotent - safe to call multiple times.
+        Delta auto-creates tables on first write, so we just need to write
+        empty dataframes with the proper schema.
         """
-        # Check and create feature_versions table
-        feature_versions_uri = self._feature_uri(FEATURE_VERSIONS_KEY)
-        if not self._table_exists(feature_versions_uri):
-            empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self.write_metadata_to_store(FEATURE_VERSIONS_KEY, nw.from_native(empty_df))
+        import deltalake  # pyright: ignore[reportMissingImports]
 
-        # Check and create migration_events table
+        # Create feature_versions table if it doesn't exist
+        feature_versions_uri = self._feature_uri(FEATURE_VERSIONS_KEY)
+        if not deltalake.DeltaTable.is_deltatable(
+            feature_versions_uri, storage_options=self.storage_options or None
+        ):
+            empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
+            deltalake.write_deltalake(
+                feature_versions_uri,
+                empty_df,
+                mode="append",
+                storage_options=self.storage_options or None,
+            )
+
+        # Create migration_events table if it doesn't exist
         migration_events_uri = self._feature_uri(MIGRATION_EVENTS_KEY)
-        if not self._table_exists(migration_events_uri):
+        if not deltalake.DeltaTable.is_deltatable(
+            migration_events_uri, storage_options=self.storage_options or None
+        ):
             empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self.write_metadata_to_store(MIGRATION_EVENTS_KEY, nw.from_native(empty_df))
+            deltalake.write_deltalake(
+                migration_events_uri,
+                empty_df,
+                mode="append",
+                storage_options=self.storage_options or None,
+            )
 
     def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
         """Convert table name back to feature key.
@@ -222,43 +217,28 @@ class DeltaMetadataStore(MetadataStore):
         parts = table_name.split("__")
         return FeatureKey(parts)
 
-    def _feature_relative_path(self, feature_key: FeatureKey) -> str:
-        """Relative directory used for the feature table."""
-        return feature_key.table_name
-
     def _feature_uri(self, feature_key: FeatureKey) -> str:
         """Return the URI/path used by deltalake for this feature."""
-        relative = self._feature_relative_path(feature_key)
-        if self._local_root_path is not None:
-            return str(self._local_root_path / relative)
-        return self._join_remote_uri(relative)
+        table_name = feature_key.table_name
+        return os.path.join(self._root_uri, table_name)
 
     def _feature_local_path(self, feature_key: FeatureKey) -> Path | None:
         """Return filesystem path when operating on local roots."""
         if self._local_root_path is None:
             return None
-        return self._local_root_path / self._feature_relative_path(feature_key)
+        return self._local_root_path / feature_key.table_name
 
-    def _join_remote_uri(self, relative: str) -> str:
-        base = self._root_uri.rstrip("/")
-        if not relative:
-            return base
-        return f"{base}/{relative}"
+    def _table_exists(self, table_uri: str) -> bool:
+        """Check whether the provided URI already contains a Delta table.
 
-    def _storage_options_payload(self) -> dict[str, Any] | None:
-        return self.storage_options or None
-
-    def _is_delta_table(self, table_uri: str) -> bool:
+        Works for both local and remote (object store) paths.
+        """
         import deltalake  # pyright: ignore[reportMissingImports]
 
         return deltalake.DeltaTable.is_deltatable(
             table_uri,
-            storage_options=self._storage_options_payload(),
+            storage_options=self.storage_options or None,
         )
-
-    def _table_exists(self, table_uri: str) -> bool:
-        """Check whether the provided URI already contains a Delta table."""
-        return self._is_delta_table(table_uri)
 
     # ===== Storage operations =====
 
@@ -293,76 +273,41 @@ class DeltaMetadataStore(MetadataStore):
                 f"Enable auto_create_tables=True to automatically create tables."
             )
 
-        # Create parent directory if needed
-        local_table_path = self._feature_local_path(feature_key)
-        if local_table_path is not None:
-            local_table_path.mkdir(parents=True, exist_ok=True)
+        # Delta automatically creates parent directories, no need to do it manually
 
+        # Use deltalake.write_deltalake for all writes
         deltalake.write_deltalake(
             table_uri,
-            df,
+            df_polars,
             mode="append",
             schema_mode="merge",
-            storage_options=self._storage_options_payload(),
+            storage_options=self.storage_options or None,
         )
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
-        """Drop Delta table for the specified feature."""
-        import shutil
+        """Drop Delta table for the specified feature using soft delete.
 
-        local_table_path = self._feature_local_path(feature_key)
-        if local_table_path is not None:
-            if local_table_path.exists():
-                shutil.rmtree(local_table_path, ignore_errors=True)
+        Uses Delta's delete operation which marks rows as deleted in the transaction log
+        rather than physically removing files.
+        """
+        import deltalake  # pyright: ignore[reportMissingImports]
+
+        table_uri = self._feature_uri(feature_key)
+
+        # Check if table exists first
+        if not self._table_exists(table_uri):
             return
 
-        self._delete_remote_prefix(feature_key)
+        # Load the Delta table
+        delta_table = deltalake.DeltaTable(
+            table_uri,
+            storage_options=self.storage_options or None,
+            without_files=True,  # Don't track files for this operation
+        )
 
-    def _delete_remote_prefix(self, feature_key: FeatureKey) -> None:
-        """Delete all objects that belong to a feature when stored remotely."""
-        store = self._get_object_store()
-        prefix = self._feature_relative_path(feature_key).rstrip("/")
-        if prefix:
-            prefix = f"{prefix}/"
-        stream = store.list(prefix=prefix)
-        for chunk in stream:
-            paths = [obj["path"] for obj in chunk]
-            if paths:
-                store.delete(paths)
-
-    def _ensure_remote_root_accessible(self) -> None:
-        if not self._is_remote:
-            return
-
-        store = self._get_object_store()
-        from obstore.exceptions import BaseError  # type: ignore[import-not-found]
-        try:
-            store.list_with_delimiter()
-        except BaseError as exc:  # pragma: no cover - depends on backend failures
-            raise RuntimeError(
-                f"Unable to access remote DeltaMetadataStore root {self._root_uri}: {exc}"
-            ) from exc
-
-    def _get_object_store(self) -> ObjectStore:
-        """Instantiate (lazily) an obstore client for remote roots."""
-        if not self._is_remote:
-            msg = "Object store access requested for a non-remote DeltaMetadataStore"
-            raise RuntimeError(msg)
-        if self._object_store is None:
-            try:
-                from obstore import store as obstore_store  # type: ignore[import-not-found]
-            except ImportError as exc:  # pragma: no cover - handled at runtime
-                raise RuntimeError(
-                    "obstore is required for remote DeltaMetadataStore paths. "
-                    "Install metaxy[delta] to include the dependency."
-                ) from exc
-
-            self._object_store = obstore_store.from_url(  # type: ignore[union-attr]
-                self._root_uri,
-                **self._object_store_kwargs,
-            )
-
-        return self._object_store
+        # Use Delta's delete operation - soft delete all rows
+        # This marks rows as deleted in transaction log without physically removing files
+        delta_table.delete()
 
     def read_metadata_in_store(
         self,
@@ -372,9 +317,7 @@ class DeltaMetadataStore(MetadataStore):
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
-        """Read metadata stored in Delta for a single feature."""
-        import deltalake  # pyright: ignore[reportMissingImports]
-
+        """Read metadata stored in Delta for a single feature using lazy evaluation."""
         self._check_open()
 
         feature_key = self._resolve_feature_key(feature)
@@ -382,25 +325,32 @@ class DeltaMetadataStore(MetadataStore):
         if not self._table_exists(table_uri):
             return None
 
-        delta_table = deltalake.DeltaTable(
+        # Use pl.scan_delta for lazy reading
+        # Build column list for projection
+        cols_to_read = None
+        if columns is not None:
+            cols_to_read = list(columns)
+            # Ensure system columns are included for filtering
+            if (
+                feature_version is not None
+                and "metaxy_feature_version" not in cols_to_read
+            ):
+                cols_to_read.append("metaxy_feature_version")
+
+        # Use scan_delta for lazy evaluation
+        lf = pl.scan_delta(
             table_uri,
-            storage_options=self._storage_options_payload(),
+            storage_options=self.storage_options or None,
         )
 
-        # Use column projection for efficiency if columns are specified
-        if columns is not None:
-            # Need to ensure system columns are included for filtering
-            cols_to_read = set(columns)
-            if feature_version is not None:
-                cols_to_read.add("metaxy_feature_version")
-            arrow_table = delta_table.to_pyarrow_table(columns=list(cols_to_read))
-        else:
-            arrow_table = delta_table.to_pyarrow_table()
+        # Apply column selection early if specified (pushdown)
+        if cols_to_read is not None:
+            lf = lf.select(cols_to_read)
 
-        df = cast(pl.DataFrame, pl.from_arrow(arrow_table))
-        lf = df.lazy()
+        # Convert to Narwhals
         nw_lazy = nw.from_native(lf)
 
+        # Apply filters
         if feature_version is not None:
             nw_lazy = nw_lazy.filter(
                 nw.col("metaxy_feature_version") == feature_version
@@ -410,6 +360,7 @@ class DeltaMetadataStore(MetadataStore):
             for expr in filters:
                 nw_lazy = nw_lazy.filter(expr)
 
+        # Apply final column selection if needed (after filtering)
         if columns is not None:
             nw_lazy = nw_lazy.select(columns)
 
@@ -445,44 +396,29 @@ class DeltaMetadataStore(MetadataStore):
         return sorted(feature_keys)
 
     def _list_features_from_object_store(self) -> list[FeatureKey]:
-        store = self._get_object_store()
-        result = store.list_with_delimiter()
+        """List features from object store (S3, Azure, GCS, etc.).
 
-        prefixes = getattr(result, "common_prefixes", None) or []
-        feature_keys: list[FeatureKey] = []
-        for prefix in prefixes:
-            table_name = prefix.rstrip("/")
-            if not table_name:
-                continue
-            try:
-                feature_key = self._table_name_to_feature_key(table_name)
-            except ValueError as exc:
-                warnings.warn(
-                    f"Could not parse Delta table name '{table_name}' as FeatureKey: {exc}",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                continue
+        Note: For remote stores, feature discovery relies on the system tables.
+        Use `metaxy graph push` to register features in the metadata store.
 
-            if self._is_system_table(feature_key):
-                continue
-
-            table_uri = self._join_remote_uri(table_name)
-            if self._table_exists(table_uri):
-                feature_keys.append(feature_key)
-
-        return sorted(feature_keys)
+        Returns:
+            Empty list - remote stores require explicit feature registration
+        """
+        warnings.warn(
+            f"Feature discovery not supported for remote Delta stores ({self._root_uri}). "
+            "Features must be registered via 'metaxy graph push' or accessed directly by key. "
+            "Use system tables (feature_versions) to query registered features.",
+            UserWarning,
+            stacklevel=2,
+        )
+        return []
 
     def display(self) -> str:
-        """Return human-readable representation of the store."""
+        """Return human-readable representation of the store.
+
+        Avoids eagerly scanning the store for performance.
+        """
         details = [f"path={self._display_root}"]
         if self.storage_options:
             details.append("storage_options=***")
-        if self._is_open:
-            try:
-                num_features = len(self._list_features_local())
-                details.append(f"features={num_features}")
-            except Exception:
-                # If listing fails, just skip the feature count
-                pass
         return f"DeltaMetadataStore({', '.join(details)})"
