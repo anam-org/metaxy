@@ -16,6 +16,7 @@ import psycopg
 import pytest
 from psycopg import conninfo as psycopg_conninfo
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy._testing import HashAlgorithmCases
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
@@ -26,6 +27,13 @@ from metaxy.models.feature import FeatureGraph
 assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 logger = logging.getLogger(__name__)
+
+# Force pytest-postgresql to use a short socket directory to avoid hitting the
+# 103-character Unix socket limit enforced by PostgreSQL on macOS.
+_PG_SOCKET_DIR = Path("/tmp/metaxy-pg")
+_PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
+
+postgresql_proc = factories.postgresql_proc(unixsocketdir=str(_PG_SOCKET_DIR))
 
 
 def _find_free_port() -> int:
