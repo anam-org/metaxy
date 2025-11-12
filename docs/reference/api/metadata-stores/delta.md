@@ -8,7 +8,8 @@ title: Delta Lake Metadata Store
 
 ## Installation
 
-The Delta Lake backend relies on [`deltalake`](https://delta-io.github.io/delta-rs/python/), which is provided through Metaxy’s `delta` dependency group. Install it with:
+The Delta Lake backend relies on [`deltalake`](https://delta-io.github.io/delta-rs/python/), which is provided through Metaxy’s `delta` dependency group.
+Install it with:
 
 ```bash
 uv sync --group delta
@@ -31,7 +32,7 @@ with DeltaMetadataStore(
     root,
     storage_options={
         # Optional: forward credentials or configuration to the underlying storage backend
-        "AWS_REGION": "us-west-2",
+        "AWS_REGION": "us-east-1",
     },
 ) as store:
     # Allow writing metadata from integration tests or scripts
@@ -90,4 +91,5 @@ store = DeltaMetadataStore(
 
 ### Hashing
 
-`DeltaMetadataStore` defaults to `HashAlgorithm.XXHASH64`, mirroring other non-SQL backends. You can override the algorithm via the constructor arguments, provided the requested hash is supported by the Polars calculator.
+`DeltaMetadataStore` defaults to `HashAlgorithm.XXHASH64`, mirroring other non-SQL backends.
+You can override the algorithm via the constructor arguments, provided the requested hash is supported by the Polars calculator.
