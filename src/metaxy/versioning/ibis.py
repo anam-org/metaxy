@@ -36,7 +36,6 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
 
         Args:
             plan: Feature plan to track provenance for
-            backend: Ibis backend instance (e.g., ibis.duckdb.connect())
             hash_functions: Mapping from HashAlgorithm to Ibis hash functions.
                 Each function takes an Ibis expression and returns an Ibis expression.
         """
@@ -77,17 +76,12 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         # Import ibis lazily (module-level import restriction)
         import ibis.expr.types
 
-        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Get hash function
         hash_fn = self.hash_functions[hash_algo]
-
-        # Apply hash to source column
-        # Hash functions are responsible for returning strings
         hashed = hash_fn(ibis_table[source_column])
 
         # Apply truncation if specified
@@ -147,27 +141,10 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         group_columns: list[str],
         timestamp_column: str,
     ) -> FrameT:
-        """Keep only the latest row per group based on a timestamp column.
-
-        Uses argmax aggregation to get the value from each column where the
-        timestamp is maximum. This is simpler and more semantically clear than
-        window functions.
-
-        Args:
-            df: Narwhals DataFrame/LazyFrame backed by Ibis
-            group_columns: Columns to group by (typically ID columns)
-            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
-
-        Returns:
-            Narwhals DataFrame/LazyFrame with only the latest row per group
-
-        Raises:
-            ValueError: If timestamp_column doesn't exist in df
-        """
+        """Keep only the latest row per group based on a timestamp column."""
         # Import ibis lazily
         import ibis.expr.types
 
-        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
@@ -183,21 +160,15 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
 
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Use argmax aggregation: for each column, get the value where timestamp is maximum
-        # This directly expresses "get the row with the latest timestamp per group"
         all_columns = set(ibis_table.columns)
         non_group_columns = all_columns - set(group_columns)
 
-        # Build aggregation dict: for each non-group column, use argmax(timestamp)
         agg_exprs = {
             col: ibis_table[col].argmax(ibis_table[timestamp_column])
             for col in non_group_columns
         }
 
-        # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
-
-        # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
 
 
@@ -218,13 +189,11 @@ class IbisVersioningEngine(BaseIbisVersioningEngine):
         # Import ibis lazily
         import ibis.expr.types
 
-        # Convert to Ibis table
         assert df.implementation == nw.Implementation.IBIS, (
             "Only Ibis DataFrames are accepted"
         )
         ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Build struct expression - reference columns by name
         struct_expr = ibis.struct(
             {
                 field_name: ibis_table[col_name]
@@ -232,8 +201,5 @@ class IbisVersioningEngine(BaseIbisVersioningEngine):
             }
         )
 
-        # Add struct column
         result_table = ibis_table.mutate(**{struct_name: struct_expr})
-
-        # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))

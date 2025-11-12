@@ -515,7 +515,7 @@ class PostgresMetadataStore(IbisMetadataStore):
     def _write_metadata_impl(self, feature_key: FeatureKey, df: pl.DataFrame) -> None:
         table_name = feature_key.table_name
         df_to_write = df
-        if self._struct_compat_mode and PROVENANCE_BY_FIELD_COL in df.columns:
+        if self._struct_compat_mode and METAXY_PROVENANCE_BY_FIELD in df.columns:
             df_to_write = self._serialize_provenance_column(df_to_write)
 
         conn = cast(Any, self.conn)
@@ -544,6 +544,7 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         if len(df_to_write) > 0:
             conn.insert(table_name, obj=df_to_write)
+
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
@@ -617,7 +618,6 @@ class PostgresMetadataStore(IbisMetadataStore):
                     )
 
         return lazy_frame
-
     def write_metadata_to_store(self, feature_key: FeatureKey, df, **kwargs):
         """Ensure string-typed materialization_id before delegating write."""
 
@@ -697,23 +697,23 @@ class PostgresMetadataStore(IbisMetadataStore):
     @staticmethod
     def _serialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
         """Convert struct provenance column to canonical JSON for storage."""
-        column = df.get_column(PROVENANCE_BY_FIELD_COL)
+        column = df.get_column(METAXY_PROVENANCE_BY_FIELD)
         serialized = [
             json.dumps(value, sort_keys=True) if value is not None else None
             for value in column.to_list()
         ]
         return df.with_columns(
-            pl.Series(name=PROVENANCE_BY_FIELD_COL, values=serialized, dtype=pl.String)
+            pl.Series(name=METAXY_PROVENANCE_BY_FIELD, values=serialized, dtype=pl.String)
         )
 
     @staticmethod
     def _deserialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
         """Restore struct provenance column from JSON text."""
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
             return df
-        column = df.get_column(PROVENANCE_BY_FIELD_COL)
+        column = df.get_column(METAXY_PROVENANCE_BY_FIELD)
         decoded = [
             json.loads(value) if value is not None else None
             for value in column.to_list()
         ]
-        return df.with_columns(pl.Series(name=PROVENANCE_BY_FIELD_COL, values=decoded))
+        return df.with_columns(pl.Series(name=METAXY_PROVENANCE_BY_FIELD, values=decoded))
