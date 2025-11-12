@@ -193,6 +193,7 @@ def setup_store_with_data(
                 connection_string=postgres_db,
                 hash_algorithm=hash_algorithm,
                 prefer_native=True,
+                enable_pgcrypto=True,  # Enable pgcrypto for SHA256 support
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
