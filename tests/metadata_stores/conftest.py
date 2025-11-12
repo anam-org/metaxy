@@ -11,6 +11,7 @@ import boto3
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
@@ -41,6 +42,13 @@ def find_free_port() -> int:
 
 
 logger = logging.getLogger(__name__)
+
+# Force pytest-postgresql to use a short socket directory to avoid hitting the
+# 103-character Unix socket limit enforced by PostgreSQL on macOS.
+_PG_SOCKET_DIR = Path("/tmp/metaxy-pg")
+_PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
+
+postgresql_proc = factories.postgresql_proc(unixsocketdir=str(_PG_SOCKET_DIR))
 
 
 @pytest.fixture
