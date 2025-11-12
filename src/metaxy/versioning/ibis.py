@@ -1,62 +1,83 @@
-"""Ibis implementation of VersioningEngine.
+"""Ibis-based metadata store for SQL databases.
 
-CRITICAL: This implementation NEVER materializes lazy expressions.
-All operations stay in the lazy Ibis world for SQL execution.
+Supports any SQL database that Ibis supports:
+- DuckDB, PostgreSQL, MySQL (local/embedded)
+- ClickHouse, Snowflake, BigQuery (cloud analytical)
+- And 20+ other backends
 """
 
-from typing import Protocol, cast
+from abc import ABC, abstractmethod
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
-from ibis import Expr as IbisExpr
-from narwhals.typing import FrameT
+from narwhals.typing import Frame
+from typing_extensions import Self
 
+from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.exceptions import (
+    HashAlgorithmNotSupportedError,
+    TableNotFoundError,
+)
+from metaxy.metadata_store.types import AccessMode
+from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.engine import VersioningEngine
+from metaxy.models.types import FeatureKey
+from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
+if TYPE_CHECKING:
+    import ibis
+    import ibis.expr.types
 
-class IbisHashFn(Protocol):
-    def __call__(self, expr: IbisExpr) -> IbisExpr: ...
 
-
-class IbisVersioningEngine(VersioningEngine):
-    """Provenance engine using Ibis for SQL databases.
+class IbisMetadataStore(MetadataStore, ABC):
+    """
+    Generic SQL metadata store using Ibis.
 
     Only implements hash_string_column and record_field_versions.
     All logic lives in the base class.
 
-    CRITICAL: This implementation NEVER leaves the lazy world.
-    All operations stay as Ibis expressions that compile to SQL.
+    Warning:
+        Backends without native struct support (e.g., SQLite) are NOT supported.
+
+    Storage layout:
+    - Each feature gets its own table: {feature}__{key}
+    - System tables: metaxy__system__feature_versions, metaxy__system__migrations
+    - Uses Ibis for cross-database compatibility
+
+    Note: Uses MD5 hash by default for cross-database compatibility.
+    DuckDBMetadataStore overrides this with dynamic algorithm detection.
+    For other backends, override the calculator instance variable with backend-specific implementations.
+
+    Example:
+        ```py
+        # ClickHouse
+        store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
+
+        # PostgreSQL
+        store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
+
+        # DuckDB (use DuckDBMetadataStore instead for better hash support)
+        store = IbisMetadataStore("duckdb:///metadata.db")
+
+        with store:
+            store.write_metadata(MyFeature, df)
+        ```
     """
 
     def __init__(
         self,
-        plan: FeaturePlan,
-        hash_functions: dict[HashAlgorithm, IbisHashFn],
-    ) -> None:
-        """Initialize the Ibis engine.
-
-        Args:
-            plan: Feature plan to track provenance for
-            backend: Ibis backend instance (e.g., ibis.duckdb.connect())
-            hash_functions: Mapping from HashAlgorithm to Ibis hash functions.
-                Each function takes an Ibis expression and returns an Ibis expression.
+        connection_string: str | None = None,
+        *,
+        backend: str | None = None,
+        connection_params: dict[str, Any] | None = None,
+        table_prefix: str | None = None,
+        **kwargs: Any,
+    ):
         """
-        super().__init__(plan)
-        self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
-
-    @classmethod
-    def implementation(cls) -> nw.Implementation:
-        return nw.Implementation.IBIS
-
-    def hash_string_column(
-        self,
-        df: FrameT,
-        source_column: str,
-        target_column: str,
-        hash_algo: HashAlgorithm,
-    ) -> FrameT:
-        """Hash a string column using Ibis hash functions.
+        Initialize Ibis metadata store.
 
         Args:
             df: Narwhals DataFrame backed by Ibis
@@ -211,38 +232,387 @@ class IbisVersioningEngine(VersioningEngine):
             Narwhals DataFrame/LazyFrame with only the latest row per group
 
         Raises:
-            ValueError: If timestamp_column doesn't exist in df
+            ValueError: If neither connection_string nor backend is provided
+            ImportError: If Ibis or required backend driver not installed
+
+        Example:
+            ```py
+            # Using connection string
+            store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
+
+            # Using backend + params
+            store = IbisMetadataStore(
+                backend="clickhouse",
+                connection_params={"host": "localhost", "port": 9000}
+                )
+            ```
         """
-        # Import ibis lazily
-        import ibis.expr.types
+        try:
+            import ibis
 
-        # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
+            self._ibis = ibis
+        except ImportError as e:
+            raise ImportError(
+                "Ibis is required for IbisMetadataStore. "
+                "Install with: pip install ibis-framework[BACKEND] "
+                "where BACKEND is one of: duckdb, postgres, clickhouse, mysql, etc."
+            ) from e
 
-        # Check if timestamp_column exists
-        if timestamp_column not in df.columns:
+        if connection_string is None and backend is None:
             raise ValueError(
-                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
-                f"Available columns: {df.columns}"
+                "Must provide either connection_string or backend. "
+                "Example: connection_string='clickhouse://host:9000/db' "
+                "or backend='clickhouse' with connection_params"
             )
 
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        self.connection_string = connection_string
+        self.backend = backend
+        self.connection_params = connection_params or {}
+        self._conn: ibis.BaseBackend | None = None
+        self._table_prefix = table_prefix or ""
 
-        # Use argmax aggregation: for each column, get the value where timestamp is maximum
-        # This directly expresses "get the row with the latest timestamp per group"
-        all_columns = set(ibis_table.columns)
-        non_group_columns = all_columns - set(group_columns)
+        super().__init__(**kwargs, versioning_engine_cls=IbisVersioningEngine)
 
-        # Build aggregation dict: for each non-group column, use argmax(timestamp)
-        agg_exprs = {
-            col: ibis_table[col].argmax(ibis_table[timestamp_column])
-            for col in non_group_columns
-        }
+    def get_table_name(
+        self,
+        key: FeatureKey,
+    ) -> str:
+        """Generate the storage table name for a feature or system table.
 
-        # Perform groupby and aggregate
-        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
+        Applies the configured table_prefix (if any) to the feature key's table name.
+        Subclasses can override this method to implement custom naming logic.
 
-        # Convert back to Narwhals
-        return cast(FrameT, nw.from_native(result_table))
+        Args:
+            key: Feature key to convert to storage table name.
+
+        Returns:
+            Storage table name with optional prefix applied.
+        """
+        base_name = key.table_name
+
+        return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
+
+    def _get_default_hash_algorithm(self) -> HashAlgorithm:
+        """Get default hash algorithm for Ibis stores.
+
+        Uses MD5 as it's universally supported across SQL databases.
+        Subclasses like DuckDBMetadataStore can override for better algorithms.
+        """
+        return HashAlgorithm.MD5
+
+    @contextmanager
+    def _create_versioning_engine(
+        self, plan: FeaturePlan
+    ) -> Iterator[IbisVersioningEngine]:
+        """Create provenance engine for Ibis backend as a context manager.
+
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            IbisVersioningEngine with backend-specific hash functions.
+
+        Note:
+            Base implementation only supports MD5 (universally available).
+            Subclasses can override _create_hash_functions() for backend-specific hashes.
+        """
+        if self._conn is None:
+            raise RuntimeError(
+                "Cannot create provenance engine: store is not open. "
+                "Ensure store is used as context manager."
+            )
+
+        # Create hash functions for Ibis expressions
+        hash_functions = self._create_hash_functions()
+
+        # Create engine (only accepts plan and hash_functions)
+        engine = IbisVersioningEngine(
+            plan=plan,
+            hash_functions=hash_functions,
+        )
+
+        try:
+            yield engine
+        finally:
+            # No cleanup needed for Ibis engine
+            pass
+
+    @abstractmethod
+    def _create_hash_functions(self):
+        """Create hash functions for Ibis expressions.
+
+        Base implementation returns empty dict. Subclasses must override
+        to provide backend-specific hash function implementations.
+
+        Returns:
+            Dictionary mapping HashAlgorithm to Ibis expression functions
+        """
+        return {}
+
+    def _validate_hash_algorithm_support(self) -> None:
+        """Validate that the configured hash algorithm is supported by Ibis backend.
+
+        Raises:
+            ValueError: If hash algorithm is not supported
+        """
+        # Create hash functions to check what's supported
+        hash_functions = self._create_hash_functions()
+
+        if self.hash_algorithm not in hash_functions:
+            supported = [algo.value for algo in hash_functions.keys()]
+            raise HashAlgorithmNotSupportedError(
+                f"Hash algorithm '{self.hash_algorithm.value}' not supported. "
+                f"Supported algorithms: {', '.join(supported)}"
+            )
+
+    @property
+    def ibis_conn(self) -> "ibis.BaseBackend":
+        """Get Ibis backend connection.
+
+        Returns:
+            Active Ibis backend connection
+
+        Raises:
+            StoreNotOpenError: If store is not open
+        """
+        from metaxy.metadata_store.exceptions import StoreNotOpenError
+
+        if self._conn is None:
+            raise StoreNotOpenError(
+                "Ibis connection is not open. Store must be used as a context manager."
+            )
+        return self._conn
+
+    @property
+    def conn(self) -> "ibis.BaseBackend":
+        """Get connection (alias for ibis_conn for consistency).
+
+        Returns:
+            Active Ibis backend connection
+
+        Raises:
+            StoreNotOpenError: If store is not open
+        """
+        return self.ibis_conn
+
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open connection to database via Ibis.
+
+        Subclasses should override this to add backend-specific initialization
+        (e.g., loading extensions) and must call this method via super().open(mode).
+
+        Args:
+            mode: Access mode. Subclasses may use this to set backend-specific connection
+                parameters (e.g., `read_only` for DuckDB).
+
+        Yields:
+            Self: The store instance with connection open
+        """
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
+
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                # Setup: Connect to database
+                if self.connection_string:
+                    # Use connection string
+                    self._conn = self._ibis.connect(self.connection_string)
+                else:
+                    # Use backend + params
+                    # Get backend-specific connect function
+                    assert self.backend is not None, (
+                        "backend must be set if connection_string is None"
+                    )
+                    backend_module = getattr(self._ibis, self.backend)
+                    self._conn = backend_module.connect(**self.connection_params)
+
+                # Mark store as open and validate
+                self._is_open = True
+                self._validate_after_open()
+
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                # Teardown: Close connection
+                if self._conn is not None:
+                    # Ibis connections may not have explicit close method
+                    # but setting to None releases resources
+                    self._conn = None
+                self._is_open = False
+
+    @property
+    def sqlalchemy_url(self) -> str:
+        """Get SQLAlchemy-compatible connection URL for tools like Alembic.
+
+        Returns the connection string if available. If the store was initialized
+        with backend + connection_params instead of a connection string, raises
+        an error since constructing a proper URL is backend-specific.
+
+        Returns:
+            SQLAlchemy-compatible URL string
+
+        Raises:
+            ValueError: If connection_string is not available
+
+        Example:
+            ```python
+            store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
+            print(store.sqlalchemy_url)  # postgresql://user:pass@host:5432/db
+            ```
+        """
+        if self.connection_string:
+            return self.connection_string
+
+        raise ValueError(
+            "SQLAlchemy URL not available. Store was initialized with backend + connection_params "
+            "instead of a connection string. To use Alembic, initialize with a connection string: "
+            f"IbisMetadataStore('postgresql://user:pass@host:5432/db') instead of "
+            f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
+        )
+
+    def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
+        """Convert table name back to feature key."""
+        return FeatureKey(table_name.split("__"))
+
+    def write_metadata_to_store(
+        self,
+        feature_key: FeatureKey,
+        df: Frame,
+    ) -> None:
+        """
+        Internal write implementation using Ibis.
+
+        Args:
+            feature_key: Feature key to write to
+            df: DataFrame with metadata (already validated)
+
+        Raises:
+            TableNotFoundError: If table doesn't exist and auto_create_tables is False
+        """
+        if df.implementation == nw.Implementation.IBIS:
+            df_to_insert = df.to_native()  # Ibis expression
+        else:
+            from metaxy._utils import collect_to_polars
+
+            df_to_insert = collect_to_polars(df)  # Polars DataFrame
+
+        table_name = self.get_table_name(feature_key)
+
+        try:
+            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+        except Exception as e:
+            import ibis.common.exceptions
+
+            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+                raise
+            if self.auto_create_tables:
+                # Warn about auto-create (first time only)
+                if self._should_warn_auto_create_tables:
+                    import warnings
+
+                    warnings.warn(
+                        f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
+                        "Do not use in production! "
+                        "Use proper database migration tools like Alembic for production deployments.",
+                        UserWarning,
+                        stacklevel=4,
+                    )
+
+                # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
+                # No separate insert needed - the data from df is already written
+                self.conn.create_table(table_name, obj=df_to_insert)
+            else:
+                raise TableNotFoundError(
+                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
+                    f"Enable auto_create_tables=True to automatically create tables, "
+                    f"or use proper database migration tools like Alembic to create the table first."
+                ) from e
+
+    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
+        """Drop the table for a feature.
+
+        Args:
+            feature_key: Feature key to drop metadata for
+        """
+        table_name = self.get_table_name(feature_key)
+
+        # Check if table exists
+        if table_name in self.conn.list_tables():
+            self.conn.drop_table(table_name)
+
+    def read_metadata_in_store(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """
+        Read metadata from this store only (no fallback).
+
+        Args:
+            feature: Feature to read
+            feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
+            filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
+            columns: Optional list of columns to select
+
+        Returns:
+            Narwhals LazyFrame with metadata, or None if not found
+        """
+        feature_key = self._resolve_feature_key(feature)
+        table_name = self.get_table_name(feature_key)
+
+        # Check if table exists
+        existing_tables = self.conn.list_tables()
+        if table_name not in existing_tables:
+            return None
+
+        # Get Ibis table reference
+        table = self.conn.table(table_name)
+
+        # Wrap Ibis table with Narwhals (stays lazy in SQL)
+        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
+
+        # Apply feature_version filter (stays in SQL via Narwhals)
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
+
+        # Apply generic Narwhals filters (stays in SQL)
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        # Select columns (stays in SQL)
+        if columns is not None:
+            nw_lazy = nw_lazy.select(columns)
+
+        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
+        return nw_lazy
+
+    def _can_compute_native(self) -> bool:
+        """
+        Ibis backends support native field provenance calculations (Narwhals-based).
+
+        Returns:
+            True (use Narwhals components with Ibis-backed tables)
+
+        Note: All Ibis stores now use Narwhals-based components (NarwhalsJoiner,
+        PolarsProvenanceByFieldCalculator, NarwhalsDiffResolver) which work efficiently
+        with Ibis-backed tables.
+        """
+        return True
+
+    def display(self) -> str:
+        """Display string for this store."""
+        backend_info = self.connection_string or f"{self.backend}"
+        status = "open" if self._is_open else "closed"
+        return f"IbisMetadataStore(backend={backend_info}, status={status})"
