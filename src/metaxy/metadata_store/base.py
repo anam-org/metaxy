@@ -80,7 +80,7 @@ class MetadataStore(ABC):
 
     # Subclasses can override this to handle lazy frames themselves
     # Set to False for stores that want to implement streaming writes or other lazy frame optimizations
-    _auto_collect_lazy_frames: bool = True
+    _auto_collect_lazy_frames: bool = False
 
     def __init__(
         self,
@@ -504,9 +504,7 @@ class MetadataStore(ABC):
             self._validate_project_write(feature)
 
         # Convert Narwhals to native Polars (both lazy and eager)
-        if isinstance(df, nw.LazyFrame):
-            df = df.to_native()  # type: ignore[assignment]
-        elif isinstance(df, nw.DataFrame):
+        if isinstance(df, (nw.LazyFrame, nw.DataFrame)):
             df = df.to_native()  # type: ignore[assignment]
 
         if pa is not None and isinstance(df, pa.Table):
