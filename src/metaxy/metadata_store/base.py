@@ -457,10 +457,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: nw.DataFrame[Any]
-        | nw.LazyFrame[Any]
-        | pl.DataFrame
-        | pl.LazyFrame,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any] | pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).

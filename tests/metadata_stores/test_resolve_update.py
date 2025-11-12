@@ -36,7 +36,6 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.types import HashAlgorithm

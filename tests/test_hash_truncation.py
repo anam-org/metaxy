@@ -247,8 +247,11 @@ class TestNarwhalsFunctions:
         MetaxyConfig.set(config)
 
         lazy_nw = nw.from_native(df.lazy(), eager_only=False)
-        result_lazy = truncate_struct_column(lazy_nw, "metaxy_provenance_by_field")
-        result_df = result_lazy.collect().to_polars()
+        # Convert back to native Polars LazyFrame for truncate_struct_column
+        result_lazy = truncate_struct_column(
+            lazy_nw.to_native(), "metaxy_provenance_by_field"
+        )
+        result_df = result_lazy.collect()
 
         assert result_df["metaxy_provenance_by_field"][0]["field1"] == "a" * 10
         assert result_df["metaxy_provenance_by_field"][1]["field1"] == "b" * 10

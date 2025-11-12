@@ -33,7 +33,6 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.types import HashAlgorithm
@@ -244,21 +243,10 @@ class EmptyStoreCases:
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}")
-    
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_delta(self, hash_algorithm: HashAlgorithm, tmp_path):
-        pytest.importorskip("deltalake")
-        try:
-            return DeltaMetadataStore(
-                tmp_path / "delta_store",
-                hash_algorithm=hash_algorithm,
-                auto_create_tables=True,
+                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
             )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {DeltaMetadataStore}"
-            )
+
+    # DeltaMetadataStore removed - uses Polars components only, not involved in native provenance calculation
 
 
 @parametrize_with_cases("empty_store", cases=EmptyStoreCases)

@@ -58,7 +58,7 @@ with DeltaMetadataStore(
 
 ### Object Stores
 
-`DeltaMetadataStore` can operate directly against cloud object stores by pointing `root` at a URI such as `s3://bucket/path`, `gs://bucket/path`, or `az://account/container/path`. When used with remote storage, Metaxy relies on [`obstore`](https://developmentseed.org/obstore) (installed via the `delta` dependency group) so that both Delta Lake operations and metadata management (listing/dropping tables) share the same credentials.
+`DeltaMetadataStore` can operate directly against cloud object stores by pointing `root` at a URI such as `s3://bucket/path`, `gs://bucket/path`, or `az://account/container/path`.
 
 ```py
 remote_root = "s3://my-metadata-bucket/prod"
@@ -80,7 +80,7 @@ store = DeltaMetadataStore(
 )
 ```
 
-`storage_options` go straight to `deltalake`, while `object_store_kwargs` are passed to [`obstore.store.from_url`](https://developmentseed.org/obstore/api/store/#obstore.store.from_url) so you can configure the remote backend exactly as required (for example, by providing `config` or `client_options`). When using file-system paths (or `file:///` URIs) the store behaves exactly as before and `object_store_kwargs` are ignored.
+`storage_options` go straight to `deltalake`.
 
 ### Storage Layout
 
