@@ -1,7 +1,6 @@
 """Metadata store for feature pipeline management."""
 
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
