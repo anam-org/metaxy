@@ -346,7 +346,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False

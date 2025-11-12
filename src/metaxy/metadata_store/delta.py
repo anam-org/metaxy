@@ -51,6 +51,7 @@ class DeltaMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
+    _auto_collect_lazy_frames = False  # Handle lazy frames for streaming writes
 
     def __init__(
         self,
