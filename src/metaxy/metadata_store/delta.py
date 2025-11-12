@@ -415,10 +415,7 @@ class DeltaMetadataStore(MetadataStore):
         return []
 
     def display(self) -> str:
-        """Return human-readable representation of the store.
-
-        Avoids eagerly scanning the store for performance.
-        """
+        """Return human-readable representation of the store."""
         details = [f"path={self._display_root}"]
         if self.storage_options:
             details.append("storage_options=***")
