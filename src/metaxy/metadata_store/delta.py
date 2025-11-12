@@ -78,7 +78,6 @@ class DeltaMetadataStore(MetadataStore):
         self.storage_options = storage_options or {}
         self._display_root = str(root_path)
 
-        # Simplified path handling - let Delta handle the complexity
         root_str = str(root_path)
         self._is_remote = "://" in root_str and not root_str.startswith("file://")
 
@@ -126,7 +125,6 @@ class DeltaMetadataStore(MetadataStore):
         """
         from metaxy.provenance.polars import PolarsProvenanceTracker
 
-        # Create tracker (only accepts plan parameter)
         tracker = PolarsProvenanceTracker(plan=plan)
 
         try:
