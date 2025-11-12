@@ -12,7 +12,6 @@ from metaxy.metadata_store import (
 )
 from metaxy.migrations import (
     BaseOperation,
-    CustomMigration,
     DataVersionReconciliation,
     DiffMigration,
     FullGraphMigration,
@@ -106,7 +105,6 @@ __all__ = [
     "Migration",
     "DiffMigration",
     "FullGraphMigration",
-    "CustomMigration",
     "MigrationResult",
     "MigrationExecutor",
     "SystemTableStorage",

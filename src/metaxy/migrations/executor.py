@@ -1,4 +1,4 @@
-"""Migration executor using event-based tracking and GraphWalker.
+"""Migration executor using event-based tracking.
 
 This is the new executor that replaces the old 3-table system with a single
 event-based system stored in system tables via SystemTableStorage.
@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 class MigrationExecutor:
     """Executes migrations with event-based progress tracking.
 
-    Uses GraphWalker for topological traversal and SystemTableStorage for
-    event logging. Supports resumability after failures.
+    Uses FeatureGraph.topological_sort_features() for topological traversal
+    and SystemTableStorage for event logging. Supports resumability after failures.
     """
 
     def __init__(self, storage: "SystemTableStorage"):
@@ -45,7 +45,7 @@ class MigrationExecutor:
         Process:
         1. Log migration_started event
         2. Get features to process from migration
-        3. Use GraphWalker to get topological order
+        3. Sort features topologically using FeatureGraph.topological_sort_features()
         4. For each feature:
            - Check if already completed (resume support)
            - Log feature_started
@@ -78,7 +78,7 @@ class MigrationExecutor:
                 migration, store, project, dry_run=dry_run
             )
         else:
-            # CustomMigration - call its execute method directly
+            # Custom migration subclass - call its execute method directly
             return migration.execute(store, project, dry_run=dry_run)
 
     def _execute_diff_migration(
@@ -88,7 +88,7 @@ class MigrationExecutor:
         project: str,
         dry_run: bool,
     ) -> "MigrationResult":
-        """Execute DiffMigration using GraphWalker.
+        """Execute DiffMigration with topological sorting.
 
         Args:
             migration: DiffMigration to execute

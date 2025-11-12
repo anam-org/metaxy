@@ -112,10 +112,6 @@ def generate(
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
 
-        # Show description
-        description = migration.get_description(metadata_store, project)
-        app.console.print(f"  Description: {description}")
-
         # Get affected features (computed on-demand)
         affected_features = migration.get_affected_features(metadata_store, project)
         app.console.print(f"\n  Affected features ({len(affected_features)}):")
@@ -378,9 +374,13 @@ def status():
                 )
                 app.console.print("  Status: [blue]NOT STARTED[/blue]")
 
-            app.console.print("  Snapshots:")
-            app.console.print(f"    From: {migration.from_snapshot_version}")
-            app.console.print(f"    To:   {migration.to_snapshot_version}")
+            # Show snapshot info for DiffMigration
+            from metaxy.migrations.models import DiffMigration
+
+            if isinstance(migration, DiffMigration):
+                app.console.print("  Snapshots:")
+                app.console.print(f"    From: {migration.from_snapshot_version}")
+                app.console.print(f"    To:   {migration.to_snapshot_version}")
             app.console.print(
                 f"  Features: {len(completed_features)}/{total_affected} completed"
             )
@@ -446,12 +446,15 @@ def list_migrations():
         created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
 
         # Format operations - extract short names
+        from metaxy.migrations.models import FullGraphMigration
+
         op_names = []
-        for op in migration.ops:
-            op_type = op.get("type", "unknown")
-            # Extract just the class name (last part after final dot)
-            op_short = op_type.split(".")[-1]
-            op_names.append(op_short)
+        if isinstance(migration, FullGraphMigration):
+            for op in migration.ops:
+                op_type = op.get("type", "unknown")
+                # Extract just the class name (last part after final dot)
+                op_short = op_type.split(".")[-1]
+                op_names.append(op_short)
 
         ops_str = ", ".join(op_names)
 
@@ -537,10 +540,6 @@ def explain(
         app.console.print(f"\n[bold]Migration: {migration_id}[/bold]")
         app.console.print(f"From: {migration.from_snapshot_version}")
         app.console.print(f"To:   {migration.to_snapshot_version}")
-
-        # Get description (computed on-demand)
-        description = migration.get_description(metadata_store, project)
-        app.console.print(f"Description: {description}")
         app.console.print()
 
         # Compute diff on-demand
@@ -762,18 +761,22 @@ def describe(
             app.console.print(f"[bold]YAML:[/bold] {yaml_path}")
             app.console.print()
 
-            # Snapshots
-            app.console.print("[bold]Snapshots:[/bold]")
-            app.console.print(f"  From: {migration_obj.from_snapshot_version}")
-            app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
-            app.console.print()
+            # Snapshots (for DiffMigration)
+            from metaxy.migrations.models import DiffMigration, FullGraphMigration
 
-            # Operations
-            app.console.print("[bold]Operations:[/bold]")
-            for j, op in enumerate(migration_obj.ops, 1):
-                op_type = op.get("type", "unknown")
-                app.console.print(f"  {j}. {op_type}")
-            app.console.print()
+            if isinstance(migration_obj, DiffMigration):
+                app.console.print("[bold]Snapshots:[/bold]")
+                app.console.print(f"  From: {migration_obj.from_snapshot_version}")
+                app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
+                app.console.print()
+
+            # Operations (for FullGraphMigration)
+            if isinstance(migration_obj, FullGraphMigration):
+                app.console.print("[bold]Operations:[/bold]")
+                for j, op in enumerate(migration_obj.ops, 1):
+                    op_type = op.get("type", "unknown")
+                    app.console.print(f"  {j}. {op_type}")
+                app.console.print()
 
             # Get affected features
             app.console.print("[bold]Computing affected features...[/bold]")

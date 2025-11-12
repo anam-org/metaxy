@@ -1,16 +1,18 @@
 """Type-safe migration models with Python class paths.
 
 Refactored migration system using:
-- Python class paths for polymorphic deserialization
+- Python class paths for polymorphic deserialization via discriminated unions
 - Struct-based storage for graph data
 - Event-based status tracking
 """
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import pydantic
+from pydantic import Field as PydanticField
+from pydantic import TypeAdapter
 from pydantic.types import AwareDatetime
 
 if TYPE_CHECKING:
@@ -18,28 +20,58 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
+class OperationConfig(pydantic.BaseModel):
+    """Configuration for a migration operation.
+
+    The structure directly matches the YAML - no nested 'config' field.
+    All operation-specific fields are defined directly on the operation class.
+
+    Required fields:
+    - type: Full Python class path to operation class (e.g., "metaxy.migrations.ops.DataVersionReconciliation")
+
+    Optional fields:
+    - features: List of feature keys this operation applies to
+      - Required for FullGraphMigration
+      - Optional for DiffMigration (features determined from graph diff)
+    - All other fields are operation-specific and defined by the operation class
+
+    Example (FullGraphMigration):
+        {
+            "type": "anam_data_utils.migrations.PostgreSQLBackfill",
+            "features": ["raw_video", "scene"],
+            "postgresql_url": "postgresql://...",  # Direct field, no nesting
+            "batch_size": 1000
+        }
+
+    Example (DiffMigration):
+        {
+            "type": "metaxy.migrations.ops.DataVersionReconciliation",
+        }
+    """
+
+    model_config = pydantic.ConfigDict(extra="allow")
+
+    type: str
+    features: list[str] = pydantic.Field(default_factory=list)
+
+
 class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Abstract base class for all migrations.
 
     Subclasses must define:
-    - migration_type: Class path as Literal for polymorphic deserialization
+    - migration_type: Literal field with class path for discriminated union deserialization
     - execute(): Migration logic
+    - get_affected_features(): Return list of affected feature keys
 
-    The migration_type field is used for storage and deserialization.
+    The migration_type field is used as a discriminator for automatic polymorphic deserialization.
+
+    All migrations form a chain via parent IDs (like git commits):
+    - parent: ID of parent migration ("initial" for first migration)
     """
 
     migration_id: str
+    parent: str  # Parent migration ID or "initial"
     created_at: AwareDatetime
-
-    @property
-    @abstractmethod
-    def migration_type(self) -> str:
-        """Get migration type (Python class path).
-
-        Returns:
-            Full Python class path (e.g., "metaxy.migrations.models.DiffMigration")
-        """
-        pass
 
     @abstractmethod
     def execute(
@@ -79,56 +111,52 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
         """
         pass
 
-    def to_storage_dict(self) -> dict[str, Any]:
-        """Convert to dict for storage.
+    @property
+    def operations(self) -> list[Any]:
+        """Get operations for this migration.
+
+        Dynamically instantiates operations from the ops field (list of dicts with "type" field).
+        If the migration doesn't have an ops field, returns empty list.
 
         Returns:
-            Dict with all fields including migration_type
-        """
-        data = self.model_dump(mode="python")
-        data["migration_type"] = self.migration_type
-        return data
-
-    @staticmethod
-    def from_storage_dict(data: dict[str, Any]) -> "Migration":
-        """Deserialize migration from storage dict.
-
-        Args:
-            data: Dict with migration_type and other fields
-
-        Returns:
-            Migration instance of appropriate subclass
+            List of operation instances
 
         Raises:
-            ValueError: If migration_type is invalid or class not found
+            ValueError: If operation dict is missing "type" field or class cannot be loaded
         """
-        migration_type = data.get("migration_type")
-        if not migration_type:
-            raise ValueError("Missing migration_type field")
+        # Check if this migration has an ops field (using getattr to avoid type errors)
+        ops = getattr(self, "ops", None)
+        if ops is None:
+            return []
 
-        # Dynamically import the class
-        try:
-            module_path, class_name = migration_type.rsplit(".", 1)
-            module = __import__(module_path, fromlist=[class_name])
-            cls = getattr(module, class_name)
+        operations = []
+        for op_dict in ops:
+            # Validate structure has required fields
+            op_config = OperationConfig.model_validate(op_dict)
 
-            if not issubclass(cls, Migration):
-                raise TypeError(
-                    f"{migration_type} must be a subclass of Migration, got {cls}"
-                )
+            try:
+                # Dynamically import and instantiate the operation class
+                module_path, class_name = op_config.type.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[class_name])
+                op_cls = getattr(module, class_name)
 
-            return cls.model_validate(data)
-        except Exception as e:
-            raise ValueError(
-                f"Failed to load migration class {migration_type}: {e}"
-            ) from e
+                # Pass the entire dict to the operation class (which inherits from BaseSettings)
+                # BaseSettings will extract the fields it needs and read from env vars
+                operation = op_cls.model_validate(op_dict)
+                operations.append(operation)
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to instantiate operation {op_config.type}: {e}"
+                ) from e
+
+        return operations
 
 
 class DiffMigration(Migration):
     """Migration based on graph diff between two snapshots.
 
     Migrations form a chain via parent IDs (like git commits):
-    - id: Unique identifier for this migration
+    - migration_id: Unique identifier for this migration
     - parent: ID of parent migration ("initial" for first migration)
     - from_snapshot_version: Source snapshot version
     - to_snapshot_version: Target snapshot version
@@ -164,40 +192,18 @@ class DiffMigration(Migration):
             )
     """
 
+    # Discriminator field for polymorphic deserialization
+    migration_type: Literal["metaxy.migrations.models.DiffMigration"] = (
+        "metaxy.migrations.models.DiffMigration"
+    )
+
     # Stored fields - persisted to YAML in git
-    parent: str  # Parent migration ID or "initial"
     from_snapshot_version: str
     to_snapshot_version: str
     ops: list[dict[str, Any]]  # Required - must explicitly specify operations
 
     # Private attribute for caching computed graph diff
     _graph_diff_cache: "GraphDiff | None" = pydantic.PrivateAttr(default=None)
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def deserialize_json_fields(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Deserialize JSON strings for ops (from storage).
-
-        Args:
-            data: Raw migration data
-
-        Returns:
-            Data with deserialized JSON fields
-        """
-        import json
-
-        data = dict(data)
-
-        # Deserialize ops from JSON string (from storage)
-        if isinstance(data.get("ops"), str):
-            data["ops"] = json.loads(data["ops"])
-
-        return data
-
-    @property
-    def migration_type(self) -> str:
-        """Get migration type."""
-        return "metaxy.migrations.models.DiffMigration"
 
     def _get_graph_diff(
         self, store: "MetadataStore", project: str | None
@@ -215,73 +221,6 @@ class DiffMigration(Migration):
             self._graph_diff_cache = self.compute_graph_diff(store, project)
         return self._graph_diff_cache
 
-    @property
-    def operations(self) -> list[Any]:
-        """Get operations for this migration.
-
-        Instantiates operations from stored ops (list of dicts with "type" field).
-
-        Returns:
-            List of operation instances
-        """
-        operations = []
-        for op_dict in self.ops:
-            op_type = op_dict.get("type")
-            if not op_type:
-                raise ValueError(f"Operation dict missing 'type' field: {op_dict}")
-            try:
-                # Dynamically import and instantiate the operation class
-                module_path, class_name = op_type.rsplit(".", 1)
-                module = __import__(module_path, fromlist=[class_name])
-                op_cls = getattr(module, class_name)
-                operations.append(op_cls())
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to instantiate operation {op_type}: {e}"
-                ) from e
-
-        return operations
-
-    @property
-    def description(self) -> str:
-        """Get auto-generated description for migration.
-
-        Returns:
-            Human-readable description based on affected features count
-        """
-        # Note: This accesses affected_features property which needs store access
-        # For display purposes, this is called after affected_features is computed
-        return self.auto_description
-
-    @property
-    def auto_description(self) -> str:
-        """Generate automatic description (requires store context).
-
-        Returns:
-            Human-readable description based on affected features
-        """
-        # This is used internally - callers should use get_description(store)
-        return "Migration: snapshot reconciliation"
-
-    def get_description(self, store: "MetadataStore", project: str | None) -> str:
-        """Get description for migration.
-
-        Args:
-            store: Metadata store for computing affected features
-            project: Project name for filtering snapshots
-
-        Returns:
-            Description string
-        """
-        affected = self.get_affected_features(store, project)
-        num_features = len(affected)
-        if num_features == 0:
-            return "No features affected"
-        elif num_features == 1:
-            return f"Migration: {affected[0]}"
-        else:
-            return f"Migration: {num_features} features affected"
-
     def get_affected_features(
         self, store: "MetadataStore", project: str | None
     ) -> list[str]:
@@ -294,73 +233,30 @@ class DiffMigration(Migration):
         Returns:
             List of feature key strings in topological order
         """
+        from metaxy.models.feature import FeatureGraph
 
         graph_diff = self._get_graph_diff(store, project)
 
         # Get changed feature keys (root changes)
-        changed_keys = {
-            node.feature_key.to_string() for node in graph_diff.changed_nodes
-        }
+        changed_keys = [node.feature_key for node in graph_diff.changed_nodes]
 
-        # Also include added nodes (though they typically don't have existing data to migrate)
+        # Also include added nodes
         for node in graph_diff.added_nodes:
-            changed_keys.add(node.feature_key.to_string())
+            changed_keys.append(node.feature_key)
 
-        # Build dependency map from the GraphDiff added/changed nodes
-        # We need to compute downstream dependencies to find all affected features
-        from metaxy.graph.diff.models import GraphData, GraphNode
-        from metaxy.graph.diff.traversal import GraphWalker
-        from metaxy.models.feature import FeatureGraph
-
-        # Get the active graph to extract dependencies
+        # Get the active graph
         active_graph = FeatureGraph.get_active()
 
-        # Build GraphData from active graph for dependency analysis
-        nodes_dict = {}
-        for feature_key, feature_cls in active_graph.features_by_key.items():
-            plan = active_graph.get_feature_plan(feature_key)
+        # Get all downstream features (features that depend on changed features)
+        downstream_keys = active_graph.get_downstream_features(changed_keys)
 
-            # Extract dependencies from plan
-            dependencies = []
-            if plan.deps:
-                for dep in plan.deps:
-                    dependencies.append(dep.key)
+        # Combine changed and downstream
+        all_affected_keys = changed_keys + downstream_keys
 
-            nodes_dict[feature_key.to_string()] = GraphNode(
-                key=feature_key,
-                version=feature_cls.feature_version(),
-                dependencies=dependencies,
-            )
+        # Sort topologically
+        sorted_keys = active_graph.topological_sort_features(all_affected_keys)
 
-        to_graph_data = GraphData(
-            nodes=nodes_dict, snapshot_version=self.to_snapshot_version
-        )
-
-        # Build reverse dependency map (feature -> dependents)
-        dependents_map: dict[str, set[str]] = {}
-        for node in to_graph_data.nodes.values():
-            for dep_key in node.dependencies:
-                dep_key_str = dep_key.to_string()
-                if dep_key_str not in dependents_map:
-                    dependents_map[dep_key_str] = set()
-                dependents_map[dep_key_str].add(node.key.to_string())
-
-        # Find all features affected (changed + their downstream)
-        affected = set(changed_keys)
-        queue = list(changed_keys)
-        while queue:
-            key_str = queue.pop(0)
-            if key_str in dependents_map:
-                for dependent in dependents_map[key_str]:
-                    if dependent not in affected:
-                        affected.add(dependent)
-                        queue.append(dependent)
-
-        # Get topological order for affected features
-        walker = GraphWalker(to_graph_data)
-        sorted_nodes = walker.topological_sort(nodes_to_include=affected)
-
-        return [node.key.to_string() for node in sorted_nodes]
+        return [key.to_string() for key in sorted_keys]
 
     def compute_graph_diff(
         self, store: "MetadataStore", project: str | None
@@ -482,8 +378,8 @@ class DiffMigration(Migration):
                     rows_affected = op.execute_for_feature(
                         store,
                         feature_key_str,
+                        snapshot_version=self.to_snapshot_version,
                         from_snapshot_version=self.from_snapshot_version,
-                        to_snapshot_version=self.to_snapshot_version,
                         dry_run=dry_run,
                     )
 
@@ -549,62 +445,41 @@ class DiffMigration(Migration):
 
 
 class FullGraphMigration(Migration):
-    """Migration that operates within a single snapshot.
+    """Migration that operates within a single snapshot or across snapshots.
 
     Used for operations that don't involve graph structure changes,
     such as backfills or custom transformations on existing features.
+
+    Each operation specifies which features it applies to, and Metaxy
+    handles topological sorting and per-feature execution.
     """
 
+    # Discriminator field for polymorphic deserialization
+    migration_type: Literal["metaxy.migrations.models.FullGraphMigration"] = (
+        "metaxy.migrations.models.FullGraphMigration"
+    )
+
     snapshot_version: str
-    affected_features: list[str] = pydantic.Field(
-        default_factory=list
-    )  # Features to process
-    operations: list[Any] = pydantic.Field(default_factory=list)  # Custom operations
-    description: str | None = None
-    metadata: dict[str, Any] = pydantic.Field(default_factory=dict)
-
-    @pydantic.model_validator(mode="before")
-    @classmethod
-    def deserialize_json_fields(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Deserialize JSON strings for operations and metadata (from storage).
-
-        Args:
-            data: Raw migration data
-
-        Returns:
-            Data with deserialized JSON fields
-        """
-        import json
-
-        data = dict(data)
-
-        # Deserialize JSON strings (from storage)
-        if isinstance(data.get("operations"), str):
-            data["operations"] = json.loads(data["operations"])
-
-        if isinstance(data.get("metadata"), str):
-            data["metadata"] = json.loads(data["metadata"])
-
-        return data
-
-    @property
-    def migration_type(self) -> str:
-        """Get migration type."""
-        return "metaxy.migrations.models.FullGraphMigration"
+    from_snapshot_version: str | None = None  # Optional for cross-snapshot operations
+    ops: list[dict[str, Any]]  # List of OperationConfig dicts
 
     def get_affected_features(
         self, store: "MetadataStore", project: str | None
     ) -> list[str]:
-        """Get affected features.
+        """Get all affected features from all operations (deduplicated).
 
         Args:
             store: Metadata store (not used for FullGraphMigration)
             project: Project name (not used for FullGraphMigration)
 
         Returns:
-            List of feature key strings
+            List of unique feature key strings (sorted)
         """
-        return self.affected_features
+        all_features = set()
+        for op_dict in self.ops:
+            op_config = OperationConfig.model_validate(op_dict)
+            all_features.update(op_config.features)
+        return sorted(all_features)  # Return sorted for consistency
 
     def execute(
         self,
@@ -613,9 +488,18 @@ class FullGraphMigration(Migration):
         *,
         dry_run: bool = False,
     ) -> "MigrationResult":
-        """Execute full graph migration.
+        """Execute full graph migration with multiple operations.
 
-        Subclasses should implement custom logic here.
+        Process:
+        1. For each operation in ops:
+           a. Parse OperationConfig
+           b. Instantiate operation class from type
+           c. Sort operation's features topologically using FeatureGraph
+           d. For each feature in topological order:
+              - Check if already completed (resume support)
+              - Execute operation.execute_for_feature()
+              - Record progress event
+        2. Return combined MigrationResult
 
         Args:
             store: Metadata store
@@ -625,85 +509,135 @@ class FullGraphMigration(Migration):
         Returns:
             MigrationResult
         """
-        # Base implementation: no-op
+        from metaxy.metadata_store.system_tables import SystemTableStorage
+        from metaxy.migrations.ops import BaseOperation
+        from metaxy.models.feature import FeatureGraph
+        from metaxy.models.types import FeatureKey
+
+        storage = SystemTableStorage(store)
+        start_time = datetime.now(timezone.utc)
+
+        if not dry_run:
+            storage.write_event(self.migration_id, "started", project)
+
+        affected_features_list = []
+        errors = {}
+        rows_affected_total = 0
+
+        # Get active graph for topological sorting
+        graph = FeatureGraph.get_active()
+
+        # Execute each operation
+        for op_index, op_dict in enumerate(self.ops):
+            # Parse operation config
+            op_config = OperationConfig.model_validate(op_dict)
+
+            # Instantiate operation class
+            try:
+                module_path, class_name = op_config.type.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[class_name])
+                op_cls = getattr(module, class_name)
+
+                if not issubclass(op_cls, BaseOperation):
+                    raise TypeError(
+                        f"{op_config.type} must be a subclass of BaseOperation"
+                    )
+
+                # Instantiate operation with full dict (flat structure)
+                operation = op_cls.model_validate(op_dict)
+
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to instantiate operation {op_config.type}: {e}"
+                ) from e
+
+            # Sort features topologically
+            feature_keys = [FeatureKey(fk.split("/")) for fk in op_config.features]
+            sorted_features = graph.topological_sort_features(feature_keys)
+
+            # Execute for each feature in topological order
+            for feature_key_obj in sorted_features:
+                feature_key_str = feature_key_obj.to_string()
+
+                # Check if already completed (resume support)
+                if not dry_run and storage.is_feature_completed(
+                    self.migration_id, feature_key_str, project
+                ):
+                    affected_features_list.append(feature_key_str)
+                    continue
+
+                # Log feature started
+                if not dry_run:
+                    storage.write_event(
+                        self.migration_id,
+                        "feature_started",
+                        project,
+                        feature_key=feature_key_str,
+                    )
+
+                try:
+                    # Execute operation for this feature
+                    rows_affected = operation.execute_for_feature(
+                        store,
+                        feature_key_str,
+                        snapshot_version=self.snapshot_version,
+                        from_snapshot_version=self.from_snapshot_version,
+                        dry_run=dry_run,
+                    )
+
+                    # Log feature completed
+                    if not dry_run:
+                        storage.write_event(
+                            self.migration_id,
+                            "feature_completed",
+                            project,
+                            feature_key=feature_key_str,
+                            rows_affected=rows_affected,
+                        )
+
+                    affected_features_list.append(feature_key_str)
+                    rows_affected_total += rows_affected
+
+                except Exception as e:
+                    error_msg = str(e)
+                    errors[feature_key_str] = error_msg
+
+                    # Log feature failed
+                    if not dry_run:
+                        storage.write_event(
+                            self.migration_id,
+                            "feature_failed",
+                            project,
+                            feature_key=feature_key_str,
+                            error_message=error_msg,
+                        )
+
+                    continue
+
+        # Determine status
+        if dry_run:
+            status = "skipped"
+        elif len(errors) == 0:
+            status = "completed"
+            if not dry_run:
+                storage.write_event(self.migration_id, "completed", project)
+        else:
+            status = "failed"
+            if not dry_run:
+                storage.write_event(self.migration_id, "failed", project)
+
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+
         return MigrationResult(
             migration_id=self.migration_id,
-            status="completed",
-            features_completed=0,
-            features_failed=0,
-            affected_features=[],
-            errors={},
-            rows_affected=0,
-            duration_seconds=0.0,
-            timestamp=datetime.now(timezone.utc),
-        )
-
-
-class CustomMigration(Migration):
-    """Base class for user-defined custom migrations.
-
-    Users can subclass this to implement completely custom migration logic.
-
-    Example:
-        class S3BackfillMigration(CustomMigration):
-            s3_bucket: str
-            s3_prefix: str
-
-            @property
-            def migration_type(self) -> str:
-                return "myproject.migrations.S3BackfillMigration"
-
-            def execute(self, store, *, dry_run=False):
-                # Custom logic here
-                ...
-    """
-
-    @property
-    def migration_type(self) -> str:
-        """Get migration type.
-
-        Subclasses must override this to return their full class path.
-        """
-        return f"{self.__class__.__module__}.{self.__class__.__name__}"
-
-    def get_affected_features(
-        self, store: "MetadataStore", project: str | None
-    ) -> list[str]:
-        """Get affected features.
-
-        Args:
-            store: Metadata store (not used for CustomMigration base class)
-            project: Project name (not used for CustomMigration base class)
-
-        Returns:
-            Empty list (subclasses should override)
-        """
-        return []
-
-    def execute(
-        self,
-        store: "MetadataStore",
-        project: str,
-        *,
-        dry_run: bool = False,
-    ) -> "MigrationResult":
-        """Execute custom migration.
-
-        Subclasses must override this to implement custom logic.
-
-        Args:
-            store: Metadata store
-            project: Project name for event tracking
-            dry_run: If True, only validate
-
-        Returns:
-            MigrationResult
-
-        Raises:
-            NotImplementedError: If not overridden by subclass
-        """
-        raise NotImplementedError(
-            f"{self.__class__.__name__} must implement execute() method"
+            status=status,
+            features_completed=len(affected_features_list),
+            features_failed=len(errors),
+            affected_features=affected_features_list,
+            errors=errors,
+            rows_affected=rows_affected_total,
+            duration_seconds=duration,
+            timestamp=start_time,
         )
 
 
@@ -746,3 +680,13 @@ class MigrationResult(pydantic.BaseModel):
                 lines.append(f"  ✗ {feature}: {error}")
 
         return "\n".join(lines)
+
+
+# Discriminated union for automatic polymorphic deserialization
+# Use Annotated with Field discriminator for type-safe deserialization
+MigrationAdapter = TypeAdapter(
+    Annotated[
+        DiffMigration | FullGraphMigration,
+        PydanticField(discriminator="migration_type"),
+    ]
+)

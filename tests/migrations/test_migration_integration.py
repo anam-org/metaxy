@@ -4,6 +4,8 @@ These tests use TempFeatureModule to create realistic graph evolution scenarios
 and test the full migration workflow: detect → execute → verify.
 """
 
+from datetime import datetime, timezone
+
 import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -210,9 +212,6 @@ def test_basic_migration_flow(
         # Snapshot migration structure
         affected_features = migration.get_affected_features(store_v2, "default")
         migration_summary = {
-            "description": migration.get_description(
-                store_v2, "default"
-            ),  # Use get_description() for auto-generation
             "affected_features_count": len(affected_features),
             "affected_features": sorted(affected_features),
         }
@@ -869,3 +868,138 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
             assert "test_integration/new" not in affected_features
 
     temp_v2.cleanup()
+
+
+# ============================================================================
+# Multi-Operation Migration Integration Tests
+# ============================================================================
+
+
+def test_full_graph_migration_integration(tmp_path):
+    """Test end-to-end FullGraphMigration with real feature graph and store."""
+    from metaxy.migrations.models import FullGraphMigration
+
+    # Create test graph
+    temp_module = TempFeatureModule("test_full_graph_migration")
+
+    upstream_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "upstream"]),
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    )
+
+    downstream_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "downstream"]),
+        deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        fields=[FieldKey(["default"])],
+                    )
+                ],
+            )
+        ],
+    )
+
+    temp_module.write_features(
+        {"Upstream": upstream_spec, "Downstream": downstream_spec}
+    )
+    graph = temp_module.graph
+
+    with graph.use(), InMemoryMetadataStore() as store:
+        # Setup initial data
+        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
+        store.write_metadata(Upstream, upstream_data)
+
+        # Write downstream
+        diff = store.resolve_update(Downstream)
+        if len(diff.added) > 0:
+            store.write_metadata(Downstream, diff.added)
+
+        store.record_feature_graph_snapshot()
+        snapshot_version = graph.snapshot_version
+
+        # Create FullGraphMigration using the test operation from test_operations
+        migration = FullGraphMigration(
+            migration_id="integration_001",
+            parent="initial",
+            created_at=datetime.now(timezone.utc),
+            snapshot_version=snapshot_version,
+            ops=[
+                {
+                    "type": "tests.migrations.test_operations._TestBackfillOperation",
+                    "features": ["test/upstream", "test/downstream"],
+                    "fixed_value": "test_value",
+                }
+            ],
+        )
+
+        # Execute migration
+        result = migration.execute(store, "default", dry_run=False)
+
+        # Verify results
+        assert result.status == "completed"
+        assert result.features_completed == 2
+        assert result.features_failed == 0
+        assert set(result.affected_features) == {"test/upstream", "test/downstream"}
+        assert result.rows_affected == 10  # 5 per feature
+
+    temp_module.cleanup()
+
+
+# Note: Additional integration tests for multiple operations, partial failures,
+# and cross-snapshot operations are covered in tests/migrations/test_operations.py
+# to avoid redundant test operation class definitions.
+
+
+def test_full_graph_migration_empty_operations(tmp_path):
+    """Test FullGraphMigration with no operations."""
+    temp_module = TempFeatureModule("test_empty_ops")
+
+    feature_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "feature"]),
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    )
+
+    temp_module.write_features({"Feature": feature_spec})
+    graph = temp_module.graph
+
+    with graph.use(), InMemoryMetadataStore() as store:
+        store.record_feature_graph_snapshot()
+        snapshot_version = graph.snapshot_version
+
+        from metaxy.migrations.models import FullGraphMigration
+
+        migration = FullGraphMigration(
+            migration_id="integration_005",
+            parent="initial",
+            created_at=datetime.now(timezone.utc),
+            snapshot_version=snapshot_version,
+            ops=[],  # No operations
+        )
+
+        result = migration.execute(store, "default", dry_run=False)
+
+        # Should complete successfully with no work done
+        assert result.status == "completed"
+        assert result.features_completed == 0
+        assert result.features_failed == 0
+        assert result.rows_affected == 0
+
+    temp_module.cleanup()

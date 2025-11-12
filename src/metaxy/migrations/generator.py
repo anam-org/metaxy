@@ -222,11 +222,7 @@ def generate_migration(
         feature_key_str = node.feature_key.to_string()
         feature_key_str.replace("/", "_")
 
-        root_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        root_operations.append(DataVersionReconciliation())
 
     if not root_operations:
         print("No feature changes detected. All features up to date!")
@@ -297,11 +293,7 @@ def generate_migration(
         # Create operation (feature versions derived from snapshots)
         # DataVersionReconciliation doesn't have id, feature_key, or reason params
         # It only has a type field since it applies to all affected features
-        downstream_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        downstream_operations.append(DataVersionReconciliation())
 
         print(f"  ✓ {feature_key_str}")
 

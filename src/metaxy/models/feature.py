@@ -380,6 +380,73 @@ class FeatureGraph:
         result = [k for k in reversed(post_order) if k not in source_set]
         return result
 
+    def topological_sort_features(
+        self,
+        feature_keys: list[FeatureKey] | None = None,
+    ) -> list[FeatureKey]:
+        """Sort feature keys in topological order (dependencies first).
+
+        Uses stable alphabetical ordering when multiple nodes are at the same level.
+        This ensures deterministic output for diff comparisons and migrations.
+
+        Implemented using depth-first search with post-order traversal.
+
+        Args:
+            feature_keys: List of feature keys to sort. If None, sorts all features in the graph.
+
+        Returns:
+            List of feature keys sorted so dependencies appear before dependents
+
+        Example:
+            ```py
+            graph = FeatureGraph.get_active()
+            # Sort specific features
+            sorted_keys = graph.topological_sort_features([
+                FeatureKey(["video", "raw"]),
+                FeatureKey(["video", "scene"]),
+            ])
+
+            # Sort all features in the graph
+            all_sorted = graph.topological_sort_features()
+            ```
+        """
+        # Determine which features to sort
+        if feature_keys is None:
+            keys_to_sort = set(self.features_by_key.keys())
+        else:
+            keys_to_sort = set(feature_keys)
+
+        visited = set()
+        result = []  # Topological order (dependencies first)
+
+        def visit(key: FeatureKey):
+            """DFS visit with post-order traversal."""
+            if key in visited or key not in keys_to_sort:
+                return
+            visited.add(key)
+
+            # Get dependencies from feature spec
+            spec = self.feature_specs_by_key.get(key)
+            if spec and spec.deps:
+                # Sort dependencies alphabetically for deterministic ordering
+                sorted_deps = sorted(
+                    (dep.feature for dep in spec.deps),
+                    key=lambda k: k.to_string().lower(),
+                )
+                for dep_key in sorted_deps:
+                    if dep_key in keys_to_sort:
+                        visit(dep_key)
+
+            # Add to result after visiting dependencies (post-order)
+            result.append(key)
+
+        # Visit all keys in sorted order for deterministic traversal
+        for key in sorted(keys_to_sort, key=lambda k: k.to_string().lower()):
+            visit(key)
+
+        # Post-order DFS gives topological order (dependencies before dependents)
+        return result
+
     @property
     def snapshot_version(self) -> str:
         """Generate a snapshot version representing the current topology + versions of the feature graph"""

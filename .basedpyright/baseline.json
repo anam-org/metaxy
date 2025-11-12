@@ -6245,14 +6245,6 @@
                 "code": "reportImplicitStringConcatenation",
                 "range": {
                     "startColumn": 12,
-                    "endColumn": 85,
-                    "lineCount": 3
-                }
-            },
-            {
-                "code": "reportImplicitStringConcatenation",
-                "range": {
-                    "startColumn": 12,
                     "endColumn": 68,
                     "lineCount": 2
                 }

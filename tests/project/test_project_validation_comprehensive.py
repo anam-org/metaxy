@@ -324,8 +324,8 @@ class TestProjectValidationComprehensive:
                 rows_affected = op.execute_for_feature(
                     store,
                     feature_key.to_string(),
+                    snapshot_version=to_snapshot_version,
                     from_snapshot_version=from_snapshot_version,
-                    to_snapshot_version=to_snapshot_version,
                     dry_run=False,
                 )
                 # Migration might not affect rows if data is already migrated
