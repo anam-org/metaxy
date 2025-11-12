@@ -99,7 +99,9 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
+                user_samples,
+                VideoEmbeddingsFeature,
+                hash_algorithm=store.hash_algorithm,
             )
 
             result = store.resolve_update(
@@ -140,7 +142,9 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, VideoEmbeddingsFeature
+                initial_metadata,
+                VideoEmbeddingsFeature,
+                hash_algorithm=store.hash_algorithm,
             )
             store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
 
@@ -158,7 +162,9 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
+                user_samples,
+                VideoEmbeddingsFeature,
+                hash_algorithm=store.hash_algorithm,
             )
 
             result = store.resolve_update(
