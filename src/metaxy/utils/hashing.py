@@ -142,9 +142,7 @@ def truncate_string_column(
     return df.with_columns(nw.col(column_name).str.slice(0, length).alias(column_name))
 
 
-def _truncate_struct_column_polars(
-    df: Any, struct_column: str, length: int
-) -> Any:
+def _truncate_struct_column_polars(df: Any, struct_column: str, length: int) -> Any:
     """Helper that truncates struct fields on Polars DataFrame/LazyFrame."""
     if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
         return df
