@@ -102,12 +102,11 @@ class InMemoryMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
+            df: DataFrame or LazyFrame with metadata
         """
-        # Type narrowing: InMemoryMetadataStore always auto-collects lazy frames
-        assert isinstance(df, pl.DataFrame), (
-            "Expected DataFrame (auto-collection enabled)"
-        )
+        # Collect lazy frames - memory store needs eager data
+        if isinstance(df, pl.LazyFrame):
+            df = df.collect()
 
         storage_key = self._get_storage_key(feature_key)
 

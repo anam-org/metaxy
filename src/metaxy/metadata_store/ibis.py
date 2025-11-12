@@ -331,15 +331,14 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
+            df: DataFrame or LazyFrame with metadata
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        # Type narrowing: IbisMetadataStore always auto-collects lazy frames
-        assert isinstance(df, pl.DataFrame), (
-            "Expected DataFrame (auto-collection enabled)"
-        )
+        # Collect lazy frames - Ibis write needs eager data
+        if isinstance(df, pl.LazyFrame):
+            df = df.collect()
 
         table_name = feature_key.table_name
 

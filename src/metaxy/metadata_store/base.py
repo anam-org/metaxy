@@ -12,12 +12,8 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
+import pyarrow as pa
 from typing_extensions import Self
-
-try:
-    import pyarrow as pa
-except ModuleNotFoundError:  # pragma: no cover
-    pa = None  # type: ignore[assignment]
 
 from metaxy.metadata_store.exceptions import (
     DependencyError,
@@ -48,10 +44,6 @@ from metaxy.provenance import ProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
-if TYPE_CHECKING:
-    pass
-
-
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 SNAPSHOT_VERSION_COL = METAXY_SNAPSHOT_VERSION
@@ -77,10 +69,6 @@ class MetadataStore(ABC):
     # Subclasses can override this to disable auto_create_tables warning
     # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
     _should_warn_auto_create_tables: bool = True
-
-    # Subclasses can override this to handle lazy frames themselves
-    # Set to False for stores that want to implement streaming writes or other lazy frame optimizations
-    _auto_collect_lazy_frames: bool = False
 
     def __init__(
         self,
@@ -456,8 +444,10 @@ class MetadataStore(ABC):
         Args:
             feature_key: Feature key to write to
             df: DataFrame or LazyFrame with metadata (already validated).
-                If _auto_collect_lazy_frames is True, this will always be a DataFrame.
-                If False, subclass must handle both DataFrame and LazyFrame.
+                Stores should handle both DataFrame and LazyFrame types.
+                Most stores will want to collect LazyFrames at the start of this method.
+                Some stores (e.g., DeltaMetadataStore) can optimize by streaming LazyFrames
+                in batches without full collection.
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -477,7 +467,7 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to write metadata for
-            df: Narwhals/Polars (lazy or eager) frame containing metadata.
+            df: Narwhals DataFrame or Polars DataFrame containing metadata.
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
                 May optionally contain `metaxy_feature_version` and `metaxy_snapshot_version` (for migrations).
 
@@ -507,71 +497,61 @@ class MetadataStore(ABC):
         if isinstance(df, (nw.LazyFrame, nw.DataFrame)):
             df = df.to_native()  # type: ignore[assignment]
 
-        if pa is not None and isinstance(df, pa.Table):
+        if isinstance(df, pa.Table):
             # Streaming paths may yield Arrow tables; normalize to Polars.
+            from typing import cast
+
             df = cast(pl.DataFrame, pl.from_arrow(df))
 
-        # Now df is either pl.DataFrame or pl.LazyFrame
+        # Type narrowing: at this point df must be pl.DataFrame or pl.LazyFrame
+        if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+            raise TypeError(
+                f"Expected Polars DataFrame or LazyFrame after conversion, got {type(df)}"
+            )
 
-        # Collect lazy frames unless subclass wants to handle them
-        if self._auto_collect_lazy_frames and isinstance(df, pl.LazyFrame):
-            df = df.collect()
-
-        # At this point: if _auto_collect_lazy_frames=True, df is pl.DataFrame
-        # If _auto_collect_lazy_frames=False, df could be pl.DataFrame or pl.LazyFrame
-
-        # For stores that handle lazy frames themselves, pass through with minimal processing
-        if not self._auto_collect_lazy_frames and isinstance(df, pl.LazyFrame):
-            # Minimal validation - just check type
-            if not is_system_table:
-                # Add feature_version and snapshot_version for regular features
-                # Use collect_schema() to avoid expensive column resolution
-                schema_names = df.collect_schema().names()
-                if (
-                    FEATURE_VERSION_COL not in schema_names
-                    or SNAPSHOT_VERSION_COL not in schema_names
-                ):
-                    if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                        current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
-                    else:
-                        from metaxy.models.feature import FeatureGraph
-
-                        graph = FeatureGraph.get_active()
-                        feature_cls = graph.features_by_key[feature_key]
-                        current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-
-                    from metaxy.models.feature import FeatureGraph
-
-                    graph = FeatureGraph.get_active()
-                    current_snapshot_version = graph.snapshot_version
-
-                    df = df.with_columns(
-                        [
-                            pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                            pl.lit(current_snapshot_version).alias(
-                                SNAPSHOT_VERSION_COL
-                            ),
-                        ]
-                    )
-            # Skip validation for lazy frames - let subclass handle it
-            self._write_metadata_impl(feature_key, df)
-            return
-
-        # Standard path for eager DataFrames (or when _auto_collect_lazy_frames=True)
-        # At this point df must be pl.DataFrame
-        assert isinstance(df, pl.DataFrame), f"Expected DataFrame, got {type(df)}"
-
-        # For system tables, write directly without feature_version tracking
+        # For system tables, collect lazy frames and write directly
         if is_system_table:
+            if isinstance(df, pl.LazyFrame):
+                df = df.collect()
+            # Type narrowing: df is now pl.DataFrame
+            assert isinstance(df, pl.DataFrame)
             self._validate_schema_system_table(df)
             self._write_metadata_impl(feature_key, df)
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
-        # Check if feature_version and snapshot_version already exist in DataFrame
-        if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
-            # DataFrame already has feature_version and snapshot_version - use as-is
-            # This is intended for migrations writing historical versions
+        # For regular features: add feature_version and snapshot_version
+        df = self._add_system_columns(feature, feature_key, df)
+
+        # Validate schema (works for both lazy and eager)
+        self._validate_schema_for_write(df)
+
+        # Write metadata - delegate to store (store decides whether to collect lazy frames)
+        self._write_metadata_impl(feature_key, df)
+
+    def _add_system_columns(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        feature_key: FeatureKey,
+        df: pl.DataFrame | pl.LazyFrame,
+    ) -> pl.DataFrame | pl.LazyFrame:
+        """Add feature_version and snapshot_version columns if not already present.
+
+        Args:
+            feature: Feature being written
+            feature_key: Resolved feature key
+            df: DataFrame or LazyFrame to add columns to
+
+        Returns:
+            DataFrame or LazyFrame with system columns added
+        """
+        # Get schema (works for both lazy and eager)
+        schema_names = (
+            df.collect_schema().names() if isinstance(df, pl.LazyFrame) else df.columns
+        )
+
+        # Check if already present (migration path)
+        if FEATURE_VERSION_COL in schema_names and SNAPSHOT_VERSION_COL in schema_names:
+            # DataFrame already has system columns - use as-is
             # Issue a warning unless we're in a suppression context
             if not _suppress_feature_version_warning.get():
                 import warnings
@@ -583,34 +563,73 @@ class MetadataStore(ABC):
                     UserWarning,
                     stacklevel=2,
                 )
+            return df
+
+        # Get current feature version
+        if isinstance(feature, type) and issubclass(feature, BaseFeature):
+            current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
         else:
-            # Get current feature version and snapshot_version from code and add them
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
-            else:
-                from metaxy.models.feature import FeatureGraph
-
-                graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-
-            # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
-            current_snapshot_version = graph.snapshot_version
+            feature_cls = graph.features_by_key[feature_key]
+            current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
-            df = df.with_columns(
-                [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
-                ]
+        # Get snapshot_version from active graph
+        from metaxy.models.feature import FeatureGraph
+
+        graph = FeatureGraph.get_active()
+        current_snapshot_version = graph.snapshot_version
+
+        # Add system columns
+        return df.with_columns(
+            [
+                pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+            ]
+        )
+
+    def _validate_schema_for_write(self, df: pl.DataFrame | pl.LazyFrame) -> None:
+        """
+        Validate that DataFrame or LazyFrame has required schema for writing.
+
+        Works for both eager DataFrames and LazyFrames without collecting.
+
+        Args:
+            df: DataFrame or LazyFrame to validate
+
+        Raises:
+            MetadataSchemaError: If schema is invalid
+        """
+        from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+        # Get schema without collecting (works for both lazy and eager)
+        schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+
+        # Check for metaxy_provenance_by_field column
+        if PROVENANCE_BY_FIELD_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self._write_metadata_impl(feature_key, df)
+        # Check that metaxy_provenance_by_field is a struct
+        provenance_type = schema[PROVENANCE_BY_FIELD_COL]
+        if not isinstance(provenance_type, pl.Struct):
+            raise MetadataSchemaError(
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+            )
+
+        # Check for feature_version column
+        if FEATURE_VERSION_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{FEATURE_VERSION_COL}' column"
+            )
+
+        # Check for snapshot_version column
+        if SNAPSHOT_VERSION_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
+            )
 
     def _validate_schema(self, df: pl.DataFrame) -> None:
         """

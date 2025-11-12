@@ -34,10 +34,22 @@ class DeltaMetadataStore(MetadataStore):
     Stores each feature's metadata in a dedicated Delta table located under ``root_path``.
     Uses Polars/Narwhals components for metadata operations and relies on delta-rs for persistence.
 
+    **Lazy Frame Handling:**
+
+    - **Eager DataFrames**: Written directly using Polars' native write_delta (efficient)
+    - **Lazy Frames with streaming_chunk_size=None** (default): Collected once then written
+    - **Lazy Frames with streaming_chunk_size=N**: Streamed in batches of size N without full collection,
+      enabling processing of datasets larger than RAM (at the cost of slower performance and more Delta versions)
+
     Example:
         ```py
+        # Standard usage (collects lazy frames before writing)
+        store = DeltaMetadataStore("/data/metaxy/metadata")
+
+        # Streaming mode for large datasets
         store = DeltaMetadataStore(
             "/data/metaxy/metadata",
+            streaming_chunk_size=10000,  # Stream in 10k row batches
             storage_options={"AWS_REGION": "us-west-2"},
         )
 
@@ -48,7 +60,6 @@ class DeltaMetadataStore(MetadataStore):
     """
 
     _should_warn_auto_create_tables = False
-    _auto_collect_lazy_frames = False  # Handle lazy frames for streaming writes
 
     def __init__(
         self,
@@ -71,14 +82,15 @@ class DeltaMetadataStore(MetadataStore):
                 For Azure: AZURE_* environment variables
                 For GCS: GOOGLE_* environment variables
             streaming_chunk_size: Optional chunk size for streaming writes of lazy frames.
-                When set, lazy frames are written in batches without full collection,
-                enabling processing of datasets larger than RAM. Each batch creates
-                a new Delta version. Trade-offs:
-                - Lower memory usage for large datasets
-                - Slower performance (Polars sink_batches overhead)
-                - More Delta versions (one per batch)
-                - Uses unstable Polars API
-                Default None means collect entire lazy frame before writing (faster).
+                - **None (default)**: Collect lazy frames fully before writing (fast, simple, higher memory)
+                - **int (e.g., 10000)**: Stream lazy frames in batches of this size without full collection
+                  (lower memory for large datasets, but slower and creates more Delta versions)
+                Trade-offs when streaming:
+                - ✓ Lower memory usage for datasets larger than RAM
+                - ✗ Slower performance (Polars sink_batches overhead)
+                - ✗ More Delta versions (one per batch)
+                - ✗ Uses unstable Polars API
+                For most use cases, leave as None (default).
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
         """
@@ -237,6 +249,10 @@ class DeltaMetadataStore(MetadataStore):
         df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """Append metadata to the Delta table for a feature.
+
+        Handles both eager DataFrames and lazy LazyFrames:
+        - **DataFrames**: Written directly via Polars write_delta (efficient)
+        - **LazyFrames**: Collected or streamed based on streaming_chunk_size setting
 
         Args:
             feature_key: Feature key to write to
