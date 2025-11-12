@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
-
-import logging
 
 import narwhals as nw
 import polars as pl
@@ -303,7 +302,9 @@ class LanceDBMetadataStore(MetadataStore):
         except TypeError as exc:
             if "batch_size" not in str(exc):
                 raise
-            logger.debug("Polars/LanceDB batch_size incompatibility hit; converting via Arrow ")
+            logger.debug(
+                "Polars/LanceDB batch_size incompatibility hit; converting via Arrow "
+            )
             # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
             arrow_table = table.to_arrow()
             pl_lazy = pl.DataFrame(arrow_table).lazy()
