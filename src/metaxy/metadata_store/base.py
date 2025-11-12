@@ -14,6 +14,11 @@ import narwhals as nw
 import polars as pl
 from typing_extensions import Self
 
+try:
+    import pyarrow as pa
+except ModuleNotFoundError:  # pragma: no cover
+    pa = None  # type: ignore[assignment]
+
 from metaxy.metadata_store.exceptions import (
     DependencyError,
     FeatureNotFoundError,
@@ -45,8 +50,6 @@ from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
     pass
-
-# Removed TRef - all stores now use Narwhals LazyFrames universally
 
 
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
@@ -505,6 +508,10 @@ class MetadataStore(ABC):
             df = df.to_native()  # type: ignore[assignment]
         elif isinstance(df, nw.DataFrame):
             df = df.to_native()  # type: ignore[assignment]
+
+        if pa is not None and isinstance(df, pa.Table):
+            # Streaming paths may yield Arrow tables; normalize to Polars.
+            df = cast(pl.DataFrame, pl.from_arrow(df))
 
         # Now df is either pl.DataFrame or pl.LazyFrame
 
