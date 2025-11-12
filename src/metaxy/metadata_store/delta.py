@@ -54,6 +54,7 @@ class DeltaMetadataStore(MetadataStore):
         root_path: str | Path,
         *,
         storage_options: dict[str, Any] | None = None,
+        streaming_chunk_size: int | None = None,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -68,10 +69,20 @@ class DeltaMetadataStore(MetadataStore):
                 For S3: AWS_* environment variables
                 For Azure: AZURE_* environment variables
                 For GCS: GOOGLE_* environment variables
+            streaming_chunk_size: Optional chunk size for streaming writes of lazy frames.
+                When set, lazy frames are written in batches without full collection,
+                enabling processing of datasets larger than RAM. Each batch creates
+                a new Delta version. Trade-offs:
+                - Lower memory usage for large datasets
+                - Slower performance (Polars sink_batches overhead)
+                - More Delta versions (one per batch)
+                - Uses unstable Polars API
+                Default None means collect entire lazy frame before writing (faster).
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
         """
         self.storage_options = storage_options or {}
+        self.streaming_chunk_size = streaming_chunk_size
         self._display_root = str(root_path)
 
         # Simplified path handling - let Delta handle the complexity
@@ -249,19 +260,46 @@ class DeltaMetadataStore(MetadataStore):
 
         # Delta automatically creates parent directories, no need to do it manually
 
-        # Handle both LazyFrame and DataFrame
-        # Collect lazy frames before writing (Polars LazyFrame doesn't have native Delta sink yet)
+        # Strategy: Use Polars write_delta for eager DataFrames (native support),
+        # convert to PyArrow for lazy frames and use deltalake API (more flexible)
         if isinstance(df, pl.LazyFrame):
-            df = df.collect()
+            # Check if streaming mode is enabled
+            if self.streaming_chunk_size is not None:
+                # Streaming mode: write batches incrementally without full collection
+                # This enables processing datasets larger than RAM at the cost of:
+                # - Slower performance (sink_batches overhead)
+                # - More Delta versions (one per batch)
+                def write_batch(batch_df: pl.DataFrame) -> bool:
+                    arrow_table = batch_df.to_arrow()
+                    deltalake.write_deltalake(
+                        table_uri,
+                        arrow_table,
+                        mode="append",
+                        schema_mode="merge",
+                        storage_options=self.storage_options or None,
+                    )
+                    return False  # Continue processing all batches
 
-        # Use deltalake.write_deltalake for all writes
-        deltalake.write_deltalake(
-            table_uri,
-            df,
-            mode="append",
-            schema_mode="merge",
-            storage_options=self.storage_options or None,
-        )
+                df.sink_batches(write_batch, chunk_size=self.streaming_chunk_size)  # pyright: ignore[reportCallIssue]
+            else:
+                # Default mode: collect then write (faster for normal-sized datasets)
+                arrow_table = df.collect().to_arrow()
+                deltalake.write_deltalake(
+                    table_uri,
+                    arrow_table,
+                    mode="append",
+                    schema_mode="merge",
+                    storage_options=self.storage_options or None,
+                )
+        else:
+            # For eager DataFrames: use Polars native write_delta
+            # This is efficient and leverages Polars' built-in Delta support
+            df.write_delta(
+                table_uri,
+                mode="append",
+                delta_write_options={"schema_mode": "merge"},
+                storage_options=self.storage_options or None,
+            )
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Delta table for the specified feature using soft delete.

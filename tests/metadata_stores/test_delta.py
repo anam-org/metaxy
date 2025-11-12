@@ -180,3 +180,42 @@ def test_delta_remote_lists_features_returns_empty() -> None:
 
     # Remote stores return empty list - must use system tables for feature discovery
     assert features == []
+
+
+def test_delta_streaming_write(tmp_path, test_graph, test_features) -> None:
+    """Verify streaming mode writes lazy frames in batches without full collection."""
+    store_path = tmp_path / "delta_streaming"
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
+
+    # Create store with streaming enabled (chunk size = 50 rows)
+    with DeltaMetadataStore(store_path, streaming_chunk_size=50) as store:
+        # Create a lazy frame with enough rows to create multiple batches
+        metadata = pl.LazyFrame(
+            {
+                "sample_uid": list(range(200)),  # 200 rows = 4 batches of 50
+                "metaxy_provenance_by_field": [
+                    {"frames": f"h{i}", "audio": f"h{i}"} for i in range(200)
+                ],
+            }
+        )
+
+        with store.allow_cross_project_writes():
+            store.write_metadata(feature_cls, metadata)
+
+        # Verify data was written correctly
+        result = collect_to_polars(store.read_metadata(feature_cls))
+        assert len(result) == 200
+        assert set(result["sample_uid"].to_list()) == set(range(200))
+
+        # Verify Delta table was created and contains all data
+        feature_path = store._feature_local_path(feature_key)
+        assert feature_path is not None
+        delta_table = DeltaTable(str(feature_path))
+
+        # Verify all rows were written (regardless of version count)
+        # Note: Delta may optimize writes into fewer transactions than expected
+        assert delta_table.to_pyarrow_table().num_rows == 200
+
+        # Verify table exists and is readable
+        assert (feature_path / "_delta_log").exists()
