@@ -205,7 +205,7 @@ def test_lancedb_system_tables_filtered(tmp_path, test_graph, test_features) -> 
 
 def test_lancedb_hash_algorithm(tmp_path, test_graph, test_features) -> None:
     """Test that custom hash algorithm is respected."""
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     database_path = tmp_path / "lancedb"
 

@@ -3,19 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, cast
 
 import narwhals as nw
 import polars as pl
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.base import MetadataDiffResolver
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 class LanceDBMetadataStore(MetadataStore):
@@ -121,13 +119,23 @@ class LanceDBMetadataStore(MetadataStore):
         """LanceDB store uses Polars components."""
         return False
 
-    def _create_native_components(
-        self,
-    ) -> tuple[
-        UpstreamJoiner,
-        ProvenanceByFieldCalculator,
-        MetadataDiffResolver,
-    ]:
+    def native_implementation(self) -> nw.Implementation:
+        """LanceDB operations run via Polars/Narwhals."""
+        return nw.Implementation.POLARS
+
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create a Polars provenance tracker for LanceDB."""
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
+        tracker = PolarsProvenanceTracker(plan=plan)
+        try:
+            yield tracker
+        finally:
+            # No cleanup needed for Polars tracker
+            pass
+
+    def _create_native_components(self) -> tuple[Any, Any, Any]:
         """Not supported - LanceDB relies on Polars fallback components."""
         raise NotImplementedError(
             "LanceDBMetadataStore does not support native field provenance calculations"
