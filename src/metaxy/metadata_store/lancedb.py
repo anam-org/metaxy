@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
+import logging
+
 import narwhals as nw
 import polars as pl
 
@@ -14,6 +16,8 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
+
+logger = logging.getLogger(__name__)
 
 
 class LanceDBMetadataStore(MetadataStore):
@@ -291,7 +295,19 @@ class LanceDBMetadataStore(MetadataStore):
             return None
 
         table = self._get_table(table_name)
-        pl_lazy = table.to_polars()
+
+        try:
+            pl_lazy = table.to_polars()
+            # Smoke-test the LazyFrame to surface the batch_size issue eagerly.
+            pl_lazy.limit(0).collect()
+        except TypeError as exc:
+            if "batch_size" not in str(exc):
+                raise
+            logger.debug("Polars/LanceDB batch_size incompatibility hit; converting via Arrow ")
+            # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
+            arrow_table = table.to_arrow()
+            pl_lazy = pl.DataFrame(arrow_table).lazy()
+
         nw_lazy = nw.from_native(pl_lazy)
 
         if feature_version is not None:
