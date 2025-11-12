@@ -279,15 +279,10 @@ class DataVersionReconciliation(BaseOperation):
             return existing_metadata_df.shape[0]
 
         # 4. Get sample metadata (exclude system columns)
+        from metaxy.models.constants import is_system_column
+
         user_columns = [
-            c
-            for c in existing_metadata_df.columns
-            if c
-            not in [
-                "metaxy_provenance_by_field",
-                "metaxy_feature_version",
-                "metaxy_snapshot_version",
-            ]
+            c for c in existing_metadata_df.columns if not is_system_column(c)
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
