@@ -324,18 +324,23 @@ class IbisMetadataStore(MetadataStore, ABC):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Internal write implementation using Ibis.
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        # Type narrowing: IbisMetadataStore always auto-collects lazy frames
+        assert isinstance(df, pl.DataFrame), (
+            "Expected DataFrame (auto-collection enabled)"
+        )
+
         table_name = feature_key.table_name
 
         try:

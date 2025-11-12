@@ -75,6 +75,10 @@ class MetadataStore(ABC):
     # Set to False for stores where table creation is not applicable (e.g., InMemoryMetadataStore)
     _should_warn_auto_create_tables: bool = True
 
+    # Subclasses can override this to handle lazy frames themselves
+    # Set to False for stores that want to implement streaming writes or other lazy frame optimizations
+    _auto_collect_lazy_frames: bool = True
+
     def __init__(
         self,
         *,
@@ -441,14 +445,16 @@ class MetadataStore(ABC):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (already validated).
+                If _auto_collect_lazy_frames is True, this will always be a DataFrame.
+                If False, subclass must handle both DataFrame and LazyFrame.
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -494,24 +500,61 @@ class MetadataStore(ABC):
         if not is_system_table:
             self._validate_project_write(feature)
 
-        # Sink lazy frames to eager DataFrames
+        # Convert Narwhals to native Polars (both lazy and eager)
         if isinstance(df, nw.LazyFrame):
-            df = df.collect()
-        if isinstance(df, pl.LazyFrame):
+            df = df.to_native()  # type: ignore[assignment]
+        elif isinstance(df, nw.DataFrame):
+            df = df.to_native()  # type: ignore[assignment]
+
+        # Now df is either pl.DataFrame or pl.LazyFrame
+
+        # Collect lazy frames unless subclass wants to handle them
+        if self._auto_collect_lazy_frames and isinstance(df, pl.LazyFrame):
             df = df.collect()
 
-        # Convert Narwhals to Polars if needed
-        if isinstance(df, nw.DataFrame):
-            df = df.to_polars()
-        # nw.DataFrame also matches as DataFrame in some contexts, ensure it's Polars
-        if not isinstance(df, pl.DataFrame):
-            # Must be some other type - shouldn't happen but handle defensively
-            if hasattr(df, "to_polars"):
-                df = df.to_polars()
-            elif hasattr(df, "to_pandas"):
-                df = pl.from_pandas(df.to_pandas())
-            else:
-                raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
+        # At this point: if _auto_collect_lazy_frames=True, df is pl.DataFrame
+        # If _auto_collect_lazy_frames=False, df could be pl.DataFrame or pl.LazyFrame
+
+        # For stores that handle lazy frames themselves, pass through with minimal processing
+        if not self._auto_collect_lazy_frames and isinstance(df, pl.LazyFrame):
+            # Minimal validation - just check type
+            if not is_system_table:
+                # Add feature_version and snapshot_version for regular features
+                # Use collect_schema() to avoid expensive column resolution
+                schema_names = df.collect_schema().names()
+                if (
+                    FEATURE_VERSION_COL not in schema_names
+                    or SNAPSHOT_VERSION_COL not in schema_names
+                ):
+                    if isinstance(feature, type) and issubclass(feature, BaseFeature):
+                        current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
+                    else:
+                        from metaxy.models.feature import FeatureGraph
+
+                        graph = FeatureGraph.get_active()
+                        feature_cls = graph.features_by_key[feature_key]
+                        current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+
+                    from metaxy.models.feature import FeatureGraph
+
+                    graph = FeatureGraph.get_active()
+                    current_snapshot_version = graph.snapshot_version
+
+                    df = df.with_columns(
+                        [
+                            pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                            pl.lit(current_snapshot_version).alias(
+                                SNAPSHOT_VERSION_COL
+                            ),
+                        ]
+                    )
+            # Skip validation for lazy frames - let subclass handle it
+            self._write_metadata_impl(feature_key, df)
+            return
+
+        # Standard path for eager DataFrames (or when _auto_collect_lazy_frames=True)
+        # At this point df must be pl.DataFrame
+        assert isinstance(df, pl.DataFrame), f"Expected DataFrame, got {type(df)}"
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:

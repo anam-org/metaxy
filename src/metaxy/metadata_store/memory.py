@@ -95,15 +95,20 @@ class InMemoryMetadataStore(MetadataStore):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Internal write implementation for in-memory storage.
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
         """
+        # Type narrowing: InMemoryMetadataStore always auto-collects lazy frames
+        assert isinstance(df, pl.DataFrame), (
+            "Expected DataFrame (auto-collection enabled)"
+        )
+
         storage_key = self._get_storage_key(feature_key)
 
         # Append or create

@@ -25,7 +25,7 @@ class MetadataStoreProtocol(Protocol):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """Write metadata for a feature key."""
         ...
