@@ -252,22 +252,23 @@ def test_lancedb_with_fallback_stores(tmp_path, test_graph, test_features) -> No
             assert dev_store.has_feature(feature_cls, check_fallback=True)
 
 
-def test_lancedb_is_remote_uri() -> None:
-    """Test that _is_remote_uri correctly identifies remote URIs."""
-    # Remote URIs
-    assert LanceDBMetadataStore._is_remote_uri("s3://bucket/path")
-    assert LanceDBMetadataStore._is_remote_uri("db://database-name")
-    assert LanceDBMetadataStore._is_remote_uri("http://remote-server/db")
-    assert LanceDBMetadataStore._is_remote_uri("https://remote-server/db")
-    assert LanceDBMetadataStore._is_remote_uri("gs://bucket/path")
-    assert LanceDBMetadataStore._is_remote_uri("az://container/path")
-    assert LanceDBMetadataStore._is_remote_uri("file:///absolute/path")
-
+def test_lancedb_is_local_path() -> None:
+    """Test that _is_local_path correctly identifies local filesystem paths."""
     # Local paths
-    assert not LanceDBMetadataStore._is_remote_uri("./local/path")
-    assert not LanceDBMetadataStore._is_remote_uri("/absolute/path")
-    assert not LanceDBMetadataStore._is_remote_uri("relative/path")
-    assert not LanceDBMetadataStore._is_remote_uri("C:\\Windows\\Path")
+    assert LanceDBMetadataStore._is_local_path("./local/path")
+    assert LanceDBMetadataStore._is_local_path("/absolute/path")
+    assert LanceDBMetadataStore._is_local_path("relative/path")
+    assert LanceDBMetadataStore._is_local_path("C:\\Windows\\Path")
+    assert LanceDBMetadataStore._is_local_path("file:///absolute/path")
+    assert LanceDBMetadataStore._is_local_path("local://path")
+
+    # Remote URIs
+    assert not LanceDBMetadataStore._is_local_path("s3://bucket/path")
+    assert not LanceDBMetadataStore._is_local_path("db://database-name")
+    assert not LanceDBMetadataStore._is_local_path("http://remote-server/db")
+    assert not LanceDBMetadataStore._is_local_path("https://remote-server/db")
+    assert not LanceDBMetadataStore._is_local_path("gs://bucket/path")
+    assert not LanceDBMetadataStore._is_local_path("az://container/path")
 
 
 def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
@@ -360,7 +361,7 @@ def test_lancedb_local_path_calls_mkdir(tmp_path, monkeypatch) -> None:
 
 
 def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
-    """Test that database_path is correctly passed to lancedb.connect."""
+    """Test that the path argument is correctly passed to lancedb.connect."""
     from unittest.mock import Mock
 
     mock_lancedb = Mock()
@@ -395,3 +396,56 @@ def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
         assert connect_calls[0] == uri
 
         store.close()
+
+
+def test_lancedb_sanitize_path() -> None:
+    """Test that _sanitize_path properly masks credentials in URIs."""
+    # URIs without credentials should pass through unchanged
+    assert LanceDBMetadataStore._sanitize_path("s3://bucket/path") == "s3://bucket/path"
+    assert LanceDBMetadataStore._sanitize_path("db://database") == "db://database"
+
+    # Local paths should pass through unchanged
+    assert LanceDBMetadataStore._sanitize_path("./local/path") == "./local/path"
+    assert LanceDBMetadataStore._sanitize_path("/absolute/path") == "/absolute/path"
+
+    # URIs with credentials should mask them
+    assert (
+        LanceDBMetadataStore._sanitize_path("db://user:pass@host/db")
+        == "db://***:***@host/db"
+    )
+    assert (
+        LanceDBMetadataStore._sanitize_path("https://admin:secret@host:8000/api")
+        == "https://***:***@host:8000/api"
+    )
+    assert (
+        LanceDBMetadataStore._sanitize_path("s3://key:secret@bucket/path")
+        == "s3://***:***@bucket/path"
+    )
+
+    # Username only (no password)
+    assert (
+        LanceDBMetadataStore._sanitize_path("db://user@host/db") == "db://***:@host/db"
+    )
+
+
+def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
+    """Test that display() masks credentials in URIs."""
+    from unittest.mock import Mock
+
+    # Mock lancedb.connect to avoid actual connection
+    mock_lancedb = Mock()
+    mock_conn = Mock()
+    mock_lancedb.connect = Mock(return_value=mock_conn)
+
+    # Test with URI containing credentials
+    store = LanceDBMetadataStore("db://admin:password@localhost/mydb")
+
+    with monkeypatch.context() as m:
+        m.setattr("lancedb.connect", mock_lancedb.connect)
+        # Check display before opening (when _is_open is False)
+        display = store.display()
+        assert "admin" not in display
+        assert "password" not in display
+        assert "***:***@localhost" in display
+
+    store.close()
