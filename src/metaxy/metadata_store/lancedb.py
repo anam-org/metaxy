@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import narwhals as nw
 import polars as pl
@@ -291,9 +291,8 @@ class LanceDBMetadataStore(MetadataStore):
             return None
 
         table = self._get_table(table_name)
-        arrow_table = table.to_arrow()  # type: ignore[attr-defined]
-        df = cast(pl.DataFrame, pl.from_arrow(arrow_table))
-        nw_lazy = nw.from_native(df.lazy())
+        pl_lazy = table.to_polars()
+        nw_lazy = nw.from_native(pl_lazy)
 
         if feature_version is not None:
             nw_lazy = nw_lazy.filter(
