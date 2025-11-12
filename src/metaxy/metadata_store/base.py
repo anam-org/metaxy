@@ -12,8 +12,12 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
-import pyarrow as pa
 from typing_extensions import Self
+
+try:  # pyarrow is an optional dependency needed only for Arrow streaming paths
+    import pyarrow as pa  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - exercised in minimal dependency envs
+    pa = None  # type: ignore
 
 from metaxy.metadata_store.exceptions import (
     DependencyError,
@@ -497,7 +501,7 @@ class MetadataStore(ABC):
         if isinstance(df, (nw.LazyFrame, nw.DataFrame)):
             df = df.to_native()  # type: ignore[assignment]
 
-        if isinstance(df, pa.Table):
+        if pa is not None and isinstance(df, pa.Table):
             # Streaming paths may yield Arrow tables; normalize to Polars.
             from typing import cast
 
