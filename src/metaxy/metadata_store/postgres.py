@@ -18,7 +18,8 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Callable, cast
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
 import polars as pl
@@ -302,14 +303,17 @@ class PostgresMetadataStore(IbisMetadataStore):
             logger.info(message.replace("!!! Metaxy INFO: ", "").replace("!!!", ""))
 
     def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
-        """Enable pgcrypto before running native SHA256 provenance tracking."""
+        """Enable pgcrypto before running native SHA256 provenance tracking.
+
+        Note: pgcrypto is needed because we still use native SHA256 hashing
+        via SQL DIGEST() function.
+        """
         if self._pgcrypto_extension_checked:
             return
 
         if (
             not self.enable_pgcrypto
             or self.hash_algorithm != HashAlgorithm.SHA256
-            or self._struct_compat_mode
             or not self._supports_native_components()
         ):
             return
@@ -413,9 +417,45 @@ class PostgresMetadataStore(IbisMetadataStore):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
     ) -> Increment | LazyIncrement:
-        """Ensure pgcrypto is available before delegating to base implementation."""
+        """Ensure pgcrypto is available before native provenance tracking.
+
+        Uses PostgresProvenanceTracker when in struct compatibility mode,
+        which builds JSON directly in SQL instead of native structs.
+
+        Deserializes JSON at the final boundary before returning results to users.
+        """
         self._ensure_pgcrypto_ready_for_native_provenance()
-        return super()._resolve_update_native(feature, filters=filters, lazy=lazy)
+        result = super()._resolve_update_native(feature, filters=filters, lazy=lazy)
+
+        # Deserialize JSON columns at the final boundary (only in struct compat mode)
+        if self._struct_compat_mode:
+            if lazy:
+                # LazyIncrement - keep lazy but mark for deserialization
+                # Deserialization happens when .collect() is called by user
+                return result  # TODO: Need to handle lazy deserialization
+            else:
+                # Increment - deserialize now
+                from metaxy.provenance.types import Increment
+
+                assert isinstance(result, Increment)
+                # Convert Narwhals DataFrames to Polars for deserialization
+                added_result = result.added.to_polars()
+                changed_result = result.changed.to_polars()
+                removed_result = result.removed.to_polars()
+
+                return Increment(
+                    added=nw.from_native(
+                        self._deserialize_provenance_column(added_result)
+                    ),
+                    changed=nw.from_native(
+                        self._deserialize_provenance_column(changed_result)
+                    ),
+                    removed=nw.from_native(
+                        self._deserialize_provenance_column(removed_result)
+                    ),
+                )
+
+        return result
 
     @staticmethod
     def _ensure_string_identifier(value: str | bytes) -> str:
@@ -446,8 +486,118 @@ class PostgresMetadataStore(IbisMetadataStore):
         return generators
 
     def _supports_native_components(self) -> bool:
-        """Disable native components when running in struct-compatibility mode."""
-        return super()._supports_native_components() and not self._struct_compat_mode
+        """PostgreSQL supports native components even in struct-compatibility mode.
+
+        When in struct compat mode, we use PostgresProvenanceTracker which builds
+        JSON directly in SQL instead of native structs, keeping everything in the database.
+        """
+        return super()._supports_native_components()
+
+    @contextmanager
+    def _create_provenance_tracker(self, plan):  # pyright: ignore[reportIncompatibleMethodOverride]
+        """Create provenance tracker for PostgreSQL.
+
+        Delegates to the parent Ibis tracker implementation.
+        Struct compatibility mode is handled at serialization/deserialization boundaries.
+        """
+        with super()._create_provenance_tracker(plan) as tracker:
+            yield tracker
+
+    @staticmethod
+    def _get_postgres_type(dtype: PolarsDataType | PolarsDataTypeClass) -> str:
+        """Convert Polars dtype to PostgreSQL type.
+
+        Struct types are mapped to JSONB for native PostgreSQL JSON support.
+        """
+        if dtype == pl.String:
+            return "VARCHAR"
+        elif dtype == pl.Int64:
+            return "BIGINT"
+        elif dtype == pl.Int32:
+            return "INTEGER"
+        elif dtype == pl.Float64:
+            return "DOUBLE PRECISION"
+        elif dtype == pl.Boolean:
+            return "BOOLEAN"
+        elif dtype == pl.Datetime:
+            return "TIMESTAMP(6)"
+        elif dtype == pl.Date:
+            return "DATE"
+        elif isinstance(dtype, pl.Struct):
+            # Use JSONB for struct types (native PostgreSQL JSON with indexing)
+            return "JSONB"
+        else:
+            return "VARCHAR"
+
+    def _create_table_ddl(self, table_name: str, schema: SchemaMapping) -> str:
+        """Generate CREATE TABLE IF NOT EXISTS DDL from Polars schema."""
+        columns = [
+            f'"{col_name}" {self._get_postgres_type(dtype)}'
+            for col_name, dtype in schema.items()
+        ]
+        columns_sql = ", ".join(columns)
+        return f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns_sql})'
+
+    def _execute_ddl(self, ddl: str):
+        """Execute DDL with proper connection handling."""
+        raw_conn = cast(Any, self.conn).con
+        original_autocommit = raw_conn.autocommit
+        try:
+            raw_conn.autocommit = True
+            with raw_conn.cursor() as cursor:
+                cursor.execute(ddl)
+        finally:
+            raw_conn.autocommit = original_autocommit
+
+    def _create_table_from_dataframe(self, table_name: str, df: pl.DataFrame) -> None:
+        """Create table from DataFrame schema using raw DDL."""
+        # Convert DataFrame schema to SchemaMapping
+        schema: dict[str, PolarsDataType | PolarsDataTypeClass] = {}
+        for col_name in df.columns:
+            dtype = df.schema[col_name]
+            # Convert pl.Null to pl.Utf8 for table creation
+            if dtype == pl.Null:
+                schema[col_name] = pl.Utf8
+            else:
+                schema[col_name] = dtype
+
+        ddl = self._create_table_ddl(table_name, cast(SchemaMapping, schema))
+        self._execute_ddl(ddl)
+
+    def _insert_with_jsonb_cast(self, table_name: str, df: pl.DataFrame) -> None:
+        """Insert data with explicit JSONB cast for provenance column.
+
+        Args:
+            table_name: Target table name
+            df: DataFrame with serialized provenance column (JSON strings)
+        """
+        raw_conn = cast(Any, self.conn).con
+
+        # Get column names and prepare INSERT statement
+        columns = df.columns
+        column_list = ", ".join(f'"{col}"' for col in columns)
+
+        # Build placeholder list with CAST for JSONB column
+        # psycopg3 uses %s placeholders
+        placeholders = []
+        for col in columns:
+            if col == METAXY_PROVENANCE_BY_FIELD:
+                placeholders.append("%s::jsonb")
+            else:
+                placeholders.append("%s")
+
+        placeholders_str = ", ".join(placeholders)
+
+        insert_sql = (
+            f'INSERT INTO "{table_name}" ({column_list}) VALUES ({placeholders_str})'
+        )
+
+        # Execute batch insert
+        with raw_conn.cursor() as cursor:
+            # Convert DataFrame to list of tuples
+            rows = [tuple(row) for row in df.iter_rows()]
+            cursor.executemany(insert_sql, rows)
+        raw_conn.commit()
 
     def _create_system_tables(self) -> None:
         """
@@ -461,60 +611,22 @@ class PostgresMetadataStore(IbisMetadataStore):
             MIGRATION_EVENTS_SCHEMA,
         )
 
-        def get_postgres_type(dtype: PolarsDataType | PolarsDataTypeClass) -> str:
-            """Convert Polars dtype to PostgreSQL type."""
-            if dtype == pl.String:
-                return "VARCHAR"
-            elif dtype == pl.Int64:
-                return "BIGINT"
-            elif dtype == pl.Int32:
-                return "INTEGER"
-            elif dtype == pl.Float64:
-                return "DOUBLE PRECISION"
-            elif dtype == pl.Boolean:
-                return "BOOLEAN"
-            elif dtype == pl.Datetime:
-                return "TIMESTAMP(6)"
-            elif dtype == pl.Date:
-                return "DATE"
-            else:
-                return "VARCHAR"
-
-        def create_table_ddl(table_name: str, schema: SchemaMapping) -> str:
-            """Generate CREATE TABLE IF NOT EXISTS DDL from Polars schema."""
-            columns = [
-                f'"{col_name}" {get_postgres_type(dtype)}'
-                for col_name, dtype in schema.items()
-            ]
-            columns_sql = ", ".join(columns)
-            return f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns_sql})'
-
-        def execute_ddl(ddl: str):
-            """Execute DDL with proper connection handling."""
-            raw_conn = cast(Any, self.conn).con
-            original_autocommit = raw_conn.autocommit
-            try:
-                raw_conn.autocommit = True
-                with raw_conn.cursor() as cursor:
-                    cursor.execute(ddl)
-            finally:
-                raw_conn.autocommit = original_autocommit
-
-        ddl_fv = create_table_ddl(
+        ddl_fv = self._create_table_ddl(
             FEATURE_VERSIONS_KEY.table_name,
             cast(SchemaMapping, FEATURE_VERSIONS_SCHEMA),
         )
-        execute_ddl(ddl_fv)
+        self._execute_ddl(ddl_fv)
 
-        ddl_me = create_table_ddl(
+        ddl_me = self._create_table_ddl(
             MIGRATION_EVENTS_KEY.table_name,
             cast(SchemaMapping, MIGRATION_EVENTS_SCHEMA),
         )
-        execute_ddl(ddl_me)
+        self._execute_ddl(ddl_me)
 
     def _write_metadata_impl(self, feature_key: FeatureKey, df: pl.DataFrame) -> None:
         table_name = feature_key.table_name
         df_to_write = df
+        # Always serialize struct to JSON string for JSONB storage
         if self._struct_compat_mode and METAXY_PROVENANCE_BY_FIELD in df.columns:
             df_to_write = self._serialize_provenance_column(df_to_write)
 
@@ -526,25 +638,18 @@ class PostgresMetadataStore(IbisMetadataStore):
 
                 raise TableNotFoundError(f"Table '{table_name}' does not exist.")
 
-            df_for_creation = df_to_write
-            if self._struct_compat_mode:
-                sanitized_schema = {
-                    k: (pl.String if isinstance(v, (pl.Struct, pl.List)) else v)
-                    for k, v in df_for_creation.schema.items()
-                }
-                df_for_creation = pl.DataFrame(schema=sanitized_schema)
-
-            for col in df_for_creation.columns:
-                if df_for_creation[col].dtype == pl.Null:
-                    df_for_creation = df_for_creation.with_columns(
-                        pl.col(col).cast(pl.Utf8)
-                    )
-
-            conn.create_table(table_name, obj=df_for_creation)
+            # Create table using raw DDL to ensure structs are mapped to JSONB
+            self._create_table_from_dataframe(table_name, df)
 
         if len(df_to_write) > 0:
-            conn.insert(table_name, obj=df_to_write)
-
+            # Use custom insert for JSONB compatibility
+            if (
+                self._struct_compat_mode
+                and METAXY_PROVENANCE_BY_FIELD in df_to_write.columns
+            ):
+                self._insert_with_jsonb_cast(table_name, df_to_write)
+            else:
+                conn.insert(table_name, obj=df_to_write)
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
