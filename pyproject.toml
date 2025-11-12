@@ -46,7 +46,6 @@ duckdb = [
 ]
 delta = [
   "deltalake>=1.2.1",
-  "obstore>=0.8.2",
 ]
 
 [project.scripts]
@@ -76,6 +75,7 @@ dev = [
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
   "moto[s3]>=5.1.16",
+  "deltalake>=1.2.1",
 ]
 
 examples = [
