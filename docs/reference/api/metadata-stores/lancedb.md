@@ -89,11 +89,20 @@ os.environ["LANCEDB_API_KEY"] = "your-api-key-here"
 
 # Connect to cloud database
 store = LanceDBMetadataStore("db://my-database-name")
+
+# Or pass credentials directly (avoids relying on environment variables)
+store = LanceDBMetadataStore(
+    "db://my-database-name",
+    connect_kwargs={
+        "api_key": "your-api-key-here",
+        "region": "us-east-1",
+    },
+)
 ```
 
 **Requirements:**
 - LanceDB Cloud account and API key
-- Set `LANCEDB_API_KEY` environment variable
+- Either set `LANCEDB_API_KEY` environment variable or supply `connect_kwargs`
 - Database must be created via LanceDB Cloud console or API
 
 **Benefits:**

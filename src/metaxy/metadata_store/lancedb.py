@@ -29,7 +29,7 @@ class LanceDBMetadataStore(MetadataStore):
     Storage layout:
     - Each feature gets its own table: {namespace}__{feature_name}
     - System tables: metaxy-system__feature_versions, metaxy-system__migration_events
-    - Tables are stored as Lance format files in the database_path directory
+    - Tables are stored as Lance format files in the uri directory
 
     Note: Uses Polars components for data processing (no native SQL execution).
 
@@ -62,10 +62,11 @@ class LanceDBMetadataStore(MetadataStore):
 
     def __init__(
         self,
-        database_path: str | Path,
+        uri: str | Path,
         *,
         fallback_stores: list[MetadataStore] | None = None,
         auto_create_tables: bool | None = True,
+        connect_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         """
@@ -75,7 +76,7 @@ class LanceDBMetadataStore(MetadataStore):
         Tables are created on-demand when features are first written.
 
         Args:
-            database_path: Directory path or URI for LanceDB tables. Can be:
+            uri: Directory path or URI for LanceDB tables. Can be:
                 - Local path: `"./metadata"` or `Path("./metadata")`
                 - S3 URI: `"s3://bucket/path/to/db"` (requires AWS credentials)
                 - LanceDB Cloud: `"db://database-name"` (requires API key via LANCEDB_API_KEY env var)
@@ -86,6 +87,10 @@ class LanceDBMetadataStore(MetadataStore):
                 If None (default), reads from global MetaxyConfig.
                 LanceDB always creates tables on-demand, so this mainly controls the warning.
                 Warning: Auto-create is intended for development/testing only.
+            connect_kwargs: Extra keyword arguments passed directly to
+                [lancedb.connect](https://lancedb.com/docs/api/python/lancedb/#lancedb.connect)
+                (e.g., api_key, region). Useful when you cannot rely on
+                environment variables for credentials.
             **kwargs: Passed to [metaxy.metadata_store.base.MetadataStore][]
                 (e.g., hash_algorithm, hash_truncation_length, prefer_native)
 
@@ -110,6 +115,12 @@ class LanceDBMetadataStore(MetadataStore):
             # LanceDB Cloud (requires LANCEDB_API_KEY environment variable)
             cloud = LanceDBMetadataStore("db://my-database")
 
+            # LanceDB Cloud with explicit credentials instead of env vars
+            cloud = LanceDBMetadataStore(
+                "db://my-database",
+                connect_kwargs={"api_key": "abc", "region": "us-east-1"},
+            )
+
             # Local with fallback to production
             dev = LanceDBMetadataStore("./dev", fallback_stores=[prod])
 
@@ -117,9 +128,9 @@ class LanceDBMetadataStore(MetadataStore):
             dev = LanceDBMetadataStore("./dev", auto_create_tables=True)
             ```
         """
-        # Store as string to handle both local paths and remote URIs
-        self._path = str(database_path)
+        self.uri: str = str(uri)
         self._conn: Any | None = None
+        self._connect_kwargs = connect_kwargs or {}
         super().__init__(
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
@@ -171,10 +182,10 @@ class LanceDBMetadataStore(MetadataStore):
 
         # Only create directory for local filesystem paths
         # Remote URIs (s3://, db://, http://, https://, gs://, etc.) are handled by LanceDB
-        if self._is_local_path(self._path):
-            Path(self._path).mkdir(parents=True, exist_ok=True)
+        if self._is_local_path(self.uri):
+            Path(self.uri).mkdir(parents=True, exist_ok=True)
 
-        self._conn = lancedb.connect(self._path)
+        self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
 
     def close(self) -> None:
         """Close LanceDB connection.
@@ -380,7 +391,7 @@ class LanceDBMetadataStore(MetadataStore):
     def display(self) -> str:
         """Human-readable representation with sanitized credentials."""
         # Sanitize path to avoid exposing credentials in URIs
-        path = self._sanitize_path(self._path)
+        path = self._sanitize_path(self.uri)
         details = [f"path={path}"]
         if self._is_open:
             details.append(f"features={len(self._list_features_local())}")
