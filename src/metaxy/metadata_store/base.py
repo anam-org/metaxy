@@ -32,6 +32,7 @@ from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
@@ -512,6 +513,22 @@ class MetadataStore(ABC):
             self._validate_schema_system_table(df)
             self._write_metadata_impl(feature_key, df)
             return
+
+        # Compute metaxy_provenance from metaxy_provenance_by_field if not present
+        # This is the standard write path - all features need metaxy_provenance column
+        if (
+            METAXY_PROVENANCE not in df.columns
+            and PROVENANCE_BY_FIELD_COL in df.columns
+        ):
+            from metaxy.provenance.polars import PolarsProvenanceTracker
+
+            plan = self._resolve_feature_plan(feature)
+            tracker = PolarsProvenanceTracker(plan=plan)
+            df_lazy = nw.from_native(df.lazy(), eager_only=False)
+            df_with_provenance = tracker.add_provenance_column(
+                df_lazy, hash_algorithm=self.hash_algorithm
+            )
+            df = df_with_provenance.collect().to_polars()
 
         # For regular features: add feature_version and snapshot_version, validate, and write
         # Check if feature_version and snapshot_version already exist in DataFrame
