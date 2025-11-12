@@ -246,8 +246,6 @@ class EmptyStoreCases:
                 f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
             )
 
-    # DeltaMetadataStore removed - uses Polars components only, not involved in native provenance calculation
-
 
 @parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
