@@ -530,6 +530,22 @@ class MetadataStore(ABC):
         # Write metadata - delegate to store (store decides whether to collect lazy frames)
         self._write_metadata_impl(feature_key, polars_df)
 
+    @overload
+    def _add_system_columns(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        feature_key: FeatureKey,
+        df: pl.DataFrame,
+    ) -> pl.DataFrame: ...
+
+    @overload
+    def _add_system_columns(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        feature_key: FeatureKey,
+        df: pl.LazyFrame,
+    ) -> pl.LazyFrame: ...
+
     def _add_system_columns(
         self,
         feature: FeatureKey | type[BaseFeature],
@@ -544,7 +560,7 @@ class MetadataStore(ABC):
             df: DataFrame or LazyFrame to add columns to
 
         Returns:
-            DataFrame or LazyFrame with system columns added
+            DataFrame or LazyFrame with system columns added (preserves input type)
         """
         # Get schema names for eager or lazy frames without collecting data
         schema_names = (

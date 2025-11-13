@@ -283,7 +283,7 @@ class DeltaMetadataStore(MetadataStore):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame | pl.LazyFrame,
+        df: pl.DataFrame | pl.LazyFrame | nw.DataFrame[Any] | nw.LazyFrame[Any],
     ) -> None:
         """Append metadata to the Delta table for a feature.
 
@@ -293,13 +293,18 @@ class DeltaMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame or LazyFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (already validated). Narwhals frames
+                are accepted and converted to native Polars before writing.
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        # Convert Narwhals frames to native Polars
         if isinstance(df, (nw.DataFrame, nw.LazyFrame)):
             df = df.to_native()  # type: ignore[assignment]
+
+        # Type narrowing: at this point df must be pl.DataFrame or pl.LazyFrame
+        assert isinstance(df, (pl.DataFrame, pl.LazyFrame))
 
         table_uri = self._feature_uri(feature_key)
         table_exists = self._table_exists(table_uri, feature_key=feature_key)
