@@ -69,10 +69,7 @@ def test_duckdb_table_prefix_applied(
         table_names = set(store.ibis_conn.list_tables())
         assert expected_feature_table in table_names
         assert expected_system_table in table_names
-        assert (
-            store.get_table_name(feature.spec().key.table_name)
-            == expected_feature_table
-        )
+        assert store.get_table_name(feature.spec().key) == expected_feature_table
 
 
 def test_duckdb_with_custom_config(

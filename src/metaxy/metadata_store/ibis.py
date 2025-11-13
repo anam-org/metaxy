@@ -132,9 +132,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def get_table_name(
         self,
-        key: FeatureKey | Sequence[str] | str,
-        *,
-        is_system: bool = False,
+        key: FeatureKey,
     ) -> str:
         """Generate the storage table name for a feature or system table.
 
@@ -142,18 +140,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         Subclasses can override this method to implement custom naming logic.
 
         Args:
-            key: Feature key or table name to convert to storage table name.
-            is_system: True if this is a system table (currently unused, for future extensions).
+            key: Feature key to convert to storage table name.
 
         Returns:
             Storage table name with optional prefix applied.
         """
-        if isinstance(key, FeatureKey):
-            base_name = key.table_name
-        elif isinstance(key, str):
-            base_name = key
-        else:
-            base_name = FeatureKey(key).table_name
+        base_name = key.table_name
 
         return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
 
@@ -166,7 +158,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return table_name
 
     def get_feature_key_from_table_name(self, table_name: str) -> FeatureKey | None:
-        """Convert a table name back into a feature key."""
+        """Convert a table name back into a feature key (used when listing tables)."""
         stripped = self._strip_table_prefix(table_name)
         if stripped is None:
             return None
@@ -428,10 +420,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature key to drop metadata for
         """
-        is_system_table = self._is_system_table(feature_key)
-        table_name = self.get_table_name(
-            feature_key.table_name, is_system=is_system_table
-        )
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         if table_name in self.conn.list_tables():
@@ -458,10 +447,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
-        table_name = self.get_table_name(
-            feature_key.table_name, is_system=is_system_table
-        )
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         existing_tables = self.conn.list_tables()
