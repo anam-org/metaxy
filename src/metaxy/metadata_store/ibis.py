@@ -84,7 +84,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             connection_params: Backend-specific connection parameters
                 e.g., {"host": "localhost", "port": 9000, "database": "default"}
             table_prefix: Optional prefix applied to all feature and system table names.
-                Useful for isolating environments (e.g., "prod_"). Must form a valid SQL
+                Useful for logically separating environments (e.g., "prod_"). Must form a valid SQL
                 identifier when combined with the generated table name.
             **kwargs: Passed to MetadataStore.__init__ (e.g., fallback_stores, hash_algorithm)
 
