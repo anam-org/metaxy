@@ -16,6 +16,7 @@ import polars as pl
 from metaxy.metadata_store._protocols import MetadataStoreProtocol
 from metaxy.metadata_store.system.events import (
     COL_EVENT_TYPE,
+    COL_EXECUTION_ID,
     COL_FEATURE_KEY,
     COL_PAYLOAD,
     COL_PROJECT,
@@ -77,16 +78,6 @@ class SystemTableStorage:
             store: Metadata store to use for system tables
         """
         self.store = store
-        self._entered = False
-
-    def __enter__(self) -> SystemTableStorage:
-        """Enter context manager."""
-        self._entered = True
-        return self
-
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Exit context manager."""
-        self._entered = False
 
     # ========== Migrations ==========
     # Note: Migration definitions are stored in YAML files (git), not in the database.
@@ -101,17 +92,18 @@ class SystemTableStorage:
         Returns:
             List of migration IDs that have been started/executed
         """
-        lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        with self.store:
+            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
 
-        if lazy is None:
-            return []
+            if lazy is None:
+                return []
 
-        if project is not None:
-            lazy = lazy.filter(nw.col(COL_PROJECT) == project)
+            if project is not None:
+                lazy = lazy.filter(nw.col(COL_PROJECT) == project)
 
-        # Select, dedupe, convert to polars, then collect
-        df = lazy.select("migration_id").unique().to_native().collect()
-        return df["migration_id"].to_list()
+            # Select, dedupe, convert to polars, then collect
+            df = lazy.select(COL_EXECUTION_ID).unique().to_native().collect()
+            return df[COL_EXECUTION_ID].to_list()
 
     # ========== Events ==========
 
@@ -140,7 +132,8 @@ class SystemTableStorage:
             ```
         """
         record = event.to_polars()
-        self.store._write_metadata_impl(EVENTS_KEY, record)
+        with self.store:
+            self.store._write_metadata_impl(EVENTS_KEY, record)
 
     def get_migration_events(
         self, migration_id: str, project: str | None = None
@@ -154,19 +147,20 @@ class SystemTableStorage:
         Returns:
             Polars DataFrame with events sorted by timestamp
         """
-        # Read the table first without project filter
-        lazy = self.store.read_metadata_in_store(
-            EVENTS_KEY,
-            filters=[nw.col("migration_id") == migration_id],
-        )
+        with self.store:
+            # Read the table first without project filter
+            lazy = self.store.read_metadata_in_store(
+                EVENTS_KEY,
+                filters=[nw.col(COL_EXECUTION_ID) == migration_id],
+            )
 
-        if lazy is None:
-            # No events yet
-            return pl.DataFrame(schema=EVENTS_SCHEMA)
+            if lazy is None:
+                # No events yet
+                return pl.DataFrame(schema=EVENTS_SCHEMA)
 
-        lazy = lazy.filter(nw.col(COL_PROJECT) == project)
-        # Convert to Polars DataFrame
-        return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
+            lazy = lazy.filter(nw.col(COL_PROJECT) == project)
+            # Convert to Polars DataFrame
+            return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
 
     def get_migration_status(
         self, migration_id: str, project: str | None = None
@@ -349,21 +343,22 @@ class SystemTableStorage:
         Returns:
             Polars DataFrame with migration events
         """
-        lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        with self.store:
+            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
 
-        if lazy is None:
-            # No events yet
-            return pl.DataFrame(schema=EVENTS_SCHEMA)
+            if lazy is None:
+                # No events yet
+                return pl.DataFrame(schema=EVENTS_SCHEMA)
 
-        # Apply filters if specified
-        if migration_id is not None:
-            lazy = lazy.filter(nw.col("migration_id") == migration_id)
+            # Apply filters if specified
+            if migration_id is not None:
+                lazy = lazy.filter(nw.col(COL_EXECUTION_ID) == migration_id)
 
-        if project is not None:
-            lazy = lazy.filter(nw.col(COL_PROJECT) == project)
+            if project is not None:
+                lazy = lazy.filter(nw.col(COL_PROJECT) == project)
 
-        # Convert to Polars DataFrame
-        return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
+            # Convert to Polars DataFrame
+            return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
 
     def read_migration_progress(
         self, project: str | None = None
@@ -465,24 +460,27 @@ class SystemTableStorage:
             - features_count: Number of features affected
             - rows_affected: Total rows affected
         """
-        lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        with self.store:
+            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
 
-        if lazy is None:
-            return []
+            if lazy is None:
+                return []
 
-        # Filter to only completed migrations using narwhals
-        completed_events = lazy.filter(nw.col(COL_EVENT_TYPE) == "completed")
+            # Filter to only completed migrations using narwhals
+            completed_events = lazy.filter(nw.col(COL_EVENT_TYPE) == "completed")
 
-        if project is not None:
-            completed_events = completed_events.filter(nw.col(COL_PROJECT) == project)
+            if project is not None:
+                completed_events = completed_events.filter(
+                    nw.col(COL_PROJECT) == project
+                )
 
-        # Convert to polars LazyFrame and collect
-        completed_df = completed_events.to_native().collect()
+            # Convert to polars LazyFrame and collect
+            completed_df = completed_events.to_native().collect()
 
-        if completed_df.height == 0:
-            return []
+            if completed_df.height == 0:
+                return []
 
-        # Get all events for all migrations at once
+        # Get all events for all migrations at once (this uses with self.store internally)
         all_events = self.read_migration_events(project=project)
 
         # Extract rows_affected from payload using JSON path (polars operations)
@@ -496,8 +494,8 @@ class SystemTableStorage:
             .alias("rows_affected")
         )
 
-        # Group by migration_id to get aggregated stats
-        migration_stats = feature_events.group_by("migration_id").agg(
+        # Group by execution_id to get aggregated stats
+        migration_stats = feature_events.group_by(COL_EXECUTION_ID).agg(
             [
                 pl.col(COL_FEATURE_KEY).n_unique().alias("features_count"),
                 pl.col("rows_affected").sum().alias("rows_affected"),
@@ -506,10 +504,10 @@ class SystemTableStorage:
 
         # Join with completed events to get project and timestamp
         result_df = completed_df.join(
-            migration_stats, on="migration_id", how="left"
+            migration_stats, on=COL_EXECUTION_ID, how="left"
         ).select(
             [
-                "migration_id",
+                COL_EXECUTION_ID,
                 pl.col(COL_PROJECT).fill_null("unknown"),
                 pl.col(COL_TIMESTAMP).alias("completed_at"),
                 pl.col("features_count").fill_null(0),

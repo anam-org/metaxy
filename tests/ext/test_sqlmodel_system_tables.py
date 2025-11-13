@@ -34,6 +34,14 @@ def test_system_table_structure():
         FeatureVersionsTable,
         MigrationEventsTable,
     )
+    from metaxy.metadata_store.system.events import (
+        COL_EVENT_TYPE,
+        COL_FEATURE_KEY,
+        COL_PAYLOAD,
+        COL_PROJECT,
+        COL_TIMESTAMP,
+        EVENTS_SCHEMA,
+    )
 
     # Check FeatureVersionsTable columns
     assert hasattr(FeatureVersionsTable, "feature_key")
@@ -43,14 +51,17 @@ def test_system_table_structure():
     assert hasattr(FeatureVersionsTable, "feature_class_path")
     assert hasattr(FeatureVersionsTable, "metaxy_snapshot_version")
 
-    # Check MigrationEventsTable columns
-    assert hasattr(MigrationEventsTable, "id")
-    assert hasattr(MigrationEventsTable, "migration_id")
-    assert hasattr(MigrationEventsTable, "event_type")
-    assert hasattr(MigrationEventsTable, "timestamp")
-    assert hasattr(MigrationEventsTable, "feature_key")
-    assert hasattr(MigrationEventsTable, "rows_affected")
-    assert hasattr(MigrationEventsTable, "error_message")
+    # Check MigrationEventsTable columns match Polars EVENTS_SCHEMA exactly
+    assert hasattr(MigrationEventsTable, COL_PROJECT)
+    assert hasattr(MigrationEventsTable, "execution_id")
+    assert hasattr(MigrationEventsTable, COL_TIMESTAMP)
+    assert hasattr(MigrationEventsTable, COL_EVENT_TYPE)
+    assert hasattr(MigrationEventsTable, COL_FEATURE_KEY)
+    assert hasattr(MigrationEventsTable, COL_PAYLOAD)
+
+    # Verify all EVENTS_SCHEMA columns are present in SQLModel
+    for col_name in EVENTS_SCHEMA.keys():
+        assert hasattr(MigrationEventsTable, col_name), f"Missing column: {col_name}"
 
 
 def test_system_table_metadata():
@@ -59,18 +70,18 @@ def test_system_table_metadata():
 
     metadata = get_system_metadata()
 
-    # Check that tables are registered
-    assert "metaxy-system__feature_versions" in metadata.tables
-    assert "metaxy-system__migration_events" in metadata.tables
+    # Check that tables are registered (SQLAlchemy converts hyphens to underscores)
+    assert "metaxy_system__feature_versions" in metadata.tables
+    assert "metaxy_system__events" in metadata.tables
 
     # Check table structure
-    feature_versions = metadata.tables["metaxy-system__feature_versions"]
+    feature_versions = metadata.tables["metaxy_system__feature_versions"]
     assert "feature_key" in feature_versions.c
     assert "metaxy_feature_version" in feature_versions.c
 
-    migration_events = metadata.tables["metaxy-system__migration_events"]
-    assert "migration_id" in migration_events.c
-    assert "event_type" in migration_events.c
+    events = metadata.tables["metaxy_system__events"]
+    assert "execution_id" in events.c
+    assert "event_type" in events.c
 
 
 def test_sqlmodel_config():
@@ -102,7 +113,7 @@ def test_alembic_helpers():
     # Test metadata retrieval
     metadata = get_metaxy_metadata()
     assert isinstance(metadata, MetaData)
-    assert "metaxy-system__feature_versions" in metadata.tables
+    assert "metaxy_system__feature_versions" in metadata.tables
 
     # Test check_sqlmodel_enabled
     from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
@@ -142,5 +153,72 @@ def test_alembic_include_tables():
 
     # Check that both user and metaxy tables are present
     assert "users" in app_metadata.tables
-    assert "metaxy-system__feature_versions" in app_metadata.tables
-    assert "metaxy-system__migration_events" in app_metadata.tables
+    assert "metaxy_system__feature_versions" in app_metadata.tables
+    assert "metaxy_system__events" in app_metadata.tables
+
+
+def test_migration_events_table_schema():
+    """Test that MigrationEventsTable schema matches Polars EVENTS_SCHEMA."""
+    from datetime import datetime
+
+    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.metadata_store.system.events import EventType
+
+    # Create an event instance
+    event = MigrationEventsTable(
+        project="test_project",
+        execution_id="mig_001",
+        timestamp=datetime(2025, 1, 13, 10, 30),
+        event_type=EventType.MIGRATION_STARTED.value,
+        feature_key=None,  # None for migration-level events
+        payload="",  # Empty string default
+    )
+
+    assert event.project == "test_project"
+    assert event.execution_id == "mig_001"
+    assert event.event_type == "migration_started"
+    assert event.feature_key is None
+    assert event.payload == ""
+
+
+def test_migration_events_feature_level():
+    """Test MigrationEventsTable with feature-level event."""
+    from datetime import datetime
+
+    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.metadata_store.system.events import EventType
+
+    # Create a feature-level event
+    event = MigrationEventsTable(
+        project="test_project",
+        execution_id="mig_001",
+        timestamp=datetime(2025, 1, 13, 10, 30),
+        event_type=EventType.FEATURE_MIGRATION_COMPLETED.value,
+        feature_key="feature/a",
+        payload='{"type":"rows_affected","rows_affected":100}',
+    )
+
+    assert event.project == "test_project"
+    assert event.execution_id == "mig_001"
+    assert event.event_type == "feature_migration_completed"
+    assert event.feature_key == "feature/a"
+    assert event.payload == '{"type":"rows_affected","rows_affected":100}'
+
+
+def test_migration_events_empty_payload():
+    """Test that empty payload strings are handled correctly in SQLModel."""
+    from datetime import datetime
+
+    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.metadata_store.system.events import EventType
+
+    # Create event with empty payload (default)
+    event = MigrationEventsTable(
+        project="test_project",
+        execution_id="mig_001",
+        timestamp=datetime(2025, 1, 13, 10, 30),
+        event_type=EventType.MIGRATION_STARTED.value,
+    )
+
+    assert event.payload == ""
+    assert event.feature_key is None

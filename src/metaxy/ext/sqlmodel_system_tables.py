@@ -10,12 +10,9 @@ These models are only for schema definition and migrations.
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
-from typing import Any
 
-from sqlalchemy import Column, Index
-from sqlalchemy.types import JSON
+from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
 # Import the Pydantic models and constants from the core module
@@ -35,7 +32,7 @@ from metaxy.models.constants import (
 # System tables that metaxy uses internally
 SYSTEM_TABLES: list[str] = [
     f"{METAXY_SYSTEM_KEY_PREFIX}__feature_versions",
-    f"{METAXY_SYSTEM_KEY_PREFIX}__migration_events",
+    f"{METAXY_SYSTEM_KEY_PREFIX}__events",
 ]
 
 
@@ -71,7 +68,7 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
     # Additional indexes for common queries
     __table_args__ = (
         Index(
-            "idx_feature_versions_lookup",
+            f"idx_{FEATURE_VERSIONS_KEY.table_name}_lookup",
             "project",
             "feature_key",
             METAXY_FEATURE_VERSION,
@@ -80,31 +77,40 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
 
 
 class MigrationEventsTable(SQLModel, table=True):
-    """SQLModel definition for the migration_events system table.
+    """SQLModel definition for the events system table.
 
     This is a pure schema definition for the database table structure.
-    Application code uses typed event models (MigrationStartedEvent, etc.)
+    Application code uses typed event models (Event with classmethods)
     which serialize to this schema via to_polars().
+
+    Note: All columns match the Polars EVENTS_SCHEMA exactly.
+    - event_type: stored as string (not enum) for maximum backend compatibility
+    - payload: stored as JSON string (not JSON column) for consistency with Polars
+    - execution_id: generic name in storage (migration_id in CLI is user-facing)
     """
 
     __tablename__: str = EVENTS_KEY.table_name  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Primary key (generated UUID for append-only log)
-    event_id: str = Field(primary_key=True, default_factory=lambda: str(uuid.uuid4()))
+    # Composite primary key matching Polars append-only storage
+    project: str = Field(primary_key=True, index=True)
+    execution_id: str = Field(primary_key=True, index=True)
+    timestamp: datetime = Field(primary_key=True)
 
-    # Event fields with indexes
-    project: str = Field(index=True)
-    migration_id: str = Field(index=True)
-    event_type: str = Field(index=True)
-    timestamp: datetime
-    feature_key: str = Field(default="")
-
-    # Payload as JSON column
-    payload: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    # Event fields
+    event_type: str = Field(index=True)  # Stored as string for backend compatibility
+    feature_key: str | None = Field(
+        default=None, nullable=True
+    )  # None for execution-level events
+    payload: str = Field(default="")  # JSON string for consistency with Polars
 
     # Additional indexes for common queries
     __table_args__ = (
-        Index("idx_migration_events_lookup", "project", "migration_id", "event_type"),
+        Index(
+            f"idx_{EVENTS_KEY.table_name}_lookup",
+            "project",
+            "execution_id",
+            "event_type",
+        ),
     )
 
 

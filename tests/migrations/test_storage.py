@@ -20,11 +20,10 @@ def store():
 @pytest.fixture
 def storage(store):
     """Create storage layer for testing."""
-    with store, SystemTableStorage(store) as storage:
-        yield storage
+    return SystemTableStorage(store)
 
 
-def test_write_and_read_events(storage):
+def test_write_and_read_events(storage: SystemTableStorage):
     """Test writing and reading migration events."""
     migration_id = "mig_001"
 
@@ -64,7 +63,7 @@ def test_write_and_read_events(storage):
     ]
 
 
-def test_get_migration_status(storage):
+def test_get_migration_status(storage: SystemTableStorage):
     """Test computing migration status from events."""
     migration_id = "mig_001"
 
@@ -118,7 +117,7 @@ def test_get_migration_status(storage):
     )
 
 
-def test_get_migration_status_failed(storage):
+def test_get_migration_status_failed(storage: SystemTableStorage):
     """Test failed migration status."""
     migration_id = "mig_failed"
 
@@ -152,7 +151,7 @@ def test_get_migration_status_failed(storage):
     )
 
 
-def test_is_feature_completed(storage):
+def test_is_feature_completed(storage: SystemTableStorage):
     """Test checking if specific feature completed."""
     migration_id = "mig_001"
 
@@ -182,7 +181,7 @@ def test_is_feature_completed(storage):
     assert not storage.is_feature_completed(migration_id, "feature/b", "test")
 
 
-def test_get_completed_features(storage):
+def test_get_completed_features(storage: SystemTableStorage):
     """Test getting list of completed features."""
     migration_id = "mig_001"
 
@@ -216,7 +215,7 @@ def test_get_completed_features(storage):
     assert set(completed) == {"feature/a", "feature/b"}
 
 
-def test_get_failed_features(storage):
+def test_get_failed_features(storage: SystemTableStorage):
     """Test getting failed features with error messages."""
     migration_id = "mig_001"
 
@@ -250,7 +249,7 @@ def test_get_failed_features(storage):
     assert failed == {"feature/b": "Error B", "feature/c": "Error C"}
 
 
-def test_resumable_migration(storage):
+def test_resumable_migration(storage: SystemTableStorage):
     """Test resuming a migration that partially failed."""
     migration_id = "mig_resume"
 
@@ -344,7 +343,7 @@ def test_resumable_migration(storage):
     }
 
 
-def test_typed_events_api(storage):
+def test_typed_events_api(storage: SystemTableStorage):
     """Test using builder pattern for type-safe event construction."""
     migration_id = "mig_typed"
 
@@ -404,7 +403,7 @@ def test_typed_events_api(storage):
     }
 
 
-def test_typed_events_failed_migration(storage):
+def test_typed_events_failed_migration(storage: SystemTableStorage):
     """Test builder pattern for a failed migration."""
     migration_id = "mig_typed_failed"
 
@@ -437,7 +436,7 @@ def test_typed_events_failed_migration(storage):
 # ========== Complex Migration Scenarios ==========
 
 
-def test_multiple_migrations_in_sequence(storage):
+def test_multiple_migrations_in_sequence(storage: SystemTableStorage):
     """Test tracking multiple migrations executed in sequence."""
     # Migration 1: Complete successfully
     storage.write_event(Event.migration_started(project="test", migration_id="mig_001"))
@@ -505,7 +504,7 @@ def test_multiple_migrations_in_sequence(storage):
     assert storage.get_failed_features("mig_003", "test") == {}
 
 
-def test_migration_with_multiple_features(storage):
+def test_migration_with_multiple_features(storage: SystemTableStorage):
     """Test migration affecting multiple features with mixed success/failure."""
     migration_id = "mig_multi_feature"
 
@@ -598,7 +597,7 @@ def test_migration_with_multiple_features(storage):
     assert storage.is_feature_completed(migration_id, "feature/d", "test")
 
 
-def test_migration_retry_after_partial_failure(storage):
+def test_migration_retry_after_partial_failure(storage: SystemTableStorage):
     """Test retrying a migration that previously failed partway through."""
     migration_id = "mig_retry"
 
@@ -683,7 +682,7 @@ def test_migration_retry_after_partial_failure(storage):
     assert storage.is_feature_completed(migration_id, "feature/c", "test")
 
 
-def test_multiple_projects_isolation(storage):
+def test_multiple_projects_isolation(storage: SystemTableStorage):
     """Test that migrations for different projects are properly isolated."""
     # Project 1
     storage.write_event(
@@ -740,7 +739,7 @@ def test_multiple_projects_isolation(storage):
     }
 
 
-def test_feature_with_zero_rows_affected(storage):
+def test_feature_with_zero_rows_affected(storage: SystemTableStorage):
     """Test feature completion with zero rows affected (e.g., no data to migrate)."""
     migration_id = "mig_zero_rows"
 
@@ -767,7 +766,7 @@ def test_feature_with_zero_rows_affected(storage):
     assert storage.get_completed_features(migration_id, "test") == ["feature/empty"]
 
 
-def test_list_executed_migrations(storage):
+def test_list_executed_migrations(storage: SystemTableStorage):
     """Test listing all executed migrations across projects."""
     # Project 1
     storage.write_event(
@@ -794,7 +793,7 @@ def test_list_executed_migrations(storage):
     assert set(project2_migrations) == {"mig_003"}
 
 
-def test_migration_with_no_features(storage):
+def test_migration_with_no_features(storage: SystemTableStorage):
     """Test migration that starts and completes without any features (edge case)."""
     migration_id = "mig_no_features"
 
@@ -812,7 +811,7 @@ def test_migration_with_no_features(storage):
     assert storage.get_failed_features(migration_id, "test") == {}
 
 
-def test_migration_immediate_failure(storage):
+def test_migration_immediate_failure(storage: SystemTableStorage):
     """Test migration that fails immediately without processing any features."""
     migration_id = "mig_immediate_fail"
 
@@ -832,7 +831,38 @@ def test_migration_immediate_failure(storage):
     assert storage.get_failed_features(migration_id, "test") == {}
 
 
-def test_get_migration_summary(storage):
+def test_empty_payload_parsing(storage: SystemTableStorage):
+    """Test that empty payload strings are handled correctly."""
+    from datetime import datetime, timezone
+
+    import polars as pl
+
+    # Create a DataFrame with empty payload string (mimics SQLAlchemy default)
+    from metaxy.metadata_store.system.events import EVENTS_SCHEMA, EventType
+
+    df = pl.DataFrame(
+        {
+            "project": ["test"],
+            "execution_id": ["mig_001"],
+            "event_type": [EventType.MIGRATION_STARTED],
+            "timestamp": [datetime(2025, 1, 1, tzinfo=timezone.utc)],
+            "feature_key": [None],
+            "payload": [""],  # Empty string
+        },
+        schema=EVENTS_SCHEMA,
+    )
+
+    # Verify the DataFrame was created successfully
+    assert df.height == 1
+    assert df["payload"][0] == ""
+
+    # Verify JSON parsing works with empty string (should not fail)
+    # This mimics what happens when SQLAlchemy writes empty payload default
+    parsed = df.select(pl.col("payload"))
+    assert parsed.height == 1
+
+
+def test_get_migration_summary(storage: SystemTableStorage):
     """Test get_migration_summary() convenience method."""
     migration_id = "mig_summary"
 

@@ -38,20 +38,19 @@ class MigrationStatus(str, Enum):
 
 # Column name constants (to avoid drift between Event model and storage)
 COL_PROJECT = "project"
-COL_EXECUTION_ID = "execution_id"  # Stored as "migration_id" for backward compatibility
+COL_EXECUTION_ID = "execution_id"
 COL_EVENT_TYPE = "event_type"
 COL_TIMESTAMP = "timestamp"
 COL_FEATURE_KEY = "feature_key"
 COL_PAYLOAD = "payload"
 
 # Events schema (for Polars storage)
-# Note: execution_id is stored as "migration_id" for backward compatibility
 EVENTS_SCHEMA = {
     COL_PROJECT: pl.String,
-    "migration_id": pl.String,  # Maps to COL_EXECUTION_ID in Event model
+    COL_EXECUTION_ID: pl.String,
     COL_EVENT_TYPE: pl.Enum(EventType),
     COL_TIMESTAMP: pl.Datetime("us"),
-    COL_FEATURE_KEY: pl.String,  # Empty for execution-level events
+    COL_FEATURE_KEY: pl.String,
     COL_PAYLOAD: pl.String,  # JSON string with arbitrary event data
 }
 
@@ -110,12 +109,12 @@ class Event(BaseModel):
             Polars DataFrame with one row matching EVENTS_SCHEMA
         """
         data = {
-            "project": self.project,
-            "migration_id": self.execution_id,  # Map execution_id to migration_id in storage
-            "event_type": self.event_type,
-            "timestamp": self.timestamp,
-            "feature_key": self.feature_key,
-            "payload": self.payload.model_dump_json(),
+            COL_PROJECT: self.project,
+            COL_EXECUTION_ID: self.execution_id,
+            COL_EVENT_TYPE: self.event_type,
+            COL_TIMESTAMP: self.timestamp,
+            COL_FEATURE_KEY: self.feature_key,
+            COL_PAYLOAD: self.payload.model_dump_json(),
         }
         return pl.DataFrame([data], schema=EVENTS_SCHEMA)
 

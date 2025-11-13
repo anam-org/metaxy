@@ -5896,32 +5896,6 @@
                 }
             }
         ],
-        "./src/metaxy/metadata_store/system_tables.py": [
-            {
-                "code": "reportUnannotatedClassAttribute",
-                "range": {
-                    "startColumn": 13,
-                    "endColumn": 18,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportPrivateUsage",
-                "range": {
-                    "startColumn": 19,
-                    "endColumn": 39,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportUnknownVariableType",
-                "range": {
-                    "startColumn": 15,
-                    "endColumn": 23,
-                    "lineCount": 1
-                }
-            }
-        ],
         "./src/metaxy/migrations/detector.py": [
             {
                 "code": "reportImplicitStringConcatenation",
