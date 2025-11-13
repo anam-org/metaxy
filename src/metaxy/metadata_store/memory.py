@@ -189,25 +189,12 @@ class InMemoryMetadataStore(MetadataStore):
         # Start with lazy Polars DataFrame, wrap with Narwhals
         df_lazy = self._storage[storage_key].lazy()
         nw_lazy = nw.from_native(df_lazy)
-
-        # Apply feature_version filter
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
-
-        # Apply generic Narwhals filters
-        if filters is not None:
-            for filter_expr in filters:
-                nw_lazy = nw_lazy.filter(filter_expr)
-
-        # Select columns
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
-
-        # Check if result would be empty (we need to check the underlying frame)
-        # For now, return the lazy frame - emptiness check happens when materializing
-        return nw_lazy
+        return self._apply_read_filters(
+            nw_lazy,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+        )
 
     def clear(self) -> None:
         """

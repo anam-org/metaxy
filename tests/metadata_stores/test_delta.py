@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 import polars as pl
 import pytest
 from deltalake import DeltaTable
@@ -142,6 +145,35 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
         assert store.list_features() == [feature_key]
 
 
+def test_delta_nested_layout_creates_directories(
+    tmp_path, test_graph, test_features
+) -> None:
+    """Nested layout stores feature tables in per-part directories."""
+    store_path = tmp_path / "delta_nested"
+    feature_cls = test_features["UpstreamFeatureA"]
+    feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
+
+    with DeltaMetadataStore(store_path, layout="nested") as store:
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [42],
+                "metaxy_provenance_by_field": [
+                    {"frames": "h42", "audio": "h42"},
+                ],
+            }
+        )
+        store.write_metadata(feature_cls, metadata)
+
+        feature_dir = store._feature_local_path(feature_key)
+        assert feature_dir is not None
+        assert feature_dir.exists()
+        assert store._local_root_path is not None
+        assert feature_dir.relative_to(store._local_root_path) == Path(
+            "/".join(feature_key.parts)
+        )
+        assert store.list_features() == [feature_key]
+
+
 def test_delta_display(tmp_path) -> None:
     """Display output includes path and storage options (but not feature count for performance)."""
     store_path = tmp_path / "delta"
@@ -151,12 +183,14 @@ def test_delta_display(tmp_path) -> None:
     assert "DeltaMetadataStore" in closed_display
     assert str(store_path) in closed_display
     assert "storage_options=***" in closed_display
+    assert "layout=flat" in closed_display
 
     with store:
         open_display = store.display()
         # Feature count is not included to avoid scanning entire store
         assert "DeltaMetadataStore" in open_display
         assert "storage_options=***" in open_display
+        assert "layout=flat" in open_display
 
 
 def test_delta_remote_lists_features_returns_empty() -> None:
@@ -289,6 +323,13 @@ def test_delta_local_path_detection(tmp_path) -> None:
     file_url_store = DeltaMetadataStore(f"file://{tmp_path}", auto_create_tables=False)
     assert file_url_store._is_remote is False
 
+    # Test local:// URL
+    local_uri_store = DeltaMetadataStore(
+        f"local://{tmp_path}", auto_create_tables=False
+    )
+    assert local_uri_store._is_remote is False
+    assert local_uri_store._local_root_path == tmp_path.resolve()
+
 
 def test_delta_storage_options_passed_through(test_graph, test_features) -> None:
     """Test that storage options are properly passed to Delta operations."""
@@ -323,6 +364,44 @@ def test_delta_storage_options_passed_through(test_graph, test_features) -> None
             table_uri, storage_options=storage_options
         )
         assert result is False
+
+
+def test_delta_custom_delta_write_options_used(
+    tmp_path, test_graph, test_features, monkeypatch
+) -> None:
+    """delta_write_options override the default schema_mode=merge."""
+    store_path = tmp_path / "delta_opts"
+    feature_cls = test_features["UpstreamFeatureA"]
+    recorded: dict[str, Any] = {}
+
+    def fake_write_delta(self, *args, **kwargs):
+        recorded["delta_write_options"] = kwargs["delta_write_options"]
+        recorded["mode"] = kwargs["mode"]
+        recorded["path"] = args[0]
+
+    monkeypatch.setattr(pl.DataFrame, "write_delta", fake_write_delta, raising=False)
+
+    with DeltaMetadataStore(
+        store_path,
+        delta_write_options={"schema_mode": "ignore_nullable", "max_workers": 2},
+        auto_create_tables=True,
+    ) as store:
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [7],
+                "metaxy_provenance_by_field": [
+                    {"frames": "h7", "audio": "h7"},
+                ],
+            }
+        )
+        store.write_metadata(feature_cls, metadata)
+
+    assert recorded["mode"] == "append"
+    assert recorded["delta_write_options"] == {
+        "schema_mode": "ignore_nullable",
+        "max_workers": 2,
+    }
+    assert str(store_path) in recorded["path"]
 
 
 def test_delta_streaming_with_s3_path() -> None:
