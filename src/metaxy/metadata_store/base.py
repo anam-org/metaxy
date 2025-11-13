@@ -1072,6 +1072,29 @@ class MetadataStore(ABC):
         # System tables don't need metaxy_provenance_by_field column
         pass
 
+    def _apply_read_filters(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        feature_version: str | None,
+        filters: Sequence[nw.Expr] | None,
+        columns: Sequence[str] | None,
+    ) -> nw.LazyFrame[Any]:
+        """Apply standard filters/column projections to lazy frames."""
+        if feature_version is not None:
+            lazy_frame = lazy_frame.filter(
+                nw.col(FEATURE_VERSION_COL) == feature_version
+            )
+
+        if filters is not None:
+            for expr in filters:
+                lazy_frame = lazy_frame.filter(expr)
+
+        if columns is not None:
+            lazy_frame = lazy_frame.select(columns)
+
+        return lazy_frame
+
     @abstractmethod
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop/delete all metadata for a feature.
