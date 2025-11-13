@@ -149,21 +149,6 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
 
-    def _strip_table_prefix(self, table_name: str) -> str | None:
-        """Remove configured table prefix from table name, if present."""
-        if self._table_prefix:
-            if not table_name.startswith(self._table_prefix):
-                return None
-            return table_name[len(self._table_prefix) :]
-        return table_name
-
-    def get_feature_key_from_table_name(self, table_name: str) -> FeatureKey | None:
-        """Convert a table name back into a feature key (used when listing tables)."""
-        stripped = self._strip_table_prefix(table_name)
-        if stripped is None:
-            return None
-        return FeatureKey(stripped.split("__"))
-
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for Ibis stores.
 
@@ -477,30 +462,6 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
-
-    def _list_features_local(self) -> list[FeatureKey]:
-        """
-        List all features in this store.
-
-        Returns:
-            List of FeatureKey objects (excluding system tables)
-        """
-        # Query all table names
-        table_names = self.conn.list_tables()
-
-        features = []
-        for table_name in table_names:
-            # Skip Ibis internal tables (start with "ibis_")
-            if table_name.startswith("ibis_"):
-                continue
-            feature_key = self.get_feature_key_from_table_name(table_name)
-            if feature_key is None:
-                continue
-            if self._is_system_table(feature_key):
-                continue
-            features.append(feature_key)
-
-        return features
 
     def _can_compute_native(self) -> bool:
         """

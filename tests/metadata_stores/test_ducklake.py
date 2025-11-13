@@ -255,9 +255,7 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
 
 
 @pytest.mark.skip(
-    reason="list_features() needs to be redesigned - currently includes system tables "
-    "due to table_name conversion losing hyphen information (metaxy-system -> metaxy_system). "
-    "Should either fix the bidirectional conversion or remove list_features() entirely."
+    reason="list_features() now returns from active graph; test needs refactoring with graph.use()"
 )
 @settings(
     max_examples=5,
