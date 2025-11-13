@@ -1,6 +1,6 @@
 """Migration system for metadata version updates."""
 
-from metaxy.metadata_store.system_tables import SystemTableStorage
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.detector import detect_migration
 from metaxy.migrations.executor import MigrationExecutor
 from metaxy.migrations.models import (

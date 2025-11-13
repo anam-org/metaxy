@@ -264,12 +264,12 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         This method is idempotent - safe to call multiple times.
         """
-        from metaxy.metadata_store.system_tables import (
+        from metaxy.metadata_store.system import (
             FEATURE_VERSIONS_KEY,
             FEATURE_VERSIONS_SCHEMA,
-            MIGRATION_EVENTS_KEY,
-            MIGRATION_EVENTS_SCHEMA,
         )
+        from metaxy.metadata_store.system.events import EVENTS_SCHEMA
+        from metaxy.metadata_store.system.keys import EVENTS_KEY
 
         existing_tables = self.conn.list_tables()
 
@@ -280,9 +280,9 @@ class IbisMetadataStore(MetadataStore, ABC):
             self.conn.create_table(feature_versions_table, obj=empty_df)
 
         # Create migration_events table if it doesn't exist
-        migration_events_table = MIGRATION_EVENTS_KEY.table_name
+        migration_events_table = EVENTS_KEY.table_name
         if migration_events_table not in existing_tables:
-            empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
+            empty_df = pl.DataFrame(schema=EVENTS_SCHEMA)
             self.conn.create_table(migration_events_table, obj=empty_df)
 
     def close(self) -> None:

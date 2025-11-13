@@ -164,7 +164,7 @@ def apply(
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.executor import MigrationExecutor
     from metaxy.migrations.loader import build_migration_chain
 
@@ -192,9 +192,11 @@ def apply(
             return
 
         # Get completed migrations from events
+        from metaxy.metadata_store.system import MigrationStatus
+
         completed_ids = set()
         for mid in [m.migration_id for m in chain]:
-            if storage.get_migration_status(mid, project) == "completed":
+            if storage.get_migration_status(mid, project) == MigrationStatus.COMPLETED:
                 completed_ids.add(mid)
 
         # Filter to unapplied migrations
@@ -301,7 +303,7 @@ def status():
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import build_migration_chain
 
     context = AppContext.get()
@@ -332,17 +334,17 @@ def status():
         for migration in chain:
             migration_id = migration.migration_id
 
-            # Get status from events
-            status_str = storage.get_migration_status(migration_id, project=project)
+            # Get migration summary
+            from metaxy.metadata_store.system import MigrationStatus
 
-            # Get completion counts
-            completed_features = storage.get_completed_features(
-                migration_id, project=project
-            )
-            failed_features = storage.get_failed_features(migration_id, project=project)
+            summary = storage.get_migration_summary(migration_id, project=project)
+            migration_status = summary["status"]
+            completed_features = summary["completed_features"]
+            failed_features = summary["failed_features"]
+            total_processed = summary["total_features_processed"]
 
             # Compute total affected
-            if status_str == "not_started":
+            if migration_status == MigrationStatus.NOT_STARTED:
                 try:
                     total_affected = len(
                         migration.get_affected_features(metadata_store, project)
@@ -350,20 +352,20 @@ def status():
                 except Exception:
                     total_affected = "?"
             else:
-                total_affected = len(completed_features) + len(failed_features)
+                total_affected = total_processed
 
             # Print status icon
-            if status_str == "completed":
+            if migration_status == MigrationStatus.COMPLETED:
                 app.console.print(
                     f"[green]✓[/green] {migration_id} (parent: {migration.parent})"
                 )
                 app.console.print("  Status: [green]COMPLETED[/green]")
-            elif status_str == "failed":
+            elif migration_status == MigrationStatus.FAILED:
                 app.console.print(
                     f"[red]✗[/red] {migration_id} (parent: {migration.parent})"
                 )
                 app.console.print("  Status: [red]FAILED[/red]")
-            elif status_str == "in_progress":
+            elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print(
                     f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent})"
                 )
@@ -700,7 +702,7 @@ def describe(
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import (
         build_migration_chain,
         find_migration_yaml,
@@ -841,23 +843,20 @@ def describe(
             app.console.print()
 
             # Execution status
-            status_str = storage.get_migration_status(
-                migration_obj.migration_id, project
-            )
-            completed_features = storage.get_completed_features(
-                migration_obj.migration_id, project
-            )
-            failed_features = storage.get_failed_features(
-                migration_obj.migration_id, project
-            )
+            from metaxy.metadata_store.system import MigrationStatus
+
+            summary = storage.get_migration_summary(migration_obj.migration_id, project)
+            migration_status = summary["status"]
+            completed_features = summary["completed_features"]
+            failed_features = summary["failed_features"]
 
             app.console.print("[bold]Execution Status:[/bold]")
-            if status_str == "completed":
+            if migration_status == MigrationStatus.COMPLETED:
                 app.console.print("  [green]✓ COMPLETED[/green]")
                 app.console.print(
                     f"    Features processed: {len(completed_features)}/{len(affected_features)}"
                 )
-            elif status_str == "failed":
+            elif migration_status == MigrationStatus.FAILED:
                 app.console.print("  [red]✗ FAILED[/red]")
                 app.console.print(
                     f"    Features completed: {len(completed_features)}/{len(affected_features)}"
@@ -867,7 +866,7 @@ def describe(
                     app.console.print("    Failed features:")
                     for feature_key, error in list(failed_features.items())[:5]:
                         app.console.print(f"      • {feature_key}: {error}")
-            elif status_str == "in_progress":
+            elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print("  [yellow]⚠ IN PROGRESS[/yellow]")
                 app.console.print(
                     f"    Features completed: {len(completed_features)}/{len(affected_features)}"

@@ -18,13 +18,13 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
-from metaxy.metadata_store.system_tables import (
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
-    SYSTEM_NAMESPACE,
-    _suppress_feature_version_warning,
+    METAXY_SYSTEM_KEY_PREFIX,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
 from metaxy.metadata_store.utils import empty_frame_like
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
@@ -334,7 +334,7 @@ class MetadataStore(ABC):
 
     def _is_system_table(self, feature_key: FeatureKey) -> bool:
         """Check if feature key is a system table."""
-        return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
+        return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
     def _resolve_feature_key(
         self, feature: FeatureKey | type[BaseFeature]
@@ -1727,9 +1727,9 @@ class MetadataStore(ABC):
                 )
                 added, changed, removed = tracker.resolve_increment_with_provenance(
                     current=current_lazy,
-                    upstream={},  # No upstream for root features
+                    upstream={},  # Empty upstream - samples already have provenance_by_field computed
                     hash_algorithm=self.hash_algorithm,
-                    filters={},  # No filters for root features
+                    filters={},  # No additional filters - samples define the target state
                     sample=samples.lazy(),
                 )
 

@@ -331,14 +331,16 @@ class DiffMigration(Migration):
         Returns:
             MigrationResult
         """
-        from metaxy.metadata_store.system_tables import SystemTableStorage
+        from metaxy.metadata_store.system import Event, SystemTableStorage
 
         storage = SystemTableStorage(store)
         start_time = datetime.now(timezone.utc)
 
         if not dry_run:
             # Write started event
-            storage.write_event(self.migration_id, "started", project)
+            storage.write_event(
+                Event.migration_started(project=project, migration_id=self.migration_id)
+            )
 
         affected_features_list = []
         errors = {}
@@ -367,10 +369,11 @@ class DiffMigration(Migration):
                 # Log feature started
                 if not dry_run:
                     storage.write_event(
-                        self.migration_id,
-                        "feature_started",
-                        project,
-                        feature_key=feature_key_str,
+                        Event.feature_started(
+                            project=project,
+                            migration_id=self.migration_id,
+                            feature_key=feature_key_str,
+                        )
                     )
 
                 try:
@@ -386,11 +389,12 @@ class DiffMigration(Migration):
                     # Log feature completed
                     if not dry_run:
                         storage.write_event(
-                            self.migration_id,
-                            "feature_completed",
-                            project,
-                            feature_key=feature_key_str,
-                            rows_affected=rows_affected,
+                            Event.feature_completed(
+                                project=project,
+                                migration_id=self.migration_id,
+                                feature_key=feature_key_str,
+                                rows_affected=rows_affected,
+                            )
                         )
 
                     affected_features_list.append(feature_key_str)
@@ -403,11 +407,12 @@ class DiffMigration(Migration):
                     # Log feature failed
                     if not dry_run:
                         storage.write_event(
-                            self.migration_id,
-                            "feature_completed",
-                            project,
-                            feature_key=feature_key_str,
-                            error_message=error_msg,
+                            Event.feature_failed(
+                                project=project,
+                                migration_id=self.migration_id,
+                                feature_key=feature_key_str,
+                                error_message=error_msg,
+                            )
                         )
 
                     continue
@@ -423,11 +428,21 @@ class DiffMigration(Migration):
         elif len(errors) == 0:
             status = "completed"
             if not dry_run:
-                storage.write_event(self.migration_id, "completed", project)
+                storage.write_event(
+                    Event.migration_completed(
+                        project=project, migration_id=self.migration_id
+                    )
+                )
         else:
             status = "failed"
             if not dry_run:
-                storage.write_event(self.migration_id, "failed", project)
+                storage.write_event(
+                    Event.migration_failed(
+                        project=project,
+                        migration_id=self.migration_id,
+                        error_message="",
+                    )
+                )
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -509,7 +524,7 @@ class FullGraphMigration(Migration):
         Returns:
             MigrationResult
         """
-        from metaxy.metadata_store.system_tables import SystemTableStorage
+        from metaxy.metadata_store.system import Event, SystemTableStorage
         from metaxy.migrations.ops import BaseOperation
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
@@ -518,7 +533,9 @@ class FullGraphMigration(Migration):
         start_time = datetime.now(timezone.utc)
 
         if not dry_run:
-            storage.write_event(self.migration_id, "started", project)
+            storage.write_event(
+                Event.migration_started(project=project, migration_id=self.migration_id)
+            )
 
         affected_features_list = []
         errors = {}
@@ -569,10 +586,11 @@ class FullGraphMigration(Migration):
                 # Log feature started
                 if not dry_run:
                     storage.write_event(
-                        self.migration_id,
-                        "feature_started",
-                        project,
-                        feature_key=feature_key_str,
+                        Event.feature_started(
+                            project=project,
+                            migration_id=self.migration_id,
+                            feature_key=feature_key_str,
+                        )
                     )
 
                 try:
@@ -588,11 +606,12 @@ class FullGraphMigration(Migration):
                     # Log feature completed
                     if not dry_run:
                         storage.write_event(
-                            self.migration_id,
-                            "feature_completed",
-                            project,
-                            feature_key=feature_key_str,
-                            rows_affected=rows_affected,
+                            Event.feature_completed(
+                                project=project,
+                                migration_id=self.migration_id,
+                                feature_key=feature_key_str,
+                                rows_affected=rows_affected,
+                            )
                         )
 
                     affected_features_list.append(feature_key_str)
@@ -605,11 +624,12 @@ class FullGraphMigration(Migration):
                     # Log feature failed
                     if not dry_run:
                         storage.write_event(
-                            self.migration_id,
-                            "feature_failed",
-                            project,
-                            feature_key=feature_key_str,
-                            error_message=error_msg,
+                            Event.feature_failed(
+                                project=project,
+                                migration_id=self.migration_id,
+                                feature_key=feature_key_str,
+                                error_message=error_msg,
+                            )
                         )
 
                     continue
@@ -620,11 +640,21 @@ class FullGraphMigration(Migration):
         elif len(errors) == 0:
             status = "completed"
             if not dry_run:
-                storage.write_event(self.migration_id, "completed", project)
+                storage.write_event(
+                    Event.migration_completed(
+                        project=project, migration_id=self.migration_id
+                    )
+                )
         else:
             status = "failed"
             if not dry_run:
-                storage.write_event(self.migration_id, "failed", project)
+                storage.write_event(
+                    Event.migration_failed(
+                        project=project,
+                        migration_id=self.migration_id,
+                        error_message="",
+                    )
+                )
 
         duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 

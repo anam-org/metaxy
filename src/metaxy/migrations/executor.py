@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.models import (
         DiffMigration,
         FullGraphMigration,

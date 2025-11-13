@@ -359,7 +359,7 @@ class TestProjectValidationComprehensive:
 
     def test_system_tables_exempt_from_validation(self, store):
         """Test that system tables are exempt from project validation."""
-        from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Set a specific project
         MetaxyConfig.set(MetaxyConfig(project="user_project"))

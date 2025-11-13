@@ -17,9 +17,8 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
-from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.system_tables import SystemTableStorage
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import FullGraphMigration
 from metaxy.migrations.ops import BaseOperation, DataVersionReconciliation
 
@@ -519,9 +518,8 @@ def test_full_graph_migration_dry_run():
 
         # Verify no events were written
         storage = SystemTableStorage(store)
-        events_lf = storage.read_migration_events(migration.migration_id, "default")
-        events_df = collect_to_polars(events_lf)
-        assert len(events_df) == 0
+        events = storage.read_migration_events(migration.migration_id, "default")
+        assert len(events) == 0
 
     temp_module.cleanup()
 

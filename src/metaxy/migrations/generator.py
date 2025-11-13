@@ -306,13 +306,11 @@ def generate_migration(
     )
 
     # Find the latest migration to set as parent
-    from metaxy.metadata_store.system_tables import MIGRATION_EVENTS_KEY
+    from metaxy.metadata_store.system import EVENTS_KEY
 
     parent_migration_id = None
     try:
-        existing_migrations = store.read_metadata(
-            MIGRATION_EVENTS_KEY, current_only=False
-        )
+        existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
         # Get most recent migration by timestamp - only collect the top row
         latest = nw.from_native(
             existing_migrations.sort("timestamp", descending=True).head(1).collect()
