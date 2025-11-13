@@ -2,24 +2,19 @@
 
 from __future__ import annotations
 
-import os
 import warnings
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+from urllib.parse import urlsplit
 
 import narwhals as nw
 import polars as pl
 
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import TableNotFoundError
-from metaxy.metadata_store.system_tables import (
-    FEATURE_VERSIONS_KEY,
-    FEATURE_VERSIONS_SCHEMA,
-    MIGRATION_EVENTS_KEY,
-    MIGRATION_EVENTS_SCHEMA,
-)
 from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
@@ -32,12 +27,16 @@ class DeltaMetadataStore(MetadataStore):
     Delta Lake metadata store backed by [delta-rs](https://github.com/delta-io/delta-rs).
 
     Stores each feature's metadata in a dedicated Delta table located under ``root_path``.
-    Uses Polars/Narwhals components for metadata operations and relies on delta-rs for persistence.
+    Uses Polars/Narwhals components for metadata operations, supports configurable storage
+    layouts (flat vs. nested directories), and forwards ``delta_write_options`` to every
+    delta-rs write call.
 
     **Lazy Frame Handling:**
 
     - **Eager DataFrames**: Written directly using Polars' native write_delta (efficient)
+
     - **Lazy Frames with streaming_chunk_size=None** (default): Collected once then written
+
     - **Lazy Frames with streaming_chunk_size=N**: Streamed in batches of size N without full collection,
       enabling processing of datasets larger than RAM (at the cost of slower performance and more Delta versions)
 
@@ -61,12 +60,21 @@ class DeltaMetadataStore(MetadataStore):
 
     _should_warn_auto_create_tables = False
 
+    @cached_property
+    def _deltalake(self):
+        """Lazy import for delta-rs to avoid repeated module imports."""
+        import deltalake  # pyright: ignore[reportMissingImports]
+
+        return deltalake
+
     def __init__(
         self,
         root_path: str | Path,
         *,
         storage_options: dict[str, Any] | None = None,
         streaming_chunk_size: int | None = None,
+        layout: Literal["flat", "nested"] = "flat",
+        delta_write_options: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -83,36 +91,72 @@ class DeltaMetadataStore(MetadataStore):
                 For GCS: GOOGLE_* environment variables
             streaming_chunk_size: Optional chunk size for streaming writes of lazy frames.
                 - **None (default)**: Collect lazy frames fully before writing (fast, simple, higher memory)
+
                 - **int (e.g., 10000)**: Stream lazy frames in batches of this size without full collection
                   (lower memory for large datasets, but slower and creates more Delta versions)
+
                 Trade-offs when streaming:
+
                 - ✓ Lower memory usage for datasets larger than RAM
+
                 - ✗ Slower performance (Polars sink_batches overhead)
+
                 - ✗ More Delta versions (one per batch)
+
                 - ✗ Uses unstable Polars API
+
                 For most use cases, leave as None (default).
+            layout: Directory layout used when deriving table paths from feature keys.
+                - **"flat"**: Current `<namespace>__<feature>` directories (backward compatible default)
+
+                - **"nested"**: `namespace/feature/...` directories for easier navigation in consoles.
+            delta_write_options: Extra keyword arguments forwarded to every
+                `deltalake.write_deltalake` call and to Polars `write_delta`.
             fallback_stores: Ordered list of read-only fallback stores.
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
         """
         self.storage_options = storage_options or {}
         self.streaming_chunk_size = streaming_chunk_size
+        if layout not in ("flat", "nested"):
+            raise ValueError("layout must be either 'flat' or 'nested'")
+        self.layout: Literal["flat", "nested"] = layout
+        write_opts: dict[str, Any] = {"schema_mode": "merge"}
+        if delta_write_options:
+            write_opts.update(delta_write_options)
+        self._delta_write_options = write_opts
+        self._delta_table_cache: dict[tuple[str, bool], Any] = {}
         self._display_root = str(root_path)
 
         root_str = str(root_path)
-        self._is_remote = "://" in root_str and not root_str.startswith("file://")
+        parsed = urlsplit(root_str) if "://" in root_str else None
+        scheme = parsed.scheme.lower() if parsed else ""
+        local_schemes = {"", "file", "local"}
 
-        if self._is_remote:
-            # Remote path (S3, Azure, GCS, etc.)
-            self._local_root_path = None
-            self._root_uri = root_str.rstrip("/")
-        else:
-            # Local path (including file:// URLs)
-            if root_str.startswith("file://"):
-                # Strip file:// prefix
-                root_str = root_str[7:]
-            local_path = Path(root_str).expanduser().resolve()
+        if scheme in local_schemes:
+            self._is_remote = False
+            if scheme == "":
+                local_path = Path(root_path).expanduser().resolve()
+            else:
+                assert parsed is not None
+                authority = parsed.netloc
+                path = parsed.path
+                if scheme == "file":
+                    raw_path = path or "/"
+                else:
+                    trimmed_path = path.lstrip("/") if authority else path
+                    if authority and trimmed_path:
+                        raw_path = f"{authority}/{trimmed_path}"
+                    elif authority:
+                        raw_path = authority
+                    else:
+                        raw_path = trimmed_path
+                local_path = Path(raw_path or ".").expanduser().resolve()
             self._local_root_path = local_path
             self._root_uri = str(local_path)
+        else:
+            self._is_remote = bool(parsed and parsed.scheme)
+            self._local_root_path = None
+            self._root_uri = root_str.rstrip("/")
 
         self.root_path = self._local_root_path
         super().__init__(fallback_stores=fallback_stores, **kwargs)
@@ -154,92 +198,85 @@ class DeltaMetadataStore(MetadataStore):
             pass
 
     def open(self) -> None:
-        """Open the store.
-
-        Delta automatically creates directories when writing tables,
-        so no manual setup is needed. Remote stores are accessed
-        directly through Delta Lake's storage_options.
-        """
-        # Auto-create system tables if enabled (warning is handled in base class)
-        if self.auto_create_tables:
-            self._create_system_tables()
+        """Delta-rs opens connections lazily; nothing to do up front."""
+        return None
 
     def close(self) -> None:
         """No persistent resources to release."""
         # delta-rs is used in one-shot write/read calls, so nothing to close.
         pass
 
-    # ===== Internal helpers =====
+    def _relative_feature_path(self, feature_key: FeatureKey) -> str:
+        """Return layout-specific relative path for a feature key."""
+        if self.layout == "flat":
+            return feature_key.table_name
+        return "/".join(feature_key.parts)
 
-    def _create_system_tables(self) -> None:
-        """Create system tables if they don't exist.
-
-        Delta auto-creates tables on first write, so we just need to write
-        empty dataframes with the proper schema.
-        """
-        import deltalake  # pyright: ignore[reportMissingImports]
-
-        # Create feature_versions table if it doesn't exist
-        feature_versions_uri = self._feature_uri(FEATURE_VERSIONS_KEY)
-        if not deltalake.DeltaTable.is_deltatable(
-            feature_versions_uri, storage_options=self.storage_options or None
-        ):
-            empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            deltalake.write_deltalake(
-                feature_versions_uri,
-                empty_df,
-                mode="append",
-                storage_options=self.storage_options or None,
-            )
-
-        # Create migration_events table if it doesn't exist
-        migration_events_uri = self._feature_uri(MIGRATION_EVENTS_KEY)
-        if not deltalake.DeltaTable.is_deltatable(
-            migration_events_uri, storage_options=self.storage_options or None
-        ):
-            empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            deltalake.write_deltalake(
-                migration_events_uri,
-                empty_df,
-                mode="append",
-                storage_options=self.storage_options or None,
-            )
-
-    def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
-        """Convert table name back to feature key.
-
-        Args:
-            table_name: Table name (directory name) to parse
-
-        Returns:
-            FeatureKey constructed from table name parts
-        """
-        # Table names are created by joining parts with "__"
-        parts = table_name.split("__")
-        return FeatureKey(parts)
+    def _relative_path_to_feature_key(self, relative_path: Path) -> FeatureKey:
+        """Convert a relative directory path back into a FeatureKey."""
+        if self.layout == "flat":
+            parts = relative_path.parts
+            if len(parts) != 1:
+                raise ValueError(
+                    f"Flat layout expects single-segment directories, got {relative_path}"
+                )
+            return FeatureKey(parts[0].split("__"))
+        return FeatureKey(list(relative_path.parts))
 
     def _feature_uri(self, feature_key: FeatureKey) -> str:
         """Return the URI/path used by deltalake for this feature."""
-        table_name = feature_key.table_name
-        return os.path.join(self._root_uri, table_name)
+        relative = self._relative_feature_path(feature_key)
+        if self._local_root_path is not None:
+            return str(self._local_root_path / Path(relative))
+        base = self._root_uri.rstrip("/")
+        return f"{base}/{relative}".rstrip("/")
 
     def _feature_local_path(self, feature_key: FeatureKey) -> Path | None:
         """Return filesystem path when operating on local roots."""
         if self._local_root_path is None:
             return None
-        return self._local_root_path / feature_key.table_name
+        return self._local_root_path / Path(self._relative_feature_path(feature_key))
 
-    def _table_exists(self, table_uri: str) -> bool:
+    def _table_exists(
+        self, table_uri: str, *, feature_key: FeatureKey | None = None
+    ) -> bool:
         """Check whether the provided URI already contains a Delta table.
 
         Works for both local and remote (object store) paths.
         """
-        import deltalake  # pyright: ignore[reportMissingImports]
+        if feature_key is not None:
+            cache_key = feature_key.to_string()
+            if (cache_key, True) in self._delta_table_cache or (
+                cache_key,
+                False,
+            ) in self._delta_table_cache:
+                return True
 
-        return deltalake.DeltaTable.is_deltatable(
+        return self._deltalake.DeltaTable.is_deltatable(
             table_uri,
             storage_options=self.storage_options or None,
         )
+
+    def _get_delta_table(
+        self, feature_key: FeatureKey, *, include_files: bool
+    ):  # -> "deltalake.DeltaTable":
+        """Return (and cache) a DeltaTable handle for the given feature."""
+        cache_key = (feature_key.to_string(), include_files)
+        table = self._delta_table_cache.get(cache_key)
+        if table is None:
+            table = self._deltalake.DeltaTable(
+                self._feature_uri(feature_key),
+                storage_options=self.storage_options or None,
+                without_files=not include_files,
+            )
+            self._delta_table_cache[cache_key] = table
+        return table
+
+    def _invalidate_delta_table_cache(self, feature_key: FeatureKey) -> None:
+        """Invalidate cached DeltaTable handles for this feature."""
+        cache_key = feature_key.to_string()
+        self._delta_table_cache.pop((cache_key, True), None)
+        self._delta_table_cache.pop((cache_key, False), None)
 
     # ===== Storage operations =====
 
@@ -261,10 +298,11 @@ class DeltaMetadataStore(MetadataStore):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        import deltalake  # pyright: ignore[reportMissingImports]
+        if isinstance(df, (nw.DataFrame, nw.LazyFrame)):
+            df = df.to_native()  # type: ignore[assignment]
 
         table_uri = self._feature_uri(feature_key)
-        table_exists = self._table_exists(table_uri)
+        table_exists = self._table_exists(table_uri, feature_key=feature_key)
 
         # Check if table exists
         if not table_exists and not self.auto_create_tables:
@@ -274,6 +312,7 @@ class DeltaMetadataStore(MetadataStore):
             )
 
         # Delta automatically creates parent directories, no need to do it manually
+        self._invalidate_delta_table_cache(feature_key)
 
         # Strategy: Use Polars write_delta for eager DataFrames (native support),
         # convert to PyArrow for lazy frames and use deltalake API (more flexible)
@@ -286,11 +325,11 @@ class DeltaMetadataStore(MetadataStore):
                 # - More Delta versions (one per batch)
                 def write_batch(batch_df: pl.DataFrame) -> bool:
                     arrow_table = batch_df.to_arrow()
-                    deltalake.write_deltalake(
+                    self._deltalake.write_deltalake(
                         table_uri,
                         arrow_table,
                         mode="append",
-                        schema_mode="merge",
+                        **self._delta_write_options,
                         storage_options=self.storage_options or None,
                     )
                     return False  # Continue processing all batches
@@ -299,11 +338,11 @@ class DeltaMetadataStore(MetadataStore):
             else:
                 # Default mode: collect then write (faster for normal-sized datasets)
                 arrow_table = df.collect().to_arrow()
-                deltalake.write_deltalake(
+                self._deltalake.write_deltalake(
                     table_uri,
                     arrow_table,
                     mode="append",
-                    schema_mode="merge",
+                    **self._delta_write_options,
                     storage_options=self.storage_options or None,
                 )
         else:
@@ -312,7 +351,7 @@ class DeltaMetadataStore(MetadataStore):
             df.write_delta(
                 table_uri,
                 mode="append",
-                delta_write_options={"schema_mode": "merge"},
+                delta_write_options=self._delta_write_options,
                 storage_options=self.storage_options or None,
             )
 
@@ -322,24 +361,19 @@ class DeltaMetadataStore(MetadataStore):
         Uses Delta's delete operation which marks rows as deleted in the transaction log
         rather than physically removing files.
         """
-        import deltalake  # pyright: ignore[reportMissingImports]
-
-        table_uri = self._feature_uri(feature_key)
-
         # Check if table exists first
-        if not self._table_exists(table_uri):
+        if not self._table_exists(
+            self._feature_uri(feature_key), feature_key=feature_key
+        ):
             return
 
         # Load the Delta table
-        delta_table = deltalake.DeltaTable(
-            table_uri,
-            storage_options=self.storage_options or None,
-            without_files=True,  # Don't track files for this operation
-        )
+        delta_table = self._get_delta_table(feature_key, include_files=False)
 
         # Use Delta's delete operation - soft delete all rows
         # This marks rows as deleted in transaction log without physically removing files
         delta_table.delete()
+        self._invalidate_delta_table_cache(feature_key)
 
     def read_metadata_in_store(
         self,
@@ -354,7 +388,7 @@ class DeltaMetadataStore(MetadataStore):
 
         feature_key = self._resolve_feature_key(feature)
         table_uri = self._feature_uri(feature_key)
-        if not self._table_exists(table_uri):
+        if not self._table_exists(table_uri, feature_key=feature_key):
             return None
 
         # Use pl.scan_delta for lazy reading
@@ -381,22 +415,12 @@ class DeltaMetadataStore(MetadataStore):
 
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)
-
-        # Apply filters
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
-
-        if filters is not None:
-            for expr in filters:
-                nw_lazy = nw_lazy.filter(expr)
-
-        # Apply final column selection if needed (after filtering)
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
-
-        return nw_lazy
+        return self._apply_read_filters(
+            nw_lazy,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+        )
 
     def _list_features_local(self) -> list[FeatureKey]:
         """List all features that have Delta tables in this store.
@@ -413,18 +437,20 @@ class DeltaMetadataStore(MetadataStore):
             return []
 
         feature_keys: list[FeatureKey] = []
-        for child in self._local_root_path.iterdir():
-            if child.is_dir() and (child / "_delta_log").exists():
-                try:
-                    feature_key = self._table_name_to_feature_key(child.name)
-                    if not self._is_system_table(feature_key):
-                        feature_keys.append(feature_key)
-                except ValueError as exc:
-                    warnings.warn(
-                        f"Could not parse Delta table name '{child.name}' as FeatureKey: {exc}",
-                        UserWarning,
-                        stacklevel=2,
-                    )
+        for delta_log_dir in self._local_root_path.rglob("_delta_log"):
+            feature_dir = delta_log_dir.parent
+            try:
+                relative = feature_dir.relative_to(self._local_root_path)
+                feature_key = self._relative_path_to_feature_key(relative)
+            except ValueError as exc:
+                warnings.warn(
+                    f"Could not parse Delta directory '{feature_dir}' as FeatureKey: {exc}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
+            if not self._is_system_table(feature_key):
+                feature_keys.append(feature_key)
         return sorted(feature_keys)
 
     def _list_features_from_object_store(self) -> list[FeatureKey]:
@@ -447,7 +473,7 @@ class DeltaMetadataStore(MetadataStore):
 
     def display(self) -> str:
         """Return human-readable representation of the store."""
-        details = [f"path={self._display_root}"]
+        details = [f"path={self._display_root}", f"layout={self.layout}"]
         if self.storage_options:
             details.append("storage_options=***")
         return f"DeltaMetadataStore({', '.join(details)})"

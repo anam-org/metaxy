@@ -513,24 +513,22 @@ class MetadataStore(ABC):
                 f"Expected Polars DataFrame or LazyFrame after conversion, got {type(df)}"
             )
 
-        # For system tables, collect lazy frames and write directly
+        polars_df: pl.DataFrame | pl.LazyFrame = df
+
+        # For system tables, write frame as-is
         if is_system_table:
-            if isinstance(df, pl.LazyFrame):
-                df = df.collect()
-            # Type narrowing: df is now pl.DataFrame
-            assert isinstance(df, pl.DataFrame)
-            self._validate_schema_system_table(df)
-            self._write_metadata_impl(feature_key, df)
+            self._validate_schema_system_table(polars_df)
+            self._write_metadata_impl(feature_key, polars_df)
             return
 
         # For regular features: add feature_version and snapshot_version
-        df = self._add_system_columns(feature, feature_key, df)
+        polars_df = self._add_system_columns(feature, feature_key, polars_df)
 
         # Validate schema (works for both lazy and eager)
-        self._validate_schema_for_write(df)
+        self._validate_schema_for_write(polars_df)
 
         # Write metadata - delegate to store (store decides whether to collect lazy frames)
-        self._write_metadata_impl(feature_key, df)
+        self._write_metadata_impl(feature_key, polars_df)
 
     def _add_system_columns(
         self,
@@ -548,7 +546,7 @@ class MetadataStore(ABC):
         Returns:
             DataFrame or LazyFrame with system columns added
         """
-        # Get schema (works for both lazy and eager)
+        # Get schema names for eager or lazy frames without collecting data
         schema_names = (
             df.collect_schema().names() if isinstance(df, pl.LazyFrame) else df.columns
         )
@@ -585,13 +583,17 @@ class MetadataStore(ABC):
         graph = FeatureGraph.get_active()
         current_snapshot_version = graph.snapshot_version
 
-        # Add system columns
-        return df.with_columns(
+        # Add system columns using Narwhals
+        # Wrap Polars frame in Narwhals, use Narwhals operations, then convert back
+        nw_df = nw.from_native(df, eager_only=False)
+        updated_df = nw_df.with_columns(
             [
-                pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+                nw.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                nw.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
             ]
         )
+        # Convert back to native Polars (preserves eager/lazy distinction)
+        return updated_df.to_native()  # type: ignore[return-value]
 
     def _validate_schema_for_write(self, df: pl.DataFrame | pl.LazyFrame) -> None:
         """
@@ -674,10 +676,33 @@ class MetadataStore(ABC):
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
+    def _validate_schema_system_table(self, df: pl.DataFrame | pl.LazyFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
         # System tables don't need metaxy_provenance_by_field column
         pass
+
+    def _apply_read_filters(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        feature_version: str | None,
+        filters: Sequence[nw.Expr] | None,
+        columns: Sequence[str] | None,
+    ) -> nw.LazyFrame[Any]:
+        """Apply standard filters/column projections to lazy frames."""
+        if feature_version is not None:
+            lazy_frame = lazy_frame.filter(
+                nw.col(FEATURE_VERSION_COL) == feature_version
+            )
+
+        if filters is not None:
+            for expr in filters:
+                lazy_frame = lazy_frame.filter(expr)
+
+        if columns is not None:
+            lazy_frame = lazy_frame.select(columns)
+
+        return lazy_frame
 
     @abstractmethod
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
