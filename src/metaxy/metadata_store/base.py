@@ -1953,10 +1953,10 @@ class MetadataStore(ABC):
                     id_columns = feature_plan.feature.id_columns
 
                     # Use rank().over() to number rows by created_at descending within each ID partition
-                    # Then filter to keep only rank=1 (the latest record for each ID)
-                    # This approach works with LazyFrames and properly handles descending order
+                    # Then filter to keep only rank=1 (the latest/most recent record for each ID)
                     current_lazy_nw = (
-                        current_lazy_nw.with_columns(
+                        current_lazy_nw
+                        .with_columns(
                             nw.col(METAXY_CREATED_AT)
                             .rank(method="ordinal", descending=True)
                             .over(id_columns)

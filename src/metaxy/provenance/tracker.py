@@ -12,6 +12,8 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -477,6 +479,13 @@ class ProvenanceTracker(ABC):
         # Case 2 & 3: Compare expected with current metadata
         # Ensure current has metaxy_provenance column (compute if missing)
         current = self._ensure_provenance_columns(current, hash_algorithm)
+        
+        # Add data_version columns to expected (default to provenance values)
+        # Users can override these in their samples, but by default they match provenance
+        expected = expected.with_columns(
+            nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+            nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+        )
 
         # Handle different lineage relationships before comparison
         lineage_handler = create_lineage_handler(self.plan, self)
@@ -484,8 +493,12 @@ class ProvenanceTracker(ABC):
             expected, current, hash_algorithm
         )
 
+        # Rename current columns - use data_version for comparison (user-overrideable)
+        # Keep provenance columns for audit/tracking but compare on data_version
         current = current.rename(
             {
+                METAXY_DATA_VERSION: f"__current_{METAXY_DATA_VERSION}",
+                METAXY_DATA_VERSION_BY_FIELD: f"__current_{METAXY_DATA_VERSION_BY_FIELD}",
                 METAXY_PROVENANCE: f"__current_{METAXY_PROVENANCE}",
                 METAXY_PROVENANCE_BY_FIELD: f"__current_{METAXY_PROVENANCE_BY_FIELD}",
             }
@@ -500,24 +513,25 @@ class ProvenanceTracker(ABC):
             ),
         )
 
+        # Compare using data_version (user-overrideable) instead of provenance
         changed = cast(
             FrameT,
             expected.join(
                 cast(
                     FrameT,
-                    current.select(*join_columns, f"__current_{METAXY_PROVENANCE}"),
+                    current.select(*join_columns, f"__current_{METAXY_DATA_VERSION}"),
                 ),
                 on=join_columns,
                 how="inner",
             )
             .filter(
-                nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
+                nw.col(f"__current_{METAXY_DATA_VERSION}").is_null()
                 | (
-                    nw.col(METAXY_PROVENANCE)
-                    != nw.col(f"__current_{METAXY_PROVENANCE}")
+                    nw.col(METAXY_DATA_VERSION)
+                    != nw.col(f"__current_{METAXY_DATA_VERSION}")
                 )
             )
-            .drop(f"__current_{METAXY_PROVENANCE}"),
+            .drop(f"__current_{METAXY_DATA_VERSION}"),
         )
 
         removed = cast(
@@ -528,6 +542,8 @@ class ProvenanceTracker(ABC):
                 how="anti",
             ).rename(
                 {
+                    f"__current_{METAXY_DATA_VERSION}": METAXY_DATA_VERSION,
+                    f"__current_{METAXY_DATA_VERSION_BY_FIELD}": METAXY_DATA_VERSION_BY_FIELD,
                     f"__current_{METAXY_PROVENANCE}": METAXY_PROVENANCE,
                     f"__current_{METAXY_PROVENANCE_BY_FIELD}": METAXY_PROVENANCE_BY_FIELD,
                 }
@@ -586,6 +602,40 @@ class ProvenanceTracker(ABC):
                         stacklevel=4,
                     )
                 df = self.add_provenance_column(df, hash_algorithm=hash_algorithm)
+        
+        # Ensure data_version columns exist (required for comparison)
+        cols = df.collect_schema().names()
+        if METAXY_DATA_VERSION_BY_FIELD not in cols:
+            if is_from_store:
+                raise ValueError(
+                    f"Metadata loaded from store is missing '{METAXY_DATA_VERSION_BY_FIELD}' column. "
+                    f"All metadata written by Metaxy includes this column."
+                )
+            else:
+                # For user samples, default to provenance values
+                df = df.with_columns(
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+                )
+        
+        if METAXY_DATA_VERSION not in cols:
+            if is_from_store:
+                raise ValueError(
+                    f"Metadata loaded from store is missing '{METAXY_DATA_VERSION}' column. "
+                    f"All metadata written by Metaxy includes this column."
+                )
+            else:
+                # For user samples, compute from data_version_by_field struct (same as provenance computation)
+                # Temporarily swap the struct column name to compute the hash
+                df = (
+                    df.rename({METAXY_DATA_VERSION_BY_FIELD: "__temp_data_version_by_field"})
+                    .rename({METAXY_PROVENANCE_BY_FIELD: METAXY_DATA_VERSION_BY_FIELD})
+                )
+                df = self.add_provenance_column(df, hash_algorithm=hash_algorithm)
+                df = (
+                    df.rename({METAXY_PROVENANCE: METAXY_DATA_VERSION})
+                    .rename({METAXY_DATA_VERSION_BY_FIELD: METAXY_PROVENANCE_BY_FIELD})
+                    .rename({"__temp_data_version_by_field": METAXY_DATA_VERSION_BY_FIELD})
+                )
 
         return df
 
