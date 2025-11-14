@@ -12,7 +12,7 @@ import cyclopts
 import narwhals as nw
 
 from metaxy.cli.console import console, error_console
-from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns, FeatureSpec
+from metaxy.models.feature_spec import FeatureSpec
 from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ app = cyclopts.App(
 
 @dataclass
 class _SnapshotOverride:
-    spec: BaseFeatureSpecWithIDColumns
+    spec: FeatureSpec
     feature_version: str
     feature_spec_version: str | None
     feature_tracking_version: str | None
@@ -50,8 +50,8 @@ def _apply_snapshot_overrides(
         tuple[
             FeatureKey,
             type[BaseFeature[IDColumns]],
-            BaseFeatureSpecWithIDColumns,
-            BaseFeatureSpecWithIDColumns,
+            FeatureSpec,
+            FeatureSpec,
             Any,
         ]
     ] = []

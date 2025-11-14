@@ -102,7 +102,7 @@ def calculate_provenance_by_field_polars(
 
     Example:
         ```python
-        from metaxy.data_versioning.calculators.polars import calculate_provenance_by_field_polars
+        from metaxy._testing.parametric.metadata import calculate_provenance_by_field_polars
         from metaxy.provenance.types import HashAlgorithm
 
         result = calculate_provenance_by_field_polars(
@@ -111,7 +111,6 @@ def calculate_provenance_by_field_polars(
             feature_plan,
             upstream_column_mapping={"parent": "metaxy_provenance_by_field"},
             hash_algorithm=HashAlgorithm.SHA256,
-            hash_truncation_length=16,
         )
         ```
     """
