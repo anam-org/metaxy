@@ -15,6 +15,7 @@ from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.types import AccessMode
 
 __all__ = [
     "MetadataStore",
@@ -28,4 +29,5 @@ __all__ = [
     "HashAlgorithmNotSupportedError",
     "FEATURE_VERSIONS_KEY",
     "allow_feature_version_override",
+    "AccessMode",
 ]

@@ -1,4 +1,4 @@
-# Base Metadata Store
+# In-Memory Metadata Store
 
 This one is mostly useful for testing.
 

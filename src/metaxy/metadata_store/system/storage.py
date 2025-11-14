@@ -105,6 +105,9 @@ class SystemTableStorage:
             df = lazy.select(COL_EXECUTION_ID).unique().to_native().collect()
             return df[COL_EXECUTION_ID].to_list()
 
+        # Unreachable - all paths return inside the with block
+        raise AssertionError("Unreachable")  # pragma: no cover
+
     # ========== Events ==========
 
     def write_event(self, event: Event) -> None:
@@ -162,6 +165,9 @@ class SystemTableStorage:
             lazy = lazy.filter(nw.col(COL_PROJECT) == project)
             # Convert to Polars DataFrame
             return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
+
+        # Unreachable - all paths return inside the with block
+        raise AssertionError("Unreachable")  # pragma: no cover
 
     def get_migration_status(
         self, migration_id: str, project: str | None = None
@@ -376,6 +382,9 @@ class SystemTableStorage:
             # Convert to Polars DataFrame
             return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
 
+        # Unreachable - all paths return inside the with block
+        raise AssertionError("Unreachable")  # pragma: no cover
+
     def read_migration_progress(
         self, project: str | None = None
     ) -> dict[str, dict[str, Any]]:
@@ -476,6 +485,9 @@ class SystemTableStorage:
             - features_count: Number of features affected
             - rows_affected: Total rows affected
         """
+        # Initialize to satisfy type checker
+        completed_df = pl.DataFrame()
+
         with self.store:
             lazy = self.store.read_metadata_in_store(EVENTS_KEY)
 

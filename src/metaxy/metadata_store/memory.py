@@ -1,13 +1,15 @@
 """In-memory metadata store implementation."""
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
 import narwhals as nw
 import polars as pl
+from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
@@ -217,23 +219,36 @@ class InMemoryMetadataStore(MetadataStore):
 
     # ========== Context Manager Implementation ==========
 
-    def open(self) -> None:
-        """Open the in-memory store.
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open the in-memory store (no-op for in-memory, but accepts mode for consistency).
 
-        For InMemoryMetadataStore, this is a no-op since no external
-        resources need initialization. The auto_create_tables setting
-        has no effect for in-memory stores (no tables to create).
+        Args:
+            mode: Access mode (accepted for consistency but ignored).
+
+        Yields:
+            Self: The store instance
         """
-        # No resources to initialize for in-memory storage
-        pass
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
 
-    def close(self) -> None:
-        """Close the in-memory store.
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                # No actual connection needed for in-memory
+                # Mark store as open and validate
+                self._is_open = True
+                self._validate_after_open()
 
-        For InMemoryMetadataStore, this is a no-op since no external
-        resources need cleanup.
-        """
-        pass  # No resources to cleanup for in-memory storage
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                # Nothing to clean up
+                self._is_open = False
 
     def __repr__(self) -> str:
         """String representation."""

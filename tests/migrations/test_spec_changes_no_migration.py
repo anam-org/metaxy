@@ -104,17 +104,17 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         store_v1.write_metadata(SimpleV1, data)
         store_v1.record_feature_graph_snapshot()
 
-        # Verify snapshot captures both versions
-        snapshot_data = graph_v1.to_snapshot()
-        assert "test/simple" in snapshot_data
-        assert "metaxy_feature_version" in snapshot_data["test/simple"]
-        assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
+    # Verify snapshot captures both versions (initialize to satisfy type checker)
+    snapshot_data = graph_v1.to_snapshot()
+    assert "test/simple" in snapshot_data
+    assert "metaxy_feature_version" in snapshot_data["test/simple"]
+    assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
 
-        # Store the versions for comparison
-        v1_feature_version = snapshot_data["test/simple"]["metaxy_feature_version"]
-        v1_feature_spec_version = snapshot_data["test/simple"][
-            "metaxy_feature_spec_version"
-        ]
+    # Store the versions for comparison
+    v1_feature_version: str = snapshot_data["test/simple"]["metaxy_feature_version"]
+    v1_feature_spec_version: str = snapshot_data["test/simple"][
+        "metaxy_feature_spec_version"
+    ]
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
@@ -134,9 +134,11 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     v2_feature_version = SimpleV2.feature_version()
     v2_feature_spec_version = SimpleV2.feature_spec_version()
 
-    assert v1_feature_version != v2_feature_version  # Changed!
     assert (
-        v1_feature_spec_version != v2_feature_spec_version
+        v1_feature_version != v2_feature_version
+    )  # Changed!  # type: ignore[possibly-unbound]
+    assert (
+        v1_feature_spec_version != v2_feature_spec_version  # type: ignore[possibly-unbound]
     )  # Also changed (includes code_version)
 
     # Test migration detection

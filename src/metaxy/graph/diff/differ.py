@@ -640,6 +640,14 @@ class GraphDiffer:
         Raises:
             ValueError: If snapshot not found in store
         """
+        # Import at function level to avoid circular imports
+        from metaxy.metadata_store.types import AccessMode
+
+        # Auto-open store if not already open
+        if not store._is_open:
+            with store.open(AccessMode.READ):
+                return self.load_snapshot_data(store, snapshot_version, project)
+
         # Query feature_versions table for this snapshot
         try:
             features_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)

@@ -13,6 +13,7 @@ except ImportError:
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import TestingFeature
 
 
@@ -78,7 +79,11 @@ def test_clickhouse_conn_property_enforcement(
         _ = store.conn
 
     # Should work when open
-    with store:
+    with store.open():
+        conn = store.conn
+        assert conn is not None
+
+    with store.open(AccessMode.WRITE):
         conn = store.conn
         assert conn is not None
 
@@ -116,26 +121,6 @@ def test_clickhouse_persistence(
 
         assert len(result) == 3
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
-
-
-def test_clickhouse_close_idempotent(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[TestingFeature]]
-) -> None:
-    """Test that close() can be called multiple times safely.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
-    store = ClickHouseMetadataStore(clickhouse_db)
-
-    with store:
-        pass
-
-    # Close again manually (should not raise)
-    store.close()
-    store.close()
 
 
 def test_clickhouse_hash_algorithms(
@@ -200,7 +185,7 @@ def test_clickhouse_config_instantiation(
     assert isinstance(store, ClickHouseMetadataStore)
 
     # Verify store can be opened
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -254,7 +239,7 @@ def test_clickhouse_config_with_hash_algorithm(
     assert isinstance(store, ClickHouseMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -287,5 +272,5 @@ def test_clickhouse_config_with_fallback_stores(
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
 
-    with dev_store:
+    with dev_store.open(AccessMode.WRITE):
         assert dev_store._is_open

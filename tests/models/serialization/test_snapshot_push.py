@@ -630,9 +630,9 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                     ]
                 ).to_dicts()
 
-    # Snapshot all results
-    assert {
-        "results": results,
-        "final_versions_count": len(versions_dict),
-        "versions": versions_dict,
-    } == snapshot
+                # Snapshot all results
+                assert {
+                    "results": results,
+                    "final_versions_count": len(versions_dict),
+                    "versions": versions_dict,
+                } == snapshot

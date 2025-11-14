@@ -360,20 +360,20 @@ def test_resolve_update_root_feature_with_samples(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
             )
 
-    # Verify all samples are added (first write)
-    assert len(increment.added) == len(samples_df)
-    assert len(increment.changed) == 0
-    assert len(increment.removed) == 0
+        # Verify all samples are added (first write)
+        assert len(increment.added) == len(samples_df)
+        assert len(increment.changed) == 0
+        assert len(increment.removed) == 0
 
-    # Verify provenance_by_field structure matches input
-    added_df = increment.added.lazy().collect().to_polars().sort(id_columns)
-    samples_sorted = samples_df.sort(id_columns)
+        # Verify provenance_by_field structure matches input
+        added_df = increment.added.lazy().collect().to_polars().sort(id_columns)
+        samples_sorted = samples_df.sort(id_columns)
 
-    pl_testing.assert_series_equal(
-        added_df["metaxy_provenance_by_field"],
-        samples_sorted["metaxy_provenance_by_field"],
-        check_names=False,
-    )
+        pl_testing.assert_series_equal(
+            added_df["metaxy_provenance_by_field"],
+            samples_sorted["metaxy_provenance_by_field"],
+            check_names=False,
+        )
 
 
 # ============= TEST: DOWNSTREAM FEATURES (WITH UPSTREAM) =============
@@ -439,27 +439,27 @@ def test_resolve_update_downstream_feature(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
             )
 
-    # Get computed metadata
-    added_df = increment.added.lazy().collect().to_polars()
+        # Get computed metadata
+        added_df = increment.added.lazy().collect().to_polars()
 
-    # Sort both for comparison
-    id_columns = list(child_plan.feature.id_columns)
-    added_sorted = added_df.sort(id_columns)
-    golden_sorted = golden_downstream.sort(id_columns)
+        # Sort both for comparison
+        id_columns = list(child_plan.feature.id_columns)
+        added_sorted = added_df.sort(id_columns)
+        golden_sorted = golden_downstream.sort(id_columns)
 
-    # Compare provenance columns
-    common_columns = [
-        col for col in added_sorted.columns if col in golden_sorted.columns
-    ]
-    added_selected = added_sorted.select(common_columns)
-    golden_selected = golden_sorted.select(common_columns)
+        # Compare provenance columns
+        common_columns = [
+            col for col in added_sorted.columns if col in golden_sorted.columns
+        ]
+        added_selected = added_sorted.select(common_columns)
+        golden_selected = golden_sorted.select(common_columns)
 
-    pl_testing.assert_frame_equal(
-        added_selected,
-        golden_selected,
-        check_row_order=True,
-        check_column_order=False,
-    )
+        pl_testing.assert_frame_equal(
+            added_selected,
+            golden_selected,
+            check_row_order=True,
+            check_column_order=False,
+        )
 
 
 # ============= TEST: INCREMENTAL UPDATES =============
@@ -546,18 +546,18 @@ def test_resolve_update_detects_changes(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
             )
 
-    # Verify changes were detected
-    # With completely new data (8 samples vs 10 initial), we expect:
-    # - Some samples added (new ones)
-    # - Some samples removed (old ones not in new data)
-    # - Possibly some changed (if IDs overlap but provenance differs)
+        # Verify changes were detected
+        # With completely new data (8 samples vs 10 initial), we expect:
+        # - Some samples added (new ones)
+        # - Some samples removed (old ones not in new data)
+        # - Possibly some changed (if IDs overlap but provenance differs)
 
-    total_changes = (
-        len(increment.added) + len(increment.changed) + len(increment.removed)
-    )
-    assert total_changes > 0, (
-        "Expected resolve_update to detect some changes when upstream data changes"
-    )
+        total_changes = (
+            len(increment.added) + len(increment.changed) + len(increment.removed)
+        )
+        assert total_changes > 0, (
+            "Expected resolve_update to detect some changes when upstream data changes"
+        )
 
 
 # ============= TEST: LAZY EXECUTION =============
@@ -773,13 +773,13 @@ def test_resolve_update_idempotency(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
             )
 
-    # Verify second call is idempotent
-    assert len(increment2.added) == 0, (
-        "Second resolve_update should have no added samples"
-    )
-    assert len(increment2.changed) == 0, (
-        "Second resolve_update should have no changed samples"
-    )
-    assert len(increment2.removed) == 0, (
-        "Second resolve_update should have no removed samples"
-    )
+        # Verify second call is idempotent
+        assert len(increment2.added) == 0, (
+            "Second resolve_update should have no added samples"
+        )
+        assert len(increment2.changed) == 0, (
+            "Second resolve_update should have no changed samples"
+        )
+        assert len(increment2.removed) == 0, (
+            "Second resolve_update should have no removed samples"
+        )
