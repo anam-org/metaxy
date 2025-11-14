@@ -513,7 +513,7 @@ class MetadataStore(ABC):
             return
 
         # For regular features: add feature_version and snapshot_version
-        polars_df = self._add_system_columns(feature, feature_key, polars_df)
+        polars_df = self._add_system_columns(feature, feature_key, polars_df)  # pyright: ignore[reportArgumentType]
 
         # Validate schema (works for both lazy and eager)
         self._validate_schema_for_write(polars_df)
@@ -521,28 +521,12 @@ class MetadataStore(ABC):
         # Write metadata - delegate to store (store decides whether to collect lazy frames)
         self._write_metadata_impl(feature_key, polars_df)
 
-    @overload
     def _add_system_columns(
         self,
         feature: FeatureKey | type[BaseFeature],
         feature_key: FeatureKey,
-        df: pl.DataFrame,
-    ) -> pl.DataFrame: ...
-
-    @overload
-    def _add_system_columns(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        feature_key: FeatureKey,
-        df: pl.LazyFrame,
-    ) -> pl.LazyFrame: ...
-
-    def _add_system_columns(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        feature_key: FeatureKey,
-        df: pl.DataFrame | pl.LazyFrame,
-    ) -> pl.DataFrame | pl.LazyFrame:
+        df: narwhals.typing.FrameT,
+    ) -> narwhals.typing.FrameT:
         """Add feature_version and snapshot_version columns if not already present.
 
         Args:
