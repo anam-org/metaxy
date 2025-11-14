@@ -1,6 +1,8 @@
 (function () {
-  var TOKEN = "22cb75dc-201e-4a72-9fb2-c3a53ce9207e";
-  var PIXEL_BASE = "https://static.scarf.sh/a.png?x-pxid=" + TOKEN + "=";
+  var TOKEN = "349d49a2-9825-489a-973a-e87096d78a7f";
+
+  var PIXEL_BASE = "https://telemetry.metaxy.io/a.png?x-pxid=" + TOKEN + "=";
+
   var lastIdentifier = null;
   var pendingPixels = [];
 
