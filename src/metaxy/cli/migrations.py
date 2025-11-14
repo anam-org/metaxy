@@ -449,7 +449,7 @@ def list_migrations():
     from rich.table import Table
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.loader import load_migration_from_file
+    from metaxy.migrations.loader import build_migration_chain, load_migration_from_file
 
     AppContext.get()
     migrations_dir = Path(".metaxy/migrations")
@@ -483,6 +483,13 @@ def list_migrations():
         app.console.print("[yellow]No valid migrations found.[/yellow]")
         app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
         return
+
+    # Validate migration chain (but still show table even if invalid)
+    chain_error = None
+    try:
+        build_migration_chain(migrations_dir)
+    except ValueError as e:
+        chain_error = str(e)
 
     # Create borderless table with blue headers (no truncation)
     table = Table(
@@ -525,6 +532,11 @@ def list_migrations():
     app.console.print()
     app.console.print(table)
     app.console.print()
+
+    # Show chain validation error after table
+    if chain_error:
+        app.console.print(f"[red]Invalid migration:[/red] {chain_error}")
+        app.console.print()
 
 
 @app.command
