@@ -4,10 +4,11 @@ This section provides a comprehensive reference for all Metaxy CLI commands.
 
 ::: cyclopts
     :module: metaxy.cli.app:app
-    :heading-level: 3
+    :heading_level: 3
     :recursive: true
-    :flatten-commands: false
-    :generate-toc: true
+    :flatten_commands: false
+    :generate_toc: true
+:::
 
 ## Examples
 
