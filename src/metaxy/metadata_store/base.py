@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import FrameT, IntoFrame
+from narwhals.typing import Frame, FrameT, IntoFrame
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import (
@@ -446,14 +446,16 @@ class MetadataStore(ABC):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
+        Backends may convert to their specific type if needed (e.g., Polars, Ibis).
+
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -510,10 +512,8 @@ class MetadataStore(ABC):
         # For system tables, write directly without feature_version tracking
         if is_system_table:
             # Ensure we have a DataFrame (collect if LazyFrame)
-            df_eager = df_nw.collect() if isinstance(df_nw, nw.LazyFrame) else df_nw
-            self._validate_schema_system_table(df_eager)
-            # Convert to Polars only when passing to backend implementation
-            self._write_metadata_impl(feature_key, df_eager.to_polars())
+            self._validate_schema_system_table(df_nw)
+            self._write_metadata_impl(feature_key, df_nw)
             return
 
         # For regular features: validate schema first before adding columns
@@ -529,10 +529,8 @@ class MetadataStore(ABC):
         # Add all required system columns
         df_nw = self._add_system_columns(df_nw, feature)  # pyright: ignore[reportArgumentType]
 
-        # Validate final schema and write
-        df_eager = df_nw.collect() if isinstance(df_nw, nw.LazyFrame) else df_nw
-        self._validate_schema(df_eager)
-        self._write_metadata_impl(feature_key, df_eager.to_polars())
+        self._validate_schema(df_nw)
+        self._write_metadata_impl(feature_key, df_nw)
 
     def _add_system_columns(
         self,
@@ -632,12 +630,12 @@ class MetadataStore(ABC):
 
         return df
 
-    def _validate_schema(self, df: nw.DataFrame[Any]) -> None:
+    def _validate_schema(self, df: Frame) -> None:
         """
         Validate that DataFrame has required schema.
 
         Args:
-            df: Narwhals DataFrame to validate
+            df: Narwhals DataFrame or LazyFrame to validate
 
         Raises:
             MetadataSchemaError: If schema is invalid
@@ -655,12 +653,10 @@ class MetadataStore(ABC):
             )
 
         # Check that metaxy_provenance_by_field is a struct
-        # Convert to Polars to check struct type (Narwhals doesn't have dtype inspection)
-        df_polars = df.to_polars()
-        provenance_type = df_polars.schema[PROVENANCE_BY_FIELD_COL]
-        if not isinstance(provenance_type, pl.Struct):
+        provenance_dtype = schema[PROVENANCE_BY_FIELD_COL]
+        if not isinstance(provenance_dtype, nw.Struct):
             raise MetadataSchemaError(
-                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be a Struct, got {provenance_dtype}"
             )
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
@@ -677,7 +673,7 @@ class MetadataStore(ABC):
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: nw.DataFrame[Any]) -> None:
+    def _validate_schema_system_table(self, df: Frame) -> None:
         """Validate schema for system tables (minimal validation).
 
         Args:
@@ -840,7 +836,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
@@ -892,7 +888,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
