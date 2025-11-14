@@ -172,6 +172,7 @@ nav:
     - Metadata Stores: learn/metadata-stores.md
     - Feature Definitions: learn/feature-definitions.md
     - Versioning: learn/data-versioning.md
+    - Migration Formats: learn/migration-formats.md
     - Feature Discovery: learn/feature-discovery.md
     - Syntactic Sugar: learn/syntactic-sugar.md
     - Lineage Relationship: learn/relationship.md
