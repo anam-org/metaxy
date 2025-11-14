@@ -1,4 +1,4 @@
-"""Example 4: CustomMigration with Pydantic validation.
+"""Example 4: PythonMigration with Pydantic validation.
 
 This example demonstrates how to use Pydantic validators to add custom
 validation logic to your migrations, ensuring data quality and catching
@@ -42,13 +42,13 @@ from typing import TYPE_CHECKING
 
 from pydantic import field_validator, model_validator
 
-from metaxy.migrations.models import CustomMigration, MigrationResult
+from metaxy.migrations.models import MigrationResult, PythonMigration
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-class ValidatedDatabaseBackfillMigration(CustomMigration):
+class ValidatedDatabaseBackfillMigration(PythonMigration):
     """Migration with comprehensive Pydantic validation.
 
     This migration demonstrates various validation techniques:
@@ -351,6 +351,7 @@ class ValidatedDatabaseBackfillMigration(CustomMigration):
                 status="completed" if not dry_run else "skipped",
                 features_completed=1,
                 features_failed=0,
+                features_skipped=0,
                 affected_features=[feature_key_str],
                 errors={},
                 rows_affected=0,
@@ -366,6 +367,7 @@ class ValidatedDatabaseBackfillMigration(CustomMigration):
                 status="failed",
                 features_completed=0,
                 features_failed=1,
+                features_skipped=0,
                 affected_features=[],
                 errors={feature_key_str: str(e)},
                 rows_affected=0,
@@ -378,7 +380,7 @@ class ValidatedDatabaseBackfillMigration(CustomMigration):
 
 # Alternative Example: File-based validation
 # -------------------------------------------
-class FileBasedMigration(CustomMigration):
+class FileBasedMigration(PythonMigration):
     """Migration that validates file paths and permissions.
 
     Demonstrates validation of filesystem resources.
@@ -451,6 +453,7 @@ class FileBasedMigration(CustomMigration):
             status="completed",
             features_completed=0,
             features_failed=0,
+            features_skipped=0,
             affected_features=[],
             errors={},
             rows_affected=0,
