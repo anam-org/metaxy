@@ -4,7 +4,12 @@ from functools import cached_property
 import narwhals as nw
 from narwhals.typing import FrameT
 
-from metaxy.models.constants import METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
@@ -26,8 +31,12 @@ class FeatureDepTransformer:
         self.plan = plan
         self.dep = dep
 
-        # allow adding more in the future
-        self.metaxy_columns_to_load = [METAXY_PROVENANCE_BY_FIELD, METAXY_PROVENANCE]
+        # Use data_version columns (user-overrideable) instead of provenance columns
+        # when computing downstream provenance
+        self.metaxy_columns_to_load = [
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_DATA_VERSION,
+        ]
 
     @cached_property
     def upstream_feature_key(self) -> FeatureKey:
@@ -51,6 +60,31 @@ class FeatureDepTransformer:
             The transformed dataframe coupled with the renamed ID columns
 
         """
+        # Backwards compatibility: add data_version columns if they don't exist
+        # (defaulting to provenance columns)
+        cols = df.collect_schema().names()
+        if (
+            METAXY_DATA_VERSION_BY_FIELD not in cols
+            and METAXY_PROVENANCE_BY_FIELD in cols
+        ):
+            df = df.with_columns(
+                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+            )
+        if METAXY_DATA_VERSION not in cols and METAXY_PROVENANCE in cols:
+            df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
+
+        # Drop provenance columns if both provenance and data_version exist
+        # (keeps only data_version which may be user-overridden)
+        cols = df.collect_schema().names()
+        cols_to_drop = []
+        if METAXY_PROVENANCE in cols and METAXY_DATA_VERSION in cols:
+            cols_to_drop.append(METAXY_PROVENANCE)
+        if METAXY_PROVENANCE_BY_FIELD in cols and METAXY_DATA_VERSION_BY_FIELD in cols:
+            cols_to_drop.append(METAXY_PROVENANCE_BY_FIELD)
+
+        if cols_to_drop:
+            df = df.drop(*cols_to_drop)
+
         return (
             RenamedDataFrame(
                 df=df, id_columns=list(self.upstream_feature_spec.id_columns)
@@ -73,6 +107,14 @@ class FeatureDepTransformer:
     @cached_property
     def renamed_provenance_by_field_col(self) -> str:
         return self.rename_upstream_metaxy_column(METAXY_PROVENANCE_BY_FIELD)
+
+    @cached_property
+    def renamed_data_version_col(self) -> str:
+        return self.rename_upstream_metaxy_column(METAXY_DATA_VERSION)
+
+    @cached_property
+    def renamed_data_version_by_field_col(self) -> str:
+        return self.rename_upstream_metaxy_column(METAXY_DATA_VERSION_BY_FIELD)
 
     @cached_property
     def renamed_metaxy_cols(self) -> list[str]:

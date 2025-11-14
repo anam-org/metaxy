@@ -47,7 +47,6 @@ class TestJoiner:
         This is a test utility that mimics the old NarwhalsJoiner interface
         but uses the new PolarsProvenanceTracker internally.
         """
-        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
         # Create a PolarsProvenanceTracker for this feature
         tracker = PolarsProvenanceTracker(plan=feature_plan)
@@ -64,16 +63,19 @@ class TestJoiner:
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
         joined = tracker.prepare_upstream(upstream_by_key, filters=None)
 
-        # Build the mapping of upstream_key -> provenance_by_field column name
+        # Build the mapping of upstream_key -> data_version_by_field column name
         # The new naming convention is: {column_name}{feature_key.to_column_suffix()}
+        # We now use data_version instead of provenance (data_version can be user-overridden)
+        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD
+
         mapping = {}
         for upstream_key_str in upstream_refs.keys():
             upstream_key = FeatureKey(upstream_key_str)
-            # The provenance_by_field column is renamed using to_column_suffix()
-            provenance_col_name = (
-                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
+            # The data_version_by_field column is renamed using to_column_suffix()
+            data_version_col_name = (
+                f"{METAXY_DATA_VERSION_BY_FIELD}{upstream_key.to_column_suffix()}"
             )
-            mapping[upstream_key_str] = provenance_col_name
+            mapping[upstream_key_str] = data_version_col_name
 
         return joined, mapping
 
@@ -128,7 +130,7 @@ class TestColumnSelection:
 
         # Verify all columns are present
         assert "sample_uid" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" in joined_df.columns
         assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
@@ -184,7 +186,7 @@ class TestColumnSelection:
 
         # Verify only selected columns are present
         assert "sample_uid" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" not in joined_df.columns
         assert "custom_col3" not in joined_df.columns
@@ -241,7 +243,7 @@ class TestColumnSelection:
         # Note: feature_version and snapshot_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream" in joined_df.columns
         assert (
             "metaxy_feature_version" not in joined_df.columns
         )  # Not essential, dropped to avoid conflicts
@@ -300,7 +302,7 @@ class TestColumnSelection:
 
         # Verify columns are renamed
         assert "sample_uid" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream" in joined_df.columns
         assert "upstream_col1" in joined_df.columns
         assert "upstream_col2" in joined_df.columns
         assert "custom_col1" not in joined_df.columns
@@ -559,7 +561,7 @@ class TestColumnSelection:
 
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream" in joined_df.columns
         # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
         assert "metaxy_feature_version" not in joined_df.columns
         assert "metaxy_snapshot_version" not in joined_df.columns
@@ -880,15 +882,21 @@ class TestColumnSelection:
         assert "unique_col" in joined_df.columns  # Not renamed
         assert "excluded_col" not in joined_df.columns  # Not selected
 
-        # Verify provenance_by_field columns
-        assert "metaxy_provenance_by_field__test_upstream1" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream2" in joined_df.columns
-        assert "metaxy_provenance_by_field__test_upstream3" in joined_df.columns
+        # Verify data_version_by_field columns
+        assert "metaxy_data_version_by_field__test_upstream1" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream2" in joined_df.columns
+        assert "metaxy_data_version_by_field__test_upstream3" in joined_df.columns
 
         # Verify mapping
-        assert mapping["test/upstream1"] == "metaxy_provenance_by_field__test_upstream1"
-        assert mapping["test/upstream2"] == "metaxy_provenance_by_field__test_upstream2"
-        assert mapping["test/upstream3"] == "metaxy_provenance_by_field__test_upstream3"
+        assert (
+            mapping["test/upstream1"] == "metaxy_data_version_by_field__test_upstream1"
+        )
+        assert (
+            mapping["test/upstream2"] == "metaxy_data_version_by_field__test_upstream2"
+        )
+        assert (
+            mapping["test/upstream3"] == "metaxy_data_version_by_field__test_upstream3"
+        )
 
     def test_custom_load_input_with_filtering(self):
         """Test overriding load_input with custom filtering logic."""
@@ -978,7 +986,7 @@ class TestColumnSelection:
         assert joined_df["upstream_value"].to_list() == [10, 30, 50]
 
         # Verify mapping
-        assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
+        assert mapping["test/upstream"] == "metaxy_data_version_by_field__test_upstream"
 
     def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""

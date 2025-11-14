@@ -12,10 +12,10 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
-    METAXY_FEATURE_VERSION,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.lineage import LineageRelationshipType
 from metaxy.models.plan import FeaturePlan, FQFieldKey
@@ -130,13 +130,18 @@ class ProvenanceTracker(ABC):
         }
 
         # Drop system columns that aren't needed for provenance calculation
-        # Keep only METAXY_PROVENANCE and METAXY_PROVENANCE_BY_FIELD
-        # Drop METAXY_FEATURE_VERSION and METAXY_SNAPSHOT_VERSION to avoid collisions
-        columns_to_drop = [METAXY_FEATURE_VERSION, METAXY_SNAPSHOT_VERSION]
+        # Keep only METAXY_DATA_VERSION and METAXY_DATA_VERSION_BY_FIELD (user-overrideable)
+        # Drop all other system columns (feature_version, snapshot_version, created_at, provenance columns)
+        from metaxy.models.constants import is_droppable_system_column
 
         for feature_key, renamed_df in dfs.items():
             cols = renamed_df.df.collect_schema().names()
-            cols_to_drop = [col for col in columns_to_drop if col in cols]
+            cols_to_drop = [col for col in cols if is_droppable_system_column(col)]
+            # Also drop provenance columns (we use data_version instead, which may be user-overridden)
+            if METAXY_PROVENANCE in cols:
+                cols_to_drop.append(METAXY_PROVENANCE)
+            if METAXY_PROVENANCE_BY_FIELD in cols:
+                cols_to_drop.append(METAXY_PROVENANCE_BY_FIELD)
             if cols_to_drop:
                 dfs[feature_key] = RenamedDataFrame(
                     df=renamed_df.df.drop(*cols_to_drop),
@@ -154,18 +159,10 @@ class ProvenanceTracker(ABC):
                     all_columns[col].append(feature_key)
 
             # System columns that are allowed to collide (needed for provenance calculation)
-            from metaxy.models.constants import (
-                METAXY_CREATED_AT,
-                METAXY_DATA_VERSION,
-                METAXY_DATA_VERSION_BY_FIELD,
-            )
-
+            # Use data_version columns (which may be user-overridden) instead of provenance
             allowed_system_columns = {
-                METAXY_PROVENANCE,
-                METAXY_PROVENANCE_BY_FIELD,
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
-                METAXY_CREATED_AT,
             }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [
@@ -258,22 +255,43 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
-    def get_renamed_provenance_by_field_col(self, feature_key: FeatureKey) -> str:
-        """Get the renamed provenance_by_field column name for an upstream feature."""
+    @abstractmethod
+    def keep_latest_by_group(
+        self,
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+        """
+        raise NotImplementedError()
+
+    def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
+        """Get the renamed data_version_by_field column name for an upstream feature.
+
+        Uses data_version instead of provenance because it may be user-overridden."""
         return self.feature_transformers_by_key[
             feature_key
-        ].renamed_provenance_by_field_col
+        ].renamed_data_version_by_field_col
 
     def get_field_provenance_exprs(
         self,
     ) -> dict[FieldKey, dict[FQFieldKey, nw.Expr]]:
-        """Returns a a mapping from field keys to data structures that determine provenances for each field.
-        Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream provenance.
+        """Returns a mapping from field keys to data structures that determine provenances for each field.
+        Each value is itself a mapping from fully qualified field keys of upstream features to an expression
+        that selects the corresponding upstream data version (which may be user-overridden).
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
-        TODO: in the future this should be able to select upstream data_version instead of provenance,
-        once user-provided data_version is implemented.
+        Note: Uses upstream data_version columns (not provenance) to respect user overrides.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         # THIS LINES HERE
@@ -283,8 +301,9 @@ class ProvenanceTracker(ABC):
             for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(
                 field_spec.key
             ).items():
+                # Use data_version_by_field (user-overrideable) instead of provenance_by_field
                 field_provenance[fq_key] = nw.col(
-                    self.get_renamed_provenance_by_field_col(fq_key.feature)
+                    self.get_renamed_data_version_by_field_col(fq_key.feature)
                 ).struct.field(parent_field_spec.key.to_struct_key())
             res[field_spec.key] = field_provenance
         return res
@@ -502,14 +521,35 @@ class ProvenanceTracker(ABC):
             current, "The `current` DataFrame loaded from the metadata store"
         )
 
+        # Add data_version columns to expected (default to provenance values)
+        # Users can override these in their samples, but by default they match provenance
+        # Only add if they don't already exist (preserve user-provided values)
+        expected_cols = expected.collect_schema().names()
+        cols_to_add = {}
+        if METAXY_DATA_VERSION_BY_FIELD not in expected_cols:
+            cols_to_add[METAXY_DATA_VERSION_BY_FIELD] = nw.col(
+                METAXY_PROVENANCE_BY_FIELD
+            ).alias(METAXY_DATA_VERSION_BY_FIELD)
+        if METAXY_DATA_VERSION not in expected_cols:
+            cols_to_add[METAXY_DATA_VERSION] = nw.col(METAXY_PROVENANCE).alias(
+                METAXY_DATA_VERSION
+            )
+
+        if cols_to_add:
+            expected = expected.with_columns(**cols_to_add)
+
         # Handle different lineage relationships before comparison
         lineage_handler = create_lineage_handler(self.plan, self)
         expected, current, join_columns = lineage_handler.normalize_for_comparison(
             expected, current, hash_algorithm
         )
 
+        # Rename current columns - use data_version for comparison (user-overrideable)
+        # Keep provenance columns for audit/tracking but compare on data_version
         current = current.rename(
             {
+                METAXY_DATA_VERSION: f"__current_{METAXY_DATA_VERSION}",
+                METAXY_DATA_VERSION_BY_FIELD: f"__current_{METAXY_DATA_VERSION_BY_FIELD}",
                 METAXY_PROVENANCE: f"__current_{METAXY_PROVENANCE}",
                 METAXY_PROVENANCE_BY_FIELD: f"__current_{METAXY_PROVENANCE_BY_FIELD}",
             }
@@ -524,24 +564,25 @@ class ProvenanceTracker(ABC):
             ),
         )
 
+        # Compare using data_version (user-overrideable) instead of provenance
         changed = cast(
             FrameT,
             expected.join(
                 cast(
                     FrameT,
-                    current.select(*join_columns, f"__current_{METAXY_PROVENANCE}"),
+                    current.select(*join_columns, f"__current_{METAXY_DATA_VERSION}"),
                 ),
                 on=join_columns,
                 how="inner",
             )
             .filter(
-                nw.col(f"__current_{METAXY_PROVENANCE}").is_null()
+                nw.col(f"__current_{METAXY_DATA_VERSION}").is_null()
                 | (
-                    nw.col(METAXY_PROVENANCE)
-                    != nw.col(f"__current_{METAXY_PROVENANCE}")
+                    nw.col(METAXY_DATA_VERSION)
+                    != nw.col(f"__current_{METAXY_DATA_VERSION}")
                 )
             )
-            .drop(f"__current_{METAXY_PROVENANCE}"),
+            .drop(f"__current_{METAXY_DATA_VERSION}"),
         )
 
         removed = cast(
@@ -552,6 +593,8 @@ class ProvenanceTracker(ABC):
                 how="anti",
             ).rename(
                 {
+                    f"__current_{METAXY_DATA_VERSION}": METAXY_DATA_VERSION,
+                    f"__current_{METAXY_DATA_VERSION_BY_FIELD}": METAXY_DATA_VERSION_BY_FIELD,
                     f"__current_{METAXY_PROVENANCE}": METAXY_PROVENANCE,
                     f"__current_{METAXY_PROVENANCE_BY_FIELD}": METAXY_PROVENANCE_BY_FIELD,
                 }

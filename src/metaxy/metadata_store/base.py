@@ -36,6 +36,9 @@ from metaxy.metadata_store.warnings import (
     PolarsMaterializationWarning,
 )
 from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
@@ -1203,6 +1206,43 @@ class MetadataStore(ABC):
         """
         pass
 
+    def _deduplicate_by_timestamp(
+        self,
+        df: nw.LazyFrame[Any],
+        feature: FeatureKey | type[BaseFeature],
+    ) -> nw.LazyFrame[Any]:
+        """Deduplicate metadata by keeping only the latest row per sample (by metaxy_created_at).
+
+        This handles cases where multiple versions of the same sample exist within the same
+        feature_version, typically due to upstream data changes or manual data_version overrides.
+
+        Args:
+            df: LazyFrame to deduplicate
+            feature: Feature to deduplicate (used to get ID columns)
+
+        Returns:
+            Deduplicated LazyFrame with only latest row per sample.
+            If metaxy_created_at column is not present (e.g., due to column selection),
+            returns the input DataFrame unchanged.
+        """
+        # Check if timestamp column is available
+        cols = df.collect_schema().names()
+        if METAXY_CREATED_AT not in cols:
+            # Can't deduplicate without timestamp column - return as-is
+            return df
+
+        # Get ID columns for grouping
+        feature_plan = self._resolve_feature_plan(feature)
+        id_columns = list(feature_plan.feature.id_columns)
+
+        # Create tracker and apply deduplication
+        with self._create_provenance_tracker(feature_plan) as tracker:
+            return tracker.keep_latest_by_group(
+                df,
+                group_columns=id_columns,
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
     def read_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
@@ -1212,6 +1252,7 @@ class MetadataStore(ABC):
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
+        latest_data_only: bool = True,
     ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
@@ -1225,6 +1266,10 @@ class MetadataStore(ABC):
             allow_fallback: If True, check fallback stores on local miss
             current_only: If True, only return rows with current feature_version
                 (default: True for safety)
+            latest_data_only: If True, keep only the latest row per sample (by metaxy_created_at)
+                when multiple versions exist with the same feature_version. This handles cases
+                where upstream data changes or data_version overrides occur without code changes.
+                (default: True for correctness)
 
         Returns:
             Narwhals LazyFrame with metadata
@@ -1279,6 +1324,36 @@ class MetadataStore(ABC):
         )
 
         if lazy_frame is not None:
+            # Apply deduplication if requested (keep latest data for each sample)
+            # Only deduplicate when reading "current" data (current_only=True or feature_version filter)
+            # When current_only=False, user wants all versions, so don't deduplicate
+            should_deduplicate = (
+                latest_data_only
+                and not is_system_table
+                and (current_only or feature_version is not None)
+            )
+            if should_deduplicate:
+                lazy_frame = self._deduplicate_by_timestamp(lazy_frame, feature)
+
+            # Backwards compatibility: add data_version columns if they don't exist
+            # (defaulting to provenance columns)
+            # Only do this when user hasn't explicitly selected columns
+            if not is_system_table and columns is None:
+                cols = lazy_frame.collect_schema().names()
+                if (
+                    METAXY_DATA_VERSION_BY_FIELD not in cols
+                    and METAXY_PROVENANCE_BY_FIELD in cols
+                ):
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
+                            METAXY_DATA_VERSION_BY_FIELD
+                        )
+                    )
+                if METAXY_DATA_VERSION not in cols and METAXY_PROVENANCE in cols:
+                    lazy_frame = lazy_frame.with_columns(
+                        nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION)
+                    )
+
             return lazy_frame
 
         # Try fallback stores
@@ -1293,6 +1368,7 @@ class MetadataStore(ABC):
                         columns=columns,
                         allow_fallback=True,
                         current_only=current_only,  # Pass through current_only
+                        latest_data_only=latest_data_only,  # Pass through latest_data_only
                     )
                 except FeatureNotFoundError:
                     # Try next fallback store

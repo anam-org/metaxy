@@ -325,3 +325,141 @@ def test_store_resolve_update_matches_golden_provenance(
             check_row_order=True,
             check_column_order=False,
         )
+
+
+@parametrize_with_cases("empty_store", cases=EmptyStoreCases, glob="inmemory|duckdb")
+@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
+def test_data_version_override_propagates_downstream(
+    empty_store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
+):
+    """Test that manual data_version overrides propagate to downstream features.
+
+    This test verifies that:
+    1. Users can manually override data_version_by_field (e.g., content hashes)
+    2. Downstream features recompute when upstream data_version changes
+    3. Changes are detected even when provenance stays the same
+    4. latest_data_only deduplication keeps only the newest version per sample
+
+    Note: This test is limited to InMemory and DuckDB stores. ClickHouse has type conversion
+    issues with string-based data_version overrides that need separate handling.
+
+    Args:
+        empty_store: Metadata store to test
+        metaxy_config: Metaxy configuration (hash truncation, etc.)
+        feature_plan_config: Feature plan configuration from cases
+    """
+    # Setup store with upstream data and get golden reference
+    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
+        setup_store_with_data(
+            empty_store,
+            feature_plan_config,
+        )
+    )
+
+    # Get the child feature from the graph
+    child_key = child_feature_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
+
+    # Get first upstream feature
+    first_upstream_key = list(upstream_features.keys())[0]
+    FirstUpstreamFeature = upstream_features[first_upstream_key]
+
+    with store:
+        try:
+            # Initial resolve_update should return all samples
+            increment1 = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
+            assert len(increment1.added) > 0, "Expected initial samples"
+
+            # Write the increment
+            store.write_metadata(ChildFeature, increment1.added)
+
+            # Read upstream data
+            upstream_data = (
+                store.read_metadata(
+                    FirstUpstreamFeature,
+                    current_only=True,
+                )
+                .collect()
+                .to_polars()
+            )
+
+            # Pick first sample to override
+            sample_uid = upstream_data["sample_uid"][0]
+
+            # Override data_version for one sample (simulating content change without provenance change)
+            # Keep provenance same but change data_version
+            first_struct = upstream_data["metaxy_data_version_by_field"][0]
+            override_data = upstream_data.filter(
+                pl.col("sample_uid") == sample_uid
+            ).with_columns(
+                # Change data_version to simulate content hash update
+                pl.col("metaxy_data_version_by_field").struct.with_fields(
+                    # Modify first field's version
+                    **{
+                        field: pl.lit(f"override_v2_{field}")
+                        for field in first_struct.keys()
+                    }
+                ),
+                pl.lit("override_v2").alias("metaxy_data_version"),
+            )
+
+            # Write the override (creates new row with same feature_version, different created_at)
+            store.write_metadata(FirstUpstreamFeature, override_data)
+
+            # Verify we have 2 records for this sample with different created_at
+            all_versions = (
+                store.read_metadata(
+                    FirstUpstreamFeature,
+                    current_only=True,
+                    latest_data_only=False,  # Get all versions
+                )
+                .collect()
+                .to_polars()
+            )
+            sample_versions = all_versions.filter(pl.col("sample_uid") == sample_uid)
+            assert len(sample_versions) >= 2, (
+                f"Expected at least 2 versions for sample {sample_uid}"
+            )
+
+            # Verify latest_data_only=True returns only latest version
+            latest_only = (
+                store.read_metadata(
+                    FirstUpstreamFeature,
+                    current_only=True,
+                    latest_data_only=True,
+                )
+                .collect()
+                .to_polars()
+            )
+            latest_sample = latest_only.filter(pl.col("sample_uid") == sample_uid)
+            assert len(latest_sample) == 1, "Should have exactly 1 latest version"
+            assert latest_sample["metaxy_data_version"][0] == "override_v2", (
+                "Latest version should have override"
+            )
+
+            # Resolve update for child - should detect the sample as changed
+            increment2 = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
+
+            # The sample with overridden data_version should appear in changed
+            changed_samples = set(
+                increment2.changed.to_polars()["sample_uid"].to_list()
+            )
+            assert sample_uid in changed_samples, (
+                f"Sample {sample_uid} should be in changed (data_version override)"
+            )
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )

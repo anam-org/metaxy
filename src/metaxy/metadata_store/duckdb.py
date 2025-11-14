@@ -238,13 +238,21 @@ class DuckDBMetadataStore(IbisMetadataStore):
                     f"Extension must be str or ExtensionSpec; got {type(ext_spec)}"
                 )
 
-            # Install and load the extension
-            if ext_repo == "community":
-                duckdb_conn.execute(f"INSTALL {ext_name} FROM community")
-            else:
-                duckdb_conn.execute(f"SET custom_extension_repository='{ext_repo}'")
-                duckdb_conn.execute(f"INSTALL {ext_name}")
+            # Try to install the extension (skip if it's a built-in extension)
+            try:
+                if ext_repo == "community":
+                    duckdb_conn.execute(f"FORCE INSTALL {ext_name} FROM community")
+                else:
+                    duckdb_conn.execute(f"SET custom_extension_repository='{ext_repo}'")
+                    duckdb_conn.execute(f"FORCE INSTALL {ext_name}")
+            except Exception as e:
+                # If installation fails with "existing extension" or HTTP 404, it's likely
+                # a built-in extension - just proceed to load
+                error_msg = str(e).lower()
+                if "existing extension" not in error_msg and "http" not in error_msg:
+                    raise  # Re-raise if it's not a known built-in extension issue
 
+            # Load the extension (works for both installed and built-in extensions)
             duckdb_conn.execute(f"LOAD {ext_name}")
 
     def _create_hash_functions(self):

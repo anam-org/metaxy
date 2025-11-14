@@ -113,6 +113,7 @@ class InMemoryMetadataStore(MetadataStore):
 
             # Handle schema evolution: ensure both DataFrames have matching columns
             # Add missing columns as null to the existing DataFrame
+
             for col_name in df_polars.columns:
                 if col_name not in existing_df.columns:
                     # Get the data type from the new DataFrame

@@ -9,7 +9,9 @@ to avoid manual data construction and ensure correctness.
 
 import warnings
 from collections.abc import Mapping
+from pathlib import Path
 
+import polars as pl
 import polars.testing as pl_testing
 import pytest
 import pytest_cases
@@ -703,7 +705,108 @@ def test_resolve_update_lazy_execution(
             )
 
 
-# ============= TEST: IDEMPOTENCY =============
+@parametrize_with_cases("store", cases=StoreCases)
+@parametrize_with_cases("simple_chain", cases=FeatureGraphCases, glob="simple_chain")
+def test_resolve_update_with_manual_data_version_override(
+    simple_chain: FeaturePlanOutput,
+    store: MetadataStore,
+    tmp_path: Path,
+) -> None:
+    """Test that users can manually override data_version columns.
+
+    Demonstrates that:
+    - Users can provide custom data_version_by_field (e.g., content hashes)
+    - Downstream features recompute only when data_version changes
+    - metaxy_provenance columns are tracked separately for audit
+    - read_metadata(current_only=True, latest_data_only=True) deduplicates by timestamp
+    """
+    graph, upstream_features, leaf_plan = simple_chain
+    root_feature = list(upstream_features.values())[0]
+    leaf_feature = graph.features_by_key[leaf_plan.feature.key]
+
+    with graph.use(), store:
+        # Write root feature with custom data_version (e.g., content hash)
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": ["s1", "s2", "s3"],
+                "value": ["data1", "data2", "data3"],  # User data column
+                "metaxy_provenance_by_field": [
+                    {"value": "prov_hash_1"},
+                    {"value": "prov_hash_2"},
+                    {"value": "prov_hash_3"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"value": "content_hash_v1"},  # Custom version from content
+                    {"value": "content_hash_v2"},
+                    {"value": "content_hash_v3"},
+                ],
+            }
+        )
+        store.write_metadata(root_feature, root_data)
+
+        # Compute child feature
+        increment = store.resolve_update(leaf_feature)
+        child_data = increment.added.to_polars()
+        assert len(child_data) == 3
+
+        # Write child metadata
+        store.write_metadata(leaf_feature, increment.added)
+
+        # Now update root's data_version for sample s1 only (simulating content change)
+        # Keep provenance same but change data_version
+        root_update = pl.DataFrame(
+            {
+                "sample_uid": ["s1"],
+                "value": ["data1"],  # Same user data
+                "metaxy_provenance_by_field": [
+                    {"value": "prov_hash_1"},  # Same provenance
+                ],
+                "metaxy_data_version_by_field": [
+                    {"value": "content_hash_v1_updated"},  # Changed data version
+                ],
+                "metaxy_feature_version": [root_feature.feature_version()],
+                "metaxy_snapshot_version": [graph.snapshot_version],
+            }
+        )
+        # Sleep to ensure different timestamp (important for deduplication)
+        # Using 100ms to be safe on fast systems
+        import time
+
+        time.sleep(0.1)
+        store.write_metadata(root_feature, root_update)
+
+        # Debug: Check what's in the root feature after update
+        all_root = (
+            store.read_metadata(root_feature, current_only=False).collect().to_polars()
+        )
+        s1_records = all_root.filter(pl.col("sample_uid") == "s1")
+
+        # Should have 2 records for s1 with different created_at timestamps
+        assert len(s1_records) == 2, f"Expected 2 records for s1, got {len(s1_records)}"
+
+        # Check current_only reads - should get latest record for s1
+        current_root = (
+            store.read_metadata(root_feature, current_only=True).collect().to_polars()
+        )
+        print(f"\nCurrent root records (should be 3): {len(current_root)}")
+        s1_current = current_root.filter(pl.col("sample_uid") == "s1")
+        print(
+            f"S1 current record data_version: {s1_current['metaxy_data_version_by_field'][0]}"
+        )
+        assert len(s1_current) == 1, (
+            f"Should have 1 current record for s1, got {len(s1_current)}"
+        )
+
+        # Resolve update for child - should detect s1 as changed (data_version changed)
+        increment2 = store.resolve_update(leaf_feature)
+
+        # Only s1 should be in changed (data_version changed for s1 in root)
+        changed_samples = set(increment2.changed.to_polars()["sample_uid"].to_list())
+        assert changed_samples == {"s1"}, f"Expected {{'s1'}}, got {changed_samples}"
+
+        # s2 and s3 should not appear (their data_version didn't change)
+        assert len(increment2.added.to_polars()) == 0
+        assert len(increment2.removed.to_polars()) == 0
 
 
 @parametrize_with_cases("store", cases=StoreCases)

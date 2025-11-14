@@ -299,9 +299,18 @@ def feature_metadata_strategy(
     df = draw(df_strategy)
 
     # Add constant version columns
+    # Use Python's datetime for timestamp (use a fixed base time for determinism in tests)
+    from datetime import datetime, timezone
+
+    # Use a fixed base timestamp for determinism
+    # In production, write_metadata adds the current time
+    base_timestamp = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+
     df = df.with_columns(
         pl.lit(feature_version).alias(METAXY_FEATURE_VERSION),
         pl.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        # Add timestamp column (using fixed time for all rows for test determinism)
+        pl.lit(base_timestamp).alias(METAXY_CREATED_AT),
     )
 
     # Add METAXY_PROVENANCE column - hash of all field hashes concatenated
@@ -333,12 +342,6 @@ def feature_metadata_strategy(
         pl.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         pl.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
     )
-
-    # Add created_at timestamp column
-    from datetime import datetime, timezone
-
-    df = df.with_columns(pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT))
-
     # If id_columns_df was provided, replace the generated ID columns with provided ones
     if id_columns_df is not None:
         # Drop the generated ID columns and add the provided ones
@@ -639,16 +642,18 @@ def downstream_metadata_strategy(
         )
 
     # Use Narwhals lit since downstream_df is a Narwhals DataFrame
+    # Use Python's datetime for timestamp
     from datetime import datetime, timezone
+
+    base_timestamp = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        nw.lit(base_timestamp).alias(METAXY_CREATED_AT),
         # Add data_version columns (default to provenance)
         nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
-        # Add created_at timestamp
-        nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
     )
 
     # Convert back to native Polars DataFrame for the return type

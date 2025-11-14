@@ -52,7 +52,7 @@ These versions are sample-level and require access to the metadata store in orde
 | video_003  | `{"audio": "c9f2a8e4", "frames": "e7d3b1c5"}` |
 | video_004  | `{"audio": "b1e4f9a7", "frames": "a8c2e6d9"}` |
 
-- **Sample Version** is derived from the **Provenance By Field** by simply hashing it.
+- **Sample Provenance** is derived from the **Provenance By Field** by simply hashing it.
 
 This is the end game of the versioning system. It ensures that only the necessary samples are recomputed when a feature version changes. It acts as source of truth for resolving incremental updates for feature metadata.
 
@@ -229,7 +229,7 @@ color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- fra
     example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font
 color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
 color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
-    style example_crop stroke:#FFA500,stroke-width:3px
+    style example_crosample versiop stroke:#FFA500,stroke-width:3px
     example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>1ac83b<br/><font
 color="#999">---</font><br/>- faces (2d75f0)</div>"]
     example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font
@@ -251,10 +251,11 @@ Notice:
 
 ## Incremental Computation
 
+sample provenances
 The metadata store's `calculate_provenance_by_field()` method:
 
 1. Joins upstream feature metadata
-2. Computes sample versions
+2. Computes sample provenances
 3. Compares against existing metadata
 4. Returns diff: added, changed, removed samples
 
@@ -273,3 +274,16 @@ with store:  # MetadataStore
 The `diff` object has attributes for new upstream samples, samples with new versions, and samples that have been removed from upstream metadata.
 
 This approach avoids expensive recomputation when nothing changed, while ensuring correctness when dependencies update.
+
+## User-defined Versioning
+
+By default, Metaxy uses ahead-of-time versioning by looking at sample provenances.
+This is a good baseline for most use cases, but sometimes users may want to override this behavior and to provide more fine-grained sample versions to Metaxy.
+
+This can be achieved by providing a custom `data_version_by_field` column when calling [`store.write_metadata`][`metaxy.MetadataStore.write_metadata`]. When this column is provided, Metaxy will use it to compute downstream provenances.
+
+This opens up the possibility to skip downstream computations even on upstream provenances changes.
+
+A common use case is **content-based versioning**: once a sample has been computed, the **data** itself can be used to version downstream samples. This is particularly easy with object stores such as S3 or GCS, since they provide SHA-256 hashes (or other kinds of identifiers) for objects.
+
+Note that user-defined versioning can only **narrow** the scope of downstream computations.

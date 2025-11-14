@@ -222,7 +222,7 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         sample_ids = list(range(1, size + 1))
         payload = pl.DataFrame(
             {
-                "sample_id": sample_ids,
+                "sample_uid": sample_ids,  # Changed from sample_id to sample_uid to match SampleFeatureSpec
                 "metaxy_provenance_by_field": [
                     {"frames": f"hash_frames_{i}", "audio": f"hash_audio_{i}"}
                     for i in sample_ids
@@ -239,10 +239,10 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         with store:
             store.write_metadata(feature, payload)
             result = collect_to_polars(store.read_metadata(feature))
-            actual = result.sort("sample_id").select(
-                ["sample_id", "metaxy_provenance_by_field"]
+            actual = result.sort("sample_uid").select(
+                ["sample_uid", "metaxy_provenance_by_field"]
             )
-            expected = payload.sort("sample_id")
+            expected = payload.sort("sample_uid")
             assert_frame_equal(actual, expected)
 
         assert _test_recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
