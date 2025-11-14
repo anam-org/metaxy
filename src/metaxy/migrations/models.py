@@ -517,9 +517,9 @@ class PythonMigration(DiffMigration):
         user_defined = cls.__dict__.get("operations")
         if user_defined is not None and not isinstance(user_defined, property):
             cls._python_operations_factory = user_defined
-            # Restore the DiffMigration.operations property so callers still
+            # Restore the Migration.operations property so callers still
             # access operation instances via the normal property.
-            setattr(cls, "operations", DiffMigration.__dict__["operations"])
+            setattr(cls, "operations", Migration.__dict__["operations"])
 
     def build_operations(self) -> list[Any]:
         """Return Python operation objects for this migration."""

@@ -525,9 +525,10 @@ def status():
 
 @app.command(name="list")
 def list_migrations():
-    """List all migrations in chain order as defined in code.
+    """List all migrations in order as defined in code.
 
     Displays a simple table showing migration ID, creation time, operations, and file type.
+    Shows all migrations (DiffMigration and FullGraphMigration), sorted by filename.
 
     Example:
         $ metaxy migrations list
@@ -540,7 +541,7 @@ def list_migrations():
     from rich.table import Table
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.loader import build_migration_chain, find_migration_file
+    from metaxy.migrations.loader import load_migration_from_file
 
     AppContext.get()
     migrations_dir = Path(".metaxy/migrations")
@@ -554,8 +555,27 @@ def list_migrations():
         print_error(app.console, "Invalid migration", e)
         return
 
-    if not chain:
+    migration_files = []
+    for pattern in ["*.yaml", "*.py"]:
+        migration_files.extend(migrations_dir.glob(pattern))
+
+    if not migration_files:
         app.console.print("[yellow]No migrations found.[/yellow]")
+        app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
+        return
+
+    # Load all migrations and sort by filename
+    migrations_list = []
+    for migration_file in sorted(migration_files):
+        try:
+            migration = load_migration_from_file(migration_file)
+            migrations_list.append((migration, migration_file))
+        except Exception:
+            # Skip files that can't be loaded
+            continue
+
+    if not migrations_list:
+        app.console.print("[yellow]No valid migrations found.[/yellow]")
         app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
         return
 
@@ -572,7 +592,7 @@ def list_migrations():
     table.add_column("Operations", no_wrap=True, overflow="fold")
     table.add_column("Type", no_wrap=False, overflow="fold")
 
-    for migration in chain:
+    for migration, migration_file in migrations_list:
         # Format created_at - simpler format without seconds
         created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
 
@@ -590,14 +610,10 @@ def list_migrations():
         ops_str = ", ".join(op_names)
 
         # Determine file type
-        try:
-            migration_file = find_migration_file(migration.migration_id, migrations_dir)
-            if migration_file.suffix == ".py":
-                file_type = "[cyan]Python[/cyan]"
-            else:
-                file_type = "[green]YAML[/green]"
-        except FileNotFoundError:
-            file_type = "[red]Unknown[/red]"
+        if migration_file.suffix == ".py":
+            file_type = "[cyan]Python[/cyan]"
+        else:
+            file_type = "[green]YAML[/green]"
 
         table.add_row(migration.migration_id, created_str, ops_str, file_type)
 
