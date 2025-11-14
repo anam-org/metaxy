@@ -29,7 +29,7 @@ from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import MigrationExecutor
 from metaxy.migrations.loader import build_migration_chain, load_migration_from_file
-from metaxy.migrations.models import DiffMigration, PythonMigration
+from metaxy.migrations.models import DiffMigration, Migration
 from metaxy.models.feature import FeatureGraph
 
 
@@ -244,9 +244,6 @@ class TestBasicPythonMigrationExecution:
         UpstreamV2 = upstream_downstream_v2.features_by_key[
             FeatureKey(["test_py_migration", "upstream"])
         ]
-        DownstreamV2 = upstream_downstream_v2.features_by_key[
-            FeatureKey(["test_py_migration", "downstream"])
-        ]
 
         with upstream_downstream_v2.use(), store_v2:
             # Record v2 snapshot
@@ -294,37 +291,22 @@ class TestBasicPythonMigrationExecution:
 
             # Verify result
             assert result.migration_id == "20250107_120000"
-            # Upstream will fail (root), downstream should succeed
+            # Upstream will fail (root), downstream will be skipped due to failed dependency
             assert result.status == "failed"
-            assert result.features_completed == 1  # Downstream
-            assert result.features_failed == 1  # Upstream
+            assert result.features_completed == 0  # Nothing completed
+            assert result.features_failed == 1  # Upstream failed
+            assert result.features_skipped == 1  # Downstream skipped
 
-            # Verify downstream was reconciled
-            # After migration, there should be metadata for all samples
-            current_downstream = collect_to_polars(
-                store_v2.read_metadata(DownstreamV2, current_only=True)
-            )
-            # Should have samples 1, 2, 3
-            sample_uids = set(current_downstream["sample_uid"].unique())
-            assert sample_uids == {1, 2, 3}
-
-            # Verify all rows have the new feature version
-            new_feature_version = upstream_downstream_v2.features_by_key[
-                FeatureKey(["test_py_migration", "downstream"])
-            ].feature_version()
-            unique_versions = set(current_downstream["metaxy_feature_version"].unique())
-            # All current rows should have the same (latest) feature version
-            assert len(unique_versions) == 1
-            assert new_feature_version in unique_versions
-
-            # Verify result properties
-            assert result.status == "failed"
-            assert result.features_completed == 1
-            assert result.features_failed == 1
-            # rows_affected can be more than 3 if duplicates exist (immutable store behavior)
-            assert result.rows_affected >= 3  # At least 3 downstream rows reconciled
+            # Verify upstream error
             assert "test_py_migration/upstream" in result.errors
             assert "Root features" in result.errors["test_py_migration/upstream"]
+
+            # Verify downstream was skipped
+            assert "test_py_migration/downstream" in result.errors
+            assert (
+                "Skipped due to failed dependencies"
+                in result.errors["test_py_migration/downstream"]
+            )
 
     def test_python_migration_with_custom_method(
         self,
@@ -431,7 +413,10 @@ class TestBasicPythonMigrationExecution:
 
             # Verify execution worked
             assert result.status == "failed"  # Upstream will fail (root)
-            assert result.features_completed == 1  # Downstream succeeded
+            assert result.features_completed == 0  # Nothing completed
+            assert (
+                result.features_skipped == 1
+            )  # Downstream skipped due to upstream failure
 
 
 class TestCustomExecuteLogic:
@@ -534,7 +519,8 @@ class TestCustomExecuteLogic:
 
             # Verify standard execution worked
             assert result.status == "failed"  # Upstream will fail
-            assert result.features_completed == 1  # Downstream succeeded
+            assert result.features_completed == 0  # Nothing completed
+            assert result.features_skipped == 1  # Downstream skipped
 
 
 class TestMixedChainExecution:
@@ -606,12 +592,12 @@ class TestMixedChainExecution:
         # Migrate to v1.5
         store_v15 = migrate_store_to_graph(store_v1, graph_v15)
 
+        # Create migrations directory (outside context managers)
+        migrations_dir = tmp_path / "migrations"
+        migrations_dir.mkdir()
+
         with graph_v15.use(), store_v15:
             store_v15.record_feature_graph_snapshot()
-
-            # Create migrations directory with YAML then Python
-            migrations_dir = tmp_path / "migrations"
-            migrations_dir.mkdir()
 
             # Migration 1: YAML (v1 -> v1.5)
             import yaml
@@ -740,18 +726,20 @@ class TestIdempotencyAndFailureRecovery:
             )
 
             assert result1.status == "failed"  # Upstream fails
-            assert result1.features_completed == 1  # Downstream completes
+            assert result1.features_completed == 0  # Nothing completes
             assert result1.features_failed == 1  # Upstream fails
+            assert result1.features_skipped == 1  # Downstream skipped
 
             # Execute second time (should be idempotent)
             result2 = executor.execute(
                 migration, store_v2, project="default", dry_run=False
             )
 
-            # Should have same results (downstream already done, upstream still fails)
+            # Should have same results (upstream still fails, downstream still skipped)
             assert result2.status == "failed"
-            assert result2.features_completed == 1
+            assert result2.features_completed == 0
             assert result2.features_failed == 1
+            assert result2.features_skipped == 1
 
 
 class TestErrorHandling:
@@ -841,16 +829,21 @@ class TestPythonMigrationTypes:
         custom_migration = f'''"""Custom migration with user-defined logic."""
 
 from datetime import datetime, timezone
-from metaxy.migrations.models import PythonMigration, MigrationResult
+from metaxy.migrations.models import Migration, MigrationResult
 from pathlib import Path
 
-class Migration(PythonMigration):
+class CustomMigration(Migration):
     """Custom migration for data cleanup."""
     migration_id: str = "20250107_200000"
+    parent: str = "initial"
     created_at: datetime = datetime.now(timezone.utc)
 
     # Custom fields
     cleanup_threshold_days: int = 30
+
+    def get_affected_features(self, store, project):
+        """Return empty list for this custom migration."""
+        return []
 
     def execute(self, store, project, *, dry_run=False):
         """Custom cleanup logic."""
@@ -864,6 +857,7 @@ class Migration(PythonMigration):
             status="completed",
             features_completed=0,
             features_failed=0,
+            features_skipped=0,
             affected_features=[],
             errors={{}},
             rows_affected=42,  # Custom value
@@ -879,8 +873,8 @@ class Migration(PythonMigration):
         # Load migration
         migration = load_migration_from_file(migration_file)
 
-        # Verify it's a PythonMigration
-        assert isinstance(migration, PythonMigration)
+        # Verify it's a Migration
+        assert isinstance(migration, Migration)
         assert migration.migration_id == "20250107_200000"
 
         # Execute with dummy store
@@ -892,14 +886,14 @@ class Migration(PythonMigration):
                 migration, store, project="default", dry_run=False
             )
 
-        # Verify custom logic ran
-        assert marker_file.exists()
-        assert "threshold: 30 days" in marker_file.read_text()
+            # Verify custom logic ran
+            assert marker_file.exists()
+            assert "threshold: 30 days" in marker_file.read_text()
 
-        # Verify custom result
-        assert result.status == "completed"
-        assert result.rows_affected == 42
-        assert result.features_completed == 0
+            # Verify custom result
+            assert result.status == "completed"
+            assert result.rows_affected == 42
+            assert result.features_completed == 0
 
 
 class TestDryRunMode:
@@ -921,6 +915,9 @@ class TestDryRunMode:
             FeatureKey(["test_py_migration", "downstream"])
         ]
 
+        # Will be populated in first context, used in second
+        initial_downstream = pl.DataFrame()
+
         with upstream_downstream_v1.use(), store_v1:
             upstream_data = pl.DataFrame(
                 {
@@ -939,7 +936,7 @@ class TestDryRunMode:
 
             store_v1.record_feature_graph_snapshot()
 
-            # Get initial downstream data
+            # Get initial downstream data for later comparison
             initial_downstream = collect_to_polars(
                 store_v1.read_metadata(DownstreamV1, current_only=False)
             )
@@ -991,7 +988,11 @@ class TestDryRunMode:
 
             # Verify dry run status
             assert result.status == "skipped"
-            assert result.rows_affected > 0  # Would affect rows
+            # In dry run, no rows are affected and features are counted differently
+            # Upstream fails, downstream skipped
+            assert result.features_completed == 0
+            assert result.features_failed == 1
+            assert result.features_skipped == 1
 
             # Verify data unchanged
             final_downstream = collect_to_polars(
