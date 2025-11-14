@@ -2136,7 +2136,7 @@
 <li><code>explain</code>: Show detailed diff for a migration.</li>
 <li><code>generate</code>: Generate migration from detected feature changes.</li>
 <li><code>list</code>: List all migrations in chain order as defined in code.</li>
-<li><code>status</code>: Show migration chain and execution status.</li>
+<li><code>status</code>: Show migrations and execution status.</li>
 </ul>
 <h4 id="metaxy-migrations-generate"><code>metaxy migrations generate</code><a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h4>
 <p>Generate migration from detected feature changes.</p>
@@ -2169,7 +2169,7 @@ Tracks execution state in database (events).</p>
 <li><code>--dry-run, --no-dry-run</code>: Preview changes without executing  <em>[default: --no-dry-run]</em></li>
 </ul>
 <h4 id="metaxy-migrations-status"><code>metaxy migrations status</code><a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h4>
-<p>Show migration chain and execution status.</p>
+<p>Show migrations and execution status.</p>
 <p>Reads migration definitions from YAML files (git). Shows execution status from database events. Displays the parent 
 chain in order.</p>
 <p><strong>Usage</strong>:</p>
@@ -2379,6 +2379,7 @@ is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 <h4 id="metaxy-metadata-drop"><code>metaxy metadata drop</code><a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h4>
 <p>Drop metadata from a store.</p>
 <p>Removes metadata for specified features from the store. This is a destructive operation and requires --confirm flag.</p>
+<p>When using --all-features, drops metadata for all features defined in the current project's feature graph.</p>
 <p>Useful for: - Cleaning up test data - Re-computing feature metadata from scratch - Removing obsolete features</p>
 <p><strong>Usage</strong>:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><a href="#__codelineno-20-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>drop<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
@@ -2388,7 +2389,7 @@ is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 <li><code>STORE, --store</code>: Store name to drop metadata from (defaults to configured default store)</li>
 <li><code>FEATURE, --feature, --empty-feature</code>: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
 --all-features.</li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features in the store  <em>[default: --no-all-features]</em></li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features defined in the current project's feature graph  <em>[default: --no-all-features]</em></li>
 <li><code>CONFIRM, --confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion)  <em>[default: --no-confirm]</em></li>
 </ul>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
