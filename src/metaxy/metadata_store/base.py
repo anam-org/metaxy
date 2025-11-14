@@ -443,7 +443,7 @@ class MetadataStore(ABC):
             )
 
     @abstractmethod
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: Frame,
@@ -513,7 +513,7 @@ class MetadataStore(ABC):
         if is_system_table:
             # Ensure we have a DataFrame (collect if LazyFrame)
             self._validate_schema_system_table(df_nw)
-            self._write_metadata_impl(feature_key, df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
             return
 
         # For regular features: validate schema first before adding columns
@@ -530,7 +530,7 @@ class MetadataStore(ABC):
         df_nw = self._add_system_columns(df_nw, feature)  # pyright: ignore[reportArgumentType]
 
         self._validate_schema(df_nw)
-        self._write_metadata_impl(feature_key, df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
 
     def _add_system_columns(
         self,
