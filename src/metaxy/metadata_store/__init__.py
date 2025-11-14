@@ -11,7 +11,7 @@ from metaxy.metadata_store.exceptions import (
     StoreNotOpenError,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.metadata_store.system_tables import (
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     allow_feature_version_override,
 )

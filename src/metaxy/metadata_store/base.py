@@ -18,13 +18,13 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
-from metaxy.metadata_store.system_tables import (
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
-    SYSTEM_NAMESPACE,
-    _suppress_feature_version_warning,
+    METAXY_SYSTEM_KEY_PREFIX,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
 from metaxy.metadata_store.utils import empty_frame_like
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
@@ -334,7 +334,7 @@ class MetadataStore(ABC):
 
     def _is_system_table(self, feature_key: FeatureKey) -> bool:
         """Check if feature key is a system table."""
-        return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
+        return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
     def _resolve_feature_key(
         self, feature: FeatureKey | type[BaseFeature]
@@ -957,43 +957,6 @@ class MetadataStore(ABC):
 
         return False
 
-    def list_features(self, *, include_fallback: bool = False) -> list[FeatureKey]:
-        """
-        List all features in store.
-
-        Args:
-            include_fallback: If True, include features from fallback stores
-
-        Returns:
-            List of FeatureKey objects
-
-        Raises:
-            StoreNotOpenError: If store is not open
-        """
-        self._check_open()
-
-        features = self._list_features_local()
-
-        if include_fallback:
-            for store in self.fallback_stores:
-                features.extend(store.list_features(include_fallback=True))
-
-        # Deduplicate
-        seen = set()
-        unique_features = []
-        for feature in features:
-            key_str = feature.to_string()
-            if key_str not in seen:
-                seen.add(key_str)
-                unique_features.append(feature)
-
-        return unique_features
-
-    @abstractmethod
-    def _list_features_local(self) -> list[FeatureKey]:
-        """List features in THIS store only."""
-        pass
-
     @abstractmethod
     def display(self) -> str:
         """Return a human-readable display string for this store.
@@ -1264,10 +1227,13 @@ class MetadataStore(ABC):
         # Determine which features to copy
         features_to_copy: list[FeatureKey]
         if features is None:
-            # Copy all features from source
-            features_to_copy = from_store.list_features(include_fallback=False)
+            # Copy all features from active graph (features defined in current project)
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            features_to_copy = graph.list_features(only_current_project=True)
             logger.info(
-                f"Copying all features from source: {len(features_to_copy)} features"
+                f"Copying all features from active graph: {len(features_to_copy)} features"
             )
         else:
             # Convert all to FeatureKey
@@ -1727,9 +1693,9 @@ class MetadataStore(ABC):
                 )
                 added, changed, removed = tracker.resolve_increment_with_provenance(
                     current=current_lazy,
-                    upstream={},  # No upstream for root features
+                    upstream={},  # Empty upstream - samples already have provenance_by_field computed
                     hash_algorithm=self.hash_algorithm,
-                    filters={},  # No filters for root features
+                    filters={},  # No additional filters - samples define the target state
                     sample=samples.lazy(),
                 )
 

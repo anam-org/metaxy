@@ -112,10 +112,6 @@ def generate(
         # Output migration ID to stdout for scripting
         data_console.print(migration.migration_id)
 
-        # Show description
-        description = migration.get_description(metadata_store, project)
-        app.console.print(f"  Description: {description}")
-
         # Get affected features (computed on-demand)
         affected_features = migration.get_affected_features(metadata_store, project)
         app.console.print(f"\n  Affected features ({len(affected_features)}):")
@@ -168,7 +164,7 @@ def apply(
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.executor import MigrationExecutor
     from metaxy.migrations.loader import build_migration_chain
 
@@ -196,9 +192,11 @@ def apply(
             return
 
         # Get completed migrations from events
+        from metaxy.metadata_store.system import MigrationStatus
+
         completed_ids = set()
         for mid in [m.migration_id for m in chain]:
-            if storage.get_migration_status(mid, project) == "completed":
+            if storage.get_migration_status(mid, project) == MigrationStatus.COMPLETED:
                 completed_ids.add(mid)
 
         # Filter to unapplied migrations
@@ -281,7 +279,7 @@ def apply(
 
 @app.command
 def status():
-    """Show migration chain and execution status.
+    """Show migrations and execution status.
 
     Reads migration definitions from YAML files (git).
     Shows execution status from database events.
@@ -290,7 +288,7 @@ def status():
     Example:
         $ metaxy migrations status
 
-        Migration Chain:
+        Migration:
         ────────────────────────────────────────────
         ✓ 20250110_120000 (parent: initial)
           Status: COMPLETED
@@ -305,7 +303,7 @@ def status():
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import build_migration_chain
 
     context = AppContext.get()
@@ -322,7 +320,7 @@ def status():
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+            app.console.print(f"[red]✗[/red] Invalid migratios: {e}")
             return
 
         if not chain:
@@ -330,23 +328,23 @@ def status():
             app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
             return
 
-        app.console.print("\n[bold]Migration Chain:[/bold]")
+        app.console.print("\n[bold]Migration:[/bold]")
         app.console.print("─" * 60)
 
         for migration in chain:
             migration_id = migration.migration_id
 
-            # Get status from events
-            status_str = storage.get_migration_status(migration_id, project=project)
+            # Get migration summary
+            from metaxy.metadata_store.system import MigrationStatus
 
-            # Get completion counts
-            completed_features = storage.get_completed_features(
-                migration_id, project=project
-            )
-            failed_features = storage.get_failed_features(migration_id, project=project)
+            summary = storage.get_migration_summary(migration_id, project=project)
+            migration_status = summary["status"]
+            completed_features = summary["completed_features"]
+            failed_features = summary["failed_features"]
+            total_processed = summary["total_features_processed"]
 
             # Compute total affected
-            if status_str == "not_started":
+            if migration_status == MigrationStatus.NOT_STARTED:
                 try:
                     total_affected = len(
                         migration.get_affected_features(metadata_store, project)
@@ -354,20 +352,20 @@ def status():
                 except Exception:
                     total_affected = "?"
             else:
-                total_affected = len(completed_features) + len(failed_features)
+                total_affected = total_processed
 
             # Print status icon
-            if status_str == "completed":
+            if migration_status == MigrationStatus.COMPLETED:
                 app.console.print(
                     f"[green]✓[/green] {migration_id} (parent: {migration.parent})"
                 )
                 app.console.print("  Status: [green]COMPLETED[/green]")
-            elif status_str == "failed":
+            elif migration_status == MigrationStatus.FAILED:
                 app.console.print(
                     f"[red]✗[/red] {migration_id} (parent: {migration.parent})"
                 )
                 app.console.print("  Status: [red]FAILED[/red]")
-            elif status_str == "in_progress":
+            elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print(
                     f"[yellow]⚠[/yellow] {migration_id} (parent: {migration.parent})"
                 )
@@ -378,9 +376,13 @@ def status():
                 )
                 app.console.print("  Status: [blue]NOT STARTED[/blue]")
 
-            app.console.print("  Snapshots:")
-            app.console.print(f"    From: {migration.from_snapshot_version}")
-            app.console.print(f"    To:   {migration.to_snapshot_version}")
+            # Show snapshot info for DiffMigration
+            from metaxy.migrations.models import DiffMigration
+
+            if isinstance(migration, DiffMigration):
+                app.console.print("  Snapshots:")
+                app.console.print(f"    From: {migration.from_snapshot_version}")
+                app.console.print(f"    To:   {migration.to_snapshot_version}")
             app.console.print(
                 f"  Features: {len(completed_features)}/{total_affected} completed"
             )
@@ -421,7 +423,7 @@ def list_migrations():
     try:
         chain = build_migration_chain(migrations_dir)
     except ValueError as e:
-        app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+        app.console.print(f"[red]✗[/red] Invalid migration: {e}")
         return
 
     if not chain:
@@ -445,10 +447,13 @@ def list_migrations():
         # Format created_at - simpler format without seconds
         created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
 
-        # Format operations - extract short names
+        # Format operations - extract short names from raw ops dicts
+        # Use .ops (raw dicts) instead of .operations (instantiated) to avoid
+        # importing operation classes that might not exist
         op_names = []
-        for op in migration.ops:
-            op_type = op.get("type", "unknown")
+        ops = getattr(migration, "ops", [])
+        for op_dict in ops:
+            op_type = op_dict.get("type", "unknown")
             # Extract just the class name (last part after final dot)
             op_short = op_type.split(".")[-1]
             op_names.append(op_short)
@@ -537,10 +542,6 @@ def explain(
         app.console.print(f"\n[bold]Migration: {migration_id}[/bold]")
         app.console.print(f"From: {migration.from_snapshot_version}")
         app.console.print(f"To:   {migration.to_snapshot_version}")
-
-        # Get description (computed on-demand)
-        description = migration.get_description(metadata_store, project)
-        app.console.print(f"Description: {description}")
         app.console.print()
 
         # Compute diff on-demand
@@ -701,7 +702,7 @@ def describe(
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.metadata_store.system_tables import SystemTableStorage
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.migrations.loader import (
         build_migration_chain,
         find_migration_yaml,
@@ -762,18 +763,22 @@ def describe(
             app.console.print(f"[bold]YAML:[/bold] {yaml_path}")
             app.console.print()
 
-            # Snapshots
-            app.console.print("[bold]Snapshots:[/bold]")
-            app.console.print(f"  From: {migration_obj.from_snapshot_version}")
-            app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
-            app.console.print()
+            # Snapshots (for DiffMigration)
+            from metaxy.migrations.models import DiffMigration, FullGraphMigration
 
-            # Operations
-            app.console.print("[bold]Operations:[/bold]")
-            for j, op in enumerate(migration_obj.ops, 1):
-                op_type = op.get("type", "unknown")
-                app.console.print(f"  {j}. {op_type}")
-            app.console.print()
+            if isinstance(migration_obj, DiffMigration):
+                app.console.print("[bold]Snapshots:[/bold]")
+                app.console.print(f"  From: {migration_obj.from_snapshot_version}")
+                app.console.print(f"  To:   {migration_obj.to_snapshot_version}")
+                app.console.print()
+
+            # Operations (for FullGraphMigration)
+            if isinstance(migration_obj, FullGraphMigration):
+                app.console.print("[bold]Operations:[/bold]")
+                for j, op in enumerate(migration_obj.ops, 1):
+                    op_type = op.get("type", "unknown")
+                    app.console.print(f"  {j}. {op_type}")
+                app.console.print()
 
             # Get affected features
             app.console.print("[bold]Computing affected features...[/bold]")
@@ -797,6 +802,11 @@ def describe(
 
             graph = FeatureGraph.get_active()
 
+            # Get events for this migration to extract rows_affected per feature
+            events_df = storage.get_migration_events(
+                migration_obj.migration_id, project
+            )
+
             for feature_key_str in affected_features:
                 feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
@@ -808,53 +818,62 @@ def describe(
                     )
                     continue
 
-                feature_cls = graph.features_by_key[feature_key_obj]
+                graph.features_by_key[feature_key_obj]
 
-                # Get current row count
-                try:
-                    import narwhals as nw
+                # Get rows affected from events (sum of all completed events for this feature)
+                import polars as pl
 
-                    metadata = metadata_store.read_metadata(
-                        feature_cls,
-                        current_only=False,
-                        allow_fallback=False,
+                feature_events = events_df.filter(
+                    (pl.col("feature_key") == feature_key_str)
+                    & (pl.col("event_type") == "feature_migration_completed")
+                )
+
+                if feature_events.height > 0:
+                    # Extract rows_affected from JSON payload
+                    feature_events = feature_events.with_columns(
+                        pl.col("payload")
+                        .str.json_path_match("$.rows_affected")
+                        .cast(pl.Int64, strict=False)
+                        .fill_null(0)
+                        .alias("rows_affected")
                     )
-                    row_count = (
-                        metadata.select(nw.col("sample_uid").unique())
-                        .collect()
-                        .shape[0]
-                    )
-                except Exception:
-                    row_count = "?"
+                    rows_affected = int(feature_events["rows_affected"].sum())
+
+                    # Count number of attempts (feature_migration_started events)
+                    attempts = events_df.filter(
+                        (pl.col("feature_key") == feature_key_str)
+                        & (pl.col("event_type") == "feature_migration_started")
+                    ).height
+                else:
+                    rows_affected = 0
+                    attempts = 0
 
                 # Check if feature has upstream dependencies
                 plan = graph.get_feature_plan(feature_key_obj)
                 has_upstream = plan.deps is not None and len(plan.deps) > 0
 
                 app.console.print(f"[bold]{feature_key_str}[/bold]")
-                app.console.print(f"    Samples: {row_count}")
+                app.console.print(f"    Rows Affected: {rows_affected}")
+                app.console.print(f"    Attempts: {attempts}")
                 app.console.print(f"    Has upstream: {has_upstream}")
 
             app.console.print()
 
             # Execution status
-            status_str = storage.get_migration_status(
-                migration_obj.migration_id, project
-            )
-            completed_features = storage.get_completed_features(
-                migration_obj.migration_id, project
-            )
-            failed_features = storage.get_failed_features(
-                migration_obj.migration_id, project
-            )
+            from metaxy.metadata_store.system import MigrationStatus
+
+            summary = storage.get_migration_summary(migration_obj.migration_id, project)
+            migration_status = summary["status"]
+            completed_features = summary["completed_features"]
+            failed_features = summary["failed_features"]
 
             app.console.print("[bold]Execution Status:[/bold]")
-            if status_str == "completed":
+            if migration_status == MigrationStatus.COMPLETED:
                 app.console.print("  [green]✓ COMPLETED[/green]")
                 app.console.print(
                     f"    Features processed: {len(completed_features)}/{len(affected_features)}"
                 )
-            elif status_str == "failed":
+            elif migration_status == MigrationStatus.FAILED:
                 app.console.print("  [red]✗ FAILED[/red]")
                 app.console.print(
                     f"    Features completed: {len(completed_features)}/{len(affected_features)}"
@@ -864,7 +883,7 @@ def describe(
                     app.console.print("    Failed features:")
                     for feature_key, error in list(failed_features.items())[:5]:
                         app.console.print(f"      • {feature_key}: {error}")
-            elif status_str == "in_progress":
+            elif migration_status == MigrationStatus.IN_PROGRESS:
                 app.console.print("  [yellow]⚠ IN PROGRESS[/yellow]")
                 app.console.print(
                     f"    Features completed: {len(completed_features)}/{len(affected_features)}"

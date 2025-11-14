@@ -7,6 +7,7 @@ from typing import Any, Protocol
 
 import narwhals as nw
 import polars as pl
+from typing_extensions import Self
 
 from metaxy.models.types import FeatureKey
 
@@ -35,4 +36,12 @@ class MetadataStoreProtocol(Protocol):
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
         """Read metadata from this store only (no fallback)."""
+        ...
+
+    def __enter__(self) -> Self:
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
         ...

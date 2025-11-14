@@ -15,7 +15,10 @@ import narwhals as nw
 import polars as pl
 
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
+from metaxy.metadata_store.exceptions import (
+    HashAlgorithmNotSupportedError,
+    TableNotFoundError,
+)
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
@@ -251,39 +254,35 @@ class IbisMetadataStore(MetadataStore, ABC):
             backend_module = getattr(self._ibis, self.backend)
             self._conn = backend_module.connect(**self.connection_params)
 
-        # Auto-create system tables if enabled (warning is handled in base class)
-        if self.auto_create_tables:
-            self._create_system_tables()
+    @property
+    def sqlalchemy_url(self) -> str:
+        """Get SQLAlchemy-compatible connection URL for tools like Alembic.
 
-    def _create_system_tables(self) -> None:
-        """Create system tables if they don't exist.
+        Returns the connection string if available. If the store was initialized
+        with backend + connection_params instead of a connection string, raises
+        an error since constructing a proper URL is backend-specific.
 
-        Creates empty system tables with proper schemas:
-        - metaxy-system__feature_versions: Tracks feature versions and graph snapshots
-        - metaxy-system__migration_events: Tracks migration execution events
+        Returns:
+            SQLAlchemy-compatible URL string
 
-        This method is idempotent - safe to call multiple times.
+        Raises:
+            ValueError: If connection_string is not available
+
+        Example:
+            ```python
+            store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
+            print(store.sqlalchemy_url)  # postgresql://user:pass@host:5432/db
+            ```
         """
-        from metaxy.metadata_store.system_tables import (
-            FEATURE_VERSIONS_KEY,
-            FEATURE_VERSIONS_SCHEMA,
-            MIGRATION_EVENTS_KEY,
-            MIGRATION_EVENTS_SCHEMA,
+        if self.connection_string:
+            return self.connection_string
+
+        raise ValueError(
+            "SQLAlchemy URL not available. Store was initialized with backend + connection_params "
+            "instead of a connection string. To use Alembic, initialize with a connection string: "
+            f"IbisMetadataStore('postgresql://user:pass@host:5432/db') instead of "
+            f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
-
-        existing_tables = self.conn.list_tables()
-
-        # Create feature_versions table if it doesn't exist
-        feature_versions_table = FEATURE_VERSIONS_KEY.table_name
-        if feature_versions_table not in existing_tables:
-            empty_df = pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-            self.conn.create_table(feature_versions_table, obj=empty_df)
-
-        # Create migration_events table if it doesn't exist
-        migration_events_table = MIGRATION_EVENTS_KEY.table_name
-        if migration_events_table not in existing_tables:
-            empty_df = pl.DataFrame(schema=MIGRATION_EVENTS_SCHEMA)
-            self.conn.create_table(migration_events_table, obj=empty_df)
 
     def close(self) -> None:
         """Close the Ibis connection."""
@@ -313,33 +312,24 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         table_name = feature_key.table_name
 
-        # Check if table exists
-        existing_tables = self.conn.list_tables()
+        try:
+            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+        except Exception as e:
+            # Check if it's a TableNotFound error
+            import ibis.common.exceptions
 
-        if table_name not in existing_tables:
-            # Table doesn't exist - create it if auto_create_tables is enabled
-            if not self.auto_create_tables:
-                from metaxy.metadata_store.exceptions import TableNotFoundError
-
+            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+                raise
+            if self.auto_create_tables:
+                # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
+                # No separate insert needed - the data from df is already written
+                self.conn.create_table(table_name, obj=df)
+            else:
                 raise TableNotFoundError(
                     f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
                     f"Enable auto_create_tables=True to automatically create tables, "
                     f"or use proper database migration tools like Alembic to create the table first."
-                )
-
-            # Create table from DataFrame
-            # Ensure NULL columns have proper types by filling with a typed value
-            # This handles cases like snapshot_version which can be NULL
-            df_typed = df
-            for col in df.columns:
-                if df[col].dtype == pl.Null:
-                    # Cast NULL columns to String
-                    df_typed = df_typed.with_columns(pl.col(col).cast(pl.Utf8))
-
-            self.conn.create_table(table_name, obj=df_typed)
-        else:
-            # Append to existing table
-            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+                ) from e
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop the table for a feature.
@@ -405,30 +395,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
         return nw_lazy
 
-    def _list_features_local(self) -> list[FeatureKey]:
-        """
-        List all features in this store.
-
-        Returns:
-            List of FeatureKey objects (excluding system tables)
-        """
-        # Query all table names
-        table_names = self.conn.list_tables()
-
-        features = []
-        for table_name in table_names:
-            # Skip Ibis internal tables (start with "ibis_")
-            if table_name.startswith("ibis_"):
-                continue
-
-            feature_key = self._table_name_to_feature_key(table_name)
-
-            # Skip system tables
-            if not self._is_system_table(feature_key):
-                features.append(feature_key)
-
-        return features
-
     def _can_compute_native(self) -> bool:
         """
         Ibis backends support native field provenance calculations (Narwhals-based).
@@ -445,8 +411,5 @@ class IbisMetadataStore(MetadataStore, ABC):
     def display(self) -> str:
         """Display string for this store."""
         backend_info = self.connection_string or f"{self.backend}"
-        if self._is_open:
-            num_features = len(self._list_features_local())
-            return f"IbisMetadataStore(backend={backend_info}, features={num_features})"
-        else:
-            return f"IbisMetadataStore(backend={backend_info})"
+        status = "open" if self._is_open else "closed"
+        return f"IbisMetadataStore(backend={backend_info}, status={status})"

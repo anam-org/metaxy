@@ -222,11 +222,7 @@ def generate_migration(
         feature_key_str = node.feature_key.to_string()
         feature_key_str.replace("/", "_")
 
-        root_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        root_operations.append(DataVersionReconciliation())
 
     if not root_operations:
         print("No feature changes detected. All features up to date!")
@@ -297,11 +293,7 @@ def generate_migration(
         # Create operation (feature versions derived from snapshots)
         # DataVersionReconciliation doesn't have id, feature_key, or reason params
         # It only has a type field since it applies to all affected features
-        downstream_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        downstream_operations.append(DataVersionReconciliation())
 
         print(f"  ✓ {feature_key_str}")
 
@@ -314,13 +306,11 @@ def generate_migration(
     )
 
     # Find the latest migration to set as parent
-    from metaxy.metadata_store.system_tables import MIGRATION_EVENTS_KEY
+    from metaxy.metadata_store.system import EVENTS_KEY
 
     parent_migration_id = None
     try:
-        existing_migrations = store.read_metadata(
-            MIGRATION_EVENTS_KEY, current_only=False
-        )
+        existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
         # Get most recent migration by timestamp - only collect the top row
         latest = nw.from_native(
             existing_migrations.sort("timestamp", descending=True).head(1).collect()

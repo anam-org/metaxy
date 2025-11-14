@@ -207,24 +207,6 @@ class InMemoryMetadataStore(MetadataStore):
         # For now, return the lazy frame - emptiness check happens when materializing
         return nw_lazy
 
-    def _list_features_local(self) -> list[FeatureKey]:
-        """
-        List all features in this store.
-
-        Returns:
-            List of FeatureKey objects (excluding system tables)
-        """
-        features = []
-        for key_tuple in self._storage.keys():
-            # Convert tuple back to FeatureKey
-            feature_key = FeatureKey(list(key_tuple))
-
-            # Skip system tables
-            if not self._is_system_table(feature_key):
-                features.append(feature_key)
-
-        return features
-
     def clear(self) -> None:
         """
         Clear all metadata from store.
@@ -255,18 +237,13 @@ class InMemoryMetadataStore(MetadataStore):
 
     def __repr__(self) -> str:
         """String representation."""
-        num_features = len(self._storage)
         num_fallbacks = len(self.fallback_stores)
+        status = "open" if self._is_open else "closed"
         return (
-            f"InMemoryMetadataStore("
-            f"features={num_features}, "
-            f"fallback_stores={num_fallbacks})"
+            f"InMemoryMetadataStore(status={status}, fallback_stores={num_fallbacks})"
         )
 
     def display(self) -> str:
         """Display string for this store."""
-        if self._is_open:
-            num_features = len(self._storage)
-            return f"InMemoryMetadataStore(features={num_features})"
-        else:
-            return "InMemoryMetadataStore()"
+        status = "open" if self._is_open else "closed"
+        return f"InMemoryMetadataStore(status={status})"

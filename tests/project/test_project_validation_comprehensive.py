@@ -324,8 +324,8 @@ class TestProjectValidationComprehensive:
                 rows_affected = op.execute_for_feature(
                     store,
                     feature_key.to_string(),
+                    snapshot_version=to_snapshot_version,
                     from_snapshot_version=from_snapshot_version,
-                    to_snapshot_version=to_snapshot_version,
                     dry_run=False,
                 )
                 # Migration might not affect rows if data is already migrated
@@ -359,7 +359,7 @@ class TestProjectValidationComprehensive:
 
     def test_system_tables_exempt_from_validation(self, store):
         """Test that system tables are exempt from project validation."""
-        from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Set a specific project
         MetaxyConfig.set(MetaxyConfig(project="user_project"))

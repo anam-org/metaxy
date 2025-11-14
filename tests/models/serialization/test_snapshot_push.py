@@ -76,7 +76,7 @@ def test_record_snapshot_first_time():
             assert result.snapshot_version == graph.snapshot_version
 
             # Verify data was written to feature_versions table
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
@@ -96,7 +96,7 @@ def test_record_snapshot_metadata_only_changes():
     Example: Adding rename={"old": "new"} to a FeatureDep
     This changes feature_spec_version but NOT feature_version.
     """
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Version 1: No rename
     graph_v1 = FeatureGraph()
@@ -241,7 +241,7 @@ def test_record_snapshot_no_changes():
             assert result2.snapshot_version == graph.snapshot_version
 
             # Verify no new rows appended
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
@@ -254,7 +254,7 @@ def test_record_snapshot_partial_metadata_changes():
 
     Only changed features should appear in features_with_spec_changes.
     """
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Version 1: Three features
     graph_v1 = FeatureGraph()
@@ -356,7 +356,7 @@ def test_record_snapshot_partial_metadata_changes():
 
 def test_record_snapshot_append_only_behavior():
     """Test append-only behavior: old rows preserved, new rows added with same snapshot_version."""
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Start with a proper setup for metadata-only change
     graph_v1 = FeatureGraph()
@@ -527,7 +527,7 @@ def test_record_snapshot_computational_change():
 
 def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
     """Test complete flow with snapshot for regression testing."""
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Create features and push multiple times
     results = []
