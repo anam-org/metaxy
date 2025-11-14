@@ -6,7 +6,6 @@ from typing import Any
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy._utils import collect_to_polars

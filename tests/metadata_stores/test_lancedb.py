@@ -78,11 +78,12 @@ def test_lancedb_drop_feature(tmp_path, test_graph, test_features) -> None:
         with store.allow_cross_project_writes():
             store.write_metadata(feature_cls, metadata)
 
-        feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
-        assert feature_key in store.list_features()
+        # Check feature exists using has_feature
+        assert store.has_feature(feature_cls, check_fallback=False)
 
         store.drop_feature_metadata(feature_cls)
-        assert feature_key not in store.list_features()
+        # Check feature no longer exists
+        assert not store.has_feature(feature_cls, check_fallback=False)
 
         fresh = pl.DataFrame(
             {
@@ -134,16 +135,23 @@ def test_lancedb_table_naming(tmp_path, test_graph, test_features) -> None:
 
 
 def test_lancedb_close_idempotent(tmp_path, test_graph, test_features) -> None:
-    """Test that close() can be called multiple times safely."""
+    """Test that context manager can be reused multiple times safely."""
     database_path = tmp_path / "lancedb"
     store = LanceDBMetadataStore(database_path)
 
+    # First use
     with store:
-        pass
+        assert store._is_open
 
-    # Close again manually (should not raise)
-    store.close()
-    store.close()
+    # Store should be closed after exiting context
+    assert not store._is_open
+
+    # Should be able to reopen
+    with store:
+        assert store._is_open
+
+    # Should be closed again
+    assert not store._is_open
 
 
 def test_lancedb_conn_property_enforcement(tmp_path, test_graph, test_features) -> None:
@@ -164,7 +172,7 @@ def test_lancedb_conn_property_enforcement(tmp_path, test_graph, test_features) 
 
 
 def test_lancedb_system_tables_filtered(tmp_path, test_graph, test_features) -> None:
-    """Test that system tables are not included in list_features()."""
+    """Test that system tables are not included in _list_features_local()."""
     database_path = tmp_path / "lancedb"
 
     with LanceDBMetadataStore(database_path) as store:
@@ -180,7 +188,7 @@ def test_lancedb_system_tables_filtered(tmp_path, test_graph, test_features) -> 
             store.write_metadata(feature_cls, metadata)
 
         # Manually create a system table (simulating metaxy_graph_push)
-        from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         system_metadata = pl.DataFrame(
             {
@@ -195,10 +203,10 @@ def test_lancedb_system_tables_filtered(tmp_path, test_graph, test_features) -> 
                 "metaxy_snapshot_version": ["snap1"],
             }
         )
-        store._write_metadata_impl(FEATURE_VERSIONS_KEY, system_metadata)
+        store.write_metadata_to_store(FEATURE_VERSIONS_KEY, system_metadata)
 
-        # list_features() should only return user features, not system tables
-        features = store.list_features()
+        # _list_features_local() should only return user features, not system tables
+        features = store._list_features_local()
         assert len(features) == 1
         assert features[0] == feature_cls.spec().key  # type: ignore[attr-defined]
 
@@ -303,18 +311,15 @@ def test_lancedb_remote_uri_no_mkdir(tmp_path, monkeypatch) -> None:
         mkdir_called.clear()
         store = LanceDBMetadataStore(uri)
 
-        # Manually set connection to simulate opening without lancedb
+        # Use context manager to open store
         with monkeypatch.context() as m:
             m.setattr("lancedb.connect", mock_lancedb.connect)
-            store.open()
-
-        # Verify mkdir was NOT called for remote URI
-        assert len(mkdir_called) == 0, (
-            f"mkdir should not be called for remote URI: {uri}"
-        )
-        assert store._conn is not None
-
-        store.close()
+            with store.open():
+                # Verify mkdir was NOT called for remote URI
+                assert len(mkdir_called) == 0, (
+                    f"mkdir should not be called for remote URI: {uri}"
+                )
+                assert store._conn is not None
 
     # Restore original mkdir
     monkeypatch.setattr(Path, "mkdir", original_mkdir)
@@ -349,15 +354,12 @@ def test_lancedb_local_path_calls_mkdir(tmp_path, monkeypatch) -> None:
 
     with monkeypatch.context() as m:
         m.setattr("lancedb.connect", mock_lancedb.connect)
-        store.open()
-
-    # Verify mkdir WAS called for local path
-    assert len(mkdir_calls) == 1, "mkdir should be called once for local path"
-    assert str(local_path) in mkdir_calls[0][0]
-    assert mkdir_calls[0][2].get("parents") is True
-    assert mkdir_calls[0][2].get("exist_ok") is True
-
-    store.close()
+        with store.open():
+            # Verify mkdir WAS called for local path
+            assert len(mkdir_calls) == 1, "mkdir should be called once for local path"
+            assert str(local_path) in mkdir_calls[0][0]
+            assert mkdir_calls[0][2].get("parents") is True
+            assert mkdir_calls[0][2].get("exist_ok") is True
 
 
 def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
@@ -387,15 +389,14 @@ def test_lancedb_connection_string_variations(tmp_path, monkeypatch) -> None:
         with monkeypatch.context() as m:
             m.setattr("lancedb.connect", mock_connect)
             try:
-                store.open()
+                with store.open():
+                    pass
             except Exception:
                 pass  # Ignore errors from mock connection
 
         # Verify correct URI was passed to connect
         assert len(connect_calls) == 1
         assert connect_calls[0] == uri
-
-        store.close()
 
 
 def test_lancedb_sanitize_path() -> None:
@@ -440,12 +441,8 @@ def test_lancedb_display_masks_credentials(tmp_path, monkeypatch) -> None:
     # Test with URI containing credentials
     store = LanceDBMetadataStore("db://admin:password@localhost/mydb")
 
-    with monkeypatch.context() as m:
-        m.setattr("lancedb.connect", mock_lancedb.connect)
-        # Check display before opening (when _is_open is False)
-        display = store.display()
-        assert "admin" not in display
-        assert "password" not in display
-        assert "***:***@localhost" in display
-
-    store.close()
+    # Check display before opening (when _is_open is False)
+    display = store.display()
+    assert "admin" not in display
+    assert "password" not in display
+    assert "***:***@localhost" in display

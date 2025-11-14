@@ -5,9 +5,22 @@ import polars as pl
 from narwhals.typing import DataFrameT, Frame, FrameT, LazyFrameT
 
 
-def collect_to_polars(frame: Frame) -> pl.DataFrame:
-    """Helper to convert a Narwhals frame into an eager Polars DataFrame."""
+def collect_to_polars(frame: Frame | pl.DataFrame) -> pl.DataFrame:
+    """Helper to convert a Narwhals frame into an eager Polars DataFrame.
 
+    Also handles raw Polars DataFrames for convenience.
+
+    Args:
+        frame: Narwhals DataFrame/LazyFrame or native Polars DataFrame
+
+    Returns:
+        Eager Polars DataFrame
+    """
+    # If it's already a Polars DataFrame, return as-is
+    if isinstance(frame, pl.DataFrame):
+        return frame
+
+    # Otherwise, convert Narwhals frame to Polars
     return frame.lazy().collect().to_polars()
 
 
