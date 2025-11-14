@@ -1,18 +1,18 @@
 """In-memory metadata store implementation."""
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from typing import Any
 
 import narwhals as nw
 import polars as pl
+from typing_extensions import Self
 
-from metaxy.data_versioning.calculators.base import ProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.base import MetadataDiffResolver
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
-from metaxy.data_versioning.joiners.base import UpstreamJoiner
 from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 class InMemoryMetadataStore(MetadataStore):
@@ -65,20 +65,32 @@ class InMemoryMetadataStore(MetadataStore):
         return tuple(feature_key)
 
     def _supports_native_components(self) -> bool:
-        """In-memory store only supports Polars components."""
         return False
 
-    def _create_native_components(
-        self,
-    ) -> tuple[
-        UpstreamJoiner,
-        ProvenanceByFieldCalculator,
-        MetadataDiffResolver,
-    ]:
-        """Not supported - in-memory store only uses Polars components."""
-        raise NotImplementedError(
-            "InMemoryMetadataStore does not support native field provenance calculations"
-        )
+    def native_implementation(self) -> nw.Implementation:
+        """Get native implementation for in-memory store."""
+        return nw.Implementation.POLARS
+
+    @contextmanager
+    def _create_provenance_tracker(self, plan):
+        """Create Polars provenance tracker for in-memory store.
+
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            PolarsProvenanceTracker instance
+        """
+        from metaxy.provenance.polars import PolarsProvenanceTracker
+
+        # Create tracker (only accepts plan parameter)
+        tracker = PolarsProvenanceTracker(plan=plan)
+
+        try:
+            yield tracker
+        finally:
+            # No cleanup needed for Polars tracker
+            pass
 
     def _write_metadata_impl(
         self,
@@ -180,7 +192,9 @@ class InMemoryMetadataStore(MetadataStore):
 
         # Apply feature_version filter
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(nw.col("feature_version") == feature_version)
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
 
         # Apply generic Narwhals filters
         if filters is not None:
@@ -195,24 +209,6 @@ class InMemoryMetadataStore(MetadataStore):
         # For now, return the lazy frame - emptiness check happens when materializing
         return nw_lazy
 
-    def _list_features_local(self) -> list[FeatureKey]:
-        """
-        List all features in this store.
-
-        Returns:
-            List of FeatureKey objects (excluding system tables)
-        """
-        features = []
-        for key_tuple in self._storage.keys():
-            # Convert tuple back to FeatureKey
-            feature_key = FeatureKey(list(key_tuple))
-
-            # Skip system tables
-            if not self._is_system_table(feature_key):
-                features.append(feature_key)
-
-        return features
-
     def clear(self) -> None:
         """
         Clear all metadata from store.
@@ -223,38 +219,46 @@ class InMemoryMetadataStore(MetadataStore):
 
     # ========== Context Manager Implementation ==========
 
-    def open(self) -> None:
-        """Open the in-memory store.
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open the in-memory store (no-op for in-memory, but accepts mode for consistency).
 
-        For InMemoryMetadataStore, this is a no-op since no external
-        resources need initialization. The auto_create_tables setting
-        has no effect for in-memory stores (no tables to create).
+        Args:
+            mode: Access mode (accepted for consistency but ignored).
+
+        Yields:
+            Self: The store instance
         """
-        # No resources to initialize for in-memory storage
-        pass
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
 
-    def close(self) -> None:
-        """Close the in-memory store.
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                # No actual connection needed for in-memory
+                # Mark store as open and validate
+                self._is_open = True
+                self._validate_after_open()
 
-        For InMemoryMetadataStore, this is a no-op since no external
-        resources need cleanup.
-        """
-        pass  # No resources to cleanup for in-memory storage
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                # Nothing to clean up
+                self._is_open = False
 
     def __repr__(self) -> str:
         """String representation."""
-        num_features = len(self._storage)
         num_fallbacks = len(self.fallback_stores)
+        status = "open" if self._is_open else "closed"
         return (
-            f"InMemoryMetadataStore("
-            f"features={num_features}, "
-            f"fallback_stores={num_fallbacks})"
+            f"InMemoryMetadataStore(status={status}, fallback_stores={num_fallbacks})"
         )
 
     def display(self) -> str:
         """Display string for this store."""
-        if self._is_open:
-            num_features = len(self._storage)
-            return f"InMemoryMetadataStore(features={num_features})"
-        else:
-            return "InMemoryMetadataStore()"
+        status = "open" if self._is_open else "closed"
+        return f"InMemoryMetadataStore(status={status})"

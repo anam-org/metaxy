@@ -24,6 +24,7 @@ class ParentFeature(
                 code_version="1",
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Parent feature generating embeddings."""
@@ -48,6 +49,7 @@ class ChildFeature(
                 ],
             ),
         ],
+        id_columns=("sample_uid",),
     ),
 ):
     """Child feature using parent embeddings."""

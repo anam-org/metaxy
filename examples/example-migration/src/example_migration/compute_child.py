@@ -46,5 +46,5 @@ with config.get_store() as store:
     child_eager = nw.from_native(child_result.collect())
     print("\n📋 Child provenance_by_field:")
     for row in child_eager.iter_rows(named=True):
-        dv = row["provenance_by_field"]["predictions"]
+        dv = row["metaxy_provenance_by_field"]["predictions"]
         print(f"  sample_uid={row['sample_uid']}: {dv[:16]}...")

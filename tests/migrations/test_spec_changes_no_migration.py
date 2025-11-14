@@ -6,7 +6,7 @@ These tests verify that the migration system correctly:
 3. Uses feature_version for all migration detection logic
 
 This is important for:
-- Future extensibility (adding tags/metadata to TestingFeatureSpec without triggering migrations)
+- Future extensibility (adding tags/metadata to SampleFeatureSpec without triggering migrations)
 - Audit trail (feature_spec_version captures complete specification history)
 - Migration accuracy (only computational changes require reconciliation)
 """
@@ -22,7 +22,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
 from metaxy.migrations import detect_migration
@@ -32,14 +32,14 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
     """Verify that feature_spec_version and feature_version are distinct properties.
 
     This test documents that:
-    - feature_spec_version captures ALL TestingFeatureSpec properties
+    - feature_spec_version captures ALL SampleFeatureSpec properties
     - feature_version captures only computational properties
     - They can potentially differ (when non-computational properties change)
     """
     # Create a simple feature
     temp_module = TempFeatureModule("test_feature_spec_version")
 
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test", "feature"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
@@ -57,11 +57,11 @@ def test_feature_spec_version_exists_and_differs_from_feature_version():
     assert len(feature_spec_version) == 64  # SHA256 hex digest
     assert len(feature_version) == 64  # SHA256 hex digest
 
-    # They are currently the same because TestingFeatureSpec has no non-computational properties yet
+    # They are currently the same because SampleFeatureSpec has no non-computational properties yet
     # But architecturally they serve different purposes:
     # - feature_spec_version: complete specification hash (for audit trail)
     # - feature_version: computational properties hash (for migration triggering)
-    # When TestingFeatureSpec gains metadata/tags, they will differ
+    # When SampleFeatureSpec gains metadata/tags, they will differ
 
     temp_module.cleanup()
 
@@ -79,7 +79,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     # Create v1: Simple feature with code_version="1"
     temp_v1 = TempFeatureModule("test_migration_detector_v1")
 
-    spec_v1 = TestingFeatureSpec(
+    spec_v1 = SampleFeatureSpec(
         key=FeatureKey(["test", "simple"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
@@ -94,7 +94,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -104,20 +104,22 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
         store_v1.write_metadata(SimpleV1, data)
         store_v1.record_feature_graph_snapshot()
 
-        # Verify snapshot captures both versions
-        snapshot_data = graph_v1.to_snapshot()
-        assert "test/simple" in snapshot_data
-        assert "feature_version" in snapshot_data["test/simple"]
-        assert "feature_spec_version" in snapshot_data["test/simple"]
+    # Verify snapshot captures both versions (initialize to satisfy type checker)
+    snapshot_data = graph_v1.to_snapshot()
+    assert "test/simple" in snapshot_data
+    assert "metaxy_feature_version" in snapshot_data["test/simple"]
+    assert "metaxy_feature_spec_version" in snapshot_data["test/simple"]
 
-        # Store the versions for comparison
-        v1_feature_version = snapshot_data["test/simple"]["feature_version"]
-        v1_feature_spec_version = snapshot_data["test/simple"]["feature_spec_version"]
+    # Store the versions for comparison
+    v1_feature_version: str = snapshot_data["test/simple"]["metaxy_feature_version"]
+    v1_feature_spec_version: str = snapshot_data["test/simple"][
+        "metaxy_feature_spec_version"
+    ]
 
     # Create v2: Change code_version (affects feature_version)
     temp_v2 = TempFeatureModule("test_migration_detector_v2")
 
-    spec_v2 = TestingFeatureSpec(
+    spec_v2 = SampleFeatureSpec(
         key=FeatureKey(["test", "simple"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="2")
@@ -132,9 +134,11 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
     v2_feature_version = SimpleV2.feature_version()
     v2_feature_spec_version = SimpleV2.feature_spec_version()
 
-    assert v1_feature_version != v2_feature_version  # Changed!
     assert (
-        v1_feature_spec_version != v2_feature_spec_version
+        v1_feature_version != v2_feature_version
+    )  # Changed!  # type: ignore[possibly-unbound]
+    assert (
+        v1_feature_spec_version != v2_feature_spec_version  # type: ignore[possibly-unbound]
     )  # Also changed (includes code_version)
 
     # Test migration detection
@@ -165,7 +169,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
 def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     """Test that changes to non-computational properties don't trigger migrations.
 
-    This test documents the intended behavior for when TestingFeatureSpec gains
+    This test documents the intended behavior for when SampleFeatureSpec gains
     additional properties like metadata, tags, or documentation fields.
 
     When such properties are added:
@@ -173,13 +177,13 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     - feature_version will NOT change (only computational properties)
     - Migration detector will NOT trigger (compares feature_version)
 
-    Current limitation: TestingFeatureSpec doesn't have such properties yet, so this
+    Current limitation: SampleFeatureSpec doesn't have such properties yet, so this
     test serves as documentation for future extensibility.
     """
     # Create a feature
     temp_module = TempFeatureModule("test_non_computational")
 
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test", "feature"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
@@ -194,17 +198,17 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)
         store.record_feature_graph_snapshot()
 
     # Currently, there's no way to change spec without changing feature_version
-    # because TestingFeatureSpec only has computational properties
+    # because SampleFeatureSpec only has computational properties
     #
-    # In the future, when TestingFeatureSpec has tags/metadata fields:
-    # 1. Add tags = ["important", "v2"] to TestingFeatureSpec
+    # In the future, when SampleFeatureSpec has tags/metadata fields:
+    # 1. Add tags = ["important", "v2"] to SampleFeatureSpec
     # 2. feature_spec_version would change (hashes ALL properties)
     # 3. feature_version would NOT change (only hashes computational properties)
     # 4. detect_migration() would return None (no feature_version change)
@@ -243,14 +247,14 @@ def test_computational_property_changes_trigger_migrations(
 
     # Test case 1: code_version change
     temp_cv1 = TempFeatureModule("test_code_version_v1")
-    spec_cv1 = TestingFeatureSpec(
+    spec_cv1 = SampleFeatureSpec(
         key=FeatureKey(["test", "cv"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
     temp_cv1.write_features({"Feature": spec_cv1})
 
     temp_cv2 = TempFeatureModule("test_code_version_v2")
-    spec_cv2 = TestingFeatureSpec(
+    spec_cv2 = SampleFeatureSpec(
         key=FeatureKey(["test", "cv"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="2")],  # Changed!
     )
@@ -272,14 +276,14 @@ def test_computational_property_changes_trigger_migrations(
 
     # Test case 2: Adding a field
     temp_f1 = TempFeatureModule("test_field_v1")
-    spec_f1 = TestingFeatureSpec(
+    spec_f1 = SampleFeatureSpec(
         key=FeatureKey(["test", "field"]),
         fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
     )
     temp_f1.write_features({"Feature": spec_f1})
 
     temp_f2 = TempFeatureModule("test_field_v2")
-    spec_f2 = TestingFeatureSpec(
+    spec_f2 = SampleFeatureSpec(
         key=FeatureKey(["test", "field"]),
         fields=[
             FieldSpec(key=FieldKey(["field1"]), code_version="1"),
@@ -305,12 +309,12 @@ def test_computational_property_changes_trigger_migrations(
     # Test case 3: Changing dependencies
     temp_d1 = TempFeatureModule("test_dep_v1")
 
-    upstream_spec = TestingFeatureSpec(
+    upstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "upstream"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    downstream_v1_spec = TestingFeatureSpec(
+    downstream_v1_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         # No deps
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -322,7 +326,7 @@ def test_computational_property_changes_trigger_migrations(
 
     temp_d2 = TempFeatureModule("test_dep_v2")
 
-    downstream_v2_spec = TestingFeatureSpec(
+    downstream_v2_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],  # Added dep!
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -368,7 +372,7 @@ def test_snapshot_stores_both_versions(tmp_path):
     """
     temp_module = TempFeatureModule("test_snapshot_versions")
 
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test", "feature"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
@@ -383,7 +387,7 @@ def test_snapshot_stores_both_versions(tmp_path):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
         store.write_metadata(TestFeature, data)
@@ -394,19 +398,20 @@ def test_snapshot_stores_both_versions(tmp_path):
         feature_data = snapshot_data["test/feature"]
 
         # Both versions should be present
-        assert "feature_version" in feature_data
-        assert "feature_spec_version" in feature_data
+        assert "metaxy_feature_version" in feature_data
+        assert "metaxy_feature_spec_version" in feature_data
         assert "feature_spec" in feature_data
         assert "feature_class_path" in feature_data
 
         # Verify they're valid hashes
-        assert len(feature_data["feature_version"]) == 64
-        assert len(feature_data["feature_spec_version"]) == 64
+        assert len(feature_data["metaxy_feature_version"]) == 64
+        assert len(feature_data["metaxy_feature_spec_version"]) == 64
 
         # Check that they match the class methods
-        assert feature_data["feature_version"] == TestFeature.feature_version()
+        assert feature_data["metaxy_feature_version"] == TestFeature.feature_version()
         assert (
-            feature_data["feature_spec_version"] == TestFeature.feature_spec_version()
+            feature_data["metaxy_feature_spec_version"]
+            == TestFeature.feature_spec_version()
         )
 
     temp_module.cleanup()
@@ -423,13 +428,13 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
     differ = GraphDiffer()
 
     # Create two snapshots with identical feature_version but different feature_spec_version
-    # (This will be possible when TestingFeatureSpec has non-computational properties)
+    # (This will be possible when SampleFeatureSpec has non-computational properties)
 
     # For now, we verify the diff logic uses the feature_version field
     snapshot1 = {
         "test/feature": {
-            "feature_version": "abc123",  # Same
-            "feature_spec_version": "spec_v1",  # Different (if we had metadata/tags)
+            "metaxy_feature_version": "abc123",  # Same
+            "metaxy_feature_spec_version": "spec_v1",  # Different (if we had metadata/tags)
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -441,8 +446,8 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
 
     snapshot2 = {
         "test/feature": {
-            "feature_version": "abc123",  # Same - no computational change
-            "feature_spec_version": "spec_v2",  # Different - non-computational change
+            "metaxy_feature_version": "abc123",  # Same - no computational change
+            "metaxy_feature_spec_version": "spec_v2",  # Different - non-computational change
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,
@@ -465,8 +470,8 @@ def test_graph_differ_compares_feature_version_not_feature_spec_version():
     # Now test with feature_version change
     snapshot3 = {
         "test/feature": {
-            "feature_version": "xyz789",  # Changed - computational change
-            "feature_spec_version": "spec_v3",  # Also changed
+            "metaxy_feature_version": "xyz789",  # Changed - computational change
+            "metaxy_feature_spec_version": "spec_v3",  # Also changed
             "feature_spec": {
                 "key": ["test", "feature"],
                 "deps": None,

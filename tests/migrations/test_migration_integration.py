@@ -4,6 +4,8 @@ These tests use TempFeatureModule to create realistic graph evolution scenarios
 and test the full migration workflow: detect → execute → verify.
 """
 
+from datetime import datetime, timezone
+
 import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -15,12 +17,13 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
-from metaxy._testing import TempFeatureModule
+from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
-from metaxy.metadata_store.system_tables import SystemTableStorage
+from metaxy.metadata_store.system import SystemTableStorage
+from metaxy.metadata_store.types import AccessMode
 from metaxy.migrations import MigrationExecutor, detect_migration
 from metaxy.models.feature import FeatureGraph
 
@@ -55,7 +58,7 @@ def simple_graph_v1():
     """Simple graph with one feature."""
     temp_module = TempFeatureModule("test_integration_simple_v1")
 
-    spec_v1 = TestingFeatureSpec(
+    spec_v1 = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
@@ -72,7 +75,7 @@ def simple_graph_v2():
     """Simple graph with code_version changed."""
     temp_module = TempFeatureModule("test_integration_simple_v2")
 
-    spec_v2 = TestingFeatureSpec(
+    spec_v2 = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
@@ -89,14 +92,14 @@ def upstream_downstream_v1():
     """Graph with upstream and downstream features."""
     temp_module = TempFeatureModule("test_integration_chain_v1")
 
-    upstream_spec = TestingFeatureSpec(
+    upstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
-    downstream_spec = TestingFeatureSpec(
+    downstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test_integration", "upstream"]))],
         fields=[
@@ -125,14 +128,14 @@ def upstream_downstream_v2():
     """Graph with upstream code_version changed."""
     temp_module = TempFeatureModule("test_integration_chain_v2")
 
-    upstream_spec = TestingFeatureSpec(
+    upstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "upstream"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="2"),  # Changed!
         ],
     )
 
-    downstream_spec = TestingFeatureSpec(
+    downstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test_integration", "upstream"]))],
         fields=[
@@ -174,13 +177,14 @@ def test_basic_migration_flow(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store_v1.write_metadata(SimpleV1, data)
 
         # Record v1 snapshot
@@ -192,7 +196,7 @@ def test_basic_migration_flow(
         FeatureKey(["test_integration", "simple"])
     ]
 
-    with simple_graph_v2.use(), store_v2:
+    with simple_graph_v2.use(), store_v2.open(AccessMode.WRITE):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
         # This compares latest snapshot in store (v1) with active graph (v2)
         migration = detect_migration(
@@ -209,9 +213,6 @@ def test_basic_migration_flow(
         # Snapshot migration structure
         affected_features = migration.get_affected_features(store_v2, "default")
         migration_summary = {
-            "description": migration.get_description(
-                store_v2, "default"
-            ),  # Use get_description() for auto-generation
             "affected_features_count": len(affected_features),
             "affected_features": sorted(affected_features),
         }
@@ -277,13 +278,15 @@ def test_upstream_downstream_migration(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
             }
         )
+        # Add metaxy_provenance column using the helper
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream (derived feature)
@@ -331,13 +334,14 @@ def test_upstream_downstream_migration(
         new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "new_h1"},
                     {"default": "new_h2"},
                     {"default": "new_h3"},
                 ],
             }
         )
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
         store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Step 6: Execute migration (will reconcile downstream)
@@ -382,9 +386,10 @@ def test_migration_idempotency(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
@@ -405,13 +410,17 @@ def test_migration_idempotency(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream manually
-        new_upstream = pl.DataFrame(
+        new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "new_h1"},
+                    {"default": "new_h2"},
+                ],
             }
         )
-        store_v2.write_metadata(UpstreamV2, new_upstream)
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
+        store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Create downstream-only migration (detect before recording v2 snapshot)
         migration = detect_migration(
@@ -429,21 +438,33 @@ def test_migration_idempotency(
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
 
-        # Execute first time - will fail on upstream (root feature) but succeed on downstream
+        # Execute first time - will fail on upstream (root feature) and skip downstream due to dependency
         result1 = executor.execute(
             migration, store_v2, project="default", dry_run=False
         )
         assert result1.status == "failed"  # Upstream will fail
-        assert result1.features_completed == 1  # Downstream should complete
-        assert result1.features_failed == 1  # Upstream should fail
+        assert (
+            result1.features_completed == 0
+        )  # Downstream skipped due to failed upstream
+        assert result1.features_failed == 1  # Only upstream failed
+        assert (
+            result1.features_skipped == 1
+        )  # Downstream skipped due to failed dependency
+        assert "test_integration/upstream" in result1.errors
+        assert "test_integration/downstream" in result1.errors
+        assert (
+            "Skipped due to failed dependencies"
+            in result1.errors["test_integration/downstream"]
+        )
 
-        # Execute second time (should skip already-completed downstream)
+        # Execute second time - same result since upstream still fails
         result2 = executor.execute(
             migration, store_v2, project="default", dry_run=False
         )
         assert result2.status == "failed"  # Still fails on upstream
-        assert result2.features_completed == 1  # Downstream was skipped (already done)
-        assert result2.features_failed == 1  # Upstream still fails
+        assert result2.features_completed == 0  # Downstream still skipped
+        assert result2.features_failed == 1  # Only upstream failed
+        assert result2.features_skipped == 1  # Downstream still skipped
 
 
 def test_migration_dry_run(
@@ -465,9 +486,10 @@ def test_migration_dry_run(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream - let system auto-load upstream and calculate provenance_by_field
@@ -477,7 +499,10 @@ def test_migration_dry_run(
 
         store_v1.record_feature_graph_snapshot()
 
-        # Get initial data
+    # Get initial data (outside context manager to ensure it's available later)
+    # Initialize to satisfy type checker - will be assigned before use
+    initial_data = pl.DataFrame()  # Placeholder
+    with store_v1:
         initial_data = collect_to_polars(
             store_v1.read_metadata(DownstreamV1, current_only=False)
         )
@@ -493,13 +518,17 @@ def test_migration_dry_run(
 
     with upstream_downstream_v2.use(), store_v2:
         # Update upstream
-        new_upstream = pl.DataFrame(
+        new_upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "new_h1"}, {"default": "new_h2"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "new_h1"},
+                    {"default": "new_h2"},
+                ],
             }
         )
-        store_v2.write_metadata(UpstreamV2, new_upstream)
+        new_upstream_data = add_metaxy_provenance_column(new_upstream_data, UpstreamV2)
+        store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Detect and execute with dry_run=True (detect before recording v2 snapshot)
         migration = detect_migration(
@@ -520,7 +549,11 @@ def test_migration_dry_run(
         result = executor.execute(migration, store_v2, project="default", dry_run=True)
 
         assert result.status == "skipped"
-        assert result.rows_affected > 0  # Would affect rows for downstream, but skipped
+        # In dry-run mode with failing root feature, no rows would be affected
+        # (upstream fails, downstream skipped due to dependency)
+        assert result.rows_affected == 0
+        assert result.features_failed == 1  # Upstream fails even in dry-run
+        assert result.features_skipped == 1  # Downstream skipped
 
         # Verify data unchanged
         final_data = collect_to_polars(
@@ -529,8 +562,8 @@ def test_migration_dry_run(
 
         assert len(final_data) == len(initial_data)
         # Compare field_provenance (dict types can't be in sets, so compare directly)
-        final_dvs = final_data["provenance_by_field"].to_list()
-        initial_dvs = initial_data["provenance_by_field"].to_list()
+        final_dvs = final_data["metaxy_provenance_by_field"].to_list()
+        initial_dvs = initial_data["metaxy_provenance_by_field"].to_list()
         assert final_dvs == initial_dvs
 
 
@@ -539,7 +572,7 @@ def test_field_dependency_change(tmp_path):
     # Create v1: Downstream depends on both upstream fields
     temp_v1 = TempFeatureModule("test_field_change_v1")
 
-    upstream_spec = TestingFeatureSpec(
+    upstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "upstream"]),
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -547,7 +580,7 @@ def test_field_dependency_change(tmp_path):
         ],
     )
 
-    downstream_v1_spec = TestingFeatureSpec(
+    downstream_v1_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
         fields=[
@@ -572,7 +605,7 @@ def test_field_dependency_change(tmp_path):
     # Create v2: Downstream only depends on frames
     temp_v2 = TempFeatureModule("test_field_change_v2")
 
-    downstream_v2_spec = TestingFeatureSpec(
+    downstream_v2_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
         fields=[
@@ -604,9 +637,10 @@ def test_field_dependency_change(tmp_path):
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "hf", "audio": "ha"}],
+                "metaxy_provenance_by_field": [{"frames": "hf", "audio": "ha"}],
             }
         )
+        upstream_data = add_metaxy_provenance_column(upstream_data, UpstreamV1)
         store_v1.write_metadata(UpstreamV1, upstream_data)
 
         # Write downstream
@@ -645,17 +679,17 @@ def test_feature_dependency_swap(tmp_path):
     # Create v1: Downstream depends on UpstreamA
     temp_v1 = TempFeatureModule("test_dep_swap_v1")
 
-    upstream_a_spec = TestingFeatureSpec(
+    upstream_a_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "upstream_a"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    upstream_b_spec = TestingFeatureSpec(
+    upstream_b_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "upstream_b"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    downstream_v1_spec = TestingFeatureSpec(
+    downstream_v1_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream_a"]))],  # Depends on A
         fields=[
@@ -684,7 +718,7 @@ def test_feature_dependency_swap(tmp_path):
     # Create v2: Downstream now depends on UpstreamB
     temp_v2 = TempFeatureModule("test_dep_swap_v2")
 
-    downstream_v2_spec = TestingFeatureSpec(
+    downstream_v2_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "downstream"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "upstream_b"]))],  # Changed to B!
         fields=[
@@ -723,18 +757,17 @@ def test_feature_dependency_swap(tmp_path):
 
     with graph_v1.use(), store_v1:
         # Write both upstreams
-        store_v1.write_metadata(
-            upstream_a_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "provenance_by_field": [{"default": "ha"}]}
-            ),
+        data_a = pl.DataFrame(
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "ha"}]}
         )
-        store_v1.write_metadata(
-            upstream_b_v1,
-            pl.DataFrame(
-                {"sample_uid": [1], "provenance_by_field": [{"default": "hb"}]}
-            ),
+        data_a = add_metaxy_provenance_column(data_a, upstream_a_v1)
+        store_v1.write_metadata(upstream_a_v1, data_a)
+
+        data_b = pl.DataFrame(
+            {"sample_uid": [1], "metaxy_provenance_by_field": [{"default": "hb"}]}
         )
+        data_b = add_metaxy_provenance_column(data_b, upstream_b_v1)
+        store_v1.write_metadata(upstream_b_v1, data_b)
 
         # Write downstream (depends on A in v1)
         # Let system auto-load upstream and calculate provenance_by_field
@@ -780,9 +813,10 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store.write_metadata(SimpleV1, data)
         store.record_feature_graph_snapshot()
 
@@ -809,21 +843,22 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
+                "metaxy_provenance_by_field": [{"default": "h1"}],
             }
         )
+        data = add_metaxy_provenance_column(data, SimpleV1)
         store_v1.write_metadata(SimpleV1, data)
         store_v1.record_feature_graph_snapshot()
 
     # Create v2 with additional feature
     temp_v2 = TempFeatureModule("test_new_feature_v2")
 
-    simple_spec = TestingFeatureSpec(
+    simple_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "simple"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],  # Unchanged
     )
 
-    new_spec = TestingFeatureSpec(
+    new_spec = SampleFeatureSpec(
         key=FeatureKey(["test_integration", "new"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
@@ -853,3 +888,138 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
             assert "test_integration/new" not in affected_features
 
     temp_v2.cleanup()
+
+
+# ============================================================================
+# Multi-Operation Migration Integration Tests
+# ============================================================================
+
+
+def test_full_graph_migration_integration(tmp_path):
+    """Test end-to-end FullGraphMigration with real feature graph and store."""
+    from metaxy.migrations.models import FullGraphMigration
+
+    # Create test graph
+    temp_module = TempFeatureModule("test_full_graph_migration")
+
+    upstream_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "upstream"]),
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    )
+
+    downstream_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "downstream"]),
+        deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
+        fields=[
+            FieldSpec(
+                key=FieldKey(["default"]),
+                code_version="1",
+                deps=[
+                    FieldDep(
+                        feature=FeatureKey(["test", "upstream"]),
+                        fields=[FieldKey(["default"])],
+                    )
+                ],
+            )
+        ],
+    )
+
+    temp_module.write_features(
+        {"Upstream": upstream_spec, "Downstream": downstream_spec}
+    )
+    graph = temp_module.graph
+
+    with graph.use(), InMemoryMetadataStore() as store:
+        # Setup initial data
+        Upstream = graph.features_by_key[FeatureKey(["test", "upstream"])]
+        Downstream = graph.features_by_key[FeatureKey(["test", "downstream"])]
+
+        upstream_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+            }
+        )
+        upstream_data = add_metaxy_provenance_column(upstream_data, Upstream)
+        store.write_metadata(Upstream, upstream_data)
+
+        # Write downstream
+        diff = store.resolve_update(Downstream)
+        if len(diff.added) > 0:
+            store.write_metadata(Downstream, diff.added)
+
+        store.record_feature_graph_snapshot()
+        snapshot_version = graph.snapshot_version
+
+        # Create FullGraphMigration using the test operation from test_operations
+        migration = FullGraphMigration(
+            migration_id="integration_001",
+            parent="initial",
+            created_at=datetime.now(timezone.utc),
+            snapshot_version=snapshot_version,
+            ops=[
+                {
+                    "type": "tests.migrations.test_operations._TestBackfillOperation",
+                    "features": ["test/upstream", "test/downstream"],
+                    "fixed_value": "test_value",
+                }
+            ],
+        )
+
+        # Execute migration
+        result = migration.execute(store, "default", dry_run=False)
+
+        # Verify results
+        assert result.status == "completed"
+        assert result.features_completed == 2
+        assert result.features_failed == 0
+        assert set(result.affected_features) == {"test/upstream", "test/downstream"}
+        assert result.rows_affected == 10  # 5 per feature
+
+    temp_module.cleanup()
+
+
+# Note: Additional integration tests for multiple operations, partial failures,
+# and cross-snapshot operations are covered in tests/migrations/test_operations.py
+# to avoid redundant test operation class definitions.
+
+
+def test_full_graph_migration_empty_operations(tmp_path):
+    """Test FullGraphMigration with no operations."""
+    temp_module = TempFeatureModule("test_empty_ops")
+
+    feature_spec = SampleFeatureSpec(
+        key=FeatureKey(["test", "feature"]),
+        fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+    )
+
+    temp_module.write_features({"Feature": feature_spec})
+    graph = temp_module.graph
+
+    with graph.use(), InMemoryMetadataStore() as store:
+        store.record_feature_graph_snapshot()
+        snapshot_version = graph.snapshot_version
+
+        from metaxy.migrations.models import FullGraphMigration
+
+        migration = FullGraphMigration(
+            migration_id="integration_005",
+            parent="initial",
+            created_at=datetime.now(timezone.utc),
+            snapshot_version=snapshot_version,
+            ops=[],  # No operations
+        )
+
+        result = migration.execute(store, "default", dry_run=False)
+
+        # Should complete successfully with no work done
+        assert result.status == "completed"
+        assert result.features_completed == 0
+        assert result.features_failed == 0
+        assert result.rows_affected == 0
+
+    temp_module.cleanup()

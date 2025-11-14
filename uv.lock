@@ -13,6 +13,7 @@ resolution-markers = [
 members = [
     "example-ducklake",
     "example-migration",
+    "example-one-to-many",
     "example-overview",
     "example-recompute",
     "examples",
@@ -537,6 +538,23 @@ dependencies = [
 requires-dist = [{ name = "metaxy", extras = ["duckdb"] }]
 
 [[package]]
+name = "example-one-to-many"
+version = "0.1.0"
+source = { editable = "examples/example-one-to-many" }
+dependencies = [
+    { name = "duckdb" },
+    { name = "ibis-framework", extra = ["duckdb"] },
+    { name = "metaxy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "duckdb" },
+    { name = "ibis-framework", extras = ["duckdb"] },
+    { name = "metaxy", editable = "." },
+]
+
+[[package]]
 name = "example-overview"
 version = "0.1.0"
 source = { editable = "examples/example-overview" }
@@ -565,6 +583,7 @@ source = { editable = "examples" }
 dependencies = [
     { name = "example-ducklake" },
     { name = "example-migration" },
+    { name = "example-one-to-many" },
     { name = "example-overview" },
     { name = "example-recompute" },
 ]
@@ -573,6 +592,7 @@ dependencies = [
 requires-dist = [
     { name = "example-ducklake", editable = "examples/example-ducklake" },
     { name = "example-migration", editable = "examples/example-migration" },
+    { name = "example-one-to-many", editable = "examples/example-one-to-many" },
     { name = "example-overview", editable = "examples/example-overview" },
     { name = "example-recompute", editable = "examples/example-recompute" },
 ]
@@ -582,7 +602,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
@@ -1657,6 +1677,22 @@ wheels = [
 name = "mkdocs-metaxy"
 version = "0.1.0"
 source = { editable = "docs/.mkdocs-metaxy" }
+dependencies = [
+    { name = "markdown" },
+    { name = "metaxy" },
+    { name = "mkdocs" },
+    { name = "pygments" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "markdown", specifier = ">=3.4" },
+    { name = "metaxy", editable = "." },
+    { name = "mkdocs", specifier = ">=1.5.0" },
+    { name = "pygments", specifier = ">=2.15.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+]
 
 [[package]]
 name = "mkdocs-section-index"

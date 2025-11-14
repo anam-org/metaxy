@@ -1,17 +1,17 @@
-"""Tests for FeatureSpec validation, especially duplicate field keys."""
+"""Tests for SampleFeatureSpec validation, especially duplicate field keys."""
 
 import pytest
 
 from metaxy.models.feature import BaseFeature
-from metaxy.models.feature_spec import BaseFeatureSpec, FeatureSpec
+from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
 
 def test_duplicate_field_keys_raises_error():
-    """Test that duplicate field keys in a FeatureSpec raise a validation error."""
+    """Test that duplicate field keys in a SampleFeatureSpec raise a validation error."""
     with pytest.raises(ValueError, match="Duplicate field key found: .*predictions.*"):
-        _ = FeatureSpec(
+        _ = SampleFeatureSpec(
             key="test/feature",
             fields=[
                 FieldSpec(key=FieldKey(["predictions"])),
@@ -24,7 +24,7 @@ def test_duplicate_field_keys_raises_error():
 def test_duplicate_field_keys_with_different_code_versions_still_fails():
     """Test that duplicate field keys fail even with different code versions."""
     with pytest.raises(ValueError, match="Duplicate field key found: .*analysis.*"):
-        _ = FeatureSpec(
+        _ = SampleFeatureSpec(
             key="test/feature",
             fields=[
                 FieldSpec(key=FieldKey(["analysis"]), code_version="v1"),
@@ -38,7 +38,7 @@ def test_duplicate_field_keys_with_different_code_versions_still_fails():
 def test_duplicate_nested_field_keys_raises_error():
     """Test that duplicate nested field keys raise a validation error."""
     with pytest.raises(ValueError, match="Duplicate field key found: .*model.output.*"):
-        _ = FeatureSpec(
+        _ = SampleFeatureSpec(
             key="test/feature",
             fields=[
                 FieldSpec(key=FieldKey(["model", "output"])),
@@ -51,7 +51,7 @@ def test_duplicate_nested_field_keys_raises_error():
 def test_unique_field_keys_pass_validation():
     """Test that unique field keys pass validation successfully."""
     # This should not raise any errors
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key="test/feature",
         fields=[
             FieldSpec(key=FieldKey(["predictions"])),
@@ -68,15 +68,15 @@ def test_unique_field_keys_pass_validation():
 def test_default_field_is_unique():
     """Test that the default field doesn't conflict with itself."""
     # Using default fields (only one "default" field)
-    spec = FeatureSpec(key="test/feature")
+    spec = SampleFeatureSpec(key="test/feature")
     assert len(spec.fields) == 1
     assert spec.fields[0].key == FieldKey(["default"])
 
 
 def test_duplicate_field_keys_in_base_feature_spec():
-    """Test that BaseFeatureSpec also validates unique field keys."""
+    """Test that SampleFeatureSpec also validates unique field keys."""
     with pytest.raises(ValueError, match="Duplicate field key found: .*data.*"):
-        _ = BaseFeatureSpec(
+        _ = SampleFeatureSpec(
             key="test/feature",
             id_columns=["sample_uid", "chunk_id"],
             fields=[
@@ -93,7 +93,7 @@ def test_duplicate_field_keys_in_feature_class_definition():
 
         class _TestFeature(  # pyright: ignore[reportUnusedClass]
             BaseFeature,
-            spec=BaseFeatureSpec(
+            spec=SampleFeatureSpec(
                 key="test/duplicate_fields",
                 id_columns=["sample_uid"],
                 fields=[
@@ -109,7 +109,7 @@ def test_duplicate_field_keys_in_feature_class_definition():
 def test_field_keys_case_sensitive():
     """Test that field keys are case-sensitive (different cases are not duplicates)."""
     # This should not raise any errors - case matters
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key="test/feature",
         fields=[
             FieldSpec(key=FieldKey(["Data"])),
@@ -118,3 +118,18 @@ def test_field_keys_case_sensitive():
         ],
     )
     assert len(spec.fields) == 3
+
+
+def test_feature_spec_requires_id_columns():
+    """Test that FeatureSpec (production API) requires id_columns parameter."""
+    from metaxy.models.feature_spec import FeatureSpec
+
+    # This should fail - id_columns is required
+    with pytest.raises(TypeError, match="id_columns"):
+        FeatureSpec(
+            key="test/feature"
+        )  # Missing id_columns  # pyright: ignore[reportCallIssue]
+
+    # This should work
+    spec = FeatureSpec(key="test/feature", id_columns=["sample_uid"])
+    assert spec.id_columns == ("sample_uid",)

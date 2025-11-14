@@ -2,10 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Always use the following agents:
 
-- @agent-planner
-- @agent-python-dev
-- @agent-qa
-- @agent-python-test-engineer
+Start each task with @agent-planner.
+
+Use @agent-python-dev to write code.
+Use @agent-python-test-engineer to write tests for it.
+
+Iterate until @agent-qa is happy.
 
 ## Project Status
 

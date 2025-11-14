@@ -9,6 +9,7 @@ dependencies = [
   "example-overview",
   "example-migration",
   "example-ducklake",
+  "example-one-to-many",
 ]
 
 [tool.uv.sources]
@@ -16,4 +17,5 @@ example-overview = { workspace = true }
 example-recompute = { workspace = true }
 example-migration = { workspace = true }
 example-ducklake = { workspace = true }
+example-one-to-many = { workspace = true }
 metaxy = { workspace = true }

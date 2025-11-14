@@ -7,11 +7,11 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
     """Test migrations list with no migrations."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -33,11 +33,11 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -51,14 +51,19 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
 
         # Write a test migration YAML
         migration_yaml = {
-            "id": "test_migration_001",
+            "migration_type": "metaxy.migrations.models.FullGraphMigration",
+            "migration_id": "test_migration_001",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
-            "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
+            "snapshot_version": "b" * 64,
+            "ops": [
+                {
+                    "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                    "features": ["video/files"],
+                }
+            ],
         }
 
         yaml_path = migrations_dir / "test_001.yaml"
@@ -86,11 +91,11 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -104,7 +109,8 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
 
         # Write first migration YAML
         migration1_yaml = {
-            "id": "migration_001",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_001",
             "created_at": datetime(
                 2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -120,7 +126,8 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
 
         # Write second migration YAML (depends on first)
         migration2_yaml = {
-            "id": "migration_002",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_002",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -156,11 +163,11 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -174,16 +181,19 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
 
         # Write migration with multiple operations
         migration_yaml = {
-            "id": "multi_op_migration",
+            "migration_type": "metaxy.migrations.models.FullGraphMigration",
+            "migration_id": "multi_op_migration",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
             "parent": "initial",
-            "from_snapshot_version": "a" * 64,
-            "to_snapshot_version": "b" * 64,
+            "snapshot_version": "b" * 64,
             "ops": [
-                {"type": "metaxy.migrations.ops.DataVersionReconciliation"},
-                {"type": "myproject.ops.CustomBackfill"},
+                {
+                    "type": "metaxy.migrations.ops.DataVersionReconciliation",
+                    "features": ["video/files"],
+                },
+                {"type": "myproject.ops.CustomBackfill", "features": ["video/files"]},
             ],
         }
 
@@ -212,11 +222,11 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, TestingFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -230,7 +240,8 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
 
         # Write two migrations that both claim to be head (invalid chain)
         migration1_yaml = {
-            "id": "migration_001",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_001",
             "created_at": datetime(
                 2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -246,7 +257,8 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
 
         # Second migration also has parent "initial" (creates two heads)
         migration2_yaml = {
-            "id": "migration_002",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_002",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -264,5 +276,5 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list", check=False)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
-        assert "Invalid migration chain" in result.stderr
+        assert "Invalid migration" in result.stderr
         assert "Multiple migration heads" in result.stderr

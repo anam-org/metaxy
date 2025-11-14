@@ -63,7 +63,7 @@ def detect_migration(
         if snapshots.height == 0:
             # No snapshots in store for this project - nothing to migrate from
             return None
-        from_snapshot_version = snapshots["snapshot_version"][0]
+        from_snapshot_version = snapshots["metaxy_snapshot_version"][0]
 
     # At this point, from_snapshot_version is guaranteed to be a str
     assert from_snapshot_version is not None  # Type narrowing for type checker
@@ -155,7 +155,8 @@ def detect_migration(
 
     yaml_path = migrations_dir / f"{migration_id}.yaml"
     migration_yaml = {
-        "id": migration.migration_id,
+        "migration_type": migration.migration_type,
+        "migration_id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,
         "from_snapshot_version": migration.from_snapshot_version,

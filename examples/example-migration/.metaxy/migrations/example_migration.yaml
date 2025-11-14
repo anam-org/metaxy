@@ -1,4 +1,5 @@
-id: 20250101_000000_example_migration
+migration_type: metaxy.migrations.models.DiffMigration
+migration_id: 20250101_000000_example_migration
 created_at: '2025-01-01T00:00:00+00:00'
 parent: initial
 from_snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489035ce82

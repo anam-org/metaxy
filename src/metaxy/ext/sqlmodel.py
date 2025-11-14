@@ -10,11 +10,29 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
+from metaxy.models.constants import (
+    ALL_SYSTEM_COLUMNS,
+    METAXY_FEATURE_SPEC_VERSION,
+    METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
+    METAXY_SNAPSHOT_VERSION,
+    SYSTEM_COLUMN_PREFIX,
+)
 from metaxy.models.feature import BaseFeature, MetaxyMeta
-from metaxy.models.feature_spec import BaseFeatureSpecWithIDColumns
+from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 
 if TYPE_CHECKING:
     pass
+
+RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
+    set(ALL_SYSTEM_COLUMNS)
+    | {
+        name.removeprefix(SYSTEM_COLUMN_PREFIX)
+        for name in ALL_SYSTEM_COLUMNS
+        if name.startswith(SYSTEM_COLUMN_PREFIX)
+    }
+)
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -36,13 +54,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     Example:
         ```py
         from metaxy.integrations.sqlmodel import SQLModelFeature
-        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
         class MyFeature(
             SQLModelFeature,
             table=True,
-            spec=BaseFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["my", "feature"]),
 
                 fields=[
@@ -66,7 +84,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
-        spec: BaseFeatureSpecWithIDColumns | None = None,
+        spec: FeatureSpecWithIDColumns | None = None,
         **kwargs: Any,
     ) -> Any:
         """Create a new combined SQLModel/Metaxy Feature class.
@@ -80,7 +98,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             name: Class name
             bases: Base classes
             namespace: Class namespace (attributes and methods)
-            spec: Metaxy BaseFeatureSpec (required for concrete features)
+            spec: Metaxy FeatureSpec (required for concrete features)
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -88,23 +106,47 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         """
         # spec is already in kwargs, no need to extract again
 
-        # Auto-generate __tablename__ if creating a table and not provided
-        # Check config to see if infer_db_table_names is enabled
-        if kwargs.get("table") and "__tablename__" not in namespace and spec:
-            from metaxy.config import MetaxyConfig
+        if kwargs.get("table") and spec is not None:
+            # Prevent user-defined fields from shadowing system-managed columns
+            conflicts = {
+                attr_name
+                for attr_name in namespace
+                if attr_name in RESERVED_SQLMODEL_FIELD_NAMES
+            }
 
-            # Get config (may not be set, so use default if not available)
-            try:
-                config = MetaxyConfig.get()
-                infer_db_table_names = config.ext.sqlmodel.infer_db_table_names
-            except Exception:
-                # If config not available or not set, default to True
-                infer_db_table_names = True
+            # Also guard against explicit sa_column_kwargs targeting system columns
+            for attr_name, attr_value in namespace.items():
+                sa_column_kwargs = getattr(attr_value, "sa_column_kwargs", None)
+                if isinstance(sa_column_kwargs, dict):
+                    column_name = sa_column_kwargs.get("name")
+                    if column_name in ALL_SYSTEM_COLUMNS:
+                        conflicts.add(attr_name)
 
-            if infer_db_table_names:
-                # Convert feature key to table name (using double underscores)
-                table_name = "__".join(spec.key.parts)
-                namespace["__tablename__"] = table_name
+            if conflicts:
+                reserved = ", ".join(sorted(ALL_SYSTEM_COLUMNS))
+                conflict_list = ", ".join(sorted(conflicts))
+                raise ValueError(
+                    "Cannot define SQLModel field(s) "
+                    f"{conflict_list} because they map to reserved Metaxy system columns. "
+                    f"Reserved columns: {reserved}"
+                )
+
+            # Auto-generate __tablename__ if not provided
+            # Check config to see if infer_db_table_names is enabled
+            if "__tablename__" not in namespace:
+                from metaxy.config import MetaxyConfig
+
+                # Get config (may not be set, so use default if not available)
+                try:
+                    config = MetaxyConfig.get()
+                    infer_db_table_names = config.ext.sqlmodel.infer_db_table_names
+                except Exception:
+                    # If config not available or not set, default to True
+                    infer_db_table_names = True
+
+                if infer_db_table_names:
+                    # Use table_name property which handles SQL compatibility (replaces hyphens)
+                    namespace["__tablename__"] = spec.key.table_name
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
@@ -127,7 +169,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     @staticmethod
     def _validate_id_columns_not_server_defined(
         new_class: type[Any],
-        spec: BaseFeatureSpecWithIDColumns,
+        spec: FeatureSpecWithIDColumns,
     ) -> None:
         """Validate that primary key id_columns are not autoincrement.
 
@@ -136,7 +178,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         Args:
             new_class: The newly created SQLModel class
-            spec: The BaseFeatureSpec containing id_columns definition
+            spec: The FeatureSpec containing id_columns definition
 
         Raises:
             ValueError: If any id_column is an autoincrement primary key
@@ -194,13 +236,13 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     Example:
         ```py
         from metaxy.integrations.sqlmodel import SQLModelFeature
-        from metaxy import BaseFeatureSpec, FeatureKey, FieldSpec, FieldKey
+        from metaxy import FeatureSpec, FeatureKey, FieldSpec, FieldKey
         from sqlmodel import Field
 
         class VideoFeature(
             SQLModelFeature,
             table=True,
-            spec=BaseFeatureSpec(
+            spec=FeatureSpec(
                 key=FeatureKey(["video"]),
                   # Root feature
                 fields=[
@@ -227,21 +269,43 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
 
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
+    metaxy_provenance: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_PROVENANCE,
+            "nullable": True,
+        },
+    )
+
     metaxy_provenance_by_field: str | None = Field(
         default=None,
         sa_type=JSON,
-        sa_column_kwargs={"name": "provenance_by_field", "nullable": True},
+        sa_column_kwargs={
+            "name": METAXY_PROVENANCE_BY_FIELD,
+            "nullable": True,
+        },
     )
 
     metaxy_feature_version: str | None = Field(
-        default=None, sa_column_kwargs={"name": "feature_version", "nullable": True}
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_FEATURE_VERSION,
+            "nullable": True,
+        },
     )
 
     metaxy_feature_spec_version: str | None = Field(
         default=None,
-        sa_column_kwargs={"name": "feature_spec_version", "nullable": True},
+        sa_column_kwargs={
+            "name": METAXY_FEATURE_SPEC_VERSION,
+            "nullable": True,
+        },
     )
 
     metaxy_snapshot_version: str | None = Field(
-        default=None, sa_column_kwargs={"name": "snapshot_version", "nullable": True}
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_SNAPSHOT_VERSION,
+            "nullable": True,
+        },
     )

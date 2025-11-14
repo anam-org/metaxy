@@ -9,7 +9,7 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     MetadataStore,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, TempFeatureModule
 from metaxy.config import MetaxyConfig, StoreConfig
@@ -101,9 +101,9 @@ def metaxy_project(tmp_path):
     Example:
         def test_example(metaxy_project):
             def features():
-                from metaxy import Feature, TestingFeatureSpec, FeatureKey, FieldSpec, FieldKey
+                from metaxy import Feature, SampleFeatureSpec, FeatureKey, FieldSpec, FieldKey
 
-                class MyFeature(Feature, spec=TestingFeatureSpec(
+                class MyFeature(Feature, spec=SampleFeatureSpec(
                     key=FeatureKey(["my_feature"]),
 
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]
@@ -131,7 +131,7 @@ def test_graph():
     temp_module = TempFeatureModule("test_stores_features")
 
     # Define specs
-    upstream_a_spec = TestingFeatureSpec(
+    upstream_a_spec = SampleFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_a"]),
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -139,14 +139,14 @@ def test_graph():
         ],
     )
 
-    upstream_b_spec = TestingFeatureSpec(
+    upstream_b_spec = SampleFeatureSpec(
         key=FeatureKey(["test_stores", "upstream_b"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
-    downstream_spec = TestingFeatureSpec(
+    downstream_spec = SampleFeatureSpec(
         key=FeatureKey(["test_stores", "downstream"]),
         deps=[
             FeatureDep(feature=FeatureKey(["test_stores", "upstream_a"])),

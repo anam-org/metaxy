@@ -61,9 +61,41 @@ Syrupy provides several snapshot extensions for different use cases:
 
 ### JSONSnapshotExtension
 
-- Stores snapshots as JSON files
-- Useful for API responses
+- Stores snapshots as JSON files (`.json` extension)
+- Useful for API responses and complex data structures
 - Machine-readable format
+- Import from `syrupy.extensions.json`
+
+**Usage Example:**
+
+```python
+import pytest
+from syrupy.extensions.json import JSONSnapshotExtension
+
+
+@pytest.fixture
+def snapshot_json(snapshot):
+    return snapshot.use_extension(JSONSnapshotExtension)
+
+
+def test_api_call(client, snapshot_json):
+    resp = client.post("/endpoint")
+    assert resp.status_code == 200
+    assert snapshot_json == resp.json()
+```
+
+**Handling Dynamic Data in JSON:**
+
+```python
+from datetime import datetime
+from syrupy.matchers import path_type
+
+
+def test_api_call(client, snapshot_json):
+    resp = client.post("/user", json={"name": "Jane"})
+    matcher = path_type({"id": (int,), "registeredAt": (datetime,)})
+    assert snapshot_json(matcher=matcher) == resp.json()
+```
 
 ### SingleFileSnapshotExtension
 
@@ -112,6 +144,37 @@ matcher = path_value({"id": "REDACTED_ID", "token": "***"})
 
 Filters control which properties are included/excluded from snapshots.
 
+### Custom Exclude Function
+
+The `exclude` parameter accepts a custom filter function with this signature:
+
+```python
+def my_filter(prop, path):
+    """
+    Args:
+        prop: The current property (any hashable value: int, str, object, etc.)
+        path: Ordered sequence of traversed locations, e.g.,
+              (("a", dict), ("b", dict)) when navigating {"a": {"b": {"c": 1}}}
+
+    Returns:
+        True to exclude the property, False to include it
+    """
+    return should_exclude
+```
+
+**Example:**
+
+```python
+def limit_foo_attrs(prop, path):
+    allowed_attrs = {"only", "serialize", "these", "attrs"}
+    return isinstance(path[-1][1], Foo) and prop in allowed_attrs
+
+
+def test_bar(snapshot):
+    actual = Foo(...)
+    assert actual == snapshot(exclude=limit_foo_attrs)
+```
+
 ### props
 
 Filter by property names (shallow):
@@ -124,17 +187,23 @@ exclude = props("id", "timestamp", "random_value")
 
 # Include only specific properties
 include = props("name", "type", "data")
+
+# Works with indexed iterables
+exclude = props("id", "1")  # Excludes "id" and index 1
 ```
 
 ### paths
 
-Filter by full property paths:
+Filter by full property paths using dot-delimited strings:
 
 ```python
 from syrupy.filters import paths
 
 # Exclude nested paths
 exclude = paths("user.password", "response.headers.authorization", "items.*.id")
+
+# Works with list indices
+exclude = paths("date", "list.1")
 ```
 
 ## CLI Options

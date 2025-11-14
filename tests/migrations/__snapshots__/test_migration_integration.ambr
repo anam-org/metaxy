@@ -5,7 +5,6 @@
       'test_integration/simple',
     ]),
     'affected_features_count': 1,
-    'description': 'Migration: test_integration/simple',
   })
 # ---
 # name: test_basic_migration_flow[migration_result]

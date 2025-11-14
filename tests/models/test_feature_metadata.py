@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 from pydantic.types import JsonValue
 
-from metaxy import Feature, FeatureKey, FeatureSpec
+from metaxy import Feature, FeatureKey, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 
@@ -16,9 +16,8 @@ def test_metadata_does_not_affect_version() -> None:
 
         class MetadataFeatureA(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["tests", "metadata", "same"]),
-                deps=None,
                 metadata={"owner": "team-a"},
             ),
         ):
@@ -31,9 +30,8 @@ def test_metadata_does_not_affect_version() -> None:
 
         class MetadataFeatureB(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["tests", "metadata", "same"]),
-                deps=None,
                 metadata={"owner": "team-b"},
             ),
         ):
@@ -56,27 +54,24 @@ def test_metadata_json_serializable() -> None:
         "nested": {"key": "value"},
     }
 
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["tests", "metadata", "json"]),
-        deps=None,
         metadata=valid_metadata,
     )
     assert spec.metadata == valid_metadata
     assert json.dumps(spec.metadata) is not None
 
     with pytest.raises(ValidationError):
-        _ = FeatureSpec(
+        _ = SampleFeatureSpec(
             key=FeatureKey(["tests", "metadata", "json"]),
-            deps=None,
             metadata=cast(Any, {"func": object()}),
         )
 
 
 def test_metadata_immutable() -> None:
     """Metadata mapping should be immutable after initialization."""
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["tests", "metadata", "immutable"]),
-        deps=None,
         metadata={"key": "value"},
     )
     assert spec.metadata == {"key": "value"}
@@ -87,8 +82,7 @@ def test_metadata_immutable() -> None:
 
 def test_metadata_defaults_to_empty_dict() -> None:
     """Metadata defaults to an empty dict for easier usage."""
-    spec = FeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["tests", "metadata", "default"]),
-        deps=None,
     )
     assert spec.metadata == {}

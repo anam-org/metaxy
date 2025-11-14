@@ -211,6 +211,14 @@ class _Key(BaseModel):
         """Convert to string representation with "/" separator."""
         return KEY_SEPARATOR.join(self.parts)
 
+    def to_struct_key(self) -> str:
+        """Convert to a name that can be used as struct key in databases"""
+        return "_".join(self.parts)
+
+    def to_column_suffix(self) -> str:
+        """Convert to a suffix usable for database column names (typically temporary)."""
+        return "__" + "_".join(self.parts)
+
     def __repr__(self) -> str:
         """Return string representation."""
         return self.to_string()
@@ -249,8 +257,11 @@ class _Key(BaseModel):
 
     @property
     def table_name(self) -> str:
-        """Get SQL-like table name for this feature key."""
-        return "__".join(self.parts)
+        """Get SQL-like table name for this feature key.
+
+        Replaces hyphens with underscores for SQL compatibility.
+        """
+        return "__".join(part.replace("-", "_") for part in self.parts)
 
     # List-like interface for backward compatibility
     def __getitem__(self, index: int) -> str:
@@ -357,6 +368,10 @@ class FeatureKey(_Key):
         if isinstance(other, self.__class__):
             return self.parts == other.parts
         return super().__eq__(other)
+
+    def to_column_suffix(self) -> str:
+        """Convert to a suffix usable for database column names (typically temporary)."""
+        return "__" + "_".join(self.parts)
 
 
 class FieldKey(_Key):

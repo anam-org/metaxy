@@ -1,50 +1,93 @@
 """Migration operation types."""
 
-import hashlib
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any
 
 import pydantic
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
-    """Base class for all migration operations.
+class BaseOperation(BaseSettings, ABC):  # pyright: ignore[reportUnsafeMultipleInheritance]
+    """Base class for all migration operations with environment variable support.
 
-    All operations must have:
-    - id: Unique identifier within migration
-    - type: Full class path for polymorphic deserialization (must be Literal in subclasses)
-    - feature_key: Root feature this operation affects
-    - reason: Human-readable explanation
+    Operations are instantiated from YAML configs and execute on individual features.
+    Subclasses implement execute_for_feature() to perform the actual migration logic.
 
-    Subclasses implement execute() to perform the actual migration logic.
+    Environment variables are automatically read using pydantic_settings. Define config
+    fields as regular Pydantic fields and they will be populated from env vars or config dict.
 
-    Note: The 'type' field must be defined as a Literal in each subclass
-    for Pydantic discriminated unions to work.
+    The 'type' field is automatically computed from the class's module and name.
+
+    Example:
+        class PostgreSQLBackfill(BaseOperation):
+            postgresql_url: str  # Reads from POSTGRESQL_URL env var or config dict
+            batch_size: int = 1000  # Optional with default
+
+            def execute_for_feature(self, store, feature_key, *, snapshot_version, from_snapshot_version=None, dry_run=False):
+                # Implementation here
+                return 0
     """
 
-    id: str  # Required, user-provided or auto-generated
-    # type field must be Literal in subclasses for discriminated unions
-    feature_key: list[str]
-    reason: str
+    model_config = SettingsConfigDict(
+        extra="ignore",  # Ignore extra fields like 'type' and 'features' from YAML
+        frozen=True,
+    )
+
+    @pydantic.model_validator(mode="before")
+    @classmethod
+    def _substitute_env_vars(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Substitute ${VAR} patterns with environment variables.
+
+        Example:
+            postgresql_url: "${POSTGRESQL_URL}" -> postgresql_url: "postgresql://..."
+        """
+        import os
+        import re
+
+        def substitute_value(value):
+            if isinstance(value, str):
+                # Replace ${VAR} with os.environ.get('VAR')
+                def replacer(match):
+                    var_name = match.group(1)
+                    env_value = os.environ.get(var_name)
+                    if env_value is None:
+                        raise ValueError(f"Environment variable {var_name} is not set")
+                    return env_value
+
+                return re.sub(r"\$\{([^}]+)\}", replacer, value)
+            return value
+
+        # Create a new dict to avoid mutating the input
+        result = {}
+        for key, value in data.items():
+            result[key] = substitute_value(value)
+        return result
+
+    @property
+    def type(self) -> str:
+        """Return the fully qualified class name for this operation."""
+        return f"{self.__class__.__module__}.{self.__class__.__name__}"
 
     @abstractmethod
-    def execute(
+    def execute_for_feature(
         self,
         store: "MetadataStore",
+        feature_key: str,
         *,
-        from_snapshot_version: str,
-        to_snapshot_version: str,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
-        """Execute the operation.
+        """Execute operation for a single feature.
 
         Args:
             store: Metadata store to operate on
-            from_snapshot_version: Source snapshot version (old state)
-            to_snapshot_version: Target snapshot version (new state)
+            feature_key: Feature key string (e.g., "video/scene")
+            snapshot_version: Target snapshot version
+            from_snapshot_version: Source snapshot version (optional, for cross-snapshot migrations)
             dry_run: If True, only validate and return count without executing
 
         Returns:
@@ -55,23 +98,12 @@ class BaseOperation(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMul
         """
         pass
 
-    def operation_config_hash(self) -> str:
-        """Generate hash of operation config (excluding id).
 
-        Used to detect if operation content changed after partial migration.
-
-        Returns:
-            16-character hex hash
-        """
-        content = self.model_dump_json(exclude={"id"}, by_alias=True)
-        return hashlib.sha256(content.encode()).hexdigest()
-
-
-class DataVersionReconciliation(pydantic.BaseModel):
+class DataVersionReconciliation(BaseOperation):
     """Reconcile field provenance when feature definition changes BUT computation is unchanged.
 
-    This operation applies to ALL affected features in the migration.
-    Feature keys are deducible from snapshot changes, so they're not specified here.
+    This operation applies to affected features specified in the migration configuration.
+    Feature keys are provided in the migration YAML operations list.
 
     This operation:
     1. For each affected feature, derives old/new feature_versions from snapshots
@@ -91,24 +123,20 @@ class DataVersionReconciliation(pydantic.BaseModel):
     - New model version → re-run pipeline instead
 
     Feature versions are automatically derived from the migration's snapshot versions.
-    Affected features are determined from the snapshot diff.
 
     Example YAML:
         operations:
           - type: metaxy.migrations.ops.DataVersionReconciliation
+            features: ["video/scene", "video/frames"]
     """
-
-    type: Literal["metaxy.migrations.ops.DataVersionReconciliation"] = (
-        "metaxy.migrations.ops.DataVersionReconciliation"
-    )
 
     def execute_for_feature(
         self,
         store: "MetadataStore",
         feature_key: str,
         *,
-        from_snapshot_version: str,
-        to_snapshot_version: str,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
         dry_run: bool = False,
     ) -> int:
         """Execute field provenance reconciliation for a single feature.
@@ -128,16 +156,22 @@ class DataVersionReconciliation(pydantic.BaseModel):
         Args:
             store: Metadata store
             feature_key: Feature key string (e.g., "examples/child")
-            from_snapshot_version: Source snapshot version (old state)
-            to_snapshot_version: Target snapshot version (new state)
+            snapshot_version: Target snapshot version (new state)
+            from_snapshot_version: Source snapshot version (old state, required for this operation)
             dry_run: If True, return row count without executing
 
         Returns:
             Number of rows affected
 
         Raises:
-            ValueError: If feature has no upstream dependencies (root feature)
+            ValueError: If feature has no upstream dependencies (root feature) or from_snapshot_version not provided
         """
+        if from_snapshot_version is None:
+            raise ValueError(
+                f"DataVersionReconciliation requires from_snapshot_version for feature {feature_key}"
+            )
+
+        to_snapshot_version = snapshot_version
         import narwhals as nw
 
         from metaxy.metadata_store.base import (
@@ -171,7 +205,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_version") == from_snapshot_version)
+                    (nw.col("metaxy_snapshot_version") == from_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -184,7 +218,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
                 current_only=False,
                 allow_fallback=False,
                 filters=[
-                    (nw.col("snapshot_version") == to_snapshot_version)
+                    (nw.col("metaxy_snapshot_version") == to_snapshot_version)
                     & (nw.col("feature_key") == feature_key_str)
                 ],
             )
@@ -201,7 +235,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             from_version_df = from_version_data.head(1).collect()
             if from_version_df.shape[0] > 0:
-                from_feature_version = str(from_version_df["feature_version"][0])
+                from_feature_version = str(from_version_df["metaxy_feature_version"][0])
             else:
                 from_version_data = None
 
@@ -209,7 +243,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             # Use .head(1) to limit at query level - no need to sort since we don't care about feature_spec_version
             to_version_df = to_version_data.head(1).collect()
             if to_version_df.shape[0] > 0:
-                to_feature_version = str(to_version_df["feature_version"][0])
+                to_feature_version = str(to_version_df["metaxy_feature_version"][0])
             else:
                 to_version_data = None
 
@@ -230,7 +264,7 @@ class DataVersionReconciliation(pydantic.BaseModel):
             existing_metadata = store.read_metadata(
                 feature_cls,
                 current_only=False,
-                filters=[nw.col("feature_version") == from_feature_version],
+                filters=[nw.col("metaxy_feature_version") == from_feature_version],
                 allow_fallback=False,
             )
         except FeatureNotFoundError:
@@ -250,7 +284,12 @@ class DataVersionReconciliation(pydantic.BaseModel):
         user_columns = [
             c
             for c in existing_metadata_df.columns
-            if c not in ["provenance_by_field", "feature_version", "snapshot_version"]
+            if c
+            not in [
+                "metaxy_provenance_by_field",
+                "metaxy_feature_version",
+                "metaxy_snapshot_version",
+            ]
         ]
         sample_metadata = existing_metadata_df.select(user_columns)
 
@@ -266,7 +305,9 @@ class DataVersionReconciliation(pydantic.BaseModel):
         # Convert results to Polars for consistent joining
         if len(diff_result.changed) > 0:
             changed_pl = nw.from_native(diff_result.changed.to_native()).to_polars()
-            new_provenance = changed_pl.select(["sample_uid", "provenance_by_field"])
+            new_provenance = changed_pl.select(
+                ["sample_uid", "metaxy_provenance_by_field"]
+            )
             df_to_write = sample_metadata_pl.join(
                 new_provenance, on="sample_uid", how="inner"
             )
@@ -279,8 +320,8 @@ class DataVersionReconciliation(pydantic.BaseModel):
         # Wrap in Narwhals for write_metadata
         df_to_write_nw = nw.from_native(df_to_write)
         df_to_write_nw = df_to_write_nw.with_columns(
-            nw.lit(to_feature_version).alias("feature_version"),
-            nw.lit(to_snapshot_version).alias("snapshot_version"),
+            nw.lit(to_feature_version).alias("metaxy_feature_version"),
+            nw.lit(to_snapshot_version).alias("metaxy_snapshot_version"),
         )
 
         with allow_feature_version_override():
@@ -297,7 +338,7 @@ class MetadataBackfill(BaseOperation, ABC):
     control over the entire process: loading, transforming, joining, filtering,
     and writing metadata.
 
-    The user implements execute() and can:
+    The user implements execute_for_feature() and can:
     - Load metadata from any external source (S3, database, API, etc.)
     - Perform custom transformations and filtering
     - Join with Metaxy's calculated field_provenance however they want
@@ -305,13 +346,22 @@ class MetadataBackfill(BaseOperation, ABC):
 
     Example Subclass:
         class S3VideoBackfill(MetadataBackfill):
-            type: Literal["myproject.migrations.S3VideoBackfill"]
             s3_bucket: str
             s3_prefix: str
             min_size_mb: int = 10
 
-            def execute(self, store, *, dry_run=False):
+            def execute_for_feature(
+                self,
+                store,
+                feature_key,
+                *,
+                snapshot_version,
+                from_snapshot_version=None,
+                dry_run=False
+            ):
                 import boto3
+                from metaxy.models.feature import FeatureGraph
+                from metaxy.models.types import FeatureKey
 
                 # Load from S3
                 s3 = boto3.client('s3')
@@ -338,7 +388,10 @@ class MetadataBackfill(BaseOperation, ABC):
                     return len(external_df)
 
                 # Get field provenance from Metaxy
-                feature_cls = graph.features_by_key[FeatureKey(self.feature_key)]
+                graph = FeatureGraph.get_active()
+                feature_key_obj = FeatureKey(feature_key.split("/"))
+                feature_cls = graph.features_by_key[feature_key_obj]
+
                 diff = store.resolve_update(
                     feature_cls,
                     samples=external_df.select(["sample_uid"])
@@ -352,28 +405,27 @@ class MetadataBackfill(BaseOperation, ABC):
                 return len(to_write)
 
     Example YAML:
-        - id: "backfill_videos_from_s3"
-          type: "myproject.migrations.S3VideoBackfill"
-          feature_key: ["video", "files"]
-          s3_bucket: "prod-videos"
-          s3_prefix: "processed/"
-          min_size_mb: 10
-          reason: "Initial backfill from production S3 bucket"
+        operations:
+          - type: "myproject.migrations.S3VideoBackfill"
+            features: ["video/files"]
+            s3_bucket: "prod-videos"
+            s3_prefix: "processed/"
+            min_size_mb: 10
     """
 
     # No additional required fields - user subclasses add their own
 
     @abstractmethod
-    def execute(
+    def execute_for_feature(
         self,
         store: "MetadataStore",
+        feature_key: str,
         *,
-        from_snapshot_version: str,
-        to_snapshot_version: str,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
         dry_run: bool = False,
-        **kwargs,
     ) -> int:
-        """User implements full backfill logic.
+        """User implements backfill logic for a single feature.
 
         User has complete control over:
         - Loading external metadata (S3, database, API, files, etc.)
@@ -383,8 +435,9 @@ class MetadataBackfill(BaseOperation, ABC):
 
         Args:
             store: Metadata store to write to
-            from_snapshot_version: Source snapshot version (old state)
-            to_snapshot_version: Target snapshot version (new state)
+            feature_key: Feature key string (e.g., "video/files")
+            snapshot_version: Target snapshot version
+            from_snapshot_version: Source snapshot version (optional, for cross-snapshot backfills)
             dry_run: If True, validate and return count without writing
 
         Returns:

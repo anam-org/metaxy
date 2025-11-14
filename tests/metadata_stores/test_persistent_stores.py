@@ -16,6 +16,7 @@ from metaxy.metadata_store import (
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.types import AccessMode
 
 # Context Manager Tests
 
@@ -27,7 +28,7 @@ def test_store_requires_context_manager(
     data = pl.DataFrame(
         {
             "sample_uid": [1, 2],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"frames": "h1", "audio": "h1"},
                 {"frames": "h2", "audio": "h2"},
             ],
@@ -47,7 +48,7 @@ def test_store_context_manager(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that store works as a context manager."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         # Store should be open
         assert store._is_open
 
@@ -55,7 +56,7 @@ def test_store_context_manager(
         data = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data)
@@ -71,12 +72,12 @@ def test_write_and_read_metadata(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test basic write and read operations."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash1", "audio": "hash1"},
                     {"frames": "hash2", "audio": "hash2"},
                     {"frames": "hash3", "audio": "hash3"},
@@ -91,7 +92,7 @@ def test_write_and_read_metadata(
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
-        assert "provenance_by_field" in result.columns
+        assert "metaxy_provenance_by_field" in result.columns
         assert "path" in result.columns
 
 
@@ -99,7 +100,7 @@ def test_write_invalid_schema(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -107,7 +108,7 @@ def test_write_invalid_schema(
             }
         )
 
-        with pytest.raises(MetadataSchemaError, match="provenance_by_field"):
+        with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
             store.write_metadata(test_features["UpstreamFeatureA"], invalid_df)
 
 
@@ -115,11 +116,11 @@ def test_write_append(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that writes are append-only."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -129,7 +130,7 @@ def test_write_append(
         df2 = pl.DataFrame(
             {
                 "sample_uid": [3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
                 ],
@@ -150,11 +151,11 @@ def test_read_with_filters(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test reading with Polars filter expressions."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -178,12 +179,12 @@ def test_read_with_column_selection(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test reading specific columns."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/a", "/b", "/c"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -195,11 +196,11 @@ def test_read_with_column_selection(
         result = collect_to_polars(
             store.read_metadata(
                 test_features["UpstreamFeatureA"],
-                columns=["sample_uid", "provenance_by_field"],
+                columns=["sample_uid", "metaxy_provenance_by_field"],
             )
         )
 
-        assert set(result.columns) == {"sample_uid", "provenance_by_field"}
+        assert set(result.columns) == {"sample_uid", "metaxy_provenance_by_field"}
         assert "path" not in result.columns
 
 
@@ -207,7 +208,7 @@ def test_read_nonexistent_feature(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that reading nonexistent feature raises error."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         with pytest.raises(FeatureNotFoundError):
             store.read_metadata(test_features["UpstreamFeatureA"])
 
@@ -219,7 +220,7 @@ def test_has_feature_local(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test has_feature for local store."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         assert not store.has_feature(
             test_features["UpstreamFeatureA"], check_fallback=False
         )
@@ -227,7 +228,7 @@ def test_has_feature_local(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -238,43 +239,6 @@ def test_has_feature_local(
         assert not store.has_feature(
             test_features["UpstreamFeatureB"], check_fallback=False
         )
-
-
-def test_list_features(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
-    """Test listing features.
-
-    Args:
-        persistent_store: Store fixture (unopened)
-        test_graph: Registry with test features
-    """
-    with persistent_store as store:
-        # Empty initially
-        features = store.list_features()
-        assert len(features) == 0
-
-        # Add features
-        data_a = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
-        )
-        store.write_metadata(test_features["UpstreamFeatureA"], data_a)
-
-        data_b = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "provenance_by_field": [{"default": "h1"}],
-            }
-        )
-        store.write_metadata(test_features["UpstreamFeatureB"], data_b)
-
-        features = store.list_features()
-        assert len(features) == 2
-        feature_strs = {f.to_string() for f in features}
-        assert feature_strs == {"test_stores/upstream_a", "test_stores/upstream_b"}
 
 
 # Data Version Calculation Tests
@@ -304,7 +268,7 @@ def test_system_tables(
         data = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -320,7 +284,7 @@ def test_system_tables(
 
         assert len(version_history) > 0
         assert "feature_key" in version_history.columns
-        assert "feature_version" in version_history.columns
+        assert "metaxy_feature_version" in version_history.columns
         assert "recorded_at" in version_history.columns
 
 
@@ -333,7 +297,7 @@ def test_display(persistent_store) -> None:
     display_closed = persistent_store.display()
     assert len(display_closed) > 0
 
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         # Should work when open
         display_open = store.display()
         assert len(display_open) > 0
@@ -341,7 +305,7 @@ def test_display(persistent_store) -> None:
 
 def test_repr(persistent_store) -> None:
     """Test /repr/ method."""
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         repr_str = repr(store)
         assert len(repr_str) > 0
 
@@ -360,14 +324,14 @@ def test_nested_context_managers(
     """
     with persistent_store as store1:
         # Nest another context (simulates fallback opening)
-        with store1 as store2:
+        with store1.open(AccessMode.WRITE) as store2:
             assert store1 is store2
             assert store1._is_open
 
             metadata = pl.DataFrame(
                 {
                     "sample_uid": [1],
-                    "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
                 }
             )
             store1.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -395,12 +359,12 @@ def test_multiple_features(
         persistent_store: Store fixture (unopened)
         test_graph: Registry with test features
     """
-    with persistent_store as store:
+    with persistent_store.open(AccessMode.WRITE) as store:
         # Write feature A
         data_a = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -412,7 +376,7 @@ def test_multiple_features(
         data_b = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},

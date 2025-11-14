@@ -4,13 +4,13 @@
 # ---
 # name: test_composite_key_multiple_columns
   dict({
-    'feature_version': '251b5f1d6cf4fc554da752e758ea7524a01e5f6160b50eeeffbbc672514f7c65',
     'id_columns': list([
       'user_id',
       'session_id',
       'timestamp',
     ]),
-    'provenance_by_field': dict({
+    'metaxy_feature_version': '251b5f1d6cf4fc554da752e758ea7524a01e5f6160b50eeeffbbc672514f7c65',
+    'metaxy_provenance_by_field': dict({
       'event': '0e1c4ff52c78531ffe409d2ec18d0fe20a28a6a955666c185dc36c59625ae656',
       'metric': '3f943f7bebadf7fc11989e6419eabde9ca44a17d77cb0976b667628e1d4a2fb9',
     }),
@@ -41,45 +41,45 @@
   dict({
     'child': list([
       dict({
-        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t1',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 10,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'summary': 'User 1 Session 10',
         'total_duration': 30.5,
         'user_id': 1,
       }),
       dict({
-        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t2',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 20,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'summary': 'User 1 Session 20',
         'total_duration': 45.0,
         'user_id': 1,
       }),
       dict({
-        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t3',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 10,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'summary': 'User 2 Session 10',
         'total_duration': 15.0,
         'user_id': 2,
       }),
       dict({
-        'feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '022b4e6b663312da71788eb70640b898b5ffeec04962ab45014c033d8935d79c',
+        'metaxy_provenance_by_field': dict({
           'total_duration': 'hash_t4',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 30,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'summary': 'User 2 Session 30',
         'total_duration': 60.0,
         'user_id': 2,
@@ -89,65 +89,65 @@
       dict({
         'activity_type': 'read',
         'duration': 30.5,
-        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a1',
           'duration': 'hash_d1',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 10,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'timestamp': 1000,
         'user_id': 1,
       }),
       dict({
         'activity_type': 'write',
         'duration': 45.0,
-        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a2',
           'duration': 'hash_d2',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 20,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'timestamp': 1100,
         'user_id': 1,
       }),
       dict({
         'activity_type': 'read',
         'duration': 15.0,
-        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a3',
           'duration': 'hash_d3',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 10,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'timestamp': 1200,
         'user_id': 2,
       }),
       dict({
         'activity_type': 'read',
         'duration': 60.0,
-        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a4',
           'duration': 'hash_d4',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 30,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'timestamp': 1300,
         'user_id': 2,
       }),
       dict({
         'activity_type': 'write',
         'duration': 25.5,
-        'feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
-        'provenance_by_field': dict({
+        'metaxy_feature_version': '41d04e70aa898a9e55ec58ab159096021ab005e134cd44905abd9244a86dc666',
+        'metaxy_provenance_by_field': dict({
           'activity_type': 'hash_a5',
           'duration': 'hash_d5',
         }),
+        'metaxy_snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'session_id': 10,
-        'snapshot_version': '55305d6011723f96c0cd5619faaa789f4cfa4bc68a5d791dd4a5ff4a91aa1d4e',
         'timestamp': 1400,
         'user_id': 3,
       }),
@@ -223,46 +223,46 @@
   list([
     dict({
       'duration': 120.5,
-      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
-      'path': '/videos/v1.mp4',
-      'provenance_by_field': dict({
+      'metaxy_feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'metaxy_provenance_by_field': dict({
         'duration': 'hash1',
         'frames': 'hash1',
       }),
+      'metaxy_snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+      'path': '/videos/v1.mp4',
       'sample_uid': 1,
-      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
     }),
     dict({
       'duration': 90.0,
-      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
-      'path': '/videos/v2.mp4',
-      'provenance_by_field': dict({
+      'metaxy_feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'metaxy_provenance_by_field': dict({
         'duration': 'hash2',
         'frames': 'hash2',
       }),
+      'metaxy_snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+      'path': '/videos/v2.mp4',
       'sample_uid': 2,
-      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
     }),
     dict({
       'duration': 150.3,
-      'feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
-      'path': '/videos/v3.mp4',
-      'provenance_by_field': dict({
+      'metaxy_feature_version': '1a8d62c84df823421daebf2f827dc0ef5104e9f9045f7fba9c1b4478f421ccd6',
+      'metaxy_provenance_by_field': dict({
         'duration': 'hash3',
         'frames': 'hash3',
       }),
+      'metaxy_snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
+      'path': '/videos/v3.mp4',
       'sample_uid': 3,
-      'snapshot_version': 'be9659f7d9837037bf7bf0ca3ed25838c4b6acdc5d0020ccce2fe7fd58ed75dd',
     }),
   ])
 # ---
 # name: test_sqlmodel_id_columns_in_snapshot
   dict({
-    'feature_version': 'a035349dabfed08bee0bd6f0d5631ff5aaf5285488b915fe3d5ca64bda42cc2b',
     'id_columns': list([
       'customer_id',
       'order_id',
     ]),
+    'metaxy_feature_version': 'a035349dabfed08bee0bd6f0d5631ff5aaf5285488b915fe3d5ca64bda42cc2b',
   })
 # ---
 # name: test_sqlmodel_rename_validation_with_store

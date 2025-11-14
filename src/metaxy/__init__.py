@@ -1,19 +1,14 @@
 from pathlib import Path
 
 from metaxy.config import MetaxyConfig, StoreConfig
-from metaxy.data_versioning.hash_algorithms import HashAlgorithm
 from metaxy.entrypoints import (
     load_features,
     load_module_entrypoint,
     load_package_entrypoints,
 )
-from metaxy.metadata_store import (
-    InMemoryMetadataStore,
-    MetadataStore,
-)
+from metaxy.metadata_store import AccessMode, InMemoryMetadataStore, MetadataStore
 from metaxy.migrations import (
     BaseOperation,
-    CustomMigration,
     DataVersionReconciliation,
     DiffMigration,
     FullGraphMigration,
@@ -33,12 +28,11 @@ from metaxy.models.feature import (
     graph,
 )
 from metaxy.models.feature_spec import (
-    BaseFeatureSpec,
-    BaseFeatureSpecWithIDColumns,
     FeatureDep,
     FeatureSpec,
+    FeatureSpecWithIDColumns,
     IDColumns,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy.models.field import (
     FieldDep,
@@ -51,7 +45,9 @@ from metaxy.models.fields_mapping import (
     FieldsMapping,
     FieldsMappingType,
 )
+from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
+from metaxy.provenance.types import HashAlgorithm
 
 
 def init_metaxy(
@@ -83,12 +79,12 @@ __all__ = [
     "TestingFeature",
     "graph",
     "FeatureSpec",
-    "TestingFeatureSpec",
+    "SampleFeatureSpec",
     "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
-    "BaseFeatureSpec",
-    "BaseFeatureSpecWithIDColumns",
+    "FeatureSpec",
+    "FeatureSpecWithIDColumns",
     "AllFieldsMapping",
     "DefaultFieldsMapping",
     "FieldsMapping",
@@ -106,7 +102,6 @@ __all__ = [
     "Migration",
     "DiffMigration",
     "FullGraphMigration",
-    "CustomMigration",
     "MigrationResult",
     "MigrationExecutor",
     "SystemTableStorage",
@@ -119,4 +114,6 @@ __all__ = [
     "init_metaxy",
     "IDColumns",
     "HashAlgorithm",
+    "LineageRelationship",
+    "AccessMode",
 ]

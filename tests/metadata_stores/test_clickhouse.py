@@ -13,6 +13,7 @@ except ImportError:
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import TestingFeature
 
 
@@ -32,7 +33,7 @@ def test_clickhouse_table_naming(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -78,7 +79,11 @@ def test_clickhouse_conn_property_enforcement(
         _ = store.conn
 
     # Should work when open
-    with store:
+    with store.open():
+        conn = store.conn
+        assert conn is not None
+
+    with store.open(AccessMode.WRITE):
         conn = store.conn
         assert conn is not None
 
@@ -99,7 +104,7 @@ def test_clickhouse_persistence(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                     {"frames": "h3", "audio": "h3"},
@@ -118,26 +123,6 @@ def test_clickhouse_persistence(
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
 
-def test_clickhouse_close_idempotent(
-    clickhouse_db: str, test_graph, test_features: dict[str, type[TestingFeature]]
-) -> None:
-    """Test that close() can be called multiple times safely.
-
-    Args:
-        clickhouse_db: Connection string fixture
-        test_graph: Feature graph fixture (for context)
-        test_features: Dict with test feature classes
-    """
-    store = ClickHouseMetadataStore(clickhouse_db)
-
-    with store:
-        pass
-
-    # Close again manually (should not raise)
-    store.close()
-    store.close()
-
-
 def test_clickhouse_hash_algorithms(
     clickhouse_db: str, test_graph, test_features: dict[str, type[TestingFeature]]
 ) -> None:
@@ -149,7 +134,7 @@ def test_clickhouse_hash_algorithms(
         test_features: Dict with test feature classes
     """
 
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     # Test each supported algorithm
     for algorithm in [
@@ -165,7 +150,7 @@ def test_clickhouse_hash_algorithms(
             metadata = pl.DataFrame(
                 {
                     "sample_uid": [1, 2],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"frames": "h1", "audio": "h1"},
                         {"frames": "h2", "audio": "h2"},
                     ],
@@ -200,7 +185,7 @@ def test_clickhouse_config_instantiation(
     assert isinstance(store, ClickHouseMetadataStore)
 
     # Verify store can be opened
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -236,7 +221,7 @@ def test_clickhouse_config_with_hash_algorithm(
 ) -> None:
     """Test ClickHouse store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
-    from metaxy.data_versioning.hash_algorithms import HashAlgorithm
+    from metaxy.provenance.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={
@@ -254,7 +239,7 @@ def test_clickhouse_config_with_hash_algorithm(
     assert isinstance(store, ClickHouseMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -287,5 +272,5 @@ def test_clickhouse_config_with_fallback_stores(
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
 
-    with dev_store:
+    with dev_store.open(AccessMode.WRITE):
         assert dev_store._is_open

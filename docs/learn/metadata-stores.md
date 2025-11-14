@@ -1,6 +1,6 @@
 # Metadata Stores
 
-Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [MetadataStore][metaxy.MetadataStore].
+Metaxy abstracts interactions with metadata stored in external systems such as databases, files, or object stores, through a unified interface: [`MetadataStore`][metaxy.MetadataStore].
 
 Metadata stores expose methods for [reading][metaxy.MetadataStore.read_metadata], [writing][metaxy.MetadataStore.write_metadata], deleting metadata, and the most important one: [resolve_update][metaxy.MetadataStore.resolve_update] for receiving a metadata increment.
 Metaxy intentionally does not support mutating metadata in-place for performance reasons.

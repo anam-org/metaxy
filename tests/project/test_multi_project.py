@@ -11,7 +11,7 @@ import pytest
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureSpec, FieldSpec
+from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
@@ -93,7 +93,7 @@ class TestProjectDetection:
                 # Create a feature with generic module name (no entry points for this module)
                 class TestFeature(
                     Feature,
-                    spec=FeatureSpec(
+                    spec=SampleFeatureSpec(
                         key="test_feature", fields=[FieldSpec(key="field1")]
                     ),
                 ):
@@ -171,7 +171,7 @@ class TestFeatureTrackingVersion:
             # Create a feature with a specific project
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
@@ -206,7 +206,7 @@ class TestFeatureTrackingVersion:
 
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
@@ -222,13 +222,16 @@ class TestFeatureTrackingVersion:
 
             # Verify tracking version is included
             feature_data = snapshot["test/feature"]
-            assert "feature_tracking_version" in feature_data
+            assert "metaxy_feature_tracking_version" in feature_data
             assert "project" in feature_data
             assert feature_data["project"] == "test_project"
 
             # Verify tracking version is computed correctly
             expected_tracking_version = TestFeature.feature_tracking_version()
-            assert feature_data["feature_tracking_version"] == expected_tracking_version
+            assert (
+                feature_data["metaxy_feature_tracking_version"]
+                == expected_tracking_version
+            )
 
 
 class TestMultiProjectIsolation:
@@ -242,7 +245,7 @@ class TestMultiProjectIsolation:
             # Create first feature
             class FeatureA(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature", "a"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
@@ -255,7 +258,7 @@ class TestMultiProjectIsolation:
             # Create second feature
             class FeatureB(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature", "b"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
@@ -288,7 +291,7 @@ class TestMultiProjectIsolation:
 
             class FeatureV1(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                 ),
@@ -298,7 +301,7 @@ class TestMultiProjectIsolation:
             FeatureV1.project = "project_a"  # type: ignore[attr-defined]
 
         snapshot1 = graph1.to_snapshot()
-        tracking_v1 = snapshot1["test/feature"]["feature_tracking_version"]
+        tracking_v1 = snapshot1["test/feature"]["metaxy_feature_tracking_version"]
 
         # Create second graph with same feature in project_b
         graph2 = FeatureGraph()
@@ -307,7 +310,7 @@ class TestMultiProjectIsolation:
 
             class FeatureV2(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),  # Same key
                     fields=[
                         FieldSpec(key=FieldKey(["value"]), code_version="1")
@@ -319,15 +322,15 @@ class TestMultiProjectIsolation:
             FeatureV2.project = "project_b"  # type: ignore[attr-defined]  # Different project
 
         snapshot2 = graph2.to_snapshot()
-        tracking_v2 = snapshot2["test/feature"]["feature_tracking_version"]
+        tracking_v2 = snapshot2["test/feature"]["metaxy_feature_tracking_version"]
 
         # Verify tracking versions are different (would trigger migration)
         assert tracking_v1 != tracking_v2
 
         # Verify feature versions are the same (no computational change)
         assert (
-            snapshot1["test/feature"]["feature_version"]
-            == snapshot2["test/feature"]["feature_version"]
+            snapshot1["test/feature"]["metaxy_feature_version"]
+            == snapshot2["test/feature"]["metaxy_feature_version"]
         )
 
 
@@ -342,7 +345,7 @@ class TestSystemTableRecording:
 
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
@@ -365,7 +368,7 @@ class TestSystemTableRecording:
                 )
 
                 # Verify tracking version is recorded
-                assert "feature_tracking_version" in features_df.columns
+                assert "metaxy_feature_tracking_version" in features_df.columns
 
                 # Verify the recorded tracking version matches the computed one
                 rows = features_df.filter(
@@ -374,7 +377,7 @@ class TestSystemTableRecording:
                 assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
                 row = rows[0]
                 assert (
-                    row["feature_tracking_version"]
+                    row["metaxy_feature_tracking_version"]
                     == TestFeature.feature_tracking_version()
                 )
                 assert row["project"] == "test_project"
@@ -392,14 +395,14 @@ class TestBackwardCompatibility:
         # Create a store with an old-style snapshot (no tracking version)
         with InMemoryMetadataStore() as store:
             # Manually insert old-style feature version record
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             old_record = pl.DataFrame(
                 {
                     "project": ["old_project"],
                     "feature_key": ["test/feature"],
-                    "feature_version": ["abc123"],
-                    "feature_spec_version": ["def456"],
+                    "metaxy_feature_version": ["abc123"],
+                    "metaxy_feature_spec_version": ["def456"],
                     "recorded_at": [pl.datetime(2024, 1, 1)],
                     "feature_spec": [
                         json.dumps(
@@ -410,7 +413,7 @@ class TestBackwardCompatibility:
                         )
                     ],
                     "feature_class_path": ["test.TestFeature"],
-                    "snapshot_version": ["snap123"],
+                    "metaxy_snapshot_version": ["snap123"],
                     # Note: no feature_tracking_version column in old data
                 }
             )
@@ -442,7 +445,7 @@ class TestProjectValidation:
 
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     # Root feature
@@ -458,7 +461,10 @@ class TestProjectValidation:
                 test_df = pl.DataFrame(
                     {
                         "sample_uid": [1, 2],
-                        "provenance_by_field": [{"value": "hash1"}, {"value": "hash2"}],
+                        "metaxy_provenance_by_field": [
+                            {"value": "hash1"},
+                            {"value": "hash2"},
+                        ],
                     }
                 )
 

@@ -16,7 +16,7 @@ from metaxy import (
     FeatureKey,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import FeatureGraph
@@ -58,7 +58,7 @@ def test_record_snapshot_first_time():
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
             ),
@@ -76,7 +76,7 @@ def test_record_snapshot_first_time():
             assert result.snapshot_version == graph.snapshot_version
 
             # Verify data was written to feature_versions table
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
@@ -84,7 +84,7 @@ def test_record_snapshot_first_time():
 
             assert versions_df.height == 1
             assert versions_df["feature_key"][0] == "video/files"
-            assert versions_df["snapshot_version"][0] == graph.snapshot_version
+            assert versions_df["metaxy_snapshot_version"][0] == graph.snapshot_version
 
 
 def test_record_snapshot_metadata_only_changes():
@@ -96,7 +96,7 @@ def test_record_snapshot_metadata_only_changes():
     Example: Adding rename={"old": "new"} to a FeatureDep
     This changes feature_spec_version but NOT feature_version.
     """
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Version 1: No rename
     graph_v1 = FeatureGraph()
@@ -104,7 +104,7 @@ def test_record_snapshot_metadata_only_changes():
 
         class Upstream(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -113,7 +113,7 @@ def test_record_snapshot_metadata_only_changes():
 
         class Downstream(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],  # No rename yet
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -144,7 +144,7 @@ def test_record_snapshot_metadata_only_changes():
 
                 class Upstream2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     ),
@@ -153,7 +153,7 @@ def test_record_snapshot_metadata_only_changes():
 
                 class Downstream2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(
@@ -219,7 +219,7 @@ def test_record_snapshot_no_changes():
 
         class VideoFiles(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
             ),
@@ -241,7 +241,7 @@ def test_record_snapshot_no_changes():
             assert result2.snapshot_version == graph.snapshot_version
 
             # Verify no new rows appended
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None
@@ -254,7 +254,7 @@ def test_record_snapshot_partial_metadata_changes():
 
     Only changed features should appear in features_with_spec_changes.
     """
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Version 1: Three features
     graph_v1 = FeatureGraph()
@@ -262,7 +262,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureA(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -271,7 +271,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureB(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -281,7 +281,7 @@ def test_record_snapshot_partial_metadata_changes():
 
         class FeatureC(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
                 fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
@@ -299,7 +299,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureA2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_a"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     ),
@@ -308,7 +308,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureB2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_b"]),
                         deps=[
                             FeatureDep(
@@ -323,7 +323,7 @@ def test_record_snapshot_partial_metadata_changes():
 
                 class FeatureC2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_c"]),
                         deps=[
                             FeatureDep(
@@ -356,7 +356,7 @@ def test_record_snapshot_partial_metadata_changes():
 
 def test_record_snapshot_append_only_behavior():
     """Test append-only behavior: old rows preserved, new rows added with same snapshot_version."""
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Start with a proper setup for metadata-only change
     graph_v1 = FeatureGraph()
@@ -364,7 +364,7 @@ def test_record_snapshot_append_only_behavior():
 
         class Upstream(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -373,7 +373,7 @@ def test_record_snapshot_append_only_behavior():
 
         class MyFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -398,7 +398,7 @@ def test_record_snapshot_append_only_behavior():
             )
             assert my_feature_rows_v1.height == 1
             timestamp_v1 = my_feature_rows_v1["recorded_at"][0]
-            my_feature_rows_v1["feature_spec_version"][0]
+            my_feature_rows_v1["metaxy_feature_spec_version"][0]
 
             # Change metadata (rename in FeatureDep)
             graph_v2 = FeatureGraph()
@@ -406,7 +406,7 @@ def test_record_snapshot_append_only_behavior():
 
                 class Upstream2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     ),
@@ -415,7 +415,7 @@ def test_record_snapshot_append_only_behavior():
 
                 class MyFeature2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         deps=[
                             FeatureDep(
@@ -453,13 +453,13 @@ def test_record_snapshot_append_only_behavior():
                 assert my_feature_rows.height == 2
 
                 # All rows have same snapshot_version
-                assert my_feature_rows["snapshot_version"].unique().to_list() == [
-                    snapshot_v1
-                ]
+                assert my_feature_rows[
+                    "metaxy_snapshot_version"
+                ].unique().to_list() == [snapshot_v1]
 
                 # But different spec_versions
                 spec_versions = sorted(
-                    my_feature_rows["feature_spec_version"].to_list()
+                    my_feature_rows["metaxy_feature_spec_version"].to_list()
                 )
                 assert len(spec_versions) == 2
                 assert spec_versions[0] != spec_versions[1]
@@ -482,7 +482,7 @@ def test_record_snapshot_computational_change():
 
         class MyFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -501,7 +501,7 @@ def test_record_snapshot_computational_change():
 
                 class MyFeature2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         fields=[
                             FieldSpec(key=FieldKey(["value"]), code_version="2")
@@ -527,7 +527,7 @@ def test_record_snapshot_computational_change():
 
 def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
     """Test complete flow with snapshot for regression testing."""
-    from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     # Create features and push multiple times
     results = []
@@ -538,7 +538,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
         class Upstream(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
             ),
@@ -547,7 +547,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
         class Downstream(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
                 fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
@@ -583,7 +583,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
                 class Upstream2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
                     ),
@@ -592,7 +592,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
 
                 class Downstream2(
                     Feature,
-                    spec=TestingFeatureSpec(
+                    spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
                             FeatureDep(
@@ -624,15 +624,15 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                 versions_dict = versions_df.select(
                     [
                         "feature_key",
-                        "feature_version",
-                        "feature_spec_version",
-                        "snapshot_version",
+                        "metaxy_feature_version",
+                        "metaxy_feature_spec_version",
+                        "metaxy_snapshot_version",
                     ]
                 ).to_dicts()
 
-    # Snapshot all results
-    assert {
-        "results": results,
-        "final_versions_count": len(versions_dict),
-        "versions": versions_dict,
-    } == snapshot
+                # Snapshot all results
+                assert {
+                    "results": results,
+                    "final_versions_count": len(versions_dict),
+                    "versions": versions_dict,
+                } == snapshot

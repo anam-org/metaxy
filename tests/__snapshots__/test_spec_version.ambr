@@ -8,9 +8,9 @@
 # name: test_feature_spec_version_recorded_in_metadata_store
   dict({
     'feature_key': 'recorded/feature',
-    'feature_spec_version': 'c19bf840ba81c8e03f3eb0516a042157623def5df12cf1c92f453d943f0ad9b7',
-    'feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
-    'snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
+    'metaxy_feature_spec_version': 'c19bf840ba81c8e03f3eb0516a042157623def5df12cf1c92f453d943f0ad9b7',
+    'metaxy_feature_version': '0c7b2d83252fbf2f689bec7d37c4f7ffb103755d11eafabc1e000a372f415d83',
+    'metaxy_snapshot_version': '14d4294da40f4ab27ca85eb739fffd70e92c92522dbcba995cfa2aa343988bf3',
   })
 # ---
 # name: test_feature_spec_version_stored_in_snapshot
@@ -38,9 +38,9 @@
       'metadata': dict({
       }),
     }),
-    'feature_spec_version': 'ffac5337d8ef946b5ebc04f54629037e5c7fc1affa56b9de24be7861bb70aa4a',
-    'feature_tracking_version': 'e94e07a211ecbb8852ad5b50eeff420370af84fc24ec39c511b2ca32ac9c6bb7',
-    'feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+    'metaxy_feature_spec_version': 'ffac5337d8ef946b5ebc04f54629037e5c7fc1affa56b9de24be7861bb70aa4a',
+    'metaxy_feature_tracking_version': 'e94e07a211ecbb8852ad5b50eeff420370af84fc24ec39c511b2ca32ac9c6bb7',
+    'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })
 # ---

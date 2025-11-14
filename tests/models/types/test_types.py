@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from typing_extensions import assert_type
 
 from metaxy.models.feature import Feature
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.types import (
     FeatureKey,
     FieldKey,
@@ -481,44 +481,46 @@ class TestJSONSerialization:
 
 
 class TestFeatureSpecIntegration:
-    """Tests for FeatureKey and FieldKey usage in FeatureSpec with various formats."""
+    """Tests for FeatureKey and FieldKey usage in SampleFeatureSpec with various formats."""
 
     def test_feature_spec_with_string_key(self):
-        """Test FeatureSpec accepts FeatureKey as string."""
-        from metaxy.models.feature_spec import FeatureSpec
+        """Test SampleFeatureSpec accepts FeatureKey as string."""
+        from metaxy.models.feature_spec import SampleFeatureSpec
 
-        spec = FeatureSpec(key="my/feature", deps=None)
+        spec = SampleFeatureSpec(key="my/feature")
 
         assert isinstance(spec.key, FeatureKey)
         assert spec.key.to_string() == "my/feature"
         assert list(spec.key.parts) == ["my", "feature"]
 
     def test_feature_spec_with_list_key(self):
-        """Test FeatureSpec accepts FeatureKey as list."""
-        from metaxy.models.feature_spec import FeatureSpec
+        """Test SampleFeatureSpec accepts FeatureKey as list."""
+        from metaxy.models.feature_spec import SampleFeatureSpec
 
-        spec = FeatureSpec(key=["my", "feature"], deps=None)
+        spec = SampleFeatureSpec(key=["my", "feature"])
 
         assert isinstance(spec.key, FeatureKey)
         assert spec.key.to_string() == "my/feature"
         assert list(spec.key.parts) == ["my", "feature"]
 
     def test_feature_spec_with_feature_key_instance(self):
-        """Test FeatureSpec accepts FeatureKey instance."""
-        from metaxy.models.feature_spec import FeatureSpec
+        """Test SampleFeatureSpec accepts FeatureKey instance."""
+        from metaxy.models.feature_spec import SampleFeatureSpec
 
         key = FeatureKey("my", "feature")
-        spec = FeatureSpec(key=key, deps=None)
+        spec = SampleFeatureSpec(key=key)
 
         assert isinstance(spec.key, FeatureKey)
         assert spec.key.to_string() == "my/feature"
         assert list(spec.key.parts) == ["my", "feature"]
 
     def test_feature_spec_serialization_with_variadic_key(self):
-        """Test FeatureSpec serialization when key created with variadic args."""
-        from metaxy.models.feature_spec import FeatureSpec
+        """Test SampleFeatureSpec serialization when key created with variadic args."""
+        from metaxy.models.feature_spec import SampleFeatureSpec
 
-        spec = FeatureSpec(key=FeatureKey("a", "b", "c"), deps=None)
+        spec = SampleFeatureSpec(
+            key=FeatureKey("a", "b", "c"),
+        )
         json_data = spec.model_dump(mode="json")
 
         # key should be serialized as list
@@ -580,11 +582,11 @@ class TestFeatureSpecIntegration:
         assert field.key.to_string() == "my/field"
 
     def test_complete_feature_spec_with_variadic_keys(self):
-        """Test complete FeatureSpec with all keys created using variadic format."""
-        from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+        """Test complete SampleFeatureSpec with all keys created using variadic format."""
+        from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
         from metaxy.models.field import FieldSpec
 
-        spec = FeatureSpec(
+        spec = SampleFeatureSpec(
             key=FeatureKey("my", "complete", "feature"),
             deps=[
                 FeatureDep(feature=FeatureKey("upstream", "one")),
@@ -625,31 +627,14 @@ class TestEdgeCases:
 
 
 feature_key = FeatureKey("/a/b")
-feature_spec = FeatureSpec(key=feature_key, deps=None)
+feature_spec = SampleFeatureSpec(key=feature_key, id_columns=("id",))
 
 
 def test_feature_dep_key_overloads():
     _ = FeatureDep(feature=feature_key)
-    _ = FeatureDep(feature=feature_spec)
+    # Note: FeatureDep doesn't accept spec instances directly anymore
+    # _ = FeatureDep(feature=feature_spec)
 
     class TestFeature(Feature, spec=feature_spec): ...
 
     _ = FeatureDep(feature=TestFeature)
-
-
-def test_feature_spec_deps_required():
-    """Test that FeatureSpec requires deps parameter."""
-    # These should all work - deps is provided
-    spec1 = FeatureSpec(key="test", deps=None)
-    spec2 = FeatureSpec(key=["test"], deps=None)
-    spec3 = FeatureSpec(key=FeatureKey("test"), deps=None)
-
-    # Verify they were created correctly
-    assert spec1.deps is None
-    assert spec2.deps is None
-    assert spec3.deps is None
-
-    # With actual dependencies
-    dep = FeatureDep(feature="upstream")
-    spec5 = FeatureSpec(key="test", deps=[dep])
-    assert spec5.deps == [dep]

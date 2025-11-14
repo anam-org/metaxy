@@ -6,7 +6,7 @@ from metaxy import (
     FeatureKey,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 
 
@@ -19,7 +19,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
 
     class TestFeature(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "comparison"]),
             fields=[
                 FieldSpec(key=FieldKey(["default"]), code_version="1"),
@@ -48,17 +48,17 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     """Test that feature_spec_version will capture future metadata/tags when added.
 
     This test demonstrates that feature_spec_version automatically includes
-    any new fields added to TestingFeatureSpec in the future.
+    any new fields added to SampleFeatureSpec in the future.
     """
     # Create two identical specs
-    spec1 = TestingFeatureSpec(
+    spec1 = SampleFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
         ],
     )
 
-    spec2 = TestingFeatureSpec(
+    spec2 = SampleFeatureSpec(
         key=FeatureKey(["test", "metadata"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
@@ -69,7 +69,7 @@ def test_feature_spec_version_stability_with_future_metadata() -> None:
     assert spec1.feature_spec_version == spec2.feature_spec_version
 
     # The feature_spec_version uses model_dump(mode="json") which will automatically
-    # include any future fields added to the TestingFeatureSpec model
+    # include any future fields added to the SampleFeatureSpec model
     spec_dict = spec1.model_dump(mode="json")
 
     # Verify all current fields are included
@@ -87,7 +87,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
     # Create upstream features
     class Upstream1(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "one"]),
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version="1"),
@@ -98,7 +98,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     class Upstream2(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "two"]),
             fields=[
                 FieldSpec(key=FieldKey(["data"]), code_version="1"),
@@ -110,7 +110,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
     # Create downstream with complex deps
     class Downstream(
         Feature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
                 FeatureDep(
@@ -149,7 +149,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     # Create an identical spec directly (not as a Feature class)
     # to verify determinism without registering another feature
-    identical_spec = TestingFeatureSpec(
+    identical_spec = SampleFeatureSpec(
         key=FeatureKey(["downstream"]),
         deps=[
             FeatureDep(

@@ -10,7 +10,7 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
 from metaxy.models.feature import FeatureGraph
@@ -19,12 +19,12 @@ from metaxy.models.feature import FeatureGraph
 @pytest.fixture
 def temp_module():
     module = TempFeatureModule("test_snapshot_stability")
-    parent_spec = TestingFeatureSpec(
+    parent_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "parent"]),
         fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
     )
 
-    child_spec = TestingFeatureSpec(
+    child_spec = SampleFeatureSpec(
         key=FeatureKey(["test", "child"]),
         deps=[FeatureDep(feature=FeatureKey(["test", "parent"]))],
         fields=[

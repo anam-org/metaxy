@@ -117,7 +117,7 @@ def generate_migration(
                 feature_versions.sort("recorded_at", descending=True).head(1).collect()
             )
             if latest_snapshot.shape[0] > 0:
-                from_snapshot_version = latest_snapshot["snapshot_version"][0]
+                from_snapshot_version = latest_snapshot["metaxy_snapshot_version"][0]
                 print(f"From: latest snapshot {from_snapshot_version}...")
             else:
                 raise ValueError(
@@ -158,7 +158,7 @@ def generate_migration(
         feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
         snapshot_data_df = nw.from_native(
             feature_versions.filter(
-                nw.col("snapshot_version") == to_snapshot_version
+                nw.col("metaxy_snapshot_version") == to_snapshot_version
             ).collect()
         )
 
@@ -173,8 +173,8 @@ def generate_migration(
                 "feature_spec": row.get(
                     "feature_spec", {}
                 ),  # This would need the actual spec
-                "feature_version": row["feature_version"],
-                "feature_spec_version": row["feature_spec_version"],
+                "metaxy_feature_version": row["metaxy_feature_version"],
+                "metaxy_feature_spec_version": row["metaxy_feature_spec_version"],
                 "feature_class_path": row.get("feature_class_path", ""),
             }
 
@@ -222,11 +222,7 @@ def generate_migration(
         feature_key_str = node.feature_key.to_string()
         feature_key_str.replace("/", "_")
 
-        root_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        root_operations.append(DataVersionReconciliation())
 
     if not root_operations:
         print("No feature changes detected. All features up to date!")
@@ -265,7 +261,7 @@ def generate_migration(
                 feature_cls,
                 current_only=False,
                 allow_fallback=False,
-                filters=[nw.col("snapshot_version") == from_snapshot_version],
+                filters=[nw.col("metaxy_snapshot_version") == from_snapshot_version],
             )
             # Only collect head(1) to check existence
             from_metadata_sample = nw.from_native(from_metadata.head(1).collect())
@@ -297,11 +293,7 @@ def generate_migration(
         # Create operation (feature versions derived from snapshots)
         # DataVersionReconciliation doesn't have id, feature_key, or reason params
         # It only has a type field since it applies to all affected features
-        downstream_operations.append(
-            DataVersionReconciliation(
-                type="metaxy.migrations.ops.DataVersionReconciliation"
-            )
-        )
+        downstream_operations.append(DataVersionReconciliation())
 
         print(f"  ✓ {feature_key_str}")
 
@@ -314,13 +306,11 @@ def generate_migration(
     )
 
     # Find the latest migration to set as parent
-    from metaxy.metadata_store.system_tables import MIGRATION_EVENTS_KEY
+    from metaxy.metadata_store.system import EVENTS_KEY
 
     parent_migration_id = None
     try:
-        existing_migrations = store.read_metadata(
-            MIGRATION_EVENTS_KEY, current_only=False
-        )
+        existing_migrations = store.read_metadata(EVENTS_KEY, current_only=False)
         # Get most recent migration by timestamp - only collect the top row
         latest = nw.from_native(
             existing_migrations.sort("timestamp", descending=True).head(1).collect()

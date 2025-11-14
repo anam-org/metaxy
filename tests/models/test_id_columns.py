@@ -1,21 +1,106 @@
 """Tests for configurable ID columns feature."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.data_versioning.calculators.polars import PolarsProvenanceByFieldCalculator
-from metaxy.data_versioning.diff.narwhals import NarwhalsDiffResolver
-from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
+from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.provenance.polars import PolarsProvenanceTracker
+
+
+# Helper function to add metaxy_provenance column to test data
+def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
+    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
+    # For tests, we just use a simple hash-like string based on the provenance_by_field
+    # In real usage, this would be calculated by the ProvenanceTracker
+    df = df.with_columns(
+        pl.col("metaxy_provenance_by_field")
+        .map_elements(
+            lambda x: f"hash_{'_'.join(str(v) for v in x.values())}",
+            return_dtype=pl.String,
+        )
+        .alias("metaxy_provenance")
+    )
+    return df
+
+
+# Simple test joiner that uses ProvenanceTracker
+class TestJoiner:
+    """Test utility that wraps PolarsProvenanceTracker for ID columns tests."""
+
+    def join_upstream(
+        self,
+        upstream_refs: dict[str, "nw.LazyFrame[Any]"],
+        feature_spec: Any,
+        feature_plan: FeaturePlan,
+        upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
+        upstream_renames: dict[str, dict[str, str] | None] | None = None,
+    ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
+        """Join upstream feature metadata using PolarsProvenanceTracker.
+
+        Args:
+            upstream_refs: Mapping of upstream feature key strings to lazy frames
+            feature_spec: Feature specification
+            feature_plan: Feature plan
+            upstream_columns: Optional column selection per upstream (for compatibility)
+            upstream_renames: Optional column renames per upstream (for compatibility)
+
+        Returns:
+            Tuple of (joined data, mapping of upstream keys to provenance columns)
+        """
+        # Handle empty upstream refs (source features)
+        if not upstream_refs:
+            # Return empty dataframe with ID columns from feature_spec
+            empty_df = pl.DataFrame({col: [] for col in feature_spec.id_columns})
+            # Add required system columns
+            empty_df = empty_df.with_columns(
+                [
+                    pl.lit(None)
+                    .alias(METAXY_PROVENANCE_BY_FIELD)
+                    .cast(pl.Struct({"default": pl.String})),
+                ]
+            )
+            return nw.from_native(empty_df.lazy(), eager_only=False), {}
+
+        # Create a PolarsProvenanceTracker for this feature
+        tracker = PolarsProvenanceTracker(plan=feature_plan)
+
+        # Convert string keys back to FeatureKey objects and ensure data is materialized
+        upstream_by_key = {}
+        for k, v in upstream_refs.items():
+            # Materialize the lazy frame and ensure it has metaxy_provenance
+            df = v.collect().to_polars()
+            if "metaxy_provenance" not in df.columns:
+                df = add_metaxy_provenance(df)
+            upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
+
+        # Prepare upstream (handles filtering, selecting, renaming, and joining)
+        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+
+        # Build the mapping of upstream_key -> provenance_by_field column name
+        # The new naming convention is: {column_name}{feature_key.to_column_suffix()}
+        mapping = {}
+        for upstream_key_str in upstream_refs.keys():
+            upstream_key = FeatureKey(upstream_key_str)
+            # The provenance_by_field column is renamed using to_column_suffix()
+            provenance_col_name = (
+                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
+            )
+            mapping[upstream_key_str] = provenance_col_name
+
+        return joined, mapping
 
 
 def test_feature_spec_id_columns_default():
     """Test that id_columns defaults to None and is interpreted as ["sample_uid"]."""
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
     assert spec.id_columns == ["sample_uid"]
@@ -23,7 +108,7 @@ def test_feature_spec_id_columns_default():
 
 def test_feature_spec_id_columns_custom():
     """Test that custom id_columns can be specified."""
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
@@ -33,7 +118,7 @@ def test_feature_spec_id_columns_custom():
 def test_feature_spec_id_columns_validation():
     """Test that empty id_columns raises validation error."""
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
-        TestingFeatureSpec(
+        SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
         )
@@ -41,12 +126,12 @@ def test_feature_spec_id_columns_validation():
 
 def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
     """Test NarwhalsJoiner uses default sample_uid when id_columns not specified."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create feature with default ID columns
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
         ),
     ):
@@ -54,7 +139,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
         ),
@@ -66,7 +151,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -94,12 +179,12 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
 
 def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
     """Test NarwhalsJoiner with a single custom ID column."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create features with custom ID column
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],
         ),
@@ -108,7 +193,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["user_id"],
@@ -121,7 +206,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "user_id": [100, 200, 300],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -150,12 +235,12 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
 
 def test_narwhals_joiner_composite_key(graph: FeatureGraph):
     """Test NarwhalsJoiner with composite key (multiple ID columns)."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create features with composite key
     class Upstream1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream1"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -164,7 +249,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
     class Upstream2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream2"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -173,7 +258,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[
                 FeatureDep(feature=FeatureKey(["upstream1"])),
@@ -190,7 +275,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
             {
                 "user_id": [1, 1, 2, 2],
                 "session_id": [10, 20, 10, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -206,7 +291,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
             {
                 "user_id": [1, 1, 2, 3],
                 "session_id": [10, 20, 10, 40],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash5"},
                     {"default": "hash6"},
                     {"default": "hash7"},
@@ -246,12 +331,12 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
 def test_narwhals_joiner_empty_upstream_custom_id(graph: FeatureGraph):
     """Test NarwhalsJoiner with no upstream deps and custom ID columns."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create source feature with custom ID columns
     class SourceFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["entity_id", "timestamp"],
         ),
@@ -276,118 +361,16 @@ def test_narwhals_joiner_empty_upstream_custom_id(graph: FeatureGraph):
     assert len(result) == 0
 
 
-def test_full_pipeline_custom_id_columns(graph: FeatureGraph):
-    """Test full pipeline (join -> calculate -> diff) with custom ID columns."""
-
-    # Create features with custom ID columns
-    class VideoFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["video"]),
-            id_columns=["content_id"],
-            fields=[
-                FieldSpec(key=FieldKey(["frames"]), code_version="1"),
-            ],
-        ),
-    ):
-        pass
-
-    class ProcessedFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["processed"]),
-            deps=[FeatureDep(feature=FeatureKey(["video"]))],
-            id_columns=["content_id"],
-            fields=[
-                FieldSpec(key=FieldKey(["analysis"]), code_version="1"),
-            ],
-        ),
-    ):
-        pass
-
-    # Step 1: Join upstream
-    joiner = NarwhalsJoiner()
-
-    video_metadata = nw.from_native(
-        pl.DataFrame(
-            {
-                "content_id": ["vid_001", "vid_002", "vid_003"],
-                "provenance_by_field": [
-                    {"frames": "frame_v1"},
-                    {"frames": "frame_v2"},
-                    {"frames": "frame_v3"},
-                ],
-                "duration": [120, 180, 90],
-            }
-        ).lazy()
-    )
-
-    plan = graph.get_feature_plan(ProcessedFeature.spec().key)
-
-    joined, mapping = joiner.join_upstream(
-        upstream_refs={"video": video_metadata},
-        feature_spec=ProcessedFeature.spec(),
-        feature_plan=plan,
-    )
-
-    # Step 2: Calculate field provenances
-    calculator = PolarsProvenanceByFieldCalculator()
-
-    with_versions = calculator.calculate_provenance_by_field(
-        joined_upstream=joined,
-        feature_spec=ProcessedFeature.spec(),
-        feature_plan=plan,
-        upstream_column_mapping=mapping,
-    )
-
-    # Step 3: Diff with current
-    diff_resolver = NarwhalsDiffResolver()
-
-    current = nw.from_native(
-        pl.DataFrame(
-            {
-                "content_id": ["vid_001", "vid_002"],
-                "provenance_by_field": [
-                    {"analysis": "old_hash1"},
-                    {"analysis": "old_hash2"},
-                ],
-            }
-        ).lazy()
-    )
-
-    diff_result = diff_resolver.find_changes(
-        target_provenance=with_versions,
-        current_metadata=current,
-        id_columns=ProcessedFeature.spec().id_columns,  # Pass ID columns explicitly
-    )
-
-    # Check results
-    added = diff_result.added.collect()
-    changed = diff_result.changed.collect()
-    removed = diff_result.removed.collect()
-
-    # Added: vid_003 (not in current)
-    assert len(added) == 1
-    assert added["content_id"][0] == "vid_003"
-
-    # Changed: vid_001 and vid_002 (different hashes)
-    assert len(changed) == 2
-    assert set(changed["content_id"].to_list()) == {"vid_001", "vid_002"}
-
-    # Removed: none
-    assert len(removed) == 0
-
-
 def test_feature_spec_version_includes_id_columns():
     """Test that feature_spec_version changes when id_columns change."""
 
     # Create two specs with same everything except id_columns
-    spec1 = TestingFeatureSpec(
+    spec1 = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         # Uses default id_columns (None)
     )
 
-    spec2 = TestingFeatureSpec(
+    spec2 = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id"],  # Custom id_columns
     )
@@ -397,154 +380,12 @@ def test_feature_spec_version_includes_id_columns():
     assert spec1.feature_spec_version != spec2.feature_spec_version
 
     # But if we create another spec with same id_columns, versions should match
-    spec3 = TestingFeatureSpec(
+    spec3 = SampleFeatureSpec(
         key=FeatureKey(["test"]),  # Same key
         id_columns=["user_id"],  # Same id_columns as spec2
     )
 
     assert spec2.feature_spec_version == spec3.feature_spec_version
-
-
-def test_mixed_id_columns_behavior(graph: FeatureGraph):
-    """Test validation when upstream and target features have different ID columns.
-
-    The joiner now validates that all upstream features have the required ID columns
-    from the target feature and raises a clear error if any are missing.
-    """
-    joiner = NarwhalsJoiner()
-
-    # Create upstream with one set of ID columns
-    class UpstreamFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["upstream"]),
-            id_columns=["user_id"],  # Upstream declares user_id
-        ),
-    ):
-        pass
-
-    # Create target with different ID columns
-    class TargetFeature(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["target"]),
-            deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
-            id_columns=["user_id", "session_id"],  # Target needs both columns
-        ),
-    ):
-        pass
-
-    # Scenario 1: Upstream has all required columns - should work
-    upstream_with_both = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 2, 3],
-                "session_id": [10, 20, 30],  # Has both columns
-                "provenance_by_field": [
-                    {"default": "hash1"},
-                    {"default": "hash2"},
-                    {"default": "hash3"},
-                ],
-            }
-        ).lazy()
-    )
-
-    plan = graph.get_feature_plan(TargetFeature.spec().key)
-
-    # This should work because upstream has both columns
-    joined, mapping = joiner.join_upstream(
-        upstream_refs={"upstream": upstream_with_both},
-        feature_spec=TargetFeature.spec(),
-        feature_plan=plan,
-    )
-    result = joined.collect()
-    assert len(result) == 3  # All rows joined successfully
-
-    # Scenario 2: Upstream missing required ID columns - should raise clear error
-    upstream_missing_column = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 2, 3],
-                # Missing session_id!
-                "provenance_by_field": [
-                    {"default": "hash1"},
-                    {"default": "hash2"},
-                    {"default": "hash3"},
-                ],
-            }
-        ).lazy()
-    )
-
-    # Should raise clear validation error about missing session_id
-    with pytest.raises(ValueError) as exc_info:
-        joined2, _ = joiner.join_upstream(
-            upstream_refs={"upstream": upstream_missing_column},
-            feature_spec=TargetFeature.spec(),
-            feature_plan=plan,
-        )
-
-    # Check the error message is helpful
-    error_msg = str(exc_info.value)
-    assert "missing required ID columns" in error_msg
-    assert "session_id" in error_msg
-    assert "upstream" in error_msg
-
-    # Scenario 3: With multiple upstreams, all must have required ID columns
-    class Upstream2(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["upstream2"]),
-            id_columns=["user_id"],
-        ),
-    ):
-        pass
-
-    class MultiUpstreamTarget(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["multi"]),
-            deps=[
-                FeatureDep(feature=FeatureKey(["upstream"])),
-                FeatureDep(feature=FeatureKey(["upstream2"])),
-            ],
-            id_columns=["user_id", "session_id"],  # Needs both
-        ),
-    ):
-        pass
-
-    # Both upstreams have user_id but only one has session_id
-    upstream2_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 2, 3],
-                "session_id": [10, 20, 30],  # This one has session_id
-                "provenance_by_field": [
-                    {"default": "hash4"},
-                    {"default": "hash5"},
-                    {"default": "hash6"},
-                ],
-            }
-        ).lazy()
-    )
-
-    plan2 = graph.get_feature_plan(MultiUpstreamTarget.spec().key)
-
-    # This will fail because upstream (first) doesn't have session_id
-    with pytest.raises(ValueError) as exc_info:
-        joined3, _ = joiner.join_upstream(
-            upstream_refs={
-                "upstream": upstream_missing_column,  # Missing session_id
-                "upstream2": upstream2_data,  # Has session_id
-            },
-            feature_spec=MultiUpstreamTarget.spec(),
-            feature_plan=plan2,
-        )
-
-    # Check error mentions the specific upstream missing the column
-    error_msg = str(exc_info.value)
-    assert "upstream" in error_msg
-    assert "missing required ID columns" in error_msg
-    assert "session_id" in error_msg
 
 
 def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
@@ -554,7 +395,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
     # Create features with custom ID columns
     class UserFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["user"]),
             id_columns=["user_id"],
             fields=[
@@ -566,7 +407,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
 
     class SessionFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["session"]),
             deps=[FeatureDep(feature=FeatureKey(["user"]))],
             id_columns=["user_id", "session_id"],
@@ -583,7 +424,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "user_id": [100, 200, 300],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"profile": "user_hash1"},
                         {"profile": "user_hash2"},
                         {"profile": "user_hash3"},
@@ -606,7 +447,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                 {
                     "user_id": [100, 100, 200],
                     "session_id": [1, 2, 1],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"activity": "session_hash1"},
                         {"activity": "session_hash2"},
                         {"activity": "session_hash3"},
@@ -636,7 +477,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     # Create feature with default ID columns
     class Feature1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             # id_columns=None (default)
@@ -647,7 +488,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     # Create identical feature but with explicit custom ID columns
     class Feature2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             id_columns=["user_id"],  # Custom ID columns
@@ -670,82 +511,20 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
     assert spec_version1 != spec_version2
 
 
-def test_diff_resolver_with_composite_id_columns():
-    """Test NarwhalsDiffResolver with composite ID columns."""
-    diff_resolver = NarwhalsDiffResolver()
-
-    # Target with composite key
-    target = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 1, 2, 2],
-                "session_id": [10, 20, 10, 30],
-                "provenance_by_field": [
-                    {"default": "new1"},
-                    {"default": "new2"},
-                    {"default": "new3"},
-                    {"default": "new4"},
-                ],
-            }
-        ).lazy()
-    )
-
-    # Current with some overlapping composite keys
-    current = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 1, 2],
-                "session_id": [10, 20, 20],  # Note: (2, 20) not in target
-                "provenance_by_field": [
-                    {"default": "old1"},  # Changed
-                    {"default": "new2"},  # Unchanged
-                    {"default": "old3"},  # Will be removed
-                ],
-            }
-        ).lazy()
-    )
-
-    result = diff_resolver.find_changes(
-        target_provenance=target,
-        current_metadata=current,
-        id_columns=["user_id", "session_id"],  # Composite key
-    )
-
-    # Materialize results
-    added = result.added.collect().sort(["user_id", "session_id"])
-    changed = result.changed.collect().sort(["user_id", "session_id"])
-    removed = result.removed.collect().sort(["user_id", "session_id"])
-
-    # Added: (2, 10) and (2, 30) - not in current
-    assert len(added) == 2
-    added_keys = list(zip(added["user_id"].to_list(), added["session_id"].to_list()))
-    assert added_keys == [(2, 10), (2, 30)]
-
-    # Changed: (1, 10) - different hash
-    assert len(changed) == 1
-    assert changed["user_id"][0] == 1
-    assert changed["session_id"][0] == 10
-
-    # Removed: (2, 20) - not in target
-    assert len(removed) == 1
-    assert removed["user_id"][0] == 2
-    assert removed["session_id"][0] == 20
-
-
 def test_snapshot_stability_with_id_columns(snapshot):
     """Snapshot test to ensure id_columns in feature_spec_version is stable."""
 
     # Create specs with different id_columns configurations
     specs = {
-        "default": TestingFeatureSpec(
+        "default": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             # id_columns=None (default)
         ),
-        "single_custom": TestingFeatureSpec(
+        "single_custom": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=["user_id"],
         ),
-        "composite": TestingFeatureSpec(
+        "composite": SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -759,11 +538,11 @@ def test_snapshot_stability_with_id_columns(snapshot):
 
 def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
     """Test that joiner result includes all ID columns from the feature spec."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     class TripleKeyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["triple"]),
             id_columns=["tenant_id", "user_id", "event_id"],
         ),
@@ -791,200 +570,6 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
     assert len(result) == 0
 
 
-def test_id_column_validation_edge_cases(graph: FeatureGraph):
-    """Test edge cases for ID column validation in the joiner."""
-    joiner = NarwhalsJoiner()
-
-    # Test Case 1: Upstream has extra ID columns (should work)
-    class UpstreamWithExtra(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["upstream_extra"]),
-            id_columns=["user_id", "session_id", "extra_id"],
-        ),
-    ):
-        pass
-
-    class TargetFewerColumns(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["target_fewer"]),
-            deps=[FeatureDep(feature=FeatureKey(["upstream_extra"]))],
-            id_columns=["user_id", "session_id"],  # Doesn't require extra_id
-        ),
-    ):
-        pass
-
-    upstream_extra_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 2],
-                "session_id": [10, 20],
-                "extra_id": [100, 200],  # Extra column, not required by target
-                "provenance_by_field": [
-                    {"default": "hash1"},
-                    {"default": "hash2"},
-                ],
-            }
-        ).lazy()
-    )
-
-    plan = graph.get_feature_plan(TargetFewerColumns.spec().key)
-
-    # Should work because upstream has all required columns (and some extra)
-    joined, _ = joiner.join_upstream(
-        upstream_refs={"upstream_extra": upstream_extra_data},
-        feature_spec=TargetFewerColumns.spec(),
-        feature_plan=plan,
-    )
-    result = joined.collect()
-    assert len(result) == 2
-    assert "user_id" in result.columns
-    assert "session_id" in result.columns
-    # extra_id may or may not be included (not required for join)
-
-    # Test Case 2: Empty upstream refs (source feature) - should work
-    class SourceWithCustomID(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["source"]),
-            id_columns=["entity_id"],
-        ),
-    ):
-        pass
-
-    plan2 = graph.get_feature_plan(SourceWithCustomID.spec().key)
-
-    # No validation needed for empty upstream
-    joined2, _ = joiner.join_upstream(
-        upstream_refs={},
-        feature_spec=SourceWithCustomID.spec(),
-        feature_plan=plan2,
-    )
-    result2 = joined2.collect()
-    assert "entity_id" in result2.columns
-    assert len(result2) == 0  # Empty source
-
-    # Test Case 3: Multiple upstreams with different missing columns
-    class Upstream1Missing(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["up1"]),
-            id_columns=["user_id"],  # Missing session_id
-        ),
-    ):
-        pass
-
-    class Upstream2Missing(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["up2"]),
-            id_columns=["session_id"],  # Missing user_id
-        ),
-    ):
-        pass
-
-    class TargetNeedsBoth(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["target_both"]),
-            deps=[
-                FeatureDep(feature=FeatureKey(["up1"])),
-                FeatureDep(feature=FeatureKey(["up2"])),
-            ],
-            id_columns=["user_id", "session_id"],
-        ),
-    ):
-        pass
-
-    up1_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "user_id": [1, 2],
-                # Missing session_id
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
-            }
-        ).lazy()
-    )
-
-    up2_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "session_id": [10, 20],
-                # Missing user_id
-                "provenance_by_field": [{"default": "h3"}, {"default": "h4"}],
-            }
-        ).lazy()
-    )
-
-    plan3 = graph.get_feature_plan(TargetNeedsBoth.spec().key)
-
-    # Should fail with clear error about up1 missing session_id
-    with pytest.raises(ValueError) as exc_info:
-        joiner.join_upstream(
-            upstream_refs={
-                "up1": up1_data,
-                "up2": up2_data,
-            },
-            feature_spec=TargetNeedsBoth.spec(),
-            feature_plan=plan3,
-        )
-
-    error_msg = str(exc_info.value)
-    # The error should mention the first upstream with missing columns
-    assert ("up1" in error_msg and "session_id" in error_msg) or (
-        "up2" in error_msg and "user_id" in error_msg
-    )
-    assert "missing required ID columns" in error_msg
-
-    # Test Case 4: Proper error message formatting
-    class SingleMissing(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["single"]),
-            id_columns=["id1"],
-        ),
-    ):
-        pass
-
-    class TargetMultipleIDs(
-        TestingFeature,
-        spec=TestingFeatureSpec(
-            key=FeatureKey(["target_multi"]),
-            deps=[FeatureDep(feature=FeatureKey(["single"]))],
-            id_columns=["id1", "id2", "id3"],  # Multiple required
-        ),
-    ):
-        pass
-
-    single_data = nw.from_native(
-        pl.DataFrame(
-            {
-                "id1": [1, 2],
-                # Missing id2 and id3
-                "provenance_by_field": [{"default": "h1"}, {"default": "h2"}],
-                "extra_col": ["a", "b"],
-            }
-        ).lazy()
-    )
-
-    plan4 = graph.get_feature_plan(TargetMultipleIDs.spec().key)
-
-    with pytest.raises(ValueError) as exc_info:
-        joiner.join_upstream(
-            upstream_refs={"single": single_data},
-            feature_spec=TargetMultipleIDs.spec(),
-            feature_plan=plan4,
-        )
-
-    error_msg = str(exc_info.value)
-    # Should mention both missing columns
-    assert "id2" in error_msg
-    assert "id3" in error_msg
-    assert "single" in error_msg  # Should mention which upstream
-    assert "target feature requires" in error_msg.lower()
-
-
 def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     """Test that features without explicit id_columns still use sample_uid."""
     from metaxy.metadata_store import InMemoryMetadataStore
@@ -992,7 +577,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
     class LegacyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["legacy"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             # No id_columns specified - should default to ["sample_uid"]
@@ -1009,7 +594,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "sample_uid": [1, 2, 3],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

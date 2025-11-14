@@ -1,0 +1,11 @@
+--- a/src/example_recompute/features.py
++++ b/src/example_recompute/features.py
+@@ -20,7 +20,7 @@ class ParentFeature(
+         fields=[
+             FieldSpec(
+                 key=FieldKey(["embeddings"]),
+-                code_version="1",
++                code_version="2",
+             ),
+         ],
+     ),

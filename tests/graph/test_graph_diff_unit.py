@@ -14,7 +14,7 @@ from metaxy.graph.diff.diff_models import (
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import TestingFeatureSpec
+from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -137,7 +137,7 @@ class TestSnapshotResolver:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -161,7 +161,7 @@ class TestSnapshotResolver:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -198,7 +198,10 @@ class TestGraphDiffer:
         differ = GraphDiffer()
         snapshot1 = {}
         snapshot2 = {
-            "feature/new": {"feature_version": "v1", "fields": {"default": "fv1"}}
+            "feature/new": {
+                "metaxy_feature_version": "v1",
+                "fields": {"default": "fv1"},
+            }
         }
 
         diff = differ.diff(snapshot1, snapshot2)
@@ -209,7 +212,10 @@ class TestGraphDiffer:
         """Test diff detects removed features."""
         differ = GraphDiffer()
         snapshot1 = {
-            "feature/old": {"feature_version": "v1", "fields": {"default": "fv1"}}
+            "feature/old": {
+                "metaxy_feature_version": "v1",
+                "fields": {"default": "fv1"},
+            }
         }
         snapshot2 = {}
 
@@ -221,10 +227,16 @@ class TestGraphDiffer:
         """Test diff detects feature version changes."""
         differ = GraphDiffer()
         snapshot1 = {
-            "feature/changed": {"feature_version": "v1", "fields": {"default": "fv1"}}
+            "feature/changed": {
+                "metaxy_feature_version": "v1",
+                "fields": {"default": "fv1"},
+            }
         }
         snapshot2 = {
-            "feature/changed": {"feature_version": "v2", "fields": {"default": "fv1"}}
+            "feature/changed": {
+                "metaxy_feature_version": "v2",
+                "fields": {"default": "fv1"},
+            }
         }
 
         diff = differ.diff(snapshot1, snapshot2)
@@ -237,11 +249,14 @@ class TestGraphDiffer:
         """Test diff detects added fields."""
         differ = GraphDiffer()
         snapshot1 = {
-            "feature/test": {"feature_version": "v1", "fields": {"field1": "fv1"}}
+            "feature/test": {
+                "metaxy_feature_version": "v1",
+                "fields": {"field1": "fv1"},
+            }
         }
         snapshot2 = {
             "feature/test": {
-                "feature_version": "v2",
+                "metaxy_feature_version": "v2",
                 "fields": {"field1": "fv1", "field2": "fv2"},
             }
         }
@@ -260,12 +275,15 @@ class TestGraphDiffer:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/test": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"field1": "fv1", "field2": "fv2"},
             }
         }
         snapshot2 = {
-            "feature/test": {"feature_version": "v2", "fields": {"field1": "fv1"}}
+            "feature/test": {
+                "metaxy_feature_version": "v2",
+                "fields": {"field1": "fv1"},
+            }
         }
 
         diff = differ.diff(snapshot1, snapshot2)
@@ -281,10 +299,16 @@ class TestGraphDiffer:
         """Test diff detects field version changes."""
         differ = GraphDiffer()
         snapshot1 = {
-            "feature/test": {"feature_version": "v1", "fields": {"field1": "fv1"}}
+            "feature/test": {
+                "metaxy_feature_version": "v1",
+                "fields": {"field1": "fv1"},
+            }
         }
         snapshot2 = {
-            "feature/test": {"feature_version": "v2", "fields": {"field1": "fv2"}}
+            "feature/test": {
+                "metaxy_feature_version": "v2",
+                "fields": {"field1": "fv2"},
+            }
         }
 
         diff = differ.diff(snapshot1, snapshot2)
@@ -303,19 +327,28 @@ class TestGraphDiffer:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"f1": "fv1"},
             },
-            "feature/changed": {"feature_version": "v1", "fields": {"f1": "fv1"}},
-            "feature/removed": {"feature_version": "v1", "fields": {"f1": "fv1"}},
+            "feature/changed": {
+                "metaxy_feature_version": "v1",
+                "fields": {"f1": "fv1"},
+            },
+            "feature/removed": {
+                "metaxy_feature_version": "v1",
+                "fields": {"f1": "fv1"},
+            },
         }
         snapshot2 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"f1": "fv1"},
             },
-            "feature/changed": {"feature_version": "v2", "fields": {"f1": "fv2"}},
-            "feature/added": {"feature_version": "v1", "fields": {"f1": "fv1"}},
+            "feature/changed": {
+                "metaxy_feature_version": "v2",
+                "fields": {"f1": "fv2"},
+            },
+            "feature/added": {"metaxy_feature_version": "v1", "fields": {"f1": "fv1"}},
         }
 
         diff = differ.diff(snapshot1, snapshot2)
@@ -341,7 +374,7 @@ class TestGraphDiffer:
 
         class TestFeature(
             TestingFeature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -363,7 +396,7 @@ class TestGraphDiffer:
 
             assert "test/feature" in snapshot_data
             feature_data = snapshot_data["test/feature"]
-            assert "feature_version" in feature_data
+            assert "metaxy_feature_version" in feature_data
             assert "fields" in feature_data
 
     def test_load_snapshot_data_invalid_version(self):
@@ -669,7 +702,7 @@ class TestMergedGraphData:
         snapshot1 = {}
         snapshot2 = {
             "feature/new": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"default": "fv1"},
                 "feature_spec": {"deps": None},
             }
@@ -690,7 +723,7 @@ class TestMergedGraphData:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/old": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"default": "fv1"},
                 "feature_spec": {"deps": None},
             }
@@ -711,14 +744,14 @@ class TestMergedGraphData:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/changed": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"default": "fv1"},
                 "feature_spec": {"deps": None},
             }
         }
         snapshot2 = {
             "feature/changed": {
-                "feature_version": "v2",
+                "metaxy_feature_version": "v2",
                 "fields": {"default": "fv2"},
                 "feature_spec": {"deps": None},
             }
@@ -738,14 +771,14 @@ class TestMergedGraphData:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"default": "fv1"},
                 "feature_spec": {"deps": None},
             }
         }
         snapshot2 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {"default": "fv1"},
                 "feature_spec": {"deps": None},
             }
@@ -766,12 +799,12 @@ class TestMergedGraphData:
         snapshot1 = {}
         snapshot2 = {
             "feature/parent": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
             "feature/child": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": [{"key": ["feature", "parent"]}]},
             },
@@ -791,34 +824,34 @@ class TestMergedGraphData:
         differ = GraphDiffer()
         snapshot1 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
             "feature/changed": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
             "feature/removed": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
         }
         snapshot2 = {
             "feature/unchanged": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
             "feature/changed": {
-                "feature_version": "v2",
+                "metaxy_feature_version": "v2",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },
             "feature/added": {
-                "feature_version": "v1",
+                "metaxy_feature_version": "v1",
                 "fields": {},
                 "feature_spec": {"deps": None},
             },

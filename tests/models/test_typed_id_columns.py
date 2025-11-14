@@ -1,20 +1,85 @@
 """Tests for custom ID columns feature (simplified after removing type support)."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, TestingFeatureSpec
+from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
+from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.provenance.polars import PolarsProvenanceTracker
+
+
+# Helper function to add metaxy_provenance column to test data
+def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
+    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
+    df = df.with_columns(
+        pl.col("metaxy_provenance_by_field")
+        .map_elements(
+            lambda x: f"hash_{'_'.join(str(v) for v in x.values())}",
+            return_dtype=pl.String,
+        )
+        .alias("metaxy_provenance")
+    )
+    return df
+
+
+# Simple test joiner
+class TestJoiner:
+    """Test utility that wraps PolarsProvenanceTracker."""
+
+    def join_upstream(
+        self,
+        upstream_refs: dict[str, "nw.LazyFrame[Any]"],
+        feature_spec: Any,
+        feature_plan: FeaturePlan,
+        upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
+        upstream_renames: dict[str, dict[str, str] | None] | None = None,
+    ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
+        """Join upstream feature metadata using PolarsProvenanceTracker."""
+        # Handle empty upstream refs (source features)
+        if not upstream_refs:
+            empty_df = pl.DataFrame({col: [] for col in feature_spec.id_columns})
+            empty_df = empty_df.with_columns(
+                [
+                    pl.lit(None)
+                    .alias(METAXY_PROVENANCE_BY_FIELD)
+                    .cast(pl.Struct({"default": pl.String})),
+                ]
+            )
+            return nw.from_native(empty_df.lazy(), eager_only=False), {}
+
+        tracker = PolarsProvenanceTracker(plan=feature_plan)
+
+        upstream_by_key = {}
+        for k, v in upstream_refs.items():
+            df = v.collect().to_polars()
+            if "metaxy_provenance" not in df.columns:
+                df = add_metaxy_provenance(df)
+            upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
+
+        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+
+        mapping = {}
+        for upstream_key_str in upstream_refs.keys():
+            upstream_key = FeatureKey(upstream_key_str)
+            provenance_col_name = (
+                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
+            )
+            mapping[upstream_key_str] = provenance_col_name
+
+        return joined, mapping
 
 
 def test_feature_spec_id_columns_list_only():
-    """Test that TestingFeatureSpec only accepts list of column names."""
+    """Test that SampleFeatureSpec only accepts list of column names."""
     # List of columns (only supported format now)
-    spec = TestingFeatureSpec(
+    spec = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "timestamp"],
     )
@@ -25,7 +90,7 @@ def test_feature_spec_id_columns_list_only():
 def test_feature_spec_id_columns_backward_compat():
     """Test backward compatibility with list-based id_columns."""
     # List format
-    spec_list = TestingFeatureSpec(
+    spec_list = SampleFeatureSpec(
         key=FeatureKey(["test"]),
         id_columns=["user_id", "session_id"],
     )
@@ -33,7 +98,7 @@ def test_feature_spec_id_columns_backward_compat():
     assert spec_list.id_columns == ["user_id", "session_id"]
 
     # None (default) - should use sample_uid
-    spec_none = TestingFeatureSpec(
+    spec_none = SampleFeatureSpec(
         key=FeatureKey(["test"]),
     )
     assert spec_none.id_columns == ["sample_uid"]
@@ -42,7 +107,7 @@ def test_feature_spec_id_columns_backward_compat():
 def test_feature_spec_empty_list_validation():
     """Test that empty list for id_columns raises validation error."""
     with pytest.raises(ValueError, match="id_columns must be non-empty"):
-        TestingFeatureSpec(
+        SampleFeatureSpec(
             key=FeatureKey(["test"]),
             id_columns=[],  # Empty list should raise error
         )
@@ -50,12 +115,12 @@ def test_feature_spec_empty_list_validation():
 
 def test_narwhals_joiner_empty_upstream(graph: FeatureGraph):
     """Test NarwhalsJoiner handles empty upstream refs for source features."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create source feature with custom ID columns (just names, no types)
     class SourceFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["user_uuid", "event_time", "score"],
         ),
@@ -89,7 +154,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
     # Feature with one set of ID columns
     class Feature1(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             id_columns=["entity_id"],
         ),
@@ -99,7 +164,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
     # Feature with different ID columns
     class Feature2(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             id_columns=["user_id", "session_id"],
         ),
@@ -112,12 +177,12 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
 
 def test_composite_key(graph: FeatureGraph):
     """Test composite key with multiple ID columns."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create feature with composite key
     class CompositeKeyFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["composite"]),
             id_columns=["tenant_id", "user_id", "timestamp", "is_active"],
         ),
@@ -144,12 +209,12 @@ def test_composite_key(graph: FeatureGraph):
 
 def test_joining_with_custom_id_columns(graph: FeatureGraph):
     """Test that joining works correctly with custom ID columns."""
-    joiner = NarwhalsJoiner()
+    joiner = TestJoiner()
 
     # Create upstream with custom ID column
     class UpstreamFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["content_id"],
         ),
@@ -159,7 +224,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
     # Create target depending on upstream with same ID column
     class TargetFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
             id_columns=["content_id"],
@@ -172,7 +237,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
         pl.DataFrame(
             {
                 "content_id": ["video-001", "video-002", "video-003"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -213,7 +278,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
     # Create feature with custom ID
     class CustomIDFeature(
         TestingFeature,
-        spec=TestingFeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["custom_id"]),
             id_columns=["uuid"],
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -227,7 +292,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
             pl.DataFrame(
                 {
                     "uuid": ["uuid-123", "uuid-456", "uuid-789"],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

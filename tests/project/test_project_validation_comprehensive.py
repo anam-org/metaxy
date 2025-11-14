@@ -15,7 +15,7 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FeatureSpec, FieldSpec
+from metaxy.models.feature_spec import FeatureDep, FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
@@ -56,7 +56,7 @@ class TestProjectValidationComprehensive:
             # 1. Default case - uses global config (default project)
             class DefaultFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["default_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -72,7 +72,7 @@ class TestProjectValidationComprehensive:
 
             class TestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                 ),
@@ -89,7 +89,7 @@ class TestProjectValidationComprehensive:
 
             class CustomFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["custom_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field3"]), code_version="1")],
                 ),
@@ -109,7 +109,7 @@ class TestProjectValidationComprehensive:
             # Create a feature with the correct project
             class ValidFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["valid_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -123,7 +123,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -148,7 +148,7 @@ class TestProjectValidationComprehensive:
 
             class FeatureA(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -163,7 +163,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -186,7 +186,7 @@ class TestProjectValidationComprehensive:
 
             class FeatureA(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -201,7 +201,7 @@ class TestProjectValidationComprehensive:
                 {
                     "sample_uid": [1, 2, 3],
                     "field1": [10, 20, 30],
-                    "provenance_by_field": [
+                    "metaxy_provenance_by_field": [
                         {"field1": "hash1"},
                         {"field1": "hash2"},
                         {"field1": "hash3"},
@@ -230,7 +230,7 @@ class TestProjectValidationComprehensive:
 
             class RootFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -239,7 +239,7 @@ class TestProjectValidationComprehensive:
 
             class ChildFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
                     deps=[FeatureDep(feature=RootFeature.spec().key)],
@@ -252,7 +252,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field1": [10, 20, 30],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field1": "hash1"},
                     {"field1": "hash2"},
                     {"field1": "hash3"},
@@ -263,7 +263,7 @@ class TestProjectValidationComprehensive:
             {
                 "sample_uid": [1, 2, 3],
                 "field2": [100, 200, 300],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"field2": "hash4"},
                     {"field2": "hash5"},
                     {"field2": "hash6"},
@@ -287,7 +287,7 @@ class TestProjectValidationComprehensive:
 
             class RootFeatureV2(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature_v2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
@@ -296,7 +296,7 @@ class TestProjectValidationComprehensive:
 
             class ChildFeatureV2(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature_v2"]),
                     fields=[
                         FieldSpec(key=FieldKey(["field2"]), code_version="2")
@@ -324,8 +324,8 @@ class TestProjectValidationComprehensive:
                 rows_affected = op.execute_for_feature(
                     store,
                     feature_key.to_string(),
+                    snapshot_version=to_snapshot_version,
                     from_snapshot_version=from_snapshot_version,
-                    to_snapshot_version=to_snapshot_version,
                     dry_run=False,
                 )
                 # Migration might not affect rows if data is already migrated
@@ -359,7 +359,7 @@ class TestProjectValidationComprehensive:
 
     def test_system_tables_exempt_from_validation(self, store):
         """Test that system tables are exempt from project validation."""
-        from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Set a specific project
         MetaxyConfig.set(MetaxyConfig(project="user_project"))
@@ -373,11 +373,11 @@ class TestProjectValidationComprehensive:
         df = pl.DataFrame(
             {
                 "project": ["user_project"],
-                "snapshot_version": ["snap1"],
+                "metaxy_snapshot_version": ["snap1"],
                 "feature_key": ["test/feature"],
-                "feature_version": ["v1"],
-                "feature_spec_version": ["spec1"],
-                "feature_tracking_version": ["track1"],
+                "metaxy_feature_version": ["v1"],
+                "metaxy_feature_spec_version": ["spec1"],
+                "metaxy_feature_tracking_version": ["track1"],
                 "recorded_at": [datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)],
                 "feature_spec": ["{}"],
                 "feature_class_path": ["test.TestFeature"],
@@ -397,7 +397,7 @@ class TestProjectValidationComprehensive:
 
             class FixtureFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["fixture_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),

@@ -21,3 +21,8 @@ See [InMemoryMetadataStore][metaxy.metadata_store.memory.InMemoryMetadataStore].
 ## Metadata Store Interface
 
 ::: metaxy.MetadataStore
+
+::: metaxy.metadata_store.types.AccessMode
+    members: true
+    options:
+      show_if_no_docstring: true

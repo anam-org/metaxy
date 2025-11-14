@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureKey, FeatureSpec, FieldKey, FieldSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
@@ -31,7 +31,7 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
         # Create feature - should get project from config
         class TestFeature(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -58,7 +58,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
 
         class FeatureA(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -75,7 +75,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
 
         class FeatureB(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -235,7 +235,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
 
         class Feature1(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature1"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -244,7 +244,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
 
         class Feature2(
             Feature,
-            spec=FeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["feature2"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
@@ -275,7 +275,7 @@ def test_feature_project_persists_across_graph_operations(
             # Define a test feature that will get the project from config
             class SnapshotTestFeature(
                 Feature,
-                spec=FeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["snapshot", "test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
                 ),
@@ -294,11 +294,13 @@ def test_feature_project_persists_across_graph_operations(
         assert snapshot_data[feature_key_str]["project"] == "persist_project"
 
         # Verify that feature_tracking_version is in snapshot
-        assert "feature_tracking_version" in snapshot_data[feature_key_str]
+        assert "metaxy_feature_tracking_version" in snapshot_data[feature_key_str]
 
         # Store snapshot data for verification
         snapshot_project = snapshot_data[feature_key_str]["project"]
-        snapshot_tracking = snapshot_data[feature_key_str]["feature_tracking_version"]
+        snapshot_tracking = snapshot_data[feature_key_str][
+            "metaxy_feature_tracking_version"
+        ]
 
         # For a proper test, we would need the feature to be importable,
         # but we can at least verify the snapshot data is correct

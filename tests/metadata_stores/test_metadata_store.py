@@ -14,7 +14,7 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
@@ -24,6 +24,7 @@ from metaxy.metadata_store import (
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.types import AccessMode
 
 
 @pytest.fixture
@@ -39,7 +40,7 @@ def graph() -> Iterator[FeatureGraph]:
 
 class UpstreamFeatureA(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["upstream", "a"]),
         fields=[
             FieldSpec(key=FieldKey(["frames"]), code_version="1"),
@@ -52,7 +53,7 @@ class UpstreamFeatureA(
 
 class UpstreamFeatureB(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["upstream", "b"]),
         fields=[
             FieldSpec(key=FieldKey(["default"]), code_version="1"),
@@ -64,7 +65,7 @@ class UpstreamFeatureB(
 
 class DownstreamFeature(
     Feature,
-    spec=TestingFeatureSpec(
+    spec=SampleFeatureSpec(
         key=FeatureKey(["downstream"]),
         deps=[
             FeatureDep(feature=FeatureKey(["upstream", "a"])),
@@ -97,13 +98,13 @@ def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
     """Store with sample upstream data."""
     store = InMemoryMetadataStore()
 
-    with store:
+    with store.open(AccessMode.WRITE):
         # Add upstream feature A
         upstream_a_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
                 "path": ["/data/1.mp4", "/data/2.mp4", "/data/3.mp4"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash_a1_frames", "audio": "hash_a1_audio"},
                     {"frames": "hash_a2_frames", "audio": "hash_a2_audio"},
                     {"frames": "hash_a3_frames", "audio": "hash_a3_audio"},
@@ -130,7 +131,7 @@ def multi_env_stores(
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "prod_hash1", "audio": "prod_hash1"},
                     {"frames": "prod_hash2", "audio": "prod_hash2"},
                     {"frames": "prod_hash3", "audio": "prod_hash3"},
@@ -148,11 +149,11 @@ def multi_env_stores(
 
 def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
     """Test basic write and read operations."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "hash1", "audio": "hash1"},
                     {"frames": "hash2", "audio": "hash2"},
                     {"frames": "hash3", "audio": "hash3"},
@@ -166,12 +167,12 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
 
         assert len(result) == 3
         assert "sample_uid" in result.columns
-        assert "provenance_by_field" in result.columns
+        assert "metaxy_provenance_by_field" in result.columns
 
 
 def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -179,18 +180,18 @@ def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
             }
         )
 
-        with pytest.raises(MetadataSchemaError, match="provenance_by_field"):
+        with pytest.raises(MetadataSchemaError, match="metaxy_provenance_by_field"):
             with empty_store.allow_cross_project_writes():
                 empty_store.write_metadata(UpstreamFeatureA, invalid_df)
 
 
 def test_write_append(empty_store: InMemoryMetadataStore) -> None:
     """Test that writes are append-only."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h1", "audio": "h1"},
                     {"frames": "h2", "audio": "h2"},
                 ],
@@ -200,7 +201,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
         df2 = pl.DataFrame(
             {
                 "sample_uid": [3, 4],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"frames": "h3", "audio": "h3"},
                     {"frames": "h4", "audio": "h4"},
                 ],
@@ -218,7 +219,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
 
 def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
     """Test reading with Polars filter expressions."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         result = collect_to_polars(
             populated_store.read_metadata(
                 UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]
@@ -231,20 +232,20 @@ def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
 
 def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> None:
     """Test reading specific columns."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         result = collect_to_polars(
             populated_store.read_metadata(
-                UpstreamFeatureA, columns=["sample_uid", "provenance_by_field"]
+                UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"]
             )
         )
 
-        assert set(result.columns) == {"sample_uid", "provenance_by_field"}
+        assert set(result.columns) == {"sample_uid", "metaxy_provenance_by_field"}
         assert "path" not in result.columns
 
 
 def test_read_nonexistent_feature(empty_store: InMemoryMetadataStore) -> None:
     """Test that reading nonexistent feature raises error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         with pytest.raises(FeatureNotFoundError):
             empty_store.read_metadata(UpstreamFeatureA)
 
@@ -254,7 +255,7 @@ def test_read_nonexistent_feature(empty_store: InMemoryMetadataStore) -> None:
 
 def test_has_feature_local(populated_store: InMemoryMetadataStore) -> None:
     """Test has_feature for local store."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         assert populated_store.has_feature(UpstreamFeatureA, check_fallback=False)
         assert not populated_store.has_feature(UpstreamFeatureB, check_fallback=False)
 
@@ -271,34 +272,6 @@ def test_has_feature_with_fallback(
         # UpstreamFeatureA is in prod, not in dev
         assert not dev.has_feature(UpstreamFeatureA, check_fallback=False)
         assert dev.has_feature(UpstreamFeatureA, check_fallback=True)
-
-
-def test_list_features(populated_store: InMemoryMetadataStore) -> None:
-    """Test listing features."""
-    with populated_store:
-        features = populated_store.list_features()
-
-        assert len(features) == 1
-        assert any(f.to_string() == "upstream/a" for f in features)
-
-
-def test_list_features_with_fallback(
-    multi_env_stores: dict[str, InMemoryMetadataStore],
-) -> None:
-    """Test listing features including fallbacks."""
-    dev = multi_env_stores["dev"]
-    staging = multi_env_stores["staging"]
-    prod = multi_env_stores["prod"]
-
-    with dev, staging, prod:
-        # Without fallback
-        local_features = dev.list_features(include_fallback=False)
-        assert len(local_features) == 0
-
-        # With fallback
-        all_features = dev.list_features(include_fallback=True)
-        assert len(all_features) == 1
-        assert any(f.to_string() == "upstream/a" for f in all_features)
 
 
 # Fallback Store Tests
@@ -338,7 +311,10 @@ def test_write_to_dev_not_prod(
         new_data = pl.DataFrame(
             {
                 "sample_uid": [4, 5],
-                "provenance_by_field": [{"default": "hash4"}, {"default": "hash5"}],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash4"},
+                    {"default": "hash5"},
+                ],
             }
         )
 
@@ -357,18 +333,18 @@ def test_write_to_dev_not_prod(
 
 def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
     """Test reading upstream dependencies."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         upstream = populated_store.read_upstream_metadata(DownstreamFeature)
 
         assert "upstream/a" in upstream
         upstream_df = collect_to_polars(upstream["upstream/a"])
         assert len(upstream_df) == 3
-        assert "provenance_by_field" in upstream_df.columns
+        assert "metaxy_provenance_by_field" in upstream_df.columns
 
 
 def test_read_upstream_metadata_missing_dep(empty_store: InMemoryMetadataStore) -> None:
     """Test that missing dependencies raise error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         with pytest.raises(DependencyError, match="upstream/a"):
             empty_store.read_upstream_metadata(DownstreamFeature, allow_fallback=False)
 
@@ -394,21 +370,12 @@ def test_read_upstream_metadata_from_fallback(
 
 def test_clear_store(populated_store: InMemoryMetadataStore) -> None:
     """Test clearing store."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         assert populated_store.has_feature(UpstreamFeatureA)
 
         populated_store.clear()
 
         assert not populated_store.has_feature(UpstreamFeatureA)
-        assert len(populated_store.list_features()) == 0
-
-
-def test_store_repr(empty_store: InMemoryMetadataStore) -> None:
-    """Test string representation."""
-    repr_str = repr(empty_store)
-
-    assert "InMemoryMetadataStore" in repr_str
-    assert "features=0" in repr_str
 
 
 # Store Open/Close Tests
@@ -419,7 +386,7 @@ def test_store_not_open_write_raises(empty_store: InMemoryMetadataStore) -> None
     metadata = pl.DataFrame(
         {
             "sample_uid": [1, 2, 3],
-            "provenance_by_field": [
+            "metaxy_provenance_by_field": [
                 {"frames": "hash1", "audio": "hash1"},
                 {"frames": "hash2", "audio": "hash2"},
                 {"frames": "hash3", "audio": "hash3"},
@@ -446,14 +413,6 @@ def test_store_not_open_has_feature_raises(
         populated_store.has_feature(UpstreamFeatureA)
 
 
-def test_store_not_open_list_features_raises(
-    populated_store: InMemoryMetadataStore,
-) -> None:
-    """Test that list_features on a closed store raises StoreNotOpenError."""
-    with pytest.raises(StoreNotOpenError, match="must be opened before use"):
-        populated_store.list_features()
-
-
 def test_store_context_manager_opens_and_closes(
     empty_store: InMemoryMetadataStore,
 ) -> None:
@@ -461,7 +420,7 @@ def test_store_context_manager_opens_and_closes(
     # Initially closed
     assert not empty_store._is_open
 
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         # Should be open inside context
         assert empty_store._is_open
 

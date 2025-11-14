@@ -52,6 +52,8 @@ theme:
 
 plugins:
   - search
+  - metaxy-examples:
+      examples_dir: "../examples"
   - gen-files:
       scripts:
         - docs/.mkdocs-metaxy/src/mkdocs_metaxy/gen_config_reference.py
@@ -136,6 +138,8 @@ markdown_extensions:
       pygments_lang_class: true
       anchor_linenums: true
       line_spans: __span
+      linenums: true
+      linenums_style: pymdownx-inline
   - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.magiclink:
@@ -145,7 +149,8 @@ markdown_extensions:
       repo: metaxy
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ['examples']
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -164,14 +169,18 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
-      - Metadata Stores: learn/metadata-stores.md
-      - Feature Definitions: learn/feature-definitions.md
-      - Versioning: learn/data-versioning.md
-      - Feature Discovery: learn/feature-discovery.md
-      - Syntactic Sugar: learn/syntactic-sugar.md
-      - Testing: learn/testing.md
-      - Integrations:
-          - SQLModel: learn/integrations/sqlmodel.md
+    - Metadata Stores: learn/metadata-stores.md
+    - Feature Definitions: learn/feature-definitions.md
+    - Versioning: learn/data-versioning.md
+    - Feature Discovery: learn/feature-discovery.md
+    - Syntactic Sugar: learn/syntactic-sugar.md
+    - Lineage Relationship: learn/relationship.md
+    - Testing: learn/testing.md
+    - System Columns: learn/system-columns.md
+    - Integrations:
+        - SQLModel: learn/integrations/sqlmodel.md
+  - Examples:
+    - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
   - API:
     - reference/api/index.md
@@ -180,6 +189,8 @@ nav:
       - Feature Spec: reference/api/definitions/feature-spec.md
       - Feature: reference/api/definitions/feature.md
       - Field: reference/api/definitions/field.md
+      - Fields Mapping: reference/api/definitions/fields-mapping.md
+      - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
     - Metadata Stores:
       - reference/api/metadata-stores/index.md
@@ -190,6 +201,7 @@ nav:
       - Memory: reference/api/metadata-stores/memory.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
+    - Constants: reference/api/constants.md
   - Configuration: reference/configuration.md
 
 extra:

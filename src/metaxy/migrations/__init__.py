@@ -1,10 +1,9 @@
 """Migration system for metadata version updates."""
 
-from metaxy.metadata_store.system_tables import SystemTableStorage
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.detector import detect_migration
 from metaxy.migrations.executor import MigrationExecutor
 from metaxy.migrations.models import (
-    CustomMigration,
     DiffMigration,
     FullGraphMigration,
     Migration,
@@ -21,7 +20,6 @@ __all__ = [
     "Migration",
     "DiffMigration",
     "FullGraphMigration",
-    "CustomMigration",
     "MigrationResult",
     # Operations (for custom migrations)
     "BaseOperation",

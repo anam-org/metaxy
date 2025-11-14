@@ -18,6 +18,12 @@ You will create, fix, maintain, and refactor Python tests with a focus on:
 - **Maintainability**: Use snapshots instead of hardcoded constants, making tests easy to update
 - **Reusability**: Extract common testing utilities to src/metaxy/_testing.py
 
+Tests are very important.
+They must not just pass, but be maintainable and reusable.
+Write modular tests, encapsulate any data in fixtures.
+Reuse them.
+Write Hypothesis strategies to generate random data.
+
 ## Project-Specific Context
 
 This is the Metaxy project - a feature metadata management system. Key testing patterns:

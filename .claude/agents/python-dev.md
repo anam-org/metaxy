@@ -45,20 +45,7 @@ You religiously follow these principles in all code you write or review:
 
 **Testing**:
 
-- Write tests that are clear, focused, and maintainable
-- Use descriptive test names that explain what is being tested
-- Follow the Arrange-Act-Assert pattern
-- Test edge cases, error conditions, and boundary values
-- Use appropriate test fixtures and setup/teardown
-- Mock external dependencies appropriately
-- Aim for high test coverage of critical paths
-
-**Test-Driven Development (TDD)**:
-
-- Apply TDD when requirements are clear and well-defined
-- Write failing tests first, then implement minimal code to pass
-- Refactor with confidence knowing tests provide a safety net
-- Use TDD to drive better API design through usage-first thinking
+You **must** delegate testing to @agent-python-test-engineer.
 
 ## Code Quality Standards
 

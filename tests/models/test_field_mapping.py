@@ -4,9 +4,9 @@ from metaxy import (
     Feature,
     FeatureDep,
     FeatureKey,
-    FeatureSpec,
     FieldKey,
     FieldSpec,
+    SampleFeatureSpec,
 )
 from metaxy.models.field import FieldDep
 
@@ -17,9 +17,8 @@ def test_default_fields_mapping_exact_match():
     # Define upstream feature with fields
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
                 FieldSpec(key=FieldKey(["video"]), code_version="1"),
@@ -31,7 +30,7 @@ def test_default_fields_mapping_exact_match():
     # Define downstream feature with auto-mapped fields
     class DownstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
             fields=[
@@ -64,9 +63,8 @@ def test_default_fields_mapping_suffix_match():
     # Define upstream feature with hierarchical fields
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio", "french"]), code_version="1"),
                 FieldSpec(key=FieldKey(["audio", "english"]), code_version="1"),
@@ -79,7 +77,7 @@ def test_default_fields_mapping_suffix_match():
     # Define downstream feature with suffix matching
     class DownstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
             fields=[
@@ -116,9 +114,8 @@ def test_default_fields_mapping_no_match():
     # Define upstream feature
     class UpstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
@@ -129,7 +126,7 @@ def test_default_fields_mapping_no_match():
     # Define downstream feature with non-matching field
     class DownstreamFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
             fields=[
@@ -156,9 +153,8 @@ def test_default_fields_mapping_multiple_upstreams():
     # Define first upstream feature
     class Upstream1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
                 FieldSpec(key=FieldKey(["metadata"]), code_version="1"),
@@ -170,9 +166,8 @@ def test_default_fields_mapping_multiple_upstreams():
     # Define second upstream feature
     class Upstream2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["video"]), code_version="1"),
                 FieldSpec(key=FieldKey(["timestamp"]), code_version="1"),
@@ -184,7 +179,7 @@ def test_default_fields_mapping_multiple_upstreams():
     # Define downstream with deps on both
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
                 FeatureDep(feature=Upstream1),
@@ -220,9 +215,8 @@ def test_default_fields_mapping_multiple_matches():
     # Define two upstream features with same field name
     class Upstream1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
             ],
@@ -232,9 +226,8 @@ def test_default_fields_mapping_multiple_matches():
 
     class Upstream2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),  # Same name!
             ],
@@ -245,7 +238,7 @@ def test_default_fields_mapping_multiple_matches():
     # This should map to both upstream features
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
                 FeatureDep(feature=Upstream1),
@@ -273,9 +266,8 @@ def test_default_fields_mapping_mixed_deps():
     # Define upstream features
     class Upstream1(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
                 FieldSpec(key=FieldKey(["video"]), code_version="1"),
@@ -286,9 +278,8 @@ def test_default_fields_mapping_mixed_deps():
 
     class Upstream2(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["metadata"]), code_version="1"),
             ],
@@ -299,7 +290,7 @@ def test_default_fields_mapping_mixed_deps():
     # Mix auto and explicit deps
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
                 FeatureDep(feature=Upstream1),
@@ -348,9 +339,9 @@ def test_default_fields_mapping_no_feature_deps_fallback():
     # No longer raises an error - instead falls back to ALL for backward compatibility
     class RootFeature(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "root"]),
-            deps=None,  # No dependencies!
+            # No dependencies!
             fields=[
                 FieldSpec(
                     key=FieldKey(["audio"]),
@@ -373,9 +364,8 @@ def test_backward_compatibility():
     # Define upstream
     class Upstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
-            deps=None,
             fields=[
                 FieldSpec(key=FieldKey(["audio"]), code_version="1"),
                 FieldSpec(key=FieldKey(["video"]), code_version="1"),
@@ -387,7 +377,7 @@ def test_backward_compatibility():
     # Old-style explicit deps should still work
     class Downstream(
         Feature,
-        spec=FeatureSpec(
+        spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=Upstream)],
             fields=[

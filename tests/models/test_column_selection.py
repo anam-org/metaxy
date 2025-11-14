@@ -1,5 +1,7 @@
 """Tests for column selection and renaming in feature dependencies."""
 
+from typing import Any
+
 import narwhals as nw
 import polars as pl
 import pytest
@@ -9,9 +11,71 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    TestingFeatureSpec,
+    SampleFeatureSpec,
 )
-from metaxy.data_versioning.joiners.narwhals import NarwhalsJoiner
+from metaxy.models.plan import FeaturePlan
+from metaxy.provenance.polars import PolarsProvenanceTracker
+
+
+# Helper function to add metaxy_provenance column to test data
+def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
+    """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
+    # For tests, we just use a simple hash-like string based on the provenance_by_field
+    # In real usage, this would be calculated by the ProvenanceTracker
+    df = df.with_columns(
+        pl.col("metaxy_provenance_by_field")
+        .map_elements(lambda x: f"hash_{x['default']}", return_dtype=pl.String)
+        .alias("metaxy_provenance")
+    )
+    return df
+
+
+# Simple test joiner that uses ProvenanceTracker
+class TestJoiner:
+    """Test utility that wraps PolarsProvenanceTracker for column selection tests."""
+
+    def join_upstream(
+        self,
+        upstream_refs: dict[str, "nw.LazyFrame[Any]"],
+        feature_spec: Any,
+        feature_plan: FeaturePlan,
+        upstream_columns: dict[str, tuple[str, ...] | None],
+        upstream_renames: dict[str, dict[str, str] | None],
+    ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
+        """Join upstream feature metadata using PolarsProvenanceTracker.
+
+        This is a test utility that mimics the old NarwhalsJoiner interface
+        but uses the new PolarsProvenanceTracker internally.
+        """
+        from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+
+        # Create a PolarsProvenanceTracker for this feature
+        tracker = PolarsProvenanceTracker(plan=feature_plan)
+
+        # Convert string keys back to FeatureKey objects and ensure data is materialized
+        upstream_by_key = {}
+        for k, v in upstream_refs.items():
+            # Materialize the lazy frame and ensure it has metaxy_provenance
+            df = v.collect().to_polars()
+            if "metaxy_provenance" not in df.columns:
+                df = add_metaxy_provenance(df)
+            upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
+
+        # Prepare upstream (handles filtering, selecting, renaming, and joining)
+        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+
+        # Build the mapping of upstream_key -> provenance_by_field column name
+        # The new naming convention is: {column_name}{feature_key.to_column_suffix()}
+        mapping = {}
+        for upstream_key_str in upstream_refs.keys():
+            upstream_key = FeatureKey(upstream_key_str)
+            # The provenance_by_field column is renamed using to_column_suffix()
+            provenance_col_name = (
+                f"{METAXY_PROVENANCE_BY_FIELD}{upstream_key.to_column_suffix()}"
+            )
+            mapping[upstream_key_str] = provenance_col_name
+
+        return joined, mapping
 
 
 class TestColumnSelection:
@@ -23,7 +87,7 @@ class TestColumnSelection:
         # Create upstream feature with custom columns
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -32,7 +96,7 @@ class TestColumnSelection:
         # Create downstream feature with default column handling
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
             ),
@@ -43,7 +107,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -54,7 +118,7 @@ class TestColumnSelection:
         )
 
         # Join upstream
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -64,7 +128,7 @@ class TestColumnSelection:
 
         # Verify all columns are present
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" in joined_df.columns
         assert joined_df["custom_col1"].to_list() == ["a", "b", "c"]
@@ -75,7 +139,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -84,7 +148,7 @@ class TestColumnSelection:
         # Select only custom_col1
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -99,7 +163,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -110,7 +174,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -120,7 +184,7 @@ class TestColumnSelection:
 
         # Verify only selected columns are present
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "custom_col1" in joined_df.columns
         assert "custom_col2" not in joined_df.columns
         assert "custom_col3" not in joined_df.columns
@@ -130,7 +194,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -139,7 +203,7 @@ class TestColumnSelection:
         # Empty tuple - keep only system columns
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -154,18 +218,18 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
-                "feature_version": ["v1", "v1", "v1"],
+                "metaxy_feature_version": ["v1", "v1", "v1"],
                 "custom_col1": ["a", "b", "c"],
                 "custom_col2": [10, 20, 30],
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -177,9 +241,9 @@ class TestColumnSelection:
         # Note: feature_version and snapshot_version are NOT considered essential for joining
         # to avoid conflicts when joining multiple upstream features
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert (
-            "feature_version" not in joined_df.columns
+            "metaxy_feature_version" not in joined_df.columns
         )  # Not essential, dropped to avoid conflicts
         assert "custom_col1" not in joined_df.columns
         assert "custom_col2" not in joined_df.columns
@@ -189,7 +253,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -198,7 +262,7 @@ class TestColumnSelection:
         # Rename columns
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -216,7 +280,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -226,7 +290,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -236,7 +300,7 @@ class TestColumnSelection:
 
         # Verify columns are renamed
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         assert "upstream_col1" in joined_df.columns
         assert "upstream_col2" in joined_df.columns
         assert "custom_col1" not in joined_df.columns
@@ -249,7 +313,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -258,7 +322,7 @@ class TestColumnSelection:
         # Select and rename
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -274,7 +338,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -285,7 +349,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -304,7 +368,7 @@ class TestColumnSelection:
 
         class Upstream1(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
         ):
@@ -312,7 +376,7 @@ class TestColumnSelection:
 
         class Upstream2(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
         ):
@@ -321,7 +385,7 @@ class TestColumnSelection:
         # Both upstreams have 'conflict_col' without renaming
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(feature=FeatureKey(["test", "upstream1"])),
@@ -334,7 +398,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -346,7 +410,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -355,14 +419,16 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
         }
 
         # Should raise error about column conflict
-        with pytest.raises(ValueError, match="Column name conflict.*conflict_col"):
+        with pytest.raises(
+            ValueError, match="Found additional shared columns.*conflict_col"
+        ):
             DownstreamFeature.load_input(joiner, upstream_refs)
 
     def test_column_conflict_resolved_with_rename(self):
@@ -370,7 +436,7 @@ class TestColumnSelection:
 
         class Upstream1(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
         ):
@@ -378,7 +444,7 @@ class TestColumnSelection:
 
         class Upstream2(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
         ):
@@ -387,7 +453,7 @@ class TestColumnSelection:
         # Rename conflicting columns
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -406,7 +472,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -418,7 +484,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -427,7 +493,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
@@ -447,7 +513,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -456,7 +522,7 @@ class TestColumnSelection:
         # Select only a custom column, but system columns should be preserved
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -471,19 +537,19 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
-                "feature_version": ["v1", "v1", "v1"],
-                "snapshot_version": ["s1", "s1", "s1"],
+                "metaxy_feature_version": ["v1", "v1", "v1"],
+                "metaxy_snapshot_version": ["s1", "s1", "s1"],
                 "custom_col": ["a", "b", "c"],
                 "other_col": [10, 20, 30],
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -493,10 +559,10 @@ class TestColumnSelection:
 
         # Verify essential system columns are preserved
         assert "sample_uid" in joined_df.columns
-        assert "__upstream_test/upstream__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream" in joined_df.columns
         # Note: feature_version and snapshot_version are NOT preserved to avoid conflicts
-        assert "feature_version" not in joined_df.columns
-        assert "snapshot_version" not in joined_df.columns
+        assert "metaxy_feature_version" not in joined_df.columns
+        assert "metaxy_snapshot_version" not in joined_df.columns
         # Verify selected column
         assert "custom_col" in joined_df.columns
         # Verify non-selected column is not present
@@ -508,7 +574,7 @@ class TestColumnSelection:
         # Create upstream feature first
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -522,12 +588,14 @@ class TestColumnSelection:
 
             class BadFeature1(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad1"]),
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={"old_col": "provenance_by_field"},  # Not allowed
+                            rename={
+                                "old_col": "metaxy_provenance_by_field"
+                            },  # Not allowed
                         )
                     ],
                 ),
@@ -542,12 +610,12 @@ class TestColumnSelection:
 
             class BadFeature2(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad2"]),
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
-                            rename={"old_col": "feature_version"},  # Not allowed
+                            rename={"old_col": "metaxy_feature_version"},  # Not allowed
                         )
                     ],
                 ),
@@ -562,7 +630,7 @@ class TestColumnSelection:
 
             class BadFeature3(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad3"]),
                     deps=[
                         FeatureDep(
@@ -582,7 +650,7 @@ class TestColumnSelection:
         # Create upstream with custom ID columns (not sample_uid)
         class UpstreamWithCustomIDs(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=[
                     "user_id",
@@ -595,7 +663,7 @@ class TestColumnSelection:
         # Renaming to sample_uid should be allowed now since it's not an ID column
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -624,7 +692,7 @@ class TestColumnSelection:
         # Create upstream with custom ID columns
         class UpstreamWithCustomIDs(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=["user_id", "session_id"],
             ),
@@ -634,7 +702,7 @@ class TestColumnSelection:
         # Renaming to a name that is NOT an ID column or system column is allowed
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -656,7 +724,7 @@ class TestColumnSelection:
             {
                 "user_id": [1, 2, 3],
                 "session_id": ["a", "b", "c"],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -665,7 +733,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -704,7 +772,7 @@ class TestColumnSelection:
 
         class Upstream1(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
         ):
@@ -712,7 +780,7 @@ class TestColumnSelection:
 
         class Upstream2(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
         ):
@@ -720,7 +788,7 @@ class TestColumnSelection:
 
         class Upstream3(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream3"]),
             ),
         ):
@@ -729,7 +797,7 @@ class TestColumnSelection:
         # Complex downstream with different operations for each upstream
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     # Keep all columns from upstream1 (default)
@@ -753,7 +821,7 @@ class TestColumnSelection:
         upstream1_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -766,7 +834,7 @@ class TestColumnSelection:
         upstream2_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -779,7 +847,7 @@ class TestColumnSelection:
         upstream3_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h7"},
                     {"default": "h8"},
                     {"default": "h9"},
@@ -790,7 +858,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream1": nw.from_native(upstream1_data.lazy(), eager_only=False),
             "test/upstream2": nw.from_native(upstream2_data.lazy(), eager_only=False),
@@ -813,30 +881,21 @@ class TestColumnSelection:
         assert "excluded_col" not in joined_df.columns  # Not selected
 
         # Verify provenance_by_field columns
-        assert "__upstream_test/upstream1__provenance_by_field" in joined_df.columns
-        assert "__upstream_test/upstream2__provenance_by_field" in joined_df.columns
-        assert "__upstream_test/upstream3__provenance_by_field" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream1" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream2" in joined_df.columns
+        assert "metaxy_provenance_by_field__test_upstream3" in joined_df.columns
 
         # Verify mapping
-        assert (
-            mapping["test/upstream1"]
-            == "__upstream_test/upstream1__provenance_by_field"
-        )
-        assert (
-            mapping["test/upstream2"]
-            == "__upstream_test/upstream2__provenance_by_field"
-        )
-        assert (
-            mapping["test/upstream3"]
-            == "__upstream_test/upstream3__provenance_by_field"
-        )
+        assert mapping["test/upstream1"] == "metaxy_provenance_by_field__test_upstream1"
+        assert mapping["test/upstream2"] == "metaxy_provenance_by_field__test_upstream2"
+        assert mapping["test/upstream3"] == "metaxy_provenance_by_field__test_upstream3"
 
     def test_custom_load_input_with_filtering(self):
         """Test overriding load_input with custom filtering logic."""
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -845,7 +904,7 @@ class TestColumnSelection:
         # Override load_input to add custom filtering
         class CustomFilterFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "custom_filter"]),
                 deps=[
                     FeatureDep(
@@ -872,7 +931,7 @@ class TestColumnSelection:
         upstream_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3, 4, 5],
-                "provenance_by_field": [
+                "metaxy_provenance_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -897,7 +956,7 @@ class TestColumnSelection:
             }
         )
 
-        joiner = NarwhalsJoiner()
+        joiner = TestJoiner()
         upstream_refs = {
             "test/upstream": nw.from_native(upstream_data.lazy(), eager_only=False)
         }
@@ -919,9 +978,7 @@ class TestColumnSelection:
         assert joined_df["upstream_value"].to_list() == [10, 30, 50]
 
         # Verify mapping
-        assert (
-            mapping["test/upstream"] == "__upstream_test/upstream__provenance_by_field"
-        )
+        assert mapping["test/upstream"] == "metaxy_provenance_by_field__test_upstream"
 
     def test_columns_and_rename_serialized_to_snapshot(self, graph: FeatureGraph):
         """Test that columns and rename fields are properly serialized when pushing graph snapshot."""
@@ -933,7 +990,7 @@ class TestColumnSelection:
         # Create features with columns and rename specified
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -941,7 +998,7 @@ class TestColumnSelection:
 
         class DownstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
                     FeatureDep(
@@ -1004,7 +1061,7 @@ class TestColumnSelection:
             assert dep_dict["rename"] == {"col1": "renamed_col1"}
 
             # Verify Pydantic can deserialize it back
-            reconstructed_spec = TestingFeatureSpec.model_validate(downstream_spec_dict)
+            reconstructed_spec = SampleFeatureSpec.model_validate(downstream_spec_dict)
             assert reconstructed_spec.deps and len(reconstructed_spec.deps) == 1
             reconstructed_dep = reconstructed_spec.deps[0]
             assert reconstructed_dep.columns == ("col1", "col2")
@@ -1016,7 +1073,7 @@ class TestColumnSelection:
         # Create upstream feature first
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
         ):
@@ -1027,7 +1084,7 @@ class TestColumnSelection:
 
             class BadFeature(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad"]),
                     deps=[
                         FeatureDep(
@@ -1048,7 +1105,7 @@ class TestColumnSelection:
         # Create two upstream features
         class Upstream1(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
         ):
@@ -1056,7 +1113,7 @@ class TestColumnSelection:
 
         class Upstream2(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
         ):
@@ -1068,7 +1125,7 @@ class TestColumnSelection:
 
             class BadDownstreamFeature(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad_downstream"]),
                     deps=[
                         FeatureDep(
@@ -1092,7 +1149,7 @@ class TestColumnSelection:
         # Create two upstream features
         class Upstream1(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
         ):
@@ -1100,7 +1157,7 @@ class TestColumnSelection:
 
         class Upstream2(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
         ):
@@ -1111,7 +1168,7 @@ class TestColumnSelection:
 
             class BadDownstreamFeature(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad_downstream"]),
                     deps=[
                         FeatureDep(
@@ -1136,7 +1193,7 @@ class TestColumnSelection:
         # Create upstream with custom ID columns
         class UpstreamWithCustomIDs(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=["user_id", "session_id"],
             ),
@@ -1150,7 +1207,7 @@ class TestColumnSelection:
 
             class BadFeature1(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad1"]),
                     deps=[
                         FeatureDep(
@@ -1172,7 +1229,7 @@ class TestColumnSelection:
 
             class BadFeature2(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad2"]),
                     deps=[
                         FeatureDep(
@@ -1192,7 +1249,7 @@ class TestColumnSelection:
 
         class UpstreamFeature(
             Feature,
-            spec=TestingFeatureSpec(
+            spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 # Default ID columns: ["sample_uid"]
             ),
@@ -1207,13 +1264,13 @@ class TestColumnSelection:
 
             class DownstreamFeature1(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "downstream1"]),
                     deps=[
                         FeatureDep(
                             feature=FeatureKey(["test", "upstream"]),
                             rename={
-                                "old_version": "provenance_by_field",  # Not allowed - system column
+                                "old_version": "metaxy_provenance_by_field",  # Not allowed - system column
                             },
                         )
                     ],
@@ -1228,7 +1285,7 @@ class TestColumnSelection:
 
             class DownstreamFeature2(
                 Feature,
-                spec=TestingFeatureSpec(
+                spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "downstream2"]),
                     deps=[
                         FeatureDep(
