@@ -244,12 +244,6 @@ class DeltaMetadataStore(MetadataStore):
             self._delta_table_cache[cache_key] = table
         return table
 
-    def _invalidate_delta_table_cache(self, feature_key: FeatureKey) -> None:
-        """Invalidate cached DeltaTable handles for this feature."""
-        cache_key = feature_key.to_string()
-        self._delta_table_cache.pop((cache_key, True), None)
-        self._delta_table_cache.pop((cache_key, False), None)
-
     # ===== Storage operations =====
 
     def _write_metadata_impl(
