@@ -21,9 +21,8 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    SampleFeatureSpec,
 )
-from metaxy._testing import TempFeatureModule
+from metaxy._testing import SampleFeatureSpec, TempFeatureModule
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
@@ -237,7 +236,7 @@ class TestBasicPythonMigrationExecution:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
             # Record v1 snapshot
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
         # Step 2: Migrate to v2 graph
         store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -247,7 +246,7 @@ class TestBasicPythonMigrationExecution:
 
         with upstream_downstream_v2.use(), store_v2:
             # Record v2 snapshot
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Step 3: Create Python migration file
             migrations_dir = tmp_path / "migrations"
@@ -340,7 +339,7 @@ class TestBasicPythonMigrationExecution:
             if len(diff.added) > 0:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
         # Migrate to v2
         store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -349,7 +348,7 @@ class TestBasicPythonMigrationExecution:
         ]
 
         with upstream_downstream_v2.use(), store_v2:
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Create Python migration with custom helper method
             migrations_dir = tmp_path / "migrations"
@@ -451,7 +450,7 @@ class TestCustomExecuteLogic:
             if len(diff.added) > 0:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
         # Migrate to v2
         store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -460,7 +459,7 @@ class TestCustomExecuteLogic:
         ]
 
         with upstream_downstream_v2.use(), store_v2:
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Create Python migration with custom execute
             migrations_dir = tmp_path / "migrations"
@@ -558,7 +557,7 @@ class TestMixedChainExecution:
             if len(diff.added) > 0:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
         # Create intermediate graph (v1.5)
         temp_module_v15 = TempFeatureModule("test_py_migration_chain_v15")
@@ -597,7 +596,7 @@ class TestMixedChainExecution:
         migrations_dir.mkdir()
 
         with graph_v15.use(), store_v15:
-            store_v15.record_feature_graph_snapshot()
+            SystemTableStorage(store_v15).push_graph_snapshot()
 
             # Migration 1: YAML (v1 -> v1.5)
             import yaml
@@ -618,7 +617,7 @@ class TestMixedChainExecution:
         store_v2 = migrate_store_to_graph(store_v15, upstream_downstream_v2)
 
         with upstream_downstream_v2.use(), store_v2:
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Migration 2: Python (v1.5 -> v2)
             write_python_diff_migration(
@@ -679,7 +678,7 @@ class TestIdempotencyAndFailureRecovery:
             if len(diff.added) > 0:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
         # Migrate to v2
         store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -688,7 +687,7 @@ class TestIdempotencyAndFailureRecovery:
         ]
 
         with upstream_downstream_v2.use(), store_v2:
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Create Python migration
             migrations_dir = tmp_path / "migrations"
@@ -934,7 +933,7 @@ class TestDryRunMode:
             if len(diff.added) > 0:
                 store_v1.write_metadata(DownstreamV1, diff.added)
 
-            store_v1.record_feature_graph_snapshot()
+            SystemTableStorage(store_v1).push_graph_snapshot()
 
             # Get initial downstream data for later comparison
             initial_downstream = collect_to_polars(
@@ -951,7 +950,7 @@ class TestDryRunMode:
         ]
 
         with upstream_downstream_v2.use(), store_v2:
-            store_v2.record_feature_graph_snapshot()
+            SystemTableStorage(store_v2).push_graph_snapshot()
 
             # Update upstream
             new_upstream = pl.DataFrame(
