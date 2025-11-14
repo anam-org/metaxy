@@ -277,6 +277,73 @@ class FeatureGraph:
             )
         return self.features_by_key[key]
 
+    def list_features(
+        self,
+        projects: list[str] | str | None = None,
+        *,
+        only_current_project: bool = True,
+    ) -> list[FeatureKey]:
+        """List all feature keys in the graph, optionally filtered by project(s).
+
+        By default, filters features by the current project (first part of feature key).
+        This prevents operations from affecting features in other projects.
+
+        Args:
+            projects: Project name(s) to filter by. Can be:
+                - None: Use current project from MetaxyConfig (if only_current_project=True)
+                - str: Single project name
+                - list[str]: Multiple project names
+            only_current_project: If True, filter by current/specified project(s).
+                If False, return all features regardless of project.
+
+        Returns:
+            List of feature keys
+
+        Example:
+            ```py
+            # Get all features for current project
+            graph = FeatureGraph.get_active()
+            features = graph.list_features()
+
+            # Get features for specific project
+            features = graph.list_features(projects="myproject")
+
+            # Get features for multiple projects
+            features = graph.list_features(projects=["project1", "project2"])
+
+            # Get all features regardless of project
+            all_features = graph.list_features(only_current_project=False)
+            ```
+        """
+        if not only_current_project:
+            # Return all features
+            return list(self.features_by_key.keys())
+
+        # Normalize projects to list
+        project_list: list[str]
+        if projects is None:
+            # Try to get from config context
+            try:
+                from metaxy.config import MetaxyConfig
+
+                config = MetaxyConfig.get()
+                project_list = [config.project]
+            except RuntimeError:
+                # Config not initialized - in tests or non-CLI usage
+                # Return all features (can't determine project)
+                return list(self.features_by_key.keys())
+        elif isinstance(projects, str):
+            project_list = [projects]
+        else:
+            project_list = projects
+
+        # Filter by project(s) using Feature.project attribute
+        return [
+            key
+            for key in self.features_by_key.keys()
+            if self.features_by_key[key].project in project_list
+        ]
+
     def get_feature_plan(self, key: FeatureKey) -> FeaturePlan:
         feature = self.feature_specs_by_key[key]
 
@@ -378,6 +445,73 @@ class FeatureGraph:
 
         # Remove sources from result, reverse to get topological order
         result = [k for k in reversed(post_order) if k not in source_set]
+        return result
+
+    def topological_sort_features(
+        self,
+        feature_keys: list[FeatureKey] | None = None,
+    ) -> list[FeatureKey]:
+        """Sort feature keys in topological order (dependencies first).
+
+        Uses stable alphabetical ordering when multiple nodes are at the same level.
+        This ensures deterministic output for diff comparisons and migrations.
+
+        Implemented using depth-first search with post-order traversal.
+
+        Args:
+            feature_keys: List of feature keys to sort. If None, sorts all features in the graph.
+
+        Returns:
+            List of feature keys sorted so dependencies appear before dependents
+
+        Example:
+            ```py
+            graph = FeatureGraph.get_active()
+            # Sort specific features
+            sorted_keys = graph.topological_sort_features([
+                FeatureKey(["video", "raw"]),
+                FeatureKey(["video", "scene"]),
+            ])
+
+            # Sort all features in the graph
+            all_sorted = graph.topological_sort_features()
+            ```
+        """
+        # Determine which features to sort
+        if feature_keys is None:
+            keys_to_sort = set(self.features_by_key.keys())
+        else:
+            keys_to_sort = set(feature_keys)
+
+        visited = set()
+        result = []  # Topological order (dependencies first)
+
+        def visit(key: FeatureKey):
+            """DFS visit with post-order traversal."""
+            if key in visited or key not in keys_to_sort:
+                return
+            visited.add(key)
+
+            # Get dependencies from feature spec
+            spec = self.feature_specs_by_key.get(key)
+            if spec and spec.deps:
+                # Sort dependencies alphabetically for deterministic ordering
+                sorted_deps = sorted(
+                    (dep.feature for dep in spec.deps),
+                    key=lambda k: k.to_string().lower(),
+                )
+                for dep_key in sorted_deps:
+                    if dep_key in keys_to_sort:
+                        visit(dep_key)
+
+            # Add to result after visiting dependencies (post-order)
+            result.append(key)
+
+        # Visit all keys in sorted order for deterministic traversal
+        for key in sorted(keys_to_sort, key=lambda k: k.to_string().lower()):
+            visit(key)
+
+        # Post-order DFS gives topological order (dependencies before dependents)
         return result
 
     @property

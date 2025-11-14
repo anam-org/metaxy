@@ -51,7 +51,8 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
 
         # Write a test migration YAML
         migration_yaml = {
-            "id": "test_migration_001",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "test_migration_001",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -104,7 +105,8 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
 
         # Write first migration YAML
         migration1_yaml = {
-            "id": "migration_001",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_001",
             "created_at": datetime(
                 2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -120,7 +122,8 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
 
         # Write second migration YAML (depends on first)
         migration2_yaml = {
-            "id": "migration_002",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_002",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -174,7 +177,8 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
 
         # Write migration with multiple operations
         migration_yaml = {
-            "id": "multi_op_migration",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "multi_op_migration",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -227,7 +231,8 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
 
         # Write two migrations that both claim to be head (invalid chain)
         migration1_yaml = {
-            "id": "migration_001",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_001",
             "created_at": datetime(
                 2025, 1, 27, 10, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -243,7 +248,8 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
 
         # Second migration also has parent "initial" (creates two heads)
         migration2_yaml = {
-            "id": "migration_002",
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "migration_002",
             "created_at": datetime(
                 2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc
             ).isoformat(),
@@ -261,5 +267,58 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list", check=False)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
-        assert "Invalid migration chain" in result.stderr
+        assert "Invalid migration:" in result.stderr
         assert "Multiple migration heads" in result.stderr
+
+
+def test_migrations_apply_with_error_logging(metaxy_project: TempMetaxyProject):
+    """Test that migration errors are logged with full tracebacks."""
+    from datetime import datetime, timezone
+
+    import yaml
+
+    def features():
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+
+        class VideoFiles(
+            Feature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Create migrations directory
+        migrations_dir = metaxy_project.project_dir / ".metaxy" / "migrations"
+        migrations_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create a migration with invalid snapshot versions (will cause errors)
+        migration_yaml = {
+            "migration_type": "metaxy.migrations.models.DiffMigration",
+            "migration_id": "test_error_migration",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "parent": "initial",
+            "from_snapshot_version": "a" * 64,  # Nonexistent snapshot
+            "to_snapshot_version": "b" * 64,  # Nonexistent snapshot
+            "ops": [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
+        }
+
+        yaml_path = migrations_dir / "test_error.yaml"
+        with open(yaml_path, "w") as f:
+            yaml.dump(migration_yaml, f)
+
+        # Apply migration (will fail because snapshots don't exist)
+        result = metaxy_project.run_cli("migrations", "apply", "--dry-run", check=False)
+
+        # This particular error causes fatal exit before feature processing
+        assert result.returncode == 1
+        output = result.stderr
+
+        # Verify that tracebacks are printed (not just error messages)
+        assert "Traceback (most recent call last):" in output
+        # Verify actual error details are shown (snapshot-related errors)
+        assert "snapshot" in output.lower() and "cannot load" in output.lower()
+        # Should show file paths and line numbers from traceback
+        assert ".py" in output and "line " in output

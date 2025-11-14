@@ -395,7 +395,7 @@ class TestBackwardCompatibility:
         # Create a store with an old-style snapshot (no tracking version)
         with InMemoryMetadataStore() as store:
             # Manually insert old-style feature version record
-            from metaxy.metadata_store.system_tables import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             old_record = pl.DataFrame(
                 {

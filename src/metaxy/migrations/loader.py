@@ -1,29 +1,31 @@
 """Load migrations from YAML files."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from metaxy.migrations.models import DiffMigration
+    from metaxy.migrations.models import Migration
 
 
-def load_migration_from_yaml(yaml_path: Path) -> "DiffMigration":
+def load_migration_from_yaml(yaml_path: Path) -> "Migration":
     """Load migration from YAML file.
+
+    Uses Pydantic's discriminated unions for automatic polymorphic deserialization
+    based on the migration_type field.
 
     Args:
         yaml_path: Path to migration YAML file
 
     Returns:
-        DiffMigration instance
+        Migration instance (DiffMigration or FullGraphMigration)
 
     Raises:
         FileNotFoundError: If YAML file doesn't exist
-        ValueError: If YAML is invalid
+        ValueError: If YAML is invalid or migration type is not supported
     """
     import yaml
 
-    from metaxy.migrations.models import DiffMigration
+    from metaxy.migrations.models import MigrationAdapter
 
     if not yaml_path.exists():
         raise FileNotFoundError(f"Migration YAML not found: {yaml_path}")
@@ -31,46 +33,11 @@ def load_migration_from_yaml(yaml_path: Path) -> "DiffMigration":
     with open(yaml_path) as f:
         data = yaml.safe_load(f)
 
-    # Extract migration ID from YAML
-    migration_id = data["id"]
-
-    # Parse timestamp from YAML, migration ID, or file modification time
-    if "created_at" in data:
-        # Read from YAML (preferred)
-        created_at_str = data["created_at"]
-        if isinstance(created_at_str, str):
-            created_at = datetime.fromisoformat(created_at_str)
-        else:
-            # Already a datetime object
-            created_at = created_at_str
-    else:
-        # Fallback: try to parse from migration ID or use file mtime
-        try:
-            timestamp_str = migration_id.replace("migration_", "")
-            created_at = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
-        except ValueError:
-            # Fallback to file modification time
-            created_at = datetime.fromtimestamp(yaml_path.stat().st_mtime)
-
-    # Get parent (default to "initial" if not specified for backwards compatibility)
-    parent = data.get("parent", "initial")
-
-    # Create migration instance - ops is required
-    if "ops" not in data:
-        raise ValueError(
-            f"Migration YAML missing required 'ops' field: {yaml_path}. "
-            "Migrations must explicitly specify operations. "
-            "Example: ops: [{type: metaxy.migrations.ops.DataVersionReconciliation}]"
-        )
-
-    migration = DiffMigration(
-        migration_id=migration_id,
-        created_at=created_at,
-        parent=parent,
-        from_snapshot_version=data["from_snapshot_version"],
-        to_snapshot_version=data["to_snapshot_version"],
-        ops=data["ops"],
-    )
+    # Use Pydantic's discriminated union to automatically deserialize
+    try:
+        migration = MigrationAdapter.validate_python(data)
+    except Exception as e:
+        raise ValueError(f"Failed to load migration from {yaml_path}: {e}") from e
 
     return migration
 
@@ -153,14 +120,16 @@ def find_latest_migration(migrations_dir: Path | None = None) -> str | None:
     Raises:
         ValueError: If multiple heads detected (conflict)
     """
+    from metaxy.migrations.models import Migration
+
     if migrations_dir is None:
         migrations_dir = Path(".metaxy/migrations")
 
     if not migrations_dir.exists():
         return None
 
-    # Load all migrations
-    migrations: dict[str, DiffMigration] = {}
+    # Load all migrations - all migrations form chains via parent IDs
+    migrations: dict[str, Migration] = {}
     for yaml_file in migrations_dir.glob("*.yaml"):
         migration = load_migration_from_yaml(yaml_file)
         migrations[migration.migration_id] = migration
@@ -194,7 +163,7 @@ def find_latest_migration(migrations_dir: Path | None = None) -> str | None:
 
 def build_migration_chain(
     migrations_dir: Path | None = None,
-) -> list["DiffMigration"]:
+) -> list["Migration"]:
     """Build ordered migration chain from parent IDs.
 
     Args:
@@ -206,14 +175,16 @@ def build_migration_chain(
     Raises:
         ValueError: If chain is invalid (cycles, orphans, multiple heads)
     """
+    from metaxy.migrations.models import Migration
+
     if migrations_dir is None:
         migrations_dir = Path(".metaxy/migrations")
 
     if not migrations_dir.exists():
         return []
 
-    # Load all migrations
-    migrations: dict[str, DiffMigration] = {}
+    # Load all migrations - all migrations form chains via parent IDs
+    migrations: dict[str, Migration] = {}
     for yaml_file in sorted(migrations_dir.glob("*.yaml")):
         migration = load_migration_from_yaml(yaml_file)
         migrations[migration.migration_id] = migration

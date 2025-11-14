@@ -15,6 +15,7 @@ from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
     SYSTEM_COLUMN_PREFIX,
@@ -254,6 +255,14 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
 
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
+    metaxy_provenance: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_PROVENANCE,
+            "nullable": True,
+        },
+    )
+
     metaxy_provenance_by_field: str | None = Field(
         default=None,
         sa_type=JSON,

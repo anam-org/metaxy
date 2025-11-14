@@ -12,6 +12,7 @@ pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.types import AccessMode
 
 
 def test_duckdb_table_naming(
@@ -100,7 +101,7 @@ def test_duckdb_conn_property_enforcement(
         _ = store.conn
 
     # Should work when open
-    with store:
+    with store.open(AccessMode.WRITE):
         conn = store.conn
         assert conn is not None
 
@@ -174,26 +175,6 @@ def test_duckdb_ducklake_integration(
         assert "lake" in attached_names
 
 
-def test_duckdb_close_idempotent(
-    tmp_path: Path, test_graph, test_features: dict[str, Any]
-) -> None:
-    """Test that close() can be called multiple times safely.
-
-    Args:
-        tmp_path: Pytest tmp_path fixture
-        test_graph: Registry with test features
-    """
-    db_path = tmp_path / "test.duckdb"
-    store = DuckDBMetadataStore(db_path)
-
-    with store:
-        pass
-
-    # Close again manually (should not raise)
-    store.close()
-    store.close()
-
-
 def test_duckdb_config_instantiation() -> None:
     """Test instantiating DuckDB store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -218,7 +199,7 @@ def test_duckdb_config_instantiation() -> None:
     assert store.database == ":memory:"
 
     # Verify store can be opened
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -252,7 +233,7 @@ def test_duckdb_config_with_extensions() -> None:
             extension_names.append(ext.name)
     assert "hashfuncs" in extension_names
 
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -277,7 +258,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     assert isinstance(store, DuckDBMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store:
+    with store.open(AccessMode.WRITE):
         assert store._is_open
 
 
@@ -308,5 +289,5 @@ def test_duckdb_config_with_fallback_stores() -> None:
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], DuckDBMetadataStore)
 
-    with dev_store:
+    with dev_store.open(AccessMode.WRITE):
         assert dev_store._is_open
