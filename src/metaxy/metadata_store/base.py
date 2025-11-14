@@ -11,13 +11,9 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
+import narwhals.typing
 import polars as pl
 from typing_extensions import Self
-
-try:  # pyarrow is an optional dependency needed only for Arrow streaming paths
-    import pyarrow as pa  # type: ignore
-except ModuleNotFoundError:  # pragma: no cover - exercised in minimal dependency envs
-    pa = None  # type: ignore
 
 from metaxy.metadata_store.exceptions import (
     DependencyError,
@@ -420,11 +416,12 @@ class MetadataStore(ABC):
         from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
-        if feature_key not in graph.features_by_key:
+        try:
+            feature_cls = graph.get_feature_by_key(feature_key)
+        except KeyError:
             # Feature not in graph - can't validate, skip
             return
 
-        feature_cls = graph.features_by_key[feature_key]
         feature_project = feature_cls.project  # type: ignore[attr-defined]
 
         # Validate the project matches
@@ -500,12 +497,6 @@ class MetadataStore(ABC):
         # Convert Narwhals to native Polars (both lazy and eager)
         if isinstance(df, (nw.LazyFrame, nw.DataFrame)):
             df = df.to_native()  # type: ignore[assignment]
-
-        if pa is not None and isinstance(df, pa.Table):
-            # Streaming paths may yield Arrow tables; normalize to Polars.
-            from typing import cast
-
-            df = cast(pl.DataFrame, pl.from_arrow(df))
 
         # Type narrowing: at this point df must be pl.DataFrame or pl.LazyFrame
         if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
@@ -590,7 +581,7 @@ class MetadataStore(ABC):
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
-            feature_cls = graph.features_by_key[feature_key]
+            feature_cls = graph.get_feature_by_key(feature_key)
             current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
         # Get snapshot_version from active graph
@@ -711,9 +702,8 @@ class MetadataStore(ABC):
                 nw.col(FEATURE_VERSION_COL) == feature_version
             )
 
-        if filters is not None:
-            for expr in filters:
-                lazy_frame = lazy_frame.filter(expr)
+        if filters:
+            lazy_frame = lazy_frame.filter(*filters)
 
         if columns is not None:
             lazy_frame = lazy_frame.select(columns)
@@ -1018,10 +1008,10 @@ class MetadataStore(ABC):
                 graph = FeatureGraph.get_active()
                 # Only try to get from graph if feature_key exists in graph
                 # This allows reading system tables or external features not in current graph
-                if feature_key in graph.features_by_key:
-                    feature_cls = graph.features_by_key[feature_key]
+                try:
+                    feature_cls = graph.get_feature_by_key(feature_key)
                     feature_version_filter = feature_cls.feature_version()  # type: ignore[attr-defined]
-                else:
+                except KeyError:
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
@@ -1624,7 +1614,7 @@ class MetadataStore(ABC):
             try:
                 # Look up the Feature class from the graph and pass it to read_metadata
                 # This way we use the bound graph instead of relying on active context
-                upstream_feature_cls = graph.features_by_key[upstream_feature_key]
+                upstream_feature_cls = graph.get_feature_by_key(upstream_feature_key)
                 lazy_frame = self.read_metadata(
                     upstream_feature_cls,
                     filters=upstream_filters,  # Pass extracted filters (Sequence or None)
@@ -1633,7 +1623,7 @@ class MetadataStore(ABC):
                 )
                 # Use string key for dict
                 upstream_metadata[upstream_feature_key.to_string()] = lazy_frame
-            except FeatureNotFoundError as e:
+            except (KeyError, FeatureNotFoundError) as e:
                 raise DependencyError(
                     f"Missing upstream feature {upstream_feature_key.to_string()} "
                     f"required by {plan.feature.key.to_string()}"
@@ -1964,7 +1954,7 @@ class MetadataStore(ABC):
 
                 # Get the upstream feature's current feature_version
                 # Look up the Feature class from the graph to get its feature_version
-                upstream_feature_cls = feature.graph.features_by_key[upstream_key]
+                upstream_feature_cls = feature.graph.get_feature_by_key(upstream_key)
                 upstream_feature_version = upstream_feature_cls.feature_version()
 
                 upstream_lazy = self.read_metadata_in_store(
@@ -1996,6 +1986,27 @@ class MetadataStore(ABC):
             if removed is None:
                 removed = empty_frame_like(added)
 
+            # Helper to collect and ensure Polars-backed frames
+            def _collect_to_polars(
+                frame: nw.DataFrame[Any] | nw.LazyFrame[Any],
+            ) -> nw.DataFrame[Any]:
+                """Collect lazy frame and ensure result is Polars-backed."""
+                result = frame.collect() if isinstance(frame, nw.LazyFrame) else frame
+
+                # If result is PyArrow-backed, convert to Polars
+                # Import here to make dependency explicit at usage site
+                if result.implementation != nw.Implementation.POLARS:
+                    try:
+                        import pyarrow as pa  # type: ignore
+
+                        native = result.to_native()
+                        if isinstance(native, pa.Table):
+                            return nw.from_native(pl.from_arrow(native))
+                    except (ImportError, AttributeError):
+                        pass  # pyarrow not available or not a PyArrow table
+
+                return result
+
             # Return as LazyIncrement or materialize to Increment
             if lazy:
                 return LazyIncrement(
@@ -2011,13 +2022,9 @@ class MetadataStore(ABC):
                 )
             else:
                 return Increment(
-                    added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                    changed=changed.collect()
-                    if isinstance(changed, nw.LazyFrame)
-                    else changed,
-                    removed=removed.collect()
-                    if isinstance(removed, nw.LazyFrame)
-                    else removed,
+                    added=_collect_to_polars(added),
+                    changed=_collect_to_polars(changed),
+                    removed=_collect_to_polars(removed),
                 )
 
     def _resolve_update_polars(
@@ -2098,6 +2105,27 @@ class MetadataStore(ABC):
         if removed is None:
             removed = empty_frame_like(added)
 
+        # Helper to collect and ensure Polars-backed frames
+        def _collect_to_polars(
+            frame: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        ) -> nw.DataFrame[Any]:
+            """Collect lazy frame and ensure result is Polars-backed."""
+            result = frame.collect() if isinstance(frame, nw.LazyFrame) else frame
+
+            # If result is PyArrow-backed, convert to Polars
+            # Import here to make dependency explicit at usage site
+            if result.implementation != nw.Implementation.POLARS:
+                try:
+                    import pyarrow as pa  # type: ignore
+
+                    native = result.to_native()
+                    if isinstance(native, pa.Table):
+                        return nw.from_native(pl.from_arrow(native))
+                except (ImportError, AttributeError):
+                    pass  # pyarrow not available or not a PyArrow table
+
+            return result
+
         # Return as LazyIncrement or materialize to Increment
         if lazy:
             return LazyIncrement(
@@ -2106,18 +2134,14 @@ class MetadataStore(ABC):
                 else nw.from_native(added),
                 changed=changed
                 if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
+                else nw.from_native(added),
                 removed=removed
                 if isinstance(removed, nw.LazyFrame)
                 else nw.from_native(removed),
             )
         else:
             return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
+                added=_collect_to_polars(added),
+                changed=_collect_to_polars(changed),
+                removed=_collect_to_polars(removed),
             )

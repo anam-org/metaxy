@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import warnings
+import os
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal
-from urllib.parse import urlsplit
 
 import narwhals as nw
 import polars as pl
@@ -27,45 +25,47 @@ class DeltaMetadataStore(MetadataStore):
     Delta Lake metadata store backed by [delta-rs](https://github.com/delta-io/delta-rs).
 
     Stores each feature's metadata in a dedicated Delta table located under ``root_path``.
-    Uses Polars/Narwhals components for metadata operations, supports configurable storage
+    Polars is used to write the tables. Supports configurable storage
     layouts (flat vs. nested directories), and forwards ``delta_write_options`` to every
     delta-rs write call.
 
     **Lazy Frame Handling:**
 
-    - **Eager DataFrames**: Written directly using Polars' native write_delta (efficient)
+    - **Eager DataFrames**: Written directly using Polars' native write_delta
 
     - **Lazy Frames with streaming_chunk_size=None** (default): Collected once then written
 
     - **Lazy Frames with streaming_chunk_size=N**: Streamed in batches of size N without full collection,
-      enabling processing of datasets larger than RAM (at the cost of slower performance and more Delta versions)
+      enabling processing of datasets larger than RAM (at the cost of slower performance and creating multiple DeltaLake versions within a single sink operation)
 
-    Example:
+    Example: Standard Usage
         ```py
         # Standard usage (collects lazy frames before writing)
         store = DeltaMetadataStore("/data/metaxy/metadata")
 
+        with store:
+            store.write_metadata(MyFeature, metadata_df)
+        ```
+
+    Example: Providing Object Storage options
+        ```py
+        store = DeltaMetadataStore(
+            "/data/metaxy/metadata",
+            storage_options={"AWS_REGION": "us-west-2"},
+        )
+        ```
+
+    Example: Sinking Lazy Frames
+        ```py
         # Streaming mode for large datasets
         store = DeltaMetadataStore(
             "/data/metaxy/metadata",
             streaming_chunk_size=10000,  # Stream in 10k row batches
-            storage_options={"AWS_REGION": "us-west-2"},
         )
-
-        with store:
-            with store.allow_cross_project_writes():
-                store.write_metadata(MyFeature, metadata_df)
         ```
     """
 
     _should_warn_auto_create_tables = False
-
-    @cached_property
-    def _deltalake(self):
-        """Lazy import for delta-rs to avoid repeated module imports."""
-        import deltalake  # pyright: ignore[reportMissingImports]
-
-        return deltalake
 
     def __init__(
         self,
@@ -93,7 +93,7 @@ class DeltaMetadataStore(MetadataStore):
                 - **None (default)**: Collect lazy frames fully before writing (fast, simple, higher memory)
 
                 - **int (e.g., 10000)**: Stream lazy frames in batches of this size without full collection
-                  (lower memory for large datasets, but slower and creates more Delta versions)
+                  (lower memory for large datasets, but slower and creates more DeltaLake versions)
 
                 Trade-offs when streaming:
 
@@ -101,15 +101,15 @@ class DeltaMetadataStore(MetadataStore):
 
                 - ✗ Slower performance (Polars sink_batches overhead)
 
-                - ✗ More Delta versions (one per batch)
+                - ✗ More DeltaLake versions (one per batch)
 
                 - ✗ Uses unstable Polars API
 
                 For most use cases, leave as None (default).
             layout: Directory layout used when deriving table paths from feature keys.
-                - **"flat"**: Current `<namespace>__<feature>` directories (backward compatible default)
+                - **"flat"** (default): `<namespace>__<feature>` directories
 
-                - **"nested"**: `namespace/feature/...` directories for easier navigation in consoles.
+                - **"nested"**: `namespace/feature/...` directories
             delta_write_options: Extra keyword arguments forwarded to every
                 `deltalake.write_deltalake` call and to Polars `write_delta`.
             fallback_stores: Ordered list of read-only fallback stores.
@@ -117,48 +117,18 @@ class DeltaMetadataStore(MetadataStore):
         """
         self.storage_options = storage_options or {}
         self.streaming_chunk_size = streaming_chunk_size
-        if layout not in ("flat", "nested"):
-            raise ValueError("layout must be either 'flat' or 'nested'")
         self.layout: Literal["flat", "nested"] = layout
         write_opts: dict[str, Any] = {"schema_mode": "merge"}
         if delta_write_options:
             write_opts.update(delta_write_options)
         self._delta_write_options = write_opts
         self._delta_table_cache: dict[tuple[str, bool], Any] = {}
-        self._display_root = str(root_path)
 
         root_str = str(root_path)
-        parsed = urlsplit(root_str) if "://" in root_str else None
-        scheme = parsed.scheme.lower() if parsed else ""
-        local_schemes = {"", "file", "local"}
-
-        if scheme in local_schemes:
-            self._is_remote = False
-            if scheme == "":
-                local_path = Path(root_path).expanduser().resolve()
-            else:
-                assert parsed is not None
-                authority = parsed.netloc
-                path = parsed.path
-                if scheme == "file":
-                    raw_path = path or "/"
-                else:
-                    trimmed_path = path.lstrip("/") if authority else path
-                    if authority and trimmed_path:
-                        raw_path = f"{authority}/{trimmed_path}"
-                    elif authority:
-                        raw_path = authority
-                    else:
-                        raw_path = trimmed_path
-                local_path = Path(raw_path or ".").expanduser().resolve()
-            self._local_root_path = local_path
-            self._root_uri = str(local_path)
-        else:
-            self._is_remote = bool(parsed and parsed.scheme)
-            self._local_root_path = None
-            self._root_uri = root_str.rstrip("/")
-
-        self.root_path = self._local_root_path
+        is_remote = "://" in root_str and not root_str.startswith(
+            ("file://", "local://")
+        )
+        self.root_path = root_str if is_remote else root_str.split("://", 1)[-1]
         super().__init__(fallback_stores=fallback_stores, **kwargs)
 
     # ===== MetadataStore abstract methods =====
@@ -210,7 +180,10 @@ class DeltaMetadataStore(MetadataStore):
         """Return layout-specific relative path for a feature key."""
         if self.layout == "flat":
             return feature_key.table_name
-        return "/".join(feature_key.parts)
+        elif self.layout == "nested":
+            return "/".join(feature_key.parts)
+        else:
+            raise ValueError(f"Unknown layout: {self.layout}")
 
     def _relative_path_to_feature_key(self, relative_path: Path) -> FeatureKey:
         """Convert a relative directory path back into a FeatureKey."""
@@ -221,29 +194,28 @@ class DeltaMetadataStore(MetadataStore):
                     f"Flat layout expects single-segment directories, got {relative_path}"
                 )
             return FeatureKey(parts[0].split("__"))
-        return FeatureKey(list(relative_path.parts))
+        elif self.layout == "nested":
+            return FeatureKey(list(relative_path.parts))
+        else:
+            raise ValueError(f"Unknown layout: {self.layout}")
+
+    @property
+    def _deltalake(self):  # type: ignore[no-untyped-def]
+        """Lazy import for delta-rs to avoid repeated module imports."""
+        import deltalake  # pyright: ignore[reportMissingImports]
+
+        return deltalake
 
     def _feature_uri(self, feature_key: FeatureKey) -> str:
         """Return the URI/path used by deltalake for this feature."""
-        relative = self._relative_feature_path(feature_key)
-        if self._local_root_path is not None:
-            return str(self._local_root_path / Path(relative))
-        base = self._root_uri.rstrip("/")
-        return f"{base}/{relative}".rstrip("/")
 
-    def _feature_local_path(self, feature_key: FeatureKey) -> Path | None:
-        """Return filesystem path when operating on local roots."""
-        if self._local_root_path is None:
-            return None
-        return self._local_root_path / Path(self._relative_feature_path(feature_key))
+        relative = self._relative_feature_path(feature_key)
+        return os.path.join(self.root_path, relative)
 
     def _table_exists(
         self, table_uri: str, *, feature_key: FeatureKey | None = None
     ) -> bool:
-        """Check whether the provided URI already contains a Delta table.
-
-        Works for both local and remote (object store) paths.
-        """
+        """Check whether the provided URI already contains a Delta table."""
         if feature_key is not None:
             cache_key = feature_key.to_string()
             if (cache_key, True) in self._delta_table_cache or (
@@ -288,16 +260,13 @@ class DeltaMetadataStore(MetadataStore):
         """Append metadata to the Delta table for a feature.
 
         Handles both eager DataFrames and lazy LazyFrames:
-        - **DataFrames**: Written directly via Polars write_delta (efficient)
+        - **DataFrames**: Written directly via Polars write_delta
         - **LazyFrames**: Collected or streamed based on streaming_chunk_size setting
 
         Args:
             feature_key: Feature key to write to
             df: DataFrame or LazyFrame with metadata (already validated). Narwhals frames
                 are accepted and converted to native Polars before writing.
-
-        Raises:
-            TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
         # Convert Narwhals frames to native Polars
         if isinstance(df, (nw.DataFrame, nw.LazyFrame)):
@@ -312,12 +281,10 @@ class DeltaMetadataStore(MetadataStore):
         # Check if table exists
         if not table_exists and not self.auto_create_tables:
             raise TableNotFoundError(
-                f"Delta table does not exist for feature {feature_key.to_string()} at {table_uri}. "
-                f"Enable auto_create_tables=True to automatically create tables."
+                f"Delta table does not exist for feature {feature_key.to_string()} at {table_uri}."
             )
 
         # Delta automatically creates parent directories, no need to do it manually
-        self._invalidate_delta_table_cache(feature_key)
 
         # Strategy: Use Polars write_delta for eager DataFrames (native support),
         # convert to PyArrow for lazy frames and use deltalake API (more flexible)
@@ -327,7 +294,7 @@ class DeltaMetadataStore(MetadataStore):
                 # Streaming mode: write batches incrementally without full collection
                 # This enables processing datasets larger than RAM at the cost of:
                 # - Slower performance (sink_batches overhead)
-                # - More Delta versions (one per batch)
+                # - Creating multiple DeltaLake versions within a single sink operation
                 def write_batch(batch_df: pl.DataFrame) -> bool:
                     arrow_table = batch_df.to_arrow()
                     self._deltalake.write_deltalake(
@@ -352,7 +319,6 @@ class DeltaMetadataStore(MetadataStore):
                 )
         else:
             # For eager DataFrames: use Polars native write_delta
-            # This is efficient and leverages Polars' built-in Delta support
             df.write_delta(
                 table_uri,
                 mode="append",
@@ -378,7 +344,6 @@ class DeltaMetadataStore(MetadataStore):
         # Use Delta's delete operation - soft delete all rows
         # This marks rows as deleted in transaction log without physically removing files
         delta_table.delete()
-        self._invalidate_delta_table_cache(feature_key)
 
     def read_metadata_in_store(
         self,
@@ -430,55 +395,18 @@ class DeltaMetadataStore(MetadataStore):
     def _list_features_local(self) -> list[FeatureKey]:
         """List all features that have Delta tables in this store.
 
-        Returns:
-            List of FeatureKey objects (excluding system tables)
-        """
-        if self._local_root_path is not None:
-            return self._list_features_from_local_root()
-        return self._list_features_from_object_store()
-
-    def _list_features_from_local_root(self) -> list[FeatureKey]:
-        if self._local_root_path is None or not self._local_root_path.exists():
-            return []
-
-        feature_keys: list[FeatureKey] = []
-        for delta_log_dir in self._local_root_path.rglob("_delta_log"):
-            feature_dir = delta_log_dir.parent
-            try:
-                relative = feature_dir.relative_to(self._local_root_path)
-                feature_key = self._relative_path_to_feature_key(relative)
-            except ValueError as exc:
-                warnings.warn(
-                    f"Could not parse Delta directory '{feature_dir}' as FeatureKey: {exc}",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                continue
-            if not self._is_system_table(feature_key):
-                feature_keys.append(feature_key)
-        return sorted(feature_keys)
-
-    def _list_features_from_object_store(self) -> list[FeatureKey]:
-        """List features from object store (S3, Azure, GCS, etc.).
-
-        Note: For remote stores, feature discovery relies on the system tables.
-        Use `metaxy graph push` to register features in the metadata store.
+        Feature discovery is not supported for Delta stores. Features must be
+        registered via 'metaxy graph push' or accessed directly by key.
+        Use system tables (feature_versions) to query registered features.
 
         Returns:
-            Empty list - remote stores require explicit feature registration
+            Empty list - feature discovery not supported
         """
-        warnings.warn(
-            f"Feature discovery not supported for remote Delta stores ({self._root_uri}). "
-            "Features must be registered via 'metaxy graph push' or accessed directly by key. "
-            "Use system tables (feature_versions) to query registered features.",
-            UserWarning,
-            stacklevel=2,
-        )
         return []
 
     def display(self) -> str:
         """Return human-readable representation of the store."""
-        details = [f"path={self._display_root}", f"layout={self.layout}"]
+        details = [f"path={self.root_path}", f"layout={self.layout}"]
         if self.storage_options:
             details.append("storage_options=***")
         return f"DeltaMetadataStore({', '.join(details)})"

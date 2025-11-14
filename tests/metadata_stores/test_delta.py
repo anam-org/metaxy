@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
-import pytest
 from deltalake import DeltaTable
 
 from metaxy._utils import collect_to_polars
@@ -38,9 +37,8 @@ def test_delta_write_and_read(tmp_path, test_graph, test_features) -> None:
         assert set(result["sample_uid"].to_list()) == {1, 2, 3}
 
         # Use Delta's native API to check version
-        feature_path = store._feature_local_path(feature_key)
-        assert feature_path is not None
-        delta_table = DeltaTable(str(feature_path))
+        feature_path = store._feature_uri(feature_key)
+        delta_table = DeltaTable(feature_path)
         assert delta_table.version() == 0
         assert delta_table.to_pyarrow_table().num_rows == 3
 
@@ -86,19 +84,18 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         )
         store.write_metadata(feature_cls, metadata)
 
-        feature_path = store._feature_local_path(feature_key)
-        assert feature_path is not None
+        feature_path_str = store._feature_uri(feature_key)
+        feature_path = Path(feature_path_str)
         assert (feature_path / "_delta_log").exists()
 
         # Soft delete - marks rows as deleted but doesn't remove transaction log
         store.drop_feature_metadata(feature_cls)
 
         # Transaction log still exists (soft delete)
-        assert feature_path is not None
         assert (feature_path / "_delta_log").exists()
 
         # Check that table is now empty (rows marked as deleted)
-        delta_table = DeltaTable(str(feature_path))
+        delta_table = DeltaTable(feature_path_str)
         assert delta_table.to_pyarrow_table().num_rows == 0
 
     # Fresh instance should see no data (deleted rows)
@@ -124,10 +121,9 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
 
 
 def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
-    """Verify feature discovery in Delta store."""
+    """Verify that feature discovery is not supported in Delta store."""
     store_path = tmp_path / "delta"
     feature_cls = test_features["UpstreamFeatureA"]
-    feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
 
     with DeltaMetadataStore(store_path) as store:
         assert store.list_features() == []
@@ -142,7 +138,8 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
         )
         store.write_metadata(feature_cls, metadata)
 
-        assert store.list_features() == [feature_key]
+        # Feature discovery is not supported - returns empty list
+        assert store.list_features() == []
 
 
 def test_delta_nested_layout_creates_directories(
@@ -164,14 +161,11 @@ def test_delta_nested_layout_creates_directories(
         )
         store.write_metadata(feature_cls, metadata)
 
-        feature_dir = store._feature_local_path(feature_key)
-        assert feature_dir is not None
+        feature_dir = Path(store._feature_uri(feature_key))
         assert feature_dir.exists()
-        assert store._local_root_path is not None
-        assert feature_dir.relative_to(store._local_root_path) == Path(
-            "/".join(feature_key.parts)
-        )
-        assert store.list_features() == [feature_key]
+        assert feature_dir.relative_to(store_path) == Path("/".join(feature_key.parts))
+        # Feature discovery not supported - returns empty list
+        assert store.list_features() == []
 
 
 def test_delta_display(tmp_path) -> None:
@@ -194,16 +188,13 @@ def test_delta_display(tmp_path) -> None:
 
 
 def test_delta_remote_lists_features_returns_empty() -> None:
-    """Remote stores return empty list for list_features() - use system tables instead."""
+    """Stores return empty list for list_features() - use system tables instead."""
     store = DeltaMetadataStore("s3://bucket/root", auto_create_tables=False)
 
     with store:
-        with pytest.warns(
-            UserWarning, match="Feature discovery not supported for remote"
-        ):
-            features = store.list_features()
+        features = store.list_features()
 
-    # Remote stores return empty list - must use system tables for feature discovery
+    # Feature discovery not supported - returns empty list
     assert features == []
 
 
@@ -233,9 +224,9 @@ def test_delta_streaming_write(tmp_path, test_graph, test_features) -> None:
         assert set(result["sample_uid"].to_list()) == set(range(200))
 
         # Verify Delta table was created and contains all data
-        feature_path = store._feature_local_path(feature_key)
-        assert feature_path is not None
-        delta_table = DeltaTable(str(feature_path))
+        feature_path_str = store._feature_uri(feature_key)
+        feature_path = Path(feature_path_str)
+        delta_table = DeltaTable(feature_path_str)
 
         # Verify all rows were written (regardless of version count)
         # Note: Delta may optimize writes into fewer transactions than expected
@@ -260,9 +251,7 @@ def test_delta_s3_store_initialization() -> None:
     store = DeltaMetadataStore(store_path, storage_options=storage_options)
 
     # Verify store configuration
-    assert store._root_uri == "s3://my-bucket/delta_store"
-    assert store._is_remote is True
-    assert store._local_root_path is None
+    assert store.root_path == "s3://my-bucket/delta_store"
     assert store.storage_options == storage_options
 
 
@@ -297,38 +286,37 @@ def test_delta_feature_uri_for_s3() -> None:
 
 
 def test_delta_s3_path_detection() -> None:
-    """Test that S3 paths are correctly detected as remote."""
+    """Test that various path formats are accepted."""
     s3_store = DeltaMetadataStore("s3://bucket/path", auto_create_tables=False)
-    assert s3_store._is_remote is True
-    assert s3_store._local_root_path is None
+    assert s3_store.root_path == "s3://bucket/path"
 
     # Test with different cloud providers
     azure_store = DeltaMetadataStore(
         "abfss://container@account.dfs.core.windows.net/path",
         auto_create_tables=False,
     )
-    assert azure_store._is_remote is True
+    assert (
+        azure_store.root_path == "abfss://container@account.dfs.core.windows.net/path"
+    )
 
     gcs_store = DeltaMetadataStore("gs://bucket/path", auto_create_tables=False)
-    assert gcs_store._is_remote is True
+    assert gcs_store.root_path == "gs://bucket/path"
 
 
 def test_delta_local_path_detection(tmp_path) -> None:
-    """Test that local paths are correctly detected."""
+    """Test that local paths are correctly handled."""
     local_store = DeltaMetadataStore(tmp_path, auto_create_tables=False)
-    assert local_store._is_remote is False
-    assert local_store._local_root_path == tmp_path
+    assert local_store.root_path == str(tmp_path)
 
     # Test file:// URL
     file_url_store = DeltaMetadataStore(f"file://{tmp_path}", auto_create_tables=False)
-    assert file_url_store._is_remote is False
+    assert file_url_store.root_path == str(tmp_path)
 
     # Test local:// URL
     local_uri_store = DeltaMetadataStore(
         f"local://{tmp_path}", auto_create_tables=False
     )
-    assert local_uri_store._is_remote is False
-    assert local_uri_store._local_root_path == tmp_path.resolve()
+    assert local_uri_store.root_path == str(tmp_path)
 
 
 def test_delta_storage_options_passed_through(test_graph, test_features) -> None:
@@ -417,7 +405,6 @@ def test_delta_streaming_with_s3_path() -> None:
     )
 
     assert store.streaming_chunk_size == 100
-    assert store._is_remote is True
 
 
 def test_delta_s3_with_no_credentials() -> None:
@@ -428,7 +415,6 @@ def test_delta_s3_with_no_credentials() -> None:
     store = DeltaMetadataStore(store_path, auto_create_tables=False)
 
     assert store.storage_options == {}
-    assert store._is_remote is True
 
 
 def test_delta_azure_adls_configuration() -> None:
@@ -443,7 +429,6 @@ def test_delta_azure_adls_configuration() -> None:
         store_path, storage_options=storage_options, auto_create_tables=False
     )
 
-    assert store._is_remote is True
     assert store.storage_options == storage_options
 
 
@@ -458,7 +443,6 @@ def test_delta_gcs_configuration() -> None:
         store_path, storage_options=storage_options, auto_create_tables=False
     )
 
-    assert store._is_remote is True
     assert store.storage_options == storage_options
 
 
