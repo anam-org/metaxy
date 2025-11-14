@@ -12,6 +12,10 @@ Metaxy has built-in support for the following metadata store types:
 
 See [IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
 
+## LanceDB
+
+See [LanceDBMetadataStore](./lancedb.md).
+
 ## In-memory
 
 See [InMemoryMetadataStore][metaxy.metadata_store.memory.InMemoryMetadataStore].

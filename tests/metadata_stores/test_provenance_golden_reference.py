@@ -34,6 +34,7 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.types import HashAlgorithm
 
@@ -205,13 +206,16 @@ def setup_store_with_data(
 
 class EmptyStoreCases:
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path):
+    def case_duckdb(
+        self, hash_algorithm: HashAlgorithm, tmp_path, metaxy_config: MetaxyConfig
+    ):
         try:
             return DuckDBMetadataStore(
                 tmp_path / "db.duckdb",
                 hash_algorithm=hash_algorithm,
                 extensions=["hashfuncs"],
                 prefer_native=True,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
@@ -219,12 +223,18 @@ class EmptyStoreCases:
             )
 
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_clickhouse(self, hash_algorithm: HashAlgorithm, clickhouse_db: str):
+    def case_clickhouse(
+        self,
+        hash_algorithm: HashAlgorithm,
+        clickhouse_db: str,
+        metaxy_config: MetaxyConfig,
+    ):
         try:
             return ClickHouseMetadataStore(
                 connection_string=clickhouse_db,
                 hash_algorithm=hash_algorithm,
                 prefer_native=True,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
             )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
@@ -244,6 +254,22 @@ class EmptyStoreCases:
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_lancedb(
+        self, hash_algorithm: HashAlgorithm, tmp_path, metaxy_config: MetaxyConfig
+    ):
+        pytest.importorskip("lancedb")
+        try:
+            return LanceDBMetadataStore(
+                tmp_path / "lancedb",
+                hash_algorithm=hash_algorithm,
+                hash_truncation_length=metaxy_config.hash_truncation_length,
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {LanceDBMetadataStore}"
             )
 
 
