@@ -11,6 +11,7 @@ from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 # Helper function to add metaxy_provenance column to test data
@@ -58,7 +59,9 @@ class TestJoiner:
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
-        joined = engine.prepare_upstream(upstream_by_key, filters=None)
+        joined = engine.prepare_upstream(
+            upstream_by_key, filters=None, hash_algorithm=HashAlgorithm.XXHASH64
+        )
 
         # Build the mapping of upstream_key -> provenance_by_field column name
         # The new naming convention is: {column_name}{feature_key.to_column_suffix()}

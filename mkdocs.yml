@@ -210,6 +210,7 @@ nav:
       - SQLAlchemy: integrations/plugins/sqlalchemy.md
   - Examples:
     - One To Many: examples/one-to-many.md
+    - Python Migrations: examples/migrations/README.md
   - CLI: reference/cli.md
   - API:
     - reference/api/index.md

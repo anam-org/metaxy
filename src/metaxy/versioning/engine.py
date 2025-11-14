@@ -110,6 +110,7 @@ class VersioningEngine(ABC):
         self,
         upstream: Mapping[FeatureKey, FrameT],
         filters: Mapping[FeatureKey, Sequence[nw.Expr]] | None,
+        hash_algorithm: HashAlgorithm,
     ) -> FrameT:
         """Prepare the upstream dataframes for the given feature.
 
@@ -130,11 +131,34 @@ class VersioningEngine(ABC):
         """
         assert len(upstream) > 0, "No upstream dataframes provided"
 
+        # Auto-compute METAXY_PROVENANCE if missing but METAXY_PROVENANCE_BY_FIELD exists
+        # This must happen BEFORE transform() because the transformer expects both columns
+        import warnings
+
+        upstream_with_prov: dict[FeatureKey, FrameT] = {}
+        for k, df in upstream.items():
+            cols = df.collect_schema().names()
+            if METAXY_PROVENANCE not in cols and METAXY_PROVENANCE_BY_FIELD in cols:
+                warnings.warn(
+                    f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} "
+                    f"for upstream feature {k.to_string()} because it is missing. "
+                    f"This happens when reading metadata written with an older version."
+                )
+                # Get field names from the upstream feature spec (not the current feature!)
+                upstream_spec = self.plan.parent_features_by_key[k]
+                field_names = [f.key.to_struct_key() for f in upstream_spec.fields]
+                # Use hash_struct_version_column to compute METAXY_PROVENANCE
+                upstream_with_prov[k] = self.hash_struct_version_column(
+                    df, hash_algorithm=hash_algorithm, field_names=field_names
+                )
+            else:
+                upstream_with_prov[k] = df
+
         dfs: dict[FeatureKey, RenamedDataFrame[FrameT]] = {
             k: self.feature_transformers_by_key[k].transform(
                 df, filters=(filters or {}).get(k)
             )
-            for k, df in upstream.items()
+            for k, df in upstream_with_prov.items()
         }
 
         # Drop system columns that aren't needed for provenance calculation
@@ -354,7 +378,7 @@ class VersioningEngine(ABC):
         hash_length = MetaxyConfig.get().hash_truncation_length or 64
 
         # Prepare upstream: filter, rename, select, join
-        df = self.prepare_upstream(upstream, filters=filters)
+        df = self.prepare_upstream(upstream, filters=filters, hash_algorithm=hash_algo)
 
         # Build concatenation columns for each field
         temp_concat_cols: dict[str, str] = {}  # field_key_str -> temp_col_name
@@ -455,10 +479,29 @@ class VersioningEngine(ABC):
         hash_algorithm: HashAlgorithm,
         struct_column: str = METAXY_PROVENANCE_BY_FIELD,
         hash_column: str = METAXY_PROVENANCE,
+        field_names: list[str] | None = None,
     ) -> FrameT:
+        """Add metaxy_provenance column by hashing metaxy_provenance_by_field struct.
+
+        Args:
+            df: DataFrame with metaxy_provenance_by_field column
+            hash_algorithm: Hash algorithm to use
+            struct_column: Name of struct column to hash (default: metaxy_provenance_by_field)
+            hash_column: Name of output hash column (default: metaxy_provenance)
+            field_names: Optional list of field names to use. If None, uses self.plan.feature.fields.
+                This should be provided when adding provenance to upstream features.
+
+        Returns:
+            DataFrame with metaxy_provenance column added
+        """
         # Compute sample-level provenance from field-level provenance
         # Get all field names from the struct (we need feature spec for this)
-        field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
+        if field_names is None:
+            field_names = sorted(
+                [f.key.to_struct_key() for f in self.plan.feature.fields]
+            )
+        else:
+            field_names = sorted(field_names)
 
         # Concatenate all field hashes with separator
         sample_components = [
