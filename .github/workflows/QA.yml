@@ -11,6 +11,12 @@ on:
       - dev
   pull_request:
   workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
 
 jobs:
   filter:
@@ -112,16 +118,20 @@ jobs:
         uses: cachix/install-nix-action@v27
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
         with:
-           # use devshell for Python 3.10
+          # use devshell for specific Python version
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
+        # uv run pytest -s --log-cli-level=INFO tests/metadata_stores/test_provenance_golden_reference.py
         run: >
           uv run pytest
           --cov=src/metaxy
@@ -186,8 +196,11 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
+        with:
+          # use devshell for Python 3.10 (docs)
+          arguments: "'.#\"python3.10\"'"
       - name: Sync dependencies
-        run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
+        run: uv python pin 3.10 && uv sync --all-extras --all-groups
       - name: Build Docs
         id: docs
         run: uv run mkdocs build --strict

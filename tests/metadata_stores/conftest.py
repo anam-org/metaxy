@@ -1,11 +1,22 @@
 """Common fixtures for metadata store tests."""
 
+import logging
+import shutil
+import socket
+import subprocess
 import time
+import uuid
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote_plus
 
+import ibis
+import ibis.backends.postgres
+import psycopg
 import pytest
+from psycopg import conninfo as psycopg_conninfo
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_postgresql import factories
 
 from metaxy._testing import HashAlgorithmCases
 from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
@@ -14,6 +25,42 @@ from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 assert HashAlgorithmCases is not None  # ensure the import is not removed
+
+logger = logging.getLogger(__name__)
+
+# Force pytest-postgresql to use a short socket directory to avoid hitting the
+# 103-character Unix socket limit enforced by PostgreSQL on macOS.
+_PG_SOCKET_DIR = Path("/tmp/metaxy-pg")
+_PG_SOCKET_DIR.mkdir(parents=True, exist_ok=True)
+
+postgresql_proc = factories.postgresql_proc(unixsocketdir=str(_PG_SOCKET_DIR))
+
+
+def _find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+    return port
+
+
+def _format_pg_connection_string(
+    *,
+    user: str,
+    host: str,
+    port: int,
+    database: str,
+    password: str | None = None,
+    options: str | None = None,
+) -> str:
+    """Build a PostgreSQL connection URI with proper escaping."""
+    auth = quote_plus(user)
+    if password:
+        auth = f"{quote_plus(user)}:{quote_plus(password)}"
+    uri = f"postgresql://{auth}@{host}:{port}/{database}"
+    if options:
+        uri = f"{uri}?options={quote_plus(options)}"
+    return uri
 
 
 @pytest.fixture(scope="session")
@@ -25,31 +72,13 @@ def clickhouse_server(tmp_path_factory):
 
     Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
     """
-    import shutil
-    import socket
-    import subprocess
-
     # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
     if not clickhouse_bin:
         pytest.skip("ClickHouse binary not found in PATH")
 
-    # Check if ibis-clickhouse is installed
-    try:
-        import ibis.backends.clickhouse  # noqa: F401
-    except ImportError:
-        pytest.skip("ibis-clickhouse not installed")
-
-    # Find a free port
-    def find_free_port():
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
-            s.listen(1)
-            port = s.getsockname()[1]
-        return port
-
-    port = find_free_port()
-    http_port = find_free_port()
+    port = _find_free_port()
+    http_port = _find_free_port()
 
     # Create temporary directories for ClickHouse
     base_dir = tmp_path_factory.mktemp("clickhouse")
@@ -126,9 +155,6 @@ def clickhouse_server(tmp_path_factory):
             f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
         )
 
-    # Now try to connect with Ibis (using HTTP port)
-    import ibis
-
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:
         conn: Any = ibis.connect(connection_string)  # type: ignore[assignment]
@@ -159,9 +185,6 @@ def clickhouse_db(clickhouse_server):
 
     Creates a unique database, yields connection string, then drops the database.
     """
-    import uuid
-
-    import ibis
 
     host = clickhouse_server["host"]
     port = clickhouse_server["port"]
@@ -185,7 +208,92 @@ def clickhouse_db(clickhouse_server):
     try:
         conn.raw_sql(f"DROP DATABASE IF EXISTS {db_name}")  # type: ignore[attr-defined]
     except Exception:
-        pass  # Best effort cleanup
+        logger.warning("Failed to drop test database %s: %s", db_name)
+
+
+@pytest.fixture(scope="session")
+def postgres_server(postgresql_proc: Any):
+    """Expose connection details for the pytest-postgresql server."""
+    host = postgresql_proc.host
+    port = postgresql_proc.port
+    user = postgresql_proc.user
+    password = postgresql_proc.password
+    admin_db = postgresql_proc.dbname
+    options = postgresql_proc.options
+
+    def build_conninfo(dbname: str) -> str:
+        return psycopg_conninfo.make_conninfo(
+            host=host,
+            port=str(port),
+            user=user,
+            password=password or None,
+            dbname=dbname,
+            options=options or None,
+        )
+
+    admin_dsn = ""
+    last_error: Exception | None = None
+    for candidate in filter(None, [admin_db, "postgres"]):
+        try:
+            admin_dsn = build_conninfo(candidate)
+            with psycopg.connect(admin_dsn):
+                pass
+        except psycopg.OperationalError as exc:
+            last_error = exc
+            continue
+        admin_db = candidate
+        break
+    else:
+        raise RuntimeError(
+            "Unable to connect to Postgres admin database"
+        ) from last_error
+
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "dbname": admin_db,
+        "password": password,
+        "options": options,
+        "dsn": admin_dsn,
+        "psycopg": psycopg,
+    }
+
+
+@pytest.fixture
+def postgres_db(postgres_server):
+    """Create a clean PostgreSQL database for each test (function-scoped)."""
+    psycopg = postgres_server["psycopg"]
+    admin_dsn = postgres_server["dsn"]
+    host = postgres_server["host"]
+    port = postgres_server["port"]
+    user = postgres_server["user"]
+    password = postgres_server["password"]
+    options = postgres_server.get("options")
+
+    db_name = f"test_{uuid.uuid4().hex}"
+
+    with psycopg.connect(admin_dsn, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'CREATE DATABASE "{db_name}"')
+
+    test_conn_string = _format_pg_connection_string(
+        user=user,
+        host=host,
+        port=port,
+        database=db_name,
+        password=password,
+        options=options,
+    )
+
+    yield test_conn_string
+
+    try:
+        with psycopg.connect(admin_dsn, autocommit=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)')
+    except psycopg.Error as exc:
+        logger.warning("Failed to drop test database %s: %s", db_name, exc)
 
 
 @pytest.fixture

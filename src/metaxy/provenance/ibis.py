@@ -4,7 +4,9 @@ CRITICAL: This implementation NEVER materializes lazy expressions.
 All operations stay in the lazy Ibis world for SQL execution.
 """
 
-from typing import Protocol, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Protocol, cast
 
 import narwhals as nw
 from ibis import Expr as IbisExpr
@@ -13,6 +15,9 @@ from narwhals.typing import FrameT
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    import ibis.expr.types
 
 
 class IbisHashFn(Protocol):
@@ -45,6 +50,16 @@ class IbisProvenanceTracker(ProvenanceTracker):
         super().__init__(plan)
         self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
+    @staticmethod
+    def _ensure_ibis_table(df: FrameT) -> ibis.expr.types.Table:
+        """Return the underlying Ibis table, ensuring the frame is Ibis-backed."""
+        import ibis.expr.types
+
+        native = df.to_native()
+        if not isinstance(native, ibis.expr.types.Table):
+            raise AssertionError("Only Ibis DataFrames are accepted")
+        return native  # type: ignore[return-value]
+
     def hash_string_column(
         self,
         df: FrameT,
@@ -70,14 +85,8 @@ class IbisProvenanceTracker(ProvenanceTracker):
                 f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        # Import ibis lazily (module-level import restriction)
-        import ibis.expr.types
-
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table = self._ensure_ibis_table(df)
 
         # Get hash function
         hash_fn = self.hash_functions[hash_algo]
@@ -110,13 +119,10 @@ class IbisProvenanceTracker(ProvenanceTracker):
             The source columns remain unchanged.
         """
         # Import ibis lazily
-        import ibis.expr.types
+        import ibis
 
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table = self._ensure_ibis_table(df)
 
         # Build struct expression - reference columns by name
         struct_expr = ibis.struct(
@@ -152,20 +158,14 @@ class IbisProvenanceTracker(ProvenanceTracker):
         Returns:
             Narwhals DataFrame with one row per group.
         """
-        # Import ibis lazily
-        import ibis
-        import ibis.expr.types
-
         # Convert to Ibis table
-        assert df.implementation == nw.Implementation.IBIS, (
-            "Only Ibis DataFrames are accepted"
-        )
-        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+        ibis_table = self._ensure_ibis_table(df)
 
         # Build aggregation expressions
         agg_exprs = {}
 
         # Concatenate the concat_column with separator
+
         agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
             concat_separator
         )

@@ -34,6 +34,7 @@ from metaxy.metadata_store import (
 )
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.plan import FeaturePlan
 from metaxy.provenance.types import HashAlgorithm
 
@@ -232,10 +233,7 @@ class EmptyStoreCases:
             )
 
     @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_inmemory(
-        self,
-        hash_algorithm: HashAlgorithm,
-    ) -> InMemoryMetadataStore:
+    def case_inmemory(self, hash_algorithm: HashAlgorithm):
         """InMemory store case."""
         try:
             return InMemoryMetadataStore(
@@ -244,6 +242,20 @@ class EmptyStoreCases:
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
+            )
+
+    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    def case_postgres(self, hash_algorithm: HashAlgorithm, postgres_db: str):
+        try:
+            return PostgresMetadataStore(
+                connection_string=postgres_db,
+                hash_algorithm=hash_algorithm,
+                prefer_native=True,
+                enable_pgcrypto=True,  # Enable pgcrypto for SHA256 support
+            )
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {hash_algorithm} not supported by {PostgresMetadataStore}"
             )
 
 
@@ -293,6 +305,7 @@ def test_store_resolve_update_matches_golden_provenance(
                 target_version=child_version,
                 snapshot_version=graph.snapshot_version,
             )
+            added_df = increment.added.lazy().collect().to_polars()
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
