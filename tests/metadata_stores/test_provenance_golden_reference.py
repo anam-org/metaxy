@@ -299,26 +299,24 @@ def test_store_resolve_update_matches_golden_provenance(
             )
 
         added_df = increment.added.lazy().collect().to_polars()
+        # Get ID columns from the feature plan
+        id_columns = list(child_feature_plan.feature.id_columns)
+        # Sort both DataFrames by ID columns for comparison
+        added_sorted = added_df.sort(id_columns)
+        golden_sorted = golden_downstream.sort(id_columns)
 
-    # Get ID columns from the feature plan
-    id_columns = list(child_feature_plan.feature.id_columns)
+        # Select only the columns that exist in both (resolve_update may not return all metadata columns)
+        common_columns = [
+            col for col in added_sorted.columns if col in golden_sorted.columns
+        ]
+        added_selected = added_sorted.select(common_columns)
+        golden_selected = golden_sorted.select(common_columns)
 
-    # Sort both DataFrames by ID columns for comparison
-    added_sorted = added_df.sort(id_columns)
-    golden_sorted = golden_downstream.sort(id_columns)
-
-    # Select only the columns that exist in both (resolve_update may not return all metadata columns)
-    common_columns = [
-        col for col in added_sorted.columns if col in golden_sorted.columns
-    ]
-    added_selected = added_sorted.select(common_columns)
-    golden_selected = golden_sorted.select(common_columns)
-
-    # Use Polars testing utility to compare DataFrames
-    # This will check all columns including the provenance_by_field struct
-    pl_testing.assert_frame_equal(
-        added_selected,
-        golden_selected,
-        check_row_order=True,
-        check_column_order=False,
-    )
+        # Use Polars testing utility to compare DataFrames
+        # This will check all columns including the provenance_by_field struct
+        pl_testing.assert_frame_equal(
+            added_selected,
+            golden_selected,
+            check_row_order=True,
+            check_column_order=False,
+        )

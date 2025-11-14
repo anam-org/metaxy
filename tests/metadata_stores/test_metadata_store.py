@@ -24,6 +24,7 @@ from metaxy.metadata_store import (
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.types import AccessMode
 
 
 @pytest.fixture
@@ -97,7 +98,7 @@ def populated_store(graph: FeatureGraph) -> Iterator[InMemoryMetadataStore]:
     """Store with sample upstream data."""
     store = InMemoryMetadataStore()
 
-    with store:
+    with store.open(AccessMode.WRITE):
         # Add upstream feature A
         upstream_a_data = pl.DataFrame(
             {
@@ -148,7 +149,7 @@ def multi_env_stores(
 
 def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
     """Test basic write and read operations."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -171,7 +172,7 @@ def test_write_and_read_metadata(empty_store: InMemoryMetadataStore) -> None:
 
 def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -186,7 +187,7 @@ def test_write_invalid_schema(empty_store: InMemoryMetadataStore) -> None:
 
 def test_write_append(empty_store: InMemoryMetadataStore) -> None:
     """Test that writes are append-only."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -218,7 +219,7 @@ def test_write_append(empty_store: InMemoryMetadataStore) -> None:
 
 def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
     """Test reading with Polars filter expressions."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         result = collect_to_polars(
             populated_store.read_metadata(
                 UpstreamFeatureA, filters=[nw.col("sample_uid") > 1]
@@ -231,7 +232,7 @@ def test_read_with_filters(populated_store: InMemoryMetadataStore) -> None:
 
 def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> None:
     """Test reading specific columns."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         result = collect_to_polars(
             populated_store.read_metadata(
                 UpstreamFeatureA, columns=["sample_uid", "metaxy_provenance_by_field"]
@@ -244,7 +245,7 @@ def test_read_with_column_selection(populated_store: InMemoryMetadataStore) -> N
 
 def test_read_nonexistent_feature(empty_store: InMemoryMetadataStore) -> None:
     """Test that reading nonexistent feature raises error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         with pytest.raises(FeatureNotFoundError):
             empty_store.read_metadata(UpstreamFeatureA)
 
@@ -254,7 +255,7 @@ def test_read_nonexistent_feature(empty_store: InMemoryMetadataStore) -> None:
 
 def test_has_feature_local(populated_store: InMemoryMetadataStore) -> None:
     """Test has_feature for local store."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         assert populated_store.has_feature(UpstreamFeatureA, check_fallback=False)
         assert not populated_store.has_feature(UpstreamFeatureB, check_fallback=False)
 
@@ -332,7 +333,7 @@ def test_write_to_dev_not_prod(
 
 def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
     """Test reading upstream dependencies."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         upstream = populated_store.read_upstream_metadata(DownstreamFeature)
 
         assert "upstream/a" in upstream
@@ -343,7 +344,7 @@ def test_read_upstream_metadata(populated_store: InMemoryMetadataStore) -> None:
 
 def test_read_upstream_metadata_missing_dep(empty_store: InMemoryMetadataStore) -> None:
     """Test that missing dependencies raise error."""
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         with pytest.raises(DependencyError, match="upstream/a"):
             empty_store.read_upstream_metadata(DownstreamFeature, allow_fallback=False)
 
@@ -369,7 +370,7 @@ def test_read_upstream_metadata_from_fallback(
 
 def test_clear_store(populated_store: InMemoryMetadataStore) -> None:
     """Test clearing store."""
-    with populated_store:
+    with populated_store.open(AccessMode.WRITE):
         assert populated_store.has_feature(UpstreamFeatureA)
 
         populated_store.clear()
@@ -419,7 +420,7 @@ def test_store_context_manager_opens_and_closes(
     # Initially closed
     assert not empty_store._is_open
 
-    with empty_store:
+    with empty_store.open(AccessMode.WRITE):
         # Should be open inside context
         assert empty_store._is_open
 

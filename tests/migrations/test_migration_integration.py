@@ -23,6 +23,7 @@ from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
+from metaxy.metadata_store.types import AccessMode
 from metaxy.migrations import MigrationExecutor, detect_migration
 from metaxy.models.feature import FeatureGraph
 
@@ -195,7 +196,7 @@ def test_basic_migration_flow(
         FeatureKey(["test_integration", "simple"])
     ]
 
-    with simple_graph_v2.use(), store_v2:
+    with simple_graph_v2.use(), store_v2.open(AccessMode.WRITE):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
         # This compares latest snapshot in store (v1) with active graph (v2)
         migration = detect_migration(
@@ -498,7 +499,10 @@ def test_migration_dry_run(
 
         store_v1.record_feature_graph_snapshot()
 
-        # Get initial data
+    # Get initial data (outside context manager to ensure it's available later)
+    # Initialize to satisfy type checker - will be assigned before use
+    initial_data = pl.DataFrame()  # Placeholder
+    with store_v1:
         initial_data = collect_to_polars(
             store_v1.read_metadata(DownstreamV1, current_only=False)
         )

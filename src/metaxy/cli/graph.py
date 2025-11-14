@@ -52,13 +52,14 @@ def push(
         abc123def456...
     """
     from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.types import AccessMode
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
 
     metadata_store = context.get_store(store)
 
-    with metadata_store:
+    with metadata_store.open(AccessMode.WRITE):
         result = metadata_store.record_feature_graph_snapshot()
 
         # Scenario 1: New snapshot (computational changes)
@@ -486,25 +487,27 @@ def render(
     if render_config.project is None and context.project is not None:
         render_config.project = context.project
 
-    # Validate feature exists if specified
-    if render_config.feature is not None:
-        focus_key = render_config.get_feature_key()
-        graph = context.graph
-        if focus_key not in graph.features_by_key:
-            console.print(
-                f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
-            )
-            console.print("\nAvailable features:")
-            for key in sorted(
-                graph.features_by_key.keys(), key=lambda k: k.to_string()
-            ):
-                console.print(f"  • {key.to_string()}")
-            raise SystemExit(1)
-
     # Determine which graph to render
+    # Initialize to satisfy type checker - will be assigned in all code paths
+    graph = FeatureGraph.get_active()  # Default initialization
+
     if snapshot is None:
         # Use current graph from code
         graph = FeatureGraph.get_active()
+
+        # Validate feature exists if specified
+        if render_config.feature is not None:
+            focus_key = render_config.get_feature_key()
+            if focus_key not in graph.features_by_key:
+                console.print(
+                    f"[red]Error:[/red] Feature '{render_config.feature}' not found in graph"
+                )
+                console.print("\nAvailable features:")
+                for key in sorted(
+                    graph.features_by_key.keys(), key=lambda k: k.to_string()
+                ):
+                    console.print(f"  • {key.to_string()}")
+                raise SystemExit(1)
 
         if len(graph.features_by_key) == 0:
             console.print(
@@ -544,20 +547,23 @@ def render(
             # Reconstruct graph from snapshot
             try:
                 graph = FeatureGraph.from_snapshot(snapshot_data)
-                console.print(
-                    f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
-                )
             except ImportError as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
                 console.print(
                     "[yellow]Hint:[/yellow] Feature classes may have been moved or deleted."
                 )
-                raise SystemExit(1)
+                raise SystemExit(1) from e
             except Exception as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
-                raise SystemExit(1)
+                raise SystemExit(1) from e
+
+            console.print(
+                f"[green]✓[/green] Loaded {len(graph.features_by_key)} features from snapshot {snapshot}"
+            )
 
     # Instantiate renderer based on format and type
+    # (graph is guaranteed to be assigned by this point - either from get_active() or from_snapshot())
+    assert "graph" in locals(), "graph must be assigned"
     if format == "terminal":
         if type == "graph":
             renderer = TerminalRenderer(graph, render_config)

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
+from types import TracebackType
 from typing import Any, Protocol
 
 import narwhals as nw
 import polars as pl
 from typing_extensions import Self
 
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.types import FeatureKey
 
 
@@ -38,10 +41,20 @@ class MetadataStoreProtocol(Protocol):
         """Read metadata from this store only (no fallback)."""
         ...
 
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open store connection with specified access mode."""
+        ...
+
     def __enter__(self) -> Self:
         """Enter the context manager."""
-        return self
+        ...
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
         """Exit the context manager."""
         ...

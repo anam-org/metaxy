@@ -240,12 +240,11 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
         with store:
             store.write_metadata(feature, payload)
             result = collect_to_polars(store.read_metadata(feature))
-
-        actual = result.sort("sample_id").select(
-            ["sample_id", "metaxy_provenance_by_field"]
-        )
-        expected = payload.sort("sample_id")
-        assert_frame_equal(actual, expected)
+            actual = result.sort("sample_id").select(
+                ["sample_id", "metaxy_provenance_by_field"]
+            )
+            expected = payload.sort("sample_id")
+            assert_frame_equal(actual, expected)
 
         assert _test_recorded_commands[:2] == ["INSTALL ducklake;", "LOAD ducklake;"]
         assert any(

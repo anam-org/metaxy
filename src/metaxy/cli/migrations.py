@@ -7,6 +7,7 @@ from typing import Annotated
 import cyclopts
 
 from metaxy.cli.console import console, data_console, error_console
+from metaxy.metadata_store.types import AccessMode
 
 # Migrations subcommand app
 app = cyclopts.App(
@@ -85,7 +86,7 @@ def generate(
     migrations_dir = Path(config.migrations_dir)
     project = context.get_required_project()  # This command needs a specific project
 
-    with metadata_store:
+    with metadata_store.open(AccessMode.WRITE):
         # Detect migration and write YAML
         migration = detect_migration(
             metadata_store,
@@ -176,7 +177,7 @@ def apply(
     metadata_store = context.get_store(store)
     migrations_dir = Path(".metaxy/migrations")
 
-    with metadata_store:
+    with metadata_store.open(AccessMode.WRITE):
         storage = SystemTableStorage(metadata_store)
 
         # Build migration chain
@@ -310,7 +311,7 @@ def status():
 
     # Get context and project from config
     project = context.get_required_project()  # This command needs a specific project
-    metadata_store = context.get_store(None)
+    metadata_store = context.get_store()
     migrations_dir = Path(".metaxy/migrations")
 
     with metadata_store:

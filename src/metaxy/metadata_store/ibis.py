@@ -7,18 +7,20 @@ Supports any SQL database that Ibis supports:
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 import polars as pl
+from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
 )
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
@@ -234,25 +236,56 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return self.ibis_conn
 
-    def open(self) -> None:
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
         """Open connection to database via Ibis.
 
         Subclasses should override this to add backend-specific initialization
-        (e.g., loading extensions) and should call super().open() first.
+        (e.g., loading extensions) and must call this method via super().open(mode).
 
-        If auto_create_tables is enabled, creates system tables.
+        Args:
+            mode: Access mode. Subclasses may use this to set backend-specific connection
+                parameters (e.g., `read_only` for DuckDB).
+
+        Yields:
+            Self: The store instance with connection open
         """
-        if self.connection_string:
-            # Use connection string
-            self._conn = self._ibis.connect(self.connection_string)
-        else:
-            # Use backend + params
-            # Get backend-specific connect function
-            assert self.backend is not None, (
-                "backend must be set if connection_string is None"
-            )
-            backend_module = getattr(self._ibis, self.backend)
-            self._conn = backend_module.connect(**self.connection_params)
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
+
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                # Setup: Connect to database
+                if self.connection_string:
+                    # Use connection string
+                    self._conn = self._ibis.connect(self.connection_string)
+                else:
+                    # Use backend + params
+                    # Get backend-specific connect function
+                    assert self.backend is not None, (
+                        "backend must be set if connection_string is None"
+                    )
+                    backend_module = getattr(self._ibis, self.backend)
+                    self._conn = backend_module.connect(**self.connection_params)
+
+                # Mark store as open and validate
+                self._is_open = True
+                self._validate_after_open()
+
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                # Teardown: Close connection
+                if self._conn is not None:
+                    # Ibis connections may not have explicit close method
+                    # but setting to None releases resources
+                    self._conn = None
+                self._is_open = False
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -284,13 +317,6 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
 
-    def close(self) -> None:
-        """Close the Ibis connection."""
-        if self._conn is not None:
-            # Ibis connections may not have explicit close method
-            # but setting to None releases resources
-            self._conn = None
-
     def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
         """Convert table name back to feature key."""
         return FeatureKey(table_name.split("__"))
@@ -321,6 +347,18 @@ class IbisMetadataStore(MetadataStore, ABC):
             if not isinstance(e, ibis.common.exceptions.TableNotFound):
                 raise
             if self.auto_create_tables:
+                # Warn about auto-create (first time only)
+                if self._should_warn_auto_create_tables:
+                    import warnings
+
+                    warnings.warn(
+                        f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
+                        "Do not use in production! "
+                        "Use proper database migration tools like Alembic for production deployments.",
+                        UserWarning,
+                        stacklevel=4,
+                    )
+
                 # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
                 # No separate insert needed - the data from df is already written
                 self.conn.create_table(table_name, obj=df)

@@ -6,10 +6,7 @@ from metaxy.entrypoints import (
     load_module_entrypoint,
     load_package_entrypoints,
 )
-from metaxy.metadata_store import (
-    InMemoryMetadataStore,
-    MetadataStore,
-)
+from metaxy.metadata_store import AccessMode, InMemoryMetadataStore, MetadataStore
 from metaxy.migrations import (
     BaseOperation,
     DataVersionReconciliation,
@@ -118,4 +115,5 @@ __all__ = [
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",
+    "AccessMode",
 ]
