@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 import narwhals as nw
 import polars as pl
+from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.types import HashAlgorithm
@@ -167,33 +169,51 @@ class LanceDBMetadataStore(MetadataStore):
             "LanceDBMetadataStore does not support native field provenance calculations"
         )
 
-    def open(self) -> None:
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
         """Open LanceDB connection.
 
         For local filesystem paths, creates the directory if it doesn't exist.
         For remote URIs (S3, LanceDB Cloud, etc.), connects directly.
         Tables are created on-demand when features are first written.
 
+        Args:
+            mode: Access mode (READ or WRITE). Accepted for consistency but not used
+                by LanceDB (LanceDB handles concurrent access internally).
+
+        Yields:
+            Self: The store instance
+
         Raises:
             ImportError: If lancedb package is not installed
             ConnectionError: If remote connection fails (e.g., invalid credentials)
         """
-        import lancedb
+        # Increment context depth to support nested contexts
+        self._context_depth += 1
 
-        # Only create directory for local filesystem paths
-        # Remote URIs (s3://, db://, http://, https://, gs://, etc.) are handled by LanceDB
-        if self._is_local_path(self.uri):
-            Path(self.uri).mkdir(parents=True, exist_ok=True)
+        try:
+            # Only perform actual open on first entry
+            if self._context_depth == 1:
+                import lancedb
 
-        self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
+                # Only create directory for local filesystem paths
+                # Remote URIs (s3://, db://, http://, https://, gs://, etc.) are handled by LanceDB
+                if self._is_local_path(self.uri):
+                    Path(self.uri).mkdir(parents=True, exist_ok=True)
 
-    def close(self) -> None:
-        """Close LanceDB connection.
+                self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
+                self._is_open = True
+                self._validate_after_open()
 
-        Releases resources by setting connection to None.
-        Safe to call multiple times (idempotent).
-        """
-        self._conn = None
+            yield self
+        finally:
+            # Decrement context depth
+            self._context_depth -= 1
+
+            # Only perform actual close on last exit
+            if self._context_depth == 0:
+                self._conn = None
+                self._is_open = False
 
     @property
     def conn(self) -> Any:
@@ -377,11 +397,17 @@ class LanceDBMetadataStore(MetadataStore):
             return []
         names = self._conn.table_names()  # type: ignore[attr-defined]
 
+        # System table prefix in table name format (with underscores)
+        from metaxy.metadata_store.system import METAXY_SYSTEM_KEY_PREFIX
+
+        system_prefix = METAXY_SYSTEM_KEY_PREFIX.replace("-", "_") + "__"
+
         features = []
         for name in names:
-            feature_key = FeatureKey(name.split("__"))
-            # Skip system tables
-            if not self._is_system_table(feature_key):
+            # Skip system tables by checking table name prefix directly
+            # (avoids issues with hyphen-to-underscore conversion)
+            if not name.startswith(system_prefix):
+                feature_key = FeatureKey(name.split("__"))
                 features.append(feature_key)
 
         return sorted(features)
