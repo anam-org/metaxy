@@ -27,9 +27,11 @@ from polars.datatypes import DataType as PolarsDataType
 from polars.datatypes import DataTypeClass as PolarsDataTypeClass
 from psycopg import Error as _PsycopgError
 from psycopg.cursor import Cursor as PsycopgCursor
+from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
 from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 from metaxy.models.types import CoercibleToFeatureKey
 from metaxy.versioning.flat_engine import IbisFlatVersioningEngine
@@ -274,33 +276,49 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         return hash_functions
 
-    def open(self) -> None:
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
         """Open connection to PostgreSQL and perform capability checks.
+
+        Args:
+            mode: Access mode (READ or WRITE). Defaults to READ.
+
+        Yields:
+            Self: The store instance with connection open
 
         Raises:
             ImportError: If psycopg driver not installed.
             Various database errors: If connection fails.
         """
-        super().open()
-        # Reset pgcrypto check for the new connection
-        self._pgcrypto_extension_checked = False
-        import sys
+        # Call parent context manager to establish connection
+        with super().open(mode):
+            try:
+                # Reset pgcrypto check for the new connection
+                self._pgcrypto_extension_checked = False
+                import sys
 
-        if not self._has_native_struct_support():
-            self._struct_compat_mode = True
-            message = (
-                "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. "
-                "Falling back to JSON serialization compatibility mode. !!!"
-            )
-            print(message, file=sys.stderr)
-            logger.warning(
-                message.replace("!!! Metaxy WARNING: ", "").replace("!!!", "")
-            )
-        else:
-            self._struct_compat_mode = False
-            message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
-            print(message, file=sys.stderr)
-            logger.info(message.replace("!!! Metaxy INFO: ", "").replace("!!!", ""))
+                if not self._has_native_struct_support():
+                    self._struct_compat_mode = True
+                    message = (
+                        "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. "
+                        "Falling back to JSON serialization compatibility mode. !!!"
+                    )
+                    print(message, file=sys.stderr)
+                    logger.warning(
+                        message.replace("!!! Metaxy WARNING: ", "").replace("!!!", "")
+                    )
+                else:
+                    self._struct_compat_mode = False
+                    message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
+                    print(message, file=sys.stderr)
+                    logger.info(
+                        message.replace("!!! Metaxy INFO: ", "").replace("!!!", "")
+                    )
+
+                yield self
+            finally:
+                # Cleanup is handled by parent's finally block
+                pass
 
     def _ensure_pgcrypto_ready_for_native_provenance(self) -> None:
         """Enable pgcrypto before running native SHA256 provenance tracking.
@@ -604,12 +622,12 @@ class PostgresMetadataStore(IbisMetadataStore):
         Atomically create system tables using `CREATE TABLE IF NOT EXISTS`.
         Uses raw SQL to avoid Ibis limitations and ensure proper schema generation.
         """
-        from metaxy.metadata_store.system_tables import (
+        from metaxy.metadata_store.system import (
+            EVENTS_KEY,
             FEATURE_VERSIONS_KEY,
             FEATURE_VERSIONS_SCHEMA,
-            MIGRATION_EVENTS_KEY,
-            MIGRATION_EVENTS_SCHEMA,
         )
+        from metaxy.metadata_store.system.events import EVENTS_SCHEMA
 
         ddl_fv = self._create_table_ddl(
             FEATURE_VERSIONS_KEY.table_name,
@@ -618,8 +636,8 @@ class PostgresMetadataStore(IbisMetadataStore):
         self._execute_ddl(ddl_fv)
 
         ddl_me = self._create_table_ddl(
-            MIGRATION_EVENTS_KEY.table_name,
-            cast(SchemaMapping, MIGRATION_EVENTS_SCHEMA),
+            EVENTS_KEY.table_name,
+            cast(SchemaMapping, EVENTS_SCHEMA),
         )
         self._execute_ddl(ddl_me)
 
