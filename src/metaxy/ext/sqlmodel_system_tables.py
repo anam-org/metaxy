@@ -1,7 +1,7 @@
 """SQLModel definitions for metaxy system tables.
 
 This module provides SQLModel table classes that extend the Pydantic models
-from system_tables.py with SQLAlchemy-specific configurations. These are used
+from metaxy.metadata_store.system with SQLAlchemy-specific configurations. These are used
 primarily for Alembic migrations when the SQLModel integration is enabled.
 
 The actual data flow remains unchanged (using Polars DataFrames).
@@ -148,6 +148,6 @@ def get_system_metadata():
         # Use with Alembic target_metadata
         ```
     """
-    # SQLModel.metadata is a class variable that contains all registered tables
-    # The tables are automatically registered when the class is defined with table=True
+    # All tables are automatically registered in SQLModel.metadata
+    # when their classes are defined with table=True
     return SQLModel.metadata

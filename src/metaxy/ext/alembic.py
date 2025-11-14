@@ -63,9 +63,7 @@ def include_metaxy_tables(target_metadata: MetaData) -> MetaData:
         target_metadata = include_metaxy_tables(metadata)
         ```
     """
-    from metaxy.ext.sqlmodel_system_tables import get_system_metadata
-
-    metaxy_metadata = get_system_metadata()
+    metaxy_metadata = get_metaxy_metadata()
 
     # Copy tables from metaxy metadata to target metadata
     for table_name, table in metaxy_metadata.tables.items():

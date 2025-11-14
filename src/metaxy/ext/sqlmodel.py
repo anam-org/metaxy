@@ -10,6 +10,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
+from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
@@ -82,8 +83,8 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
     """
 
     def __new__(
-        mcs: type[Any],
-        name: str,
+        cls,
+        cls_name: str,
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
@@ -94,7 +95,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         """Create a new SQLModel + Metaxy Feature class.
 
         Args:
-            name: Class name
+            cls_name: Name of the class being created
             bases: Base classes
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
@@ -103,9 +104,10 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
-            New class that is both a SQLModel table and Metaxy feature
+            New class that is both a SQLModel table and a Metaxy feature
         """
-        # spec is already in kwargs, no need to extract again
+        # If this is a concrete table (table=True) with a spec
+        config = MetaxyConfig.get()
 
         if kwargs.get("table") and spec is not None:
             # Prevent user-defined fields from shadowing system-managed columns
@@ -132,22 +134,12 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                     f"Reserved columns: {reserved}"
                 )
 
-            # Auto-generate __tablename__ if not provided
-            # Check config to see if infer_db_table_names is enabled
-            if "__tablename__" not in namespace:
-                from metaxy.config import MetaxyConfig
-
-                # Get config (may not be set, so use default if not available)
-                try:
-                    config = MetaxyConfig.get()
-                    infer_db_table_names = config.ext.sqlmodel.infer_db_table_names
-                except Exception:
-                    # If config not available or not set, default to True
-                    infer_db_table_names = True
-
-                if infer_db_table_names:
-                    # Use table_name property which handles SQL compatibility (replaces hyphens)
-                    namespace["__tablename__"] = spec.key.table_name
+            # Automatically set __tablename__ from the feature key if not provided
+            if (
+                "__tablename__" not in namespace
+                and config.ext.sqlmodel.infer_db_table_names
+            ):
+                namespace["__tablename__"] = spec.key.table_name
 
             # Inject composite primary key if requested
             if inject_metaxy_pk:
@@ -155,19 +147,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
-        # Note: super().__new__ in metaclass context implicitly receives the metaclass
         new_class = super().__new__(
-            mcs,
-            name,  # pyright: ignore[reportCallIssue]
-            bases,
-            namespace,
-            spec=spec,
-            **kwargs,  # type: ignore[misc]
+            cls, cls_name, bases, namespace, spec=spec, **kwargs
         )
 
         # After class creation, validate id_columns are not server-defined
         if kwargs.get("table") and spec is not None:
-            mcs._validate_id_columns_not_server_defined(new_class, spec)
+            cls._validate_id_columns_not_server_defined(new_class, spec)
 
         return new_class
 
@@ -269,14 +255,19 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
 ):  # type: ignore[misc]
     """Base class for features that are also SQLModel tables.
 
-    Combines Metaxy Feature functionality with SQLModel ORM capabilities.
-    Classes inheriting from this can be used both as Metaxy features and SQLAlchemy tables.
+    Use this as a base class when you want to create Metaxy features
+    that are also SQLAlchemy/SQLModel ORM models.
 
-    Key features:
-    - Automatic table name generation from feature key
-    - Built-in Metaxy metadata columns (data_version, feature_version, etc.)
-    - Full SQLModel ORM functionality (queries, relationships, etc.)
-    - All Metaxy Feature methods (load_input, data_version, etc.)
+    This class combines:
+    - Metaxy's Feature functionality (versioning, dependency tracking)
+    - SQLModel's ORM functionality (database mapping, queries)
+
+    Note: Unlike regular Feature classes, SQLModelFeature instances are mutable
+    to support SQLModel ORM operations. Only the spec and graph class attributes
+    are used from Feature, not the instance behavior.
+
+    System-managed fields are defined as optional here and will be populated
+    by the metadata store when reading/writing data.
 
     Example:
         ```py

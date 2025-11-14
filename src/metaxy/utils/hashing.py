@@ -32,12 +32,12 @@ def truncate_hash(hash_str: str) -> str:
         truncate_hash("a" * 64)
         # 'aaaaaaaaaaaa'
 
-        ```py
         # With no truncation setting:
         truncate_hash("abc123")
         # 'abc123'
         ```
     """
+    # Get length from global setting
     length = get_hash_truncation_length()
 
     # No truncation if length is None
@@ -93,17 +93,13 @@ def ensure_hash_compatibility(hash1: str, hash2: str) -> bool:
         ensure_hash_compatibility("abc123", "abc123")
         # True
 
-        ```py
         ensure_hash_compatibility("abc123456789", "abc12345")
         # True  # Second is truncation of first
-        ```
 
-        ```py
         ensure_hash_compatibility("abc123", "def456")
         # False  # Different hashes
         ```
     """
-    # Exact match
     if hash1 == hash2:
         return True
 
