@@ -392,6 +392,7 @@ def test_prepare_upstream_applies_filters(
     prepared = engine.prepare_upstream(
         upstream=upstream,
         filters=filters,
+        hash_algorithm=HashAlgorithm.XXHASH64,
     )
 
     prepared_df = prepared.collect()

@@ -3,9 +3,9 @@
 Metaxy stores migrations alongside your repository in `.metaxy/migrations/`.
 The migration chain can mix both YAML (`.yaml`) and Python (`.py`) files.
 Each file contributes a single migration node linked through the `parent` field.
-This page explains when to reach for each format, documents the Python migration API, and links to fully worked examples under `examples/migration-examples/`.
+This page explains when to reach for each format, documents the Python migration API, and links to fully worked examples under `docs/examples/migrations/`.
 
-> **Note:** The example files double as integration tests and may intentionally demonstrate advanced techniques (dynamic imports, optional dependencies such as `boto3`/`psycopg2`, etc.).
+> **Note:** The example files are reference implementations and may intentionally demonstrate advanced techniques (dynamic imports, optional dependencies such as `boto3`/`psycopg`, etc.).
 > Treat them as educational references—you can adopt lighter-weight patterns in production.
 
 ## Choosing Between YAML and Python
@@ -59,7 +59,7 @@ The migration ID inside the file should match the filename prefix, e.g., `202501
 
 ## Example Library
 
-The `examples/migration-examples/` directory contains canonical examples for common scenarios:
+The `docs/examples/migrations/` directory contains canonical examples for common scenarios:
 
 | Example                        | File                                       | Highlights                                                                                                                      |
 | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |

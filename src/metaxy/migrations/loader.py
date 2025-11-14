@@ -307,7 +307,7 @@ def find_latest_migration(migrations_dir: Path | None = None) -> str | None:
     Raises:
         ValueError: If multiple heads detected (conflict)
     """
-    from metaxy.migrations.models import DiffMigration
+    from metaxy.migrations.models import Migration
 
     if migrations_dir is None:
         migrations_dir = Path(".metaxy/migrations")
@@ -316,14 +316,13 @@ def find_latest_migration(migrations_dir: Path | None = None) -> str | None:
         return None
 
     # Load all migrations (both YAML and Python)
-    migrations: dict[str, DiffMigration] = {}
+    migrations: dict[str, Migration] = {}
     for pattern in ["*.yaml", "*.py"]:
         for migration_file in migrations_dir.glob(pattern):
             try:
                 migration = load_migration_from_file(migration_file)
-                # Only include DiffMigration instances (which have parent chains)
-                if isinstance(migration, DiffMigration):
-                    migrations[migration.migration_id] = migration
+                # Include all Migration instances (all have parent chains via base class)
+                migrations[migration.migration_id] = migration
             except Exception:
                 # Skip files that can't be loaded
                 continue
@@ -369,7 +368,7 @@ def build_migration_chain(
     Raises:
         ValueError: If chain is invalid (cycles, orphans, multiple heads, duplicate IDs)
     """
-    from metaxy.migrations.models import DiffMigration
+    from metaxy.migrations.models import Migration
 
     if migrations_dir is None:
         migrations_dir = Path(".metaxy/migrations")
@@ -379,7 +378,7 @@ def build_migration_chain(
 
     # Load all migrations (both YAML and Python)
     # Track file paths for better error messages
-    migrations: dict[str, DiffMigration] = {}
+    migrations: dict[str, Migration] = {}
     migration_id_to_path: dict[str, Path] = {}
     migration_files = []
     for pattern in ["*.yaml", "*.py"]:
@@ -388,23 +387,20 @@ def build_migration_chain(
     for migration_file in sorted(migration_files):
         try:
             migration = load_migration_from_file(migration_file)
-            # Only include DiffMigration instances (which have parent chains)
-            if isinstance(migration, DiffMigration):
-                # Check for duplicate migration IDs across different file types
-                if migration.migration_id in migrations:
-                    existing_path = migration_id_to_path[migration.migration_id]
-                    existing_type = (
-                        "Python" if existing_path.suffix == ".py" else "YAML"
-                    )
-                    new_type = "Python" if migration_file.suffix == ".py" else "YAML"
-                    raise ValueError(
-                        f"Duplicate migration ID '{migration.migration_id}' found:\n"
-                        f"  {existing_type}: {existing_path}\n"
-                        f"  {new_type}: {migration_file}\n"
-                        f"Please ensure migration IDs are unique across all migration files."
-                    )
-                migrations[migration.migration_id] = migration
-                migration_id_to_path[migration.migration_id] = migration_file
+            # Include all Migration instances (all have parent chains via base class)
+            # Check for duplicate migration IDs across different file types
+            if migration.migration_id in migrations:
+                existing_path = migration_id_to_path[migration.migration_id]
+                existing_type = "Python" if existing_path.suffix == ".py" else "YAML"
+                new_type = "Python" if migration_file.suffix == ".py" else "YAML"
+                raise ValueError(
+                    f"Duplicate migration ID '{migration.migration_id}' found:\n"
+                    f"  {existing_type}: {existing_path}\n"
+                    f"  {new_type}: {migration_file}\n"
+                    f"Please ensure migration IDs are unique across all migration files."
+                )
+            migrations[migration.migration_id] = migration
+            migration_id_to_path[migration.migration_id] = migration_file
         except ValueError:
             # Re-raise ValueError (including duplicate ID errors)
             raise
