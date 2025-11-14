@@ -3,7 +3,7 @@
 This example demonstrates how to create a custom MetadataBackfill operation
 that can be used in DiffMigration or as a standalone migration.
 
-MetadataBackfill vs CustomMigration:
+MetadataBackfill vs PythonMigration:
 -------------------------------------
 - MetadataBackfill: Structured interface for backfill operations
   - Designed to be reusable across migrations
@@ -11,7 +11,7 @@ MetadataBackfill vs CustomMigration:
   - Focused specifically on backfilling metadata
   - Follows operation contract (execute returns row count)
 
-- CustomMigration: Complete control over entire migration
+- PythonMigration: Complete control over entire migration
   - Full flexibility for any migration logic
   - Not reusable as an operation
   - Can't be composed with other operations
@@ -33,7 +33,7 @@ When to Use MetadataBackfill:
 - Need operation-level abstraction
 - Building a library of backfill operations
 
-When to Use CustomMigration Instead:
+When to Use PythonMigration Instead:
 -------------------------------------
 - One-off migration with unique logic
 - Complex multi-step migration workflow
@@ -67,12 +67,9 @@ Option 2: Use in DiffMigration Python:
 
 from typing import TYPE_CHECKING, Any, Literal
 
-import narwhals as nw
 from pydantic import field_validator
 
 from metaxy.migrations.ops import MetadataBackfill
-from metaxy.models.feature import FeatureGraph
-from metaxy.models.types import FeatureKey
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -95,11 +92,6 @@ class S3VideoBackfillOperation(MetadataBackfill):
     - max_size_mb: Maximum file size (MB) to include
     - file_extensions: List of allowed file extensions
     """
-
-    # Required by BaseOperation
-    type: Literal["metaxy.migrations.ops.S3VideoBackfillOperation"] = (
-        "metaxy.migrations.ops.S3VideoBackfillOperation"
-    )
 
     # S3 configuration
     s3_bucket: str
@@ -174,6 +166,31 @@ class S3VideoBackfillOperation(MetadataBackfill):
 
         return v
 
+    def execute_for_feature(
+        self,
+        store: "MetadataStore",
+        feature_key: str,
+        *,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
+        dry_run: bool = False,
+    ) -> int:
+        """Execute backfill for a single feature.
+
+        Args:
+            store: Metadata store
+            feature_key: Feature key string
+            snapshot_version: Target snapshot version
+            from_snapshot_version: Source snapshot (optional)
+            dry_run: If True, don't write to store
+
+        Returns:
+            Number of rows affected
+        """
+        # Example stub implementation
+        # In a real implementation, you would load from S3, filter, join, and write
+        return 0
+
     def execute(
         self,
         store: "MetadataStore",
@@ -217,8 +234,18 @@ class S3VideoBackfillOperation(MetadataBackfill):
             return len(external_df)
 
         # Step 3: Get field_provenance from Metaxy
+        # Note: In the real implementation, feature_key would be passed as a parameter
+        # graph = FeatureGraph.get_active()
+        # feature_key_obj = FeatureKey(feature_key)  # feature_key from execute_for_feature
+        # feature_cls = graph.features_by_key[feature_key_obj]
+
+        # For this example, just return 0
+        return 0
+
+        # Remaining code is for illustration only:
+        """
         graph = FeatureGraph.get_active()
-        feature_key_obj = FeatureKey(self.feature_key)
+        feature_key_obj = FeatureKey(feature_key)
         feature_cls = graph.features_by_key[feature_key_obj]
 
         # Get samples list
@@ -250,6 +277,7 @@ class S3VideoBackfillOperation(MetadataBackfill):
             return len(df_to_write)
 
         return 0
+        """
 
     def _list_s3_objects(self) -> list[dict[str, Any]]:
         """List objects in S3 bucket matching criteria.
@@ -358,10 +386,6 @@ class DatabaseTableBackfillOperation(MetadataBackfill):
     supported by SQLAlchemy.
     """
 
-    type: Literal["metaxy.migrations.ops.DatabaseTableBackfillOperation"] = (
-        "metaxy.migrations.ops.DatabaseTableBackfillOperation"
-    )
-
     # Database configuration
     database_url: str  # SQLAlchemy connection string
     table_name: str  # Source table
@@ -373,6 +397,30 @@ class DatabaseTableBackfillOperation(MetadataBackfill):
 
     # Processing options
     batch_size: int = 1000
+
+    def execute_for_feature(
+        self,
+        store: "MetadataStore",
+        feature_key: str,
+        *,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
+        dry_run: bool = False,
+    ) -> int:
+        """Execute backfill for a single feature.
+
+        Args:
+            store: Metadata store
+            feature_key: Feature key string
+            snapshot_version: Target snapshot version
+            from_snapshot_version: Source snapshot (optional)
+            dry_run: If True, don't write to store
+
+        Returns:
+            Number of rows affected
+        """
+        # Example stub implementation
+        return 0
 
     def execute(
         self,
@@ -415,10 +463,6 @@ class RestAPIBackfillOperation(MetadataBackfill):
     Generic REST API backfill operation with pagination support.
     """
 
-    type: Literal["metaxy.migrations.ops.RestAPIBackfillOperation"] = (
-        "metaxy.migrations.ops.RestAPIBackfillOperation"
-    )
-
     # API configuration
     api_url: str  # Base API URL
     endpoint: str  # API endpoint path
@@ -436,6 +480,30 @@ class RestAPIBackfillOperation(MetadataBackfill):
     # Response parsing
     response_data_key: str = "data"  # Key containing data in response
     sample_uid_field: str = "id"  # Field to use as sample_uid
+
+    def execute_for_feature(
+        self,
+        store: "MetadataStore",
+        feature_key: str,
+        *,
+        snapshot_version: str,
+        from_snapshot_version: str | None = None,
+        dry_run: bool = False,
+    ) -> int:
+        """Execute backfill for a single feature.
+
+        Args:
+            store: Metadata store
+            feature_key: Feature key string
+            snapshot_version: Target snapshot version
+            from_snapshot_version: Source snapshot (optional)
+            dry_run: If True, don't write to store
+
+        Returns:
+            Number of rows affected
+        """
+        # Example stub implementation
+        return 0
 
     def execute(
         self,
@@ -488,7 +556,7 @@ class RestAPIBackfillOperation(MetadataBackfill):
 # - Need to combine with DataVersionReconciliation
 # - Want to use in multiple migrations
 
-# When to Use CustomMigration Instead:
+# When to Use PythonMigration Instead:
 # -------------------------------------
 # - One-off migration with unique logic
 # - Complex multi-step workflow
@@ -496,7 +564,7 @@ class RestAPIBackfillOperation(MetadataBackfill):
 # - Full control over migration lifecycle
 # - Not reusable as an operation
 
-# MetadataBackfill vs CustomMigration:
+# MetadataBackfill vs PythonMigration:
 # -------------------------------------
 # MetadataBackfill:
 #   + Reusable operation
@@ -506,7 +574,7 @@ class RestAPIBackfillOperation(MetadataBackfill):
 #   - Less flexible (operation contract)
 #   - Focused on backfills only
 
-# CustomMigration:
+# PythonMigration:
 #   + Complete flexibility
 #   + Any migration logic
 #   + Full lifecycle control
