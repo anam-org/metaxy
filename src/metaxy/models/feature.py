@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from pydantic import AwareDatetime
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
@@ -893,6 +894,15 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+
+    # System-managed columns (optional - populated by metadata store)
+    metaxy_provenance_by_field: dict[str, str] | None = None
+    metaxy_provenance: str | None = None
+    metaxy_feature_version: str | None = None
+    metaxy_snapshot_version: str | None = None
+    metaxy_created_at: AwareDatetime | None = None  # Timezone-aware datetime in UTC
+    metaxy_data_version_by_field: dict[str, str] | None = None
+    metaxy_data_version: str | None = None
 
     @classmethod
     def spec(cls) -> FeatureSpec:  # type: ignore[override]

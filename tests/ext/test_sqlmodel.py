@@ -750,8 +750,9 @@ def test_sqlmodel_feature_with_duckdb_store(
             for v in result_df["metaxy_feature_version"].to_list()
         )
 
-        # Snapshot result
-        assert result_df.to_dicts() == snapshot
+        # Snapshot result (exclude timestamp which changes on each run)
+        result_without_timestamp = result_df.drop("metaxy_created_at")
+        assert result_without_timestamp.to_dicts() == snapshot
 
 
 # Custom ID Columns Tests
@@ -942,10 +943,14 @@ def test_sqlmodel_duckdb_custom_id_columns(
         )
         assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
 
-        # Snapshot results
+        # Snapshot results (exclude timestamps which change on each run)
         assert {
-            "parent": parent_result_df.sort(["user_id", "session_id"]).to_dicts(),
-            "child": child_result_df.sort(["user_id", "session_id"]).to_dicts(),
+            "parent": parent_result_df.drop("metaxy_created_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
+            "child": child_result_df.drop("metaxy_created_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
         } == snapshot
 
 
@@ -1406,30 +1411,36 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     - System column names are reserved and protected
     """
 
-    # Attempting to create a feature with system column names should fail
-    # This is actually GOOD behavior - it prevents accidental overrides
-    try:
+    # Attempting to create a feature with system-managed column names (like metaxy_feature_version)
+    # should fail - but user field names without the metaxy_ prefix are allowed
+    # SQLModel will warn if they shadow parent attributes
 
-        class BadFeature(
+    import warnings
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        class FeatureWithShadowing(
             SQLModelFeature,
             table=True,
             spec=SampleFeatureSpec(
-                key=FeatureKey(["bad", "feature"]),
+                key=FeatureKey(["test", "shadowing"]),
                 fields=[
                     FieldSpec(key=FieldKey(["content"]), code_version="1"),
                 ],
             ),
         ):
-            __tablename__: str = "bad_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
+            __tablename__: str = "test_shadowing"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
-            feature_version: str = Field()  # This SHOULD conflict!  # pyright: ignore[reportIncompatibleMethodOverride]
+            feature_version: str = Field()  # Shadows parent method but allowed  # pyright: ignore[reportIncompatibleMethodOverride]
 
-        # If we get here, it means SQLModel didn't protect the column
-        # which would be unexpected
-        assert False, "Expected DuplicateColumnError but feature was created"
-    except Exception as e:
-        # SQLAlchemy/SQLModel properly prevents this
-        assert "metaxy_feature_version" in str(e) or "shadows" in str(e)
+        # Should create successfully but with a warning
+        assert FeatureWithShadowing is not None
+        # Check for shadowing warning
+        shadow_warnings = [
+            warning for warning in w if "shadows" in str(warning.message)
+        ]
+        assert len(shadow_warnings) > 0, "Expected shadowing warning"
 
     # This shows proper usage: renaming regular columns that might conflict
     class UpstreamWithStatus(

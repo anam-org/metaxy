@@ -4,21 +4,18 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy.types import JSON
+from sqlalchemy.types import JSON, DateTime
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
-    METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_VERSION,
+    METAXY_CREATED_AT,
     METAXY_PROVENANCE,
-    METAXY_PROVENANCE_BY_FIELD,
-    METAXY_SNAPSHOT_VERSION,
-    SYSTEM_COLUMN_PREFIX,
 )
 from metaxy.models.feature import BaseFeature, MetaxyMeta
 from metaxy.models.feature_spec import FeatureSpecWithIDColumns
@@ -26,14 +23,7 @@ from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 if TYPE_CHECKING:
     pass
 
-RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
-    set(ALL_SYSTEM_COLUMNS)
-    | {
-        name.removeprefix(SYSTEM_COLUMN_PREFIX)
-        for name in ALL_SYSTEM_COLUMNS
-        if name.startswith(SYSTEM_COLUMN_PREFIX)
-    }
-)
+RESERVED_SQLMODEL_FIELD_NAMES = frozenset(ALL_SYSTEM_COLUMNS)
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -263,35 +253,27 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         },
     )
 
-    metaxy_provenance_by_field: str | None = Field(
+    metaxy_provenance_by_field: dict[str, str] | None = Field(  # type: ignore[assignment]
+        default=None, sa_type=JSON, nullable=False
+    )
+
+    metaxy_feature_version: str | None = Field(default=None, nullable=False)
+
+    metaxy_feature_spec_version: str | None = Field(default=None, nullable=False)
+
+    metaxy_snapshot_version: str | None = Field(default=None, nullable=False)
+
+    metaxy_created_at: datetime | None = Field(
         default=None,
-        sa_type=JSON,
+        sa_type=DateTime(timezone=True),  # Timezone-aware datetime
         sa_column_kwargs={
-            "name": METAXY_PROVENANCE_BY_FIELD,
-            "nullable": True,
+            "name": METAXY_CREATED_AT,
+            "nullable": False,
         },
     )
 
-    metaxy_feature_version: str | None = Field(
-        default=None,
-        sa_column_kwargs={
-            "name": METAXY_FEATURE_VERSION,
-            "nullable": True,
-        },
+    metaxy_data_version_by_field: dict[str, str] | None = Field(  # type: ignore[assignment]
+        default=None, sa_type=JSON, nullable=False
     )
 
-    metaxy_feature_spec_version: str | None = Field(
-        default=None,
-        sa_column_kwargs={
-            "name": METAXY_FEATURE_SPEC_VERSION,
-            "nullable": True,
-        },
-    )
-
-    metaxy_snapshot_version: str | None = Field(
-        default=None,
-        sa_column_kwargs={
-            "name": METAXY_SNAPSHOT_VERSION,
-            "nullable": True,
-        },
-    )
+    metaxy_data_version: str | None = Field(default=None, nullable=False)
