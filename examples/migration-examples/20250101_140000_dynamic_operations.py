@@ -240,13 +240,13 @@ class FeatureSpecificMigration(PythonMigration):
         """
         # For DiffMigration with DataVersionReconciliation, we can only
         # have one operation that applies to all affected features.
-        # For feature-specific operations, you'd need to use CustomMigration
+        # For feature-specific operations, you'd need to use PythonMigration
         # and implement your own execute() logic.
 
         # This example shows the structure for documentation purposes
         return [{"type": "metaxy.migrations.ops.DataVersionReconciliation"}]
 
-    # Note: For true feature-specific operations, use CustomMigration instead
+    # Note: For true feature-specific operations, use PythonMigration instead
     # and implement execute() to iterate through features and apply different
     # operations based on your rules.
 
@@ -257,7 +257,7 @@ class FeatureSpecificMigration(PythonMigration):
 # 2. The method runs when the migration class is instantiated, so you can inspect the current graph/config
 # 3. You can inspect feature graph, read config files, check env vars
 # 4. Override get_affected_features() to filter which features are processed
-# 5. For truly feature-specific operations, use CustomMigration (see Example 2)
+# 5. For truly feature-specific operations, use PythonMigration (see Example 2)
 # 6. Dynamic operations enable A/B testing, conditional rollout, env-specific logic
 
 # When to Use Dynamic Operations:

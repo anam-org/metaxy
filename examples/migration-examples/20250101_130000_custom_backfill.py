@@ -1,4 +1,4 @@
-"""Example 2: CustomMigration with S3 backfill logic.
+"""Example 2: PythonMigration with S3 backfill logic.
 
 This example demonstrates how to implement a completely custom migration
 that loads data from an external source (S3), performs transformations,
@@ -14,7 +14,7 @@ pipeline. This is common when:
 - Integrating with external services
 - Bulk loading from data lakes
 
-CustomMigration provides complete control over:
+PythonMigration provides complete control over:
 - Loading data from any source
 - Custom transformations and filtering
 - Joining with Metaxy's calculated field_provenance
@@ -49,7 +49,7 @@ from typing import TYPE_CHECKING
 
 import narwhals as nw
 
-from metaxy.migrations.models import CustomMigration, MigrationResult
+from metaxy.migrations.models import MigrationResult, PythonMigration
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey
 
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-class S3VideoBackfillMigration(CustomMigration):
+class S3VideoBackfillMigration(PythonMigration):
     """Backfill video metadata from S3 bucket.
 
     This migration loads video files from an S3 bucket, filters by size,
@@ -146,6 +146,7 @@ class S3VideoBackfillMigration(CustomMigration):
                         status="completed",
                         features_completed=1,
                         features_failed=0,
+                        features_skipped=0,
                         affected_features=[feature_key_str],
                         errors={},
                         rows_affected=0,
@@ -211,6 +212,7 @@ class S3VideoBackfillMigration(CustomMigration):
                     status="skipped",
                     features_completed=1,
                     features_failed=0,
+                    features_skipped=0,
                     affected_features=[feature_key_str],
                     errors={},
                     rows_affected=len(filtered_df),
@@ -261,6 +263,7 @@ class S3VideoBackfillMigration(CustomMigration):
                 status="completed",
                 features_completed=1,
                 features_failed=0,
+                features_skipped=0,
                 affected_features=[feature_key_str],
                 errors={},
                 rows_affected=rows_affected,
@@ -280,6 +283,7 @@ class S3VideoBackfillMigration(CustomMigration):
                 status="failed",
                 features_completed=0,
                 features_failed=1,
+                features_skipped=0,
                 affected_features=[],
                 errors=errors,
                 rows_affected=0,
@@ -292,7 +296,7 @@ class S3VideoBackfillMigration(CustomMigration):
 
 # Key Takeaways:
 # --------------
-# 1. CustomMigration gives you full control over the migration process
+# 1. PythonMigration gives you full control over the migration process
 # 2. You can load data from any external source (S3, database, API, etc.)
 # 3. Use store.resolve_update() to get Metaxy's field_provenance
 # 4. Join external data with field_provenance before writing
@@ -301,5 +305,5 @@ class S3VideoBackfillMigration(CustomMigration):
 
 # Alternative Approaches:
 # -----------------------
-# Instead of CustomMigration, you could subclass MetadataBackfill (see Example 5)
+# Instead of PythonMigration, you could subclass MetadataBackfill (see Example 5)
 # which provides a more structured interface specifically for backfill operations.
