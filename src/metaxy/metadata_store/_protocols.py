@@ -30,7 +30,7 @@ class MetadataStoreProtocol(Protocol):
         """Write metadata for a feature."""
         ...
 
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: Frame,
