@@ -321,7 +321,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Convert table name back to feature key."""
         return FeatureKey(table_name.split("__"))
 
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: pl.DataFrame,
