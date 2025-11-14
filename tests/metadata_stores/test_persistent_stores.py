@@ -240,43 +240,6 @@ def test_has_feature_local(
         )
 
 
-def test_list_features(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
-    """Test listing features.
-
-    Args:
-        persistent_store: Store fixture (unopened)
-        test_graph: Registry with test features
-    """
-    with persistent_store as store:
-        # Empty initially
-        features = store.list_features()
-        assert len(features) == 0
-
-        # Add features
-        data_a = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-            }
-        )
-        store.write_metadata(test_features["UpstreamFeatureA"], data_a)
-
-        data_b = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"default": "h1"}],
-            }
-        )
-        store.write_metadata(test_features["UpstreamFeatureB"], data_b)
-
-        features = store.list_features()
-        assert len(features) == 2
-        feature_strs = {f.to_string() for f in features}
-        assert feature_strs == {"test_stores/upstream_a", "test_stores/upstream_b"}
-
-
 # Data Version Calculation Tests
 # NOTE: The calculate_and_write_data_versions API was removed.
 # Field provenance calculation is now handled differently in the new architecture.

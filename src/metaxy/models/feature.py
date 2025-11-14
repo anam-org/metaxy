@@ -277,6 +277,73 @@ class FeatureGraph:
             )
         return self.features_by_key[key]
 
+    def list_features(
+        self,
+        projects: list[str] | str | None = None,
+        *,
+        only_current_project: bool = True,
+    ) -> list[FeatureKey]:
+        """List all feature keys in the graph, optionally filtered by project(s).
+
+        By default, filters features by the current project (first part of feature key).
+        This prevents operations from affecting features in other projects.
+
+        Args:
+            projects: Project name(s) to filter by. Can be:
+                - None: Use current project from MetaxyConfig (if only_current_project=True)
+                - str: Single project name
+                - list[str]: Multiple project names
+            only_current_project: If True, filter by current/specified project(s).
+                If False, return all features regardless of project.
+
+        Returns:
+            List of feature keys
+
+        Example:
+            ```py
+            # Get all features for current project
+            graph = FeatureGraph.get_active()
+            features = graph.list_features()
+
+            # Get features for specific project
+            features = graph.list_features(projects="myproject")
+
+            # Get features for multiple projects
+            features = graph.list_features(projects=["project1", "project2"])
+
+            # Get all features regardless of project
+            all_features = graph.list_features(only_current_project=False)
+            ```
+        """
+        if not only_current_project:
+            # Return all features
+            return list(self.features_by_key.keys())
+
+        # Normalize projects to list
+        project_list: list[str]
+        if projects is None:
+            # Try to get from config context
+            try:
+                from metaxy.config import MetaxyConfig
+
+                config = MetaxyConfig.get()
+                project_list = [config.project]
+            except RuntimeError:
+                # Config not initialized - in tests or non-CLI usage
+                # Return all features (can't determine project)
+                return list(self.features_by_key.keys())
+        elif isinstance(projects, str):
+            project_list = [projects]
+        else:
+            project_list = projects
+
+        # Filter by project(s) using Feature.project attribute
+        return [
+            key
+            for key in self.features_by_key.keys()
+            if self.features_by_key[key].project in project_list
+        ]
+
     def get_feature_plan(self, key: FeatureKey) -> FeaturePlan:
         feature = self.feature_specs_by_key[key]
 

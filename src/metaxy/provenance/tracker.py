@@ -367,6 +367,17 @@ class ProvenanceTracker(ABC):
         version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
         current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
+
+        # Drop renamed upstream provenance columns (e.g., metaxy_provenance__raw_video)
+        # These were needed for provenance calculation but shouldn't be in final result
+        for transformer in self.feature_transformers_by_key.values():
+            renamed_prov_col = transformer.renamed_provenance_col
+            renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            if renamed_prov_col in current_columns:
+                columns_to_drop.append(renamed_prov_col)
+            if renamed_prov_by_field_col in current_columns:
+                columns_to_drop.append(renamed_prov_by_field_col)
+
         if columns_to_drop:
             df = df.drop(*columns_to_drop)
 
@@ -539,8 +550,8 @@ class ProvenanceTracker(ABC):
         if METAXY_PROVENANCE not in cols:
             raise ValueError(
                 f"{message} is missing required "
-                f"'{METAXY_PROVENANCE}' column. Root features must provide both provenance "
-                f"columns, with {METAXY_PROVENANCE} being a string representing the combined provenance of all the fields on this feature."
+                f"'{METAXY_PROVENANCE}' column. All metadata in the store must have both provenance columns. "
+                f"This column is automatically added by Metaxy when writing metadata."
             )
 
 

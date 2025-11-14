@@ -222,3 +222,98 @@ def test_migration_events_empty_payload():
 
     assert event.payload == ""
     assert event.feature_key is None
+
+
+def test_push_graph_with_changed_feature_spec():
+    """Test that pushing graph with changed feature spec works without constraint violations.
+
+    This specifically tests the case where only metadata changes in the feature spec,
+    which changes feature_spec_version but not necessarily feature_version.
+    """
+    from metaxy.config import MetaxyConfig
+    from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+    from metaxy.models.feature import Feature, FeatureGraph
+    from metaxy.models.feature_spec import FeatureSpec
+    from metaxy.models.types import FeatureKey
+
+    # Set project in config
+    config = MetaxyConfig(project="test_project")
+    MetaxyConfig.set(config)
+
+    try:
+        with DuckDBMetadataStore(database=":memory:") as store:
+            # Create isolated graph
+            graph = FeatureGraph()
+
+            with graph.use():
+                # Define feature with metadata v1
+                class TestFeature(
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test_feature"]),
+                        fields=[],
+                        id_columns=["sample_uid"],
+                        metadata={"owner": "team_a", "version": 1},
+                    ),
+                ):
+                    pass
+
+                # Push graph first time
+                result1 = store.record_feature_graph_snapshot()
+
+                # Get the snapshot version
+                snapshot_v1 = graph.snapshot_version
+                assert not result1.already_recorded  # New snapshot
+                assert result1.snapshot_version == snapshot_v1
+
+            # Create new graph with changed metadata
+            graph2 = FeatureGraph()
+
+            with graph2.use():
+                # Same feature but different metadata (changes feature_spec_version)
+                class TestFeature(  # type: ignore
+                    Feature,
+                    spec=FeatureSpec(
+                        key=FeatureKey(["test_feature"]),
+                        fields=[],
+                        id_columns=["sample_uid"],
+                        metadata={"owner": "team_b", "version": 2},  # Changed metadata
+                    ),
+                ):
+                    pass
+
+                # Push graph second time - should work without constraint violation
+                result2 = store.record_feature_graph_snapshot()
+
+                snapshot_v2 = graph2.snapshot_version
+
+                # Snapshot version is same (metadata change doesn't affect feature_version)
+                assert snapshot_v1 == snapshot_v2
+                assert result2.snapshot_version == snapshot_v2
+                # Should be metadata-only change since same fields/deps
+                assert result2.already_recorded  # Snapshot already exists
+                assert result2.metadata_changed  # But metadata changed
+                assert "test_feature" in result2.features_with_spec_changes
+
+                # Query feature_versions table to verify both specs exist
+                from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+
+                versions_df = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                assert versions_df is not None
+
+                versions = versions_df.collect()
+
+                # Should have two rows (one for each feature_spec_version)
+                test_feature_versions = versions.filter(
+                    versions["feature_key"] == "test_feature"
+                )
+                assert len(test_feature_versions) == 2
+
+                # Verify different feature_spec_versions
+                spec_versions = set(
+                    test_feature_versions["metaxy_feature_spec_version"].to_list()
+                )
+                assert len(spec_versions) == 2  # Two different spec versions
+    finally:
+        # Reset config
+        MetaxyConfig.reset()

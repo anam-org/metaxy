@@ -437,21 +437,33 @@ def test_migration_idempotency(
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
 
-        # Execute first time - will fail on upstream (root feature) but succeed on downstream
+        # Execute first time - will fail on upstream (root feature) and skip downstream due to dependency
         result1 = executor.execute(
             migration, store_v2, project="default", dry_run=False
         )
         assert result1.status == "failed"  # Upstream will fail
-        assert result1.features_completed == 1  # Downstream should complete
-        assert result1.features_failed == 1  # Upstream should fail
+        assert (
+            result1.features_completed == 0
+        )  # Downstream skipped due to failed upstream
+        assert result1.features_failed == 1  # Only upstream failed
+        assert (
+            result1.features_skipped == 1
+        )  # Downstream skipped due to failed dependency
+        assert "test_integration/upstream" in result1.errors
+        assert "test_integration/downstream" in result1.errors
+        assert (
+            "Skipped due to failed dependencies"
+            in result1.errors["test_integration/downstream"]
+        )
 
-        # Execute second time (should skip already-completed downstream)
+        # Execute second time - same result since upstream still fails
         result2 = executor.execute(
             migration, store_v2, project="default", dry_run=False
         )
         assert result2.status == "failed"  # Still fails on upstream
-        assert result2.features_completed == 1  # Downstream was skipped (already done)
-        assert result2.features_failed == 1  # Upstream still fails
+        assert result2.features_completed == 0  # Downstream still skipped
+        assert result2.features_failed == 1  # Only upstream failed
+        assert result2.features_skipped == 1  # Downstream still skipped
 
 
 def test_migration_dry_run(
@@ -533,7 +545,11 @@ def test_migration_dry_run(
         result = executor.execute(migration, store_v2, project="default", dry_run=True)
 
         assert result.status == "skipped"
-        assert result.rows_affected > 0  # Would affect rows for downstream, but skipped
+        # In dry-run mode with failing root feature, no rows would be affected
+        # (upstream fails, downstream skipped due to dependency)
+        assert result.rows_affected == 0
+        assert result.features_failed == 1  # Upstream fails even in dry-run
+        assert result.features_skipped == 1  # Downstream skipped
 
         # Verify data unchanged
         final_data = collect_to_polars(

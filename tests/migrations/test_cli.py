@@ -276,5 +276,5 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
         result = metaxy_project.run_cli("migrations", "list", check=False)
 
         assert result.returncode == 0  # Doesn't exit with error, just prints error
-        assert "Invalid migration chain" in result.stderr
+        assert "Invalid migration" in result.stderr
         assert "Multiple migration heads" in result.stderr

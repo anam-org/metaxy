@@ -133,6 +133,7 @@ class SystemTableStorage:
         """
         record = event.to_polars()
         with self.store:
+            # Write directly to implementation - system tables don't need feature validation
             self.store._write_metadata_impl(EVENTS_KEY, record)
 
     def get_migration_events(
@@ -269,6 +270,9 @@ class SystemTableStorage:
     ) -> dict[str, str]:
         """Get features that failed in a migration with error messages.
 
+        Only returns features whose LATEST event is a failure. If a feature
+        failed and then succeeded on retry, it won't be included here.
+
         Args:
             migration_id: Migration ID
             project: Optional project name to filter by. If None, returns features for all projects.
@@ -278,8 +282,14 @@ class SystemTableStorage:
         """
         events_df = self.get_migration_events(migration_id, project=project)
 
-        # Filter and extract failed features
-        events_df = (
+        if events_df.height == 0:
+            return {}
+
+        # Get completed features (these succeeded, even if they failed before)
+        completed_features = set(self.get_completed_features(migration_id, project))
+
+        # Filter for failed events, excluding features that later completed
+        failed_events = (
             events_df.filter(
                 pl.col(COL_EVENT_TYPE) == EventType.FEATURE_MIGRATION_FAILED.value
             )
@@ -288,14 +298,20 @@ class SystemTableStorage:
                 .str.json_path_match("$.error_message")
                 .alias("error_message")
             )
+            # Get latest failed event per feature
+            .sort(COL_TIMESTAMP, descending=True)
+            .group_by(COL_FEATURE_KEY, maintain_order=True)
+            .agg([pl.col("error_message").first().alias("error_message")])
+            # Exclude features that eventually completed
+            .filter(~pl.col(COL_FEATURE_KEY).is_in(list(completed_features)))
             .select([COL_FEATURE_KEY, "error_message"])
         )
 
         # Convert to dict
         return dict(
             zip(
-                events_df[COL_FEATURE_KEY].to_list(),
-                events_df["error_message"].to_list(),
+                failed_events[COL_FEATURE_KEY].to_list(),
+                failed_events["error_message"].to_list(),
             )
         )
 
@@ -508,7 +524,7 @@ class SystemTableStorage:
         ).select(
             [
                 COL_EXECUTION_ID,
-                pl.col(COL_PROJECT).fill_null("unknown"),
+                COL_PROJECT,
                 pl.col(COL_TIMESTAMP).alias("completed_at"),
                 pl.col("features_count").fill_null(0),
                 pl.col("rows_affected").fill_null(0).cast(pl.Int64),

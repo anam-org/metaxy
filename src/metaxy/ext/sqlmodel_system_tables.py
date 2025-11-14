@@ -46,10 +46,11 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
     __tablename__: str = FEATURE_VERSIONS_KEY.table_name  # pyright: ignore[reportIncompatibleVariableOverride]
 
     # Override fields that need SQLAlchemy-specific configuration (primary keys, indexes, column names)
+    # Composite primary key: (project, feature_key, feature_spec_version)
     project: str = Field(primary_key=True, index=True)
     feature_key: str = Field(primary_key=True)
     metaxy_snapshot_version: str = Field(
-        primary_key=True,
+        index=True,
         sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
     )
     metaxy_feature_version: str = Field(
@@ -57,7 +58,7 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
         sa_column_kwargs={"name": METAXY_FEATURE_VERSION},
     )
     metaxy_feature_spec_version: str = Field(
-        index=True,
+        primary_key=True,
         sa_column_kwargs={"name": METAXY_FEATURE_SPEC_VERSION},
     )
     metaxy_feature_tracking_version: str = Field(

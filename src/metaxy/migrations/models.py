@@ -7,7 +7,6 @@ Refactored migration system using:
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 import pydantic
@@ -315,13 +314,7 @@ class DiffMigration(Migration):
     ) -> "MigrationResult":
         """Execute diff-based migration.
 
-        Process:
-        1. Execute each operation in the operations list
-        2. For each operation:
-           - Check if feature already completed (resume support)
-           - Execute operation
-           - Record event
-        3. Return result
+        Delegates to MigrationExecutor for execution logic.
 
         Args:
             store: Metadata store
@@ -331,132 +324,12 @@ class DiffMigration(Migration):
         Returns:
             MigrationResult
         """
-        from metaxy.metadata_store.system import Event, SystemTableStorage
+        from metaxy.metadata_store.system import SystemTableStorage
+        from metaxy.migrations.executor import MigrationExecutor
 
         storage = SystemTableStorage(store)
-        start_time = datetime.now(timezone.utc)
-
-        if not dry_run:
-            # Write started event
-            storage.write_event(
-                Event.migration_started(project=project, migration_id=self.migration_id)
-            )
-
-        affected_features_list = []
-        errors = {}
-        rows_affected_total = 0
-
-        # Execute operations (currently only DataVersionReconciliation is supported)
-        from metaxy.migrations.ops import DataVersionReconciliation
-
-        # Get affected features (computed on-demand)
-        affected_features_to_process = self.get_affected_features(store, project)
-
-        if len(self.operations) == 1 and isinstance(
-            self.operations[0], DataVersionReconciliation
-        ):
-            # DataVersionReconciliation applies to all affected features
-            op = self.operations[0]
-
-            for feature_key_str in affected_features_to_process:
-                # Check if already completed (resume support)
-                if not dry_run and storage.is_feature_completed(
-                    self.migration_id, feature_key_str, project
-                ):
-                    affected_features_list.append(feature_key_str)
-                    continue
-
-                # Log feature started
-                if not dry_run:
-                    storage.write_event(
-                        Event.feature_started(
-                            project=project,
-                            migration_id=self.migration_id,
-                            feature_key=feature_key_str,
-                        )
-                    )
-
-                try:
-                    # Execute operation for this feature
-                    rows_affected = op.execute_for_feature(
-                        store,
-                        feature_key_str,
-                        snapshot_version=self.to_snapshot_version,
-                        from_snapshot_version=self.from_snapshot_version,
-                        dry_run=dry_run,
-                    )
-
-                    # Log feature completed
-                    if not dry_run:
-                        storage.write_event(
-                            Event.feature_completed(
-                                project=project,
-                                migration_id=self.migration_id,
-                                feature_key=feature_key_str,
-                                rows_affected=rows_affected,
-                            )
-                        )
-
-                    affected_features_list.append(feature_key_str)
-                    rows_affected_total += rows_affected
-
-                except Exception as e:
-                    error_msg = str(e)
-                    errors[feature_key_str] = error_msg
-
-                    # Log feature failed
-                    if not dry_run:
-                        storage.write_event(
-                            Event.feature_failed(
-                                project=project,
-                                migration_id=self.migration_id,
-                                feature_key=feature_key_str,
-                                error_message=error_msg,
-                            )
-                        )
-
-                    continue
-        else:
-            # Future: Support other operation types here
-            raise NotImplementedError(
-                "Only DataVersionReconciliation is currently supported"
-            )
-
-        # Determine status
-        if dry_run:
-            status = "skipped"
-        elif len(errors) == 0:
-            status = "completed"
-            if not dry_run:
-                storage.write_event(
-                    Event.migration_completed(
-                        project=project, migration_id=self.migration_id
-                    )
-                )
-        else:
-            status = "failed"
-            if not dry_run:
-                storage.write_event(
-                    Event.migration_failed(
-                        project=project,
-                        migration_id=self.migration_id,
-                        error_message="",
-                    )
-                )
-
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-        return MigrationResult(
-            migration_id=self.migration_id,
-            status=status,
-            features_completed=len(affected_features_list),
-            features_failed=len(errors),
-            affected_features=affected_features_list,
-            errors=errors,
-            rows_affected=rows_affected_total,
-            duration_seconds=duration,
-            timestamp=start_time,
-        )
+        executor = MigrationExecutor(storage)
+        return executor._execute_diff_migration(self, store, project, dry_run)
 
 
 class FullGraphMigration(Migration):
@@ -505,16 +378,7 @@ class FullGraphMigration(Migration):
     ) -> "MigrationResult":
         """Execute full graph migration with multiple operations.
 
-        Process:
-        1. For each operation in ops:
-           a. Parse OperationConfig
-           b. Instantiate operation class from type
-           c. Sort operation's features topologically using FeatureGraph
-           d. For each feature in topological order:
-              - Check if already completed (resume support)
-              - Execute operation.execute_for_feature()
-              - Record progress event
-        2. Return combined MigrationResult
+        Delegates to MigrationExecutor for execution logic.
 
         Args:
             store: Metadata store
@@ -524,151 +388,12 @@ class FullGraphMigration(Migration):
         Returns:
             MigrationResult
         """
-        from metaxy.metadata_store.system import Event, SystemTableStorage
-        from metaxy.migrations.ops import BaseOperation
-        from metaxy.models.feature import FeatureGraph
-        from metaxy.models.types import FeatureKey
+        from metaxy.metadata_store.system import SystemTableStorage
+        from metaxy.migrations.executor import MigrationExecutor
 
         storage = SystemTableStorage(store)
-        start_time = datetime.now(timezone.utc)
-
-        if not dry_run:
-            storage.write_event(
-                Event.migration_started(project=project, migration_id=self.migration_id)
-            )
-
-        affected_features_list = []
-        errors = {}
-        rows_affected_total = 0
-
-        # Get active graph for topological sorting
-        graph = FeatureGraph.get_active()
-
-        # Execute each operation
-        for op_index, op_dict in enumerate(self.ops):
-            # Parse operation config
-            op_config = OperationConfig.model_validate(op_dict)
-
-            # Instantiate operation class
-            try:
-                module_path, class_name = op_config.type.rsplit(".", 1)
-                module = __import__(module_path, fromlist=[class_name])
-                op_cls = getattr(module, class_name)
-
-                if not issubclass(op_cls, BaseOperation):
-                    raise TypeError(
-                        f"{op_config.type} must be a subclass of BaseOperation"
-                    )
-
-                # Instantiate operation with full dict (flat structure)
-                operation = op_cls.model_validate(op_dict)
-
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to instantiate operation {op_config.type}: {e}"
-                ) from e
-
-            # Sort features topologically
-            feature_keys = [FeatureKey(fk.split("/")) for fk in op_config.features]
-            sorted_features = graph.topological_sort_features(feature_keys)
-
-            # Execute for each feature in topological order
-            for feature_key_obj in sorted_features:
-                feature_key_str = feature_key_obj.to_string()
-
-                # Check if already completed (resume support)
-                if not dry_run and storage.is_feature_completed(
-                    self.migration_id, feature_key_str, project
-                ):
-                    affected_features_list.append(feature_key_str)
-                    continue
-
-                # Log feature started
-                if not dry_run:
-                    storage.write_event(
-                        Event.feature_started(
-                            project=project,
-                            migration_id=self.migration_id,
-                            feature_key=feature_key_str,
-                        )
-                    )
-
-                try:
-                    # Execute operation for this feature
-                    rows_affected = operation.execute_for_feature(
-                        store,
-                        feature_key_str,
-                        snapshot_version=self.snapshot_version,
-                        from_snapshot_version=self.from_snapshot_version,
-                        dry_run=dry_run,
-                    )
-
-                    # Log feature completed
-                    if not dry_run:
-                        storage.write_event(
-                            Event.feature_completed(
-                                project=project,
-                                migration_id=self.migration_id,
-                                feature_key=feature_key_str,
-                                rows_affected=rows_affected,
-                            )
-                        )
-
-                    affected_features_list.append(feature_key_str)
-                    rows_affected_total += rows_affected
-
-                except Exception as e:
-                    error_msg = str(e)
-                    errors[feature_key_str] = error_msg
-
-                    # Log feature failed
-                    if not dry_run:
-                        storage.write_event(
-                            Event.feature_failed(
-                                project=project,
-                                migration_id=self.migration_id,
-                                feature_key=feature_key_str,
-                                error_message=error_msg,
-                            )
-                        )
-
-                    continue
-
-        # Determine status
-        if dry_run:
-            status = "skipped"
-        elif len(errors) == 0:
-            status = "completed"
-            if not dry_run:
-                storage.write_event(
-                    Event.migration_completed(
-                        project=project, migration_id=self.migration_id
-                    )
-                )
-        else:
-            status = "failed"
-            if not dry_run:
-                storage.write_event(
-                    Event.migration_failed(
-                        project=project,
-                        migration_id=self.migration_id,
-                        error_message="",
-                    )
-                )
-
-        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-        return MigrationResult(
-            migration_id=self.migration_id,
-            status=status,
-            features_completed=len(affected_features_list),
-            features_failed=len(errors),
-            affected_features=affected_features_list,
-            errors=errors,
-            rows_affected=rows_affected_total,
-            duration_seconds=duration,
-            timestamp=start_time,
-        )
+        executor = MigrationExecutor(storage)
+        return executor._execute_full_graph_migration(self, store, project, dry_run)
 
 
 class MigrationResult(pydantic.BaseModel):
@@ -678,6 +403,7 @@ class MigrationResult(pydantic.BaseModel):
     status: str  # "completed", "failed", "skipped"
     features_completed: int
     features_failed: int
+    features_skipped: int  # Features skipped due to failed dependencies
     affected_features: list[str]
     errors: dict[str, str]  # feature_key -> error message
     rows_affected: int

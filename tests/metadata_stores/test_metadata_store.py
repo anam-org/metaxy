@@ -273,34 +273,6 @@ def test_has_feature_with_fallback(
         assert dev.has_feature(UpstreamFeatureA, check_fallback=True)
 
 
-def test_list_features(populated_store: InMemoryMetadataStore) -> None:
-    """Test listing features."""
-    with populated_store:
-        features = populated_store.list_features()
-
-        assert len(features) == 1
-        assert any(f.to_string() == "upstream/a" for f in features)
-
-
-def test_list_features_with_fallback(
-    multi_env_stores: dict[str, InMemoryMetadataStore],
-) -> None:
-    """Test listing features including fallbacks."""
-    dev = multi_env_stores["dev"]
-    staging = multi_env_stores["staging"]
-    prod = multi_env_stores["prod"]
-
-    with dev, staging, prod:
-        # Without fallback
-        local_features = dev.list_features(include_fallback=False)
-        assert len(local_features) == 0
-
-        # With fallback
-        all_features = dev.list_features(include_fallback=True)
-        assert len(all_features) == 1
-        assert any(f.to_string() == "upstream/a" for f in all_features)
-
-
 # Fallback Store Tests
 
 
@@ -403,15 +375,6 @@ def test_clear_store(populated_store: InMemoryMetadataStore) -> None:
         populated_store.clear()
 
         assert not populated_store.has_feature(UpstreamFeatureA)
-        assert len(populated_store.list_features()) == 0
-
-
-def test_store_repr(empty_store: InMemoryMetadataStore) -> None:
-    """Test string representation."""
-    repr_str = repr(empty_store)
-
-    assert "InMemoryMetadataStore" in repr_str
-    assert "features=0" in repr_str
 
 
 # Store Open/Close Tests
@@ -447,14 +410,6 @@ def test_store_not_open_has_feature_raises(
     """Test that has_feature on a closed store raises StoreNotOpenError."""
     with pytest.raises(StoreNotOpenError, match="must be opened before use"):
         populated_store.has_feature(UpstreamFeatureA)
-
-
-def test_store_not_open_list_features_raises(
-    populated_store: InMemoryMetadataStore,
-) -> None:
-    """Test that list_features on a closed store raises StoreNotOpenError."""
-    with pytest.raises(StoreNotOpenError, match="must be opened before use"):
-        populated_store.list_features()
 
 
 def test_store_context_manager_opens_and_closes(

@@ -173,7 +173,7 @@ def drop(
         bool,
         cyclopts.Parameter(
             name=["--all-features"],
-            help="Drop metadata for all features in the store",
+            help="Drop metadata for all features defined in the current project's feature graph",
         ),
     ] = False,
     confirm: Annotated[
@@ -189,6 +189,9 @@ def drop(
     Removes metadata for specified features from the store.
     This is a destructive operation and requires --confirm flag.
 
+    When using --all-features, drops metadata for all features defined in the
+    current project's feature graph.
+
     Useful for:
     - Cleaning up test data
     - Re-computing feature metadata from scratch
@@ -201,7 +204,7 @@ def drop(
         # Drop multiple features
         $ metaxy metadata drop --feature user_features --feature customer_features --confirm
 
-        # Drop all features from specific store
+        # Drop all features defined in current project
         $ metaxy metadata drop --store dev --all-features --confirm
     """
     from metaxy.cli.context import AppContext
@@ -244,10 +247,20 @@ def drop(
     metadata_store = context.get_store(store)
 
     with metadata_store:
-        # If all_features, get all feature keys from store
+        # If all_features, get all feature keys from the active feature graph
         if all_features:
-            # Get all features that have metadata in the store
-            feature_keys = metadata_store.list_features(include_fallback=False)
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            # Get all feature keys from the graph (features defined in code for current project)
+            feature_keys = graph.list_features(only_current_project=True)
+
+            if not feature_keys:
+                console.print(
+                    "[yellow]Warning:[/yellow] No features found in active graph. "
+                    "Make sure your features are imported."
+                )
+                return
 
         console.print(
             f"\n[bold]Dropping metadata for {len(feature_keys)} feature(s)...[/bold]\n"

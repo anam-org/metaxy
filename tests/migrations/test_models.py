@@ -165,6 +165,7 @@ def test_custom_migration():
                 features_completed=1,
                 features_failed=0,
                 affected_features=["test/feature"],
+                features_skipped=0,
                 errors={},
                 rows_affected=100,
                 duration_seconds=1.0,
@@ -209,6 +210,7 @@ def test_custom_migration_serialization():
                 status="completed",
                 features_completed=0,
                 features_failed=0,
+                features_skipped=0,
                 affected_features=[],
                 errors={},
                 rows_affected=0,
@@ -237,6 +239,7 @@ def test_migration_result_summary():
         status="completed",
         features_completed=3,
         features_failed=1,
+        features_skipped=0,
         affected_features=["feature/a", "feature/b", "feature/c"],
         errors={"feature/d": "Connection timeout"},
         rows_affected=1500,
@@ -470,3 +473,72 @@ def test_full_graph_migration_with_from_snapshot():
 
 # Removed test_full_graph_migration_deserialize_json_fields - deserialize_json_fields validator was removed
 # Pydantic handles JSON deserialization automatically when proper types are used
+
+
+def test_get_failed_features_with_retry(store):
+    """Test that get_failed_features only returns features whose latest event is failure.
+
+    If a feature fails and then succeeds on retry, it should not appear in failed_features.
+    """
+    from metaxy.metadata_store.system import Event, SystemTableStorage
+
+    storage = SystemTableStorage(store)
+
+    with store:
+        migration_id = "test_migration_retry"
+        project = "test"
+
+        # Feature 1: fails then succeeds
+        storage.write_event(Event.migration_started(project, migration_id))
+        storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
+        storage.write_event(
+            Event.feature_failed(project, migration_id, "feature_1", "First error")
+        )
+        # Retry - now succeeds
+        storage.write_event(Event.feature_started(project, migration_id, "feature_1"))
+        storage.write_event(
+            Event.feature_completed(
+                project, migration_id, "feature_1", rows_affected=100
+            )
+        )
+
+        # Feature 2: fails and stays failed
+        storage.write_event(Event.feature_started(project, migration_id, "feature_2"))
+        storage.write_event(
+            Event.feature_failed(project, migration_id, "feature_2", "Permanent error")
+        )
+
+        # Feature 3: succeeds on first try
+        storage.write_event(Event.feature_started(project, migration_id, "feature_3"))
+        storage.write_event(
+            Event.feature_completed(
+                project, migration_id, "feature_3", rows_affected=50
+            )
+        )
+
+        # Get completed and failed features
+        completed = storage.get_completed_features(migration_id, project)
+        failed = storage.get_failed_features(migration_id, project)
+
+        # Assertions
+        assert "feature_1" in completed, (
+            "Feature that succeeded after retry should be in completed"
+        )
+        assert "feature_3" in completed, (
+            "Feature that succeeded first try should be in completed"
+        )
+        assert "feature_1" not in failed, (
+            "Feature that succeeded after retry should NOT be in failed"
+        )
+        assert "feature_2" in failed, "Feature that never succeeded should be in failed"
+        assert failed["feature_2"] == "Permanent error"
+        assert "feature_3" not in failed, (
+            "Feature that succeeded should NOT be in failed"
+        )
+
+        # Check migration summary
+        summary = storage.get_migration_summary(migration_id, project)
+        assert summary["status"].value == "in_progress"  # Not completed or failed
+        assert len(summary["completed_features"]) == 2  # feature_1 and feature_3
+        assert len(summary["failed_features"]) == 1  # only feature_2
+        assert "feature_2" in summary["failed_features"]

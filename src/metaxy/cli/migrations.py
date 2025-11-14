@@ -279,7 +279,7 @@ def apply(
 
 @app.command
 def status():
-    """Show migration chain and execution status.
+    """Show migrations and execution status.
 
     Reads migration definitions from YAML files (git).
     Shows execution status from database events.
@@ -288,7 +288,7 @@ def status():
     Example:
         $ metaxy migrations status
 
-        Migration Chain:
+        Migration:
         ────────────────────────────────────────────
         ✓ 20250110_120000 (parent: initial)
           Status: COMPLETED
@@ -320,7 +320,7 @@ def status():
         try:
             chain = build_migration_chain(migrations_dir)
         except ValueError as e:
-            app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+            app.console.print(f"[red]✗[/red] Invalid migratios: {e}")
             return
 
         if not chain:
@@ -328,7 +328,7 @@ def status():
             app.console.print(f"  Migrations directory: {migrations_dir.resolve()}")
             return
 
-        app.console.print("\n[bold]Migration Chain:[/bold]")
+        app.console.print("\n[bold]Migration:[/bold]")
         app.console.print("─" * 60)
 
         for migration in chain:
@@ -423,7 +423,7 @@ def list_migrations():
     try:
         chain = build_migration_chain(migrations_dir)
     except ValueError as e:
-        app.console.print(f"[red]✗[/red] Invalid migration chain: {e}")
+        app.console.print(f"[red]✗[/red] Invalid migration: {e}")
         return
 
     if not chain:
@@ -447,16 +447,16 @@ def list_migrations():
         # Format created_at - simpler format without seconds
         created_str = migration.created_at.strftime("%Y-%m-%d %H:%M")
 
-        # Format operations - extract short names
-        from metaxy.migrations.models import FullGraphMigration
-
+        # Format operations - extract short names from raw ops dicts
+        # Use .ops (raw dicts) instead of .operations (instantiated) to avoid
+        # importing operation classes that might not exist
         op_names = []
-        if isinstance(migration, FullGraphMigration):
-            for op in migration.ops:
-                op_type = op.get("type", "unknown")
-                # Extract just the class name (last part after final dot)
-                op_short = op_type.split(".")[-1]
-                op_names.append(op_short)
+        ops = getattr(migration, "ops", [])
+        for op_dict in ops:
+            op_type = op_dict.get("type", "unknown")
+            # Extract just the class name (last part after final dot)
+            op_short = op_type.split(".")[-1]
+            op_names.append(op_short)
 
         ops_str = ", ".join(op_names)
 
@@ -802,6 +802,11 @@ def describe(
 
             graph = FeatureGraph.get_active()
 
+            # Get events for this migration to extract rows_affected per feature
+            events_df = storage.get_migration_events(
+                migration_obj.migration_id, project
+            )
+
             for feature_key_str in affected_features:
                 feature_key_obj = FeatureKey(feature_key_str.split("/"))
 
@@ -813,31 +818,43 @@ def describe(
                     )
                     continue
 
-                feature_cls = graph.features_by_key[feature_key_obj]
+                graph.features_by_key[feature_key_obj]
 
-                # Get current row count
-                try:
-                    import narwhals as nw
+                # Get rows affected from events (sum of all completed events for this feature)
+                import polars as pl
 
-                    metadata = metadata_store.read_metadata(
-                        feature_cls,
-                        current_only=False,
-                        allow_fallback=False,
+                feature_events = events_df.filter(
+                    (pl.col("feature_key") == feature_key_str)
+                    & (pl.col("event_type") == "feature_migration_completed")
+                )
+
+                if feature_events.height > 0:
+                    # Extract rows_affected from JSON payload
+                    feature_events = feature_events.with_columns(
+                        pl.col("payload")
+                        .str.json_path_match("$.rows_affected")
+                        .cast(pl.Int64, strict=False)
+                        .fill_null(0)
+                        .alias("rows_affected")
                     )
-                    row_count = (
-                        metadata.select(nw.col("sample_uid").unique())
-                        .collect()
-                        .shape[0]
-                    )
-                except Exception:
-                    row_count = "?"
+                    rows_affected = int(feature_events["rows_affected"].sum())
+
+                    # Count number of attempts (feature_migration_started events)
+                    attempts = events_df.filter(
+                        (pl.col("feature_key") == feature_key_str)
+                        & (pl.col("event_type") == "feature_migration_started")
+                    ).height
+                else:
+                    rows_affected = 0
+                    attempts = 0
 
                 # Check if feature has upstream dependencies
                 plan = graph.get_feature_plan(feature_key_obj)
                 has_upstream = plan.deps is not None and len(plan.deps) > 0
 
                 app.console.print(f"[bold]{feature_key_str}[/bold]")
-                app.console.print(f"    Samples: {row_count}")
+                app.console.print(f"    Rows Affected: {rows_affected}")
+                app.console.print(f"    Attempts: {attempts}")
                 app.console.print(f"    Has upstream: {has_upstream}")
 
             app.console.print()

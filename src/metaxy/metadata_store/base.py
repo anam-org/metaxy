@@ -957,43 +957,6 @@ class MetadataStore(ABC):
 
         return False
 
-    def list_features(self, *, include_fallback: bool = False) -> list[FeatureKey]:
-        """
-        List all features in store.
-
-        Args:
-            include_fallback: If True, include features from fallback stores
-
-        Returns:
-            List of FeatureKey objects
-
-        Raises:
-            StoreNotOpenError: If store is not open
-        """
-        self._check_open()
-
-        features = self._list_features_local()
-
-        if include_fallback:
-            for store in self.fallback_stores:
-                features.extend(store.list_features(include_fallback=True))
-
-        # Deduplicate
-        seen = set()
-        unique_features = []
-        for feature in features:
-            key_str = feature.to_string()
-            if key_str not in seen:
-                seen.add(key_str)
-                unique_features.append(feature)
-
-        return unique_features
-
-    @abstractmethod
-    def _list_features_local(self) -> list[FeatureKey]:
-        """List features in THIS store only."""
-        pass
-
     @abstractmethod
     def display(self) -> str:
         """Return a human-readable display string for this store.
@@ -1264,10 +1227,13 @@ class MetadataStore(ABC):
         # Determine which features to copy
         features_to_copy: list[FeatureKey]
         if features is None:
-            # Copy all features from source
-            features_to_copy = from_store.list_features(include_fallback=False)
+            # Copy all features from active graph (features defined in current project)
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            features_to_copy = graph.list_features(only_current_project=True)
             logger.info(
-                f"Copying all features from source: {len(features_to_copy)} features"
+                f"Copying all features from active graph: {len(features_to_copy)} features"
             )
         else:
             # Convert all to FeatureKey
