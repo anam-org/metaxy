@@ -419,7 +419,7 @@ class TestBackwardCompatibility:
             )
 
             # Write with only the old columns
-            store._write_metadata_impl(FEATURE_VERSIONS_KEY, old_record)
+            store.write_metadata(FEATURE_VERSIONS_KEY, old_record)
 
             # Try to read features - should handle missing tracking version
             features_df = store.read_features(current=False, snapshot_version="snap123")

@@ -1,16 +1,11 @@
-from typing import Any
-
-import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame
 
 
-def collect_to_polars(lazy_frame: nw.LazyFrame[Any]) -> pl.DataFrame:
-    """Helper to collect a Narwhals LazyFrame and convert to Polars DataFrame.
+def collect_to_polars(frame: Frame) -> pl.DataFrame:
+    """Helper to convert a Narwhals frame into an eager Polars DataFrame."""
 
-    This handles all backend conversions (Polars, DuckDB/PyArrow, etc.) transparently.
-    Used throughout tests for materializing query results.
-    """
-    return lazy_frame.collect().to_polars()
+    return frame.lazy().collect().to_polars()
 
 
 __all__ = ["collect_to_polars"]
