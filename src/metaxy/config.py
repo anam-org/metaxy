@@ -149,12 +149,15 @@ class MetaxyConfig(BaseSettings):
 
     3. Config file (`metaxy.toml` or `[tool.metaxy]` in `pyproject.toml` )
 
-    Example:
-        ```py
-        # Auto-discover config
-        config = MetaxyConfig.load()
 
-        # Get store instance
+    Example: Accessing current configuration
+        ```py
+        config = MetaxyConfig.load()
+        ```
+
+
+    Example: Getting a configured metadata store
+        ```py
         store = config.get_store("prod")
         ```
 

@@ -52,8 +52,8 @@ class MetaxyTableInfo(BaseModel):
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
     def __new__(
-        mcs: type[Any],
-        name: str,
+        cls,
+        cls_name: str,
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
@@ -65,7 +65,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         """Create a new SQLModel + Metaxy Feature class.
 
         Args:
-            name: Class name
+            cls_name: Name of the class being created
             bases: Base classes
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
@@ -76,7 +76,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
-            New class that is both a SQLModel table and Metaxy feature
+            New class that is both a SQLModel table and a Metaxy feature
         """
         # Override frozen config for SQLModel - instances need to be mutable for ORM
         if "model_config" not in namespace:
@@ -136,14 +136,8 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
-        # Note: super().__new__ in metaclass context implicitly receives the metaclass
         new_class = super().__new__(
-            mcs,
-            name,  # pyright: ignore[reportCallIssue]
-            bases,
-            namespace,
-            spec=spec,
-            **kwargs,  # type: ignore[misc]
+            cls, cls_name, bases, namespace, spec=spec, **kwargs
         )
 
         return new_class

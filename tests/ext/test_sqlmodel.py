@@ -218,12 +218,12 @@ def test_sqlmodel_field_definitions() -> None:
         optional_artist: str | None = None  # Optional metadata
 
     # Verify instance can be created
-    instance = AudioFeature(  # pyright: ignore[reportCallIssue]
-        uid="1",  # pyright: ignore[reportCallIssue]
-        path="/audio/track1.wav",  # pyright: ignore[reportCallIssue]
-        sample_rate=44100,  # pyright: ignore[reportCallIssue]
-        duration=180.5,  # pyright: ignore[reportCallIssue]
-        format="wav",  # pyright: ignore[reportCallIssue]
+    instance = AudioFeature(
+        uid="1",
+        path="/audio/track1.wav",
+        sample_rate=44100,
+        duration=180.5,
+        format="wav",
     )
 
     assert instance.uid == "1"
