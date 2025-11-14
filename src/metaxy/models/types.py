@@ -257,8 +257,11 @@ class _Key(BaseModel):
 
     @property
     def table_name(self) -> str:
-        """Get SQL-like table name for this feature key."""
-        return "__".join(self.parts)
+        """Get SQL-like table name for this feature key.
+
+        Replaces hyphens with underscores for SQL compatibility.
+        """
+        return "__".join(part.replace("-", "_") for part in self.parts)
 
     # List-like interface for backward compatibility
     def __getitem__(self, index: int) -> str:

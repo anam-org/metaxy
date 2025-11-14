@@ -427,7 +427,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
 
 
 def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
-    """Test dropping from an empty store is a no-op."""
+    """Test dropping from an empty store succeeds (idempotent operation)."""
 
     def features():
         from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
@@ -444,15 +444,15 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
     with metaxy_project.with_features(features):
         # Don't write any metadata - store is empty
 
-        # Drop all features from empty store - should be a no-op
+        # Drop all features from empty store - should succeed (idempotent)
         result = metaxy_project.run_cli(
             "metadata", "drop", "--all-features", "--confirm"
         )
 
-        # Should succeed with 0 features dropped
+        # Should succeed - drop is idempotent even if no metadata exists
         assert result.returncode == 0
-        assert "Dropping metadata for 0 feature(s)" in result.stderr
-        assert "Drop complete: 0 feature(s) dropped" in result.stderr
+        assert "Dropping metadata for 1 feature(s)" in result.stderr
+        assert "Drop complete: 1 feature(s) dropped" in result.stderr
 
 
 def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):

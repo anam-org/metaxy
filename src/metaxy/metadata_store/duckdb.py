@@ -1,11 +1,12 @@
 """DuckDB metadata store - thin wrapper around IbisMetadataStore."""
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
@@ -19,6 +20,7 @@ from metaxy.metadata_store._ducklake_support import (
     ensure_extensions_with_plugins,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.types import AccessMode
 from metaxy.provenance.types import HashAlgorithm
 
 
@@ -326,17 +328,36 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return hash_functions
 
     # ------------------------------------------------------------------ DuckLake
-    def open(self) -> None:
-        """Open DuckDB connection and configure optional DuckLake attachment."""
-        super().open()
-        if self._ducklake_attachment is not None:
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+        """Open DuckDB connection with specified access mode.
+
+        Args:
+            mode: Access mode (READ or WRITE). Defaults to READ.
+                READ mode sets read_only=True for concurrent access.
+
+        Yields:
+            Self: The store instance with connection open
+        """
+        # Setup: Configure connection params based on mode
+        if mode == AccessMode.READ:
+            self.connection_params["read_only"] = True
+        else:
+            # Remove read_only if present (switching to WRITE)
+            self.connection_params.pop("read_only", None)
+
+        # Call parent context manager to establish connection
+        with super().open(mode):
             try:
-                duckdb_conn = self._duckdb_raw_connection()
-                self._ducklake_attachment.configure(duckdb_conn)
-            except Exception:
-                # Ensure connection is closed if DuckLake configuration fails
-                super().close()
-                raise
+                # Configure DuckLake if needed (only on first entry)
+                if self._ducklake_attachment is not None and self._context_depth == 1:
+                    duckdb_conn = self._duckdb_raw_connection()
+                    self._ducklake_attachment.configure(duckdb_conn)
+
+                yield self
+            finally:
+                # Cleanup is handled by parent's finally block
+                pass
 
     def preview_ducklake_sql(self) -> list[str]:
         """Return DuckLake attachment SQL if configured."""

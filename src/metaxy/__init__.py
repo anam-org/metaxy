@@ -6,13 +6,9 @@ from metaxy.entrypoints import (
     load_module_entrypoint,
     load_package_entrypoints,
 )
-from metaxy.metadata_store import (
-    InMemoryMetadataStore,
-    MetadataStore,
-)
+from metaxy.metadata_store import AccessMode, InMemoryMetadataStore, MetadataStore
 from metaxy.migrations import (
     BaseOperation,
-    CustomMigration,
     DataVersionReconciliation,
     DiffMigration,
     FullGraphMigration,
@@ -106,7 +102,6 @@ __all__ = [
     "Migration",
     "DiffMigration",
     "FullGraphMigration",
-    "CustomMigration",
     "MigrationResult",
     "MigrationExecutor",
     "SystemTableStorage",
@@ -120,4 +115,5 @@ __all__ = [
     "IDColumns",
     "HashAlgorithm",
     "LineageRelationship",
+    "AccessMode",
 ]

@@ -154,13 +154,13 @@ def test_allow_cross_project_writes_context_manager() -> None:
 
 def test_system_tables_exempt_from_project_validation() -> None:
     """Test that system tables (metaxy-system) are exempt from project validation."""
-    from metaxy.metadata_store.system_tables import SYSTEM_NAMESPACE
+    from metaxy.metadata_store.system import METAXY_SYSTEM_KEY_PREFIX
 
     config = MetaxyConfig(project="test_project")
     MetaxyConfig.set(config)
 
     # Create a system table feature key
-    system_key = FeatureKey([SYSTEM_NAMESPACE, "test_table"])
+    system_key = FeatureKey([METAXY_SYSTEM_KEY_PREFIX, "test_table"])
 
     import narwhals as nw
 

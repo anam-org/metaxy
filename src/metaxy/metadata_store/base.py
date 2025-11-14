@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
+from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
@@ -18,13 +19,14 @@ from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
 )
-from metaxy.metadata_store.system_tables import (
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
-    SYSTEM_NAMESPACE,
-    _suppress_feature_version_warning,
+    METAXY_SYSTEM_KEY_PREFIX,
     allow_feature_version_override,
 )
+from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
+from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import empty_frame_like
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
@@ -109,6 +111,9 @@ class MetadataStore(ABC):
         self._context_depth = 0
         self._prefer_native = prefer_native
         self._allow_cross_project_writes = False
+        self._open_cm: AbstractContextManager[Self] | None = (
+            None  # Track the open() context manager
+        )
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -198,47 +203,39 @@ class MetadataStore(ABC):
         ...
 
     @abstractmethod
-    def open(self) -> None:
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
         """Open/initialize the store for operations.
 
-        Called by __enter__. Subclasses implement connection setup here.
-        Can be called manually but context manager usage is recommended.
-        """
-        pass
+        Context manager that opens the store with specified access mode.
+        Called internally by `__enter__`.
+        Child classes should implement backend-specific connection setup/teardown here.
 
-    @abstractmethod
-    def close(self) -> None:
-        """Close/cleanup the store.
+        Args:
+            mode: Access mode for this connection session.
 
-        Called by __exit__. Subclasses implement connection cleanup here.
-        Can be called manually but context manager usage is recommended.
+        Yields:
+            Self: The store instance with connection open
+
+        Note:
+            Users should prefer using `with store:` pattern except when write access mode is needed.
         """
-        pass
+        ...
 
     def __enter__(self) -> Self:
-        """Enter context manager."""
-        # Track nesting depth
-        self._context_depth += 1
+        """Enter context manager - opens store in READ mode by default.
 
-        # Only open on first enter
-        if self._context_depth == 1:
-            # Warn if auto_create_tables is enabled (and store wants warnings)
-            if self.auto_create_tables and self._should_warn_auto_create_tables:
-                import warnings
+        For explicit mode control, use `with store.open(mode):` instead.
 
-                warnings.warn(
-                    f"AUTO_CREATE_TABLES is enabled for {self.display()} - "
-                    "do not use in production! "
-                    "Use proper database migration tools like Alembic for production deployments.",
-                    UserWarning,
-                    stacklevel=3,  # stacklevel=3 to point to user's 'with store:' line
-                )
+        Returns:
+            Self: The opened store instance
+        """
+        # Determine mode based on auto_create_tables
+        mode = AccessMode.WRITE if self.auto_create_tables else AccessMode.READ
 
-            self.open()
-            self._is_open = True
-
-            # Validate after opening (when all components are ready)
-            self._validate_after_open()
+        # Open the store (open() manages _context_depth internally)
+        self._open_cm = self.open(mode)
+        self._open_cm.__enter__()
 
         return self
 
@@ -270,15 +267,30 @@ class MetadataStore(ABC):
                     f"All stores in a fallback chain must use the same hash truncation length."
                 )
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Exit context manager."""
-        # Decrement depth
-        self._context_depth -= 1
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
+        """Exit context manager.
 
-        # Only close when fully exited
-        if self._context_depth == 0:
-            self._is_open = False
-            self.close()
+        Properly cleans up the opened connection by delegating to the open() context manager.
+
+        Args:
+            exc_type: Exception type if an error occurred
+            exc_val: Exception value if an error occurred
+            exc_tb: Exception traceback if an error occurred
+
+        Returns:
+            False to propagate any exceptions
+        """
+        # Delegate to open()'s context manager (which manages _context_depth)
+        if self._open_cm is not None:
+            self._open_cm.__exit__(exc_type, exc_val, exc_tb)
+            self._open_cm = None
+
+        return False
 
     def _check_open(self) -> None:
         """Check if store is open, raise error if not.
@@ -289,7 +301,7 @@ class MetadataStore(ABC):
         if not self._is_open:
             raise StoreNotOpenError(
                 f"{self.__class__.__name__} must be opened before use. "
-                "Use it as a context manager: `with store: ...`"
+                "Use it as a context manager: `with store: ...` or `with store.open(mode=AccessMode.WRITE): ...`"
             )
 
     # ========== Hash Algorithm Validation ==========
@@ -334,7 +346,7 @@ class MetadataStore(ABC):
 
     def _is_system_table(self, feature_key: FeatureKey) -> bool:
         """Check if feature key is a system table."""
-        return len(feature_key) >= 1 and feature_key[0] == SYSTEM_NAMESPACE
+        return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
     def _resolve_feature_key(
         self, feature: FeatureKey | type[BaseFeature]
@@ -471,8 +483,10 @@ class MetadataStore(ABC):
               as-is (no replacement). This allows migrations to write historical
               versions. A warning is issued unless suppressed via context manager.
             - Project validation is performed unless disabled via allow_cross_project_writes()
+            - Must be called within store.open(mode=AccessMode.WRITE) context
         """
         self._check_open()
+
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
@@ -957,43 +971,6 @@ class MetadataStore(ABC):
 
         return False
 
-    def list_features(self, *, include_fallback: bool = False) -> list[FeatureKey]:
-        """
-        List all features in store.
-
-        Args:
-            include_fallback: If True, include features from fallback stores
-
-        Returns:
-            List of FeatureKey objects
-
-        Raises:
-            StoreNotOpenError: If store is not open
-        """
-        self._check_open()
-
-        features = self._list_features_local()
-
-        if include_fallback:
-            for store in self.fallback_stores:
-                features.extend(store.list_features(include_fallback=True))
-
-        # Deduplicate
-        seen = set()
-        unique_features = []
-        for feature in features:
-            key_str = feature.to_string()
-            if key_str not in seen:
-                seen.add(key_str)
-                unique_features.append(feature)
-
-        return unique_features
-
-    @abstractmethod
-    def _list_features_local(self) -> list[FeatureKey]:
-        """List features in THIS store only."""
-        pass
-
     @abstractmethod
     def display(self) -> str:
         """Return a human-readable display string for this store.
@@ -1231,14 +1208,22 @@ class MetadataStore(ABC):
 
         # Validate destination store is open
         if not self._is_open:
-            raise ValueError("Destination store must be opened (use context manager)")
+            raise ValueError(
+                "Destination store must be opened with store.open(AccessMode.WRITE) before use"
+            )
 
-        # Automatically handle source store context manager
-        should_close_source = not from_store._is_open
-        if should_close_source:
-            from_store.__enter__()
-
-        try:
+        # Auto-open source store if not already open
+        if not from_store._is_open:
+            with from_store.open(AccessMode.READ):
+                return self._copy_metadata_impl(
+                    from_store=from_store,
+                    features=features,
+                    from_snapshot=from_snapshot,
+                    filters=filters,
+                    incremental=incremental,
+                    logger=logger,
+                )
+        else:
             return self._copy_metadata_impl(
                 from_store=from_store,
                 features=features,
@@ -1247,9 +1232,6 @@ class MetadataStore(ABC):
                 incremental=incremental,
                 logger=logger,
             )
-        finally:
-            if should_close_source:
-                from_store.__exit__(None, None, None)
 
     def _copy_metadata_impl(
         self,
@@ -1264,10 +1246,13 @@ class MetadataStore(ABC):
         # Determine which features to copy
         features_to_copy: list[FeatureKey]
         if features is None:
-            # Copy all features from source
-            features_to_copy = from_store.list_features(include_fallback=False)
+            # Copy all features from active graph (features defined in current project)
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            features_to_copy = graph.list_features(only_current_project=True)
             logger.info(
-                f"Copying all features from source: {len(features_to_copy)} features"
+                f"Copying all features from active graph: {len(features_to_copy)} features"
             )
         else:
             # Convert all to FeatureKey
@@ -1727,9 +1712,9 @@ class MetadataStore(ABC):
                 )
                 added, changed, removed = tracker.resolve_increment_with_provenance(
                     current=current_lazy,
-                    upstream={},  # No upstream for root features
+                    upstream={},  # Empty upstream - samples already have provenance_by_field computed
                     hash_algorithm=self.hash_algorithm,
-                    filters={},  # No filters for root features
+                    filters={},  # No additional filters - samples define the target state
                     sample=samples.lazy(),
                 )
 

@@ -1,8 +1,8 @@
 """SQLModel definitions for metaxy system tables.
 
-This module provides SQLModel table classes that mirror the Polars schemas
-from system_tables.py. These are used primarily for Alembic migrations
-when the SQLModel integration is enabled.
+This module provides SQLModel table classes that extend the Pydantic models
+from system_tables.py with SQLAlchemy-specific configurations. These are used
+primarily for Alembic migrations when the SQLModel integration is enabled.
 
 The actual data flow remains unchanged (using Polars DataFrames).
 These models are only for schema definition and migrations.
@@ -15,8 +15,13 @@ from datetime import datetime
 from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
-# Import the namespace constant from the core module
-from metaxy.metadata_store.system_tables import SYSTEM_NAMESPACE
+# Import the Pydantic models and constants from the core module
+from metaxy.metadata_store.system import (
+    EVENTS_KEY,
+    FEATURE_VERSIONS_KEY,
+    METAXY_SYSTEM_KEY_PREFIX,
+    FeatureVersionsModel,
+)
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
@@ -26,51 +31,45 @@ from metaxy.models.constants import (
 
 # System tables that metaxy uses internally
 SYSTEM_TABLES: list[str] = [
-    f"{SYSTEM_NAMESPACE}__feature_versions",
-    f"{SYSTEM_NAMESPACE}__migration_events",
+    f"{METAXY_SYSTEM_KEY_PREFIX}__feature_versions",
+    f"{METAXY_SYSTEM_KEY_PREFIX}__events",
 ]
 
 
-class FeatureVersionsTable(SQLModel, table=True):
+class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """SQLModel definition for the feature_versions system table.
 
-    This table records when feature specifications are pushed to production,
-    tracking the evolution of feature definitions over time.
+    Extends FeatureVersionsModel from system_tables.py with SQLModel-specific
+    configuration for database table creation and Alembic migrations.
     """
 
-    __tablename__: str = f"{SYSTEM_NAMESPACE}__feature_versions"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __tablename__: str = FEATURE_VERSIONS_KEY.table_name  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Composite primary key: project + feature_key + metaxy_snapshot_version
+    # Override fields that need SQLAlchemy-specific configuration (primary keys, indexes, column names)
+    # Composite primary key: (project, feature_key, feature_spec_version)
     project: str = Field(primary_key=True, index=True)
     feature_key: str = Field(primary_key=True)
     metaxy_snapshot_version: str = Field(
-        primary_key=True,
+        index=True,
         sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
     )
-
-    # Version and timestamp
     metaxy_feature_version: str = Field(
         index=True,
         sa_column_kwargs={"name": METAXY_FEATURE_VERSION},
     )
     metaxy_feature_spec_version: str = Field(
-        index=True,  # Hash of complete FeatureSpec
+        primary_key=True,
         sa_column_kwargs={"name": METAXY_FEATURE_SPEC_VERSION},
     )
     metaxy_feature_tracking_version: str = Field(
         index=True,
         sa_column_kwargs={"name": METAXY_FEATURE_TRACKING_VERSION},
     )
-    recorded_at: datetime = Field(index=True)
-
-    # Serialized feature specification and class path
-    feature_spec: str  # JSON string
-    feature_class_path: str
 
     # Additional indexes for common queries
     __table_args__ = (
         Index(
-            "idx_feature_versions_lookup",
+            f"idx_{FEATURE_VERSIONS_KEY.table_name}_lookup",
             "project",
             "feature_key",
             METAXY_FEATURE_VERSION,
@@ -79,31 +78,40 @@ class FeatureVersionsTable(SQLModel, table=True):
 
 
 class MigrationEventsTable(SQLModel, table=True):
-    """SQLModel definition for the migration_events system table.
+    """SQLModel definition for the events system table.
 
-    This table stores append-only events tracking migration execution,
-    enabling recovery from partial failures and progress monitoring.
+    This is a pure schema definition for the database table structure.
+    Application code uses typed event models (Event with classmethods)
+    which serialize to this schema via to_polars().
+
+    Note: All columns match the Polars EVENTS_SCHEMA exactly.
+    - event_type: stored as string (not enum) for maximum backend compatibility
+    - payload: stored as JSON string (not JSON column) for consistency with Polars
+    - execution_id: generic name in storage (migration_id in CLI is user-facing)
     """
 
-    __tablename__: str = f"{SYSTEM_NAMESPACE}__migration_events"  # pyright: ignore[reportIncompatibleVariableOverride]
+    __tablename__: str = EVENTS_KEY.table_name  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Auto-incrementing ID for append-only events
-    id: int | None = Field(default=None, primary_key=True)
+    # Composite primary key matching Polars append-only storage
+    project: str = Field(primary_key=True, index=True)
+    execution_id: str = Field(primary_key=True, index=True)
+    timestamp: datetime = Field(primary_key=True)
 
     # Event fields
-    project: str = Field(index=True)
-    migration_id: str = Field(index=True)
-    event_type: str = (
-        Field()
-    )  # "started", "feature_started", "feature_completed", "completed", "failed"
-    timestamp: datetime = Field(index=True)
-    feature_key: str = Field(default="")  # Empty for migration-level events
-    rows_affected: int = Field(default=0)
-    error_message: str = Field(default="")  # Empty if no error
+    event_type: str = Field(index=True)  # Stored as string for backend compatibility
+    feature_key: str | None = Field(
+        default=None, nullable=True
+    )  # None for execution-level events
+    payload: str = Field(default="")  # JSON string for consistency with Polars
 
     # Additional indexes for common queries
     __table_args__ = (
-        Index("idx_migration_events_lookup", "project", "migration_id", "event_type"),
+        Index(
+            f"idx_{EVENTS_KEY.table_name}_lookup",
+            "project",
+            "execution_id",
+            "event_type",
+        ),
     )
 
 

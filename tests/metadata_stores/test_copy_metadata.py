@@ -9,6 +9,7 @@ import pytest
 from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
+from metaxy.metadata_store.types import AccessMode
 
 
 @pytest.fixture
@@ -51,7 +52,7 @@ def test_copy_metadata_all_features(
     dest_store = InMemoryMetadataStore()
 
     # Write to source store
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         # Write metadata to source store
         source_data_a = pl.DataFrame(
             {
@@ -86,8 +87,8 @@ def test_copy_metadata_all_features(
         )
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
-    # Copy with destination store (source will be opened automatically)
-    with dest_store:
+    # Copy with destination store (source must be opened for reading)
+    with source_store.open(AccessMode.READ), dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=None,  # Copy all
@@ -128,7 +129,7 @@ def test_copy_metadata_specific_features(
     dest_store = InMemoryMetadataStore()
 
     # Write to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1"],
@@ -156,7 +157,7 @@ def test_copy_metadata_specific_features(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy only FeatureA
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key],
@@ -187,7 +188,7 @@ def test_copy_metadata_with_snapshot_filter(
     dest_store = InMemoryMetadataStore()
 
     # Write data with different snapshot versions to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         snapshot_1 = "snapshot_123"
         snapshot_2 = "snapshot_456"
 
@@ -233,7 +234,7 @@ def test_copy_metadata_with_snapshot_filter(
         assert all_source_data.height == 5
 
     # Copy only snapshot 2
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key],
@@ -258,7 +259,7 @@ def test_copy_metadata_empty_source() -> None:
     source_store = InMemoryMetadataStore()
     dest_store = InMemoryMetadataStore()
 
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=None,
@@ -278,7 +279,7 @@ def test_copy_metadata_missing_feature(
     dest_store = InMemoryMetadataStore()
 
     # Write only FeatureA to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1"],
@@ -297,7 +298,7 @@ def test_copy_metadata_missing_feature(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Try to copy both features (FeatureB doesn't exist)
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key, FeatureB.spec().key],
@@ -319,7 +320,7 @@ def test_copy_metadata_preserves_feature_version(
     dest_store = InMemoryMetadataStore()
 
     # Write data to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         original_version = FeatureA.feature_version()
         source_data = pl.DataFrame(
             {
@@ -339,7 +340,7 @@ def test_copy_metadata_preserves_feature_version(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy to destination
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key],
@@ -373,7 +374,7 @@ def test_copy_metadata_preserves_snapshot_version(
     dest_store = InMemoryMetadataStore()
 
     # Write data to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data = pl.DataFrame(
             {
                 "sample_uid": ["s1"],
@@ -392,7 +393,7 @@ def test_copy_metadata_preserves_snapshot_version(
         original_snapshot = written_data["metaxy_snapshot_version"][0]
 
     # Copy - snapshot_version should be preserved
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key],
@@ -416,7 +417,7 @@ def test_copy_metadata_no_rows_for_snapshot(
     dest_store = InMemoryMetadataStore()
 
     # Write data to source
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data = pl.DataFrame(
             {
                 "sample_uid": ["s1"],
@@ -427,7 +428,7 @@ def test_copy_metadata_no_rows_for_snapshot(
         source_store.write_metadata(FeatureA, source_data)
 
     # Try to copy with non-existent snapshot
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key],
@@ -449,7 +450,7 @@ def test_copy_metadata_with_global_filters(
     dest_store = InMemoryMetadataStore()
 
     # Write metadata with different sample_uids
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1", "s2", "s3"],
@@ -486,7 +487,7 @@ def test_copy_metadata_with_global_filters(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with global filter - only s1 and s2
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=None,  # All features
@@ -524,7 +525,7 @@ def test_copy_metadata_with_per_feature_filters(
     dest_store = InMemoryMetadataStore()
 
     # Write metadata
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1", "s2", "s3"],
@@ -560,7 +561,7 @@ def test_copy_metadata_with_per_feature_filters(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with per-feature filters
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key, FeatureB.spec().key],
@@ -604,7 +605,7 @@ def test_copy_metadata_with_mixed_filters(
     dest_store = InMemoryMetadataStore()
 
     # Write metadata
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1", "s2", "s3", "s4"],
@@ -642,7 +643,7 @@ def test_copy_metadata_with_mixed_filters(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Copy with multiple filters combined for each feature
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key, FeatureB.spec().key],
@@ -685,7 +686,7 @@ def test_copy_metadata_with_mixed_feature_types(
     dest_store = InMemoryMetadataStore()
 
     # Write metadata
-    with source_store:
+    with source_store.open(AccessMode.WRITE):
         source_data_a = pl.DataFrame(
             {
                 "sample_uid": ["s1", "s2"],
@@ -719,7 +720,7 @@ def test_copy_metadata_with_mixed_feature_types(
         snapshot_version = written_data["metaxy_snapshot_version"][0]
 
     # Apply filter to one feature but not the other
-    with dest_store:
+    with dest_store.open(AccessMode.WRITE):
         stats = dest_store.copy_metadata(
             from_store=source_store,
             features=[FeatureA.spec().key, FeatureB.spec().key],
