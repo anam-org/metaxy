@@ -42,52 +42,12 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.types import HashAlgorithm, LazyIncrement
+from metaxy.provenance.types import HashAlgorithm
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
 ]
-
-
-def verify_lazy_sql_frames(store: MetadataStore, lazy_result: LazyIncrement):
-    """Verify that lazy frames from IbisMetadataStore contain SQL and haven't been materialized.
-
-    Args:
-        store: The metadata store instance
-        lazy_result: LazyIncrement with lazy frames to verify
-    """
-    from metaxy.metadata_store.ibis import IbisMetadataStore
-
-    if not isinstance(store, IbisMetadataStore):
-        return  # Only check for Ibis-based stores
-
-    # Check each lazy frame in the result
-    for frame_name in ["added", "changed", "removed"]:
-        lazy_frame = getattr(lazy_result, frame_name)
-
-        # Get the native lazy frame
-        native_frame = lazy_frame.to_native()
-
-        # For Ibis-based stores, the native frame should be an Ibis expression
-        # that can be compiled to SQL
-        import ibis
-
-        if isinstance(native_frame, ibis.expr.types.Table):
-            # Verify we can get SQL from it
-            try:
-                sql = store.conn.compile(native_frame)
-                assert isinstance(sql, str), (
-                    f"{frame_name} lazy frame should have SQL representation"
-                )
-                # Check that it's actually SQL (contains SELECT, FROM, etc.)
-                assert any(keyword in sql.upper() for keyword in ["SELECT", "FROM"]), (
-                    f"{frame_name} should contain SQL keywords"
-                )
-            except Exception as e:
-                raise AssertionError(
-                    f"Failed to get SQL from {frame_name} lazy frame: {e}"
-                )
 
 
 def get_available_store_types() -> list[str]:
