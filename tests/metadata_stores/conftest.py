@@ -5,7 +5,6 @@ import uuid
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote_plus
 
 import boto3
 import pytest
