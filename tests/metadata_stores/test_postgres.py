@@ -61,27 +61,20 @@ def test_postgres_respects_custom_port_and_schema() -> None:
     assert "schema=features" in display
 
 
-def test_postgres_hash_sql_generators_include_sha256() -> None:
-    """Test SHA256 hash SQL generation."""
+def test_postgres_hash_functions_include_sha256() -> None:
+    """Test SHA256 hash function via UDF approach."""
     store = PostgresMetadataStore(host="localhost", database="metaxy")
 
-    generators = store._get_hash_sql_generators()
-    assert HashAlgorithm.SHA256 in generators
+    # Hash functions are created via UDF approach (like DuckDB/ClickHouse)
+    hash_functions = store._create_hash_functions()
+    assert HashAlgorithm.SHA256 in hash_functions
+    assert HashAlgorithm.MD5 in hash_functions
 
-    class DummyTable:
-        def compile(self) -> str:
-            return "SELECT * FROM dummy"
-
-    import ibis.expr.types as ir
-
-    dummy_table = cast(ir.Table, cast(object, DummyTable()))
-    sql = generators[HashAlgorithm.SHA256](
-        dummy_table, {"field1": "col1", "field2": "col2"}
-    )
-    assert "DIGEST(col1, 'sha256')" in sql
-    assert "DIGEST(col2, 'sha256')" in sql
-    assert "__hash_field1" in sql
-    assert "__hash_field2" in sql
+    # Verify the hash functions are callable
+    sha256_fn = hash_functions[HashAlgorithm.SHA256]
+    md5_fn = hash_functions[HashAlgorithm.MD5]
+    assert callable(sha256_fn)
+    assert callable(md5_fn)
 
 
 def test_postgres_display_with_connection_string() -> None:
@@ -125,11 +118,11 @@ def test_postgres_sha256_with_explicit_hash_algorithm() -> None:
     )
 
     assert store.hash_algorithm == HashAlgorithm.SHA256
-    # Should have SHA256 generator
-    generators = store._get_hash_sql_generators()
-    assert HashAlgorithm.SHA256 in generators
-    # Should also have MD5 (inherited from base)
-    assert HashAlgorithm.MD5 in generators
+    # Should have SHA256 hash function via UDF approach
+    hash_functions = store._create_hash_functions()
+    assert HashAlgorithm.SHA256 in hash_functions
+    # Should also have MD5
+    assert HashAlgorithm.MD5 in hash_functions
 
 
 def test_postgres_pgcrypto_enabled_during_native_resolve(
