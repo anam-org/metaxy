@@ -33,16 +33,43 @@ METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
 METAXY_FEATURE_TRACKING_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_tracking_version"
 """Hash of feature dependencies and ID columns (tracks structural changes)."""
 
+METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
+"""Timestamp when the metadata record was created (used for versioning)."""
+
+METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
+"""User-provided data version by field (future use, falls back to provenance_by_field)."""
+
+METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
+"""User-provided data version (future use, falls back to provenance)."""
+
 # --- System Column Sets ------------------------------------------------------------
 
 ALL_SYSTEM_COLUMNS = frozenset(
     {
         METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
         METAXY_FEATURE_VERSION,
         METAXY_SNAPSHOT_VERSION,
+        METAXY_CREATED_AT,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
     }
 )
 """All Metaxy-managed column names that are injected into feature tables."""
+
+# Required columns that must exist in metadata (either provided or auto-populated)
+REQUIRED_SYSTEM_COLUMNS = frozenset(
+    {
+        METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
+        METAXY_FEATURE_VERSION,
+        METAXY_SNAPSHOT_VERSION,
+        METAXY_CREATED_AT,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
+    }
+)
+"""System columns that are required in all metadata tables."""
 
 # Columns that should be dropped when joining upstream features (will be recalculated)
 _DROPPABLE_COLUMNS = frozenset(

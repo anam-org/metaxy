@@ -307,7 +307,7 @@ def test_upstream_downstream_migration(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Step 3: Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
@@ -408,7 +408,7 @@ def test_migration_idempotency(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Update upstream manually
         new_upstream_data = pl.DataFrame(
             {
@@ -516,7 +516,7 @@ def test_migration_dry_run(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Update upstream
         new_upstream_data = pl.DataFrame(
             {
@@ -656,7 +656,7 @@ def test_field_dependency_change(tmp_path):
     graph_v2.features_by_key[FeatureKey(["test", "upstream"])]
     graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
-    with graph_v2.use(), store_v2:
+    with graph_v2.use(), store_v2.open(AccessMode.WRITE):
         # Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
@@ -783,7 +783,7 @@ def test_feature_dependency_swap(tmp_path):
     graph_v2.features_by_key[FeatureKey(["test", "upstream_b"])]
     graph_v2.features_by_key[FeatureKey(["test", "downstream"])]
 
-    with graph_v2.use(), store_v2:
+    with graph_v2.use(), store_v2.open(AccessMode.WRITE):
         # Detect migration (before recording v2 snapshot)
         migration = detect_migration(
             store_v2,
@@ -869,7 +869,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     # Migrate store
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
 
-    with graph_v2.use(), store_v2:
+    with graph_v2.use(), store_v2.open(AccessMode.WRITE):
         store_v2.record_feature_graph_snapshot()
 
         # Detect migration

@@ -373,8 +373,11 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
                 downstream_data.sort("sample_id"),
             )
 
-            # Test 3: List features
-            features_list = store.list_features()
+            # Test 3: List features from graph
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            features_list = graph.list_features(only_current_project=False)
             assert len(features_list) == 3
             feature_keys = set(features_list)
             assert upstream_a.spec().key in feature_keys
@@ -427,8 +430,11 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
             result_d2 = collect_to_polars(store2.read_metadata(downstream))
             assert len(result_d2) == num_samples
 
-            # Verify feature list persists
-            features_list2 = store2.list_features()
+            # Verify feature list persists in graph
+            from metaxy.models.feature import FeatureGraph
+
+            graph2 = FeatureGraph.get_active()
+            features_list2 = graph2.list_features(only_current_project=False)
             assert len(features_list2) == 3
 
         # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)

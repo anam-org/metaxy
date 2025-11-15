@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import FrameT, IntoFrame
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import (
@@ -29,9 +30,13 @@ from metaxy.metadata_store.system.storage import _suppress_feature_version_warni
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import empty_frame_like
 from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
@@ -457,7 +462,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: nw.DataFrame[Any] | pl.DataFrame,
+        df: IntoFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -468,7 +473,7 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to write metadata for
-            df: Narwhals DataFrame or Polars DataFrame containing metadata.
+            df: Any dataframe that can be converted to Narwhals (pandas, Polars, PyArrow, etc.).
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
                 May optionally contain `metaxy_feature_version` and `metaxy_snapshot_version` (for migrations).
 
@@ -479,10 +484,13 @@ class MetadataStore(ABC):
 
         Note:
             - Always writes to current store, never to fallback stores.
-            - If df already contains the metaxy-managed columns, they will be used
+
+            - If df already contains the metaxy-managed feature version columns, they will be used
               as-is (no replacement). This allows migrations to write historical
               versions. A warning is issued unless suppressed via context manager.
+
             - Project validation is performed unless disabled via allow_cross_project_writes()
+
             - Must be called within store.open(mode=AccessMode.WRITE) context
         """
         self._check_open()
@@ -494,28 +502,57 @@ class MetadataStore(ABC):
         if not is_system_table:
             self._validate_project_write(feature)
 
-        # Convert Narwhals to Polars if needed
-        if isinstance(df, nw.DataFrame):
-            df = df.to_polars()
-        # nw.DataFrame also matches as DataFrame in some contexts, ensure it's Polars
-        if not isinstance(df, pl.DataFrame):
-            # Must be some other type - shouldn't happen but handle defensively
-            if hasattr(df, "to_polars"):
-                df = df.to_polars()
-            elif hasattr(df, "to_pandas"):
-                df = pl.from_pandas(df.to_pandas())
-            else:
-                raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
+        df_nw = nw.from_native(df)
+
+        # Get column names from schema
+        columns = df_nw.collect_schema().names()
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self._write_metadata_impl(feature_key, df)
+            # Ensure we have a DataFrame (collect if LazyFrame)
+            df_eager = df_nw.collect() if isinstance(df_nw, nw.LazyFrame) else df_nw
+            self._validate_schema_system_table(df_eager)
+            # Convert to Polars only when passing to backend implementation
+            self._write_metadata_impl(feature_key, df_eager.to_polars())
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
+        # For regular features: validate schema first before adding columns
+        # Early validation to ensure provenance_by_field column exists
+        # (needed for backward compatibility columns)
+        if PROVENANCE_BY_FIELD_COL not in columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
+            )
+
+        # Add all required system columns
+        df_nw = self._add_system_columns(df_nw, feature)  # pyright: ignore[reportArgumentType]
+
+        # Validate final schema and write
+        df_eager = df_nw.collect() if isinstance(df_nw, nw.LazyFrame) else df_nw
+        self._validate_schema(df_eager)
+        self._write_metadata_impl(feature_key, df_eager.to_polars())
+
+    def _add_system_columns(
+        self,
+        df: FrameT,
+        feature: FeatureKey | type[BaseFeature],
+    ) -> FrameT:
+        """Add all required system columns to the DataFrame.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            feature: Feature class or key
+
+        Returns:
+            DataFrame with all system columns added
+        """
+        feature_key = self._resolve_feature_key(feature)
+        columns = df.collect_schema().names()
+
         # Check if feature_version and snapshot_version already exist in DataFrame
-        if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
+        if FEATURE_VERSION_COL in columns and SNAPSHOT_VERSION_COL in columns:
             # DataFrame already has feature_version and snapshot_version - use as-is
             # This is intended for migrations writing historical versions
             # Issue a warning unless we're in a suppression context
@@ -546,38 +583,81 @@ class MetadataStore(ABC):
             graph = FeatureGraph.get_active()
             current_snapshot_version = graph.snapshot_version
 
+            # Get current timestamp as timezone-aware datetime
+            current_timestamp = datetime.now(timezone.utc)
+
             df = df.with_columns(
-                [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
-                ]
+                nw.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                nw.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+                nw.lit(current_timestamp).alias(METAXY_CREATED_AT),
             )
+            # Update columns list after adding new columns
+            columns = df.collect_schema().names()
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self._write_metadata_impl(feature_key, df)
+        # Add created_at timestamp if not present
+        if METAXY_CREATED_AT not in columns:
+            current_timestamp = datetime.now(timezone.utc)
+            df = df.with_columns(nw.lit(current_timestamp).alias(METAXY_CREATED_AT))
+            columns = df.collect_schema().names()
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
+        # Add metaxy_provenance if not present (hash of provenance_by_field struct)
+        # This is required so data read from store always has both provenance columns
+        if METAXY_PROVENANCE not in columns:
+            plan = self._resolve_feature_plan(feature)
+
+            # Use native tracker if DataFrame backend matches store's native implementation
+            tracker_cm = (
+                self._create_provenance_tracker(plan)
+                if self._supports_native_components()
+                and df.implementation == self.native_implementation
+                else self.create_polars_provenance_tracker(plan)
+            )
+            with tracker_cm as tracker:
+                df = tracker.add_provenance_column(
+                    df,
+                    hash_algorithm=self.hash_algorithm,  # pyright: ignore[reportArgumentType]
+                )
+
+            columns = df.collect_schema().names()
+
+        # Add data version columns if they don't exist
+        if METAXY_DATA_VERSION_BY_FIELD not in columns:
+            df = df.with_columns(
+                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+            )
+            columns = df.collect_schema().names()
+
+        if METAXY_DATA_VERSION not in columns:
+            df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
+
+        return df
+
+    def _validate_schema(self, df: nw.DataFrame[Any]) -> None:
         """
         Validate that DataFrame has required schema.
 
         Args:
-            df: DataFrame to validate
+            df: Narwhals DataFrame to validate
 
         Raises:
             MetadataSchemaError: If schema is invalid
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
+        # Get schema and column names
+        schema = df.collect_schema()
+        columns = schema.names()
+
         # Check for metaxy_provenance_by_field column
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if PROVENANCE_BY_FIELD_COL not in columns:
             raise MetadataSchemaError(
                 f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
         # Check that metaxy_provenance_by_field is a struct
-        provenance_type = df.schema[PROVENANCE_BY_FIELD_COL]
+        # Convert to Polars to check struct type (Narwhals doesn't have dtype inspection)
+        df_polars = df.to_polars()
+        provenance_type = df_polars.schema[PROVENANCE_BY_FIELD_COL]
         if not isinstance(provenance_type, pl.Struct):
             raise MetadataSchemaError(
                 f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
@@ -586,19 +666,23 @@ class MetadataStore(ABC):
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
-        if FEATURE_VERSION_COL not in df.columns:
+        if FEATURE_VERSION_COL not in columns:
             raise MetadataSchemaError(
                 f"DataFrame must have '{FEATURE_VERSION_COL}' column"
             )
 
         # Check for snapshot_version column
-        if SNAPSHOT_VERSION_COL not in df.columns:
+        if SNAPSHOT_VERSION_COL not in columns:
             raise MetadataSchemaError(
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
-        """Validate schema for system tables (minimal validation)."""
+    def _validate_schema_system_table(self, df: nw.DataFrame[Any]) -> None:
+        """Validate schema for system tables (minimal validation).
+
+        Args:
+            df: Narwhals DataFrame to validate
+        """
         # System tables don't need metaxy_provenance_by_field column
         pass
 
@@ -1862,6 +1946,30 @@ class MetadataStore(ABC):
                 feature, feature_version=feature.feature_version()
             )
 
+            # Get only the latest records based on metaxy_created_at if multiple versions exist
+            # This handles the case where metadata was manually updated with newer timestamps
+            if current_lazy_nw is not None:
+                # Check if metaxy_created_at column exists (backward compatibility)
+                cols = current_lazy_nw.collect_schema().names()
+                if METAXY_CREATED_AT in cols:
+                    # Get ID columns for this feature to group by
+                    feature_plan = self._resolve_feature_plan(feature)
+                    id_columns = feature_plan.feature.id_columns
+
+                    # Use rank().over() to number rows by created_at descending within each ID partition
+                    # Then filter to keep only rank=1 (the latest record for each ID)
+                    # This approach works with LazyFrames and properly handles descending order
+                    current_lazy_nw = (
+                        current_lazy_nw.with_columns(
+                            nw.col(METAXY_CREATED_AT)
+                            .rank(method="ordinal", descending=True)
+                            .over(id_columns)
+                            .alias("__metaxy_row_num")
+                        )
+                        .filter(nw.col("__metaxy_row_num") == 1)
+                        .drop("__metaxy_row_num")
+                    )
+
             # Use ProvenanceTracker to compute provenance and resolve increment
             # This internally handles: joining, hashing, and diffing
             added, changed, removed = tracker.resolve_increment_with_provenance(
@@ -2003,3 +2111,9 @@ class MetadataStore(ABC):
                 if isinstance(removed, nw.LazyFrame)
                 else removed,
             )
+
+    @contextmanager
+    def create_polars_provenance_tracker(
+        self, plan: FeaturePlan
+    ) -> Generator[PolarsProvenanceTracker, None, None]:
+        yield PolarsProvenanceTracker(plan)

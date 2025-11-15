@@ -458,8 +458,8 @@ class ProvenanceTracker(ABC):
                 )
 
             # Validate that root features provide both required provenance columns
-            self._check_required_provenance_columns(
-                expected, "The `sample` DataFrame (must be provided to root features)"
+            expected = self._ensure_provenance_columns(
+                expected, hash_algorithm=hash_algorithm, is_from_store=False
             )
         else:
             # Normal case: compute provenance from upstream
@@ -475,10 +475,8 @@ class ProvenanceTracker(ABC):
         assert current is not None
 
         # Case 2 & 3: Compare expected with current metadata
-        # Validate that current has metaxy_provenance column
-        self._check_required_provenance_columns(
-            current, "The `current` DataFrame loaded from the metadata store"
-        )
+        # Ensure current has metaxy_provenance column (compute if missing)
+        current = self._ensure_provenance_columns(current, hash_algorithm)
 
         # Handle different lineage relationships before comparison
         lineage_handler = create_lineage_handler(self.plan, self)
@@ -539,20 +537,57 @@ class ProvenanceTracker(ABC):
         # Return lazy frames with ID and provenance columns (caller decides whether to collect)
         return added, changed, removed
 
-    def _check_required_provenance_columns(self, df: FrameT, message: str):
+    def _ensure_provenance_columns(
+        self, df: FrameT, hash_algorithm: HashAlgorithm, *, is_from_store: bool = True
+    ) -> FrameT:
+        """Ensure both provenance columns exist.
+
+        Args:
+            df: DataFrame to check/update
+            hash_algorithm: Hash algorithm to use if computing provenance
+            is_from_store: True if df came from metadata store (should always have provenance),
+                          False if from user-provided samples (needs computation)
+
+        Returns:
+            DataFrame with both provenance columns
+
+        Raises:
+            ValueError: If metaxy_provenance_by_field is missing, or if metaxy_provenance
+                       is missing from store data
+        """
         cols = df.collect_schema().names()
 
         if METAXY_PROVENANCE_BY_FIELD not in cols:
             raise ValueError(
-                f"{message} is missing required "
-                f"'{METAXY_PROVENANCE_BY_FIELD}' column. This column must be a struct containing the provenance of each field on this feature."
+                f"DataFrame is missing required '{METAXY_PROVENANCE_BY_FIELD}' column. "
+                f"This column must be a struct containing the provenance of each field on this feature."
             )
+
+        # Handle metaxy_provenance
         if METAXY_PROVENANCE not in cols:
-            raise ValueError(
-                f"{message} is missing required "
-                f"'{METAXY_PROVENANCE}' column. All metadata in the store must have both provenance columns. "
-                f"This column is automatically added by Metaxy when writing metadata."
-            )
+            if is_from_store:
+                # ERROR: Data from store MUST have this column
+                raise ValueError(
+                    f"Metadata loaded from store is missing '{METAXY_PROVENANCE}' column. "
+                    f"This indicates corrupt or incomplete data in the metadata store. "
+                    f"All metadata written by Metaxy includes this column."
+                )
+            else:
+                # User-provided samples: compute the provenance
+                # For root features this is expected, for non-root it suggests an error
+                is_root = not self.plan.deps
+                if not is_root:
+                    import warnings
+
+                    warnings.warn(
+                        f"User-provided DataFrame for non-root feature is missing '{METAXY_PROVENANCE}' column. "
+                        f"Did you accidentally drop this column? It should be preserved from a `resolve_update` call.",
+                        UserWarning,
+                        stacklevel=4,
+                    )
+                df = self.add_provenance_column(df, hash_algorithm=hash_algorithm)
+
+        return df
 
 
 def create_lineage_handler(
