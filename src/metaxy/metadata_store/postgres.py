@@ -475,34 +475,6 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         return result
 
-    @staticmethod
-    def _ensure_string_identifier(value: str | bytes) -> str:
-        """Ensure identifier is a string, not bytes."""
-        if isinstance(value, bytes):
-            return value.hex()
-        return str(value)
-
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, Any]:
-        """Get hash SQL generators for PostgreSQL."""
-        generators = super()._get_hash_sql_generators()
-        ensure_str = self._ensure_string_identifier
-
-        def sha256_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                field_key_str = ensure_str(field_key)
-                concat_col_str = ensure_str(concat_col)
-                hash_col = f"__hash_{field_key_str}"
-                hash_expr = f"ENCODE(DIGEST({concat_col_str}, 'sha256'), 'hex')"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
-
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-        generators[HashAlgorithm.SHA256] = sha256_generator
-        return generators
-
     def _supports_native_components(self) -> bool:
         """PostgreSQL supports native components even in struct-compatibility mode.
 
