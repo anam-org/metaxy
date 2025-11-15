@@ -26,8 +26,6 @@ They are backed by SQLGlot and understand the following subset of SQL `WHERE` sy
 - Literals: strings (`'value'`), numbers, booleans (`TRUE`/`FALSE`), and `NULL`
 - Implicit boolean columns (e.g., `NOT is_active`)
 
-::: metaxy.models.filter_expression.NarwhalsFilter
-
 Convert SQL `WHERE` condition into Narwhals expressions
 ```py
 from metaxy.models.filter_expression import parse_filter_string
@@ -38,3 +36,7 @@ expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
 # Apply the parsed expression to any Narwhals LazyFrame
 filtered = lazy_frame.filter(expr)
 ```
+
+---
+
+::: metaxy.models.filter_expression.NarwhalsFilter
