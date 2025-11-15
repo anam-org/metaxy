@@ -20,6 +20,12 @@ from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
 )
+from metaxy.metadata_store.system import (
+    EVENTS_KEY,
+    FEATURE_VERSIONS_KEY,
+    FEATURE_VERSIONS_SCHEMA,
+)
+from metaxy.metadata_store.system.events import EVENTS_SCHEMA
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
@@ -70,6 +76,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         *,
         backend: str | None = None,
         connection_params: dict[str, Any] | None = None,
+        table_prefix: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -82,6 +89,9 @@ class IbisMetadataStore(MetadataStore, ABC):
                 Used with connection_params for more control.
             connection_params: Backend-specific connection parameters
                 e.g., {"host": "localhost", "port": 9000, "database": "default"}
+            table_prefix: Optional prefix applied to all feature and system table names.
+                Useful for logically separating environments (e.g., "prod_"). Must form a valid SQL
+                identifier when combined with the generated table name.
             **kwargs: Passed to MetadataStore.__init__ (e.g., fallback_stores, hash_algorithm)
 
         Raises:
@@ -122,8 +132,28 @@ class IbisMetadataStore(MetadataStore, ABC):
         self.backend = backend
         self.connection_params = connection_params or {}
         self._conn: ibis.BaseBackend | None = None
+        self._table_prefix = table_prefix or ""
 
         super().__init__(**kwargs)
+
+    def get_table_name(
+        self,
+        key: FeatureKey,
+    ) -> str:
+        """Generate the storage table name for a feature or system table.
+
+        Applies the configured table_prefix (if any) to the feature key's table name.
+        Subclasses can override this method to implement custom naming logic.
+
+        Args:
+            key: Feature key to convert to storage table name.
+
+        Returns:
+            Storage table name with optional prefix applied.
+        """
+        base_name = key.table_name
+
+        return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for Ibis stores.
@@ -206,6 +236,27 @@ class IbisMetadataStore(MetadataStore, ABC):
                 f"Supported algorithms: {', '.join(supported)}"
             )
 
+    def _ensure_system_tables_exist(self) -> None:
+        """Create system tables automatically when auto_create_tables is enabled."""
+        if not self.auto_create_tables or self._conn is None:
+            return
+
+        existing_tables = set(self._conn.list_tables())
+        system_tables = (
+            (FEATURE_VERSIONS_KEY, FEATURE_VERSIONS_SCHEMA),
+            (EVENTS_KEY, EVENTS_SCHEMA),
+        )
+
+        for table_key, schema in system_tables:
+            table_name = self.get_table_name(table_key)
+            if table_name in existing_tables:
+                continue
+
+            # Ensure a zero-row table exists with the expected schema so prefixed
+            # system tables show up in list_tables() immediately.
+            empty_df = pl.DataFrame(schema=schema)
+            self.conn.create_table(table_name, obj=empty_df)
+
     @property
     def ibis_conn(self) -> "ibis.BaseBackend":
         """Get Ibis backend connection.
@@ -272,6 +323,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Mark store as open and validate
                 self._is_open = True
                 self._validate_after_open()
+                self._ensure_system_tables_exist()
 
             yield self
         finally:
@@ -317,10 +369,6 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
 
-    def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
-        """Convert table name back to feature key."""
-        return FeatureKey(table_name.split("__"))
-
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
@@ -336,7 +384,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         try:
             self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
@@ -375,7 +423,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature key to drop metadata for
         """
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         if table_name in self.conn.list_tables():
@@ -402,7 +450,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         existing_tables = self.conn.list_tables()

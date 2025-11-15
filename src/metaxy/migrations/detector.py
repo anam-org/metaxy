@@ -155,7 +155,9 @@ def detect_migration(
 
     yaml_path = migrations_dir / f"{migration_id}.yaml"
     migration_yaml = {
-        "id": migration.migration_id,
+        "migration_type": DiffMigration.__module__ + ".DiffMigration",
+        "migration_id": migration.migration_id,
+        "id": migration.migration_id,  # Backward compatibility for older tooling
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,
         "from_snapshot_version": migration.from_snapshot_version,
