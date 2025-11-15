@@ -8,7 +8,6 @@ import uuid
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote_plus
 
 import boto3
 import ibis
@@ -56,25 +55,6 @@ def _find_free_port() -> int:
         s.listen(1)
         port = s.getsockname()[1]
     return port
-
-
-def _format_pg_connection_string(
-    *,
-    user: str,
-    host: str,
-    port: int,
-    database: str,
-    password: str | None = None,
-    options: str | None = None,
-) -> str:
-    """Build a PostgreSQL connection URI with proper escaping."""
-    auth = quote_plus(user)
-    if password:
-        auth = f"{quote_plus(user)}:{quote_plus(password)}"
-    uri = f"postgresql://{auth}@{host}:{port}/{database}"
-    if options:
-        uri = f"{uri}?options={quote_plus(options)}"
-    return uri
 
 
 @pytest.fixture(scope="session")
@@ -227,46 +207,33 @@ def clickhouse_db(clickhouse_server):
 
 @pytest.fixture(scope="session")
 def postgres_server(postgresql_proc: Any):
-    """Expose connection details for the pytest-postgresql server."""
+    """Expose connection details from pytest-postgresql's server.
+
+    Connects to the 'postgres' database (which always exists) to provide
+    an admin connection for creating test databases.
+    """
     host = postgresql_proc.host
     port = postgresql_proc.port
     user = postgresql_proc.user
     password = postgresql_proc.password
-    admin_db = postgresql_proc.dbname
     options = postgresql_proc.options
 
-    def build_conninfo(dbname: str) -> str:
-        return psycopg_conninfo.make_conninfo(
-            host=host,
-            port=str(port),
-            user=user,
-            password=password or None,
-            dbname=dbname,
-            options=options or None,
-        )
+    admin_dbname = "postgres"
 
-    admin_dsn = ""
-    last_error: Exception | None = None
-    for candidate in filter(None, [admin_db, "postgres"]):
-        try:
-            admin_dsn = build_conninfo(candidate)
-            with psycopg.connect(admin_dsn):
-                pass
-        except psycopg.OperationalError as exc:
-            last_error = exc
-            continue
-        admin_db = candidate
-        break
-    else:
-        raise RuntimeError(
-            "Unable to connect to Postgres admin database"
-        ) from last_error
+    admin_dsn = psycopg_conninfo.make_conninfo(
+        host=host,
+        port=str(port),
+        user=user,
+        password=password or None,
+        dbname=admin_dbname,
+        options=options or None,
+    )
 
     return {
         "host": host,
         "port": port,
         "user": user,
-        "dbname": admin_db,
+        "dbname": admin_dbname,
         "password": password,
         "options": options,
         "dsn": admin_dsn,
@@ -276,14 +243,16 @@ def postgres_server(postgresql_proc: Any):
 
 @pytest.fixture
 def postgres_db(postgres_server):
-    """Create a clean PostgreSQL database for each test (function-scoped)."""
+    """Create a clean PostgreSQL database for each test (function-scoped).
+
+    Returns a PostgreSQL URI connection string suitable for PostgresMetadataStore.
+    """
     psycopg = postgres_server["psycopg"]
     admin_dsn = postgres_server["dsn"]
     host = postgres_server["host"]
     port = postgres_server["port"]
     user = postgres_server["user"]
     password = postgres_server["password"]
-    options = postgres_server.get("options")
 
     db_name = f"test_{uuid.uuid4().hex}"
 
@@ -291,14 +260,13 @@ def postgres_db(postgres_server):
         with conn.cursor() as cur:
             cur.execute(f'CREATE DATABASE "{db_name}"')
 
-    test_conn_string = _format_pg_connection_string(
-        user=user,
-        host=host,
-        port=port,
-        database=db_name,
-        password=password,
-        options=options,
-    )
+    # Build PostgreSQL URI connection string (not libpq format)
+    # Format: postgresql://[user[:password]@][host][:port][/dbname]
+    if password:
+        auth = f"{user}:{password}"
+    else:
+        auth = user
+    test_conn_string = f"postgresql://{auth}@{host}:{port}/{db_name}"
 
     yield test_conn_string
 

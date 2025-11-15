@@ -31,7 +31,7 @@ from typing_extensions import Self
 
 from metaxy.metadata_store.base import PROVENANCE_BY_FIELD_COL
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-from metaxy.metadata_store.ibis import HashSQLGenerator, IbisMetadataStore
+from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.types import AccessMode
 from metaxy.provenance.ibis import IbisProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
@@ -467,24 +467,6 @@ class PostgresMetadataStore(IbisMetadataStore):
                 )
 
         return result
-
-    def _get_hash_sql_generators(self) -> dict[HashAlgorithm, HashSQLGenerator]:
-        """Get hash SQL generators for PostgreSQL."""
-        generators = super()._get_hash_sql_generators()
-
-        def sha256_generator(table, concat_columns: dict[str, str]) -> str:
-            hash_selects: list[str] = []
-            for field_key, concat_col in concat_columns.items():
-                hash_col = f"__hash_{field_key}"
-                hash_expr = f"ENCODE(DIGEST({concat_col}, 'sha256'), 'hex')"
-                hash_selects.append(f"{hash_expr} as {hash_col}")
-
-            hash_clause = ", ".join(hash_selects)
-            table_sql = table.compile()
-            return f"SELECT *, {hash_clause} FROM ({table_sql}) AS __metaxy_temp"
-
-        generators[HashAlgorithm.SHA256] = sha256_generator
-        return generators
 
     def _supports_native_components(self) -> bool:
         """PostgreSQL supports native components even in struct-compatibility mode.
