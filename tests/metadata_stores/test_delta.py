@@ -120,28 +120,6 @@ def test_delta_drop_feature(tmp_path, test_graph, test_features) -> None:
         assert result["sample_uid"].to_list() == [2]
 
 
-def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
-    """Verify that feature discovery is not supported in Delta store."""
-    store_path = tmp_path / "delta"
-    feature_cls = test_features["UpstreamFeatureA"]
-
-    with DeltaMetadataStore(store_path) as store:
-        assert store.list_features() == []
-
-        metadata = pl.DataFrame(
-            {
-                "sample_uid": [1],
-                "metaxy_provenance_by_field": [
-                    {"frames": "h1", "audio": "h1"},
-                ],
-            }
-        )
-        store.write_metadata(feature_cls, metadata)
-
-        # Feature discovery is not supported - returns empty list
-        assert store.list_features() == []
-
-
 def test_delta_nested_layout_creates_directories(
     tmp_path, test_graph, test_features
 ) -> None:
@@ -164,8 +142,6 @@ def test_delta_nested_layout_creates_directories(
         feature_dir = Path(store._feature_uri(feature_key))
         assert feature_dir.exists()
         assert feature_dir.relative_to(store_path) == Path("/".join(feature_key.parts))
-        # Feature discovery not supported - returns empty list
-        assert store.list_features() == []
 
 
 def test_delta_display(tmp_path) -> None:
@@ -185,17 +161,6 @@ def test_delta_display(tmp_path) -> None:
         assert "DeltaMetadataStore" in open_display
         assert "storage_options=***" in open_display
         assert "layout=flat" in open_display
-
-
-def test_delta_remote_lists_features_returns_empty() -> None:
-    """Stores return empty list for list_features() - use system tables instead."""
-    store = DeltaMetadataStore("s3://bucket/root", auto_create_tables=False)
-
-    with store:
-        features = store.list_features()
-
-    # Feature discovery not supported - returns empty list
-    assert features == []
 
 
 def test_delta_streaming_write(tmp_path, test_graph, test_features) -> None:

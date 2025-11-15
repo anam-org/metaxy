@@ -373,15 +373,7 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
                 downstream_data.sort("sample_id"),
             )
 
-            # Test 3: List features
-            features_list = store.list_features()
-            assert len(features_list) == 3
-            feature_keys = set(features_list)
-            assert upstream_a.spec().key in feature_keys
-            assert upstream_b.spec().key in feature_keys
-            assert downstream.spec().key in feature_keys
-
-            # Test 4: Update metadata (append-only write)
+            # Test 3: Update metadata (append-only write)
             # Metaxy uses immutable, append-only metadata storage
             new_sample_id = num_samples + 1
             updated_upstream_a = pl.DataFrame(
@@ -426,10 +418,6 @@ def test_ducklake_e2e_with_dependencies(test_features, num_samples) -> None:
 
             result_d2 = collect_to_polars(store2.read_metadata(downstream))
             assert len(result_d2) == num_samples
-
-            # Verify feature list persists
-            features_list2 = store2.list_features()
-            assert len(features_list2) == 3
 
         # Verify DuckLake catalog database exists (storage dir may not exist if no tables were created)
         assert metadata_path.exists(), "DuckLake catalog database should exist"

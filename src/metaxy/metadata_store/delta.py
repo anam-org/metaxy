@@ -13,6 +13,7 @@ import polars as pl
 
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import TableNotFoundError
+from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
@@ -167,9 +168,21 @@ class DeltaMetadataStore(MetadataStore):
             # No cleanup needed for Polars tracker
             pass
 
-    def open(self) -> None:
-        """Delta-rs opens connections lazily; nothing to do up front."""
-        return None
+    @contextmanager
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[DeltaMetadataStore]:
+        """Delta-rs opens connections lazily; manage context state for consistency."""
+        self._context_depth += 1
+
+        try:
+            if self._context_depth == 1:
+                self._is_open = True
+                self._validate_after_open()
+
+            yield self
+        finally:
+            self._context_depth -= 1
+            if self._context_depth == 0:
+                self._is_open = False
 
     def close(self) -> None:
         """No persistent resources to release."""
@@ -385,18 +398,6 @@ class DeltaMetadataStore(MetadataStore):
             filters=filters,
             columns=columns,
         )
-
-    def _list_features_local(self) -> list[FeatureKey]:
-        """List all features that have Delta tables in this store.
-
-        Feature discovery is not supported for Delta stores. Features must be
-        registered via 'metaxy graph push' or accessed directly by key.
-        Use system tables (feature_versions) to query registered features.
-
-        Returns:
-            Empty list - feature discovery not supported
-        """
-        return []
 
     def display(self) -> str:
         """Return human-readable representation of the store."""
