@@ -155,6 +155,8 @@ def detect_migration(
 
     yaml_path = migrations_dir / f"{migration_id}.yaml"
     migration_yaml = {
+        "migration_type": migration.migration_type,
+        "migration_id": migration.migration_id,
         "id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,

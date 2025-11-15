@@ -164,26 +164,55 @@ def test_parsed_expression_equals_narwhals_expression_null() -> None:
     assert parsed_result == expected_result == [True, True]
 
 
-def test_parsed_expression_equals_narwhals_expression_all_comparisons() -> None:
-    """Test all comparison operators."""
-    test_cases = [
+@pytest.mark.parametrize(
+    ("filter_string", "expected_expr", "expected_values"),
+    [
         ("x = 5", nw.col("x") == 5, [5]),
         ("x != 5", nw.col("x") != 5, [3, 7, 10]),
         ("x > 5", nw.col("x") > 5, [7, 10]),
         ("x < 5", nw.col("x") < 5, [3]),
         ("x >= 5", nw.col("x") >= 5, [5, 7, 10]),
         ("x <= 5", nw.col("x") <= 5, [3, 5]),
-    ]
-
+    ],
+)
+def test_parsed_expression_equals_narwhals_expression_all_comparisons(
+    filter_string: str,
+    expected_expr: nw.Expr,
+    expected_values: list[int],
+) -> None:
+    """Test that every comparison operator produces equivalent Narwhals expressions."""
     df = pl.DataFrame({"x": [3, 5, 7, 10]})
     lf = nw.from_native(df.lazy())
 
-    for filter_string, expected_expr, expected_values in test_cases:
-        parsed = parse_filter_string(filter_string)
+    parsed = parse_filter_string(filter_string)
 
-        parsed_result = lf.filter(parsed).collect().to_native()["x"].to_list()
-        expected_result = lf.filter(expected_expr).collect().to_native()["x"].to_list()
+    parsed_result = lf.filter(parsed).collect().to_native()["x"].to_list()
+    expected_result = lf.filter(expected_expr).collect().to_native()["x"].to_list()
 
-        assert parsed_result == expected_result == expected_values, (
-            f"Failed for: {filter_string}"
-        )
+    assert parsed_result == expected_result == expected_values
+
+
+@pytest.mark.parametrize(
+    ("filter_string", "expected_ids"),
+    [
+        (
+            "((age >= 25 AND (status = 'active' OR status = 'inactive')) "
+            "OR NOT is_active) AND deleted_at = NULL",
+            [2, 4],
+        ),
+        (
+            "NOT (status = 'deleted' OR deleted_at != NULL) "
+            "AND (age < 30 OR NOT is_active)",
+            [1, 2],
+        ),
+    ],
+)
+def test_parse_deeply_nested_expressions(
+    sample_lazy_frame: nw.LazyFrame[Any],
+    filter_string: str,
+    expected_ids: list[int],
+) -> None:
+    """Ensure parsing handles nested parentheses and mixed operators."""
+    expr = parse_filter_string(filter_string)
+    ids = collect_ids(sample_lazy_frame, expr)
+    assert ids == expected_ids

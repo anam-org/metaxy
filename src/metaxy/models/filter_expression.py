@@ -62,7 +62,28 @@ class NarwhalsFilter(FrozenBaseModel):
 
 
 def parse_filter_string(filter_string: str) -> nw.Expr:
-    """Parse a SQL WHERE-like string into a Narwhals expression."""
+    """Parse a SQL WHERE-like string into a Narwhals expression.
+
+    The parser uses SQLGlot under the hood and understands SQL WHERE
+    clauses composed of comparison operators, logical operators, parentheses,
+    dotted identifiers, and literal values (strings, numbers, booleans, ``NULL``).
+    It returns a backend-agnostic Narwhals expression that can be fed directly
+    into ``LazyFrame.filter`` for any Narwhals-compatible backend (Polars,
+    pandas, PyArrow, DuckDB, ...).
+
+    Examples
+    --------
+    >>> parse_filter_string("age > 25")
+    (nw.col("age") > 25)
+
+    >>> lf = nw.from_native(my_lazy_frame)
+    >>> expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
+    >>> lf.filter(expr)
+    <LazyFrame filtered by complex predicate>
+
+    >>> parse_filter_string("NOT (status = 'deleted') AND deleted_at = NULL")
+    ((~(nw.col("status") == "deleted")) & nw.col("deleted_at").is_null())
+    """
     return NarwhalsFilter.model_validate(filter_string).to_expr()
 
 

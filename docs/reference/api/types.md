@@ -28,10 +28,13 @@ They are backed by SQLGlot and understand the following subset of SQL `WHERE` sy
 
 ::: metaxy.models.filter_expression.NarwhalsFilter
 
+Convert SQL `WHERE` condition into Narwhals expressions
 ```py
 from metaxy.models.filter_expression import parse_filter_string
 
+# Parse a SQL WHERE clause into a backend-agnostic Narwhals expression
 expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
-# Use on any Narwhals LazyFrame
+
+# Apply the parsed expression to any Narwhals LazyFrame
 filtered = lazy_frame.filter(expr)
 ```
