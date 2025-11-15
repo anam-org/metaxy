@@ -4,6 +4,7 @@ This is the new executor that replaces the old 3-table system with a single
 event-based system stored in system tables via SystemTableStorage.
 """
 
+import traceback
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -245,21 +246,22 @@ class MigrationExecutor:
                     rows_affected_total += rows_affected
 
                 except Exception as e:
-                    # Get full error message
-                    error_msg = str(e) if str(e) else repr(e)
-                    errors[feature_key_str] = error_msg
+                    # Capture both human-friendly and full traceback messages
+                    short_error = str(e) if str(e) else repr(e)
+                    trace_error = traceback.format_exc().strip()
+                    errors[feature_key_str] = trace_error
 
                     # Log exception with full traceback
                     logger.exception(f"Error in feature {feature_key_str}")
 
-                    # Log feature failed
+                    # Log feature failed with concise error in system tables
                     if not dry_run:
                         self.storage.write_event(
                             Event.feature_failed(
                                 project=project,
                                 migration_id=migration.migration_id,
                                 feature_key=feature_key_str,
-                                error_message=error_msg,
+                                error_message=short_error,
                             )
                         )
 
@@ -440,9 +442,9 @@ class MigrationExecutor:
                     rows_affected_total += rows_affected
 
                 except Exception as e:
-                    # Get full error message
-                    error_msg = str(e) if str(e) else repr(e)
-                    errors[feature_key_str] = error_msg
+                    short_error = str(e) if str(e) else repr(e)
+                    trace_error = traceback.format_exc().strip()
+                    errors[feature_key_str] = trace_error
 
                     # Log exception with full traceback
                     logger.exception(f"Error in feature {feature_key_str}")
@@ -454,7 +456,7 @@ class MigrationExecutor:
                                 project=project,
                                 migration_id=migration.migration_id,
                                 feature_key=feature_key_str,
-                                error_message=error_msg,
+                                error_message=short_error,
                             )
                         )
 

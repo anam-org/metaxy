@@ -674,7 +674,9 @@ class GraphDiffer:
                 )
 
         except Exception as e:
-            raise ValueError(f"Failed to load snapshot {snapshot_version}: {e}") from e
+            raise ValueError(
+                f"Failed to load snapshot {snapshot_version}: cannot load snapshot {snapshot_version}: {e}"
+            ) from e
 
         # Build snapshot data structure
         snapshot_dict = {}
