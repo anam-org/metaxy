@@ -10,11 +10,12 @@ Metaxy has built-in support for the following metadata store types:
 
 ## Databases
 
-See [IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
+[IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
 
-## In-memory
+## Storage Only
 
-See [InMemoryMetadataStore][metaxy.metadata_store.memory.InMemoryMetadataStore].
+- [DeltaMetadataStore](./delta.md).
+- [InMemoryMetadataStore][metaxy.metadata_store.memory.InMemoryMetadataStore].
 
 ---
 

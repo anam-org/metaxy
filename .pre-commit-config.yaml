@@ -7,10 +7,10 @@ repos:
       - id: trailing-whitespace
         exclude: '\.ambr$'  # Exclude syrupy snapshot files
       - id: end-of-file-fixer
-        exclude: ^.basedpyright/baseline\.json$
+        exclude: '^(\.basedpyright/baseline\.json|uv\.lock)$'
       - id: check-yaml
       - id: check-added-large-files
-        exclude: ^.basedpyright/baseline\.json$
+        exclude: '^(\.basedpyright/baseline\.json|uv\.lock)$'
   - repo: local
     hooks:
     - id: ruff-check

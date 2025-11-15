@@ -8,9 +8,10 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import Any, Literal, overload
 
 import narwhals as nw
+import narwhals.typing
 import polars as pl
 from typing_extensions import Self
 
@@ -42,12 +43,6 @@ from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
 from metaxy.provenance import ProvenanceTracker
 from metaxy.provenance.polars import PolarsProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
-
-if TYPE_CHECKING:
-    pass
-
-# Removed TRef - all stores now use Narwhals LazyFrames universally
-
 
 PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
@@ -421,11 +416,12 @@ class MetadataStore(ABC):
         from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
-        if feature_key not in graph.features_by_key:
+        try:
+            feature_cls = graph.get_feature_by_key(feature_key)
+        except KeyError:
             # Feature not in graph - can't validate, skip
             return
 
-        feature_cls = graph.features_by_key[feature_key]
         feature_project = feature_cls.project  # type: ignore[attr-defined]
 
         # Validate the project matches
@@ -441,14 +437,18 @@ class MetadataStore(ABC):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata (already validated).
+                Stores should handle both DataFrame and LazyFrame types.
+                Most stores will want to collect LazyFrames at the start of this method.
+                Some stores (e.g., DeltaMetadataStore) can optimize by streaming LazyFrames
+                in batches without full collection.
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -457,7 +457,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: nw.DataFrame[Any] | pl.DataFrame,
+        df: nw.DataFrame[Any] | nw.LazyFrame[Any] | pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -494,30 +494,57 @@ class MetadataStore(ABC):
         if not is_system_table:
             self._validate_project_write(feature)
 
-        # Convert Narwhals to Polars if needed
-        if isinstance(df, nw.DataFrame):
-            df = df.to_polars()
-        # nw.DataFrame also matches as DataFrame in some contexts, ensure it's Polars
-        if not isinstance(df, pl.DataFrame):
-            # Must be some other type - shouldn't happen but handle defensively
-            if hasattr(df, "to_polars"):
-                df = df.to_polars()
-            elif hasattr(df, "to_pandas"):
-                df = pl.from_pandas(df.to_pandas())
-            else:
-                raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
+        # Convert Narwhals to native Polars (both lazy and eager)
+        if isinstance(df, (nw.LazyFrame, nw.DataFrame)):
+            df = df.to_native()  # type: ignore[assignment]
 
-        # For system tables, write directly without feature_version tracking
+        # Type narrowing: at this point df must be pl.DataFrame or pl.LazyFrame
+        if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+            raise TypeError(
+                f"Expected Polars DataFrame or LazyFrame after conversion, got {type(df)}"
+            )
+
+        polars_df: pl.DataFrame | pl.LazyFrame = df
+
+        # For system tables, write frame as-is
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self._write_metadata_impl(feature_key, df)
+            self._validate_schema_system_table(polars_df)
+            self._write_metadata_impl(feature_key, polars_df)
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
-        # Check if feature_version and snapshot_version already exist in DataFrame
-        if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
-            # DataFrame already has feature_version and snapshot_version - use as-is
-            # This is intended for migrations writing historical versions
+        # For regular features: add feature_version and snapshot_version
+        polars_df = self._add_system_columns(feature, feature_key, polars_df)  # pyright: ignore[reportArgumentType]
+
+        # Validate schema (works for both lazy and eager)
+        self._validate_schema_for_write(polars_df)
+
+        # Write metadata - delegate to store (store decides whether to collect lazy frames)
+        self._write_metadata_impl(feature_key, polars_df)
+
+    def _add_system_columns(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        feature_key: FeatureKey,
+        df: narwhals.typing.FrameT,
+    ) -> narwhals.typing.FrameT:
+        """Add feature_version and snapshot_version columns if not already present.
+
+        Args:
+            feature: Feature being written
+            feature_key: Resolved feature key
+            df: DataFrame or LazyFrame to add columns to
+
+        Returns:
+            DataFrame or LazyFrame with system columns added (preserves input type)
+        """
+        # Get schema names for eager or lazy frames without collecting data
+        schema_names = (
+            df.collect_schema().names() if isinstance(df, pl.LazyFrame) else df.columns
+        )
+
+        # Check if already present (migration path)
+        if FEATURE_VERSION_COL in schema_names and SNAPSHOT_VERSION_COL in schema_names:
+            # DataFrame already has system columns - use as-is
             # Issue a warning unless we're in a suppression context
             if not _suppress_feature_version_warning.get():
                 import warnings
@@ -529,34 +556,77 @@ class MetadataStore(ABC):
                     UserWarning,
                     stacklevel=2,
                 )
+            return df
+
+        # Get current feature version
+        if isinstance(feature, type) and issubclass(feature, BaseFeature):
+            current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
         else:
-            # Get current feature version and snapshot_version from code and add them
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
-            else:
-                from metaxy.models.feature import FeatureGraph
-
-                graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
-
-            # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
 
             graph = FeatureGraph.get_active()
-            current_snapshot_version = graph.snapshot_version
+            feature_cls = graph.get_feature_by_key(feature_key)
+            current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
 
-            df = df.with_columns(
-                [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
-                ]
+        # Get snapshot_version from active graph
+        from metaxy.models.feature import FeatureGraph
+
+        graph = FeatureGraph.get_active()
+        current_snapshot_version = graph.snapshot_version
+
+        # Add system columns using Narwhals
+        # Wrap Polars frame in Narwhals, use Narwhals operations, then convert back
+        nw_df = nw.from_native(df, eager_only=False)
+        updated_df = nw_df.with_columns(
+            [
+                nw.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                nw.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+            ]
+        )
+        # Convert back to native Polars (preserves eager/lazy distinction)
+        return updated_df.to_native()  # type: ignore[return-value]
+
+    def _validate_schema_for_write(self, df: pl.DataFrame | pl.LazyFrame) -> None:
+        """
+        Validate that DataFrame or LazyFrame has required schema for writing.
+
+        Works for both eager DataFrames and LazyFrames without collecting.
+
+        Args:
+            df: DataFrame or LazyFrame to validate
+
+        Raises:
+            MetadataSchemaError: If schema is invalid
+        """
+        from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+        # Get schema without collecting (works for both lazy and eager)
+        schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
+
+        # Check for metaxy_provenance_by_field column
+        if PROVENANCE_BY_FIELD_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self._write_metadata_impl(feature_key, df)
+        # Check that metaxy_provenance_by_field is a struct
+        provenance_type = schema[PROVENANCE_BY_FIELD_COL]
+        if not isinstance(provenance_type, pl.Struct):
+            raise MetadataSchemaError(
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+            )
+
+        # Check for feature_version column
+        if FEATURE_VERSION_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{FEATURE_VERSION_COL}' column"
+            )
+
+        # Check for snapshot_version column
+        if SNAPSHOT_VERSION_COL not in schema:
+            raise MetadataSchemaError(
+                f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
+            )
 
     def _validate_schema(self, df: pl.DataFrame) -> None:
         """
@@ -597,10 +667,32 @@ class MetadataStore(ABC):
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
+    def _validate_schema_system_table(self, df: pl.DataFrame | pl.LazyFrame) -> None:
         """Validate schema for system tables (minimal validation)."""
         # System tables don't need metaxy_provenance_by_field column
         pass
+
+    def _apply_read_filters(
+        self,
+        lazy_frame: nw.LazyFrame[Any],
+        *,
+        feature_version: str | None,
+        filters: Sequence[nw.Expr] | None,
+        columns: Sequence[str] | None,
+    ) -> nw.LazyFrame[Any]:
+        """Apply standard filters/column projections to lazy frames."""
+        if feature_version is not None:
+            lazy_frame = lazy_frame.filter(
+                nw.col(FEATURE_VERSION_COL) == feature_version
+            )
+
+        if filters:
+            lazy_frame = lazy_frame.filter(*filters)
+
+        if columns is not None:
+            lazy_frame = lazy_frame.select(columns)
+
+        return lazy_frame
 
     @abstractmethod
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
@@ -900,10 +992,10 @@ class MetadataStore(ABC):
                 graph = FeatureGraph.get_active()
                 # Only try to get from graph if feature_key exists in graph
                 # This allows reading system tables or external features not in current graph
-                if feature_key in graph.features_by_key:
-                    feature_cls = graph.features_by_key[feature_key]
+                try:
+                    feature_cls = graph.get_feature_by_key(feature_key)
                     feature_version_filter = feature_cls.feature_version()  # type: ignore[attr-defined]
-                else:
+                except KeyError:
                     # Feature not in graph - skip feature_version filtering
                     feature_version_filter = None
 
@@ -1506,7 +1598,7 @@ class MetadataStore(ABC):
             try:
                 # Look up the Feature class from the graph and pass it to read_metadata
                 # This way we use the bound graph instead of relying on active context
-                upstream_feature_cls = graph.features_by_key[upstream_feature_key]
+                upstream_feature_cls = graph.get_feature_by_key(upstream_feature_key)
                 lazy_frame = self.read_metadata(
                     upstream_feature_cls,
                     filters=upstream_filters,  # Pass extracted filters (Sequence or None)
@@ -1515,7 +1607,7 @@ class MetadataStore(ABC):
                 )
                 # Use string key for dict
                 upstream_metadata[upstream_feature_key.to_string()] = lazy_frame
-            except FeatureNotFoundError as e:
+            except (KeyError, FeatureNotFoundError) as e:
                 raise DependencyError(
                     f"Missing upstream feature {upstream_feature_key.to_string()} "
                     f"required by {plan.feature.key.to_string()}"
@@ -1846,7 +1938,7 @@ class MetadataStore(ABC):
 
                 # Get the upstream feature's current feature_version
                 # Look up the Feature class from the graph to get its feature_version
-                upstream_feature_cls = feature.graph.features_by_key[upstream_key]
+                upstream_feature_cls = feature.graph.get_feature_by_key(upstream_key)
                 upstream_feature_version = upstream_feature_cls.feature_version()
 
                 upstream_lazy = self.read_metadata_in_store(
@@ -1878,6 +1970,27 @@ class MetadataStore(ABC):
             if removed is None:
                 removed = empty_frame_like(added)
 
+            # Helper to collect and ensure Polars-backed frames
+            def _collect_to_polars(
+                frame: nw.DataFrame[Any] | nw.LazyFrame[Any],
+            ) -> nw.DataFrame[Any]:
+                """Collect lazy frame and ensure result is Polars-backed."""
+                result = frame.collect() if isinstance(frame, nw.LazyFrame) else frame
+
+                # If result is PyArrow-backed, convert to Polars
+                # Import here to make dependency explicit at usage site
+                if result.implementation != nw.Implementation.POLARS:
+                    try:
+                        import pyarrow as pa  # type: ignore
+
+                        native = result.to_native()
+                        if isinstance(native, pa.Table):
+                            return nw.from_native(pl.from_arrow(native))
+                    except (ImportError, AttributeError):
+                        pass  # pyarrow not available or not a PyArrow table
+
+                return result
+
             # Return as LazyIncrement or materialize to Increment
             if lazy:
                 return LazyIncrement(
@@ -1893,13 +2006,9 @@ class MetadataStore(ABC):
                 )
             else:
                 return Increment(
-                    added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                    changed=changed.collect()
-                    if isinstance(changed, nw.LazyFrame)
-                    else changed,
-                    removed=removed.collect()
-                    if isinstance(removed, nw.LazyFrame)
-                    else removed,
+                    added=_collect_to_polars(added),
+                    changed=_collect_to_polars(changed),
+                    removed=_collect_to_polars(removed),
                 )
 
     def _resolve_update_polars(
@@ -1980,6 +2089,27 @@ class MetadataStore(ABC):
         if removed is None:
             removed = empty_frame_like(added)
 
+        # Helper to collect and ensure Polars-backed frames
+        def _collect_to_polars(
+            frame: nw.DataFrame[Any] | nw.LazyFrame[Any],
+        ) -> nw.DataFrame[Any]:
+            """Collect lazy frame and ensure result is Polars-backed."""
+            result = frame.collect() if isinstance(frame, nw.LazyFrame) else frame
+
+            # If result is PyArrow-backed, convert to Polars
+            # Import here to make dependency explicit at usage site
+            if result.implementation != nw.Implementation.POLARS:
+                try:
+                    import pyarrow as pa  # type: ignore
+
+                    native = result.to_native()
+                    if isinstance(native, pa.Table):
+                        return nw.from_native(pl.from_arrow(native))
+                except (ImportError, AttributeError):
+                    pass  # pyarrow not available or not a PyArrow table
+
+            return result
+
         # Return as LazyIncrement or materialize to Increment
         if lazy:
             return LazyIncrement(
@@ -1988,18 +2118,14 @@ class MetadataStore(ABC):
                 else nw.from_native(added),
                 changed=changed
                 if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
+                else nw.from_native(added),
                 removed=removed
                 if isinstance(removed, nw.LazyFrame)
                 else nw.from_native(removed),
             )
         else:
             return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
+                added=_collect_to_polars(added),
+                changed=_collect_to_polars(changed),
+                removed=_collect_to_polars(removed),
             )

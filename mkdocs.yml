@@ -192,13 +192,15 @@ nav:
       - Fields Mapping: reference/api/definitions/fields-mapping.md
       - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
-    - Metadata Stores:
-      - reference/api/metadata-stores/index.md
-      - Databases:
-        - reference/api/metadata-stores/ibis/index.md
-        - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
-        - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-      - Memory: reference/api/metadata-stores/memory.md
+      - Metadata Stores:
+        - reference/api/metadata-stores/index.md
+        - Databases:
+          - reference/api/metadata-stores/ibis/index.md
+          - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
+          - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
+        - Storage Only:
+          - Delta Lake: reference/api/metadata-stores/delta.md
+          - Memory: reference/api/metadata-stores/memory.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md

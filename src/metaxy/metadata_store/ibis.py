@@ -324,18 +324,22 @@ class IbisMetadataStore(MetadataStore, ABC):
     def _write_metadata_impl(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: pl.DataFrame | pl.LazyFrame,
     ) -> None:
         """
         Internal write implementation using Ibis.
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: DataFrame or LazyFrame with metadata
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        # Collect lazy frames - Ibis write needs eager data
+        if isinstance(df, pl.LazyFrame):
+            df = df.collect()
+
         table_name = feature_key.table_name
 
         try:
@@ -415,23 +419,12 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
         nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
 
-        # Apply feature_version filter (stays in SQL via Narwhals)
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
-
-        # Apply generic Narwhals filters (stays in SQL)
-        if filters is not None:
-            for filter_expr in filters:
-                nw_lazy = nw_lazy.filter(filter_expr)
-
-        # Select columns (stays in SQL)
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
-
-        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
-        return nw_lazy
+        return self._apply_read_filters(
+            nw_lazy,
+            feature_version=feature_version,
+            filters=filters,
+            columns=columns,
+        )
 
     def _can_compute_native(self) -> bool:
         """

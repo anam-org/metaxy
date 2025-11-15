@@ -894,6 +894,15 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
 
+    def __init_subclass__(
+        cls,
+        *,
+        spec: FeatureSpecWithIDColumns | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Allow pyright and subclasses to pass the `spec` kwarg."""
+        super().__init_subclass__(**kwargs)
+
     @classmethod
     def spec(cls) -> FeatureSpec:  # type: ignore[override]
         return cls._spec
