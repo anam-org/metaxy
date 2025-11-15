@@ -20,6 +20,12 @@ from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
 )
+from metaxy.metadata_store.system import (
+    EVENTS_KEY,
+    FEATURE_VERSIONS_KEY,
+    FEATURE_VERSIONS_SCHEMA,
+)
+from metaxy.metadata_store.system.events import EVENTS_SCHEMA
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
@@ -230,6 +236,27 @@ class IbisMetadataStore(MetadataStore, ABC):
                 f"Supported algorithms: {', '.join(supported)}"
             )
 
+    def _ensure_system_tables_exist(self) -> None:
+        """Create system tables automatically when auto_create_tables is enabled."""
+        if not self.auto_create_tables or self._conn is None:
+            return
+
+        existing_tables = set(self._conn.list_tables())
+        system_tables = (
+            (FEATURE_VERSIONS_KEY, FEATURE_VERSIONS_SCHEMA),
+            (EVENTS_KEY, EVENTS_SCHEMA),
+        )
+
+        for table_key, schema in system_tables:
+            table_name = self.get_table_name(table_key)
+            if table_name in existing_tables:
+                continue
+
+            # Ensure a zero-row table exists with the expected schema so prefixed
+            # system tables show up in list_tables() immediately.
+            empty_df = pl.DataFrame(schema=schema)
+            self.conn.create_table(table_name, obj=empty_df)
+
     @property
     def ibis_conn(self) -> "ibis.BaseBackend":
         """Get Ibis backend connection.
@@ -296,6 +323,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Mark store as open and validate
                 self._is_open = True
                 self._validate_after_open()
+                self._ensure_system_tables_exist()
 
             yield self
         finally:

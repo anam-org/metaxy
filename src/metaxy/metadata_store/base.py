@@ -997,6 +997,7 @@ class MetadataStore(ABC):
             projects=projects,
             only_current_project=only_current_project,
         )
+
     @abstractmethod
     def display(self) -> str:
         """Return a human-readable display string for this store.

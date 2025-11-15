@@ -284,6 +284,7 @@ def test_list_features(graph: FeatureGraph) -> None:
     pytest's graph reset mechanism. This test verifies the behavior with
     features explicitly registered in the test graph.
     """
+
     # Register a feature in the test graph
     class TestFeatureForListing(
         Feature,
