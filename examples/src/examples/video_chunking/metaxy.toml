@@ -1,0 +1,15 @@
+# Video Chunking Example Configuration
+# Demonstrates one-to-many relationships in Metaxy
+
+# Entry point for feature registration
+# This module will be imported when using the metaxy CLI
+entrypoints = ["video_chunking.features"]
+
+# Metadata store configuration
+[stores.dev]
+# Use DuckDB for this example - it supports native operations
+type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
+
+[stores.dev.config]
+# Store database in /tmp for easy cleanup
+database = "/tmp/video_chunking_example.db"
