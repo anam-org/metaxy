@@ -193,26 +193,40 @@ def test_parsed_expression_equals_narwhals_expression_all_comparisons(
 
 
 @pytest.mark.parametrize(
-    ("filter_string", "expected_ids"),
+    ("filter_string", "expected_expr"),
     [
         (
             "((age >= 25 AND (status = 'active' OR status = 'inactive')) "
             "OR NOT is_active) AND deleted_at = NULL",
-            [2, 4],
+            (
+                (
+                    (nw.col("age") >= nw.lit(25))
+                    & (
+                        (nw.col("status") == nw.lit("active"))
+                        | (nw.col("status") == nw.lit("inactive"))
+                    )
+                )
+                | (~nw.col("is_active"))
+            )
+            & nw.col("deleted_at").is_null(),
         ),
         (
             "NOT (status = 'deleted' OR deleted_at != NULL) "
             "AND (age < 30 OR NOT is_active)",
-            [1, 2],
+            (
+                ~(
+                    (nw.col("status") == nw.lit("deleted"))
+                    | (~nw.col("deleted_at").is_null())
+                )
+            )
+            & ((nw.col("age") < nw.lit(30)) | (~nw.col("is_active"))),
         ),
     ],
 )
 def test_parse_deeply_nested_expressions(
-    sample_lazy_frame: nw.LazyFrame[Any],
     filter_string: str,
-    expected_ids: list[int],
+    expected_expr: nw.Expr,
 ) -> None:
     """Ensure parsing handles nested parentheses and mixed operators."""
     expr = parse_filter_string(filter_string)
-    ids = collect_ids(sample_lazy_frame, expr)
-    assert ids == expected_ids
+    assert repr(expr) == repr(expected_expr)
