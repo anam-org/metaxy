@@ -71,18 +71,28 @@ def parse_filter_string(filter_string: str) -> nw.Expr:
     into ``LazyFrame.filter`` for any Narwhals-compatible backend (Polars,
     pandas, PyArrow, DuckDB, ...).
 
-    Examples
-    --------
-    >>> parse_filter_string("age > 25")
-    (nw.col("age") > 25)
+    Examples:
+        Parse a simple comparison:
 
-    >>> lf = nw.from_native(my_lazy_frame)
-    >>> expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
-    >>> lf.filter(expr)
-    <LazyFrame filtered by complex predicate>
+        ```python
+        parse_filter_string("age > 25")
+        # Returns: nw.col("age") > 25
+        ```
 
-    >>> parse_filter_string("NOT (status = 'deleted') AND deleted_at = NULL")
-    ((~(nw.col("status") == "deleted")) & nw.col("deleted_at").is_null())
+        Apply to a Narwhals LazyFrame with complex predicates:
+
+        ```python
+        lf = nw.from_native(my_lazy_frame)
+        expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
+        filtered = lf.filter(expr)
+        ```
+
+        Handle NULL comparisons (converted to is_null() checks):
+
+        ```python
+        parse_filter_string("NOT (status = 'deleted') AND deleted_at = NULL")
+        # Returns: (~(nw.col("status") == "deleted")) & nw.col("deleted_at").is_null()
+        ```
     """
     return NarwhalsFilter.model_validate(filter_string).to_expr()
 

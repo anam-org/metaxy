@@ -37,22 +37,27 @@ def detect_migration(
     Returns:
         DiffMigration if changes detected and written, None otherwise
 
-    Example:
+    Examples:
         ```py
         # Compare latest snapshot in store vs current graph
         with store:
             migration = detect_migration(store, project="my_project")
             if migration:
-            print(f"Migration written to {migration.yaml_path}")
+                print(f"Migration written to {migration.yaml_path}")
+        ```
 
         ```py
         # Use custom operation
-        migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
+        detect_migration(
+            store,
+            project="my_project",
+            ops=[{"type": "myproject.ops.CustomOp"}],
+        )
         ```
 
         ```py
         # Use custom name
-        migration = detect_migration(store, project="my_project", name="example_migration")
+        detect_migration(store, project="my_project", name="example_migration")
         ```
     """
     differ = GraphDiffer()

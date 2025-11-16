@@ -20,10 +20,15 @@ Narwhals filter expressions let you serialize and deserialize backend-agnostic p
 They are backed by SQLGlot and understand the following subset of SQL `WHERE` syntax:
 
 - Comparisons: `=`, `!=`, `>`, `<`, `>=`, `<=`
+
 - Logical operators: `AND`, `OR`, `NOT`
+
 - Parentheses for grouping
+
 - Column references (identifiers or dotted paths)
+
 - Literals: strings (`'value'`), numbers, booleans (`TRUE`/`FALSE`), and `NULL`
+
 - Implicit boolean columns (e.g., `NOT is_active`)
 
 Convert SQL `WHERE` condition into Narwhals expressions
