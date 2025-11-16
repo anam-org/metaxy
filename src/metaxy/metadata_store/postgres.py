@@ -5,6 +5,7 @@ import logging
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import narwhals as nw
 import polars as pl
@@ -47,6 +48,42 @@ def _decode_pg_text(value: Any) -> str:
     if isinstance(value, (bytes, bytearray)):
         return value.decode("utf-8", errors="replace")
     return str(value)
+
+
+def _sanitize_connection_string(value: str) -> str:
+    """Mask passwords in connection strings for safe display."""
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return "<redacted>"
+
+    sanitized_netloc = parsed.netloc
+    if "@" in sanitized_netloc:
+        userinfo, hostinfo = sanitized_netloc.rsplit("@", 1)
+        if ":" in userinfo:
+            username, _, _ = userinfo.partition(":")
+            userinfo = f"{username}:***"
+        sanitized_netloc = f"{userinfo}@{hostinfo}"
+
+    sanitized_query = parsed.query
+    if parsed.query:
+        query_params = parse_qsl(parsed.query, keep_blank_values=True)
+        masked_params = []
+        changed = False
+        for key, val in query_params:
+            if key.lower() in {"password", "pwd", "pass"}:
+                masked_params.append((key, "***"))
+                changed = True
+            else:
+                masked_params.append((key, val))
+        if changed:
+            sanitized_query = urlencode(masked_params, doseq=True)
+
+    if sanitized_netloc == parsed.netloc and sanitized_query == parsed.query:
+        return value
+
+    sanitized_parts = parsed._replace(netloc=sanitized_netloc, query=sanitized_query)
+    return urlunsplit(sanitized_parts)
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -700,7 +737,8 @@ class PostgresMetadataStore(IbisMetadataStore):
         if detail_str:
             return f"PostgresMetadataStore({detail_str})"
         if self.connection_string:
-            return f"PostgresMetadataStore(connection_string={self.connection_string})"
+            sanitized = _sanitize_connection_string(self.connection_string)
+            return f"PostgresMetadataStore(connection_string={sanitized})"
         return "PostgresMetadataStore()"
 
     def _has_native_struct_support(self) -> bool:
