@@ -1,18 +1,3 @@
-# ==============================================================================
-# Psycopg Compatibility Shim
-#
-# REASON: In some CI/Linux environments, psycopg's pure-Python fallback is
-# installed instead of the C-optimized version. The pure-Python version has a
-# different default behavior: it returns `bytes` for certain metadata query
-# results (like schema names and data types), whereas the C version correctly
-# decodes them to `str`. This inconsistency breaks upstream libraries like Ibis.
-#
-# SOLUTION: This code block acts as a compatibility shim. It monkey-patches the
-# `psycopg.Cursor` class to normalize the data flow. It ensures that both
-# query parameters (on the way in) and query results (on the way out) are
-# consistently strings, regardless of which `psycopg` implementation is in use.
-# This patch is applied globally and exactly once when this module is imported.
-# ==============================================================================
 from __future__ import annotations
 
 import json
@@ -26,7 +11,6 @@ import polars as pl
 from polars.datatypes import DataType as PolarsDataType
 from polars.datatypes import DataTypeClass as PolarsDataTypeClass
 from psycopg import Error as _PsycopgError
-from psycopg.cursor import Cursor as PsycopgCursor
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
@@ -53,73 +37,16 @@ logger = logging.getLogger(__name__)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
-try:
-    if not getattr(PsycopgCursor, "_metaxy_compat_patched", False):
-        logger.info(
-            "Applying psycopg compatibility shim for pure-Python fallback support."
-        )
-        _original_execute = PsycopgCursor.execute
-        _original_fetchone = PsycopgCursor.fetchone
-        _original_fetchall = PsycopgCursor.fetchall
-        _original_iter = PsycopgCursor.__iter__
 
-        def _decoder(byte_value):
-            return byte_value.decode("utf-8", "replace")
-
-        def _patched_execute(self, query, params=None, *args, **kwargs):
-            sanitized_params = params
-            if params:
-                if isinstance(params, dict):
-                    sanitized_params = {}
-                    for key, value in params.items():
-                        if (
-                            isinstance(value, list)
-                            and value
-                            and isinstance(value[0], bytes)
-                        ):
-                            sanitized_params[key] = [_decoder(item) for item in value]
-                        elif isinstance(value, bytes):
-                            sanitized_params[key] = _decoder(value)
-                        else:
-                            sanitized_params[key] = value
-                elif isinstance(params, (tuple, list)):
-                    sanitized_params = tuple(
-                        _decoder(p) if isinstance(p, bytes) else p for p in params
-                    )
-            return _original_execute(self, query, sanitized_params, *args, **kwargs)
-
-        def _sanitize_row(row: tuple[Any, ...]) -> tuple[Any, ...]:
-            return tuple(
-                _decoder(item) if isinstance(item, bytes) else item for item in row
-            )
-
-        def _patched_fetchone(self) -> tuple[Any, ...] | None:
-            row = _original_fetchone(self)
-            if row is None:
-                return None
-            return _sanitize_row(row)
-
-        def _patched_fetchall(self) -> list[tuple[Any, ...]]:
-            rows: Sequence[tuple[Any, ...]] = cast(
-                Sequence[tuple[Any, ...]], _original_fetchall(self)
-            )
-            return [_sanitize_row(row) for row in rows]
-
-        def _patched_iter(self) -> Iterator[tuple[Any, ...]]:
-            for row in _original_iter(self):
-                yield _sanitize_row(row)
-
-        PsycopgCursor.execute = cast(Any, _patched_execute)
-        PsycopgCursor.fetchone = cast(Any, _patched_fetchone)
-        PsycopgCursor.fetchall = cast(Any, _patched_fetchall)
-        PsycopgCursor.__iter__ = cast(Any, _patched_iter)
-        setattr(PsycopgCursor, "_metaxy_compat_patched", True)
-        logger.info("Psycopg compatibility shim applied successfully.")
-except Exception as e:
-    logger.error(f"Failed to apply psycopg compatibility shim: {e}", exc_info=True)
-# ==============================================================================
-# End of Psycopg Compatibility Shim
-# ==============================================================================
+def _decode_pg_text(value: Any) -> str:
+    """Convert PostgreSQL driver outputs to text consistently."""
+    if value is None:
+        return ""
+    if isinstance(value, memoryview):
+        value = value.tobytes()
+    if isinstance(value, (bytes, bytearray)):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
 
 
 class PostgresMetadataStore(IbisMetadataStore):
@@ -362,7 +289,6 @@ class PostgresMetadataStore(IbisMetadataStore):
 
     def _get_current_schema(self, raw_conn: Any) -> str:
         """Get the current schema from the search_path."""
-        # This method is simpler because the patch guarantees `result` contains strings.
         try:
             with raw_conn.cursor() as cursor:
                 cursor.execute("SHOW search_path")
@@ -374,7 +300,7 @@ class PostgresMetadataStore(IbisMetadataStore):
             )
             return "public"
 
-        search_path = result[0] if result else ""
+        search_path = _decode_pg_text(result[0]) if result else ""
         if not search_path:
             return "public"
 
@@ -408,8 +334,7 @@ class PostgresMetadataStore(IbisMetadataStore):
                     "SELECT tablename FROM pg_tables WHERE schemaname = %s",
                     (schema_to_query,),
                 )
-                # The patch guarantees results are strings, so a simple cast is safe.
-                tables = [str(row[0]) for row in cursor.fetchall()]
+                tables = [_decode_pg_text(row[0]) for row in cursor.fetchall()]
                 return tables
         except Exception:
             logger.warning(
