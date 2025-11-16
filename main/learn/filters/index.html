@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/system-columns/">
+        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/filters/">
       
       
-        <link rel="prev" href="../testing/">
+        <link rel="prev" href="../relationship/">
       
       
-        <link rel="next" href="../integrations/sqlmodel/">
+        <link rel="next" href="../testing/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>System Columns - Metaxy</title>
+        <title>Filters - Metaxy</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#system-column-registry" class="md-skip">
+        <a href="#specifying-filters-as-text" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              System Columns
+              Filters
             
           </span>
         </div>
@@ -643,10 +643,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../filters/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -657,6 +666,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -689,32 +699,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    System Columns
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../system-columns/" class="md-nav__link">
         
   
   
@@ -725,35 +713,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#canonical-column-names" class="md-nav__link">
-    <span class="md-ellipsis">
-      Canonical column names
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1570,23 +1529,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#canonical-column-names" class="md-nav__link">
-    <span class="md-ellipsis">
-      Canonical column names
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1604,44 +1546,40 @@
   
 
 
-<h1 id="system-column-registry">System Column Registry<a class="headerlink" href="#system-column-registry" title="Permanent link">&para;</a></h1>
-<p>Metaxy reserves a small set of <a href="../../reference/api/constants/">system-managed columns</a> that it attaches to feature
-metadata tables. These columns are part of the platform contract and are used by
-the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore">metadata store</a>, versioning engine, and migration tooling to keep track of
-feature lineage.</p>
-<p>All system column names start with the <code>metaxy_</code> prefix to avoid collisions with
-user-defined feature fields. Only the prefixed forms are supported.</p>
-<h2 id="canonical-column-names">Canonical column names<a class="headerlink" href="#canonical-column-names" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Canonical name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>metaxy_provenance_by_field</code></td>
-<td>Struct capturing per-field provenance hashes. Sample level.</td>
-</tr>
-<tr>
-<td><code>metaxy_feature_version</code></td>
-<td>Version of the versioned graph upstream to the feature.</td>
-</tr>
-<tr>
-<td><code>metaxy_snapshot_version</code></td>
-<td>Version of the entire feature graph for the Metaxy project.</td>
-</tr>
-<tr>
-<td><code>metaxy_feature_spec_version</code></td>
-<td>Version of the feature spec part responsible for graph topology.</td>
-</tr>
-<tr>
-<td><code>metaxy_feature_tracking_version</code></td>
-<td>Hash that combines spec version and project for multi-project tracking.</td>
-</tr>
-</tbody>
-</table>
+<h1 id="specifying-filters-as-text">Specifying Filters As Text<a class="headerlink" href="#specifying-filters-as-text" title="Permanent link">&para;</a></h1>
+<p>There are a few occasions with Metaxy where users may want to define custom filter expressions via text, mainly being CLI arguments or configuration files.
+For this purpose, Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;parse_filter_string&lt;/span&gt;" href="../../reference/api/definitions/filters/#metaxy.models.filter_expression.parse_filter_string"><code>parse_filter_string</code></a>, which converts SQL-like <code>WHERE</code> clauses into Narwhals filter expressions.</p>
+<p>The following syntax is supported:</p>
+<ul>
+<li>
+<p>Comparisons: <code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></p>
+</li>
+<li>
+<p>Logical operators: <code>AND</code>, <code>OR</code>, <code>NOT</code></p>
+</li>
+<li>
+<p>Parentheses for grouping</p>
+</li>
+<li>
+<p>Column references (identifiers or dotted paths)</p>
+</li>
+<li>
+<p>Literals: strings (<code>'value'</code>), numbers, booleans (<code>TRUE</code>/<code>FALSE</code>), and <code>NULL</code></p>
+</li>
+<li>
+<p>Implicit boolean columns (e.g., <code>NOT is_active</code>)</p>
+</li>
+</ul>
+<p>Example usage:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.models.filter_expression</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_filter_string</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">df</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># a Narwhals frame</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="c1"># Parse a SQL WHERE clause into a backend-agnostic Narwhals expression</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">expr</span> <span class="o">=</span> <span class="n">parse_filter_string</span><span class="p">(</span><span class="s2">&quot;(age &gt; 25 OR age &lt; 18) AND status != &#39;deleted&#39;&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos="8 "></span></a><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+</span></code></pre></div>
 
 
 
