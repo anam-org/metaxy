@@ -79,12 +79,17 @@ def test_postgres_hash_functions_include_sha256() -> None:
 
 def test_postgres_display_with_connection_string() -> None:
     """Test display output when initialized with connection string."""
-    store = PostgresMetadataStore(
-        "postgresql://user:pass@localhost:5432/metaxy",
+    connection_string = (
+        "postgresql://user:pass@localhost:5432/metaxy?password=secret&sslmode=require"
     )
+    store = PostgresMetadataStore(connection_string)
 
     display = store.display()
-    assert "connection_string=postgresql://user:pass@localhost:5432/metaxy" in display
+    assert (
+        display == "PostgresMetadataStore("
+        "connection_string=postgresql://user:***@localhost:5432/metaxy"
+        "?password=%2A%2A%2A&sslmode=require)"
+    )
 
 
 def test_postgres_schema_detection_decodes_bytes() -> None:
