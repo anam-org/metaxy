@@ -37,7 +37,7 @@ def detect_migration(
     Returns:
         DiffMigration if changes detected and written, None otherwise
 
-    Examples:
+    Example:
         ```py
         # Compare latest snapshot in store vs current graph
         with store:
