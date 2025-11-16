@@ -33,7 +33,6 @@ def load_migration_from_yaml(yaml_path: Path) -> "Migration":
     with open(yaml_path) as f:
         data = yaml.safe_load(f)
 
-    # Backward compatibility: older migration files may lack discriminator field
     if (
         isinstance(data, dict)
         and "migration_type" not in data
