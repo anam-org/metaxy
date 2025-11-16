@@ -249,7 +249,7 @@ class MigrationExecutor:
                     # Capture both human-friendly and full traceback messages
                     short_error = str(e) if str(e) else repr(e)
                     trace_error = traceback.format_exc().strip()
-                    errors[feature_key_str] = trace_error
+                    errors[feature_key_str] = f"{short_error}\n{trace_error}"
 
                     # Log exception with full traceback
                     logger.exception(f"Error in feature {feature_key_str}")
@@ -444,7 +444,7 @@ class MigrationExecutor:
                 except Exception as e:
                     short_error = str(e) if str(e) else repr(e)
                     trace_error = traceback.format_exc().strip()
-                    errors[feature_key_str] = trace_error
+                    errors[feature_key_str] = f"{short_error}\n{trace_error}"
 
                     # Log exception with full traceback
                     logger.exception(f"Error in feature {feature_key_str}")
