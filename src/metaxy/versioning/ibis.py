@@ -1,4 +1,8 @@
-"""Ibis implementation of VersioningEngine."""
+"""Ibis implementation of VersioningEngine.
+
+CRITICAL: This implementation NEVER materializes lazy expressions.
+All operations stay in the lazy Ibis world for SQL execution.
+"""
 
 from abc import ABC
 from typing import Protocol, cast
@@ -32,13 +36,7 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         plan: FeaturePlan,
         hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
-        """Initialize the Ibis engine.
-
-        Args:
-            plan: Feature plan to track provenance for
-            hash_functions: Mapping from HashAlgorithm to Ibis hash functions.
-                Each function takes an Ibis expression and returns an Ibis expression.
-        """
+        """Initialize the Ibis engine."""
         super().__init__(plan)
         self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
@@ -173,11 +171,7 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
 
 
 class IbisVersioningEngine(BaseIbisVersioningEngine):
-    """Provenance engine using Ibis for SQL databases with native struct support.
-
-    CRITICAL: This implementation NEVER leaves the lazy world.
-    All operations stay as Ibis expressions that compile to SQL.
-    """
+    """Provenance engine using Ibis for SQL databases with native struct support."""
 
     def record_field_versions(
         self,

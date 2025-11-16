@@ -6,7 +6,6 @@ import ibis
 import ibis.backends.postgres
 import pytest
 
-from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.feature import BaseFeature
 from metaxy.versioning.types import HashAlgorithm
@@ -189,16 +188,17 @@ def test_postgres_sha256_with_explicit_hash_algorithm() -> None:
     assert HashAlgorithm.MD5 in hash_functions
 
 
-def test_postgres_pgcrypto_enabled_during_native_resolve(
+def test_postgres_pgcrypto_enabled_during_provenance_tracker_creation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Ensure pgcrypto extension is enabled lazily when native resolve runs."""
+    """Ensure pgcrypto extension is enabled lazily when provenance tracker is created."""
     store = PostgresMetadataStore(
         host="localhost",
         database="metaxy",
         enable_pgcrypto=True,
         hash_algorithm=HashAlgorithm.SHA256,
     )
+    store._is_open = True
     dummy_backend = cast(ibis.BaseBackend, object())
     store._conn = dummy_backend  # Pretend connection is open
 
@@ -213,23 +213,19 @@ def test_postgres_pgcrypto_enabled_during_native_resolve(
         fake_enable,
     )
 
-    def fake_resolve(
-        self: MetadataStore,
-        feature: type[BaseFeature],
-        *,
-        filters=None,
-        lazy=False,
-    ) -> str:
-        return "ok"
+    # Create a minimal FeaturePlan-like object for testing
 
-    monkeypatch.setattr(MetadataStore, "_resolve_update_native", fake_resolve)
+    dummy_plan = cast(
+        Any, type("Plan", (), {"feature": cast(type[BaseFeature], object())})
+    )
 
-    dummy_feature = cast(type[BaseFeature], object())
-    first = store._resolve_update_native(dummy_feature)
-    second = store._resolve_update_native(dummy_feature)
+    # Call _create_versioning_engine twice to verify it only enables once
+    with store._create_versioning_engine(dummy_plan):
+        pass
+    with store._create_versioning_engine(dummy_plan):
+        pass
 
-    assert first == "ok"
-    assert second == "ok"
+    # Should only be called once due to _pgcrypto_extension_checked flag
     assert enable_calls == [True]
 
 
@@ -244,6 +240,7 @@ def test_postgres_pgcrypto_not_enabled_when_disabled(
         enable_pgcrypto=False,
         hash_algorithm=HashAlgorithm.SHA256,
     )
+    store._is_open = True
     dummy_backend = cast(ibis.BaseBackend, object())
     store._conn = dummy_backend
 
@@ -258,18 +255,12 @@ def test_postgres_pgcrypto_not_enabled_when_disabled(
         fake_enable,
     )
 
-    def fake_resolve(
-        self: MetadataStore,
-        feature: type[BaseFeature],
-        *,
-        filters=None,
-        lazy=False,
-    ) -> str:
-        return "ok"
+    # Create a minimal FeaturePlan-like object for testing
 
-    monkeypatch.setattr(MetadataStore, "_resolve_update_native", fake_resolve)
+    dummy_plan = cast(
+        Any, type("Plan", (), {"feature": cast(type[BaseFeature], object())})
+    )
 
-    dummy_feature = cast(type[BaseFeature], object())
-    result = store._resolve_update_native(dummy_feature)
-
-    assert result == "ok"
+    # Call _create_versioning_engine - should not enable pgcrypto when disabled
+    with store._create_versioning_engine(dummy_plan):
+        pass
