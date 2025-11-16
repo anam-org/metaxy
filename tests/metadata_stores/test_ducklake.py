@@ -20,6 +20,7 @@ from metaxy.metadata_store._ducklake_support import (
     format_attach_options,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.models.feature import FeatureGraph
 
 
 # Hypothesis strategies for generating metadata dataframes using Polars parametric testing

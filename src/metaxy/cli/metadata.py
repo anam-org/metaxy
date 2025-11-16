@@ -253,8 +253,11 @@ def drop(
     with metadata_store.open(AccessMode.WRITE):
         # If all_features, get all feature keys from the active feature graph
         if all_features:
-            # Use only features defined in the active graph for the current project
-            feature_keys = metadata_store.list_features()
+            from metaxy.models.feature import FeatureGraph
+
+            graph = FeatureGraph.get_active()
+            # Get all feature keys from the graph (features defined in code for current project)
+            feature_keys = graph.list_features(only_current_project=True)
 
             if not feature_keys:
                 console.print(

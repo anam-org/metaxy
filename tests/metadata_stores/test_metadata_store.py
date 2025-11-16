@@ -295,12 +295,10 @@ def test_list_features(graph: FeatureGraph) -> None:
     ):
         pass
 
-    store = InMemoryMetadataStore()
-    with store.open(AccessMode.WRITE):
-        # list_features() should return the feature from the graph
-        features = store.list_features()
-        assert len(features) == 1
-        assert features[0].to_string() == "test/listing"
+    graph = FeatureGraph.get_active()
+    features = graph.list_features()
+    assert len(features) == 1
+    assert features[0].to_string() == "test/listing"
 
 
 # Fallback Store Tests

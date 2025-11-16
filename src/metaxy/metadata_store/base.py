@@ -1012,33 +1012,6 @@ class MetadataStore(ABC):
 
         return False
 
-    def list_features(
-        self,
-        *,
-        projects: list[str] | str | None = None,
-        only_current_project: bool = True,
-    ) -> list[FeatureKey]:
-        """
-        List features recorded in the active feature graph.
-
-        Args:
-            projects: Optional project filter(s) to pass through to the graph.
-            only_current_project: If True (default), filters to the current project(s).
-
-        Returns:
-            List of FeatureKey objects defined in the active graph.
-
-        Raises:
-            StoreNotOpenError: If store is not open.
-        """
-        self._check_open()
-
-        graph = FeatureGraph.get_active()
-        return graph.list_features(
-            projects=projects,
-            only_current_project=only_current_project,
-        )
-
     @abstractmethod
     def display(self) -> str:
         """Return a human-readable display string for this store.
