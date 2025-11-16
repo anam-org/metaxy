@@ -260,14 +260,33 @@ class StoreCases:
         return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
 
 
+class BasicStoreCases:
+    """Minimal store cases for backend-agnostic API tests."""
+
+    def case_inmemory(
+        self, test_graph: FeatureGraph
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
+        """Use the in-memory store implementation."""
+        # Registry is accessed globally via FeatureGraph.get_active()
+        return (InMemoryMetadataStore, {})
+
+    def case_duckdb(
+        self, tmp_path: Path, test_graph: FeatureGraph
+    ) -> tuple[type[MetadataStore], dict[str, Any]]:
+        """Use the DuckDB-backed store implementation."""
+        db_path = tmp_path / "test.duckdb"
+        # Registry is accessed globally via FeatureGraph.get_active()
+        return (DuckDBMetadataStore, {"database": db_path})
+
+
 @fixture
-@parametrize_with_cases("store_config", cases=StoreCases)
+@parametrize_with_cases("store_config", cases=BasicStoreCases)
 def persistent_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
 ) -> MetadataStore:
     """Parametrized persistent store fixture.
 
-    This fixture runs tests for all persistent store implementations.
+    This fixture runs tests against the basic store matrix (in-memory + DuckDB).
     Returns an unopened store - tests should use it with a context manager.
 
     Usage:
