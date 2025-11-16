@@ -192,9 +192,8 @@ class DiffMigration(Migration):
     """
 
     # Discriminator field for polymorphic deserialization
-    migration_type: Literal["metaxy.migrations.models.DiffMigration"] = PydanticField(
-        default="metaxy.migrations.models.DiffMigration",
-        serialization_alias="migration_type",
+    migration_type: Literal["metaxy.migrations.models.DiffMigration"] = (
+        "metaxy.migrations.models.DiffMigration"
     )
 
     # Stored fields - persisted to YAML in git
@@ -345,10 +344,7 @@ class FullGraphMigration(Migration):
 
     # Discriminator field for polymorphic deserialization
     migration_type: Literal["metaxy.migrations.models.FullGraphMigration"] = (
-        PydanticField(
-            default="metaxy.migrations.models.FullGraphMigration",
-            serialization_alias="migration_type",
-        )
+        "metaxy.migrations.models.FullGraphMigration"
     )
 
     snapshot_version: str
