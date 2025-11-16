@@ -1,11 +1,3 @@
-"""SQL filter string parsing into Narwhals expressions.
-
-This module exposes utilities to parse SQL WHERE-like strings into Narwhals
-``Expr`` objects. The primary entry point is :func:`parse_filter_string`, which
-returns a Narwhals expression that can be fed directly into
-``LazyFrame.filter`` (works across all Narwhals backends).
-"""
-
 from __future__ import annotations
 
 from typing import Any, NamedTuple
@@ -64,31 +56,12 @@ class NarwhalsFilter(FrozenBaseModel):
 def parse_filter_string(filter_string: str) -> nw.Expr:
     """Parse a SQL WHERE-like string into a Narwhals expression.
 
-    The parser uses SQLGlot under the hood and understands SQL WHERE
-    clauses composed of comparison operators, logical operators, parentheses,
+    The parser understands SQL `WHERE` clauses composed of comparison operators, logical operators, parentheses,
     dotted identifiers, and literal values (strings, numbers, booleans, ``NULL``).
-    It returns a backend-agnostic Narwhals expression that can be fed directly
-    into ``LazyFrame.filter`` for any Narwhals-compatible backend (Polars,
-    pandas, PyArrow, DuckDB, ...).
+
+    This functionality is implemented with [SQLGlot](https://sqlglot.com/).
 
     Example:
-        Parse a simple comparison:
-
-        ```python
-        parse_filter_string("age > 25")
-        # Returns: nw.col("age") > 25
-        ```
-
-        Apply to a Narwhals LazyFrame with complex predicates:
-
-        ```python
-        lf = nw.from_native(my_lazy_frame)
-        expr = parse_filter_string("(age > 25 OR age < 18) AND status != 'deleted'")
-        filtered = lf.filter(expr)
-        ```
-
-        Handle NULL comparisons (converted to is_null() checks):
-
         ```python
         parse_filter_string("NOT (status = 'deleted') AND deleted_at = NULL")
         # Returns: (~(nw.col("status") == "deleted")) & nw.col("deleted_at").is_null()
