@@ -87,6 +87,65 @@ def test_postgres_display_with_connection_string() -> None:
     assert "connection_string=postgresql://user:pass@localhost:5432/metaxy" in display
 
 
+def test_postgres_schema_detection_decodes_bytes() -> None:
+    """Ensure raw psycopg cursors returning bytes still produce schema names."""
+    store = PostgresMetadataStore(host="localhost", database="metaxy")
+
+    class DummyCursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def execute(self, query: str) -> None:
+            assert query == "SHOW search_path"
+
+        def fetchone(self) -> tuple[bytes]:
+            return (b'"$user", "analytics"',)
+
+    class DummyConn:
+        def cursor(self):
+            return DummyCursor()
+
+    assert store._get_current_schema(DummyConn()) == "analytics"
+
+
+def test_postgres_table_listing_decodes_bytes() -> None:
+    """Ensure robust table listing handles byte outputs without the global shim."""
+    store = PostgresMetadataStore(host="localhost", database="metaxy")
+    store.schema = "public"
+
+    class DummyCursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def execute(self, query: str, params: tuple[str, ...]) -> None:
+            assert "pg_tables" in query
+            assert params == ("public",)
+
+        def fetchall(self) -> list[tuple[bytes]]:
+            return [(b"foo",), (b"bar",)]
+
+    class DummyRawConn:
+        def cursor(self):
+            return DummyCursor()
+
+    class DummyBackend:
+        def __init__(self) -> None:
+            self.con = DummyRawConn()
+
+        def list_tables(self) -> list[str]:
+            return ["fallback"]
+
+    store._conn = cast(Any, DummyBackend())
+
+    assert store._list_tables_robustly() == ["foo", "bar"]
+
+
 def test_postgres_default_hash_algorithm_is_md5() -> None:
     """Test that default hash algorithm is MD5 (no extension required)."""
     store = PostgresMetadataStore(host="localhost", database="metaxy")
