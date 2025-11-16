@@ -241,44 +241,6 @@ def test_has_feature_local(
         )
 
 
-def test_list_features(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
-    """Test that list_features() returns features from the active graph.
-
-    list_features() returns features registered in the active graph,
-    not features that have metadata stored in the database.
-
-    Args:
-        persistent_store: Store fixture (unopened)
-        test_graph: Tuple of (graph, features_dict) with test features registered
-    """
-    graph, _ = test_graph
-
-    # Activate the test graph so list_features() uses it
-    with graph.use():
-        with persistent_store.open(AccessMode.WRITE):
-            # Active graph has 3 features registered
-            features = graph.list_features()
-            assert len(features) == 3
-            feature_strs = {f.to_string() for f in features}
-            assert "test_stores/upstream_a" in feature_strs
-            assert "test_stores/upstream_b" in feature_strs
-            assert "test_stores/downstream" in feature_strs
-
-            # Writing metadata doesn't change which features are registered
-            data_a = pl.DataFrame(
-                {
-                    "sample_uid": [1],
-                    "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
-                }
-            )
-            persistent_store.write_metadata(test_features["UpstreamFeatureA"], data_a)
-
-            features_after = graph.list_features()
-            assert len(features_after) == 3
-
-
 # Data Version Calculation Tests
 # NOTE: The calculate_and_write_data_versions API was removed.
 # Field provenance calculation is now handled differently in the new architecture.

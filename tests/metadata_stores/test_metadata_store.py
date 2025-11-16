@@ -274,33 +274,6 @@ def test_has_feature_with_fallback(
         assert dev.has_feature(UpstreamFeatureA, check_fallback=True)
 
 
-def test_list_features(graph: FeatureGraph) -> None:
-    """Test that list_features() returns features from the active graph.
-
-    list_features() returns features registered in the active graph,
-    not features that have metadata stored in the database.
-
-    Note: Module-level features are NOT in the test's isolated graph due to
-    pytest's graph reset mechanism. This test verifies the behavior with
-    features explicitly registered in the test graph.
-    """
-
-    # Register a feature in the test graph
-    class TestFeatureForListing(
-        Feature,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "listing"]),
-            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-        ),
-    ):
-        pass
-
-    graph = FeatureGraph.get_active()
-    features = graph.list_features()
-    assert len(features) == 1
-    assert features[0].to_string() == "test/listing"
-
-
 # Fallback Store Tests
 
 

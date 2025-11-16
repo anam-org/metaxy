@@ -367,7 +367,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
             df_to_insert = collect_to_polars(df)  # Polars DataFrame
 
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         try:
             self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
