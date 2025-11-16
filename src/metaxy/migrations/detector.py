@@ -43,21 +43,16 @@ def detect_migration(
         with store:
             migration = detect_migration(store, project="my_project")
             if migration:
-                print(f"Migration written to {migration.yaml_path}")
-        ```
+            print(f"Migration written to {migration.yaml_path}")
 
         ```py
         # Use custom operation
-        detect_migration(
-            store,
-            project="my_project",
-            ops=[{"type": "myproject.ops.CustomOp"}],
-        )
+        migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
         ```
 
         ```py
         # Use custom name
-        detect_migration(store, project="my_project", name="example_migration")
+        migration = detect_migration(store, project="my_project", name="example_migration")
         ```
     """
     differ = GraphDiffer()
@@ -160,8 +155,6 @@ def detect_migration(
 
     yaml_path = migrations_dir / f"{migration_id}.yaml"
     migration_yaml = {
-        "migration_type": migration.migration_type,
-        "migration_id": migration.migration_id,
         "id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,
