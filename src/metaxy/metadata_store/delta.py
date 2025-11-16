@@ -18,6 +18,8 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.exceptions import TableNotFoundError
 from metaxy.metadata_store.system import (
     EVENTS_KEY as MIGRATION_EVENTS_KEY,
+)
+from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
     FEATURE_VERSIONS_SCHEMA,
 )

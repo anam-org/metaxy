@@ -12,7 +12,7 @@ Metaxy has built-in support for the following metadata store types:
 ## Storage Only
 
 - [DeltaMetadataStore](./delta.md).
-- [InMemoryMetadataStore][metaxy.metadata_store.memory.InMemoryMetadataStore].
+- [InMemoryMetadataStore](./memory.md).
 
 ---
 

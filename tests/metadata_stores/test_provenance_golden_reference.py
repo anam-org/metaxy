@@ -202,17 +202,10 @@ def test_store_resolve_update_matches_golden_provenance(
     child_key = child_feature_plan.feature.key
     ChildFeature = graph.features_by_key[child_key]
 
-    # Get child version
-    child_version = ChildFeature.feature_version()
-
     # Call resolve_update to compute provenance
     with store:
         try:
-            increment = store.resolve_update(
-                ChildFeature,
-                target_version=child_version,
-                snapshot_version=graph.snapshot_version,
-            )
+            increment = store.resolve_update(ChildFeature)
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
@@ -226,8 +219,11 @@ def test_store_resolve_update_matches_golden_provenance(
         golden_sorted = golden_downstream.sort(id_columns)
 
         # Select only the columns that exist in both (resolve_update may not return all metadata columns)
+        # Exclude metaxy_created_at since timestamps will always differ
         common_columns = [
-            col for col in added_sorted.columns if col in golden_sorted.columns
+            col
+            for col in added_sorted.columns
+            if col in golden_sorted.columns and col != METAXY_CREATED_AT
         ]
         added_selected = added_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)
