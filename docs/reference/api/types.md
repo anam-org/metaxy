@@ -45,3 +45,4 @@ filtered = lazy_frame.filter(expr)
 ---
 
 ::: metaxy.models.filter_expression.NarwhalsFilter
+::: metaxy.models.filter_expression.parse_filter_string
