@@ -257,27 +257,25 @@ def test_list_features(
 
     # Activate the test graph so list_features() uses it
     with graph.use():
-        with persistent_store.open(AccessMode.WRITE) as store:
-            # list_features() returns features from active graph, not from store
-            # test_graph has 3 features registered
-            features = store.list_features()
+        with persistent_store.open(AccessMode.WRITE):
+            # Active graph has 3 features registered
+            features = graph.list_features()
             assert len(features) == 3
             feature_strs = {f.to_string() for f in features}
             assert "test_stores/upstream_a" in feature_strs
             assert "test_stores/upstream_b" in feature_strs
             assert "test_stores/downstream" in feature_strs
 
-            # Writing metadata doesn't change what list_features() returns
+            # Writing metadata doesn't change which features are registered
             data_a = pl.DataFrame(
                 {
                     "sample_uid": [1],
                     "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
                 }
             )
-            store.write_metadata(test_features["UpstreamFeatureA"], data_a)
+            persistent_store.write_metadata(test_features["UpstreamFeatureA"], data_a)
 
-            # Still returns same features from graph
-            features_after = store.list_features()
+            features_after = graph.list_features()
             assert len(features_after) == 3
 
 

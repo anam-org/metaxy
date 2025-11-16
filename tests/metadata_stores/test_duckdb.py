@@ -66,10 +66,13 @@ def test_duckdb_table_prefix_applied(
         expected_feature_table = table_prefix + feature.spec().key.table_name
         expected_system_table = table_prefix + FEATURE_VERSIONS_KEY.table_name
 
+        # Record snapshot to ensure system table is materialized
+        store.record_feature_graph_snapshot()
+
         table_names = set(store.ibis_conn.list_tables())
         assert expected_feature_table in table_names
-        assert expected_system_table in table_names
         assert store.get_table_name(feature.spec().key) == expected_feature_table
+        assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
 
 
 def test_duckdb_with_custom_config(
