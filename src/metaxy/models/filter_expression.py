@@ -71,7 +71,7 @@ def parse_filter_string(filter_string: str) -> nw.Expr:
     into ``LazyFrame.filter`` for any Narwhals-compatible backend (Polars,
     pandas, PyArrow, DuckDB, ...).
 
-    Examples:
+    Example:
         Parse a simple comparison:
 
         ```python
