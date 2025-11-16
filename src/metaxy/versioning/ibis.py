@@ -1,70 +1,32 @@
-"""Ibis-based metadata store for SQL databases.
+"""Ibis implementation of VersioningEngine.
 
-Supports any SQL database that Ibis supports:
-- DuckDB, PostgreSQL, MySQL (local/embedded)
-- ClickHouse, Snowflake, BigQuery (cloud analytical)
-- And 20+ other backends
+CRITICAL: This implementation NEVER materializes lazy expressions.
+All operations stay in the lazy Ibis world for SQL execution.
 """
 
-from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import Protocol, cast
 
 import narwhals as nw
-from narwhals.typing import Frame
-from typing_extensions import Self
+from ibis import Expr as IbisExpr
+from narwhals.typing import FrameT
 
-from metaxy.metadata_store.base import MetadataStore
-from metaxy.metadata_store.exceptions import (
-    HashAlgorithmNotSupportedError,
-    TableNotFoundError,
-)
-from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
-from metaxy.versioning.ibis import IbisVersioningEngine
+from metaxy.versioning.engine import VersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
-if TYPE_CHECKING:
-    import ibis
-    import ibis.expr.types
+
+class IbisHashFn(Protocol):
+    def __call__(self, expr: IbisExpr) -> IbisExpr: ...
 
 
-class IbisMetadataStore(MetadataStore, ABC):
-    """
-    Generic SQL metadata store using Ibis.
+class IbisVersioningEngine(VersioningEngine):
+    """Provenance engine using Ibis for SQL databases.
 
     Only implements hash_string_column and record_field_versions.
     All logic lives in the base class.
 
-    Warning:
-        Backends without native struct support (e.g., SQLite) are NOT supported.
-
-    Storage layout:
-    - Each feature gets its own table: {feature}__{key}
-    - System tables: metaxy__system__feature_versions, metaxy__system__migrations
-    - Uses Ibis for cross-database compatibility
-
-    Note: Uses MD5 hash by default for cross-database compatibility.
-    DuckDBMetadataStore overrides this with dynamic algorithm detection.
-    For other backends, override the calculator instance variable with backend-specific implementations.
-
-    Example:
-        ```py
-        # ClickHouse
-        store = IbisMetadataStore("clickhouse://user:pass@host:9000/db")
-
-        # PostgreSQL
-        store = IbisMetadataStore("postgresql://user:pass@host:5432/db")
-
-        # DuckDB (use DuckDBMetadataStore instead for better hash support)
-        store = IbisMetadataStore("duckdb:///metadata.db")
-
-        with store:
-            store.write_metadata(MyFeature, df)
-        ```
+    CRITICAL: This implementation NEVER leaves the lazy world.
+    All operations stay as Ibis expressions that compile to SQL.
     """
 
     def __init__(
@@ -485,134 +447,216 @@ class IbisMetadataStore(MetadataStore, ABC):
         feature_key: FeatureKey,
         df: Frame,
     ) -> None:
-        """
-        Internal write implementation using Ibis.
+        """Initialize the Ibis engine.
 
         Args:
-            feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
-
-        Raises:
-            TableNotFoundError: If table doesn't exist and auto_create_tables is False
+            plan: Feature plan to track provenance for
+            backend: Ibis backend instance (e.g., ibis.duckdb.connect())
+            hash_functions: Mapping from HashAlgorithm to Ibis hash functions.
+                Each function takes an Ibis expression and returns an Ibis expression.
         """
-        if df.implementation == nw.Implementation.IBIS:
-            df_to_insert = df.to_native()  # Ibis expression
-        else:
-            from metaxy._utils import collect_to_polars
+        super().__init__(plan)
+        self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
-            df_to_insert = collect_to_polars(df)  # Polars DataFrame
+    @classmethod
+    def implementation(cls) -> nw.Implementation:
+        return nw.Implementation.IBIS
 
-        table_name = self.get_table_name(feature_key)
-
-        try:
-            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
-        except Exception as e:
-            import ibis.common.exceptions
-
-            if not isinstance(e, ibis.common.exceptions.TableNotFound):
-                raise
-            if self.auto_create_tables:
-                # Warn about auto-create (first time only)
-                if self._should_warn_auto_create_tables:
-                    import warnings
-
-                    warnings.warn(
-                        f"AUTO_CREATE_TABLES is enabled - automatically creating table '{table_name}'. "
-                        "Do not use in production! "
-                        "Use proper database migration tools like Alembic for production deployments.",
-                        UserWarning,
-                        stacklevel=4,
-                    )
-
-                # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
-                # No separate insert needed - the data from df is already written
-                self.conn.create_table(table_name, obj=df_to_insert)
-            else:
-                raise TableNotFoundError(
-                    f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
-                    f"Enable auto_create_tables=True to automatically create tables, "
-                    f"or use proper database migration tools like Alembic to create the table first."
-                ) from e
-
-    def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
-        """Drop the table for a feature.
-
-        Args:
-            feature_key: Feature key to drop metadata for
-        """
-        table_name = self.get_table_name(feature_key)
-
-        # Check if table exists
-        if table_name in self.conn.list_tables():
-            self.conn.drop_table(table_name)
-
-    def read_metadata_in_store(
+    def hash_string_column(
         self,
-        feature: FeatureKey | type[BaseFeature],
-        *,
-        feature_version: str | None = None,
-        filters: Sequence[nw.Expr] | None = None,
-        columns: Sequence[str] | None = None,
-    ) -> nw.LazyFrame[Any] | None:
-        """
-        Read metadata from this store only (no fallback).
+        df: FrameT,
+        source_column: str,
+        target_column: str,
+        hash_algo: HashAlgorithm,
+    ) -> FrameT:
+        """Hash a string column using Ibis hash functions.
 
         Args:
-            feature: Feature to read
-            feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
-            filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
-            columns: Optional list of columns to select
+            df: Narwhals DataFrame backed by Ibis
+            source_column: Name of string column to hash
+            target_column: Name for the new column containing the hash
+            hash_algo: Hash algorithm to use
 
         Returns:
-            Narwhals LazyFrame with metadata, or None if not found
+            Narwhals DataFrame with new hashed column added, backed by Ibis.
+            The source column remains unchanged.
         """
-        feature_key = self._resolve_feature_key(feature)
-        table_name = self.get_table_name(feature_key)
-
-        # Check if table exists
-        existing_tables = self.conn.list_tables()
-        if table_name not in existing_tables:
-            return None
-
-        # Get Ibis table reference
-        table = self.conn.table(table_name)
-
-        # Wrap Ibis table with Narwhals (stays lazy in SQL)
-        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
-
-        # Apply feature_version filter (stays in SQL via Narwhals)
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
+        if hash_algo not in self.hash_functions:
+            raise ValueError(
+                f"Hash algorithm {hash_algo} not supported by this Ibis backend. "
+                f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        # Apply generic Narwhals filters (stays in SQL)
-        if filters is not None:
-            for filter_expr in filters:
-                nw_lazy = nw_lazy.filter(filter_expr)
+        # Import ibis lazily (module-level import restriction)
+        import ibis.expr.types
 
-        # Select columns (stays in SQL)
-        if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
 
-        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
-        return nw_lazy
+        # Get hash function
+        hash_fn = self.hash_functions[hash_algo]
 
-    def _can_compute_native(self) -> bool:
-        """
-        Ibis backends support native field provenance calculations (Narwhals-based).
+        # Apply hash to source column
+        # Hash functions are responsible for returning strings
+        hashed = hash_fn(ibis_table[source_column])
+
+        # Add new column with the hash
+        result_table = ibis_table.mutate(**{target_column: hashed})  # pyright: ignore[reportArgumentType]
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+    @staticmethod
+    def build_struct_column(
+        df: FrameT,
+        struct_name: str,
+        field_columns: dict[str, str],
+    ) -> FrameT:
+        """Build a struct column from existing columns.
+
+        Args:
+            df: Narwhals DataFrame backed by Ibis
+            struct_name: Name for the new struct column
+            field_columns: Mapping from struct field names to column names
 
         Returns:
-            True (use Narwhals components with Ibis-backed tables)
-
-        Note: All Ibis stores now use Narwhals-based components (NarwhalsJoiner,
-        PolarsProvenanceByFieldCalculator, NarwhalsDiffResolver) which work efficiently
-        with Ibis-backed tables.
+            Narwhals DataFrame with new struct column added, backed by Ibis.
+            The source columns remain unchanged.
         """
-        return True
+        # Import ibis lazily
+        import ibis.expr.types
 
-    def display(self) -> str:
-        """Display string for this store."""
-        backend_info = self.connection_string or f"{self.backend}"
-        status = "open" if self._is_open else "closed"
-        return f"IbisMetadataStore(backend={backend_info}, status={status})"
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Build struct expression - reference columns by name
+        struct_expr = ibis.struct(
+            {
+                field_name: ibis_table[col_name]
+                for field_name, col_name in field_columns.items()
+            }
+        )
+
+        # Add struct column
+        result_table = ibis_table.mutate(**{struct_name: struct_expr})
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+    @staticmethod
+    def aggregate_with_string_concat(
+        df: FrameT,
+        group_by_columns: list[str],
+        concat_column: str,
+        concat_separator: str,
+        exclude_columns: list[str],
+    ) -> FrameT:
+        """Aggregate DataFrame by grouping and concatenating strings.
+
+        Args:
+            df: Narwhals DataFrame backed by Ibis
+            group_by_columns: Columns to group by
+            concat_column: Column containing strings to concatenate within groups
+            concat_separator: Separator to use when concatenating strings
+            exclude_columns: Columns to exclude from aggregation
+
+        Returns:
+            Narwhals DataFrame with one row per group.
+        """
+        # Import ibis lazily
+        import ibis
+        import ibis.expr.types
+
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Build aggregation expressions
+        agg_exprs = {}
+
+        # Concatenate the concat_column with separator
+        agg_exprs[concat_column] = ibis_table[concat_column].group_concat(
+            concat_separator
+        )
+
+        # Take first value for all other columns (except group_by and exclude)
+        all_columns = set(ibis_table.columns)
+        columns_to_aggregate = (
+            all_columns - set(group_by_columns) - {concat_column} - set(exclude_columns)
+        )
+
+        for col in columns_to_aggregate:
+            agg_exprs[col] = ibis_table[
+                col
+            ].arbitrary()  # Take any value (like first())
+
+        # Perform groupby and aggregate
+        result_table = ibis_table.group_by(group_by_columns).aggregate(**agg_exprs)
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+    @staticmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Uses argmax aggregation to get the value from each column where the
+        timestamp is maximum. This is simpler and more semantically clear than
+        window functions.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame backed by Ibis
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        # Import ibis lazily
+        import ibis.expr.types
+
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+
+        # Check if timestamp_column exists
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"Available columns: {df.columns}"
+            )
+
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Use argmax aggregation: for each column, get the value where timestamp is maximum
+        # This directly expresses "get the row with the latest timestamp per group"
+        all_columns = set(ibis_table.columns)
+        non_group_columns = all_columns - set(group_columns)
+
+        # Build aggregation dict: for each non-group column, use argmax(timestamp)
+        agg_exprs = {
+            col: ibis_table[col].argmax(ibis_table[timestamp_column])
+            for col in non_group_columns
+        }
+
+        # Perform groupby and aggregate
+        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
