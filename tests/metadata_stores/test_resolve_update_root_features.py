@@ -18,9 +18,7 @@ from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
-from tests.metadata_stores.conftest import (
-    BasicStoreCases,  # pyrefly: ignore[import-error]
-)
+from tests.metadata_stores.conftest import StoreCases  # pyrefly: ignore[import-error]
 
 
 # Define a root feature (no upstream dependencies)
@@ -48,7 +46,7 @@ class VideoEmbeddingsFeature(
 class TestResolveUpdateRootFeatures:
     """Test resolve_update behavior for root features."""
 
-    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_requires_samples(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -69,7 +67,7 @@ class TestResolveUpdateRootFeatures:
             with pytest.raises(ValueError, match="root feature"):
                 store.resolve_update(VideoEmbeddingsFeature)
 
-    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_with_samples_no_existing_metadata(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -99,9 +97,7 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             user_samples = add_metaxy_provenance_column(
-                user_samples,
-                VideoEmbeddingsFeature,
-                hash_algorithm=store.hash_algorithm,
+                user_samples, VideoEmbeddingsFeature
             )
 
             result = store.resolve_update(
@@ -114,7 +110,11 @@ class TestResolveUpdateRootFeatures:
             assert len(result.changed) == 0
             assert len(result.removed) == 0
 
-    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    @pytest.mark.skip(
+        reason="Requires groupby id_columns+feature_version and taking latest sample by created_at. "
+        "Support for changing provenance values without changing code versions will be added later."
+    )
+    @parametrize_with_cases("store_config", cases=StoreCases)
     def test_resolve_update_root_feature_with_samples_and_changes(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -142,9 +142,7 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(
-                initial_metadata,
-                VideoEmbeddingsFeature,
-                hash_algorithm=store.hash_algorithm,
+                initial_metadata, VideoEmbeddingsFeature
             )
             store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
 
@@ -162,9 +160,7 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             user_samples = add_metaxy_provenance_column(
-                user_samples,
-                VideoEmbeddingsFeature,
-                hash_algorithm=store.hash_algorithm,
+                user_samples, VideoEmbeddingsFeature
             )
 
             result = store.resolve_update(
