@@ -222,7 +222,6 @@ class PostgresMetadataStore(IbisMetadataStore):
             try:
                 # Reset pgcrypto check for the new connection
                 self._pgcrypto_extension_checked = False
-                import sys
 
                 if not self._has_native_struct_support():
                     self._struct_compat_mode = True
@@ -230,14 +229,12 @@ class PostgresMetadataStore(IbisMetadataStore):
                         "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. "
                         "Falling back to JSON serialization compatibility mode. !!!"
                     )
-                    print(message, file=sys.stderr)
                     logger.warning(
                         message.replace("!!! Metaxy WARNING: ", "").replace("!!!", "")
                     )
                 else:
                     self._struct_compat_mode = False
                     message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
-                    print(message, file=sys.stderr)
                     logger.info(
                         message.replace("!!! Metaxy INFO: ", "").replace("!!!", "")
                     )
