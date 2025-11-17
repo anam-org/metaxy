@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame, FrameT, IntoFrame
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import (
@@ -441,14 +442,16 @@ class MetadataStore(ABC):
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
+        Backends may convert to their specific type if needed (e.g., Polars, Ibis).
+
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -553,52 +556,55 @@ class MetadataStore(ABC):
                 ]
             )
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self.write_metadata_to_store(feature_key, df)
+        return df
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
+    def _validate_schema(self, df: Frame) -> None:
         """
         Validate that DataFrame has required schema.
 
         Args:
-            df: DataFrame to validate
+            df: Narwhals DataFrame or LazyFrame to validate
 
         Raises:
             MetadataSchemaError: If schema is invalid
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
+        schema = df.collect_schema()
+
         # Check for metaxy_provenance_by_field column
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if PROVENANCE_BY_FIELD_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
         # Check that metaxy_provenance_by_field is a struct
-        provenance_type = df.schema[PROVENANCE_BY_FIELD_COL]
-        if not isinstance(provenance_type, pl.Struct):
+        provenance_dtype = schema[PROVENANCE_BY_FIELD_COL]
+        if not isinstance(provenance_dtype, nw.Struct):
             raise MetadataSchemaError(
-                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be a Struct, got {provenance_dtype}"
             )
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
-        if FEATURE_VERSION_COL not in df.columns:
+        if FEATURE_VERSION_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{FEATURE_VERSION_COL}' column"
             )
 
         # Check for snapshot_version column
-        if SNAPSHOT_VERSION_COL not in df.columns:
+        if SNAPSHOT_VERSION_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
-        """Validate schema for system tables (minimal validation)."""
+    def _validate_schema_system_table(self, df: Frame) -> None:
+        """Validate schema for system tables (minimal validation).
+
+        Args:
+            df: Narwhals DataFrame to validate
+        """
         # System tables don't need metaxy_provenance_by_field column
         pass
 
@@ -756,7 +762,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
@@ -808,7 +814,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,

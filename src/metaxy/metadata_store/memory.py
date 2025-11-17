@@ -6,8 +6,10 @@ from typing import Any
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
+from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
@@ -95,7 +97,7 @@ class InMemoryMetadataStore(MetadataStore):
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation for in-memory storage.
@@ -104,6 +106,8 @@ class InMemoryMetadataStore(MetadataStore):
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
         """
+        df_polars: pl.DataFrame = collect_to_polars(df)
+
         storage_key = self._get_storage_key(feature_key)
 
         # Append or create
@@ -112,36 +116,38 @@ class InMemoryMetadataStore(MetadataStore):
 
             # Handle schema evolution: ensure both DataFrames have matching columns
             # Add missing columns as null to the existing DataFrame
-            for col_name in df.columns:
+            for col_name in df_polars.columns:
                 if col_name not in existing_df.columns:
                     # Get the data type from the new DataFrame
-                    col_dtype = df.schema[col_name]
+                    col_dtype = df_polars.schema[col_name]
                     # Add column with null values of the appropriate type
                     existing_df = existing_df.with_columns(
                         pl.lit(None).cast(col_dtype).alias(col_name)
                     )
 
-            # Add missing columns to the new DataFrame (for backward compatibility)
+            # Add missing columns to the new DataFrame
             for col_name in existing_df.columns:
-                if col_name not in df.columns:
+                if col_name not in df_polars.columns:
                     # Get the data type from the existing DataFrame
                     col_dtype = existing_df.schema[col_name]
                     # Add column with null values of the appropriate type
-                    df = df.with_columns(pl.lit(None).cast(col_dtype).alias(col_name))
+                    df_polars = df_polars.with_columns(
+                        pl.lit(None).cast(col_dtype).alias(col_name)
+                    )  # type: ignore[arg-type,union-attr]
 
             # Ensure column order matches by selecting columns in consistent order
-            all_columns = sorted(set(existing_df.columns) | set(df.columns))
+            all_columns = sorted(set(existing_df.columns) | set(df_polars.columns))
             existing_df = existing_df.select(all_columns)
-            df = df.select(all_columns)
+            df_polars = df_polars.select(all_columns)
 
             # Now we can safely concat
             self._storage[storage_key] = pl.concat(
-                [existing_df, df],
+                [existing_df, df_polars],
                 how="vertical",
             )
         else:
             # Create new
-            self._storage[storage_key] = df
+            self._storage[storage_key] = df_polars
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop all metadata for a feature from in-memory storage.

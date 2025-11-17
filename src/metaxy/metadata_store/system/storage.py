@@ -136,8 +136,7 @@ class SystemTableStorage:
         """
         record = event.to_polars()
         with self.store:
-            # Write directly to implementation - system tables don't need feature validation
-            self.store.write_metadata_to_store(EVENTS_KEY, record)
+            self.store.write_metadata(EVENTS_KEY, record)
 
     def get_migration_events(
         self, migration_id: str, project: str | None = None
