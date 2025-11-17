@@ -120,7 +120,7 @@ def metaxy_project(tmp_path):
 
 
 @pytest.fixture
-def test_graph():
+def test_graph_and_features():
     """Create a clean FeatureGraph for testing with test features registered.
 
     Returns a tuple of (graph, features_dict) where features_dict provides
@@ -199,13 +199,25 @@ def test_graph():
 
 
 @pytest.fixture
-def test_features(test_graph):
+def test_graph(test_graph_and_features):
     """Provide dict of test feature classes for easy access in tests.
 
     This fixture extracts just the features dict from test_graph for convenience.
     """
-    _, features = test_graph
-    return features
+    graph, _ = test_graph_and_features
+    with graph.use():
+        yield graph
+
+
+@pytest.fixture
+def test_features(test_graph_and_features):
+    """Provide dict of test feature classes for easy access in tests.
+
+    This fixture extracts just the features dict from test_graph for convenience.
+    """
+    graph, features = test_graph_and_features
+    with graph.use():
+        yield features
 
 
 def pytest_addoption(parser):

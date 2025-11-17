@@ -154,9 +154,18 @@ class ProvenanceTracker(ABC):
                     all_columns[col].append(feature_key)
 
             # System columns that are allowed to collide (needed for provenance calculation)
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+            )
+
             allowed_system_columns = {
                 METAXY_PROVENANCE,
                 METAXY_PROVENANCE_BY_FIELD,
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_CREATED_AT,
             }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [
@@ -353,7 +362,7 @@ class ProvenanceTracker(ABC):
 
         # Compute sample-level provenance hash
         # Step 1: Concatenate all field hashes with separator
-        df = self.add_provenance_column(df, hash_algorithm=hash_algo)
+        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
 
         # Drop all temporary columns (BASE CLASS CLEANUP)
         # Drop temporary concat columns and hash columns
@@ -381,10 +390,25 @@ class ProvenanceTracker(ABC):
         if columns_to_drop:
             df = df.drop(*columns_to_drop)
 
+        # Add data_version columns (default to provenance values)
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+        )
+
+        df = df.with_columns(
+            nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+            nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+        )
+
         return df
 
-    def add_provenance_column(
-        self, df: FrameT, hash_algorithm: HashAlgorithm
+    def hash_struct_version_column(
+        self,
+        df: FrameT,
+        hash_algorithm: HashAlgorithm,
+        struct_column: str = METAXY_PROVENANCE_BY_FIELD,
+        hash_column: str = METAXY_PROVENANCE,
     ) -> FrameT:
         # Compute sample-level provenance from field-level provenance
         # Get all field names from the struct (we need feature spec for this)
@@ -392,26 +416,24 @@ class ProvenanceTracker(ABC):
 
         # Concatenate all field hashes with separator
         sample_components = [
-            nw.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
-            for field_name in field_names
+            nw.col(struct_column).struct.field(field_name) for field_name in field_names
         ]
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))
 
         # Hash the concatenation to produce final provenance hash
-        df = self.hash_string_column(
-            df,
-            "__sample_concat",
-            METAXY_PROVENANCE,
-            hash_algorithm,
-        ).with_columns(
-            nw.col(METAXY_PROVENANCE).str.slice(0, get_hash_truncation_length())
+        return (
+            self.hash_string_column(
+                df,
+                "__sample_concat",
+                hash_column,
+                hash_algorithm,
+            )
+            .with_columns(
+                nw.col(hash_column).str.slice(0, get_hash_truncation_length())
+            )
+            .drop("__sample_concat")
         )
-
-        # Drop temporary column
-        df = df.drop("__sample_concat")
-
-        return df
 
     def resolve_increment_with_provenance(
         self,
@@ -453,7 +475,7 @@ class ProvenanceTracker(ABC):
                 warnings.warn(
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
                 )
-                expected = self.add_provenance_column(
+                expected = self.hash_struct_version_column(
                     expected, hash_algorithm=hash_algorithm
                 )
 

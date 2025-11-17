@@ -42,7 +42,6 @@ class MetadataStoreProtocol(Protocol):
         self,
         feature: FeatureKey,
         *,
-        feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:

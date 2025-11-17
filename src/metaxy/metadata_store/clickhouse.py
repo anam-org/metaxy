@@ -96,10 +96,6 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         """
         return HashAlgorithm.XXHASH64
 
-    def _supports_native_components(self) -> bool:
-        """ClickHouse stores support native field provenance calculations when connection is open."""
-        return self._conn is not None
-
     def _create_hash_functions(self):
         """Create ClickHouse-specific hash functions for Ibis expressions.
 

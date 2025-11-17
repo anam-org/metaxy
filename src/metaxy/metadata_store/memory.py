@@ -66,9 +66,6 @@ class InMemoryMetadataStore(MetadataStore):
         """Convert feature key to storage key (tuple for hashability)."""
         return tuple(feature_key)
 
-    def _supports_native_components(self) -> bool:
-        return False
-
     def native_implementation(self) -> nw.Implementation:
         """Get native implementation for in-memory store."""
         return nw.Implementation.POLARS

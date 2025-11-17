@@ -44,7 +44,7 @@ def add_metaxy_provenance_column(
 
     # Convert to Narwhals, add provenance column, convert back
     df_nw = nw.from_native(df.lazy())
-    df_nw = tracker.add_provenance_column(df_nw, hash_algorithm=hash_algorithm)
+    df_nw = tracker.hash_struct_version_column(df_nw, hash_algorithm=hash_algorithm)
     result_df = df_nw.collect().to_native()
 
     # Apply hash truncation if specified

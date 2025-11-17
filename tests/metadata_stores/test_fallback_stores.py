@@ -33,6 +33,7 @@ from metaxy.metadata_store import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
 from metaxy.provenance.types import HashAlgorithm
 
@@ -92,45 +93,58 @@ def create_store_for_fallback(
 # ============= FEATURE DEFINITIONS =============
 
 
-class RootFeature(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["fallback_test", "root"]),
-        fields=[
-            FieldSpec(key=FieldKey(["default"]), code_version="1"),
-        ],
-    ),
-):
-    """Root feature with no dependencies."""
+@pytest.fixture
+def features(graph: FeatureGraph):
+    class RootFeature(
+        Feature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["fallback_test", "root"]),
+            fields=[
+                FieldSpec(key=FieldKey(["default"]), code_version="1"),
+            ],
+        ),
+    ):
+        """Root feature with no dependencies."""
 
-    pass
+        pass
+
+    class DownstreamFeature(
+        Feature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["fallback_test", "downstream"]),
+            deps=[FeatureDep(feature=FeatureKey(["fallback_test", "root"]))],
+            fields=[
+                FieldSpec(
+                    key=FieldKey(["default"]),
+                    code_version="1",
+                    deps=[
+                        FieldDep(
+                            feature=FeatureKey(["fallback_test", "root"]),
+                            fields=[FieldKey(["default"])],
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ):
+        """Downstream feature depending on RootFeature."""
+
+        pass
+
+    return {
+        "RootFeature": RootFeature,
+        "DownstreamFeature": DownstreamFeature,
+    }
 
 
-class DownstreamFeature(
-    Feature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["fallback_test", "downstream"]),
-        deps=[FeatureDep(feature=FeatureKey(["fallback_test", "root"]))],
-        fields=[
-            FieldSpec(
-                key=FieldKey(["default"]),
-                code_version="1",
-                deps=[
-                    FieldDep(
-                        feature=FeatureKey(["fallback_test", "root"]),
-                        fields=[FieldKey(["default"])],
-                    )
-                ],
-            ),
-        ],
-    ),
-):
-    """Downstream feature depending on RootFeature."""
-
-    pass
+@pytest.fixture
+def RootFeature(features):
+    return features["RootFeature"]
 
 
-# ============= TESTS =============
+@pytest.fixture
+def DownstreamFeature(features):
+    return features["DownstreamFeature"]
 
 
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
@@ -144,8 +158,9 @@ def test_fallback_store_warning_issued(
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
-    caplog,
     snapshot,
+    RootFeature,
+    DownstreamFeature,
 ):
     """Test that warning IS issued when upstream feature is in fallback store.
 
@@ -155,10 +170,6 @@ def test_fallback_store_warning_issued(
     - resolve_update() should switch to Polars components and issue warning
     - Results should match snapshot across different configurations
     """
-    graph = FeatureGraph()
-    graph.add_feature(RootFeature)
-    graph.add_feature(DownstreamFeature)
-
     # Create fallback store (InMemory - simple, no native components)
     fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
 
@@ -177,7 +188,7 @@ def test_fallback_store_warning_issued(
     results = {}
 
     # Setup: Write root feature to fallback store
-    with fallback_store, graph.use():
+    with fallback_store:
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write_metadata(RootFeature, root_data)
 
@@ -194,31 +205,22 @@ def test_fallback_store_warning_issued(
         )
 
         # Test: Resolve downstream feature with primary store that has fallback
-        with primary_store, fallback_store, graph.use():
-            import logging
-
-            caplog.clear()
-            with caplog.at_level(logging.WARNING):
-                result = primary_store.resolve_update(DownstreamFeature)
-
-            # Verify warning was issued only when prefer_native=True
-            fallback_warnings = [
-                record
-                for record in caplog.records
-                if "upstream dependencies in fallback stores" in record.message
-                and "Falling back to in-memory Polars processing" in record.message
-            ]
-
+        with primary_store, fallback_store:
             if prefer_native:
-                assert len(fallback_warnings) == 1, (
-                    f"Expected exactly 1 fallback warning for {primary_store_type} with prefer_native=True, "
-                    f"but got {len(fallback_warnings)}: {[r.message for r in fallback_warnings]}"
-                )
+                # Should warn when falling back from native to Polars
+                with pytest.warns(
+                    PolarsMaterializationWarning,
+                    match="Using Polars for resolving the increment instead",
+                ):
+                    result = primary_store.resolve_update(DownstreamFeature)
             else:
                 # prefer_native=False means we intentionally use Polars, not a fallback
-                assert len(fallback_warnings) == 0, (
-                    f"Unexpected fallback warning for {primary_store_type} with prefer_native=False"
-                )
+                # No warning should be issued
+                import warnings
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("error", PolarsMaterializationWarning)
+                    result = primary_store.resolve_update(DownstreamFeature)
 
             # Collect field provenances for comparison
             added_sorted = (
@@ -255,7 +257,8 @@ def test_no_fallback_warning_when_all_local(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    caplog,
+    RootFeature,
+    DownstreamFeature,
 ):
     """Test that warning is NOT issued when all upstream is in the same store.
 
@@ -264,10 +267,6 @@ def test_no_fallback_warning_when_all_local(
     - resolve_update() should use native components (no Polars fallback)
     - No warning should be issued
     """
-    graph = FeatureGraph()
-    graph.add_feature(RootFeature)
-    graph.add_feature(DownstreamFeature)
-
     store = create_store_for_fallback(
         store_type,
         prefer_native=True,
@@ -276,7 +275,7 @@ def test_no_fallback_warning_when_all_local(
         suffix="single",
     )
 
-    with store, graph.use():
+    with store:
         # Write root feature to same store
         root_data = pl.DataFrame(
             {
@@ -292,24 +291,12 @@ def test_no_fallback_warning_when_all_local(
         store.write_metadata(RootFeature, root_data)
 
         # Resolve downstream feature - all upstream is local
-        import logging
+        # No warning should be issued
+        import warnings
 
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", PolarsMaterializationWarning)
             result = store.resolve_update(DownstreamFeature)
-
-        # Verify NO fallback warning was issued
-        fallback_warnings = [
-            record
-            for record in caplog.records
-            if "upstream dependencies in fallback stores" in record.message
-            or "Falling back to in-memory Polars processing" in record.message
-        ]
-
-        assert len(fallback_warnings) == 0, (
-            f"Unexpected fallback warning for {store_type} when all upstream is local: "
-            f"{[r.message for r in fallback_warnings]}"
-        )
 
         # Verify results are still correct
         assert len(result.added) == 3
@@ -326,8 +313,9 @@ def test_fallback_store_switches_to_polars_components(
     hash_algorithm: HashAlgorithm,
     primary_store_type: str,
     fallback_store_type: str,
-    caplog,
     snapshot,
+    RootFeature,
+    DownstreamFeature,
 ):
     """Test that resolve_update switches from native to Polars components with fallback.
 
@@ -337,10 +325,6 @@ def test_fallback_store_switches_to_polars_components(
     3. Results should be identical in both cases
     4. All scenarios are snapshotted for regression detection
     """
-    graph = FeatureGraph()
-    graph.add_feature(RootFeature)
-    graph.add_feature(DownstreamFeature)
-
     # Setup root feature data
     root_data = pl.DataFrame(
         {
@@ -364,19 +348,16 @@ def test_fallback_store_switches_to_polars_components(
         suffix="all_local",
     )
 
-    with store_all_local, graph.use():
+    with store_all_local:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
         store_all_local.write_metadata(RootFeature, root_data_with_prov)
 
-        import logging
-
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
-            result_local = store_all_local.resolve_update(DownstreamFeature)
-
         # Should be no warnings
-        warnings_local = [r for r in caplog.records if "fallback" in r.message.lower()]
-        assert len(warnings_local) == 0
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", PolarsMaterializationWarning)
+            result_local = store_all_local.resolve_update(DownstreamFeature)
 
         # Collect field provenances from result
         added_local = (
@@ -400,7 +381,7 @@ def test_fallback_store_switches_to_polars_components(
     fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
 
     # Write root to fallback store
-    with fallback_store, graph.use():
+    with fallback_store:
         root_data_with_prov = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write_metadata(RootFeature, root_data_with_prov)
 
@@ -414,20 +395,13 @@ def test_fallback_store_switches_to_polars_components(
         fallback_stores=[fallback_store],
     )
 
-    with primary_store, fallback_store, graph.use():
-        import logging
-
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
-            result_fallback = primary_store.resolve_update(DownstreamFeature)
-
+    with primary_store, fallback_store:
         # Should have warning about fallback
-        warnings_fallback = [
-            r
-            for r in caplog.records
-            if "upstream dependencies in fallback stores" in r.message
-        ]
-        assert len(warnings_fallback) == 1
+        with pytest.warns(
+            PolarsMaterializationWarning,
+            match="Using Polars for resolving the increment instead",
+        ):
+            result_fallback = primary_store.resolve_update(DownstreamFeature)
 
         # Collect field provenances from result
         added_fallback = (
@@ -467,7 +441,8 @@ def test_prefer_native_false_no_warning_even_without_fallback(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     store_type: str,
-    caplog,
+    RootFeature,
+    DownstreamFeature,
 ):
     """Test that prefer_native=False doesn't issue fallback warning.
 
@@ -475,10 +450,6 @@ def test_prefer_native_false_no_warning_even_without_fallback(
     so there's no "fallback" from native to Polars - it's intentional.
     The warning should only be issued when we CAN'T use native due to fallback stores.
     """
-    graph = FeatureGraph()
-    graph.add_feature(RootFeature)
-    graph.add_feature(DownstreamFeature)
-
     # Create store with prefer_native=False
     store = create_store_for_fallback(
         store_type,
@@ -488,7 +459,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
         suffix="no_native",
     )
 
-    with store, graph.use():
+    with store:
         root_data = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -502,17 +473,12 @@ def test_prefer_native_false_no_warning_even_without_fallback(
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
         store.write_metadata(RootFeature, root_data)
 
-        import logging
-
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
-            result = store.resolve_update(DownstreamFeature)
-
         # Should be no warnings - prefer_native=False is intentional, not a fallback
-        warnings = [r for r in caplog.records]
-        assert len(warnings) == 0, (
-            f"Unexpected warnings with prefer_native=False: {[r.message for r in warnings]}"
-        )
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", PolarsMaterializationWarning)
+            result = store.resolve_update(DownstreamFeature)
 
         # Verify results are correct
         assert len(result.added) == 3
