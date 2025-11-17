@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import Frame, FrameT, IntoFrame
+from narwhals.typing import Frame, FrameT
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import (
@@ -510,13 +510,48 @@ class MetadataStore(ABC):
             else:
                 raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
 
+        # Convert to Narwhals for validation and writing
+        df_nw = nw.from_native(df)
+
         # For system tables, write directly without feature_version tracking
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self.write_metadata_to_store(feature_key, df)
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
+        # For regular features: validate schema first before adding columns
+        # Early validation to ensure provenance_by_field column exists
+        # (needed for backward compatibility columns)
+        columns = df_nw.collect_schema().names()
+        if PROVENANCE_BY_FIELD_COL not in columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
+            )
+
+        # Add all required system columns
+        df_nw = self._add_system_columns(df_nw, feature)  # pyright: ignore[reportArgumentType]
+
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
+
+    def _add_system_columns(
+        self,
+        df: FrameT,
+        feature: FeatureKey | type[BaseFeature],
+    ) -> FrameT:
+        """Add all required system columns to the DataFrame.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            feature: Feature class or key
+
+        Returns:
+            DataFrame with all system columns added
+        """
+        feature_key = self._resolve_feature_key(feature)
+        df.collect_schema().names()
         # Check if feature_version and snapshot_version already exist in DataFrame
         if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
             # DataFrame already has feature_version and snapshot_version - use as-is
@@ -551,8 +586,8 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+                    nw.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                    nw.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
                 ]
             )
 
