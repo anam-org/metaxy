@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 
-def detect_migration(
+def detect_diff_migration(
     store: "MetadataStore",
     project: str | None = None,
     from_snapshot_version: str | None = None,
@@ -41,18 +41,18 @@ def detect_migration(
         ```py
         # Compare latest snapshot in store vs current graph
         with store:
-            migration = detect_migration(store, project="my_project")
+            migration = detect_diff_migration(store, project="my_project")
             if migration:
             print(f"Migration written to {migration.yaml_path}")
 
         ```py
         # Use custom operation
-        migration = detect_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
+        migration = detect_diff_migration(store, project="my_project", ops=[{"type": "myproject.ops.CustomOp"}])
         ```
 
         ```py
         # Use custom name
-        migration = detect_migration(store, project="my_project", name="example_migration")
+        migration = detect_diff_migration(store, project="my_project", name="example_migration")
         ```
     """
     differ = GraphDiffer()
@@ -155,6 +155,7 @@ def detect_migration(
 
     yaml_path = migrations_dir / f"{migration_id}.yaml"
     migration_yaml = {
+        "migration_type": "metaxy.migrations.models.DiffMigration",
         "id": migration.migration_id,
         "created_at": migration.created_at.isoformat(),
         "parent": migration.parent,

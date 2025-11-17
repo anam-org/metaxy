@@ -104,7 +104,7 @@ def test_copy_metadata_all_features(
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
         assert dest_data_a.height == 3
-        assert dest_data_a["sample_uid"].to_list() == ["s1", "s2", "s3"]
+        assert set(dest_data_a["sample_uid"].to_list()) == {"s1", "s2", "s3"}
         assert all(
             sid == snapshot_version for sid in dest_data_a["metaxy_snapshot_version"]
         )
@@ -113,7 +113,7 @@ def test_copy_metadata_all_features(
             dest_store.read_metadata(FeatureB, current_only=False).collect().to_polars()
         )
         assert dest_data_b.height == 2
-        assert dest_data_b["sample_uid"].to_list() == ["s1", "s2"]
+        assert set(dest_data_b["sample_uid"].to_list()) == {"s1", "s2"}
         assert all(
             sid == snapshot_version for sid in dest_data_b["metaxy_snapshot_version"]
         )
@@ -250,7 +250,7 @@ def test_copy_metadata_with_snapshot_filter(
             dest_store.read_metadata(FeatureA, current_only=False).collect().to_polars()
         )
         assert dest_data.height == 3
-        assert dest_data["sample_uid"].to_list() == ["s3", "s4", "s5"]
+        assert set(dest_data["sample_uid"].to_list()) == {"s3", "s4", "s5"}
         assert all(sid == snapshot_2 for sid in dest_data["metaxy_snapshot_version"])
 
 

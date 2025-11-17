@@ -14,6 +14,8 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
 
 
@@ -69,6 +71,11 @@ class InMemoryMetadataStore(MetadataStore):
     def native_implementation(self) -> nw.Implementation:
         """Get native implementation for in-memory store."""
         return nw.Implementation.POLARS
+
+    @classmethod
+    def native_provenance_tracker_class(cls) -> type[ProvenanceTracker]:
+        """Get the native Narwhals provenance tracker class for this store's backend."""
+        return PolarsProvenanceTracker
 
     @contextmanager
     def _create_provenance_tracker(self, plan):
