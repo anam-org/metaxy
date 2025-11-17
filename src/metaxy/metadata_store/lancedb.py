@@ -10,14 +10,16 @@ from typing import Any
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
+from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +139,7 @@ class LanceDBMetadataStore(MetadataStore):
         super().__init__(
             fallback_stores=fallback_stores,
             auto_create_tables=auto_create_tables,
+            versioning_engine_cls=PolarsVersioningEngine,
             **kwargs,
         )
 
@@ -153,15 +156,20 @@ class LanceDBMetadataStore(MetadataStore):
         return nw.Implementation.POLARS
 
     @contextmanager
-    def _create_provenance_tracker(self, plan):
-        """Create a Polars provenance tracker for LanceDB."""
-        from metaxy.provenance.polars import PolarsProvenanceTracker
+    def _create_versioning_engine(self, plan):
+        """Create Polars versioning engine for LanceDB.
 
-        tracker = PolarsProvenanceTracker(plan=plan)
+        Args:
+            plan: Feature plan for the feature we're tracking provenance for
+
+        Yields:
+            PolarsVersioningEngine instance
+        """
+        engine = PolarsVersioningEngine(plan=plan)
         try:
-            yield tracker
+            yield engine
         finally:
-            # No cleanup needed for Polars tracker
+            # No cleanup needed for Polars engine
             pass
 
     def _create_native_components(self) -> tuple[Any, Any, Any]:
@@ -279,7 +287,7 @@ class LanceDBMetadataStore(MetadataStore):
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: nw.DataFrame[Any] | pl.DataFrame,
+        df: Frame,
     ) -> None:
         """Append metadata to Lance table.
 
@@ -288,7 +296,7 @@ class LanceDBMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: Narwhals DataFrame or native Polars DataFrame with metadata (already validated by base class)
+            df: Narwhals Frame with metadata (already validated by base class)
         """
         assert self._conn is not None, "Store must be open"
 
@@ -370,7 +378,7 @@ class LanceDBMetadataStore(MetadataStore):
             if "batch_size" not in str(exc):
                 raise
             logger.debug(
-                "Polars/LanceDB batch_size incompatibility hit; converting via Arrow "
+                "Polars/LanceDB batch_size incompatibility hit; converting via Arrow"
             )
             # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
             arrow_table = table.to_arrow()
@@ -392,31 +400,6 @@ class LanceDBMetadataStore(MetadataStore):
 
         return nw_lazy
 
-    def _list_features_local(self) -> list[FeatureKey]:
-        """List Lance tables in this store (excluding system tables).
-
-        Note: "local" here means "in this store instance", not "local filesystem".
-        The store may be backed by remote storage (S3, LanceDB Cloud, etc.).
-        """
-        if self._conn is None:
-            return []
-        names = self._conn.table_names()  # type: ignore[attr-defined]
-
-        # System table prefix in table name format (with underscores)
-        from metaxy.metadata_store.system import METAXY_SYSTEM_KEY_PREFIX
-
-        system_prefix = METAXY_SYSTEM_KEY_PREFIX.replace("-", "_") + "__"
-
-        features = []
-        for name in names:
-            # Skip system tables by checking table name prefix directly
-            # (avoids issues with hyphen-to-underscore conversion)
-            if not name.startswith(system_prefix):
-                feature_key = FeatureKey(name.split("__"))
-                features.append(feature_key)
-
-        return sorted(features)
-
     # Display ------------------------------------------------------------------
 
     def display(self) -> str:
@@ -424,8 +407,11 @@ class LanceDBMetadataStore(MetadataStore):
         # Sanitize path to avoid exposing credentials in URIs
         path = self._sanitize_path(self.uri)
         details = [f"path={path}"]
+
         if self._is_open:
-            details.append(f"features={len(self._list_features_local())}")
+            graph = FeatureGraph.get_active()
+            features = graph.list_features()
+            details.append(f"features={len(features)}")
         return f"LanceDBMetadataStore({', '.join(details)})"
 
     @staticmethod

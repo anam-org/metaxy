@@ -202,8 +202,9 @@ nav:
         - BigQuery: integrations/metadata-stores/databases/bigquery.md
         - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
-      - Storage Only:
+      - Stores without engine:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
+        - LanceDB: learn/metadata-stores/lancedb.md
     - Plugins:
       - SQLModel: integrations/plugins/sqlmodel.md
       - SQLAlchemy: integrations/plugins/sqlalchemy.md

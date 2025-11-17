@@ -2,6 +2,7 @@
 
 import hashlib
 from contextvars import copy_context
+from typing import Any, cast
 
 import narwhals as nw
 import polars as pl
@@ -225,7 +226,9 @@ class TestNarwhalsFunctions:
         MetaxyConfig.set(MetaxyConfig(hash_truncation_length=10))
 
         lazy_frame = nw.from_native(lf, eager_only=False)
-        truncated = truncate_struct_column(lazy_frame, "metaxy_provenance_by_field")
+        truncated = truncate_struct_column(
+            cast(Any, lazy_frame), "metaxy_provenance_by_field"
+        )
         result_pl = truncated.collect().to_polars()
 
         assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 10

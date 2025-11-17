@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
-import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore, VersioningEngineOptions
@@ -346,22 +346,15 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: Narwhals Frame with metadata (already validated)
             **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        # Handle raw Polars DataFrame
-        if isinstance(df, pl.DataFrame):
-            df_to_insert = df
         # Handle Narwhals frame with IBIS implementation
-        elif (
-            hasattr(df, "implementation")
-            and df.implementation == nw.Implementation.IBIS
-        ):
+        if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
-        # Handle other Narwhals frames (convert to Polars)
         else:
             from metaxy._utils import collect_to_polars
 
