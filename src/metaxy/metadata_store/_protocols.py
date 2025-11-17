@@ -22,7 +22,15 @@ class MetadataStoreProtocol(Protocol):
     by defining only the methods that SystemTableStorage actually uses.
     """
 
-    def _write_metadata_impl(
+    def write_metadata(
+        self,
+        feature: FeatureKey | type[Any],
+        df: Any,
+    ) -> None:
+        """Write metadata for a feature."""
+        ...
+
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: pl.DataFrame,

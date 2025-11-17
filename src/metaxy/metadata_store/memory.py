@@ -92,7 +92,7 @@ class InMemoryMetadataStore(MetadataStore):
             # No cleanup needed for Polars tracker
             pass
 
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: pl.DataFrame,

@@ -438,7 +438,7 @@ class MetadataStore(ABC):
             )
 
     @abstractmethod
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: pl.DataFrame,
@@ -510,7 +510,7 @@ class MetadataStore(ABC):
         # For system tables, write directly without feature_version tracking
         if is_system_table:
             self._validate_schema_system_table(df)
-            self._write_metadata_impl(feature_key, df)
+            self.write_metadata_to_store(feature_key, df)
             return
 
         # For regular features: add feature_version and snapshot_version, validate, and write
@@ -556,7 +556,7 @@ class MetadataStore(ABC):
         # Validate schema first (must have metaxy_provenance_by_field)
         self._validate_schema(df)
         # Write metadata
-        self._write_metadata_impl(feature_key, df)
+        self.write_metadata_to_store(feature_key, df)
 
     def _validate_schema(self, df: pl.DataFrame) -> None:
         """
@@ -756,7 +756,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
@@ -808,7 +808,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
