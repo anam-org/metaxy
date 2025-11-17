@@ -274,7 +274,7 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
     5. Verify persistence across store reopening
     """
     # Extract graph from test_graph fixture
-    graph, _ = test_graph
+    graph = test_graph
 
     # Activate the test graph for list_features() calls
     with graph.use():
