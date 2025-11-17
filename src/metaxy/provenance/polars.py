@@ -144,3 +144,42 @@ class PolarsProvenanceTracker(ProvenanceTracker):
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(grouped))
+
+    def keep_latest_by_group(
+        self,
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame backed by Polars
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        assert df.implementation == nw.Implementation.POLARS, (
+            "Only Polars DataFrames are accepted"
+        )
+
+        # Check if timestamp_column exists
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"Available columns: {df.columns}"
+            )
+
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+
+        result = df_pl.group_by(group_columns).agg(
+            pl.col("*").sort_by(timestamp_column).last()
+        )
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result))

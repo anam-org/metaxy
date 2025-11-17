@@ -1212,6 +1212,7 @@ class MetadataStore(ABC):
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
+        latest_only: bool = True,
     ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
@@ -1225,6 +1226,7 @@ class MetadataStore(ABC):
             allow_fallback: If True, check fallback stores on local miss
             current_only: If True, only return rows with current feature_version
                 (default: True for safety)
+            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
 
         Returns:
             Narwhals LazyFrame with metadata
@@ -1235,6 +1237,7 @@ class MetadataStore(ABC):
         """
         filters = filters or []
 
+        plan = self._resolve_feature_plan(feature)
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
@@ -1279,6 +1282,20 @@ class MetadataStore(ABC):
         )
 
         if lazy_frame is not None:
+            if latest_only:
+                with self.create_provenance_tracker(
+                    plan=plan, implementation=lazy_frame.implementation
+                ) as tracker:
+                    # Keep only the latest row per sample for each upstream feature
+                    from metaxy.models.constants import METAXY_CREATED_AT
+
+                    # Apply deduplication
+                    lazy_frame = tracker.keep_latest_by_group(
+                        df=lazy_frame,
+                        group_columns=list(plan.feature.id_columns),
+                        timestamp_column=METAXY_CREATED_AT,
+                    )
+
             return lazy_frame
 
         # Try fallback stores

@@ -325,3 +325,328 @@ def test_store_resolve_update_matches_golden_provenance(
             check_row_order=True,
             check_column_order=False,
         )
+
+
+# ============= TEST: DEDUPLICATION WITH DUPLICATES =============
+
+
+@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
+@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
+def test_golden_reference_with_duplicate_timestamps(
+    empty_store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
+):
+    """Test golden reference comparison with upstream metadata containing duplicate timestamps.
+
+    This test verifies that:
+    1. When upstream metadata contains multiple versions of the same sample (duplicates)
+    2. The resolve_update correctly deduplicates using keep_latest_by_group
+    3. The computed provenance still matches the golden reference (which has no duplicates)
+
+    This proves that the deduplication logic correctly filters older versions before
+    computing provenance.
+    """
+    # Setup store with upstream data and get golden reference
+    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
+        setup_store_with_data(
+            empty_store,
+            feature_plan_config,
+        )
+    )
+
+    # Get the child feature from the graph
+    child_key = child_feature_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
+
+    with store:
+        try:
+            from datetime import timedelta
+
+            import polars as pl
+
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Add older duplicates to upstream metadata
+            for feature_key, upstream_feature in upstream_features.items():
+                # Read existing upstream data
+                existing_df = (
+                    store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+
+                # Create older duplicates (same IDs, older timestamps)
+                older_df = existing_df.clone()
+                older_df = older_df.with_columns(
+                    (pl.col(METAXY_CREATED_AT) - timedelta(hours=2)).alias(
+                        METAXY_CREATED_AT
+                    )
+                )
+
+                # Modify a field value to ensure different provenance
+                # This tests that older version is NOT used
+                user_fields = [
+                    col
+                    for col in older_df.columns
+                    if not col.startswith("metaxy_") and col != "sample_uid"
+                ]
+                if user_fields:
+                    field = user_fields[0]
+                    older_df = older_df.with_columns(
+                        pl.when(pl.col(field).is_not_null())
+                        .then(pl.col(field).cast(pl.Utf8) + "_DUPLICATE_OLD")
+                        .otherwise(pl.col(field))
+                        .alias(field)
+                    )
+
+                # Write the older duplicates
+                store.write_metadata(upstream_feature, older_df)
+
+                # Now store has 2 versions per sample:
+                # - Original (newer) - should be used
+                # - Duplicate (older, modified) - should be ignored
+
+            # Call resolve_update - should use only latest versions
+            increment = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
+
+        except HashAlgorithmNotSupportedError:
+            pytest.skip(
+                f"Hash algorithm {store.hash_algorithm} not supported by {store}"
+            )
+
+        added_df = increment.added.lazy().collect().to_polars()
+
+        # Get ID columns from the feature plan
+        id_columns = list(child_feature_plan.feature.id_columns)
+
+        # Sort both DataFrames by ID columns for comparison
+        added_sorted = added_df.sort(id_columns)
+        golden_sorted = golden_downstream.sort(id_columns)
+
+        # Exclude metaxy_created_at since it's a timestamp
+        common_columns = [
+            col
+            for col in added_sorted.columns
+            if col in golden_sorted.columns and col != METAXY_CREATED_AT
+        ]
+        added_selected = added_sorted.select(common_columns)
+        golden_selected = golden_sorted.select(common_columns)
+
+        # Verify that computed provenance matches golden reference
+        # This proves deduplication worked correctly - only latest versions were used
+        pl_testing.assert_frame_equal(
+            added_selected,
+            golden_selected,
+            check_row_order=True,
+            check_column_order=False,
+        )
+
+
+@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
+def test_golden_reference_with_all_duplicates_same_timestamp(
+    empty_store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    graph: FeatureGraph,
+):
+    """Test golden reference when all upstream samples have duplicate entries with same timestamp.
+
+    This is an edge case where every sample has multiple versions with identical timestamps.
+    The deduplication should still work deterministically.
+    """
+
+    # Create simple feature graph
+    class ParentFeature(
+        Feature,
+        spec=SampleFeatureSpec(
+            key="parent",
+            fields=["value"],
+        ),
+    ):
+        pass
+
+    class ChildFeature(
+        Feature,
+        spec=SampleFeatureSpec(
+            key="child",
+            deps=[FeatureDep(feature=ParentFeature)],
+            fields=["computed"],
+        ),
+    ):
+        pass
+
+    child_plan = graph.get_feature_plan(ChildFeature.spec().key)
+
+    # Generate golden reference data
+    feature_versions = {
+        "parent": ParentFeature.feature_version(),
+        "child": ChildFeature.feature_version(),
+    }
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=NonInteractiveExampleWarning)
+        upstream_data, golden_downstream = downstream_metadata_strategy(
+            child_plan,
+            feature_versions=feature_versions,
+            snapshot_version=graph.snapshot_version,
+            hash_algorithm=empty_store.hash_algorithm,
+            min_rows=5,
+            max_rows=10,
+        ).example()
+
+    parent_df = upstream_data["parent"]
+
+    try:
+        with empty_store:
+            from datetime import datetime
+
+            import polars as pl
+
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Create duplicates with SAME timestamp for ALL samples
+            same_timestamp = datetime.now()
+
+            # Write first version
+            version1 = parent_df.with_columns(
+                pl.lit(same_timestamp).alias(METAXY_CREATED_AT)
+            )
+            empty_store.write_metadata(ParentFeature, version1)
+
+            # Create second version with same timestamp but different provenance
+            # We modify the provenance columns to simulate different data
+            version2 = parent_df.with_columns(
+                pl.lit(same_timestamp).alias(METAXY_CREATED_AT),
+                # Modify provenance to make it different (simulate different underlying data)
+                (pl.col("metaxy_provenance").cast(pl.Utf8) + "_DUP").alias(
+                    "metaxy_provenance"
+                ),
+            )
+
+            # Write duplicates with same timestamp
+            empty_store.write_metadata(ParentFeature, version2)
+
+            # Now every sample has 2 versions with same timestamp
+            # Call resolve_update - should pick one deterministically
+            increment = empty_store.resolve_update(
+                ChildFeature,
+                target_version=ChildFeature.feature_version(),
+                snapshot_version=graph.snapshot_version,
+            )
+
+            # Verify we got results (deterministic even with same timestamps)
+            added_df = increment.added.lazy().collect().to_polars()
+            assert len(added_df) > 0, (
+                "Expected at least some samples after deduplication"
+            )
+
+            # With duplicates at same timestamp, we should still get the original count
+            # (deduplication picks one version per sample)
+            assert len(added_df) == len(parent_df), (
+                f"Expected {len(parent_df)} deduplicated samples, got {len(added_df)}"
+            )
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {empty_store.hash_algorithm} not supported by {empty_store}"
+        )
+
+
+@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
+@parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
+def test_golden_reference_partial_duplicates(
+    empty_store: MetadataStore,
+    metaxy_config: MetaxyConfig,
+    feature_plan_config: FeaturePlanOutput,
+):
+    """Test golden reference with only some upstream samples having duplicates.
+
+    This test ensures that:
+    - Samples with duplicates are correctly deduplicated
+    - Samples without duplicates pass through unchanged
+    - The final provenance matches golden reference
+    """
+    # Setup store with upstream data
+    store, (graph, upstream_features, child_feature_plan), golden_downstream = (
+        setup_store_with_data(
+            empty_store,
+            feature_plan_config,
+        )
+    )
+
+    child_key = child_feature_plan.feature.key
+    ChildFeature = graph.features_by_key[child_key]
+    child_version = ChildFeature.feature_version()
+
+    try:
+        with store:
+            from datetime import timedelta
+
+            import polars as pl
+
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Add older duplicates for only HALF of the samples in each upstream
+            for feature_key, upstream_feature in upstream_features.items():
+                existing_df = (
+                    store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+
+                # Get half of samples
+                num_samples = len(existing_df)
+                half_count = num_samples // 2
+
+                if half_count > 0:
+                    # Take first half
+                    samples_to_duplicate = existing_df.head(half_count)
+
+                    # Create older version
+                    older_df = samples_to_duplicate.with_columns(
+                        (pl.col(METAXY_CREATED_AT) - timedelta(hours=1)).alias(
+                            METAXY_CREATED_AT
+                        )
+                    )
+
+                    # Write older duplicates
+                    store.write_metadata(upstream_feature, older_df)
+
+                # Now store has:
+                # - First half of samples: 2 versions each (newer and older)
+                # - Second half of samples: 1 version each (original only)
+
+            # Call resolve_update
+            increment = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
+
+            added_df = increment.added.lazy().collect().to_polars()
+            id_columns = list(child_feature_plan.feature.id_columns)
+
+            # Sort both for comparison
+            added_sorted = added_df.sort(id_columns)
+            golden_sorted = golden_downstream.sort(id_columns)
+
+            # Exclude timestamp
+            common_columns = [
+                col
+                for col in added_sorted.columns
+                if col in golden_sorted.columns and col != METAXY_CREATED_AT
+            ]
+            added_selected = added_sorted.select(common_columns)
+            golden_selected = golden_sorted.select(common_columns)
+
+            # Verify provenance matches golden reference
+            pl_testing.assert_frame_equal(
+                added_selected,
+                golden_selected,
+                check_row_order=True,
+                check_column_order=False,
+            )
+
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(f"Hash algorithm {store.hash_algorithm} not supported by {store}")

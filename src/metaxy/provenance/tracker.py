@@ -258,6 +258,28 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def keep_latest_by_group(
+        self,
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        raise NotImplementedError()
+
     def get_renamed_provenance_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed provenance_by_field column name for an upstream feature."""
         return self.feature_transformers_by_key[
