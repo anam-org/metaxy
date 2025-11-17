@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame, FrameT
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import (
@@ -441,14 +442,16 @@ class MetadataStore(ABC):
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
+        Backends may convert to their specific type if needed (e.g., Polars, Ibis).
+
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -507,13 +510,48 @@ class MetadataStore(ABC):
             else:
                 raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
 
+        # Convert to Narwhals for validation and writing
+        df_nw = nw.from_native(df)
+
         # For system tables, write directly without feature_version tracking
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self.write_metadata_to_store(feature_key, df)
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
+        # For regular features: validate schema first before adding columns
+        # Early validation to ensure provenance_by_field column exists
+        # (needed for backward compatibility columns)
+        columns = df_nw.collect_schema().names()
+        if PROVENANCE_BY_FIELD_COL not in columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
+            )
+
+        # Add all required system columns
+        df_nw = self._add_system_columns(df_nw, feature)  # pyright: ignore[reportArgumentType]
+
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
+
+    def _add_system_columns(
+        self,
+        df: FrameT,
+        feature: FeatureKey | type[BaseFeature],
+    ) -> FrameT:
+        """Add all required system columns to the DataFrame.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            feature: Feature class or key
+
+        Returns:
+            DataFrame with all system columns added
+        """
+        feature_key = self._resolve_feature_key(feature)
+        df.collect_schema().names()
         # Check if feature_version and snapshot_version already exist in DataFrame
         if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
             # DataFrame already has feature_version and snapshot_version - use as-is
@@ -548,57 +586,60 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+                    nw.lit(current_feature_version).alias(FEATURE_VERSION_COL),
+                    nw.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
                 ]
             )
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self.write_metadata_to_store(feature_key, df)
+        return df
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
+    def _validate_schema(self, df: Frame) -> None:
         """
         Validate that DataFrame has required schema.
 
         Args:
-            df: DataFrame to validate
+            df: Narwhals DataFrame or LazyFrame to validate
 
         Raises:
             MetadataSchemaError: If schema is invalid
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
+        schema = df.collect_schema()
+
         # Check for metaxy_provenance_by_field column
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if PROVENANCE_BY_FIELD_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
             )
 
         # Check that metaxy_provenance_by_field is a struct
-        provenance_type = df.schema[PROVENANCE_BY_FIELD_COL]
-        if not isinstance(provenance_type, pl.Struct):
+        provenance_dtype = schema[PROVENANCE_BY_FIELD_COL]
+        if not isinstance(provenance_dtype, nw.Struct):
             raise MetadataSchemaError(
-                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+                f"'{PROVENANCE_BY_FIELD_COL}' column must be a Struct, got {provenance_dtype}"
             )
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
-        if FEATURE_VERSION_COL not in df.columns:
+        if FEATURE_VERSION_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{FEATURE_VERSION_COL}' column"
             )
 
         # Check for snapshot_version column
-        if SNAPSHOT_VERSION_COL not in df.columns:
+        if SNAPSHOT_VERSION_COL not in schema.names():
             raise MetadataSchemaError(
                 f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
-        """Validate schema for system tables (minimal validation)."""
+    def _validate_schema_system_table(self, df: Frame) -> None:
+        """Validate schema for system tables (minimal validation).
+
+        Args:
+            df: Narwhals DataFrame to validate
+        """
         # System tables don't need metaxy_provenance_by_field column
         pass
 
@@ -756,7 +797,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,
@@ -808,7 +849,7 @@ class MetadataStore(ABC):
                     records,
                     schema=FEATURE_VERSIONS_SCHEMA,
                 )
-                self.write_metadata_to_store(FEATURE_VERSIONS_KEY, version_records)
+                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
 
             return SnapshotPushResult(
                 snapshot_version=snapshot_version,

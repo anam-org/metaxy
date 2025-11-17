@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
-import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore
@@ -324,7 +324,7 @@ class IbisMetadataStore(MetadataStore, ABC):
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation using Ibis.
@@ -336,12 +336,18 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
+        if df.implementation == nw.Implementation.IBIS:
+            df_to_insert = df.to_native()  # Ibis expression
+        else:
+            from metaxy._utils import collect_to_polars
+
+            df_to_insert = collect_to_polars(df)  # Polars DataFrame
+
         table_name = feature_key.table_name
 
         try:
-            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
         except Exception as e:
-            # Check if it's a TableNotFound error
             import ibis.common.exceptions
 
             if not isinstance(e, ibis.common.exceptions.TableNotFound):
@@ -361,7 +367,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
                 # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
                 # No separate insert needed - the data from df is already written
-                self.conn.create_table(table_name, obj=df)
+                self.conn.create_table(table_name, obj=df_to_insert)
             else:
                 raise TableNotFoundError(
                     f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
