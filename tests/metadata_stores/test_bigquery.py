@@ -148,21 +148,6 @@ def test_bigquery_location_parameter():
     assert store.connection_params.get("location") == "EU"
 
 
-def test_bigquery_supports_native_components():
-    """Test that BigQuery reports native component support correctly."""
-    store = BigQueryMetadataStore(
-        project_id="test-project",
-        dataset_id="test_dataset",
-    )
-
-    # Should not support native when connection is None
-    assert store._supports_native_components() is False
-
-    # Should support native when connection exists
-    with patch.object(store, "_conn", Mock()):
-        assert store._supports_native_components() is True
-
-
 def test_bigquery_config_instantiation():
     """Test instantiating BigQuery store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig

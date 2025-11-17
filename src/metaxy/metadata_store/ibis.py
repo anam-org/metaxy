@@ -133,10 +133,6 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return HashAlgorithm.MD5
 
-    def _supports_native_components(self) -> bool:
-        """Ibis stores support native (Ibis-based) provenance tracking when connection is open."""
-        return self._conn is not None
-
     def native_implementation(self) -> nw.Implementation:
         """Get native implementation for Ibis-based stores."""
         return nw.Implementation.IBIS

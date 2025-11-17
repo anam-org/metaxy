@@ -788,6 +788,15 @@ class FeatureGraph:
             _active_graph.reset(token)
 
 
+def current_graph() -> FeatureGraph:
+    """Get the currently active graph.
+
+    Returns:
+        FeatureGraph: The currently active graph.
+    """
+    return FeatureGraph.get_active()
+
+
 # Default global graph
 graph = FeatureGraph()
 

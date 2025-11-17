@@ -447,9 +447,13 @@ def test_resolve_update_downstream_feature(
         added_sorted = added_df.sort(id_columns)
         golden_sorted = golden_downstream.sort(id_columns)
 
-        # Compare provenance columns
+        # Compare provenance columns (exclude metaxy_created_at since it's a timestamp)
+        from metaxy.models.constants import METAXY_CREATED_AT
+
         common_columns = [
-            col for col in added_sorted.columns if col in golden_sorted.columns
+            col
+            for col in added_sorted.columns
+            if col in golden_sorted.columns and col != METAXY_CREATED_AT
         ]
         added_selected = added_sorted.select(common_columns)
         golden_selected = golden_sorted.select(common_columns)
@@ -631,7 +635,7 @@ def test_resolve_update_lazy_execution(
             max_rows=10,
         ).example()
 
-    with store, graph.use():
+    with store:
         try:
             # Write upstream metadata
             for feat_key_str, upstream_df in upstream_data.items():

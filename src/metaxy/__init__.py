@@ -24,6 +24,7 @@ from metaxy.models.feature import (
     Feature,
     FeatureGraph,
     TestingFeature,
+    current_graph,
     get_feature_by_key,
     graph,
 )
@@ -116,4 +117,5 @@ __all__ = [
     "HashAlgorithm",
     "LineageRelationship",
     "AccessMode",
+    "current_graph",
 ]

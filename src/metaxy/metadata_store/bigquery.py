@@ -251,10 +251,6 @@ class BigQueryMetadataStore(IbisMetadataStore):
         # Should switch to FARM_FINGERPRINT64 once https://github.com/ion-elgreco/polars-hash/issues/49 is resolved
         return HashAlgorithm.MD5
 
-    def _supports_native_components(self) -> bool:
-        """BigQuery stores support native field provenance calculations when connection is open."""
-        return self._conn is not None
-
     def _create_hash_functions(self):
         """Create BigQuery-specific hash functions for Ibis expressions.
 

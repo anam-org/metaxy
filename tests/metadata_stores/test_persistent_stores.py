@@ -250,9 +250,7 @@ def test_has_feature_local(
 # System Tables Tests
 
 
-def test_system_tables(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
     """Test that system tables work correctly.
 
     Args:
@@ -261,9 +259,7 @@ def test_system_tables(
     """
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-    graph, _ = test_graph
-
-    with graph.use(), persistent_store as store:
+    with persistent_store as store:
         # Write data and record version
         data = pl.DataFrame(
             {

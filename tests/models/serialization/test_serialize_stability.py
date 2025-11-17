@@ -1,13 +1,11 @@
 """Test that record_feature_graph_snapshot produces stable snapshot_versions."""
 
-from typing import Any
-
 from metaxy.metadata_store import MetadataStore
 from metaxy.models.feature import FeatureGraph
 
 
 def test_record_feature_graph_snapshot_stability(
-    store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
+    store: MetadataStore, test_graph: FeatureGraph
 ) -> None:
     """Test that record_feature_graph_snapshot produces consistent snapshot_versions.
 
@@ -17,7 +15,7 @@ def test_record_feature_graph_snapshot_stability(
     3. Serializing the same graph multiple times produces the same snapshot_version
     4. The snapshot can be deserialized and produces the same snapshot_version
     """
-    graph, features = test_graph
+    graph = test_graph
 
     # Ensure this graph is active so record_feature_graph_snapshot uses it
     with graph.use():
@@ -69,13 +67,13 @@ def test_record_feature_graph_snapshot_stability(
 
 
 def test_serialize_uses_to_snapshot(
-    store: MetadataStore, test_graph: tuple[FeatureGraph, dict[str, Any]]
+    store: MetadataStore, test_graph: FeatureGraph
 ) -> None:
     """Test that record_feature_graph_snapshot correctly uses to_snapshot().
 
     Verifies that the serialization format matches what to_snapshot() produces.
     """
-    graph, features = test_graph
+    graph = test_graph
 
     # Get snapshot dict from to_snapshot()
     snapshot_dict = graph.to_snapshot()
@@ -125,14 +123,14 @@ def test_serialize_uses_to_snapshot(
 
 
 def test_snapshot_version_deterministic_across_stores(
-    test_graph: tuple[FeatureGraph, dict[str, Any]],
+    test_graph: FeatureGraph,
 ) -> None:
     """Test that snapshot_version is deterministic regardless of store type.
 
     The snapshot_version should be computed from the graph structure alone,
     not from any store-specific details.
     """
-    graph, _ = test_graph
+    graph = test_graph
 
     # Get snapshot_version directly from graph
     snapshot_version_1 = graph.snapshot_version

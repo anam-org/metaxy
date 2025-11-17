@@ -196,10 +196,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
         # If hashfuncs loads successfully, the calculator will support XXHASH64 too
         return HashAlgorithm.MD5
 
-    def _supports_native_components(self) -> bool:
-        """DuckDB stores support native provenance tracking when connection is open."""
-        return self._conn is not None
-
     @contextmanager
     def _create_provenance_tracker(self, plan):
         """Create provenance tracker for DuckDB backend as a context manager.
