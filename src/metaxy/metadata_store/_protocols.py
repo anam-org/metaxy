@@ -8,7 +8,7 @@ from types import TracebackType
 from typing import Any, Protocol
 
 import narwhals as nw
-from narwhals.typing import Frame
+from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
 from metaxy.metadata_store.types import AccessMode
@@ -25,7 +25,7 @@ class MetadataStoreProtocol(Protocol):
     def write_metadata(
         self,
         feature: FeatureKey | type[Any],
-        df: Any,
+        df: IntoFrame,
     ) -> None:
         """Write metadata for a feature."""
         ...
