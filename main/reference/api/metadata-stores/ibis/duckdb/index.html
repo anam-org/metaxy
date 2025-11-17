@@ -1519,6 +1519,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata_to_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_metadata_to_store
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_metadata
@@ -2035,6 +2044,15 @@
   <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.allow_cross_project_writes" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;allow_cross_project_writes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata_to_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_metadata_to_store
     </span>
   </a>
   
@@ -3139,6 +3157,120 @@ where metadata needs to be written to features from different projects.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata_to_store" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_to_store</span>
+
+
+<a href="#metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata_to_store" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../definitions/feature/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><span title="polars.DataFrame">DataFrame</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Internal write implementation using Ibis.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>feature_key</code></b>
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../../definitions/feature/#metaxy.FeatureKey">FeatureKey</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Feature key to write to</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>df</code></b>
+              (<code><span title="polars.DataFrame">DataFrame</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>DataFrame with metadata (already validated)</p>
+          </div>
+        </li>
+    </ul>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="metaxy.metadata_store.exceptions.TableNotFoundError">TableNotFoundError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>If table doesn't exist and auto_create_tables is False</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/metaxy/metadata_store/ibis.py</code></summary>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a><a href="#__codelineno-0-324"><span class="linenos" data-linenos="324 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">write_metadata_to_store</span><span class="p">(</span>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a><a href="#__codelineno-0-325"><span class="linenos" data-linenos="325 "></span></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><a href="#__codelineno-0-326"><span class="linenos" data-linenos="326 "></span></a>    <span class="n">feature_key</span><span class="p">:</span> <span class="n">FeatureKey</span><span class="p">,</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a><a href="#__codelineno-0-327"><span class="linenos" data-linenos="327 "></span></a>    <span class="n">df</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><a href="#__codelineno-0-328"><span class="linenos" data-linenos="328 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a><a href="#__codelineno-0-329"><span class="linenos" data-linenos="329 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><a href="#__codelineno-0-330"><span class="linenos" data-linenos="330 "></span></a><span class="sd">    Internal write implementation using Ibis.</span>
+</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><a href="#__codelineno-0-331"><span class="linenos" data-linenos="331 "></span></a>
+</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a><a href="#__codelineno-0-332"><span class="linenos" data-linenos="332 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><a href="#__codelineno-0-333"><span class="linenos" data-linenos="333 "></span></a><span class="sd">        feature_key: Feature key to write to</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><a href="#__codelineno-0-334"><span class="linenos" data-linenos="334 "></span></a><span class="sd">        df: DataFrame with metadata (already validated)</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><a href="#__codelineno-0-335"><span class="linenos" data-linenos="335 "></span></a>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><a href="#__codelineno-0-336"><span class="linenos" data-linenos="336 "></span></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><a href="#__codelineno-0-337"><span class="linenos" data-linenos="337 "></span></a><span class="sd">        TableNotFoundError: If table doesn&#39;t exist and auto_create_tables is False</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a><a href="#__codelineno-0-338"><span class="linenos" data-linenos="338 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a><a href="#__codelineno-0-339"><span class="linenos" data-linenos="339 "></span></a>    <span class="n">table_name</span> <span class="o">=</span> <span class="n">feature_key</span><span class="o">.</span><span class="n">table_name</span>
+</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a><a href="#__codelineno-0-340"><span class="linenos" data-linenos="340 "></span></a>
+</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><a href="#__codelineno-0-341"><span class="linenos" data-linenos="341 "></span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><a href="#__codelineno-0-342"><span class="linenos" data-linenos="342 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">table_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a><a href="#__codelineno-0-343"><span class="linenos" data-linenos="343 "></span></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a><a href="#__codelineno-0-344"><span class="linenos" data-linenos="344 "></span></a>        <span class="c1"># Check if it&#39;s a TableNotFound error</span>
+</span><span id="__span-0-345"><a id="__codelineno-0-345" name="__codelineno-0-345"></a><a href="#__codelineno-0-345"><span class="linenos" data-linenos="345 "></span></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">ibis.common.exceptions</span>
+</span><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a><a href="#__codelineno-0-346"><span class="linenos" data-linenos="346 "></span></a>
+</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a><a href="#__codelineno-0-347"><span class="linenos" data-linenos="347 "></span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">ibis</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">TableNotFound</span><span class="p">):</span>
+</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><a href="#__codelineno-0-348"><span class="linenos" data-linenos="348 "></span></a>            <span class="k">raise</span>
+</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><a href="#__codelineno-0-349"><span class="linenos" data-linenos="349 "></span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span><span class="p">:</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a><a href="#__codelineno-0-350"><span class="linenos" data-linenos="350 "></span></a>            <span class="c1"># Warn about auto-create (first time only)</span>
+</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><a href="#__codelineno-0-351"><span class="linenos" data-linenos="351 "></span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_warn_auto_create_tables</span><span class="p">:</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><a href="#__codelineno-0-352"><span class="linenos" data-linenos="352 "></span></a>                <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><a href="#__codelineno-0-353"><span class="linenos" data-linenos="353 "></span></a>
+</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><a href="#__codelineno-0-354"><span class="linenos" data-linenos="354 "></span></a>                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><a href="#__codelineno-0-355"><span class="linenos" data-linenos="355 "></span></a>                    <span class="sa">f</span><span class="s2">&quot;AUTO_CREATE_TABLES is enabled - automatically creating table &#39;</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><a href="#__codelineno-0-356"><span class="linenos" data-linenos="356 "></span></a>                    <span class="s2">&quot;Do not use in production! &quot;</span>
+</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a><a href="#__codelineno-0-357"><span class="linenos" data-linenos="357 "></span></a>                    <span class="s2">&quot;Use proper database migration tools like Alembic for production deployments.&quot;</span><span class="p">,</span>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><a href="#__codelineno-0-358"><span class="linenos" data-linenos="358 "></span></a>                    <span class="ne">UserWarning</span><span class="p">,</span>
+</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><a href="#__codelineno-0-359"><span class="linenos" data-linenos="359 "></span></a>                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a><a href="#__codelineno-0-360"><span class="linenos" data-linenos="360 "></span></a>                <span class="p">)</span>
+</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><a href="#__codelineno-0-361"><span class="linenos" data-linenos="361 "></span></a>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a><a href="#__codelineno-0-362"><span class="linenos" data-linenos="362 "></span></a>            <span class="c1"># Note: create_table(table_name, obj=df) both creates the table AND inserts the data</span>
+</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a><a href="#__codelineno-0-363"><span class="linenos" data-linenos="363 "></span></a>            <span class="c1"># No separate insert needed - the data from df is already written</span>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a><a href="#__codelineno-0-364"><span class="linenos" data-linenos="364 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">create_table</span><span class="p">(</span><span class="n">table_name</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><a href="#__codelineno-0-365"><span class="linenos" data-linenos="365 "></span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a><a href="#__codelineno-0-366"><span class="linenos" data-linenos="366 "></span></a>            <span class="k">raise</span> <span class="n">TableNotFoundError</span><span class="p">(</span>
+</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><a href="#__codelineno-0-367"><span class="linenos" data-linenos="367 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Table &#39;</span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&#39; does not exist for feature </span><span class="si">{</span><span class="n">feature_key</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s2">. &quot;</span>
+</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a><a href="#__codelineno-0-368"><span class="linenos" data-linenos="368 "></span></a>                <span class="sa">f</span><span class="s2">&quot;Enable auto_create_tables=True to automatically create tables, &quot;</span>
+</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><a href="#__codelineno-0-369"><span class="linenos" data-linenos="369 "></span></a>                <span class="sa">f</span><span class="s2">&quot;or use proper database migration tools like Alembic to create the table first.&quot;</span>
+</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><a href="#__codelineno-0-370"><span class="linenos" data-linenos="370 "></span></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+</span></code></pre></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="metaxy.metadata_store.duckdb.DuckDBMetadataStore.write_metadata" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata</span>
 
@@ -3294,7 +3426,7 @@ May optionally contain <code>metaxy_feature_version</code> and <code>metaxy_snap
 </span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a>    <span class="c1"># For system tables, write directly without feature_version tracking</span>
 </span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a>    <span class="k">if</span> <span class="n">is_system_table</span><span class="p">:</span>
 </span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_schema_system_table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a>        <span class="k">return</span>
 </span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>
 </span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a>    <span class="c1"># For regular features: add feature_version and snapshot_version, validate, and write</span>
@@ -3340,7 +3472,7 @@ May optionally contain <code>metaxy_feature_version</code> and <code>metaxy_snap
 </span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a><a href="#__codelineno-0-556"><span class="linenos" data-linenos="556 "></span></a>    <span class="c1"># Validate schema first (must have metaxy_provenance_by_field)</span>
 </span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a><a href="#__codelineno-0-557"><span class="linenos" data-linenos="557 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_validate_schema</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><a href="#__codelineno-0-558"><span class="linenos" data-linenos="558 "></span></a>    <span class="c1"># Write metadata</span>
-</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><a href="#__codelineno-0-559"><span class="linenos" data-linenos="559 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><a href="#__codelineno-0-559"><span class="linenos" data-linenos="559 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -3590,7 +3722,7 @@ same feature definitions produces the same snapshot_version.</p>
 </span><span id="__span-0-756"><a id="__codelineno-0-756" name="__codelineno-0-756"></a><a href="#__codelineno-0-756"><span class="linenos" data-linenos="756 "></span></a>                <span class="n">records</span><span class="p">,</span>
 </span><span id="__span-0-757"><a id="__codelineno-0-757" name="__codelineno-0-757"></a><a href="#__codelineno-0-757"><span class="linenos" data-linenos="757 "></span></a>                <span class="n">schema</span><span class="o">=</span><span class="n">FEATURE_VERSIONS_SCHEMA</span><span class="p">,</span>
 </span><span id="__span-0-758"><a id="__codelineno-0-758" name="__codelineno-0-758"></a><a href="#__codelineno-0-758"><span class="linenos" data-linenos="758 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-759"><a id="__codelineno-0-759" name="__codelineno-0-759"></a><a href="#__codelineno-0-759"><span class="linenos" data-linenos="759 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
+</span><span id="__span-0-759"><a id="__codelineno-0-759" name="__codelineno-0-759"></a><a href="#__codelineno-0-759"><span class="linenos" data-linenos="759 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
 </span><span id="__span-0-760"><a id="__codelineno-0-760" name="__codelineno-0-760"></a><a href="#__codelineno-0-760"><span class="linenos" data-linenos="760 "></span></a>
 </span><span id="__span-0-761"><a id="__codelineno-0-761" name="__codelineno-0-761"></a><a href="#__codelineno-0-761"><span class="linenos" data-linenos="761 "></span></a>        <span class="k">return</span> <span class="n">SnapshotPushResult</span><span class="p">(</span>
 </span><span id="__span-0-762"><a id="__codelineno-0-762" name="__codelineno-0-762"></a><a href="#__codelineno-0-762"><span class="linenos" data-linenos="762 "></span></a>            <span class="n">snapshot_version</span><span class="o">=</span><span class="n">snapshot_version</span><span class="p">,</span>
@@ -3642,7 +3774,7 @@ same feature definitions produces the same snapshot_version.</p>
 </span><span id="__span-0-808"><a id="__codelineno-0-808" name="__codelineno-0-808"></a><a href="#__codelineno-0-808"><span class="linenos" data-linenos="808 "></span></a>                <span class="n">records</span><span class="p">,</span>
 </span><span id="__span-0-809"><a id="__codelineno-0-809" name="__codelineno-0-809"></a><a href="#__codelineno-0-809"><span class="linenos" data-linenos="809 "></span></a>                <span class="n">schema</span><span class="o">=</span><span class="n">FEATURE_VERSIONS_SCHEMA</span><span class="p">,</span>
 </span><span id="__span-0-810"><a id="__codelineno-0-810" name="__codelineno-0-810"></a><a href="#__codelineno-0-810"><span class="linenos" data-linenos="810 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-811"><a id="__codelineno-0-811" name="__codelineno-0-811"></a><a href="#__codelineno-0-811"><span class="linenos" data-linenos="811 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
+</span><span id="__span-0-811"><a id="__codelineno-0-811" name="__codelineno-0-811"></a><a href="#__codelineno-0-811"><span class="linenos" data-linenos="811 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
 </span><span id="__span-0-812"><a id="__codelineno-0-812" name="__codelineno-0-812"></a><a href="#__codelineno-0-812"><span class="linenos" data-linenos="812 "></span></a>
 </span><span id="__span-0-813"><a id="__codelineno-0-813" name="__codelineno-0-813"></a><a href="#__codelineno-0-813"><span class="linenos" data-linenos="813 "></span></a>        <span class="k">return</span> <span class="n">SnapshotPushResult</span><span class="p">(</span>
 </span><span id="__span-0-814"><a id="__codelineno-0-814" name="__codelineno-0-814"></a><a href="#__codelineno-0-814"><span class="linenos" data-linenos="814 "></span></a>            <span class="n">snapshot_version</span><span class="o">=</span><span class="n">snapshot_version</span><span class="p">,</span>

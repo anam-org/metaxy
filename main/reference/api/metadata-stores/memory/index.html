@@ -1585,6 +1585,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metaxy.InMemoryMetadataStore.write_metadata_to_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_metadata_to_store
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#metaxy.InMemoryMetadataStore.read_metadata_in_store" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;read_metadata_in_store
@@ -1930,6 +1939,15 @@
   <a href="#metaxy.InMemoryMetadataStore.native_implementation" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;native_implementation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metaxy.InMemoryMetadataStore.write_metadata_to_store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;write_metadata_to_store
     </span>
   </a>
   
@@ -2554,7 +2572,7 @@ May optionally contain <code>metaxy_feature_version</code> and <code>metaxy_snap
 </span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><a href="#__codelineno-0-510"><span class="linenos" data-linenos="510 "></span></a>    <span class="c1"># For system tables, write directly without feature_version tracking</span>
 </span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><a href="#__codelineno-0-511"><span class="linenos" data-linenos="511 "></span></a>    <span class="k">if</span> <span class="n">is_system_table</span><span class="p">:</span>
 </span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><a href="#__codelineno-0-512"><span class="linenos" data-linenos="512 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_schema_system_table</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><a href="#__codelineno-0-513"><span class="linenos" data-linenos="513 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><a href="#__codelineno-0-514"><span class="linenos" data-linenos="514 "></span></a>        <span class="k">return</span>
 </span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><a href="#__codelineno-0-515"><span class="linenos" data-linenos="515 "></span></a>
 </span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><a href="#__codelineno-0-516"><span class="linenos" data-linenos="516 "></span></a>    <span class="c1"># For regular features: add feature_version and snapshot_version, validate, and write</span>
@@ -2600,7 +2618,7 @@ May optionally contain <code>metaxy_feature_version</code> and <code>metaxy_snap
 </span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a><a href="#__codelineno-0-556"><span class="linenos" data-linenos="556 "></span></a>    <span class="c1"># Validate schema first (must have metaxy_provenance_by_field)</span>
 </span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a><a href="#__codelineno-0-557"><span class="linenos" data-linenos="557 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_validate_schema</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><a href="#__codelineno-0-558"><span class="linenos" data-linenos="558 "></span></a>    <span class="c1"># Write metadata</span>
-</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><a href="#__codelineno-0-559"><span class="linenos" data-linenos="559 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
+</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><a href="#__codelineno-0-559"><span class="linenos" data-linenos="559 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">,</span> <span class="n">df</span><span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
@@ -2850,7 +2868,7 @@ same feature definitions produces the same snapshot_version.</p>
 </span><span id="__span-0-756"><a id="__codelineno-0-756" name="__codelineno-0-756"></a><a href="#__codelineno-0-756"><span class="linenos" data-linenos="756 "></span></a>                <span class="n">records</span><span class="p">,</span>
 </span><span id="__span-0-757"><a id="__codelineno-0-757" name="__codelineno-0-757"></a><a href="#__codelineno-0-757"><span class="linenos" data-linenos="757 "></span></a>                <span class="n">schema</span><span class="o">=</span><span class="n">FEATURE_VERSIONS_SCHEMA</span><span class="p">,</span>
 </span><span id="__span-0-758"><a id="__codelineno-0-758" name="__codelineno-0-758"></a><a href="#__codelineno-0-758"><span class="linenos" data-linenos="758 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-759"><a id="__codelineno-0-759" name="__codelineno-0-759"></a><a href="#__codelineno-0-759"><span class="linenos" data-linenos="759 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
+</span><span id="__span-0-759"><a id="__codelineno-0-759" name="__codelineno-0-759"></a><a href="#__codelineno-0-759"><span class="linenos" data-linenos="759 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
 </span><span id="__span-0-760"><a id="__codelineno-0-760" name="__codelineno-0-760"></a><a href="#__codelineno-0-760"><span class="linenos" data-linenos="760 "></span></a>
 </span><span id="__span-0-761"><a id="__codelineno-0-761" name="__codelineno-0-761"></a><a href="#__codelineno-0-761"><span class="linenos" data-linenos="761 "></span></a>        <span class="k">return</span> <span class="n">SnapshotPushResult</span><span class="p">(</span>
 </span><span id="__span-0-762"><a id="__codelineno-0-762" name="__codelineno-0-762"></a><a href="#__codelineno-0-762"><span class="linenos" data-linenos="762 "></span></a>            <span class="n">snapshot_version</span><span class="o">=</span><span class="n">snapshot_version</span><span class="p">,</span>
@@ -2902,7 +2920,7 @@ same feature definitions produces the same snapshot_version.</p>
 </span><span id="__span-0-808"><a id="__codelineno-0-808" name="__codelineno-0-808"></a><a href="#__codelineno-0-808"><span class="linenos" data-linenos="808 "></span></a>                <span class="n">records</span><span class="p">,</span>
 </span><span id="__span-0-809"><a id="__codelineno-0-809" name="__codelineno-0-809"></a><a href="#__codelineno-0-809"><span class="linenos" data-linenos="809 "></span></a>                <span class="n">schema</span><span class="o">=</span><span class="n">FEATURE_VERSIONS_SCHEMA</span><span class="p">,</span>
 </span><span id="__span-0-810"><a id="__codelineno-0-810" name="__codelineno-0-810"></a><a href="#__codelineno-0-810"><span class="linenos" data-linenos="810 "></span></a>            <span class="p">)</span>
-</span><span id="__span-0-811"><a id="__codelineno-0-811" name="__codelineno-0-811"></a><a href="#__codelineno-0-811"><span class="linenos" data-linenos="811 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_write_metadata_impl</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
+</span><span id="__span-0-811"><a id="__codelineno-0-811" name="__codelineno-0-811"></a><a href="#__codelineno-0-811"><span class="linenos" data-linenos="811 "></span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">write_metadata_to_store</span><span class="p">(</span><span class="n">FEATURE_VERSIONS_KEY</span><span class="p">,</span> <span class="n">version_records</span><span class="p">)</span>
 </span><span id="__span-0-812"><a id="__codelineno-0-812" name="__codelineno-0-812"></a><a href="#__codelineno-0-812"><span class="linenos" data-linenos="812 "></span></a>
 </span><span id="__span-0-813"><a id="__codelineno-0-813" name="__codelineno-0-813"></a><a href="#__codelineno-0-813"><span class="linenos" data-linenos="813 "></span></a>        <span class="k">return</span> <span class="n">SnapshotPushResult</span><span class="p">(</span>
 </span><span id="__span-0-814"><a id="__codelineno-0-814" name="__codelineno-0-814"></a><a href="#__codelineno-0-814"><span class="linenos" data-linenos="814 "></span></a>            <span class="n">snapshot_version</span><span class="o">=</span><span class="n">snapshot_version</span><span class="p">,</span>
@@ -4513,6 +4531,111 @@ If <code>False</code>, return <a class="autorefs autorefs-internal" title="&lt;c
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><a href="#__codelineno-0-70"><span class="linenos" data-linenos="70 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">native_implementation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nw</span><span class="o">.</span><span class="n">Implementation</span><span class="p">:</span>
 </span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><a href="#__codelineno-0-71"><span class="linenos" data-linenos="71 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get native implementation for in-memory store.&quot;&quot;&quot;</span>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><a href="#__codelineno-0-72"><span class="linenos" data-linenos="72 "></span></a>    <span class="k">return</span> <span class="n">nw</span><span class="o">.</span><span class="n">Implementation</span><span class="o">.</span><span class="n">POLARS</span>
+</span></code></pre></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="metaxy.InMemoryMetadataStore.write_metadata_to_store" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">write_metadata_to_store</span>
+
+
+<a href="#metaxy.InMemoryMetadataStore.write_metadata_to_store" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">write_metadata_to_store</span><span class="p">(</span><span class="n">feature_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../definitions/feature/#metaxy.FeatureKey">FeatureKey</a></span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n"><span title="polars.DataFrame">DataFrame</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Internal write implementation for in-memory storage.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>feature_key</code></b>
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.models.types.FeatureKey&lt;/code&gt;)" href="../../definitions/feature/#metaxy.FeatureKey">FeatureKey</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Feature key to write to</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>df</code></b>
+              (<code><span title="polars.DataFrame">DataFrame</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>DataFrame with metadata (already validated)</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="quote">
+              <summary>Source code in <code>src/metaxy/metadata_store/memory.py</code></summary>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><a href="#__codelineno-0-95"><span class="linenos" data-linenos=" 95 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">write_metadata_to_store</span><span class="p">(</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><a href="#__codelineno-0-96"><span class="linenos" data-linenos=" 96 "></span></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><a href="#__codelineno-0-97"><span class="linenos" data-linenos=" 97 "></span></a>    <span class="n">feature_key</span><span class="p">:</span> <span class="n">FeatureKey</span><span class="p">,</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a><a href="#__codelineno-0-98"><span class="linenos" data-linenos=" 98 "></span></a>    <span class="n">df</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><a href="#__codelineno-0-99"><span class="linenos" data-linenos=" 99 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><a href="#__codelineno-0-100"><span class="linenos" data-linenos="100 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><a href="#__codelineno-0-101"><span class="linenos" data-linenos="101 "></span></a><span class="sd">    Internal write implementation for in-memory storage.</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><a href="#__codelineno-0-102"><span class="linenos" data-linenos="102 "></span></a>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><a href="#__codelineno-0-103"><span class="linenos" data-linenos="103 "></span></a><span class="sd">    Args:</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><a href="#__codelineno-0-104"><span class="linenos" data-linenos="104 "></span></a><span class="sd">        feature_key: Feature key to write to</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><a href="#__codelineno-0-105"><span class="linenos" data-linenos="105 "></span></a><span class="sd">        df: DataFrame with metadata (already validated)</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><a href="#__codelineno-0-106"><span class="linenos" data-linenos="106 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><a href="#__codelineno-0-107"><span class="linenos" data-linenos="107 "></span></a>    <span class="n">storage_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_storage_key</span><span class="p">(</span><span class="n">feature_key</span><span class="p">)</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><a href="#__codelineno-0-108"><span class="linenos" data-linenos="108 "></span></a>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><a href="#__codelineno-0-109"><span class="linenos" data-linenos="109 "></span></a>    <span class="c1"># Append or create</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><a href="#__codelineno-0-110"><span class="linenos" data-linenos="110 "></span></a>    <span class="k">if</span> <span class="n">storage_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span><span class="p">:</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><a href="#__codelineno-0-111"><span class="linenos" data-linenos="111 "></span></a>        <span class="n">existing_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span><span class="p">[</span><span class="n">storage_key</span><span class="p">]</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><a href="#__codelineno-0-112"><span class="linenos" data-linenos="112 "></span></a>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><a href="#__codelineno-0-113"><span class="linenos" data-linenos="113 "></span></a>        <span class="c1"># Handle schema evolution: ensure both DataFrames have matching columns</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><a href="#__codelineno-0-114"><span class="linenos" data-linenos="114 "></span></a>        <span class="c1"># Add missing columns as null to the existing DataFrame</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><a href="#__codelineno-0-115"><span class="linenos" data-linenos="115 "></span></a>        <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a>            <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">existing_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><a href="#__codelineno-0-117"><span class="linenos" data-linenos="117 "></span></a>                <span class="c1"># Get the data type from the new DataFrame</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><a href="#__codelineno-0-118"><span class="linenos" data-linenos="118 "></span></a>                <span class="n">col_dtype</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><a href="#__codelineno-0-119"><span class="linenos" data-linenos="119 "></span></a>                <span class="c1"># Add column with null values of the appropriate type</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><a href="#__codelineno-0-120"><span class="linenos" data-linenos="120 "></span></a>                <span class="n">existing_df</span> <span class="o">=</span> <span class="n">existing_df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><a href="#__codelineno-0-121"><span class="linenos" data-linenos="121 "></span></a>                    <span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">col_dtype</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">col_name</span><span class="p">)</span>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><a href="#__codelineno-0-122"><span class="linenos" data-linenos="122 "></span></a>                <span class="p">)</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><a href="#__codelineno-0-123"><span class="linenos" data-linenos="123 "></span></a>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><a href="#__codelineno-0-124"><span class="linenos" data-linenos="124 "></span></a>        <span class="c1"># Add missing columns to the new DataFrame (for backward compatibility)</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a><a href="#__codelineno-0-125"><span class="linenos" data-linenos="125 "></span></a>        <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">existing_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a><a href="#__codelineno-0-126"><span class="linenos" data-linenos="126 "></span></a>            <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><a href="#__codelineno-0-127"><span class="linenos" data-linenos="127 "></span></a>                <span class="c1"># Get the data type from the existing DataFrame</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><a href="#__codelineno-0-128"><span class="linenos" data-linenos="128 "></span></a>                <span class="n">col_dtype</span> <span class="o">=</span> <span class="n">existing_df</span><span class="o">.</span><span class="n">schema</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><a href="#__codelineno-0-129"><span class="linenos" data-linenos="129 "></span></a>                <span class="c1"># Add column with null values of the appropriate type</span>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a><a href="#__codelineno-0-130"><span class="linenos" data-linenos="130 "></span></a>                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">lit</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">col_dtype</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">col_name</span><span class="p">))</span>
+</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a>        <span class="c1"># Ensure column order matches by selecting columns in consistent order</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>        <span class="n">all_columns</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">existing_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">))</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a>        <span class="n">existing_df</span> <span class="o">=</span> <span class="n">existing_df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">all_columns</span><span class="p">)</span>
+</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a>        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">all_columns</span><span class="p">)</span>
+</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><a href="#__codelineno-0-136"><span class="linenos" data-linenos="136 "></span></a>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><a href="#__codelineno-0-137"><span class="linenos" data-linenos="137 "></span></a>        <span class="c1"># Now we can safely concat</span>
+</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a><a href="#__codelineno-0-138"><span class="linenos" data-linenos="138 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span><span class="p">[</span><span class="n">storage_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><a href="#__codelineno-0-139"><span class="linenos" data-linenos="139 "></span></a>            <span class="p">[</span><span class="n">existing_df</span><span class="p">,</span> <span class="n">df</span><span class="p">],</span>
+</span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a><a href="#__codelineno-0-140"><span class="linenos" data-linenos="140 "></span></a>            <span class="n">how</span><span class="o">=</span><span class="s2">&quot;vertical&quot;</span><span class="p">,</span>
+</span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><a href="#__codelineno-0-141"><span class="linenos" data-linenos="141 "></span></a>        <span class="p">)</span>
+</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><a href="#__codelineno-0-142"><span class="linenos" data-linenos="142 "></span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><a href="#__codelineno-0-143"><span class="linenos" data-linenos="143 "></span></a>        <span class="c1"># Create new</span>
+</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a><a href="#__codelineno-0-144"><span class="linenos" data-linenos="144 "></span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_storage</span><span class="p">[</span><span class="n">storage_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
 </span></code></pre></div>
             </details>
     </div>
