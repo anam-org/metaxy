@@ -438,9 +438,14 @@ class VersioningEngine(ABC):
         Creates Narwhals expressions that read from the renamed data_version_by_field
         struct columns of upstream features. These expressions are used to build the
         provenance hash for each field in the current feature.
-
         Returns:
             Nested dictionary mapping each field key to its parent field expressions.
+        Returns:
+            Nested dictionary mapping each field key to its parent field expressions.
+        Note:
+            This reads from upstream `metaxy_data_version_by_field` instead of
+            `[[metaxy.models.constants.]]`, enabling users to control version
+            propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         for field_spec in self.plan.feature.fields:
