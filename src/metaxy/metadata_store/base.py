@@ -902,6 +902,7 @@ class MetadataStore(ABC):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation (backend-specific).
@@ -911,6 +912,7 @@ class MetadataStore(ABC):
         Args:
             feature_key: Feature key to write to
             df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
+            **kwargs: Backend-specific parameters
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -1072,29 +1074,6 @@ class MetadataStore(ABC):
         # System tables don't need metaxy_provenance_by_field column
         pass
 
-    def _apply_read_filters(
-        self,
-        lazy_frame: nw.LazyFrame[Any],
-        *,
-        feature_version: str | None,
-        filters: Sequence[nw.Expr] | None,
-        columns: Sequence[str] | None,
-    ) -> nw.LazyFrame[Any]:
-        """Apply standard filters/column projections to lazy frames."""
-        if feature_version is not None:
-            lazy_frame = lazy_frame.filter(
-                nw.col(FEATURE_VERSION_COL) == feature_version
-            )
-
-        if filters is not None:
-            for expr in filters:
-                lazy_frame = lazy_frame.filter(expr)
-
-        if columns is not None:
-            lazy_frame = lazy_frame.select(columns)
-
-        return lazy_frame
-
     @abstractmethod
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop/delete all metadata for a feature.
@@ -1135,6 +1114,7 @@ class MetadataStore(ABC):
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from THIS store only without using any fallbacks stores.
@@ -1143,6 +1123,7 @@ class MetadataStore(ABC):
             feature: Feature to read metadata for
             filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
+            **kwargs: Backend-specific parameters
 
         Returns:
             Narwhals LazyFrame with metadata, or None if feature not found in the store

@@ -339,13 +339,15 @@ class IbisMetadataStore(MetadataStore, ABC):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation using Ibis.
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
+            df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
@@ -408,6 +410,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -417,6 +420,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
             filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
@@ -435,12 +439,23 @@ class IbisMetadataStore(MetadataStore, ABC):
         # Wrap Ibis table with Narwhals (stays lazy in SQL)
         nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
 
-        return self._apply_read_filters(
-            nw_lazy,
-            feature_version=feature_version,
-            filters=filters,
-            columns=columns,
-        )
+        # Apply feature_version filter (stays in SQL via Narwhals)
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
+
+        # Apply generic Narwhals filters (stays in SQL)
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        # Select columns (stays in SQL)
+        if columns is not None:
+            nw_lazy = nw_lazy.select(columns)
+
+        # Return Narwhals LazyFrame wrapping Ibis table (stays lazy in SQL)
+        return nw_lazy
 
     def _can_compute_native(self) -> bool:
         """

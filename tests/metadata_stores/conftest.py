@@ -256,14 +256,6 @@ class StoreCases:
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
         return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
 
-    def case_delta(
-        self, tmp_path: Path, test_graph: FeatureGraph
-    ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """Delta Lake store case."""
-        pytest.importorskip("deltalake")  # Skip if deltalake not installed
-        delta_path = tmp_path / "delta_store"
-        return (DeltaMetadataStore, {"root_path": delta_path})
-
 
 class BasicStoreCases:
     """Minimal store cases for backend-agnostic API tests."""
@@ -365,6 +357,17 @@ class AllStoresCases:
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
+    @pytest.mark.delta
+    @pytest.mark.polars
+    def case_delta(self, tmp_path: Path) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        delta_path = tmp_path / "delta_store"
+        return DeltaMetadataStore(
+            root_path=delta_path,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
 
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
@@ -437,3 +440,140 @@ def config_with_truncation(truncation_length):
     # Set and restore config
     with config.use():
         yield config
+
+
+@pytest.fixture(scope="session")
+def moto_s3_server():
+    """Start a moto S3 server for testing (session-scoped).
+
+    Runs moto's S3 server in a separate process to avoid GIL contention with
+    delta-rs (Rust) threads. This mirrors the behaviour of the moto CLI.
+    """
+    import os
+    import socket
+    import subprocess
+    import sys
+
+    import requests
+
+    try:
+        import moto  # noqa: F401
+    except ImportError:
+        pytest.skip("moto not installed")
+
+    # Find a free port (moto server doesn't support port=0)
+    def find_free_port():
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("", 0))
+            s.listen(1)
+            port = s.getsockname()[1]
+        return port
+
+    port = find_free_port()
+    endpoint_url = f"http://127.0.0.1:{port}"
+
+    env = os.environ.copy()
+    env.setdefault("AWS_DEFAULT_REGION", "us-east-1")
+
+    process = subprocess.Popen(  # type: ignore[call-overload]
+        [
+            sys.executable,
+            "-m",
+            "moto.server",
+            "-H",
+            "127.0.0.1",
+            "-p",
+            str(port),
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=env,
+    )
+
+    # Wait for server to be ready (3 second timeout)
+    for _ in range(30):
+        if process.poll() is not None:
+            process.terminate()
+            pytest.skip("Moto server process terminated while starting")
+        try:
+            response = requests.get(f"{endpoint_url}/moto-api/data.json", timeout=0.1)
+            if response.ok:
+                break
+        except requests.exceptions.RequestException:
+            time.sleep(0.1)
+    else:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        pytest.skip("Moto server did not start in time")
+
+    yield {
+        "endpoint_url": endpoint_url,
+        "access_key": "testing",
+        "secret_key": "testing",
+        "region": "us-east-1",
+    }
+
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+
+
+@pytest.fixture
+def moto_s3_bucket(moto_s3_server):
+    """Create a test S3 bucket (function-scoped).
+
+    Creates a unique bucket for each test. Moto server state persists
+    across tests (session-scoped), so cleanup is required.
+    """
+    import uuid
+
+    try:
+        import boto3
+    except ImportError:
+        pytest.skip("boto3 not installed")
+
+    bucket_name = f"test-bucket-{uuid.uuid4().hex[:8]}"
+
+    # Use boto3.resource for simpler bucket operations
+    s3_resource: Any = boto3.resource(
+        "s3",
+        endpoint_url=moto_s3_server["endpoint_url"],
+        aws_access_key_id=moto_s3_server["access_key"],
+        aws_secret_access_key=moto_s3_server["secret_key"],
+        region_name=moto_s3_server["region"],
+    )
+
+    s3_resource.create_bucket(Bucket=bucket_name)  # type: ignore[attr-defined]
+
+    # Storage options for delta-rs and object store libraries
+    storage_options = {
+        "AWS_ACCESS_KEY_ID": moto_s3_server["access_key"],
+        "AWS_SECRET_ACCESS_KEY": moto_s3_server["secret_key"],
+        "AWS_ENDPOINT_URL": moto_s3_server["endpoint_url"],
+        "AWS_REGION": moto_s3_server["region"],
+        "AWS_ALLOW_HTTP": "true",
+        "AWS_S3_ALLOW_UNSAFE_RENAME": "true",
+        "TIMEOUT": "5s",
+        "CONNECT_TIMEOUT": "5s",
+    }
+
+    yield {
+        "bucket": bucket_name,
+        "bucket_name": bucket_name,
+        "storage_options": storage_options,
+        "s3_resource": s3_resource,
+    }
+
+    # Cleanup required because server persists across tests
+    try:
+        bucket = s3_resource.Bucket(bucket_name)  # type: ignore[attr-defined]
+        bucket.objects.all().delete()  # type: ignore[attr-defined]
+        bucket.delete()  # type: ignore[attr-defined]
+    except Exception as e:
+        # Fail gracefully to not disrupt other tests
+        print(f"Warning: Failed to clean up bucket '{bucket_name}': {e}")
