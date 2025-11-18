@@ -25,7 +25,7 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
-from metaxy.migrations import detect_migration
+from metaxy.migrations import detect_diff_migration
 
 
 def test_feature_spec_version_exists_and_differs_from_feature_version():
@@ -147,7 +147,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
 
     with graph_v2.use(), store_v2:
         # Detect migration (compares latest snapshot vs current graph)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="test",  # Changed to match test config
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -211,7 +211,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
     # 1. Add tags = ["important", "v2"] to SampleFeatureSpec
     # 2. feature_spec_version would change (hashes ALL properties)
     # 3. feature_version would NOT change (only hashes computational properties)
-    # 4. detect_migration() would return None (no feature_version change)
+    # 4. detect_diff_migration() would return None (no feature_version change)
     #
     # This architectural separation ensures:
     # - Rich metadata can be added without forcing data migrations
@@ -220,7 +220,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
 
     # For now, verify that no migration is detected when nothing changes
     with graph.use(), store:
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store,
             project="test",  # Changed to match test config
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],

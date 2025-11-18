@@ -45,6 +45,10 @@ class IbisProvenanceTracker(ProvenanceTracker):
         super().__init__(plan)
         self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
+    @classmethod
+    def implementation(cls) -> nw.Implementation:
+        return nw.Implementation.IBIS
+
     def hash_string_column(
         self,
         df: FrameT,
@@ -92,8 +96,8 @@ class IbisProvenanceTracker(ProvenanceTracker):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
 
+    @staticmethod
     def build_struct_column(
-        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -132,8 +136,8 @@ class IbisProvenanceTracker(ProvenanceTracker):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))
 
+    @staticmethod
     def aggregate_with_string_concat(
-        self,
         df: FrameT,
         group_by_columns: list[str],
         concat_column: str,
@@ -183,6 +187,63 @@ class IbisProvenanceTracker(ProvenanceTracker):
 
         # Perform groupby and aggregate
         result_table = ibis_table.group_by(group_by_columns).aggregate(**agg_exprs)
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result_table))
+
+    @staticmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Uses argmax aggregation to get the value from each column where the
+        timestamp is maximum. This is simpler and more semantically clear than
+        window functions.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame backed by Ibis
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        # Import ibis lazily
+        import ibis.expr.types
+
+        # Convert to Ibis table
+        assert df.implementation == nw.Implementation.IBIS, (
+            "Only Ibis DataFrames are accepted"
+        )
+
+        # Check if timestamp_column exists
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"Available columns: {df.columns}"
+            )
+
+        ibis_table: ibis.expr.types.Table = cast(ibis.expr.types.Table, df.to_native())
+
+        # Use argmax aggregation: for each column, get the value where timestamp is maximum
+        # This directly expresses "get the row with the latest timestamp per group"
+        all_columns = set(ibis_table.columns)
+        non_group_columns = all_columns - set(group_columns)
+
+        # Build aggregation dict: for each non-group column, use argmax(timestamp)
+        agg_exprs = {
+            col: ibis_table[col].argmax(ibis_table[timestamp_column])
+            for col in non_group_columns
+        }
+
+        # Perform groupby and aggregate
+        result_table = ibis_table.group_by(group_columns).aggregate(**agg_exprs)
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(result_table))

@@ -31,6 +31,10 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
     }
 
+    @classmethod
+    def implementation(cls) -> nw.Implementation:
+        return nw.Implementation.POLARS
+
     def hash_string_column(
         self,
         df: FrameT,
@@ -71,8 +75,8 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
 
+    @staticmethod
     def build_struct_column(
-        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -107,8 +111,8 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(df_pl))
 
+    @staticmethod
     def aggregate_with_string_concat(
-        self,
         df: FrameT,
         group_by_columns: list[str],
         concat_column: str,
@@ -144,3 +148,42 @@ class PolarsProvenanceTracker(ProvenanceTracker):
 
         # Convert back to Narwhals
         return cast(FrameT, nw.from_native(grouped))
+
+    @staticmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame backed by Polars
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        assert df.implementation == nw.Implementation.POLARS, (
+            "Only Polars DataFrames are accepted"
+        )
+
+        # Check if timestamp_column exists
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"Timestamp column '{timestamp_column}' not found in DataFrame. "
+                f"Available columns: {df.columns}"
+            )
+
+        df_pl = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
+
+        result = df_pl.group_by(group_columns).agg(
+            pl.col("*").sort_by(timestamp_column).last()
+        )
+
+        # Convert back to Narwhals
+        return cast(FrameT, nw.from_native(result))

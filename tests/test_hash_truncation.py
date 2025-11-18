@@ -502,7 +502,7 @@ class TestMigrationCompatibility:
 
     def test_migration_with_truncation(self, graph):
         """Test that migration detection works with truncated hashes."""
-        from metaxy.migrations.detector import detect_migration
+        from metaxy.migrations.detector import detect_diff_migration
 
         # Enable truncation (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=12)
@@ -540,7 +540,7 @@ class TestMigrationCompatibility:
                 pass
 
             # Detect migration - should work with truncated versions
-            migration = detect_migration(
+            migration = detect_diff_migration(
                 store,
                 project="test",  # Use the same project as in config
                 ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],

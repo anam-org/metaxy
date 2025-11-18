@@ -35,6 +35,10 @@ class ProvenanceTracker(ABC):
     def __init__(self, plan: FeaturePlan):
         self.plan = plan
 
+    @classmethod
+    @abstractmethod
+    def implementation(cls) -> nw.Implementation: ...
+
     @cached_property
     def key(self) -> FeatureKey:
         """Feature key for the feature we are calculating provenance for."""
@@ -208,9 +212,9 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @staticmethod
     @abstractmethod
     def build_struct_column(
-        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -228,9 +232,9 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @staticmethod
     @abstractmethod
     def aggregate_with_string_concat(
-        self,
         df: FrameT,
         group_by_columns: list[str],
         concat_column: str,
@@ -255,6 +259,28 @@ class ProvenanceTracker(ABC):
         Returns:
             Narwhals DataFrame with one row per group, with concat_column containing
             concatenated strings and other columns taking their first value.
+        """
+        raise NotImplementedError()
+
+    @staticmethod
+    @abstractmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
         """
         raise NotImplementedError()
 

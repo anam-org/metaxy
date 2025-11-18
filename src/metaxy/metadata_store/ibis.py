@@ -22,7 +22,9 @@ from metaxy.metadata_store.exceptions import (
 )
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
+from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
+from metaxy.provenance.ibis import IbisProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
 
 if TYPE_CHECKING:
@@ -128,7 +130,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         self._conn: ibis.BaseBackend | None = None
         self._table_prefix = table_prefix or ""
 
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, provenance_tracker_cls=IbisProvenanceTracker)
 
     def get_table_name(
         self,
@@ -157,12 +159,10 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return HashAlgorithm.MD5
 
-    def native_implementation(self) -> nw.Implementation:
-        """Get native implementation for Ibis-based stores."""
-        return nw.Implementation.IBIS
-
     @contextmanager
-    def _create_provenance_tracker(self, plan):
+    def _create_provenance_tracker(
+        self, plan: FeaturePlan
+    ) -> Iterator[IbisProvenanceTracker]:
         """Create provenance tracker for Ibis backend as a context manager.
 
         Args:
@@ -175,8 +175,6 @@ class IbisMetadataStore(MetadataStore, ABC):
             Base implementation only supports MD5 (universally available).
             Subclasses can override _create_hash_functions() for backend-specific hashes.
         """
-        from metaxy.provenance.ibis import IbisProvenanceTracker
-
         if self._conn is None:
             raise RuntimeError(
                 "Cannot create provenance tracker: store is not open. "
