@@ -10,7 +10,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime, timezone
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
 import polars as pl
@@ -65,6 +65,9 @@ FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
 FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 
 
+ProvenanceTrackerT = TypeVar("ProvenanceTrackerT", bound=ProvenanceTracker)
+
+
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
@@ -87,6 +90,7 @@ class MetadataStore(ABC):
     def __init__(
         self,
         *,
+        provenance_tracker_cls: type[ProvenanceTrackerT],
         hash_algorithm: HashAlgorithm | None = None,
         hash_truncation_length: int | None = None,
         prefer_native: bool = True,
@@ -123,6 +127,7 @@ class MetadataStore(ABC):
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
+        self.provenance_tracker_cls = provenance_tracker_cls
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -386,27 +391,15 @@ class MetadataStore(ABC):
         """
         pass
 
-    @abstractmethod
     def native_implementation(self) -> nw.Implementation:
-        """Get the native Narwhals implementation for this store's backend.
-
-        Returns:
-            nw.Implementation.POLARS for Polars-backed stores (InMemory, etc.)
-            nw.Implementation.IBIS for SQL-backed stores (DuckDB, ClickHouse, etc.)
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def native_provenance_tracker_class(cls) -> type[ProvenanceTracker]:
-        """Get the native Narwhals provenance tracker class for this store's backend."""
-        ...
+        """Get the native Narwhals implementation for this store's backend."""
+        return self.provenance_tracker_cls.implementation()
 
     @abstractmethod
     @contextmanager
     def _create_provenance_tracker(
         self, plan: FeaturePlan
-    ) -> Iterator[ProvenanceTracker]:
+    ) -> Iterator[ProvenanceTrackerT]:
         """Create provenance tracker for this store as a context manager.
 
         Args:
@@ -1246,7 +1239,6 @@ class MetadataStore(ABC):
 
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
-        plan = self._resolve_feature_plan(feature)
 
         # Validate mutually exclusive parameters
         if feature_version is not None and current_only:
@@ -1255,34 +1247,43 @@ class MetadataStore(ABC):
                 "Use current_only=False with feature_version parameter."
             )
 
-        filters = [
-            nw.col(METAXY_FEATURE_VERSION)
-            == (
+        # Add feature_version filter only when needed
+        if current_only or feature_version is not None and not is_system_table:
+            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
                 current_graph().get_feature_version(feature_key)
                 if current_only
                 else feature_version
-            ),
-            *filters,
-        ]
+            )
+            filters = [version_filter, *filters]
+
+        if columns and not is_system_table:
+            # Add only system columns that aren't already in the user's columns list
+            columns_set = set(columns)
+            missing_system_cols = [
+                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
+            ]
+            read_columns = [*columns, *missing_system_cols]
+        else:
+            read_columns = None
 
         lazy_frame = self.read_metadata_in_store(
-            feature, filters=filters, columns=[*columns, *ALL_SYSTEM_COLUMNS]
+            feature, filters=filters, columns=read_columns
         )
 
+        if lazy_frame is not None and not is_system_table and latest_only:
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Apply deduplication
+            lazy_frame = self.provenance_tracker_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=list(
+                    self._resolve_feature_plan(feature_key).feature.id_columns
+                ),
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
         if lazy_frame is not None:
-            # Apply latest_only deduplication for normal user tables
-            if latest_only and not is_system_table:
-                from metaxy.models.constants import METAXY_CREATED_AT
-
-                # Apply deduplication
-                lazy_frame = (
-                    self.native_provenance_tracker_class().keep_latest_by_group(
-                        df=lazy_frame,
-                        group_columns=list(plan.feature.id_columns),
-                        timestamp_column=METAXY_CREATED_AT,
-                    )
-                )
-
+            # After dedup, filter to requested columns if specified
             if columns:
                 lazy_frame = lazy_frame.select(columns)
 

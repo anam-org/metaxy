@@ -31,6 +31,10 @@ class PolarsProvenanceTracker(ProvenanceTracker):
         HashAlgorithm.MD5: lambda expr: expr.nchash.md5(),  # pyright: ignore[reportAttributeAccessIssue]
     }
 
+    @classmethod
+    def implementation(cls) -> nw.Implementation:
+        return nw.Implementation.POLARS
+
     def hash_string_column(
         self,
         df: FrameT,

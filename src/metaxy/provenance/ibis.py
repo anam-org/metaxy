@@ -45,6 +45,10 @@ class IbisProvenanceTracker(ProvenanceTracker):
         super().__init__(plan)
         self.hash_functions: dict[HashAlgorithm, IbisHashFn] = hash_functions
 
+    @classmethod
+    def implementation(cls) -> nw.Implementation:
+        return nw.Implementation.IBIS
+
     def hash_string_column(
         self,
         df: FrameT,

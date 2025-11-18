@@ -15,7 +15,6 @@ from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
 from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.tracker import ProvenanceTracker
 from metaxy.provenance.types import HashAlgorithm
 
 
@@ -58,7 +57,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, provenance_tracker_cls=PolarsProvenanceTracker)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for in-memory store."""
@@ -68,17 +67,8 @@ class InMemoryMetadataStore(MetadataStore):
         """Convert feature key to storage key (tuple for hashability)."""
         return tuple(feature_key)
 
-    def native_implementation(self) -> nw.Implementation:
-        """Get native implementation for in-memory store."""
-        return nw.Implementation.POLARS
-
-    @classmethod
-    def native_provenance_tracker_class(cls) -> type[ProvenanceTracker]:
-        """Get the native Narwhals provenance tracker class for this store's backend."""
-        return PolarsProvenanceTracker
-
     @contextmanager
-    def _create_provenance_tracker(self, plan):
+    def _create_provenance_tracker(self, plan) -> Iterator[PolarsProvenanceTracker]:
         """Create Polars provenance tracker for in-memory store.
 
         Args:

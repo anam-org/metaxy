@@ -35,6 +35,10 @@ class ProvenanceTracker(ABC):
     def __init__(self, plan: FeaturePlan):
         self.plan = plan
 
+    @classmethod
+    @abstractmethod
+    def implementation(cls) -> nw.Implementation: ...
+
     @cached_property
     def key(self) -> FeatureKey:
         """Feature key for the feature we are calculating provenance for."""
