@@ -112,6 +112,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "custom_col1": ["a", "b", "c"],
                 "custom_col2": [10, 20, 30],
             }
@@ -168,6 +173,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "custom_col1": ["a", "b", "c"],
                 "custom_col2": [10, 20, 30],
                 "custom_col3": [100, 200, 300],
@@ -219,6 +229,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -285,6 +300,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "custom_col1": ["a", "b", "c"],
                 "custom_col2": [10, 20, 30],
             }
@@ -339,6 +359,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -403,6 +428,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "conflict_col": ["a", "b", "c"],
             }
         )
@@ -411,6 +441,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h4"},
+                    {"default": "h5"},
+                    {"default": "h6"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -477,6 +512,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "conflict_col": ["a", "b", "c"],
             }
         )
@@ -485,6 +525,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h4"},
+                    {"default": "h5"},
+                    {"default": "h6"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h4"},
                     {"default": "h5"},
                     {"default": "h6"},
@@ -538,6 +583,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},
@@ -729,6 +779,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "some_col": ["x", "y", "z"],
             }
         )
@@ -826,6 +881,11 @@ class TestColumnSelection:
                     {"default": "h2"},
                     {"default": "h3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                ],
                 "col_a": ["a1", "a2", "a3"],
                 "col_b": [1, 2, 3],
             }
@@ -839,6 +899,11 @@ class TestColumnSelection:
                     {"default": "h5"},
                     {"default": "h6"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "h4"},
+                    {"default": "h5"},
+                    {"default": "h6"},
+                ],
                 "important_col": ["i1", "i2", "i3"],
                 "unimportant_col": ["u1", "u2", "u3"],
             }
@@ -848,6 +913,11 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3],
                 "metaxy_provenance_by_field": [
+                    {"default": "h7"},
+                    {"default": "h8"},
+                    {"default": "h9"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h7"},
                     {"default": "h8"},
                     {"default": "h9"},
@@ -932,6 +1002,13 @@ class TestColumnSelection:
             {
                 "sample_uid": [1, 2, 3, 4, 5],
                 "metaxy_provenance_by_field": [
+                    {"default": "h1"},
+                    {"default": "h2"},
+                    {"default": "h3"},
+                    {"default": "h4"},
+                    {"default": "h5"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "h1"},
                     {"default": "h2"},
                     {"default": "h3"},

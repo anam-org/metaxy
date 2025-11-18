@@ -1,7 +1,32 @@
 # serializer version: 1
+# name: test_feature_dep_column_selection
+  list([
+    dict({
+      'field_data_version': dict({
+        'default': '3403868002304381262',
+      }),
+      'field_provenance': dict({
+        'default': '3403868002304381262',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'default': '13044536508083413104',
+      }),
+      'field_provenance': dict({
+        'default': '13044536508083413104',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
 # name: test_feature_dep_renames
   list([
     dict({
+      'field_data_version': dict({
+        'default': '11045469579419104296',
+      }),
       'field_provenance': dict({
         'default': '11045469579419104296',
       }),
@@ -9,6 +34,9 @@
       'sample_uid': 1,
     }),
     dict({
+      'field_data_version': dict({
+        'default': '5655355725504109707',
+      }),
       'field_provenance': dict({
         'default': '5655355725504109707',
       }),
@@ -22,4 +50,48 @@
     'field_a': '4086c66ae16cbea1e3d2a7243527ce423a20a1d04d1084e39cfbc122fc4fc3aa',
     'field_b': '7c343b7bf86ffb2c65b888cd9fef2dab7a49cf83ca3678ead24e018ae91f7952',
   })
+# ---
+# name: test_filters_applied_before_join
+  list([
+    dict({
+      'field_data_version': dict({
+        'default': '176643765444805005',
+      }),
+      'field_provenance': dict({
+        'default': '176643765444805005',
+      }),
+      'sample_uid': 3,
+    }),
+    dict({
+      'field_data_version': dict({
+        'default': '12005045164625407873',
+      }),
+      'field_provenance': dict({
+        'default': '12005045164625407873',
+      }),
+      'sample_uid': 4,
+    }),
+  ])
+# ---
+# name: test_multi_upstream_join_on_common_id_columns
+  list([
+    dict({
+      'field_data_version': dict({
+        'default': '17370060903493036894',
+      }),
+      'field_provenance': dict({
+        'default': '17370060903493036894',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'field_data_version': dict({
+        'default': '14011145748578331224',
+      }),
+      'field_provenance': dict({
+        'default': '14011145748578331224',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
 # ---

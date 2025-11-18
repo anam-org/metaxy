@@ -6,7 +6,9 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
@@ -242,6 +244,11 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
                     {"default": "hash2"},
                     {"default": "hash3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
                 "duration": [120, 180, 90],
             }
         ).lazy()
@@ -293,6 +300,11 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
                 {
                     "uuid": ["uuid-123", "uuid-456", "uuid-789"],
                     "metaxy_provenance_by_field": [
+                        {"data": "hash1"},
+                        {"data": "hash2"},
+                        {"data": "hash3"},
+                    ],
+                    "metaxy_data_version_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

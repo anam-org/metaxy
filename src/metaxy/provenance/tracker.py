@@ -290,16 +290,23 @@ class ProvenanceTracker(ABC):
             feature_key
         ].renamed_provenance_by_field_col
 
+    def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
+        """Get the renamed data_version_by_field column name for an upstream feature."""
+        return self.feature_transformers_by_key[
+            feature_key
+        ].renamed_data_version_by_field_col
+
     def get_field_provenance_exprs(
         self,
     ) -> dict[FieldKey, dict[FQFieldKey, nw.Expr]]:
-        """Returns a a mapping from field keys to data structures that determine provenances for each field.
-        Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream provenance.
+        """Returns a mapping from field keys to data structures that determine provenances for each field.
+        Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream data version.
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
-        TODO: in the future this should be able to select upstream data_version instead of provenance,
-        once user-provided data_version is implemented.
+        Note:
+            This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
+            enabling users to control version propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         # THIS LINES HERE
@@ -309,8 +316,10 @@ class ProvenanceTracker(ABC):
             for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(
                 field_spec.key
             ).items():
+                # Read from data_version_by_field instead of provenance_by_field
+                # This enables user-defined versioning control
                 field_provenance[fq_key] = nw.col(
-                    self.get_renamed_provenance_by_field_col(fq_key.feature)
+                    self.get_renamed_data_version_by_field_col(fq_key.feature)
                 ).struct.field(parent_field_spec.key.to_struct_key())
             res[field_spec.key] = field_provenance
         return res
@@ -403,15 +412,20 @@ class ProvenanceTracker(ABC):
         current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
-        # Drop renamed upstream provenance columns (e.g., metaxy_provenance__raw_video)
+        # Drop renamed upstream provenance and data_version columns (e.g., metaxy_provenance__raw_video)
         # These were needed for provenance calculation but shouldn't be in final result
         for transformer in self.feature_transformers_by_key.values():
             renamed_prov_col = transformer.renamed_provenance_col
             renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            renamed_data_version_by_field_col = (
+                transformer.renamed_data_version_by_field_col
+            )
             if renamed_prov_col in current_columns:
                 columns_to_drop.append(renamed_prov_col)
             if renamed_prov_by_field_col in current_columns:
                 columns_to_drop.append(renamed_prov_by_field_col)
+            if renamed_data_version_by_field_col in current_columns:
+                columns_to_drop.append(renamed_data_version_by_field_col)
 
         if columns_to_drop:
             df = df.drop(*columns_to_drop)

@@ -6,7 +6,9 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
@@ -156,6 +158,11 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
                     {"default": "hash2"},
                     {"default": "hash3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
                 "extra_column": ["a", "b", "c"],
             }
         ).lazy()
@@ -207,6 +214,11 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
             {
                 "user_id": [100, 200, 300],
                 "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -281,6 +293,12 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
                     {"default": "hash3"},
                     {"default": "hash4"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                    {"default": "hash4"},
+                ],
                 "data1": ["a", "b", "c", "d"],
             }
         ).lazy()
@@ -292,6 +310,12 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
                 "user_id": [1, 1, 2, 3],
                 "session_id": [10, 20, 10, 40],
                 "metaxy_provenance_by_field": [
+                    {"default": "hash5"},
+                    {"default": "hash6"},
+                    {"default": "hash7"},
+                    {"default": "hash8"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "hash5"},
                     {"default": "hash6"},
                     {"default": "hash7"},
@@ -429,6 +453,11 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                         {"profile": "user_hash2"},
                         {"profile": "user_hash3"},
                     ],
+                    "metaxy_data_version_by_field": [
+                        {"profile": "user_hash1"},
+                        {"profile": "user_hash2"},
+                        {"profile": "user_hash3"},
+                    ],
                     "username": ["alice", "bob", "charlie"],
                 }
             )
@@ -448,6 +477,11 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                     "user_id": [100, 100, 200],
                     "session_id": [1, 2, 1],
                     "metaxy_provenance_by_field": [
+                        {"activity": "session_hash1"},
+                        {"activity": "session_hash2"},
+                        {"activity": "session_hash3"},
+                    ],
+                    "metaxy_data_version_by_field": [
                         {"activity": "session_hash1"},
                         {"activity": "session_hash2"},
                         {"activity": "session_hash3"},
@@ -595,6 +629,11 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
                 {
                     "sample_uid": [1, 2, 3],
                     "metaxy_provenance_by_field": [
+                        {"data": "hash1"},
+                        {"data": "hash2"},
+                        {"data": "hash3"},
+                    ],
+                    "metaxy_data_version_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

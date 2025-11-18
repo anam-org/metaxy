@@ -4,7 +4,11 @@ from functools import cached_property
 import narwhals as nw
 from narwhals.typing import FrameT
 
-from metaxy.models.constants import METAXY_PROVENANCE, METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
+    METAXY_PROVENANCE,
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
@@ -27,7 +31,11 @@ class FeatureDepTransformer:
         self.dep = dep
 
         # allow adding more in the future
-        self.metaxy_columns_to_load = [METAXY_PROVENANCE_BY_FIELD, METAXY_PROVENANCE]
+        self.metaxy_columns_to_load = [
+            METAXY_PROVENANCE_BY_FIELD,
+            METAXY_PROVENANCE,
+            METAXY_DATA_VERSION_BY_FIELD,
+        ]
 
     @cached_property
     def upstream_feature_key(self) -> FeatureKey:
@@ -73,6 +81,10 @@ class FeatureDepTransformer:
     @cached_property
     def renamed_provenance_by_field_col(self) -> str:
         return self.rename_upstream_metaxy_column(METAXY_PROVENANCE_BY_FIELD)
+
+    @cached_property
+    def renamed_data_version_by_field_col(self) -> str:
+        return self.rename_upstream_metaxy_column(METAXY_DATA_VERSION_BY_FIELD)
 
     @cached_property
     def renamed_metaxy_cols(self) -> list[str]:
