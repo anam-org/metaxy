@@ -25,6 +25,7 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration
 
 
@@ -102,7 +103,7 @@ def test_migration_detector_uses_feature_version_not_feature_spec_version(
             }
         )
         store_v1.write_metadata(SimpleV1, data)
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Verify snapshot captures both versions (initialize to satisfy type checker)
     snapshot_data = graph_v1.to_snapshot()
@@ -202,7 +203,7 @@ def test_no_migration_when_only_non_computational_properties_change(tmp_path):
             }
         )
         store.write_metadata(TestFeature, data)
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
     # Currently, there's no way to change spec without changing feature_version
     # because SampleFeatureSpec only has computational properties
@@ -391,7 +392,7 @@ def test_snapshot_stores_both_versions(tmp_path):
             }
         )
         store.write_metadata(TestFeature, data)
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         # Check snapshot data structure
         snapshot_data = graph.to_snapshot()

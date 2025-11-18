@@ -8,6 +8,7 @@ import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import TestingFeature
 from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -519,7 +520,7 @@ class TestMigrationCompatibility:
 
         # Record snapshot
         with InMemoryMetadataStore() as store:
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_v1 = result.snapshot_version
 
@@ -608,7 +609,7 @@ class TestEndToEnd:
         # Store metadata
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 

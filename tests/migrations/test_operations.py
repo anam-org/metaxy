@@ -201,7 +201,7 @@ def test_full_graph_migration_single_operation_single_feature():
         if len(diff.added) > 0:
             store.write_metadata(Downstream, diff.added)
 
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with _TestBackfillOperation
@@ -250,7 +250,7 @@ def test_full_graph_migration_single_operation_multiple_features():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with TestBackfillOperation for both features
@@ -296,7 +296,7 @@ def test_full_graph_migration_multiple_operations():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with two different operations
@@ -362,7 +362,7 @@ def test_full_graph_migration_topological_sorting():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with features in wrong order (downstream before upstream)
@@ -411,7 +411,7 @@ def test_full_graph_migration_operation_fails():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with FailingOperation
@@ -454,7 +454,7 @@ def test_full_graph_migration_invalid_operation_class():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with non-existent operation class
@@ -491,7 +491,7 @@ def test_full_graph_migration_dry_run():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         migration = FullGraphMigration(
@@ -573,7 +573,7 @@ def test_full_graph_migration_resume_after_partial_failure():
         if len(diff.added) > 0:
             store.write_metadata(Downstream, diff.added)
 
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration where upstream succeeds but downstream fails
@@ -622,7 +622,7 @@ def test_full_graph_migration_operation_specific_config():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create migration with custom config
@@ -662,7 +662,7 @@ def test_full_graph_migration_events_tracking():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         migration = FullGraphMigration(
@@ -728,7 +728,7 @@ def test_data_version_reconciliation_requires_from_snapshot():
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         op = DataVersionReconciliation()
 
@@ -772,7 +772,7 @@ def test_data_version_reconciliation_root_feature_error():
         data = add_metaxy_provenance_column(data, Root)
         store.write_metadata(Root, data)
 
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         from_snapshot = graph.snapshot_version
 
         # Change code version
@@ -785,7 +785,7 @@ def test_data_version_reconciliation_root_feature_error():
         graph_v2 = temp_module2.graph
 
         with graph_v2.use():
-            store.record_feature_graph_snapshot()
+            SystemTableStorage(store).push_graph_snapshot()
 
             op = DataVersionReconciliation()
 

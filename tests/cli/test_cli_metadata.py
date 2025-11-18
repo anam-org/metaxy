@@ -3,6 +3,7 @@
 import polars as pl
 
 from metaxy._testing import TempMetaxyProject
+from metaxy.metadata_store.system import SystemTableStorage
 
 
 def _write_sample_metadata(
@@ -52,7 +53,7 @@ def _write_sample_metadata(
         with store:
             store.write_metadata(feature_cls, sample_data)
             # Record the feature graph snapshot so copy_metadata can determine snapshot_version
-            store.record_feature_graph_snapshot()
+            SystemTableStorage(store).push_graph_snapshot()
 
 
 def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):

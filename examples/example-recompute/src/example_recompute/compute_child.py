@@ -15,6 +15,7 @@ from metaxy import (
     init_metaxy,
     load_features,
 )
+from metaxy.metadata_store.system import SystemTableStorage
 
 load_features()
 
@@ -28,7 +29,7 @@ ParentFeature = get_feature_by_key(parent_key)
 config = init_metaxy()
 with config.get_store() as store:
     # Save feature graph snapshot, normally this should be done in CI/CD before running the pipeline
-    result = store.record_feature_graph_snapshot()
+    result = SystemTableStorage(store).push_graph_snapshot()
 
     snapshot_version = result.snapshot_version
 

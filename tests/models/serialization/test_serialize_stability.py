@@ -1,30 +1,31 @@
-"""Test that record_feature_graph_snapshot produces stable snapshot_versions."""
+"""Test that push_graph_snapshot produces stable snapshot_versions."""
 
 from metaxy.metadata_store import MetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
 
 def test_record_feature_graph_snapshot_stability(
     store: MetadataStore, test_graph: FeatureGraph
 ) -> None:
-    """Test that record_feature_graph_snapshot produces consistent snapshot_versions.
+    """Test that push_graph_snapshot produces consistent snapshot_versions.
 
     Verifies that:
-    1. record_feature_graph_snapshot uses to_snapshot() internally
-    2. The snapshot_version from record_feature_graph_snapshot matches graph.snapshot_version
+    1. push_graph_snapshot uses to_snapshot() internally
+    2. The snapshot_version from push_graph_snapshot matches graph.snapshot_version
     3. Serializing the same graph multiple times produces the same snapshot_version
     4. The snapshot can be deserialized and produces the same snapshot_version
     """
     graph = test_graph
 
-    # Ensure this graph is active so record_feature_graph_snapshot uses it
+    # Ensure this graph is active so push_graph_snapshot uses it
     with graph.use():
         with store:
             # Get the original snapshot_version from the graph
             original_snapshot_version = graph.snapshot_version
 
             # Serialize the graph for the first time
-            result_1 = store.record_feature_graph_snapshot()
+            result_1 = SystemTableStorage(store).push_graph_snapshot()
             snapshot_version_1 = result_1.snapshot_version
             was_already_recorded_1 = result_1.already_recorded
 
@@ -39,7 +40,7 @@ def test_record_feature_graph_snapshot_stability(
             )
 
             # Serialize again - should be idempotent
-            result_2 = store.record_feature_graph_snapshot()
+            result_2 = SystemTableStorage(store).push_graph_snapshot()
             snapshot_version_2 = result_2.snapshot_version
             was_already_recorded_2 = result_2.already_recorded
 
@@ -78,11 +79,11 @@ def test_serialize_uses_to_snapshot(
     # Get snapshot dict from to_snapshot()
     snapshot_dict = graph.to_snapshot()
 
-    # Ensure this graph is active so record_feature_graph_snapshot uses it
+    # Ensure this graph is active so push_graph_snapshot uses it
     with graph.use():
         with store:
             # Serialize to the store
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 

@@ -12,7 +12,7 @@ pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
-from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
@@ -67,7 +67,7 @@ def test_duckdb_table_prefix_applied(
         expected_system_table = table_prefix + FEATURE_VERSIONS_KEY.table_name
 
         # Record snapshot to ensure system table is materialized
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         table_names = set(store.ibis_conn.list_tables())
         assert expected_feature_table in table_names

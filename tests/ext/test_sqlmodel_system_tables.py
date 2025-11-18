@@ -232,6 +232,7 @@ def test_push_graph_with_changed_feature_spec():
     """
     from metaxy.config import MetaxyConfig
     from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+    from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.models.feature import Feature, FeatureGraph
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.types import FeatureKey
@@ -259,7 +260,7 @@ def test_push_graph_with_changed_feature_spec():
                     pass
 
                 # Push graph first time
-                result1 = store.record_feature_graph_snapshot()
+                result1 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Get the snapshot version
                 snapshot_v1 = graph.snapshot_version
@@ -283,7 +284,7 @@ def test_push_graph_with_changed_feature_spec():
                     pass
 
                 # Push graph second time - should work without constraint violation
-                result2 = store.record_feature_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 snapshot_v2 = graph2.snapshot_version
 

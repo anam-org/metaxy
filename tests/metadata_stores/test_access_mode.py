@@ -9,6 +9,7 @@ import polars as pl
 
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
 
 
@@ -299,15 +300,14 @@ def test_mode_reset_between_opens(tmp_path: Path) -> None:
 def test_record_feature_graph_snapshot_uses_write_mode(
     tmp_path: Path, test_graph
 ) -> None:
-    """Test that record_feature_graph_snapshot works in WRITE mode."""
+    """Test that push_graph_snapshot works in WRITE mode."""
     db_path = tmp_path / "test.duckdb"
 
     # Open with WRITE mode
     store = DuckDBMetadataStore(db_path, auto_create_tables=True)
 
     with store.open(AccessMode.WRITE):
-        # record_feature_graph_snapshot should work (requires writes)
-        result = store.record_feature_graph_snapshot()
+        result = SystemTableStorage(store).push_graph_snapshot()
         assert result.snapshot_version is not None
 
 

@@ -12,6 +12,7 @@ from metaxy import (
     FieldSpec,
     SampleFeatureSpec,
 )
+from metaxy.metadata_store.system import SystemTableStorage
 
 
 def test_feature_spec_version_deterministic(snapshot: SnapshotAssertion) -> None:
@@ -344,7 +345,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
         with store:
             # Record the feature graph snapshot
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             is_existing = result.already_recorded
 
@@ -412,7 +413,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
 
         with store:
             # First push
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_v1 = result.snapshot_version
 
@@ -425,7 +426,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
             ]
 
             # Second push (identical graph)
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_v2 = result.snapshot_version
 

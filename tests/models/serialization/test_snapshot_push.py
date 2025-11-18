@@ -1,7 +1,7 @@
 """Tests for feature graph snapshot push functionality (GitHub issue #86).
 
 This module tests the new metadata-only change detection feature in
-record_feature_graph_snapshot() that enables graph snapshot pushes
+push_graph_snapshot() that enables graph snapshot pushes
 without triggering migrations.
 """
 
@@ -19,6 +19,7 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import SnapshotPushResult
 
@@ -66,7 +67,7 @@ def test_record_snapshot_first_time():
             pass
 
         with InMemoryMetadataStore() as store:
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
             assert isinstance(result, SnapshotPushResult)
@@ -127,7 +128,7 @@ def test_record_snapshot_metadata_only_changes():
 
         # First push
         with InMemoryMetadataStore() as store:
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_recorded is False
             assert result1.metadata_changed is False
 
@@ -184,7 +185,7 @@ def test_record_snapshot_metadata_only_changes():
                 )
 
                 # Second push - should detect metadata-only change
-                result2 = store.record_feature_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Verify result
                 assert result2.already_recorded is True
@@ -228,11 +229,11 @@ def test_record_snapshot_no_changes():
 
         with InMemoryMetadataStore() as store:
             # First push
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_recorded is False
 
             # Second push - identical code
-            result2 = store.record_feature_graph_snapshot()
+            result2 = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
             assert result2.already_recorded is True
@@ -290,7 +291,7 @@ def test_record_snapshot_partial_metadata_changes():
             pass
 
         with InMemoryMetadataStore() as store:
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.already_recorded is False
 
             # Version 2: Change metadata for FeatureB and FeatureC (not FeatureA)
@@ -336,7 +337,7 @@ def test_record_snapshot_partial_metadata_changes():
                 ):
                     pass
 
-                result2 = store.record_feature_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Verify: only B and C changed, not A
                 assert result2.already_recorded is True
@@ -385,7 +386,7 @@ def test_record_snapshot_append_only_behavior():
 
         with InMemoryMetadataStore() as store:
             # Push v1
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
             versions_lazy_v1 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
@@ -433,7 +434,7 @@ def test_record_snapshot_append_only_behavior():
                     "Metadata-only change should keep same snapshot_version"
                 )
 
-                result2 = store.record_feature_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
                 assert result2.metadata_changed is True
 
                 # Verify append-only: old rows still exist
@@ -492,7 +493,7 @@ def test_record_snapshot_computational_change():
         snapshot_v1 = graph_v1.snapshot_version
 
         with InMemoryMetadataStore() as store:
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             assert result1.snapshot_version == snapshot_v1
 
             # Change code_version (computational change)
@@ -517,7 +518,7 @@ def test_record_snapshot_computational_change():
                     "Computational change should create new snapshot_version"
                 )
 
-                result2 = store.record_feature_graph_snapshot()
+                result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Should be treated as NEW snapshot (not metadata-only)
                 assert result2.already_recorded is False
@@ -556,7 +557,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             pass
 
         with InMemoryMetadataStore() as store:
-            result1 = store.record_feature_graph_snapshot()
+            result1 = SystemTableStorage(store).push_graph_snapshot()
             results.append(
                 {
                     "push": 1,
@@ -567,7 +568,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             )
 
             # Push 2: No changes
-            result2 = store.record_feature_graph_snapshot()
+            result2 = SystemTableStorage(store).push_graph_snapshot()
             results.append(
                 {
                     "push": 2,
@@ -605,7 +606,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                 ):
                     pass
 
-                result3 = store.record_feature_graph_snapshot()
+                result3 = SystemTableStorage(store).push_graph_snapshot()
                 results.append(
                     {
                         "push": 3,

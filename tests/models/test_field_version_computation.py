@@ -2,6 +2,7 @@
 
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
@@ -47,7 +48,7 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
 
     with InMemoryMetadataStore() as store:
         # Record snapshot
-        result = store.record_feature_graph_snapshot()
+        result = SystemTableStorage(store).push_graph_snapshot()
 
         snapshot_version = result.snapshot_version
 
@@ -91,7 +92,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
     with InMemoryMetadataStore() as store:
         # Record snapshot
-        result = store.record_feature_graph_snapshot()
+        result = SystemTableStorage(store).push_graph_snapshot()
 
         snapshot_version = result.snapshot_version
 
@@ -132,7 +133,7 @@ def test_field_key_normalization(graph: FeatureGraph):
 
     with InMemoryMetadataStore() as store:
         # Record snapshot
-        result = store.record_feature_graph_snapshot()
+        result = SystemTableStorage(store).push_graph_snapshot()
 
         snapshot_version = result.snapshot_version
 
