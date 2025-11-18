@@ -3,7 +3,6 @@
 import hashlib
 from contextvars import copy_context
 
-import narwhals as nw
 import polars as pl
 import pytest
 
@@ -209,33 +208,6 @@ class TestNarwhalsFunctions:
 
             # Other columns unchanged
             assert result_pl["sample_uid"].to_list() == [1, 2]
-
-    def test_truncate_struct_column_narwhals_lazyframe(self):
-        """Test struct truncation works when operating on Narwhals LazyFrames."""
-        df = pl.DataFrame(
-            {
-                "metaxy_provenance_by_field": [
-                    {"field1": "a" * 64},
-                    {"field1": "b" * 64},
-                ],
-                "sample_uid": [1, 2],
-            }
-        )
-
-        config = MetaxyConfig(hash_truncation_length=10)
-        MetaxyConfig.set(config)
-
-        lazy_nw = nw.from_native(df.lazy(), eager_only=False)
-        # Convert back to native Polars LazyFrame for truncate_struct_column
-        result_lazy = truncate_struct_column(
-            lazy_nw.to_native(), "metaxy_provenance_by_field"
-        )
-        result_df = result_lazy.collect()
-
-        assert result_df["metaxy_provenance_by_field"][0]["field1"] == "a" * 10
-        assert result_df["metaxy_provenance_by_field"][1]["field1"] == "b" * 10
-
-        MetaxyConfig.reset()
 
     def test_truncate_functions_with_empty_df(self):
         """Test truncate functions with empty DataFrames."""

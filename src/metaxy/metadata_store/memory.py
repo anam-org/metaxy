@@ -97,13 +97,15 @@ class InMemoryMetadataStore(MetadataStore):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation for in-memory storage.
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame or LazyFrame with metadata (always DataFrame since _auto_collect_lazy_frames=True)
+            df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
         """
         df_polars: pl.DataFrame = collect_to_polars(df)
 
@@ -167,6 +169,7 @@ class InMemoryMetadataStore(MetadataStore):
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -176,6 +179,7 @@ class InMemoryMetadataStore(MetadataStore):
             feature_version: Filter by specific feature_version
             filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
@@ -194,12 +198,25 @@ class InMemoryMetadataStore(MetadataStore):
         # Start with lazy Polars DataFrame, wrap with Narwhals
         df_lazy = self._storage[storage_key].lazy()
         nw_lazy = nw.from_native(df_lazy)
-        return self._apply_read_filters(
-            nw_lazy,
-            feature_version=feature_version,
-            filters=filters,
-            columns=columns,
-        )
+
+        # Apply feature_version filter
+        if feature_version is not None:
+            nw_lazy = nw_lazy.filter(
+                nw.col("metaxy_feature_version") == feature_version
+            )
+
+        # Apply generic Narwhals filters
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        # Select columns
+        if columns is not None:
+            nw_lazy = nw_lazy.select(columns)
+
+        # Check if result would be empty (we need to check the underlying frame)
+        # For now, return the lazy frame - emptiness check happens when materializing
+        return nw_lazy
 
     def clear(self) -> None:
         """

@@ -169,7 +169,10 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Learn:
-    - Metadata Stores: learn/metadata-stores.md
+    - Metadata Stores:
+      - Overview: learn/metadata-stores.md
+      - Stores without engine:
+          - Delta Lake: learn/metadata-stores/deltalake.md
     - Feature Definitions: learn/feature-definitions.md
     - Versioning: learn/data-versioning.md
     - Feature Discovery: learn/feature-discovery.md

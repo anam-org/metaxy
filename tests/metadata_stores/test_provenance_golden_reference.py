@@ -183,6 +183,11 @@ def setup_store_with_data(
     return empty_store, feature_plan_config, golden_downstream
 
 
+# Removed: EmptyStoreCases with hash algorithm parametrization
+# Now using simplified fixtures from conftest.py
+# Hash algorithm × store combinations are tested in test_hash_algorithms.py
+
+
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_store_resolve_update_matches_golden_provenance(
     any_store: MetadataStore,
@@ -202,10 +207,17 @@ def test_store_resolve_update_matches_golden_provenance(
     child_key = child_feature_plan.feature.key
     ChildFeature = graph.features_by_key[child_key]
 
+    # Get child version
+    child_version = ChildFeature.feature_version()
+
     # Call resolve_update to compute provenance
     with store:
         try:
-            increment = store.resolve_update(ChildFeature)
+            increment = store.resolve_update(
+                ChildFeature,
+                target_version=child_version,
+                snapshot_version=graph.snapshot_version,
+            )
         except HashAlgorithmNotSupportedError:
             pytest.skip(
                 f"Hash algorithm {store.hash_algorithm} not supported by {store}"
@@ -219,7 +231,9 @@ def test_store_resolve_update_matches_golden_provenance(
         golden_sorted = golden_downstream.sort(id_columns)
 
         # Select only the columns that exist in both (resolve_update may not return all metadata columns)
-        # Exclude metaxy_created_at since timestamps will always differ
+        # Exclude metaxy_created_at since it's a timestamp that differs between generation times
+        from metaxy.models.constants import METAXY_CREATED_AT
+
         common_columns = [
             col
             for col in added_sorted.columns
