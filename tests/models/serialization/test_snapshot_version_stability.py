@@ -2,12 +2,16 @@
 
 # Import from conftest since it's in the same tests directory
 
+from typing import Any, cast
+
 import pytest
 
 from metaxy import FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
 from metaxy._testing import TempFeatureModule
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
+
+SnapshotPayload = dict[str, dict[str, Any]]
 
 
 @pytest.fixture
@@ -56,7 +60,7 @@ def test_snapshot_version_stability_with_module(temp_module: TempFeatureModule):
     snapshot_dict = graph1.to_snapshot()
 
     # Reconstruct from snapshot
-    graph2 = FeatureGraph.from_snapshot(snapshot_dict)
+    graph2 = FeatureGraph.from_snapshot(cast(SnapshotPayload, snapshot_dict))
     reconstructed_snapshot_version = graph2.snapshot_version
     print(f"Reconstructed snapshot_version: {reconstructed_snapshot_version}")
 

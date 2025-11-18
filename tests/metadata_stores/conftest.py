@@ -26,6 +26,7 @@ from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+from metaxy.metadata_store.postgres import PostgresMetadataStore
 from metaxy.models.feature import FeatureGraph
 
 # Note: clickhouse_server and clickhouse_db fixtures are defined in tests/conftest.py
@@ -216,6 +217,16 @@ class AllStoresCases:
 
     @pytest.mark.ibis
     @pytest.mark.native
+    @pytest.mark.postgres
+    def case_postgres(self, postgres_db: str) -> MetadataStore:
+        return PostgresMetadataStore(
+            connection_string=postgres_db,
+            hash_algorithm=HashAlgorithm.MD5,
+            auto_create_tables=True,  # Enable auto-create for tests
+        )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
     @pytest.mark.duckdb
     def case_duckdb_json_compat(self, tmp_path: Path) -> MetadataStore:
         db_path = tmp_path / "test_json_compat.duckdb"
@@ -225,7 +236,7 @@ class AllStoresCases:
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (InMemory + DuckDB + ClickHouse)."""
+    """Parametrized store (InMemory + DuckDB + ClickHouse + PostgreSQL)."""
     return store
 
 

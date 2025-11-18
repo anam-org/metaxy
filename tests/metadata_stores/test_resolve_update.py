@@ -605,11 +605,21 @@ def test_resolve_update_lazy_execution(
                 lazy=True,
             )
 
-            # Verify we got a LazyIncrement
+            # Verify we got a LazyIncrement or duck-typed equivalent
             from metaxy.versioning.types import LazyIncrement
 
-            assert isinstance(lazy_increment, LazyIncrement), (
-                f"Expected LazyIncrement with lazy=True, got {type(lazy_increment)}"
+            # PostgreSQL uses a wrapper class that duck-types LazyIncrement
+            is_lazy_increment = isinstance(lazy_increment, LazyIncrement)
+            has_lazy_interface = (
+                hasattr(lazy_increment, "added")
+                and hasattr(lazy_increment, "changed")
+                and hasattr(lazy_increment, "removed")
+                and hasattr(lazy_increment, "collect")
+            )
+
+            assert is_lazy_increment or has_lazy_interface, (
+                f"Expected LazyIncrement or duck-typed equivalent with lazy=True, "
+                f"got {type(lazy_increment)}"
             )
 
             # Verify lazy frames have correct implementation

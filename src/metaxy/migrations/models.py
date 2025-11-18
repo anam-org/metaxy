@@ -7,7 +7,7 @@ Refactored migration system using:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal, cast
 
 import pydantic
 from pydantic import AliasChoices, TypeAdapter
@@ -368,12 +368,16 @@ class DiffMigration(Migration):
                     f"to_snapshot {self.to_snapshot_version} not found in store "
                     f"and doesn't match active graph ({active_graph.snapshot_version})"
                 )
-            to_snapshot_data = active_graph.to_snapshot()
+            to_snapshot_data_for_diff = cast(
+                dict[str, dict[str, Any]], active_graph.to_snapshot()
+            )
+        else:
+            to_snapshot_data_for_diff = to_snapshot_data
 
         # Compute diff
         return differ.diff(
             from_snapshot_data,
-            to_snapshot_data,
+            to_snapshot_data_for_diff,
             self.from_snapshot_version,
             self.to_snapshot_version,
         )

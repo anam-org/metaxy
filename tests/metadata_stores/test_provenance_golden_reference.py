@@ -15,6 +15,7 @@ not to test every possible combination of hash algorithm × store × truncation.
 
 from __future__ import annotations
 
+import json
 import warnings
 from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
@@ -454,6 +455,18 @@ class FeaturePlanCases:
         }
 
         return [(graph, upstream_features, child_plan)]
+
+
+def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
+    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
+    dtype = df.schema[column_name]
+    if isinstance(dtype, pl.Struct):
+        return df
+
+    converted = df[column_name].map_elements(
+        lambda v: v if isinstance(v, dict) else json.loads(v)
+    )
+    return df.with_columns(converted.alias(column_name))
 
 
 # Removed: TruncationCases and metaxy_config fixture

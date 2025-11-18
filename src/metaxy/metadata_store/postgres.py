@@ -1,31 +1,26 @@
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Literal, cast, overload
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import FrameT
 from polars.datatypes import DataType as PolarsDataType
 from polars.datatypes import DataTypeClass as PolarsDataTypeClass
 from psycopg import Error as _PsycopgError
 from typing_extensions import Self
 
 from metaxy.metadata_store.exceptions import HashAlgorithmNotSupportedError
-from metaxy.metadata_store.ibis import IbisMetadataStore
+from metaxy.metadata_store.ibis_json_compat import IbisJsonCompatStore
 from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.utils import sanitize_uri
 from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_PROVENANCE_BY_FIELD,
 )
-from metaxy.utils.hashing import get_hash_truncation_length
-from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.models.types import CoercibleToFeatureKey
-from metaxy.versioning.flat_engine import IbisFlatVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 # Alias for backwards compatibility
@@ -35,12 +30,10 @@ if TYPE_CHECKING:
     from narwhals.typing import Frame
 
     from metaxy.metadata_store.base import MetadataStore
-    from metaxy.models.feature import BaseFeature
     from metaxy.models.types import FeatureKey
 
 
 _PGCRYPTO_ERROR_TYPES: tuple[type[Exception], ...] = (_PsycopgError,)
-SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
 
 logger = logging.getLogger(__name__)
 SchemaMapping = Mapping[str, PolarsDataType | PolarsDataTypeClass]
@@ -58,49 +51,19 @@ def _decode_pg_text(value: Any) -> str:
     return str(value)
 
 
-def _sanitize_connection_string(value: str) -> str:
-    """Mask passwords in connection strings for safe display."""
-    try:
-        parsed = urlsplit(value)
-    except ValueError:
-        return "<redacted>"
-
-    sanitized_netloc = parsed.netloc
-    if "@" in sanitized_netloc:
-        userinfo, hostinfo = sanitized_netloc.rsplit("@", 1)
-        if ":" in userinfo:
-            username, _, _ = userinfo.partition(":")
-            userinfo = f"{username}:***"
-        sanitized_netloc = f"{userinfo}@{hostinfo}"
-
-    sanitized_query = parsed.query
-    if parsed.query:
-        query_params = parse_qsl(parsed.query, keep_blank_values=True)
-        masked_params = []
-        changed = False
-        for key, val in query_params:
-            if key.lower() in {"password", "pwd", "pass"}:
-                masked_params.append((key, "***"))
-                changed = True
-            else:
-                masked_params.append((key, val))
-        if changed:
-            sanitized_query = urlencode(masked_params, doseq=True)
-
-    if sanitized_netloc == parsed.netloc and sanitized_query == parsed.query:
-        return value
-
-    sanitized_parts = parsed._replace(netloc=sanitized_netloc, query=sanitized_query)
-    return urlunsplit(sanitized_parts)
-
-
-class PostgresMetadataStore(IbisMetadataStore):
+class PostgresMetadataStore(IbisJsonCompatStore):
     """
-    [PostgreSQL](https://www.postgresql.org/) metadata store - thin wrapper around IbisMetadataStore.
+    [PostgreSQL](https://www.postgresql.org/) metadata store using JSONB storage.
 
     Provides production-grade metadata storage using PostgreSQL with:
     - Full ACID compliance
+    - JSONB storage for struct-like columns via Ibis JSON packing
     - Extension support (pgcrypto for SHA256)
+
+    Note: For production deployments, PostgreSQL tables should be created manually using
+    database migration tools (e.g., Alembic) or via the SQLModel integration.
+    Auto-table creation (auto_create_tables=True) is supported for testing and development
+    but not recommended for production use.
     """
 
     def __init__(
@@ -143,7 +106,6 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         Raises:
             ValueError: If neither connection_string nor connection parameters provided.
-            ImportError: If Ibis or psycopg driver not installed.
 
         Note:
             When using SHA256 hash algorithm, pgcrypto extension is required.
@@ -183,6 +145,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         self.enable_pgcrypto = enable_pgcrypto
         self._pgcrypto_extension_checked = False
 
+        # IbisJsonCompatStore handles dict-based versioning engine setup
         super().__init__(
             connection_string=connection_string,
             backend="postgres" if connection_string is None else None,
@@ -249,7 +212,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         return hash_functions
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open connection to PostgreSQL and perform capability checks.
 
         Args:
@@ -268,22 +231,6 @@ class PostgresMetadataStore(IbisMetadataStore):
                 # Reset pgcrypto check for the new connection
                 self._pgcrypto_extension_checked = False
 
-                if not self._has_native_struct_support():
-                    self._struct_compat_mode = True
-                    message = (
-                        "!!! Metaxy WARNING: PostgreSQL backend lacks native STRUCT type support. "
-                        "Falling back to JSON serialization compatibility mode. !!!"
-                    )
-                    logger.warning(
-                        message.replace("!!! Metaxy WARNING: ", "").replace("!!!", "")
-                    )
-                else:
-                    self._struct_compat_mode = False
-                    message = "!!! Metaxy INFO: PostgreSQL backend has native STRUCT type support. Normal operation. !!!"
-                    logger.info(
-                        message.replace("!!! Metaxy INFO: ", "").replace("!!!", "")
-                    )
-
                 yield self
             finally:
                 # Cleanup is handled by parent's finally block
@@ -301,12 +248,7 @@ class PostgresMetadataStore(IbisMetadataStore):
         # Only enable pgcrypto if:
         # 1. enable_pgcrypto flag is True
         # 2. Using SHA256 hash algorithm (which requires pgcrypto)
-        # 3. Not using prefer_native=False (which would use Polars components)
-        if (
-            not self.enable_pgcrypto
-            or self.hash_algorithm != HashAlgorithm.SHA256
-            or not self._prefer_native
-        ):
+        if not self.enable_pgcrypto or self.hash_algorithm != HashAlgorithm.SHA256:
             return
 
         try:
@@ -360,36 +302,6 @@ class PostgresMetadataStore(IbisMetadataStore):
             return unquoted
         return "public"
 
-    def _list_tables_robustly(self) -> list[str]:
-        """
-        Robustly list tables using a raw DBAPI query to avoid bytes vs string issues.
-        """
-        raw_conn = getattr(self.conn, "con", None)
-        if raw_conn is None:
-            return self.conn.list_tables()
-
-        try:
-            schema_to_query = (self.schema or self._get_current_schema(raw_conn)).strip(
-                '"'
-            )
-            if not schema_to_query:
-                schema_to_query = "public"
-
-            with raw_conn.cursor() as cursor:
-                cursor.execute(
-                    "SELECT tablename FROM pg_tables WHERE schemaname = %s",
-                    (schema_to_query,),
-                )
-                tables = [_decode_pg_text(row[0]) for row in cursor.fetchall()]
-                return tables
-        except Exception:
-            logger.warning(
-                "Robust table listing failed, falling back to Ibis.list_tables(). "
-                "This may cause bytes vs. string errors in some environments.",
-                exc_info=True,
-            )
-            return self.conn.list_tables()
-
     @staticmethod
     def _log_pgcrypto_warning(error: Exception) -> None:
         logger.warning(
@@ -403,62 +315,52 @@ class PostgresMetadataStore(IbisMetadataStore):
     def _create_versioning_engine(self, plan):
         """Create provenance engine for PostgreSQL.
 
-        Uses PostgresProvenanceTracker when in struct compatibility mode,
-        which builds JSON directly in SQL instead of native structs.
-
         Ensures pgcrypto extension is ready before creating tracker for SHA256 hashing.
+        Delegates to IbisJsonCompatStore for JSON packing/unpacking.
         """
         # Ensure pgcrypto is ready before native provenance tracking
         self._ensure_pgcrypto_ready_for_native_provenance()
 
-        if not self._struct_compat_mode:
-            # Use standard Ibis tracker (native structs)
-            with super()._create_versioning_engine(plan) as engine:
-                yield engine
-        else:
-            # Use PostgreSQL-specific tracker (JSON serialization in SQL)
-            if self._conn is None:
-                raise RuntimeError(
-                    "Cannot create provenance tracker: store is not open. "
-                    "Ensure store is used as context manager."
-                )
+        # Use parent implementation from JsonCompatStore
+        with super()._create_versioning_engine(plan) as engine:
+            yield engine
 
-            # Create hash functions for Ibis expressions
-            hash_functions = self._create_hash_functions()
+    def _get_json_unpack_exprs(
+        self, json_column: str, field_names: list[str]
+    ) -> dict[str, Any]:
+        """Extract flattened columns from a JSONB column using PostgreSQL functions."""
+        import ibis
 
-            # Create PostgreSQL tracker (uses JSON instead of structs)
-            tracker = PostgresProvenanceTracker(
-                plan=plan,
-                hash_functions=hash_functions,
+        @ibis.udf.scalar.builtin
+        def jsonb_extract_path_text(_data, *paths) -> str: ...
+
+        exprs: dict[str, Any] = {}
+        table = ibis._  # placeholder for the current table context
+        for field_name in field_names:
+            flattened_name = f"{json_column}__{field_name}"
+            exprs[flattened_name] = jsonb_extract_path_text(
+                table[json_column].cast("jsonb"),
+                ibis.literal(field_name),
             )
+        return exprs
 
-            try:
-                yield tracker
-            finally:
-                # No cleanup needed
-                pass
+    def _get_json_pack_expr(
+        self, struct_name: str, field_columns: Mapping[str, str]
+    ) -> Any:
+        """Pack flattened provenance columns into a JSONB object."""
+        import ibis
+        import ibis.expr.datatypes as dt
 
-    @overload
-    def resolve_update(
-        self,
-        feature: type[BaseFeature],
-        *,
-        samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: Literal[False] = False,
-        **kwargs: Any,
-    ) -> Increment: ...
+        @ibis.udf.scalar.builtin(output_type=dt.jsonb)
+        def jsonb_object(_keys: list[str], _values: list[str]) -> str: ...
 
-    @overload
-    def resolve_update(
-        self,
-        feature: type[BaseFeature],
-        *,
-        samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: Literal[True],
-        **kwargs: Any,
-    ) -> LazyIncrement: ...
+        keys: list[Any] = []
+        values: list[Any] = []
+        table = ibis._
+        for field_name, col_name in sorted(field_columns.items()):
+            keys.append(ibis.literal(field_name))
+            values.append(table[col_name].cast(dt.string))
+        return jsonb_object(ibis.array(keys), ibis.array(values))
 
     @staticmethod
     def _get_postgres_type(dtype: PolarsDataType | PolarsDataTypeClass) -> str:
@@ -572,9 +474,13 @@ class PostgresMetadataStore(IbisMetadataStore):
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
-        """Override to ensure table existence checks use robust listing."""
-        table_name = feature_key.table_name
-        if table_name in self._list_tables_robustly():
+        """Drop the table for a feature.
+
+        Args:
+            feature_key: Feature key to drop metadata for
+        """
+        table_name = self.get_table_name(feature_key)
+        if table_name in self.conn.list_tables():
             self.conn.drop_table(table_name)
 
     def read_metadata_in_store(
@@ -666,6 +572,30 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         super().write_metadata_to_store(feature_key, df, **kwargs)
 
+    def write_metadata_to_store(self, feature_key: FeatureKey, df, **kwargs):
+        """Ensure string-typed materialization_id before delegating write."""
+
+        import polars as pl
+
+        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+        if METAXY_MATERIALIZATION_ID in df.columns:
+            df = df.with_columns(nw.col(METAXY_MATERIALIZATION_ID).cast(nw.String))
+
+        # Postgres rejects NULL-typed columns; cast Null columns to string for Polars inputs
+        if df.implementation == nw.Implementation.POLARS:
+            null_cols = [
+                col
+                for col, dtype in df.schema.items()
+                if dtype == pl.Null  # type: ignore[attr-defined]
+            ]
+            if null_cols:
+                df = df.with_columns(
+                    [nw.col(col).cast(nw.String).alias(col) for col in null_cols]
+                )
+
+        super().write_metadata_to_store(feature_key, df, **kwargs)
+
     def read_metadata(
         self,
         feature: CoercibleToFeatureKey,
@@ -702,377 +632,10 @@ class PostgresMetadataStore(IbisMetadataStore):
 
         if self._is_open:
             details.append(f"features={len(self._list_features_local())}")  # ty: ignore[unresolved-attribute]
-
         detail_str = ", ".join(details)
         if detail_str:
             return f"PostgresMetadataStore({detail_str})"
         if self.connection_string:
-            sanitized = _sanitize_connection_string(self.connection_string)
+            sanitized = sanitize_uri(self.connection_string)
             return f"PostgresMetadataStore(connection_string={sanitized})"
         return "PostgresMetadataStore()"
-
-    def _has_native_struct_support(self) -> bool:
-        """
-        NOTE: Native struct support for PostgreSQL in the Ibis/sqlglot stack has proven
-        unreliable across different environments. We are temporarily disabling it
-        to enforce the more stable JSON serialization path.
-        """
-        return False
-
-    @staticmethod
-    def _serialize_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
-        """Convert a struct column to canonical JSON string for storage.
-
-        Args:
-            df: Polars DataFrame containing the struct column
-            column_name: Name of the struct column to serialize
-
-        Returns:
-            DataFrame with the struct column replaced by JSON strings
-        """
-        if column_name not in df.columns:
-            return df
-
-        column = df.get_column(column_name)
-        serialized = [
-            json.dumps(value, sort_keys=True) if value is not None else None
-            for value in column.to_list()
-        ]
-        return df.with_columns(
-            pl.Series(name=column_name, values=serialized, dtype=pl.String)
-        )
-
-    @staticmethod
-    def _serialize_struct_columns(df: pl.DataFrame) -> pl.DataFrame:
-        """Convert all struct columns to canonical JSON strings for storage.
-
-        Serializes both metaxy_provenance_by_field and metaxy_data_version_by_field
-        columns if they exist in the DataFrame.
-
-        Args:
-            df: Polars DataFrame potentially containing struct columns
-
-        Returns:
-            DataFrame with all struct columns replaced by JSON strings
-        """
-        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD
-
-        # Serialize provenance_by_field
-        df = PostgresMetadataStore._serialize_struct_column(
-            df, METAXY_PROVENANCE_BY_FIELD
-        )
-
-        # Serialize data_version_by_field
-        df = PostgresMetadataStore._serialize_struct_column(
-            df, METAXY_DATA_VERSION_BY_FIELD
-        )
-
-        return df
-
-    @staticmethod
-    def _deserialize_provenance_column(df: pl.DataFrame) -> pl.DataFrame:
-        """Restore struct provenance columns from JSON text or keep dicts.
-
-        Handles both cases:
-        - JSON strings from serialization: Parse with json.loads()
-        - Python dicts from Ibis JSONB deserialization: Keep as-is
-
-        Processes all columns starting with METAXY_PROVENANCE_BY_FIELD prefix,
-        including renamed parent columns like "metaxy_provenance_by_field__parent",
-        and METAXY_DATA_VERSION_BY_FIELD columns.
-        """
-        from metaxy.models.constants import METAXY_DATA_VERSION_BY_FIELD
-
-        # Find all provenance columns (main + renamed parent columns after join)
-        provenance_cols = [
-            col for col in df.columns if col.startswith(METAXY_PROVENANCE_BY_FIELD)
-        ]
-
-        # Also find data_version_by_field columns
-        data_version_cols = [
-            col for col in df.columns if col.startswith(METAXY_DATA_VERSION_BY_FIELD)
-        ]
-
-        # Combine both types of struct columns
-        struct_cols = provenance_cols + data_version_cols
-
-        if not struct_cols:
-            return df
-
-        # Deserialize each struct column
-        for col_name in struct_cols:
-            column = df.get_column(col_name)
-            decoded = [
-                # If value is already a dict (from Ibis JSONB), keep it
-                # If value is a string (from serialization), parse it
-                json.loads(value) if isinstance(value, str) else value
-                for value in column.to_list()
-            ]
-            df = df.with_columns(pl.Series(name=col_name, values=decoded))
-
-        return df
-
-    @staticmethod
-    def _ensure_utc_created_at(df: pl.DataFrame) -> pl.DataFrame:
-        """Normalize metaxy_created_at columns to UTC-aware timestamps."""
-        from polars.datatypes import Datetime
-
-        from metaxy.models.constants import METAXY_CREATED_AT
-
-        updates: list[pl.Expr] = []
-        for col_name, dtype in df.schema.items():
-            if (
-                col_name.startswith(METAXY_CREATED_AT)
-                and isinstance(dtype, Datetime)
-                and dtype.time_zone is None
-            ):
-                updates.append(
-                    pl.col(col_name).dt.replace_time_zone("UTC").alias(col_name)
-                )
-
-        if not updates:
-            return df
-
-        return df.with_columns(updates)
-
-
-class PostgresProvenanceTracker(IbisVersioningEngine):  # pyright: ignore[reportIncompatibleMethodOverride]
-    """Provenance tracker for PostgreSQL that uses JSON serialization for structs.
-
-    PostgreSQL doesn't reliably support native STRUCT/ROW types across all versions.
-    This tracker works directly with Ibis tables and uses PostgreSQL's JSON text operations,
-    keeping everything in the database without materializing to Polars.
-
-    Uses IbisVersioningEngine methods via manual initialization.
-    """
-
-    def __init__(self, plan, hash_functions):
-        """Initialize PostgreSQL provenance tracker.
-
-        Args:
-            plan: Feature plan
-            hash_functions: Dict mapping HashAlgorithm to Ibis hash functions
-        """
-        super().__init__(plan=plan, hash_functions=hash_functions)
-
-    @staticmethod
-    def _ensure_ibis_frame(
-        df: nw.DataFrame[Any] | nw.LazyFrame[Any],
-    ) -> tuple[Any, bool]:
-        """Return the underlying Ibis table and whether the frame is lazy."""
-        import ibis.expr.types
-
-        if df.implementation != nw.Implementation.IBIS:
-            raise TypeError("PostgreSQL tracker only works with Ibis-backed frames.")
-
-        table = cast(ibis.expr.types.Table, df.to_native())
-        return table, isinstance(df, nw.LazyFrame)
-
-    @staticmethod
-    def _wrap_like(
-        df: FrameT,
-        table: Any,
-        *,
-        is_lazy: bool,
-    ) -> FrameT:
-        """Wrap an Ibis table back into a Narwhals frame matching the input."""
-        if df.implementation != nw.Implementation.IBIS:
-            raise TypeError("PostgreSQL tracker only works with Ibis-backed frames.")
-
-        wrapped = cast(nw.LazyFrame[Any], nw.from_native(table, eager_only=False))
-        if is_lazy:
-            return cast(FrameT, wrapped)
-        return cast(FrameT, wrapped.collect())
-
-    # Methods below access IbisVersioningEngine attributes set by __init__
-    # pyright doesn't see them, so we use ignore comments where needed
-
-    @staticmethod
-    def _concat_ibis_parts(parts: Sequence[Any]):
-        """Concatenate a list of Ibis string expressions without ibis.concat."""
-        parts_list = list(parts)
-        if not parts_list:
-            raise ValueError("Cannot concatenate zero expressions")
-
-        expr = parts_list[0]
-        for part in parts_list[1:]:
-            expr = expr.concat(part)
-        return expr
-
-    @staticmethod
-    def _concat_with_separator(parts: Sequence[Any]):
-        """Concatenate expressions with a '|' separator between each component."""
-        import ibis
-
-        parts_list = list(parts)
-        if not parts_list:
-            raise ValueError("Cannot concatenate zero expressions")
-
-        interleaved = [parts_list[0]]
-        for part in parts_list[1:]:
-            interleaved.append(ibis.literal("|"))
-            interleaved.append(part)
-
-        return PostgresProvenanceTracker._concat_ibis_parts(interleaved)
-
-    @staticmethod
-    def build_struct_column(
-        df: FrameT, struct_name: str, field_columns: dict[str, str]
-    ) -> FrameT:
-        """Build a JSON column from existing columns using PostgreSQL string concatenation.
-
-        Args:
-            df: Narwhals DataFrame backed by Ibis
-            struct_name: Name for the new JSON column
-            field_columns: Mapping from struct field names to column names
-
-        Returns:
-            Narwhals DataFrame with new JSON column added, backed by Ibis.
-        """
-
-        import ibis
-
-        table, is_lazy = PostgresProvenanceTracker._ensure_ibis_frame(df)
-
-        # Build JSON object using string concatenation
-        # Format: {"field1": "value1", "field2": "value2"}
-        concat_parts = [ibis.literal("{")]
-        first = True
-        for field_name, col_name in sorted(field_columns.items()):
-            if not first:
-                concat_parts.append(ibis.literal(","))
-            first = False
-
-            # Add "fieldname":"value"
-            concat_parts.append(ibis.literal(f'"{field_name}":"'))
-            # Cast to text (hash values are plain strings)
-            col_value = table[col_name].cast(str)
-            concat_parts.append(col_value)  # pyright: ignore[reportArgumentType]
-            concat_parts.append(ibis.literal('"'))
-
-        concat_parts.append(ibis.literal("}"))
-
-        # Use concatenation helper and cast to JSONB to match struct semantics
-        json_expr = PostgresProvenanceTracker._concat_ibis_parts(concat_parts).cast(
-            "jsonb"
-        )
-
-        # Add JSON column
-        result_table = table.mutate(**{struct_name: json_expr})
-        return PostgresProvenanceTracker._wrap_like(df, result_table, is_lazy=is_lazy)
-
-    def load_upstream_with_provenance(self, upstream, hash_algo, filters):
-        """Load upstream with provenance, extracting JSON fields using PostgreSQL operators.
-
-        This is the key method that handles JSON field extraction instead of struct field access.
-        """
-        import ibis
-        import narwhals as nw
-
-        logger.warning("[POSTGRES DEBUG] load_upstream_with_provenance called!")
-
-        hash_length = get_hash_truncation_length()
-
-        # Prepare upstream (rename, filter, join)
-        df = self.prepare_upstream(upstream, filters)  # pyright: ignore[reportAttributeAccessIssue]
-
-        # Convert to Ibis table for JSON operations
-        ibis_table, _ = self._ensure_ibis_frame(df)
-
-        # Build concatenation columns for each field, extracting from JSON
-        temp_concat_cols: dict[str, str] = {}
-
-        for field_spec in self.plan.feature.fields:  # pyright: ignore[reportAttributeAccessIssue]
-            field_key_str = field_spec.key.to_struct_key()
-            temp_col_name = f"__concat_{field_key_str}"
-            temp_concat_cols[field_key_str] = temp_col_name
-
-            # Build concatenation: field_key + code_version + parent_provenances
-            components = [
-                ibis.literal(field_spec.key.to_string()),
-                ibis.literal(str(field_spec.code_version)),
-            ]
-
-            # Extract parent field provenances from JSONB
-            # Sort parent fields for deterministic order (matches base tracker)
-            parent_fields = self.plan.get_parent_fields_for_field(field_spec.key)  # pyright: ignore[reportAttributeAccessIssue]
-            for fq_field_key in sorted(parent_fields.keys()):
-                parent_field_spec = parent_fields[fq_field_key]
-                # Use fq_field_key.to_string() to match base tracker format
-                components.append(ibis.literal(fq_field_key.to_string()))
-
-                # Extract JSONB field using Ibis's [] operator
-                # With JSONB type, Ibis supports: table[jsonb_column][key]
-                provenance_col = self.get_renamed_provenance_by_field_col(  # pyright: ignore[reportAttributeAccessIssue]
-                    fq_field_key.feature
-                )
-                parent_key_str = parent_field_spec.key.to_struct_key()
-
-                # Ibis supports JSONB field extraction natively
-                # Use JSON unwrap to get unquoted text value (->> operator)
-                json_value = ibis_table[provenance_col][parent_key_str].str
-                components.append(json_value)
-
-            concat_expr = self._concat_with_separator(components)
-            ibis_table = ibis_table.mutate(**{temp_col_name: concat_expr})
-
-        # Convert back to Narwhals for hashing
-        df = nw.from_native(ibis_table)
-
-        # Hash each concatenation column
-        temp_hash_cols: dict[str, str] = {}
-        for field_key_str, concat_col in temp_concat_cols.items():
-            hash_col_name = f"__hash_{field_key_str}"
-            temp_hash_cols[field_key_str] = hash_col_name
-
-            # Hash the concatenated string column
-            df = self.hash_string_column(  # pyright: ignore[reportAttributeAccessIssue]
-                df, concat_col, hash_col_name, hash_algo
-            ).with_columns(nw.col(hash_col_name).str.slice(0, hash_length))
-
-        # Build struct from hash columns
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)
-
-        # Recompute table reference for JSON extraction
-        ibis_table, _ = self._ensure_ibis_frame(df)
-
-        # Add sample-level provenance
-        field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])  # pyright: ignore[reportAttributeAccessIssue]
-
-        sample_components = [
-            ibis_table[METAXY_PROVENANCE_BY_FIELD][field_name].str
-            for field_name in field_names
-        ]
-        sample_concat_expr = self._concat_with_separator(sample_components)
-        ibis_table = ibis_table.mutate(__sample_concat=sample_concat_expr)
-
-        # Hash sample-level provenance
-        df = nw.from_native(ibis_table)
-        df = self.hash_string_column(  # pyright: ignore[reportAttributeAccessIssue]
-            df, "__sample_concat", "metaxy_provenance", hash_algo
-        ).with_columns(nw.col("metaxy_provenance").str.slice(0, hash_length))
-        df = df.drop("__sample_concat")
-
-        # Drop temporary columns
-        df = df.drop(*list(temp_concat_cols.values()))
-        df = df.drop(*list(temp_hash_cols.values()))
-
-        # Drop version columns if present
-        version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
-        current_columns = df.collect_schema().names()
-        columns_to_drop = [col for col in version_columns if col in current_columns]
-        if columns_to_drop:
-            df = df.drop(*columns_to_drop)
-
-        # Mirror base tracker behavior: default data version columns to provenance values.
-        from metaxy.models.constants import (
-            METAXY_DATA_VERSION,
-            METAXY_DATA_VERSION_BY_FIELD,
-        )
-
-        df = df.with_columns(
-            nw.col("metaxy_provenance").alias(METAXY_DATA_VERSION),
-            nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
-        )
-
-        return df
