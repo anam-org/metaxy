@@ -1,4 +1,4 @@
-"""Polars implementation of ProvenanceTracker."""
+"""Polars implementation of VersioningEngine."""
 
 from collections.abc import Callable
 from typing import cast
@@ -8,15 +8,15 @@ import polars as pl
 import polars_hash  # noqa: F401  # Registers .nchash and .chash namespaces
 from narwhals.typing import FrameT
 
-from metaxy.provenance.tracker import ProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.engine import VersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 # narwhals DataFrame backed by either a lazy or an eager frame
 # PolarsFrame = TypeVar("PolarsFrame", pl.DataFrame, pl.LazyFrame)
 
 
-class PolarsProvenanceTracker(ProvenanceTracker):
-    """Provenance tracker using Polars and polars_hash plugin.
+class PolarsVersioningEngine(VersioningEngine):
+    """Provenance engine using Polars and polars_hash plugin.
 
     Only implements hash_string_column and build_struct_column.
     All logic lives in the base class.

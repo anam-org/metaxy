@@ -14,7 +14,7 @@ from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.versioning.polars import PolarsVersioningEngine
 
 
 # Helper function to add metaxy_provenance column to test data
@@ -33,7 +33,7 @@ def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
 
 # Simple test joiner
 class TestJoiner:
-    """Test utility that wraps PolarsProvenanceTracker."""
+    """Test utility that wraps PolarsVersioningEngine."""
 
     def join_upstream(
         self,
@@ -43,7 +43,7 @@ class TestJoiner:
         upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
         upstream_renames: dict[str, dict[str, str] | None] | None = None,
     ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
-        """Join upstream feature metadata using PolarsProvenanceTracker."""
+        """Join upstream feature metadata using PolarsVersioningEngine."""
         # Handle empty upstream refs (source features)
         if not upstream_refs:
             empty_df = pl.DataFrame({col: [] for col in feature_spec.id_columns})
@@ -56,7 +56,7 @@ class TestJoiner:
             )
             return nw.from_native(empty_df.lazy(), eager_only=False), {}
 
-        tracker = PolarsProvenanceTracker(plan=feature_plan)
+        engine = PolarsVersioningEngine(plan=feature_plan)
 
         upstream_by_key = {}
         for k, v in upstream_refs.items():
@@ -65,7 +65,7 @@ class TestJoiner:
                 df = add_metaxy_provenance(df)
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
-        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+        joined = engine.prepare_upstream(upstream_by_key, filters=None)
 
         mapping = {}
         for upstream_key_str in upstream_refs.keys():

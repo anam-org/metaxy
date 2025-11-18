@@ -24,8 +24,8 @@ from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.ibis import IbisProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.ibis import IbisVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
     import ibis
@@ -130,7 +130,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         self._conn: ibis.BaseBackend | None = None
         self._table_prefix = table_prefix or ""
 
-        super().__init__(**kwargs, provenance_tracker_cls=IbisProvenanceTracker)
+        super().__init__(**kwargs, versioning_engine_cls=IbisVersioningEngine)
 
     def get_table_name(
         self,
@@ -160,16 +160,16 @@ class IbisMetadataStore(MetadataStore, ABC):
         return HashAlgorithm.MD5
 
     @contextmanager
-    def _create_provenance_tracker(
+    def _create_versioning_engine(
         self, plan: FeaturePlan
-    ) -> Iterator[IbisProvenanceTracker]:
-        """Create provenance tracker for Ibis backend as a context manager.
+    ) -> Iterator[IbisVersioningEngine]:
+        """Create provenance engine for Ibis backend as a context manager.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            IbisProvenanceTracker with backend-specific hash functions.
+            IbisVersioningEngine with backend-specific hash functions.
 
         Note:
             Base implementation only supports MD5 (universally available).
@@ -177,23 +177,23 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create provenance tracker: store is not open. "
+                "Cannot create provenance engine: store is not open. "
                 "Ensure store is used as context manager."
             )
 
         # Create hash functions for Ibis expressions
         hash_functions = self._create_hash_functions()
 
-        # Create tracker (only accepts plan and hash_functions)
-        tracker = IbisProvenanceTracker(
+        # Create engine (only accepts plan and hash_functions)
+        engine = IbisVersioningEngine(
             plan=plan,
             hash_functions=hash_functions,
         )
 
         try:
-            yield tracker
+            yield engine
         finally:
-            # No cleanup needed for Ibis tracker
+            # No cleanup needed for Ibis engine
             pass
 
     @abstractmethod

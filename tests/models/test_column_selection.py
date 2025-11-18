@@ -14,14 +14,14 @@ from metaxy import (
     SampleFeatureSpec,
 )
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.versioning.polars import PolarsVersioningEngine
 
 
 # Helper function to add metaxy_provenance column to test data
 def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
     """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
     # For tests, we just use a simple hash-like string based on the provenance_by_field
-    # In real usage, this would be calculated by the ProvenanceTracker
+    # In real usage, this would be calculated by the VersioningEngine
     df = df.with_columns(
         pl.col("metaxy_provenance_by_field")
         .map_elements(lambda x: f"hash_{x['default']}", return_dtype=pl.String)
@@ -30,9 +30,9 @@ def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-# Simple test joiner that uses ProvenanceTracker
+# Simple test joiner that uses VersioningEngine
 class TestJoiner:
-    """Test utility that wraps PolarsProvenanceTracker for column selection tests."""
+    """Test utility that wraps PolarsVersioningEngine for column selection tests."""
 
     def join_upstream(
         self,
@@ -42,15 +42,15 @@ class TestJoiner:
         upstream_columns: dict[str, tuple[str, ...] | None],
         upstream_renames: dict[str, dict[str, str] | None],
     ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
-        """Join upstream feature metadata using PolarsProvenanceTracker.
+        """Join upstream feature metadata using PolarsVersioningEngine.
 
         This is a test utility that mimics the old NarwhalsJoiner interface
-        but uses the new PolarsProvenanceTracker internally.
+        but uses the new PolarsVersioningEngine internally.
         """
         from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
-        # Create a PolarsProvenanceTracker for this feature
-        tracker = PolarsProvenanceTracker(plan=feature_plan)
+        # Create a PolarsVersioningEngine for this feature
+        engine = PolarsVersioningEngine(plan=feature_plan)
 
         # Convert string keys back to FeatureKey objects and ensure data is materialized
         upstream_by_key = {}
@@ -62,7 +62,7 @@ class TestJoiner:
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
-        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+        joined = engine.prepare_upstream(upstream_by_key, filters=None)
 
         # Build the mapping of upstream_key -> provenance_by_field column name
         # The new naming convention is: {column_name}{feature_key.to_column_suffix()}

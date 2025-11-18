@@ -48,7 +48,7 @@ from metaxy.models.fields_mapping import (
 )
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 def init_metaxy(

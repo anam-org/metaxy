@@ -27,7 +27,7 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
-    from metaxy.provenance.types import Increment, LazyIncrement
+    from metaxy.versioning.types import Increment, LazyIncrement
 
     # TODO: These are no longer used - remove after refactoring
     # from metaxy.data_versioning.diff import MetadataDiffResolver
@@ -1186,7 +1186,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
 
         # Materialize to Increment if lazy=False
         if not lazy:
-            from metaxy.provenance.types import Increment
+            from metaxy.versioning.types import Increment
 
             return Increment(
                 added=lazy_result.added.collect(),

@@ -1,6 +1,6 @@
-"""Integration tests for ProvenanceTracker with FeatureGraph.
+"""Integration tests for VersioningEngine with FeatureGraph.
 
-These tests verify that trackers integrate correctly with the broader
+These tests verify that engines integrate correctly with the broader
 Metaxy system including FeatureGraph, FeatureDep renames, and filters.
 """
 
@@ -16,8 +16,8 @@ from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
@@ -61,7 +61,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
         pass
 
     plan = graph.get_feature_plan(DownstreamFeature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Create upstream metadata with original name
     upstream_metadata = nw.from_native(
@@ -85,7 +85,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
     upstream = {FeatureKey(["upstream"]): upstream_metadata}
 
     # Prepare upstream - should apply rename
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
     )
@@ -100,7 +100,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
     assert prepared_df["renamed_field"].to_list() == ["value1", "value2"]
 
     # Compute full provenance
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -166,7 +166,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
         pass
 
     plan = graph.get_feature_plan(DownstreamFeature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Create upstream metadata with all fields
     upstream_metadata = nw.from_native(
@@ -192,7 +192,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     upstream = {FeatureKey(["upstream"]): upstream_metadata}
 
     # Prepare upstream - should only include selected columns
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
     )
@@ -205,7 +205,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     assert "field_b" not in prepared_df.columns  # Should be excluded
 
     # Compute full provenance and snapshot
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -265,7 +265,7 @@ def test_multi_upstream_join_on_common_id_columns(
         pass
 
     plan = graph.get_feature_plan(DownstreamFeature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Create upstream metadata with partial overlap on sample_uid
     upstream_a_metadata = nw.from_native(
@@ -314,7 +314,7 @@ def test_multi_upstream_join_on_common_id_columns(
     }
 
     # Prepare upstream - should inner join on sample_uid
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream=upstream,
         filters={},
     )
@@ -330,7 +330,7 @@ def test_multi_upstream_join_on_common_id_columns(
     assert "data_b" in prepared_df.columns
 
     # Compute full provenance and snapshot
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -394,7 +394,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         pass
 
     plan = graph.get_feature_plan(DownstreamFeature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream_a_metadata = nw.from_native(
         pl.DataFrame(
@@ -440,7 +440,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         FeatureKey(["upstream_b"]): [nw.col("sample_uid") < 5],
     }
 
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream=upstream,
         filters=filters,
     )
@@ -453,7 +453,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
     assert set(prepared_df["sample_uid"].to_list()) == {3, 4}
 
     # Compute full provenance and snapshot
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters=filters,
@@ -476,7 +476,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
 
 @pytest.mark.skip(reason="TODO: Fix column collision issue in multi-level dependencies")
 def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
-    """Test tracker with a complex multi-level dependency graph."""
+    """Test engine with a complex multi-level dependency graph."""
     # Note: This test is skipped but needs a valid plan for type checking
 
     # Level 0: Root features (separate features to avoid collisions)
@@ -619,8 +619,8 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Compute provenance for ProcessedA
     processed_a_plan = graph.get_feature_plan(ProcessedA.spec().key)
-    processed_a_tracker = PolarsProvenanceTracker(processed_a_plan)
-    processed_a_result = processed_a_tracker.load_upstream_with_provenance(
+    processed_a_engine = PolarsVersioningEngine(processed_a_plan)
+    processed_a_result = processed_a_engine.load_upstream_with_provenance(
         upstream={FeatureKey(["raw_a"]): raw_a_metadata},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -628,8 +628,8 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Compute provenance for ProcessedB
     processed_b_plan = graph.get_feature_plan(ProcessedB.spec().key)
-    processed_b_tracker = PolarsProvenanceTracker(processed_b_plan)
-    processed_b_result = processed_b_tracker.load_upstream_with_provenance(
+    processed_b_engine = PolarsVersioningEngine(processed_b_plan)
+    processed_b_result = processed_b_engine.load_upstream_with_provenance(
         upstream={FeatureKey(["raw_b"]): raw_b_metadata},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -637,8 +637,8 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Compute provenance for FinalAnalysis
     final_analysis_plan = graph.get_feature_plan(FinalAnalysis.spec().key)
-    final_analysis_tracker = PolarsProvenanceTracker(final_analysis_plan)
-    final_result = final_analysis_tracker.load_upstream_with_provenance(
+    final_analysis_engine = PolarsVersioningEngine(final_analysis_plan)
+    final_result = final_analysis_engine.load_upstream_with_provenance(
         upstream={
             FeatureKey(["processed_a"]): processed_a_result,
             FeatureKey(["processed_b"]): processed_b_result,
@@ -700,7 +700,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         pass
 
     plan = graph.get_feature_plan(BadDownstream.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream_a_metadata = nw.from_native(
         pl.DataFrame(
@@ -733,7 +733,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
 
     # Should raise error about colliding columns
     with pytest.raises(ValueError, match="additional shared columns"):
-        tracker.prepare_upstream(
+        engine.prepare_upstream(
             upstream=upstream,
             filters={},
         )
@@ -743,7 +743,7 @@ def test_feature_graph_integration_with_provenance_by_field(
     graph: FeatureGraph, snapshot
 ) -> None:
     """Test integration with FeatureGraph's provenance_by_field() method."""
-    # This test verifies that trackers work correctly with the Feature.provenance_by_field()
+    # This test verifies that engines work correctly with the Feature.provenance_by_field()
     # class method that returns the expected field provenance structure
 
     class MyFeature(

@@ -14,8 +14,8 @@ from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
@@ -73,13 +73,13 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
         ).lazy()
     )
 
-    # Get child plan and tracker
+    # Get child plan and engine
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
     # Compute child provenance from parent
     upstream = {FeatureKey(["parent"]): parent_df}
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -192,8 +192,8 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
 
     # Compute B from A
     b_plan = graph.get_feature_plan(FeatureB.spec().key)
-    b_tracker = PolarsProvenanceTracker(b_plan)
-    b_result = b_tracker.load_upstream_with_provenance(
+    b_engine = PolarsVersioningEngine(b_plan)
+    b_result = b_engine.load_upstream_with_provenance(
         upstream={FeatureKey(["A"]): a_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -201,8 +201,8 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
 
     # Compute C from B (keep as lazy frame)
     c_plan = graph.get_feature_plan(FeatureC.spec().key)
-    c_tracker = PolarsProvenanceTracker(c_plan)
-    c_result = c_tracker.load_upstream_with_provenance(
+    c_engine = PolarsVersioningEngine(c_plan)
+    c_result = c_engine.load_upstream_with_provenance(
         upstream={FeatureKey(["B"]): b_result},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -322,9 +322,9 @@ def test_selective_field_override(graph: FeatureGraph, snapshot) -> None:
     )
 
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["parent"]): parent_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -409,9 +409,9 @@ def test_default_behavior_no_override(graph: FeatureGraph, snapshot) -> None:
     )
 
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["parent"]): parent_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -526,9 +526,9 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
     )
 
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream={
             FeatureKey(["parent1"]): p1_df,
             FeatureKey(["parent2"]): p2_df,
@@ -622,10 +622,10 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
     )
 
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
     # First verify that renames are applied correctly
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream={FeatureKey(["parent"]): parent_df},
         filters={},
     )
@@ -639,7 +639,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
     assert "metaxy_data_version_by_field__parent" in prepared_df.columns
 
     # Now compute full provenance
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["parent"]): parent_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -725,9 +725,9 @@ def test_data_version_cleanup_in_result(graph: FeatureGraph, snapshot) -> None:
     )
 
     child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    tracker = PolarsProvenanceTracker(child_plan)
+    engine = PolarsVersioningEngine(child_plan)
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["parent"]): parent_df},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},

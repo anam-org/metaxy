@@ -17,8 +17,8 @@ from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 # ============================================================================
 # Fixtures for Aggregation (N:1) scenarios
@@ -247,14 +247,14 @@ def test_identity_lineage_load_upstream(
     """Test identity lineage (1:1) - baseline behavior."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is identity
     assert plan.feature.lineage.relationship.type.value == "1:1"
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -290,12 +290,12 @@ def test_identity_lineage_resolve_increment(
     """Test identity lineage (1:1) increment resolution."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
     # Compute expected provenance
-    expected = tracker.load_upstream_with_provenance(
+    expected = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -326,7 +326,7 @@ def test_identity_lineage_resolve_increment(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -365,14 +365,14 @@ def test_aggregation_lineage_load_upstream(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is aggregation
     assert plan.feature.lineage.relationship.type.value == "N:1"
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -417,11 +417,11 @@ def test_aggregation_lineage_resolve_increment_no_current(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -465,7 +465,7 @@ def test_aggregation_lineage_resolve_increment_with_changes(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
@@ -505,7 +505,7 @@ def test_aggregation_lineage_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -539,7 +539,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Initial upstream: 2 readings for s1 in hour 10
     upstream_v1 = nw.from_native(
@@ -563,7 +563,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
     )
 
     # First resolve: no current, so all readings are added
-    added_v1_lazy, _, _ = tracker.resolve_increment_with_provenance(
+    added_v1_lazy, _, _ = engine.resolve_increment_with_provenance(
         current=None,
         upstream={FeatureKey(["sensor_readings"]): upstream_v1},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -630,7 +630,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
     )
 
     # Resolve increment with new upstream
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_aggregated,
         upstream={FeatureKey(["sensor_readings"]): upstream_v2},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -665,14 +665,14 @@ def test_expansion_lineage_load_upstream(
     """Test 1:N expansion lineage loads upstream correctly."""
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is expansion
     assert plan.feature.lineage.relationship.type.value == "1:N"
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -709,11 +709,11 @@ def test_expansion_lineage_resolve_increment_no_current(
     """Test 1:N expansion increment resolution with no current metadata."""
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -758,7 +758,7 @@ def test_expansion_lineage_resolve_increment_video_changed(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Modified video metadata (v2's provenance changed compared to fixture)
     upstream_modified = nw.from_native(
@@ -796,7 +796,7 @@ def test_expansion_lineage_resolve_increment_video_changed(
     # Resolve increment with modified video metadata
     # The expansion handler will group video_frames_current by video_id to get one row per video
     # Then compare with upstream (which has 2 videos)
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
         upstream={FeatureKey(["video"]): upstream_modified},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -829,7 +829,7 @@ def test_expansion_lineage_new_video_added(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # New upstream includes v1, v2, and v3 (v3 is new)
     upstream_with_new_video = nw.from_native(
@@ -855,7 +855,7 @@ def test_expansion_lineage_new_video_added(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Has frames for v1 and v2 only
         upstream={FeatureKey(["video"]): upstream_with_new_video},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -889,7 +889,7 @@ def test_expansion_lineage_video_removed(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # New upstream only has v1 (v2 is removed)
     upstream_without_v2 = nw.from_native(
@@ -907,7 +907,7 @@ def test_expansion_lineage_video_removed(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Has frames for v1 and v2
         upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -946,7 +946,7 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Initial upstream with specific data_version
     upstream_v1 = nw.from_native(
@@ -980,7 +980,7 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Get initial expected state
-    expected_v1 = tracker.load_upstream_with_provenance(
+    expected_v1 = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["sensor_readings"]): upstream_v1},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -1036,7 +1036,7 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_v1,
         upstream={FeatureKey(["sensor_readings"]): upstream_v2},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -1071,7 +1071,7 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Initial upstream with specific data_version
     upstream_v1 = nw.from_native(
@@ -1092,7 +1092,7 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Get initial expected state
-    tracker.load_upstream_with_provenance(
+    engine.load_upstream_with_provenance(
         upstream={FeatureKey(["video"]): upstream_v1},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -1149,7 +1149,7 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
     )
 
     # Resolve increment with changed data_version for v2
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_v1,
         upstream={FeatureKey(["video"]): upstream_v2},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -1189,7 +1189,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Base upstream state
     upstream_base = nw.from_native(
@@ -1213,7 +1213,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
     )
 
     # Get base expected state
-    expected_base = tracker.load_upstream_with_provenance(
+    expected_base = engine.load_upstream_with_provenance(
         upstream={FeatureKey(["sensor_readings"]): upstream_base},
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -1262,7 +1262,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_base,
         upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -1300,7 +1300,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_base,
         upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -1326,7 +1326,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Base upstream state
     nw.from_native(
@@ -1379,7 +1379,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_base,
         upstream={FeatureKey(["video"]): upstream_dv_changed},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -1407,7 +1407,7 @@ def test_expansion_lineage_data_version_vs_provenance_independent(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_base,
         upstream={FeatureKey(["video"]): upstream_prov_changed},
         hash_algorithm=HashAlgorithm.XXHASH64,

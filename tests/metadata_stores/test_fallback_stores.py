@@ -35,7 +35,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.warnings import PolarsMaterializationWarning
 from metaxy.models.feature import FeatureGraph
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 # ============= HELPERS =============
 

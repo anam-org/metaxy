@@ -18,23 +18,23 @@ from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.models.plan import FeaturePlan
-    from metaxy.provenance.tracker import ProvenanceTracker
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.engine import VersioningEngine
+    from metaxy.versioning.types import HashAlgorithm
 
 
 class LineageHandler(ABC):
     """Base class for handling lineage-based provenance normalization."""
 
-    def __init__(self, feature_plan: FeaturePlan, tracker: ProvenanceTracker):
-        """Initialize handler with feature plan and tracker.
+    def __init__(self, feature_plan: FeaturePlan, engine: VersioningEngine):
+        """Initialize handler with feature plan and engine.
 
         Args:
             feature_plan: The feature plan containing lineage information
-            tracker: The provenance tracker instance
+            engine: The provenance engine instance
         """
         self.plan = feature_plan
         self.feature_spec = feature_plan.feature
-        self.tracker = tracker
+        self.engine = engine
 
     @abstractmethod
     def normalize_for_comparison(
@@ -80,7 +80,7 @@ class AggregationLineageHandler(LineageHandler):
     Multiple upstream rows aggregate to one downstream row. We need to:
     1. Group expected metadata by aggregation columns (sorted within group)
     2. Concatenate provenance values deterministically
-    3. Hash the concatenated result using tracker's hash method
+    3. Hash the concatenated result using engine's hash method
     """
 
     def normalize_for_comparison(
@@ -112,8 +112,8 @@ class AggregationLineageHandler(LineageHandler):
 
         Strategy:
         1. Sort by id_columns within each group for deterministic ordering
-        2. Group by aggregation columns and concatenate provenance with tracker's method
-        3. Hash the concatenated result using tracker's hash_string_column
+        2. Group by aggregation columns and concatenate provenance with engine's method
+        3. Hash the concatenated result using engine's hash_string_column
 
         Args:
             expected: Expected metadata with upstream provenance
@@ -128,9 +128,9 @@ class AggregationLineageHandler(LineageHandler):
         id_columns = list(self.feature_spec.id_columns)
         expected_sorted = expected.sort(id_columns)
 
-        # Use tracker's aggregate_with_string_concat method
+        # Use engine's aggregate_with_string_concat method
         # This concatenates provenance strings and stores in a temporary column
-        grouped = self.tracker.aggregate_with_string_concat(
+        grouped = self.engine.aggregate_with_string_concat(
             df=expected_sorted,
             group_by_columns=agg_columns,
             concat_column=METAXY_PROVENANCE,
@@ -138,9 +138,9 @@ class AggregationLineageHandler(LineageHandler):
             exclude_columns=[METAXY_PROVENANCE_BY_FIELD],
         )
 
-        # Hash the concatenated provenance using tracker's method
+        # Hash the concatenated provenance using engine's method
         # Note: the concat column still has name METAXY_PROVENANCE after aggregation
-        hashed = self.tracker.hash_string_column(
+        hashed = self.engine.hash_string_column(
             grouped, METAXY_PROVENANCE, "__hashed_prov", hash_algorithm
         )
 
@@ -152,7 +152,7 @@ class AggregationLineageHandler(LineageHandler):
             nw.col(METAXY_PROVENANCE).str.slice(0, get_hash_truncation_length())
         )
 
-        # Create placeholder provenance_by_field struct using tracker's method
+        # Create placeholder provenance_by_field struct using engine's method
         field_names = [f.key.to_struct_key() for f in self.plan.feature.fields]
         field_map = {name: "__aggregated_placeholder" for name in field_names}
 
@@ -161,8 +161,8 @@ class AggregationLineageHandler(LineageHandler):
             nw.lit("aggregated").alias("__aggregated_placeholder")
         )
 
-        # Build struct using tracker's method
-        result = self.tracker.build_struct_column(
+        # Build struct using engine's method
+        result = self.engine.build_struct_column(
             hashed, METAXY_PROVENANCE_BY_FIELD, field_map
         )
 

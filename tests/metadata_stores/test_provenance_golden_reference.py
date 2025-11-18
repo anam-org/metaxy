@@ -36,7 +36,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
@@ -660,7 +660,7 @@ class KeepLatestTestDataCases:
     """Test data cases for keep_latest_by_group tests.
 
     Each case returns a tuple of:
-    - tracker_class: The ProvenanceTracker class to use
+    - engine_class: The VersioningEngine class to use
     - create_data_fn: A callable that takes Polars DataFrame and returns Narwhals DataFrame
     - base_time: The base datetime used in test data generation
     """
@@ -671,7 +671,7 @@ class KeepLatestTestDataCases:
 
         import narwhals as nw
 
-        from metaxy.provenance.polars import PolarsProvenanceTracker
+        from metaxy.versioning.polars import PolarsVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 
@@ -679,7 +679,7 @@ class KeepLatestTestDataCases:
             """Convert Polars DataFrame to Narwhals (Polars-backed)."""
             return nw.from_native(pl_df)
 
-        return (PolarsProvenanceTracker, create_data_fn, base_time)
+        return (PolarsVersioningEngine, create_data_fn, base_time)
 
     def case_ibis(self, tmp_path):
         """Test data using Ibis implementation (via DuckDB)."""
@@ -688,7 +688,7 @@ class KeepLatestTestDataCases:
         import ibis
         import narwhals as nw
 
-        from metaxy.provenance.ibis import IbisProvenanceTracker
+        from metaxy.versioning.ibis import IbisVersioningEngine
 
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 
@@ -707,7 +707,7 @@ class KeepLatestTestDataCases:
             ibis_table = con.table(table_name)
             return nw.from_native(ibis_table)
 
-        return (IbisProvenanceTracker, create_data_fn, base_time)
+        return (IbisVersioningEngine, create_data_fn, base_time)
 
 
 @pytest_cases.fixture
@@ -731,7 +731,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     import polars as pl
 
     # Get fixture data
-    tracker_class, create_data_fn, base_time = keep_latest_test_data
+    engine_class, create_data_fn, base_time = keep_latest_test_data
 
     # Create test data with 5 versions of the same sample
     data = pl.DataFrame(
@@ -751,7 +751,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
     nw_df = create_data_fn(shuffled_data)
 
     # Call keep_latest_by_group directly (staticmethod)
-    result_nw = tracker_class.keep_latest_by_group(
+    result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sample_uid"],
         timestamp_column="timestamp",
@@ -788,7 +788,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
 
     import polars as pl
 
-    tracker_class, create_data_fn, base_time = keep_latest_test_data
+    engine_class, create_data_fn, base_time = keep_latest_test_data
 
     # Create sensor readings with duplicates (multiple versions of same reading)
     # reading_id identifies individual readings, but we have 2 versions of each
@@ -829,7 +829,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
     nw_df = create_data_fn(shuffled_data)
 
     # Call keep_latest_by_group
-    result_nw = tracker_class.keep_latest_by_group(
+    result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["sensor_id", "hour", "reading_id"],
         timestamp_column="timestamp",
@@ -861,7 +861,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
 
     import polars as pl
 
-    tracker_class, create_data_fn, base_time = keep_latest_test_data
+    engine_class, create_data_fn, base_time = keep_latest_test_data
 
     # Create video metadata with duplicates (old and new versions)
     # Same video_id but different metadata versions
@@ -883,7 +883,7 @@ def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
     nw_df = create_data_fn(shuffled_data)
 
     # Call keep_latest_by_group
-    result_nw = tracker_class.keep_latest_by_group(
+    result_nw = engine_class.keep_latest_by_group(
         nw_df,
         group_columns=["video_id"],
         timestamp_column="timestamp",

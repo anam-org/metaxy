@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.metadata_store.ibis import IbisMetadataStore
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 class BigQueryMetadataStore(IbisMetadataStore):
