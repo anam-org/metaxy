@@ -19,7 +19,7 @@ METAXY_PROVENANCE_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}provenance_by_field"
 """Field-level provenance hashes (struct column mapping field names to hashes)."""
 
 METAXY_PROVENANCE = f"{SYSTEM_COLUMN_PREFIX}provenance"
-"""Hash of`[[metaxy.models.constants.]]` -- a single string value."""
+"""Hash of [metaxy_provenance_by_field][metaxy.models.constants.METAXY_PROVENANCE_BY_FIELD] -- a single string value."""
 
 METAXY_FEATURE_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_version"
 """Hash of the feature definition (dependencies + fields + code_versions)."""

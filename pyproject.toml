@@ -97,6 +97,8 @@ dev = [
   "ruff>=0.13.1",
   "syrupy>=5.0.0",
   "lancedb>=0.15.0",
+  # Pin because 0.2.0 ships an empty wheel and breaks imports
+  "lance-namespace<=0.0.21",
   "ibis-framework[duckdb,clickhouse,postgres]>=11.0.0",
   "vulture>=2.14",
   "prek>=0.2.11",

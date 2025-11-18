@@ -440,11 +440,9 @@ class VersioningEngine(ABC):
         provenance hash for each field in the current feature.
         Returns:
             Nested dictionary mapping each field key to its parent field expressions.
-        Returns:
-            Nested dictionary mapping each field key to its parent field expressions.
         Note:
             This reads from upstream `metaxy_data_version_by_field` instead of
-            `[[metaxy.models.constants.]]`, enabling users to control version
+            `metaxy_provenance_by_field`, enabling users to control version
             propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
@@ -534,7 +532,7 @@ class VersioningEngine(ABC):
         temp_columns_to_drop = list(temp_concat_cols.values()) + list(
             temp_hash_cols.values()
         )
-        df = df.drop(*temp_columns_to_drop)  # ty: ignore[invalid-argument-type]
+        df = df.drop(*temp_columns_to_drop, strict=False)  # ty: ignore[invalid-argument-type]
 
         # Drop renamed upstream system columns
         current_columns = df.collect_schema().names()
@@ -556,6 +554,12 @@ class VersioningEngine(ABC):
                 if renamed_data_version_col in current_columns:
                     columns_to_drop.append(renamed_data_version_col)
 
+        # Drop version columns if present (they come from upstream and shouldn't be in the result)
+        version_columns = ["metaxy_feature_version", "metaxy_snapshot_version"]
+        for col in version_columns:
+            if col in current_columns:
+                columns_to_drop.append(col)
+
         if columns_to_drop:
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
@@ -564,7 +568,22 @@ class VersioningEngine(ABC):
             METAXY_DATA_VERSION,
         )
 
-        df = df.with_columns(  # ty: ignore[invalid-argument-type]
+        # Ensure flattened data_version_by_field columns exist (mirror provenance_by_field)
+        prov_prefix = f"{METAXY_PROVENANCE_BY_FIELD}__"
+        data_prefix = f"{METAXY_DATA_VERSION_BY_FIELD}__"
+        for col in current_columns:
+            if col.startswith(prov_prefix):
+                field_name = col.split("__", 1)[1]
+                target_col = f"{data_prefix}{field_name}"
+                if target_col not in current_columns:
+                    df = df.with_columns(nw.col(col).alias(target_col))
+
+        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
+            df = df.with_columns(
+                nw.lit(None, dtype=nw.String).alias(METAXY_PROVENANCE_BY_FIELD)
+            )
+
+        df = df.with_columns(
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         )
