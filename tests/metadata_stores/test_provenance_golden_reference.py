@@ -83,6 +83,18 @@ class FeaturePlanCases:
 
         return graph, upstream_features, child_plan
 
+
+def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
+    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
+    dtype = df.schema[column_name]
+    if isinstance(dtype, pl.Struct):
+        return df
+
+    converted = df[column_name].map_elements(
+        lambda v: v if isinstance(v, dict) else json.loads(v)
+    )
+    return df.with_columns(converted.alias(column_name))
+
     def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanOutput:
         """Feature plan with two upstream dependencies."""
 
@@ -295,13 +307,19 @@ def test_golden_reference_with_duplicate_timestamps(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
 
             # Add older duplicates to upstream metadata
             for feature_key, upstream_feature in upstream_features.items():
                 # Read existing upstream data
                 existing_df = (
                     store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+                existing_df = _ensure_struct_column(
+                    existing_df, METAXY_PROVENANCE_BY_FIELD
                 )
 
                 # Create older duplicates (same IDs, older timestamps)
@@ -429,7 +447,9 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+            )
 
             # Create duplicates with SAME timestamp for ALL samples
             same_timestamp = datetime.now()
@@ -504,12 +524,18 @@ def test_golden_reference_partial_duplicates(
 
             import polars as pl
 
-            from metaxy.models.constants import METAXY_CREATED_AT
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
 
             # Add older duplicates for only HALF of the samples in each upstream
             for feature_key, upstream_feature in upstream_features.items():
                 existing_df = (
                     store.read_metadata(upstream_feature).lazy().collect().to_polars()
+                )
+                existing_df = _ensure_struct_column(
+                    existing_df, METAXY_PROVENANCE_BY_FIELD
                 )
 
                 # Get half of samples

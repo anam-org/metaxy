@@ -334,7 +334,7 @@ class VersioningEngine(ABC):
         Resolves field-level dependencies. Only actual parent fields are considered.
 
         Note:
-            This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
+            This reads from upstream `metaxy_data_version_by_field` instead of `[[metaxy.models.constants.]]`,
             enabling users to control version propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
