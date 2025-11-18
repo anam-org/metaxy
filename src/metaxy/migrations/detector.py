@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.migrations.models import DiffMigration, FullGraphMigration
@@ -104,7 +104,7 @@ def detect_diff_migration(
         return None
 
     # Build snapshot data for to_snapshot (current graph)
-    to_snapshot_data = active_graph.to_snapshot()
+    to_snapshot_data = cast(dict[str, dict[str, Any]], active_graph.to_snapshot())
 
     # Compute GraphDiff using GraphDiffer
     graph_diff = differ.diff(
