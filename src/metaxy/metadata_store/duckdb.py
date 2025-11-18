@@ -21,7 +21,7 @@ from metaxy.metadata_store._ducklake_support import (
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 class ExtensionSpec(BaseModel):
@@ -197,25 +197,25 @@ class DuckDBMetadataStore(IbisMetadataStore):
         return HashAlgorithm.MD5
 
     @contextmanager
-    def _create_provenance_tracker(self, plan):
-        """Create provenance tracker for DuckDB backend as a context manager.
+    def _create_versioning_engine(self, plan):
+        """Create provenance engine for DuckDB backend as a context manager.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            IbisProvenanceTracker with DuckDB-specific hash functions.
+            IbisVersioningEngine with DuckDB-specific hash functions.
 
         Note:
-            Extensions are loaded lazily when tracker is created.
+            Extensions are loaded lazily when engine is created.
         """
         # Load extensions first (if connection is open)
         if self._conn is not None:
             self._load_extensions()
 
         # Call parent implementation (which calls our _create_hash_functions)
-        with super()._create_provenance_tracker(plan) as tracker:
-            yield tracker
+        with super()._create_versioning_engine(plan) as engine:
+            yield engine
 
     def _load_extensions(self) -> None:
         """Load DuckDB extensions if not already loaded."""

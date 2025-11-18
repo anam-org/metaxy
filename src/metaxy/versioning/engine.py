@@ -20,16 +20,16 @@ from metaxy.models.constants import (
 from metaxy.models.lineage import LineageRelationshipType
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.feature_dep_transformer import FeatureDepTransformer
-from metaxy.provenance.renamed_df import RenamedDataFrame
-from metaxy.provenance.types import HashAlgorithm
 from metaxy.utils.hashing import get_hash_truncation_length
+from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
+from metaxy.versioning.renamed_df import RenamedDataFrame
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.provenance.lineage_handler import LineageHandler
+    from metaxy.versioning.lineage_handler import LineageHandler
 
 
-class ProvenanceTracker(ABC):
+class VersioningEngine(ABC):
     """A class responsible for tracking sample and field level provenance."""
 
     def __init__(self, plan: FeaturePlan):
@@ -619,19 +619,19 @@ class ProvenanceTracker(ABC):
 
 def create_lineage_handler(
     feature_plan: FeaturePlan,
-    tracker: ProvenanceTracker,
+    engine: VersioningEngine,
 ) -> LineageHandler:
     """Factory function to create appropriate lineage handler.
 
     Args:
         feature_plan: The feature plan containing lineage information
-        tracker: The provenance tracker instance
+        engine: The provenance engine instance
 
     Returns:
         Appropriate LineageHandler instance based on lineage type
     """
     # Import handler classes at runtime to avoid circular import
-    from metaxy.provenance.lineage_handler import (
+    from metaxy.versioning.lineage_handler import (
         AggregationLineageHandler,
         ExpansionLineageHandler,
         IdentityLineageHandler,
@@ -641,10 +641,10 @@ def create_lineage_handler(
     relationship_type = lineage.relationship.type
 
     if relationship_type == LineageRelationshipType.IDENTITY:
-        return IdentityLineageHandler(feature_plan, tracker)
+        return IdentityLineageHandler(feature_plan, engine)
     elif relationship_type == LineageRelationshipType.AGGREGATION:
-        return AggregationLineageHandler(feature_plan, tracker)
+        return AggregationLineageHandler(feature_plan, engine)
     elif relationship_type == LineageRelationshipType.EXPANSION:
-        return ExpansionLineageHandler(feature_plan, tracker)
+        return ExpansionLineageHandler(feature_plan, engine)
     else:
         raise ValueError(f"Unknown lineage relationship type: {relationship_type}")

@@ -27,7 +27,7 @@ from metaxy.models.constants import (
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -106,7 +106,7 @@ def calculate_provenance_by_field_polars(
     Example:
         ```python
         from metaxy.data_versioning.calculators.polars import calculate_provenance_by_field_polars
-        from metaxy.provenance.types import HashAlgorithm
+        from metaxy.versioning.types import HashAlgorithm
 
         result = calculate_provenance_by_field_polars(
             joined_df,
@@ -540,7 +540,7 @@ def downstream_metadata_strategy(
         from hypothesis import given
         from metaxy import FeatureGraph, FeatureKey
         from metaxy._testing.parametric import downstream_metadata_strategy
-        from metaxy.provenance.types import HashAlgorithm
+        from metaxy.versioning.types import HashAlgorithm
 
         graph = FeatureGraph()
         # ... define features ...
@@ -607,13 +607,13 @@ def downstream_metadata_strategy(
         )
         return ({}, downstream_df)
 
-    # Use the new PolarsProvenanceTracker to calculate provenance
+    # Use the new PolarsVersioningEngine to calculate provenance
     import narwhals as nw
 
-    from metaxy.provenance.polars import PolarsProvenanceTracker
+    from metaxy.versioning.polars import PolarsVersioningEngine
 
-    # Create tracker (only accepts plan parameter)
-    tracker = PolarsProvenanceTracker(plan=feature_plan)
+    # Create engine (only accepts plan parameter)
+    engine = PolarsVersioningEngine(plan=feature_plan)
 
     # Convert upstream_data keys from strings to FeatureKey objects and wrap in Narwhals
     # Keys are simple strings like "parent", "child" that need to be wrapped in a list
@@ -624,7 +624,7 @@ def downstream_metadata_strategy(
 
     # Load upstream with provenance calculation
     # Note: hash_length is read from MetaxyConfig.get().hash_truncation_length internally
-    downstream_df = tracker.load_upstream_with_provenance(
+    downstream_df = engine.load_upstream_with_provenance(
         upstream=upstream_dict,
         hash_algo=hash_algorithm,
         filters=None,

@@ -1,4 +1,4 @@
-"""Ibis implementation of ProvenanceTracker.
+"""Ibis implementation of VersioningEngine.
 
 CRITICAL: This implementation NEVER materializes lazy expressions.
 All operations stay in the lazy Ibis world for SQL execution.
@@ -11,16 +11,16 @@ from ibis import Expr as IbisExpr
 from narwhals.typing import FrameT
 
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.tracker import ProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.engine import VersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 class IbisHashFn(Protocol):
     def __call__(self, expr: IbisExpr) -> IbisExpr: ...
 
 
-class IbisProvenanceTracker(ProvenanceTracker):
-    """Provenance tracker using Ibis for SQL databases.
+class IbisVersioningEngine(VersioningEngine):
+    """Provenance engine using Ibis for SQL databases.
 
     Only implements hash_string_column and build_struct_column.
     All logic lives in the base class.
@@ -34,7 +34,7 @@ class IbisProvenanceTracker(ProvenanceTracker):
         plan: FeaturePlan,
         hash_functions: dict[HashAlgorithm, IbisHashFn],
     ) -> None:
-        """Initialize the Ibis tracker.
+        """Initialize the Ibis engine.
 
         Args:
             plan: Feature plan to track provenance for

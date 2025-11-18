@@ -14,8 +14,8 @@ from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
 class InMemoryMetadataStore(MetadataStore):
@@ -57,7 +57,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
-        super().__init__(**kwargs, provenance_tracker_cls=PolarsProvenanceTracker)
+        super().__init__(**kwargs, versioning_engine_cls=PolarsVersioningEngine)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for in-memory store."""
@@ -68,24 +68,24 @@ class InMemoryMetadataStore(MetadataStore):
         return tuple(feature_key)
 
     @contextmanager
-    def _create_provenance_tracker(self, plan) -> Iterator[PolarsProvenanceTracker]:
-        """Create Polars provenance tracker for in-memory store.
+    def _create_versioning_engine(self, plan) -> Iterator[PolarsVersioningEngine]:
+        """Create Polars provenance engine for in-memory store.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            PolarsProvenanceTracker instance
+            PolarsVersioningEngine instance
         """
-        from metaxy.provenance.polars import PolarsProvenanceTracker
+        from metaxy.versioning.polars import PolarsVersioningEngine
 
-        # Create tracker (only accepts plan parameter)
-        tracker = PolarsProvenanceTracker(plan=plan)
+        # Create engine (only accepts plan parameter)
+        engine = PolarsVersioningEngine(plan=plan)
 
         try:
-            yield tracker
+            yield engine
         finally:
-            # No cleanup needed for Polars tracker
+            # No cleanup needed for Polars engine
             pass
 
     def write_metadata_to_store(

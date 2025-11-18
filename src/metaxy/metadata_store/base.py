@@ -47,9 +47,9 @@ from metaxy.models.constants import (
 from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, SnapshotPushResult
-from metaxy.provenance import ProvenanceTracker
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy.versioning import VersioningEngine
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
     pass
@@ -65,7 +65,7 @@ FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
 FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 
 
-ProvenanceTrackerT = TypeVar("ProvenanceTrackerT", bound=ProvenanceTracker)
+VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
 
 
 class MetadataStore(ABC):
@@ -90,7 +90,7 @@ class MetadataStore(ABC):
     def __init__(
         self,
         *,
-        provenance_tracker_cls: type[ProvenanceTrackerT],
+        versioning_engine_cls: type[VersioningEngineT],
         hash_algorithm: HashAlgorithm | None = None,
         hash_truncation_length: int | None = None,
         prefer_native: bool = True,
@@ -127,7 +127,7 @@ class MetadataStore(ABC):
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
-        self.provenance_tracker_cls = provenance_tracker_cls
+        self.versioning_engine_cls = versioning_engine_cls
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -219,8 +219,8 @@ class MetadataStore(ABC):
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If `True`, return [metaxy.provenance.types.LazyIncrement][] with lazy Narwhals LazyFrames.
-                If `False`, return [metaxy.provenance.types.Increment][] with eager Narwhals DataFrames.
+            lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
+                If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
             **kwargs: Backend-specific parameters
 
         Raises:
@@ -342,10 +342,10 @@ class MetadataStore(ABC):
             for upstream_key, df in upstream_by_key.items():
                 upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
 
-        with self.create_provenance_tracker(
+        with self.create_versioning_engine(
             plan=plan, implementation=implementation
-        ) as tracker:
-            added, changed, removed = tracker.resolve_increment_with_provenance(
+        ) as engine:
+            added, changed, removed = engine.resolve_increment_with_provenance(
                 current=current_metadata,
                 upstream=upstream_by_key,
                 hash_algorithm=self.hash_algorithm,
@@ -393,66 +393,66 @@ class MetadataStore(ABC):
 
     def native_implementation(self) -> nw.Implementation:
         """Get the native Narwhals implementation for this store's backend."""
-        return self.provenance_tracker_cls.implementation()
+        return self.versioning_engine_cls.implementation()
 
     @abstractmethod
     @contextmanager
-    def _create_provenance_tracker(
+    def _create_versioning_engine(
         self, plan: FeaturePlan
-    ) -> Iterator[ProvenanceTrackerT]:
-        """Create provenance tracker for this store as a context manager.
+    ) -> Iterator[VersioningEngineT]:
+        """Create provenance engine for this store as a context manager.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            ProvenanceTracker instance appropriate for this store's backend.
-            - For SQL stores (DuckDB, ClickHouse): Returns IbisProvenanceTracker
-            - For in-memory/Polars stores: Returns PolarsProvenanceTracker
+            VersioningEngine instance appropriate for this store's backend.
+            - For SQL stores (DuckDB, ClickHouse): Returns IbisVersioningEngine
+            - For in-memory/Polars stores: Returns PolarsVersioningEngine
 
         Raises:
             NotImplementedError: If provenance tracking not supported by this store
 
         Example:
             ```python
-            with self._create_provenance_tracker(plan) as tracker:
-                result = tracker.resolve_update(...)
+            with self._create_versioning_engine(plan) as engine:
+                result = engine.resolve_update(...)
             ```
         """
         ...
 
     @contextmanager
-    def _create_polars_provenance_tracker(
+    def _create_polars_versioning_engine(
         self, plan: FeaturePlan
-    ) -> Iterator[PolarsProvenanceTracker]:
-        yield PolarsProvenanceTracker(plan=plan)
+    ) -> Iterator[PolarsVersioningEngine]:
+        yield PolarsVersioningEngine(plan=plan)
 
     @contextmanager
-    def create_provenance_tracker(
+    def create_versioning_engine(
         self, plan: FeaturePlan, implementation: nw.Implementation
-    ) -> Iterator[ProvenanceTracker | PolarsProvenanceTracker]:
+    ) -> Iterator[VersioningEngine | PolarsVersioningEngine]:
         """
-        Creates an appropriate provenance tracker.
+        Creates an appropriate provenance engine.
 
         Falls back to Polars implementation if the required implementation differs from the store's native implementation.
 
         Args:
             plan: The feature plan.
-            implementation: The desired tracker implementation.
+            implementation: The desired engine implementation.
 
         Returns:
-            An appropriate provenance tracker.
+            An appropriate provenance engine.
         """
 
         if implementation == nw.Implementation.POLARS:
-            cm = self._create_polars_provenance_tracker(plan)
+            cm = self._create_polars_versioning_engine(plan)
         elif implementation == self.native_implementation():
-            cm = self._create_provenance_tracker(plan)
+            cm = self._create_versioning_engine(plan)
         else:
-            cm = self._create_polars_provenance_tracker(plan)
+            cm = self._create_polars_versioning_engine(plan)
 
-        with cm as tracker:
-            yield tracker
+        with cm as engine:
+            yield engine
 
     def hash_struct_version_column(
         self,
@@ -461,9 +461,9 @@ class MetadataStore(ABC):
         struct_column: str,
         hash_column: str,
     ) -> Frame:
-        with self.create_provenance_tracker(plan, df.implementation) as tracker:
+        with self.create_versioning_engine(plan, df.implementation) as engine:
             if (
-                isinstance(tracker, PolarsProvenanceTracker)
+                isinstance(engine, PolarsVersioningEngine)
                 and df.implementation != nw.Implementation.POLARS
             ):
                 PolarsMaterializationWarning.warn_on_implementation_mismatch(
@@ -475,7 +475,7 @@ class MetadataStore(ABC):
 
             return cast(
                 Frame,
-                tracker.hash_struct_version_column(
+                engine.hash_struct_version_column(
                     df,  # pyright: ignore[reportArgumentType]
                     hash_algorithm=self.hash_algorithm,
                     struct_column=struct_column,
@@ -602,8 +602,8 @@ class MetadataStore(ABC):
         Raises:
             ValueError: If hash algorithm not supported by components or fallback stores
         """
-        # Validate hash algorithm support without creating a full tracker
-        # (tracker creation requires a graph which isn't available during store init)
+        # Validate hash algorithm support without creating a full engine
+        # (engine creation requires a graph which isn't available during store init)
         self._validate_hash_algorithm_support()
 
         # Check fallback stores
@@ -858,7 +858,7 @@ class MetadataStore(ABC):
                 ]
             )
 
-        # These should normally be added by the provenance tracker during resolve_update
+        # These should normally be added by the provenance engine during resolve_update
         from metaxy.models.constants import (
             METAXY_CREATED_AT,
             METAXY_DATA_VERSION,
@@ -1274,7 +1274,7 @@ class MetadataStore(ABC):
             from metaxy.models.constants import METAXY_CREATED_AT
 
             # Apply deduplication
-            lazy_frame = self.provenance_tracker_cls.keep_latest_by_group(
+            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
                 df=lazy_frame,
                 group_columns=list(
                     self._resolve_feature_plan(feature_key).feature.id_columns

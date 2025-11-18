@@ -12,7 +12,7 @@ from metaxy.models.constants import (
 from metaxy.models.feature_spec import FeatureDep, FeatureSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.renamed_df import RenamedDataFrame
+from metaxy.versioning.renamed_df import RenamedDataFrame
 
 
 class FeatureDepTransformer:

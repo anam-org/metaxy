@@ -38,7 +38,7 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[
@@ -652,7 +652,7 @@ def test_resolve_update_lazy_execution(
             )
 
             # Verify we got a LazyIncrement
-            from metaxy.provenance.types import LazyIncrement
+            from metaxy.versioning.types import LazyIncrement
 
             assert isinstance(lazy_increment, LazyIncrement), (
                 f"Expected LazyIncrement with lazy=True, got {type(lazy_increment)}"

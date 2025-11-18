@@ -22,7 +22,7 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
