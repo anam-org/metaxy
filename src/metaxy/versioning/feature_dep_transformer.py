@@ -67,13 +67,74 @@ class FeatureDepTransformer:
         if filters:
             combined_filters.extend(filters)
 
+        # Add dynamic renames for flattened provenance/data_version columns to avoid collisions
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_PROVENANCE_BY_FIELD,
+        )
+
+        suffix = self.upstream_feature_key.to_column_suffix()
+        struct_key = self.upstream_feature_key.to_struct_key()
+        prov_struct = f"{METAXY_PROVENANCE_BY_FIELD}{suffix}"
+        data_struct = f"{METAXY_DATA_VERSION_BY_FIELD}{suffix}"
+        dynamic_renames: dict[str, str] = {}
+        for col in df.columns:
+            # Already suffixed columns can stay as-is
+            if col == prov_struct or col == data_struct:
+                continue
+            if col == METAXY_PROVENANCE_BY_FIELD or col == METAXY_DATA_VERSION_BY_FIELD:
+                # Base renames already cover struct columns
+                continue
+            if col.startswith(f"{prov_struct}__") or col.startswith(f"{data_struct}__"):
+                continue
+
+            if col == METAXY_PROVENANCE_BY_FIELD:
+                dynamic_renames[col] = prov_struct
+            elif col == METAXY_DATA_VERSION_BY_FIELD:
+                dynamic_renames[col] = data_struct
+            elif col.startswith(f"{METAXY_PROVENANCE_BY_FIELD}__"):
+                remainder = col.split("__", 1)[1]
+                if remainder == struct_key:
+                    dynamic_renames[col] = prov_struct
+                else:
+                    cleaned = (
+                        remainder.split("__", 1)[1]
+                        if remainder.startswith(f"{struct_key}__")
+                        else remainder
+                    )
+                    dynamic_renames[col] = f"{prov_struct}__{cleaned}"
+            elif col.startswith(f"{METAXY_DATA_VERSION_BY_FIELD}__"):
+                remainder = col.split("__", 1)[1]
+                if remainder == struct_key:
+                    dynamic_renames[col] = data_struct
+                else:
+                    cleaned = (
+                        remainder.split("__", 1)[1]
+                        if remainder.startswith(f"{struct_key}__")
+                        else remainder
+                    )
+                    dynamic_renames[col] = f"{data_struct}__{cleaned}"
+
+        renames = {**self.renames, **dynamic_renames}
+
+        if self.dep.columns is None:
+            select_cols = None
+        else:
+            renamed_selected_cols = [renames.get(col, col) for col in self.dep.columns]
+            select_cols = [
+                *self.renamed_id_columns,
+                *renamed_selected_cols,
+                *self.renamed_metaxy_cols,
+                *dynamic_renames.values(),
+            ]
+
         return (
             RenamedDataFrame(
                 df=df, id_columns=list(self.upstream_feature_spec.id_columns)
             )
-            .rename(self.renames)
+            .rename(renames)
             .filter(combined_filters if combined_filters else None)
-            .select(self.renamed_columns)
+            .select(select_cols)
         )
 
     def rename_upstream_metaxy_column(self, column_name: str) -> str:

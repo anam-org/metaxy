@@ -15,6 +15,7 @@ not to test every possible combination of hash algorithm × store × truncation.
 
 from __future__ import annotations
 
+import json
 import warnings
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, TypeAlias
@@ -83,18 +84,6 @@ class FeaturePlanCases:
 
         return graph, upstream_features, child_plan
 
-
-def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
-    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
-    dtype = df.schema[column_name]
-    if isinstance(dtype, pl.Struct):
-        return df
-
-    converted = df[column_name].map_elements(
-        lambda v: v if isinstance(v, dict) else json.loads(v)
-    )
-    return df.with_columns(converted.alias(column_name))
-
     def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanOutput:
         """Feature plan with two upstream dependencies."""
 
@@ -138,6 +127,18 @@ def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
         }
 
         return graph, upstream_features, child_plan
+
+
+def _ensure_struct_column(df: pl.DataFrame, column_name: str) -> pl.DataFrame:
+    """Ensure the specified column is a Struct; decode JSON strings if necessary."""
+    dtype = df.schema[column_name]
+    if isinstance(dtype, pl.Struct):
+        return df
+
+    converted = df[column_name].map_elements(
+        lambda v: v if isinstance(v, dict) else json.loads(v)
+    )
+    return df.with_columns(converted.alias(column_name))
 
 
 # Removed: TruncationCases and metaxy_config fixture
@@ -197,20 +198,6 @@ def setup_store_with_data(
 # Removed: EmptyStoreCases with hash algorithm parametrization
 # Now using simplified fixtures from conftest.py
 # Hash algorithm × store combinations are tested in test_hash_algorithms.py
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_postgres(self, hash_algorithm: HashAlgorithm, postgres_db: str):
-        try:
-            return PostgresMetadataStore(
-                connection_string=postgres_db,
-                hash_algorithm=hash_algorithm,
-                prefer_native=True,
-                enable_pgcrypto=True,  # Enable pgcrypto for SHA256 support
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {PostgresMetadataStore}"
-            )
 
 
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
