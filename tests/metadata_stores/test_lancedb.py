@@ -15,12 +15,11 @@ from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 @pytest.fixture(autouse=True)
 def _lancedb_project(config):
     """Ensure LanceDB tests run with the same project as test features."""
-    original_project = config.project
-    config.project = "test_stores"
-    MetaxyConfig.set(config)
+    original_config = MetaxyConfig.get()
+    project_config = config.model_copy(update={"project": "test_stores"})
+    MetaxyConfig.set(project_config)
     yield
-    config.project = original_project
-    MetaxyConfig.set(config)
+    MetaxyConfig.set(original_config)
 
 
 def test_lancedb_write_and_read(tmp_path, test_graph, test_features) -> None:

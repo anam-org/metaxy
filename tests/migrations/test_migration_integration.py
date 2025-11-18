@@ -46,8 +46,11 @@ def migrate_store_to_graph(
     migration detection can find the previous snapshot.
     """
     new_store = InMemoryMetadataStore()
-    # Copy all storage including system tables
-    new_store._storage = source_store._storage.copy()
+    # Copy all storage including system tables (clone DataFrames for isolation)
+    new_store._storage = {
+        key: df.clone()
+        for key, df in source_store._storage.items()
+    }
     # System tables are already copied since they're part of _storage
     return new_store
 
