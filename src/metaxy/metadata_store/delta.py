@@ -61,6 +61,9 @@ class DeltaMetadataStore(MetadataStore):
         *,
         storage_options: dict[str, Any] | None = None,
         fallback_stores: list[MetadataStore] | None = None,
+        layout: str = "flat",
+        streaming_chunk_size: int | None = None,
+        delta_write_options: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -75,23 +78,39 @@ class DeltaMetadataStore(MetadataStore):
                 For Azure: AZURE_* environment variables
                 For GCS: GOOGLE_* environment variables
             fallback_stores: Ordered list of read-only fallback stores.
+            layout: Directory layout for feature tables. Options:
+                - "flat" (default): Feature tables stored as "{part1}__{part2}__..." directories
+                - "nested": Feature tables stored in nested directories "{part1}/{part2}/..."
+            streaming_chunk_size: If specified, enables streaming writes for lazy frames,
+                processing data in chunks of this size instead of collecting the entire frame.
+                Useful for large datasets that don't fit in memory.
+            delta_write_options: Additional options passed to deltalake.write_deltalake().
+                Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}
             **kwargs: Forwarded to [metaxy.metadata_store.base.MetadataStore][].
         """
         self.storage_options = storage_options or {}
         self._display_root = str(root_path)
+        self.layout = layout
+        self.streaming_chunk_size = streaming_chunk_size
+        self.delta_write_options = delta_write_options or {}
 
         root_str = str(root_path)
-        self._is_remote = "://" in root_str and not root_str.startswith("file://")
+        self._is_remote = "://" in root_str and not root_str.startswith(
+            ("file://", "local://")
+        )
 
         if self._is_remote:
             # Remote path (S3, Azure, GCS, etc.)
             self._local_root_path = None
             self._root_uri = root_str.rstrip("/")
         else:
-            # Local path (including file:// URLs)
+            # Local path (including file:// and local:// URLs)
             if root_str.startswith("file://"):
                 # Strip file:// prefix
                 root_str = root_str[7:]
+            elif root_str.startswith("local://"):
+                # Strip local:// prefix
+                root_str = root_str[8:]
             local_path = Path(root_str).expanduser().resolve()
             self._local_root_path = local_path
             self._root_uri = str(local_path)
@@ -136,11 +155,11 @@ class DeltaMetadataStore(MetadataStore):
             pass
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:  # noqa: ARG002
         """Open the Delta Lake store.
 
         Args:
-            mode: Access mode for this connection session.
+            mode: Access mode for this connection session (accepted for consistency but not used).
 
         Yields:
             Self: The store instance with connection open
@@ -216,18 +235,31 @@ class DeltaMetadataStore(MetadataStore):
         """
         # Table names are created by joining parts with "__"
         parts = table_name.split("__")
+        # Restore system table prefix (table_name converts hyphens to underscores)
+        if parts and parts[0] == "metaxy_system":
+            parts[0] = "metaxy-system"
         return FeatureKey(parts)
 
     def _feature_uri(self, feature_key: FeatureKey) -> str:
         """Return the URI/path used by deltalake for this feature."""
-        table_name = feature_key.table_name
-        return os.path.join(self._root_uri, table_name)
+        if self.layout == "nested":
+            # Nested layout: store in directories like "part1/part2/part3"
+            table_path = "/".join(feature_key.parts)
+        else:
+            # Flat layout (default): store in directories like "part1__part2__part3"
+            table_path = feature_key.table_name
+        return os.path.join(self._root_uri, table_path)
 
     def _feature_local_path(self, feature_key: FeatureKey) -> Path | None:
         """Return filesystem path when operating on local roots."""
         if self._local_root_path is None:
             return None
-        return self._local_root_path / feature_key.table_name
+        if self.layout == "nested":
+            # Nested layout: use Path objects to create nested directories
+            return self._local_root_path / Path(*feature_key.parts)
+        else:
+            # Flat layout (default)
+            return self._local_root_path / feature_key.table_name
 
     def _table_exists(self, table_uri: str) -> bool:
         """Check whether the provided URI already contains a Delta table.
@@ -276,13 +308,22 @@ class DeltaMetadataStore(MetadataStore):
 
         # Delta automatically creates parent directories, no need to do it manually
 
+        # Merge default write options with custom options
+        # Default: schema_mode="merge" to allow schema evolution
+        write_kwargs: dict[str, Any] = {
+            "mode": "append",
+            "schema_mode": "merge",  # Default to allow schema evolution
+            "storage_options": self.storage_options or None,
+        }
+        # Override with custom options
+        write_kwargs.update(self.delta_write_options)
+
         # Use deltalake.write_deltalake for all writes
+        # Type ignore: delta_write_options allows arbitrary user-provided parameters
         deltalake.write_deltalake(
             table_uri,
             df_polars,
-            mode="append",
-            schema_mode="merge",
-            storage_options=self.storage_options or None,
+            **write_kwargs,  # type: ignore[arg-type]
         )
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
@@ -344,26 +385,28 @@ class DeltaMetadataStore(MetadataStore):
             storage_options=self.storage_options or None,
         )
 
-        # Apply column selection early if specified (pushdown)
-        if cols_to_read is not None:
-            lf = lf.select(cols_to_read)
-
         # Convert to Narwhals
         nw_lazy = nw.from_native(lf)
 
-        # Apply filters
+        # Apply filters first (before column selection)
         if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
+            # Only filter if column exists
+            if "metaxy_feature_version" in nw_lazy.collect_schema().names():
+                nw_lazy = nw_lazy.filter(
+                    nw.col("metaxy_feature_version") == feature_version
+                )
 
         if filters is not None:
             for expr in filters:
                 nw_lazy = nw_lazy.filter(expr)
 
-        # Apply final column selection if needed (after filtering)
+        # Apply column selection last (after filtering)
         if columns is not None:
-            nw_lazy = nw_lazy.select(columns)
+            # Only select columns that exist
+            available_cols = nw_lazy.collect_schema().names()
+            cols_to_select = [col for col in columns if col in available_cols]
+            if cols_to_select:
+                nw_lazy = nw_lazy.select(cols_to_select)
 
         return nw_lazy
 
@@ -382,18 +425,38 @@ class DeltaMetadataStore(MetadataStore):
             return []
 
         feature_keys: list[FeatureKey] = []
-        for child in self._local_root_path.iterdir():
-            if child.is_dir() and (child / "_delta_log").exists():
+
+        if self.layout == "nested":
+            # Nested layout: recursively search for _delta_log directories
+            for delta_log_dir in self._local_root_path.rglob("_delta_log"):
+                feature_dir = delta_log_dir.parent
                 try:
-                    feature_key = self._table_name_to_feature_key(child.name)
+                    # Get relative path from root and convert to feature key
+                    rel_path = feature_dir.relative_to(self._local_root_path)
+                    parts = list(rel_path.parts)
+                    feature_key = FeatureKey(parts)
                     if not self._is_system_table(feature_key):
                         feature_keys.append(feature_key)
                 except ValueError as exc:
                     warnings.warn(
-                        f"Could not parse Delta table name '{child.name}' as FeatureKey: {exc}",
+                        f"Could not parse Delta table path '{feature_dir}' as FeatureKey: {exc}",
                         UserWarning,
                         stacklevel=2,
                     )
+        else:
+            # Flat layout: look for direct children only
+            for child in self._local_root_path.iterdir():
+                if child.is_dir() and (child / "_delta_log").exists():
+                    try:
+                        feature_key = self._table_name_to_feature_key(child.name)
+                        if not self._is_system_table(feature_key):
+                            feature_keys.append(feature_key)
+                    except ValueError as exc:
+                        warnings.warn(
+                            f"Could not parse Delta table name '{child.name}' as FeatureKey: {exc}",
+                            UserWarning,
+                            stacklevel=2,
+                        )
         return sorted(feature_keys)
 
     def _list_features_from_object_store(self) -> list[FeatureKey]:
@@ -419,4 +482,5 @@ class DeltaMetadataStore(MetadataStore):
         details = [f"path={self._display_root}"]
         if self.storage_options:
             details.append("storage_options=***")
+        details.append(f"layout={self.layout}")
         return f"DeltaMetadataStore({', '.join(details)})"

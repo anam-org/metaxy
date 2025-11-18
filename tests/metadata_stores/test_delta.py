@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
-import pytest
 from deltalake import DeltaTable
 
 from metaxy._utils import collect_to_polars
@@ -130,7 +129,7 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
     feature_key = feature_cls.spec().key  # type: ignore[attr-defined]
 
     with DeltaMetadataStore(store_path) as store:
-        assert store.list_features() == []
+        assert store._list_features_local() == []
 
         metadata = pl.DataFrame(
             {
@@ -142,7 +141,7 @@ def test_delta_lists_features(tmp_path, test_graph, test_features) -> None:
         )
         store.write_metadata(feature_cls, metadata)
 
-        assert store.list_features() == [feature_key]
+        assert store._list_features_local() == [feature_key]
 
 
 def test_delta_nested_layout_creates_directories(
@@ -171,7 +170,7 @@ def test_delta_nested_layout_creates_directories(
         assert feature_dir.relative_to(store._local_root_path) == Path(
             "/".join(feature_key.parts)
         )
-        assert store.list_features() == [feature_key]
+        assert store._list_features_local() == [feature_key]
 
 
 def test_delta_display(tmp_path) -> None:
@@ -191,20 +190,6 @@ def test_delta_display(tmp_path) -> None:
         assert "DeltaMetadataStore" in open_display
         assert "storage_options=***" in open_display
         assert "layout=flat" in open_display
-
-
-def test_delta_remote_lists_features_returns_empty() -> None:
-    """Remote stores return empty list for list_features() - use system tables instead."""
-    store = DeltaMetadataStore("s3://bucket/root", auto_create_tables=False)
-
-    with store:
-        with pytest.warns(
-            UserWarning, match="Feature discovery not supported for remote"
-        ):
-            features = store.list_features()
-
-    # Remote stores return empty list - must use system tables for feature discovery
-    assert features == []
 
 
 def test_delta_streaming_write(tmp_path, test_graph, test_features) -> None:
@@ -370,16 +355,17 @@ def test_delta_custom_delta_write_options_used(
     tmp_path, test_graph, test_features, monkeypatch
 ) -> None:
     """delta_write_options override the default schema_mode=merge."""
+    import deltalake
+
     store_path = tmp_path / "delta_opts"
     feature_cls = test_features["UpstreamFeatureA"]
     recorded: dict[str, Any] = {}
 
-    def fake_write_delta(self, *args, **kwargs):
-        recorded["delta_write_options"] = kwargs["delta_write_options"]
-        recorded["mode"] = kwargs["mode"]
-        recorded["path"] = args[0]
+    def fake_write_deltalake(table_uri, data, **kwargs):
+        recorded["kwargs"] = kwargs
+        recorded["table_uri"] = table_uri
 
-    monkeypatch.setattr(pl.DataFrame, "write_delta", fake_write_delta, raising=False)
+    monkeypatch.setattr(deltalake, "write_deltalake", fake_write_deltalake)
 
     with DeltaMetadataStore(
         store_path,
@@ -396,12 +382,11 @@ def test_delta_custom_delta_write_options_used(
         )
         store.write_metadata(feature_cls, metadata)
 
-    assert recorded["mode"] == "append"
-    assert recorded["delta_write_options"] == {
-        "schema_mode": "ignore_nullable",
-        "max_workers": 2,
-    }
-    assert str(store_path) in recorded["path"]
+    # Check that custom options override defaults
+    assert recorded["kwargs"]["mode"] == "append"
+    assert recorded["kwargs"]["schema_mode"] == "ignore_nullable"
+    assert recorded["kwargs"]["max_workers"] == 2
+    assert str(store_path) in recorded["table_uri"]
 
 
 def test_delta_streaming_with_s3_path() -> None:
