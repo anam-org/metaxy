@@ -399,8 +399,8 @@ toml = [
 
 [[package]]
 name = "cyclopts"
-version = "4.2.2.dev7+g44dd449e3"
-source = { git = "https://github.com/BrianPugh/cyclopts.git?branch=mkdocs-plugin#44dd449e3833c4b8cebe3fab40f2252dc9faf94d" }
+version = "4.2.4.dev27+g4175ac11c"
+source = { git = "https://github.com/BrianPugh/cyclopts.git?branch=mkdocs-plugin#4175ac11c98a32d85e5d26cc444fe998c62f6a33" }
 dependencies = [
     { name = "attrs" },
     { name = "docstring-parser" },
@@ -414,6 +414,7 @@ dependencies = [
 mkdocs = [
     { name = "markdown" },
     { name = "mkdocs" },
+    { name = "pymdown-extensions" },
 ]
 
 [[package]]
@@ -2324,6 +2325,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/71/70/23b021c950c2addd24ec408e9ab05d59b035b39d97cdc1130e1bce647bb6/pydantic_core-2.41.5.tar.gz", hash = "sha256:08daa51ea16ad373ffd5e7606252cc32f07bc72b28284b6bc9c6df804816476e", size = 460952, upload-time = "2025-11-04T13:43:49.098Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c6/90/32c9941e728d564b411d574d8ee0cf09b12ec978cb22b294995bae5549a5/pydantic_core-2.41.5-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:77b63866ca88d804225eaa4af3e664c5faf3568cea95360d21f4725ab6e07146", size = 2107298, upload-time = "2025-11-04T13:39:04.116Z" },
     { url = "https://files.pythonhosted.org/packages/fb/a8/61c96a77fe28993d9a6fb0f4127e05430a267b235a124545d79fea46dd65/pydantic_core-2.41.5-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:dfa8a0c812ac681395907e71e1274819dec685fec28273a28905df579ef137e2", size = 1901475, upload-time = "2025-11-04T13:39:06.055Z" },
