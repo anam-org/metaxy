@@ -934,10 +934,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Table of Contents">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metaxy-shell" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy shell
@@ -945,8 +944,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy migrations
@@ -1014,8 +1013,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-graph" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy graph
@@ -1065,8 +1064,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-graph-diff" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy graph-diff
@@ -1089,8 +1088,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-list" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy list
@@ -1113,8 +1112,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy metadata
@@ -1139,11 +1138,6 @@
       metaxy metadata drop
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -1835,10 +1829,9 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Table of Contents">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
+</li>
+      
+        <li class="md-nav__item">
   <a href="#metaxy-shell" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy shell
@@ -1846,8 +1839,8 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy migrations
@@ -1915,8 +1908,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-graph" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy graph
@@ -1966,8 +1959,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-graph-diff" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy graph-diff
@@ -1990,8 +1983,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-list" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy list
@@ -2014,8 +2007,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#metaxy-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       metaxy metadata
@@ -2040,11 +2033,6 @@
       metaxy metadata drop
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2150,16 +2138,8 @@
 </ul>
 </li>
 </ul>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>COMMAND
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy COMMAND</span>
 </span></code></pre></div>
-<p><strong>Arguments</strong>:</p>
-<p><strong>Options</strong>:</p>
-<ul>
-<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
-<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
-<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: --no-all-projects]</em></li>
-</ul>
 <p><strong>Commands</strong>:</p>
 <ul>
 <li><code>graph</code>: Manage feature graphs</li>
@@ -2169,301 +2149,265 @@
 <li><code>migrations</code>: Metadata migration commands</li>
 <li><code>shell</code>: Start interactive shell.</li>
 </ul>
-<h3 id="metaxy-shell"><code>metaxy shell</code><a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h3>
-<p>Start interactive shell.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>shell
-</span></code></pre></div>
-<h3 id="metaxy-migrations"><code>metaxy migrations</code><a class="headerlink" href="#metaxy-migrations" title="Permanent link">&para;</a></h3>
-<p>Metadata migration commands</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>migrations<span class="w"> </span>COMMAND
-</span></code></pre></div>
-<p><strong>Commands</strong>:</p>
-<ul>
-<li><code>apply</code>: Apply migration(s) from YAML files.</li>
-<li><code>describe</code>: Show verbose description of migration(s).</li>
-<li><code>explain</code>: Show detailed diff for a migration.</li>
-<li><code>generate</code>: Generate migration from detected feature changes.</li>
-<li><code>list</code>: List all migrations in chain order as defined in code.</li>
-<li><code>status</code>: Show migrations and execution status.</li>
-</ul>
-<h4 id="metaxy-migrations-generate"><code>metaxy migrations generate</code><a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h4>
-<p>Generate migration from detected feature changes.</p>
-<p>Compares the latest snapshot in the store (or specified from_snapshot) with the current active graph to detect changes.</p>
-<p>The migration is recorded in the system tables (not a YAML file).</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>LIST<span class="o">[</span>STR<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
-</span></code></pre></div>
 <p><strong>Arguments</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>--OP</code>: Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation  <strong>[required]</strong></li>
+<li><code>--config-file</code>: Global option. Path to the Metaxy configuration file. Defaults to auto-discovery.  <em>[env: METAXY_CONFIG_FILE]</em></li>
+<li><code>--project</code>: Global option. Metaxy project to work with. Some commands may forbid setting this argument.  <em>[env: METAXY_PROJECT]</em></li>
+<li><code>--all-projects, --no-all-projects</code>: Global option. Operate on all available Metaxy projects. Some commands may forbid setting this argument.  <em>[env: METAXY_ALL_PROJECTS]</em>  <em>[default: --no-all-projects]</em></li>
 </ul>
-<p><strong>Options</strong>:</p>
+<h2 id="metaxy-shell">metaxy shell<a class="headerlink" href="#metaxy-shell" title="Permanent link">&para;</a></h2>
+<p>Start interactive shell.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy shell</span>
+</span></code></pre></div>
+<h2 id="metaxy-migrations">metaxy migrations<a class="headerlink" href="#metaxy-migrations" title="Permanent link">&para;</a></h2>
+<p>Metadata migration commands</p>
+<h3 id="metaxy-migrations-generate">metaxy migrations generate<a class="headerlink" href="#metaxy-migrations-generate" title="Permanent link">&para;</a></h3>
+<p>Generate migration from detected feature changes.</p>
+<p>Compares the latest snapshot in the store (or specified from_snapshot)
+with the current active graph to detect changes.</p>
+<p>The migration is recorded in the system tables (not a YAML file).</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations generate --op LIST[STR] [OPTIONS]</span>
+</span></code></pre></div>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>--name</code>: Migration name (creates {timestamp}_{name} ID)</li>
 <li><code>--store</code>: Store name (defaults to default)</li>
 <li><code>--from-snapshot</code>: Compare from this historical snapshot version (defaults to latest)</li>
+<li><code>--OP</code>: Operation class path to use (can be repeated). Example: metaxy.migrations.ops.DataVersionReconciliation  <strong>[required]</strong></li>
 </ul>
-<h4 id="metaxy-migrations-apply"><code>metaxy migrations apply</code><a class="headerlink" href="#metaxy-migrations-apply" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-migrations-apply">metaxy migrations apply<a class="headerlink" href="#metaxy-migrations-apply" title="Permanent link">&para;</a></h3>
 <p>Apply migration(s) from YAML files.</p>
-<p>Reads migration definitions from .metaxy/migrations/ directory (git). Follows parent chain to ensure correct order. 
+<p>Reads migration definitions from .metaxy/migrations/ directory (git).
+Follows parent chain to ensure correct order.
 Tracks execution state in database (events).</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations apply [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to apply (applies all unapplied if not specified)</li>
 <li><code>STORE, --store</code>: Metadata store to use.</li>
 <li><code>--dry-run, --no-dry-run</code>: Preview changes without executing  <em>[default: --no-dry-run]</em></li>
 </ul>
-<h4 id="metaxy-migrations-status"><code>metaxy migrations status</code><a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-migrations-status">metaxy migrations status<a class="headerlink" href="#metaxy-migrations-status" title="Permanent link">&para;</a></h3>
 <p>Show migrations and execution status.</p>
-<p>Reads migration definitions from YAML files (git). Shows execution status from database events. Displays the parent 
-chain in order.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>status
+<p>Reads migration definitions from YAML files (git).
+Shows execution status from database events.
+Displays the parent chain in order.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations status</span>
 </span></code></pre></div>
-<h4 id="metaxy-migrations-list"><code>metaxy migrations list</code><a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-migrations-list">metaxy migrations list<a class="headerlink" href="#metaxy-migrations-list" title="Permanent link">&para;</a></h3>
 <p>List all migrations in chain order as defined in code.</p>
 <p>Displays a simple table showing migration ID, creation time, and operations.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>list
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations list</span>
 </span></code></pre></div>
-<h4 id="metaxy-migrations-explain"><code>metaxy migrations explain</code><a class="headerlink" href="#metaxy-migrations-explain" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-migrations-explain">metaxy migrations explain<a class="headerlink" href="#metaxy-migrations-explain" title="Permanent link">&para;</a></h3>
 <p>Show detailed diff for a migration.</p>
-<p>Reads migration from YAML file. Computes and displays the GraphDiff between the two snapshots on-demand.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>explain<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Reads migration from YAML file.
+Computes and displays the GraphDiff between the two snapshots on-demand.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations explain [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-ID, --migration-id</code>: Migration ID to explain (explains latest if not specified)</li>
 </ul>
-<h4 id="metaxy-migrations-describe"><code>metaxy migrations describe</code><a class="headerlink" href="#metaxy-migrations-describe" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-migrations-describe">metaxy migrations describe<a class="headerlink" href="#metaxy-migrations-describe" title="Permanent link">&para;</a></h3>
 <p>Show verbose description of migration(s).</p>
-<p>Displays detailed information about what the migration will do: - Migration metadata (ID, parent, snapshots, created 
-timestamp) - Operations to execute - Affected features with row counts - Execution status if already run</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>migrations<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Displays detailed information about what the migration will do:
+- Migration metadata (ID, parent, snapshots, created timestamp)
+- Operations to execute
+- Affected features with row counts
+- Execution status if already run</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy migrations describe [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>MIGRATION-IDS, --migration-ids, --empty-migration-ids</code>: Migration IDs to describe (default: all migrations in order)  <em>[default: []]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use.</li>
 </ul>
-<h3 id="metaxy-graph"><code>metaxy graph</code><a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h3>
+<h2 id="metaxy-graph">metaxy graph<a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h2>
 <p>Manage feature graphs</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>graph<span class="w"> </span>COMMAND
-</span></code></pre></div>
-<p><strong>Commands</strong>:</p>
-<ul>
-<li><code>describe</code>: Describe a graph snapshot.</li>
-<li><code>history</code>: Show history of recorded graph snapshots.</li>
-<li><code>push</code>: Record all feature versions (push graph snapshot).</li>
-<li><code>render</code>: Render feature graph visualization.</li>
-</ul>
-<h4 id="metaxy-graph-push"><code>metaxy graph push</code><a class="headerlink" href="#metaxy-graph-push" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-graph-push">metaxy graph push<a class="headerlink" href="#metaxy-graph-push" title="Permanent link">&para;</a></h3>
 <p>Record all feature versions (push graph snapshot).</p>
-<p>Records all features in the active graph to the metadata store with a deterministic snapshot version. This should be run
-after deploying new feature definitions.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>push<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Records all features in the active graph to the metadata store
+with a deterministic snapshot version. This should be run after deploying
+new feature definitions.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph push [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
-<h4 id="metaxy-graph-history"><code>metaxy graph history</code><a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-graph-history">metaxy graph history<a class="headerlink" href="#metaxy-graph-history" title="Permanent link">&para;</a></h3>
 <p>Show history of recorded graph snapshots.</p>
-<p>Displays all recorded graph snapshots from the metadata store, showing snapshot versions, when they were recorded, and 
-feature counts.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span><span class="nb">history</span><span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Displays all recorded graph snapshots from the metadata store,
+showing snapshot versions, when they were recorded, and feature counts.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph history [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 <li><code>LIMIT, --limit</code>: Limit number of snapshots to show (defaults to all)</li>
 </ul>
-<h4 id="metaxy-graph-describe"><code>metaxy graph describe</code><a class="headerlink" href="#metaxy-graph-describe" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-graph-describe">metaxy graph describe<a class="headerlink" href="#metaxy-graph-describe" title="Permanent link">&para;</a></h3>
 <p>Describe a graph snapshot.</p>
-<p>Shows detailed information about a graph snapshot including: - Feature count (optionally filtered by project) - Graph 
-depth (longest dependency chain) - Root features (features with no dependencies) - Leaf features (features with no 
-dependents) - Project breakdown (if multi-project)</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>describe<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Shows detailed information about a graph snapshot including:
+- Feature count (optionally filtered by project)
+- Graph depth (longest dependency chain)
+- Root features (features with no dependencies)
+- Leaf features (features with no dependents)
+- Project breakdown (if multi-project)</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph describe [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>SNAPSHOT, --snapshot</code>: Snapshot version to describe (defaults to current graph from code)</li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 </ul>
-<h4 id="metaxy-graph-render"><code>metaxy graph render</code><a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-graph-render">metaxy graph render<a class="headerlink" href="#metaxy-graph-render" title="Permanent link">&para;</a></h3>
 <p>Render feature graph visualization.</p>
-<p>Visualize the feature graph in different formats: - terminal: Terminal rendering with two types:</p>
-<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span><span class="n">graph</span> <span class="p">(</span><span class="n">default</span><span class="p">):</span> <span class="n">Hierarchical</span> <span class="n">tree</span> <span class="n">view</span>  <span class="n">cards</span><span class="p">:</span> <span class="n">Panel</span><span class="o">/</span><span class="n">card</span><span class="o">-</span><span class="n">based</span> <span class="n">view</span> <span class="k">with</span> <span class="n">dependency</span> <span class="n">edges</span>
-</code></pre></div>
-<p>• mermaid: Mermaid flowchart markup
- • graphviz: Graphviz DOT format</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Visualize the feature graph in different formats:
+- terminal: Terminal rendering with two types:
+  - graph (default): Hierarchical tree view
+  - cards: Panel/card-based view with dependency edges
+- mermaid: Mermaid flowchart markup
+- graphviz: Graphviz DOT format</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph render [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>SHOW-FIELDS, --show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
-<li><code>SHOW-FEATURE-VERSIONS, --show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
-<li><code>SHOW-FIELD-VERSIONS, --show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
-<li><code>SHOW-CODE-VERSIONS, --show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
-<li><code>SHOW-SNAPSHOT-VERSION, --show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
-<li><code>HASH-LENGTH, --hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
-<li><code>DIRECTION, --direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
-<li><code>FEATURE, --feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
-<li><code>UP, --up</code>: Number of dependency levels to render upstream (default: all)</li>
-<li><code>DOWN, --down</code>: Number of dependency levels to render downstream (default: all)</li>
-<li><code>PROJECT, --project</code>: Filter nodes by project (show only features from this project)</li>
-<li><code>SHOW-PROJECTS, --show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
 <li><code>-f, --format</code>: Output format: terminal, mermaid, or graphviz  <em>[default: terminal]</em></li>
 <li><code>-t, --type</code>: Terminal rendering type: graph or cards (only for --format terminal)  <em>[choices: graph, cards]</em>  <em>[default: graph]</em></li>
 <li><code>-o, --output</code>: Output file path (default: stdout)</li>
-<li><code>SNAPSHOT, --snapshot</code>: Snapshot version to render (default: current graph from code)</li>
-<li><code>STORE, --store</code>: Metadata store to use (for loading historical snapshots)</li>
-<li><code>MINIMAL, --minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
-<li><code>VERBOSE, --verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
+<li><code>--snapshot</code>: Snapshot version to render (default: current graph from code)</li>
+<li><code>--store</code>: Metadata store to use (for loading historical snapshots)</li>
+<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
+<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
+<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
+<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
+<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
+<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
+<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
+<li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
+<li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
+<li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
+<li><code>--up</code>: Number of dependency levels to render upstream (default: all)</li>
+<li><code>--down</code>: Number of dependency levels to render downstream (default: all)</li>
+<li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
+<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
 </ul>
-<h3 id="metaxy-graph-diff"><code>metaxy graph-diff</code><a class="headerlink" href="#metaxy-graph-diff" title="Permanent link">&para;</a></h3>
+<h2 id="metaxy-graph-diff">metaxy graph-diff<a class="headerlink" href="#metaxy-graph-diff" title="Permanent link">&para;</a></h2>
 <p>Compare and visualize graph snapshots</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>graph-diff<span class="w"> </span>COMMAND
-</span></code></pre></div>
-<p><strong>Commands</strong>:</p>
-<ul>
-<li><code>render</code>: Render merged graph visualization comparing two snapshots.</li>
-</ul>
-<h4 id="metaxy-graph-diff-render"><code>metaxy graph-diff render</code><a class="headerlink" href="#metaxy-graph-diff-render" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-graph-diff-render">metaxy graph-diff render<a class="headerlink" href="#metaxy-graph-diff-render" title="Permanent link">&para;</a></h3>
 <p>Render merged graph visualization comparing two snapshots.</p>
-<p>Shows all features color-coded by status (added/removed/changed/unchanged). Uses the unified rendering system - same 
-renderers as 'metaxy graph render'.</p>
-<p>Special snapshot literals: - "latest": Most recent snapshot in the store - "current": Current graph state from code</p>
-<p>Output formats: - terminal: Hierarchical tree view (default) - cards: Panel/card-based view - mermaid: Mermaid flowchart
-diagram - graphviz: Graphviz DOT format</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>FROM-SNAPSHOT<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Shows all features color-coded by status (added/removed/changed/unchanged).
+Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
+<p>Special snapshot literals:
+- "latest": Most recent snapshot in the store
+- "current": Current graph state from code</p>
+<p>Output formats:
+- terminal: Hierarchical tree view (default)
+- cards: Panel/card-based view
+- mermaid: Mermaid flowchart diagram
+- graphviz: Graphviz DOT format</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph-diff render [OPTIONS] FROM-SNAPSHOT [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Arguments</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>FROM-SNAPSHOT</code>: First snapshot to compare (can be "latest", "current", or snapshot hash)  <strong>[required]</strong></li>
-</ul>
-<p><strong>Options</strong>:</p>
-<ul>
 <li><code>TO-SNAPSHOT, --to-snapshot</code>: Second snapshot to compare (can be "latest", "current", or snapshot hash)  <em>[default: current]</em></li>
 <li><code>STORE, --store</code>: Metadata store to use (defaults to configured default store)</li>
 <li><code>-f, --format</code>: Output format: terminal, cards, mermaid, graphviz, json, or yaml  <em>[choices: terminal, cards, mermaid, graphviz, json, yaml]</em>  <em>[default: terminal]</em></li>
 <li><code>-o, --output</code>: Output file path (default: stdout)</li>
-<li><code>SHOW-FIELDS, --show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
-<li><code>SHOW-FEATURE-VERSIONS, --show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
-<li><code>SHOW-FIELD-VERSIONS, --show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
-<li><code>SHOW-CODE-VERSIONS, --show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
-<li><code>SHOW-SNAPSHOT-VERSION, --show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
-<li><code>HASH-LENGTH, --hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
-<li><code>DIRECTION, --direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
-<li><code>FEATURE, --feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
-<li><code>UP, --up</code>: Number of dependency levels to render upstream (default: all)</li>
-<li><code>DOWN, --down</code>: Number of dependency levels to render downstream (default: all)</li>
-<li><code>PROJECT, --project</code>: Filter nodes by project (show only features from this project)</li>
-<li><code>SHOW-PROJECTS, --show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
-<li><code>MINIMAL, --minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
-<li><code>VERBOSE, --verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
+<li><code>--minimal, --no-minimal</code>: Minimal output: only feature keys and dependencies  <em>[default: --no-minimal]</em></li>
+<li><code>--verbose, --no-verbose</code>: Verbose output: show all available information  <em>[default: --no-verbose]</em></li>
+<li><code>--show-fields, --no-show-fields</code>: Show field-level details within features  <em>[default: --show-fields]</em></li>
+<li><code>--show-feature-versions, --no-show-feature-versions</code>: Show feature version hashes  <em>[default: --show-feature-versions]</em></li>
+<li><code>--show-field-versions, --no-show-field-versions</code>: Show field version hashes (requires --show-fields)  <em>[default: --show-field-versions]</em></li>
+<li><code>--show-code-versions, --no-show-code-versions</code>: Show feature and field code versions  <em>[default: --no-show-code-versions]</em></li>
+<li><code>--show-snapshot-version, --no-show-snapshot-version</code>: Show graph snapshot version in output  <em>[default: --show-snapshot-version]</em></li>
+<li><code>--hash-length</code>: Number of characters to show for version hashes (0 for full)  <em>[default: 8]</em></li>
+<li><code>--direction</code>: Graph layout direction: TB (top-bottom) or LR (left-right)  <em>[default: TB]</em></li>
+<li><code>--feature</code>: Focus on a specific feature (e.g., 'video/files' or 'video__files')</li>
+<li><code>--up</code>: Number of dependency levels to render upstream (default: all)</li>
+<li><code>--down</code>: Number of dependency levels to render downstream (default: all)</li>
+<li><code>--project</code>: Filter nodes by project (show only features from this project)</li>
+<li><code>--show-projects, --no-show-projects</code>: Show project names in feature nodes  <em>[default: --show-projects]</em></li>
 </ul>
-<h3 id="metaxy-list"><code>metaxy list</code><a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h3>
+<h2 id="metaxy-list">metaxy list<a class="headerlink" href="#metaxy-list" title="Permanent link">&para;</a></h2>
 <p>List Metaxy entities</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>list<span class="w"> </span>COMMAND
-</span></code></pre></div>
-<p><strong>Commands</strong>:</p>
-<ul>
-<li><code>features</code>: List Metaxy features.</li>
-</ul>
-<h4 id="metaxy-list-features"><code>metaxy list features</code><a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-list-features">metaxy list features<a class="headerlink" href="#metaxy-list-features" title="Permanent link">&para;</a></h3>
 <p>List Metaxy features.</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>list<span class="w"> </span>features
+<div class="language-console highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy list features</span>
 </span></code></pre></div>
-<h3 id="metaxy-metadata"><code>metaxy metadata</code><a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h3>
+<h2 id="metaxy-metadata">metaxy metadata<a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h2>
 <p>Manage Metaxy metadata</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metadata<span class="w"> </span>COMMAND
-</span></code></pre></div>
-<p><strong>Commands</strong>:</p>
-<ul>
-<li><code>copy</code>: Copy metadata between stores.</li>
-<li><code>drop</code>: Drop metadata from a store.</li>
-</ul>
-<h4 id="metaxy-metadata-copy"><code>metaxy metadata copy</code><a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
 <p>Copy metadata between stores.</p>
-<p>Copies metadata for specified features from one store to another, optionally using a historical version. Useful for: - 
-Migrating data between environments - Backfilling metadata - Copying specific feature versions</p>
+<p>Copies metadata for specified features from one store to another,
+optionally using a historical version. Useful for:
+- Migrating data between environments
+- Backfilling metadata
+- Copying specific feature versions</p>
 <p>Incremental Mode (default):
-    By default, performs an anti-join on sample_uid to skip rows that already exist in the destination for the same 
-snapshot_version. This prevents duplicate writes.  Disabling incremental (--no-incremental) may improve performance 
-when: - The destination store is empty or has no overlap with source - The destination store has eventual deduplication</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><a href="#__codelineno-19-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>copy<span class="w"> </span>FROM<span class="w"> </span>TO<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+    By default, performs an anti-join on sample_uid to skip rows that already exist
+    in the destination for the same snapshot_version. This prevents duplicate writes.</p>
+<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span><span class="n">Disabling</span> <span class="n">incremental</span> <span class="p">(</span><span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">incremental</span><span class="p">)</span> <span class="n">may</span> <span class="n">improve</span> <span class="n">performance</span> <span class="n">when</span><span class="p">:</span>
+<span class="linenos" data-linenos="2 "></span><span class="o">-</span> <span class="n">The</span> <span class="n">destination</span> <span class="n">store</span> <span class="ow">is</span> <span class="n">empty</span> <span class="ow">or</span> <span class="n">has</span> <span class="n">no</span> <span class="n">overlap</span> <span class="k">with</span> <span class="n">source</span>
+<span class="linenos" data-linenos="3 "></span><span class="o">-</span> <span class="n">The</span> <span class="n">destination</span> <span class="n">store</span> <span class="n">has</span> <span class="n">eventual</span> <span class="n">deduplication</span>
+</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy metadata copy FROM TO [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Arguments</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>FROM</code>: Source store name (must be configured in metaxy.toml)  <strong>[required]</strong></li>
 <li><code>TO</code>: Destination store name (must be configured in metaxy.toml)  <strong>[required]</strong></li>
-</ul>
-<p><strong>Options</strong>:</p>
-<ul>
-<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
---all-features.</li>
+<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.</li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Copy all features from source store  <em>[default: --no-all-features]</em></li>
 <li><code>SNAPSHOT, --snapshot</code>: Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.</li>
-<li><code>INCREMENTAL, --incremental, --no-incremental</code>: Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination 
-is empty or uses deduplication.  <em>[default: --incremental]</em></li>
+<li><code>INCREMENTAL, --incremental, --no-incremental</code>: Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination is empty or uses deduplication.  <em>[default: --incremental]</em></li>
 </ul>
-<h4 id="metaxy-metadata-drop"><code>metaxy metadata drop</code><a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h4>
+<h3 id="metaxy-metadata-drop">metaxy metadata drop<a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h3>
 <p>Drop metadata from a store.</p>
-<p>Removes metadata for specified features from the store. This is a destructive operation and requires --confirm flag.</p>
-<p>When using --all-features, drops metadata for all features defined in the current project's feature graph.</p>
-<p>Useful for: - Cleaning up test data - Re-computing feature metadata from scratch - Removing obsolete features</p>
-<p><strong>Usage</strong>:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><a href="#__codelineno-20-1"><span class="linenos" data-linenos="1 "></span></a><span class="gp">$ </span>metaxy<span class="w"> </span>metadata<span class="w"> </span>drop<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>
+<p>Removes metadata for specified features from the store.
+This is a destructive operation and requires --confirm flag.</p>
+<p>When using --all-features, drops metadata for all features defined in the
+current project's feature graph.</p>
+<p>Useful for:
+- Cleaning up test data
+- Re-computing feature metadata from scratch
+- Removing obsolete features</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy metadata drop [ARGS]</span>
 </span></code></pre></div>
-<p><strong>Options</strong>:</p>
+<p><strong>Parameters</strong>:</p>
 <ul>
 <li><code>STORE, --store</code>: Store name to drop metadata from (defaults to configured default store)</li>
-<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses 
---all-features.</li>
+<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.</li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features defined in the current project's feature graph  <em>[default: --no-all-features]</em></li>
 <li><code>CONFIRM, --confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion)  <em>[default: --no-confirm]</em></li>
 </ul>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="recording-a-graph-snapshot">Recording a graph snapshot<a class="headerlink" href="#recording-a-graph-snapshot" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><a href="#__codelineno-21-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Push the current feature graph to the metadata store</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2"></a><a href="#__codelineno-21-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>push
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Push the current feature graph to the metadata store</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a><a href="#__codelineno-16-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>push
 </span></code></pre></div>
 <p>The recommendation is to run this command in your CD pipeline.</p>
 <h3 id="generating-and-applying-migrations">Generating and applying migrations<a class="headerlink" href="#generating-and-applying-migrations" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><a href="#__codelineno-22-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Generate a migration for detected changes</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2"></a><a href="#__codelineno-22-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>metaxy.migrations.ops.DataVersionReconciliation
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3"></a><a href="#__codelineno-22-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4"></a><a href="#__codelineno-22-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Apply pending migrations</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5"></a><a href="#__codelineno-22-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Generate a migration for detected changes</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2"></a><a href="#__codelineno-17-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>metaxy.migrations.ops.DataVersionReconciliation
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3"></a><a href="#__codelineno-17-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4"></a><a href="#__codelineno-17-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Apply pending migrations</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5"></a><a href="#__codelineno-17-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply
 </span></code></pre></div>
 <h3 id="visualizing-the-feature-graph">Visualizing the feature graph<a class="headerlink" href="#visualizing-the-feature-graph" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><a href="#__codelineno-23-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Render as terminal tree view</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2"></a><a href="#__codelineno-23-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3"></a><a href="#__codelineno-23-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4"></a><a href="#__codelineno-23-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Render as Mermaid diagram</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5"></a><a href="#__codelineno-23-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6"></a><a href="#__codelineno-23-6"><span class="linenos" data-linenos="6 "></span></a>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7"></a><a href="#__codelineno-23-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># Compare two snapshots</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8"></a><a href="#__codelineno-23-8"><span class="linenos" data-linenos="8 "></span></a>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>&lt;snapshot-id&gt;<span class="w"> </span>current<span class="w"> </span>--format<span class="w"> </span>mermaid
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Render as terminal tree view</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2"></a><a href="#__codelineno-18-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3"></a><a href="#__codelineno-18-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4"></a><a href="#__codelineno-18-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Render as Mermaid diagram</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5"></a><a href="#__codelineno-18-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6"></a><a href="#__codelineno-18-6"><span class="linenos" data-linenos="6 "></span></a>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7"></a><a href="#__codelineno-18-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># Compare two snapshots</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8"></a><a href="#__codelineno-18-8"><span class="linenos" data-linenos="8 "></span></a>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>&lt;snapshot-id&gt;<span class="w"> </span>current<span class="w"> </span>--format<span class="w"> </span>mermaid
 </span></code></pre></div>
 
 
