@@ -1003,7 +1003,7 @@ class PostgresProvenanceTracker(IbisVersioningEngine):  # pyright: ignore[report
 
                 # Extract JSONB field using Ibis's [] operator
                 # With JSONB type, Ibis supports: table[jsonb_column][key]
-                provenance_col = self.get_renamed_METAXY_PROVENANCE_BY_FIELD(  # pyright: ignore[reportAttributeAccessIssue]
+                provenance_col = self.get_renamed_provenance_by_field_col(  # pyright: ignore[reportAttributeAccessIssue]
                     fq_field_key.feature
                 )
                 parent_key_str = parent_field_spec.key.to_struct_key()
