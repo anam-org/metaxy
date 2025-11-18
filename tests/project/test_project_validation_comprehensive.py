@@ -7,13 +7,13 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import SystemTableStorage
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep, FieldSpec, SampleFeatureSpec
@@ -378,7 +378,7 @@ class TestProjectValidationComprehensive:
                 "feature_key": ["test/feature"],
                 "metaxy_feature_version": ["v1"],
                 "metaxy_feature_spec_version": ["spec1"],
-                "metaxy_feature_tracking_version": ["track1"],
+                "metaxy_full_definition_version": ["track1"],
                 "recorded_at": [datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)],
                 "feature_spec": ["{}"],
                 "feature_class_path": ["test.TestFeature"],

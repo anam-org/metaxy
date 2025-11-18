@@ -264,7 +264,7 @@ def test_push_graph_with_changed_feature_spec():
 
                 # Get the snapshot version
                 snapshot_v1 = graph.snapshot_version
-                assert not result1.already_recorded  # New snapshot
+                assert not result1.already_pushed  # New snapshot
                 assert result1.snapshot_version == snapshot_v1
 
             # Create new graph with changed metadata
@@ -291,10 +291,11 @@ def test_push_graph_with_changed_feature_spec():
                 # Snapshot version is same (metadata change doesn't affect feature_version)
                 assert snapshot_v1 == snapshot_v2
                 assert result2.snapshot_version == snapshot_v2
-                # Should be metadata-only change since same fields/deps
-                assert result2.already_recorded  # Snapshot already exists
-                assert result2.metadata_changed  # But metadata changed
-                assert "test_feature" in result2.features_with_spec_changes
+                # Should be info update to existing snapshot (same fields/deps)
+                assert result2.already_pushed  # Same snapshot_version
+                assert (
+                    "test_feature" in result2.updated_features
+                )  # Feature info updated
 
                 # Query feature_versions table to verify both specs exist
                 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY

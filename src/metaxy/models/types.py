@@ -28,15 +28,13 @@ class SnapshotPushResult(NamedTuple):
 
     Attributes:
         snapshot_version: The deterministic hash of the graph snapshot
-        already_recorded: True if computational changes were already recorded
-        metadata_changed: True if metadata-only changes were detected
-        features_with_spec_changes: List of feature keys with spec version changes
+        already_pushed: True if this snapshot_version was already pushed previously
+        updated_features: List of feature keys with updated information (changed full_definition_version)
     """
 
     snapshot_version: str
-    already_recorded: bool
-    metadata_changed: bool
-    features_with_spec_changes: list[str]
+    already_pushed: bool
+    updated_features: list[str]
 
 
 _CoercibleToKey: TypeAlias = Sequence[str] | str

@@ -179,18 +179,17 @@ This can be skipped in non-production environments.
 Use `metaxy.MetadataStore.resolve_update` to identify samples requiring recomputation:
 
 ```py
-from metaxy import init_metaxy
+import metaxy as mx
 
 # discover and load Metaxy features
-init_metaxy()
+mx.init_metaxy()
 
-store = (
-    ...
-)  # can be DuckDBMetadataStore locally and ClickHouseMetadataStore in production
+# can be DuckDBMetadataStore locally and ClickHouseMetadataStore in production
+store: mx.MetadataStore = ...
 diff = store.resolve_update(VoiceDetection)
 ```
 
-`metaxy.MetadataStore.resolve_update` runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
+[`resolve_update`][metaxy.MetadataStore.resolve_update] runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
 The returned object provides [Narwhals](https://narwhals-dev.github.io/narwhals/) lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the field provenances already computed.
 
 ### 3. Run user-defined computation over the metadata increment

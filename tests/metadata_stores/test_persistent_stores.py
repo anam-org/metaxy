@@ -258,7 +258,7 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
         persistent_store: Store fixture (unopened)
         test_graph: Registry with test features
     """
-    from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
     with persistent_store as store:
         # Write data and record version

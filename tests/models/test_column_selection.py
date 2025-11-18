@@ -1063,7 +1063,7 @@ class TestColumnSelection:
         import json
 
         from metaxy.metadata_store import InMemoryMetadataStore
-        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified
         class UpstreamFeature(
@@ -1092,9 +1092,7 @@ class TestColumnSelection:
         # Create store and push snapshot
         store = InMemoryMetadataStore()
         with store:
-            result = SystemTableStorage(store).push_graph_snapshot()
-
-            _ = result.already_recorded
+            _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table
             versions = (

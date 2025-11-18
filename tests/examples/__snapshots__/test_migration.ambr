@@ -6,6 +6,9 @@
     'migration_type': 'metaxy.migrations.models.DiffMigration',
     'ops': list([
       dict({
+        'features': list([
+          'examples/child',
+        ]),
         'type': 'metaxy.migrations.ops.DataVersionReconciliation',
       }),
     ]),

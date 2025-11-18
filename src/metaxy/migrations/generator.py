@@ -107,7 +107,7 @@ def generate_migration(
 
     if from_snapshot_version is None:
         # Default mode: get from store's latest snapshot
-        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
 
         try:
             feature_versions = store.read_metadata(
@@ -139,22 +139,22 @@ def generate_migration(
         # This ensures the to_snapshot is available in the store for comparison
         snapshot_result = SystemTableStorage(store).push_graph_snapshot()
         to_snapshot_version = snapshot_result.snapshot_version
-        was_already_recorded = snapshot_result.already_recorded
+        was_already_pushed = snapshot_result.already_pushed
         to_graph = FeatureGraph.get_active()
-        if was_already_recorded:
+        if was_already_pushed:
             print(
-                f"To: current active graph (snapshot {to_snapshot_version}... already recorded)"
+                f"To: current active graph (snapshot {to_snapshot_version}... already pushed)"
             )
         else:
             print(
-                f"To: current active graph (snapshot {to_snapshot_version}... recorded)"
+                f"To: current active graph (snapshot {to_snapshot_version}... pushed)"
             )
 
     else:
         # Historical mode: load from snapshot with force_reload
         # force_reload ensures we get current code from disk, not cached imports
         # Need to load the snapshot data from the store first
-        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
 
         feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
         snapshot_data_df = nw.from_native(

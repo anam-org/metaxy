@@ -292,15 +292,25 @@ class MetaxyProject:
             cmd_env.update(env)
 
         # Run CLI command
-        result = subprocess.run(
-            [sys.executable, "-m", "metaxy.cli.app", *args],
-            cwd=str(self.project_dir),
-            capture_output=True,
-            text=True,
-            env=cmd_env,
-            check=check,
-            **kwargs,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "metaxy.cli.app", *args],
+                cwd=str(self.project_dir),
+                capture_output=True,
+                text=True,
+                env=cmd_env,
+                check=check,
+                **kwargs,
+            )
+        except subprocess.CalledProcessError as e:
+            # Re-raise with stderr output for better debugging
+            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg += f"Exit code: {e.returncode}\n"
+            if e.stdout:
+                error_msg += f"STDOUT:\n{e.stdout}\n"
+            if e.stderr:
+                error_msg += f"STDERR:\n{e.stderr}\n"
+            raise RuntimeError(error_msg) from e
 
         return result
 
@@ -706,15 +716,25 @@ database = "{staging_db_path}"
             cmd_env.update(env)
 
         # Run CLI command
-        result = subprocess.run(
-            [sys.executable, "-m", "metaxy.cli.app", *args],
-            cwd=str(self.project_dir),
-            capture_output=True,
-            text=True,
-            env=cmd_env,
-            check=check,
-            **kwargs,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "metaxy.cli.app", *args],
+                cwd=str(self.project_dir),
+                capture_output=True,
+                text=True,
+                env=cmd_env,
+                check=check,
+                **kwargs,
+            )
+        except subprocess.CalledProcessError as e:
+            # Re-raise with stderr output for better debugging
+            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg += f"Exit code: {e.returncode}\n"
+            if e.stdout:
+                error_msg += f"STDOUT:\n{e.stdout}\n"
+            if e.stderr:
+                error_msg += f"STDERR:\n{e.stderr}\n"
+            raise RuntimeError(error_msg) from e
 
         return result
 

@@ -33,8 +33,6 @@ with config.get_store() as store:
 
     snapshot_version = result.snapshot_version
 
-    _ = result.already_recorded
-
     print(f"Graph snapshot_version: {snapshot_version}")
 
     # Compute child feature (e.g., generate predictions from embeddings)

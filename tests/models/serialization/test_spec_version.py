@@ -345,15 +345,16 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
         with store:
             # Record the feature graph snapshot
-            result = SystemTableStorage(store).push_graph_snapshot()
+            storage = SystemTableStorage(store)
+            result = storage.push_graph_snapshot()
 
-            is_existing = result.already_recorded
+            is_existing = result.already_pushed
 
             # Should be a new snapshot
             assert not is_existing
 
             # Read the feature_versions system table
-            features_df = store.read_features(current=True)
+            features_df = storage.read_features(current=True)
 
             # Should have one feature
             assert len(features_df) == 1
@@ -413,28 +414,29 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
 
         with store:
             # First push
-            result = SystemTableStorage(store).push_graph_snapshot()
+            storage = SystemTableStorage(store)
+            result = storage.push_graph_snapshot()
 
             snapshot_v1 = result.snapshot_version
 
-            is_existing_1 = result.already_recorded
+            is_existing_1 = result.already_pushed
             assert not is_existing_1
 
-            features_df_1 = store.read_features(current=True)
+            features_df_1 = storage.read_features(current=True)
             feature_spec_version_1 = features_df_1.to_dicts()[0][
                 "metaxy_feature_spec_version"
             ]
 
             # Second push (identical graph)
-            result = SystemTableStorage(store).push_graph_snapshot()
+            result = storage.push_graph_snapshot()
 
             snapshot_v2 = result.snapshot_version
 
-            is_existing_2 = result.already_recorded
+            is_existing_2 = result.already_pushed
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            features_df_2 = store.read_features(current=True)
+            features_df_2 = storage.read_features(current=True)
             feature_spec_version_2 = features_df_2.to_dicts()[0][
                 "metaxy_feature_spec_version"
             ]

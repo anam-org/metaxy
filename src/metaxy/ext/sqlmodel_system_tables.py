@@ -24,8 +24,8 @@ from metaxy.metadata_store.system import (
 )
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
 
@@ -61,9 +61,9 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
         primary_key=True,
         sa_column_kwargs={"name": METAXY_FEATURE_SPEC_VERSION},
     )
-    metaxy_feature_tracking_version: str = Field(
+    metaxy_full_definition_version: str = Field(
         index=True,
-        sa_column_kwargs={"name": METAXY_FEATURE_TRACKING_VERSION},
+        sa_column_kwargs={"name": METAXY_FULL_DEFINITION_VERSION},
     )
 
     # Additional indexes for common queries

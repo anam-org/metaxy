@@ -163,8 +163,8 @@ class TestProjectDetection:
 class TestFeatureTrackingVersion:
     """Test feature tracking version that combines spec version and project."""
 
-    def test_feature_tracking_version_calculation(self):
-        """Test that feature_tracking_version correctly combines spec version and project."""
+    def test_full_definition_version_calculation(self):
+        """Test that full_definition_version correctly combines spec version and project."""
         # Create a test graph
         test_graph = FeatureGraph()
 
@@ -184,7 +184,7 @@ class TestFeatureTrackingVersion:
             TestFeature.project = "project_a"  # type: ignore[attr-defined]
 
             # Get the tracking version
-            tracking_version = TestFeature.feature_tracking_version()
+            tracking_version = TestFeature.full_definition_version()
 
             # Verify it's different from spec version alone
             spec_version = TestFeature.feature_spec_version()
@@ -192,12 +192,12 @@ class TestFeatureTrackingVersion:
 
             # Verify it changes when project changes
             TestFeature.project = "project_b"  # type: ignore[attr-defined]
-            new_tracking_version = TestFeature.feature_tracking_version()
+            new_tracking_version = TestFeature.full_definition_version()
             assert new_tracking_version != tracking_version
 
             # Verify it's deterministic
             TestFeature.project = "project_a"  # type: ignore[attr-defined]
-            assert TestFeature.feature_tracking_version() == tracking_version
+            assert TestFeature.full_definition_version() == tracking_version
 
     def test_tracking_version_in_snapshot(self):
         """Test that tracking version is included in graph snapshot."""
@@ -223,14 +223,14 @@ class TestFeatureTrackingVersion:
 
             # Verify tracking version is included
             feature_data = snapshot["test/feature"]
-            assert "metaxy_feature_tracking_version" in feature_data
+            assert "metaxy_full_definition_version" in feature_data
             assert "project" in feature_data
             assert feature_data["project"] == "test_project"
 
             # Verify tracking version is computed correctly
-            expected_tracking_version = TestFeature.feature_tracking_version()
+            expected_tracking_version = TestFeature.full_definition_version()
             assert (
-                feature_data["metaxy_feature_tracking_version"]
+                feature_data["metaxy_full_definition_version"]
                 == expected_tracking_version
             )
 
@@ -274,8 +274,7 @@ class TestMultiProjectIsolation:
 
             # Verify they have different tracking versions
             assert (
-                FeatureA.feature_tracking_version()
-                != FeatureB.feature_tracking_version()
+                FeatureA.full_definition_version() != FeatureB.full_definition_version()
             )
 
             # Verify snapshot includes both with correct projects
@@ -302,7 +301,7 @@ class TestMultiProjectIsolation:
             FeatureV1.project = "project_a"  # type: ignore[attr-defined]
 
         snapshot1 = graph1.to_snapshot()
-        tracking_v1 = snapshot1["test/feature"]["metaxy_feature_tracking_version"]
+        tracking_v1 = snapshot1["test/feature"]["metaxy_full_definition_version"]
 
         # Create second graph with same feature in project_b
         graph2 = FeatureGraph()
@@ -323,7 +322,7 @@ class TestMultiProjectIsolation:
             FeatureV2.project = "project_b"  # type: ignore[attr-defined]  # Different project
 
         snapshot2 = graph2.to_snapshot()
-        tracking_v2 = snapshot2["test/feature"]["metaxy_feature_tracking_version"]
+        tracking_v2 = snapshot2["test/feature"]["metaxy_full_definition_version"]
 
         # Verify tracking versions are different (would trigger migration)
         assert tracking_v1 != tracking_v2
@@ -358,18 +357,19 @@ class TestSystemTableRecording:
 
             # Create a store and record snapshot (while the test graph is still active)
             with InMemoryMetadataStore() as store:
-                result = SystemTableStorage(store).push_graph_snapshot()
+                storage = SystemTableStorage(store)
+                result = storage.push_graph_snapshot()
 
-                assert not result.already_recorded  # First time recording
+                assert not result.already_pushed  # First time recording
                 snapshot_version = result.snapshot_version
 
                 # Read the recorded features
-                features_df = store.read_features(
+                features_df = storage.read_features(
                     current=False, snapshot_version=snapshot_version
                 )
 
                 # Verify tracking version is recorded
-                assert "metaxy_feature_tracking_version" in features_df.columns
+                assert "metaxy_full_definition_version" in features_df.columns
 
                 # Verify the recorded tracking version matches the computed one
                 rows = features_df.filter(
@@ -378,8 +378,8 @@ class TestSystemTableRecording:
                 assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
                 row = rows[0]
                 assert (
-                    row["metaxy_feature_tracking_version"]
-                    == TestFeature.feature_tracking_version()
+                    row["metaxy_full_definition_version"]
+                    == TestFeature.full_definition_version()
                 )
                 assert row["project"] == "test_project"
 
@@ -415,7 +415,7 @@ class TestBackwardCompatibility:
                     ],
                     "feature_class_path": ["test.TestFeature"],
                     "metaxy_snapshot_version": ["snap123"],
-                    # Note: no feature_tracking_version column in old data
+                    # Note: no full_definition_version column in old data
                 }
             )
 
@@ -423,7 +423,10 @@ class TestBackwardCompatibility:
             store.write_metadata(FEATURE_VERSIONS_KEY, old_record)
 
             # Try to read features - should handle missing tracking version
-            features_df = store.read_features(current=False, snapshot_version="snap123")
+            storage = SystemTableStorage(store)
+            features_df = storage.read_features(
+                current=False, snapshot_version="snap123"
+            )
 
             # Should still work even without tracking version
             assert features_df.height == 1

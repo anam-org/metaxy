@@ -30,7 +30,6 @@ from metaxy.metadata_store.system.models import (
 )
 from metaxy.metadata_store.system.storage import (
     SystemTableStorage,
-    allow_feature_version_override,
 )
 
 __all__ = [
@@ -55,5 +54,4 @@ __all__ = [
     "FeatureVersionsModel",
     # Storage
     "SystemTableStorage",
-    "allow_feature_version_override",
 ]

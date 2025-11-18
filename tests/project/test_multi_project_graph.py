@@ -235,7 +235,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     # Verify that snapshot contains project information for all features
     for feature_key_str, feature_data in snapshot_data.items():
         assert "project" in feature_data
-        assert "metaxy_feature_tracking_version" in feature_data
+        assert "metaxy_full_definition_version" in feature_data
         # Project should match what we expect
         if "feature_a" in feature_key_str:
             assert feature_data["project"] == "restore_a"

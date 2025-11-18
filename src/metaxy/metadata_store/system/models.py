@@ -7,10 +7,13 @@ from datetime import datetime
 import polars as pl
 from pydantic import BaseModel, Field
 
+from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+from metaxy.metadata_store.system.events import EVENTS_SCHEMA
+from metaxy.metadata_store.system.keys import EVENTS_KEY
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
 
@@ -20,7 +23,7 @@ FEATURE_VERSIONS_SCHEMA = {
     "feature_key": pl.String,
     METAXY_FEATURE_VERSION: pl.String,
     METAXY_FEATURE_SPEC_VERSION: pl.String,  # Hash of complete FeatureSpec (all properties)
-    METAXY_FEATURE_TRACKING_VERSION: pl.String,  # Hash of feature_spec_version + project (for migration detection)   # TODO: this is probably not needed, we can just use a combination of project and metaxy_feature_version instead
+    METAXY_FULL_DEFINITION_VERSION: pl.String,  # Hash of feature_spec_version + project (for migration detection)   # TODO: this is probably not needed, we can just use a combination of project and metaxy_feature_version instead
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_class_path": pl.String,
@@ -44,7 +47,7 @@ class FeatureVersionsModel(BaseModel):
     metaxy_feature_spec_version: str = Field(
         ..., description="Hash of complete FeatureSpec (all properties)"
     )
-    metaxy_feature_tracking_version: str = Field(
+    metaxy_full_definition_version: str = Field(
         ..., description="Hash of feature_spec_version + project"
     )
     recorded_at: datetime = Field(
@@ -68,3 +71,9 @@ class FeatureVersionsModel(BaseModel):
         """
         # Polars can directly convert Pydantic models to DataFrames
         return pl.DataFrame([self], schema=FEATURE_VERSIONS_SCHEMA)
+
+
+POLARS_SCHEMAS = {
+    FEATURE_VERSIONS_KEY: FEATURE_VERSIONS_SCHEMA,
+    EVENTS_KEY: EVENTS_SCHEMA,
+}

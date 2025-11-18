@@ -307,7 +307,7 @@ def test_upstream_downstream_migration(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Step 3: Detect migration (before recording v2 snapshot)
         migration = detect_diff_migration(
             store_v2,
@@ -408,7 +408,7 @@ def test_migration_idempotency(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Update upstream manually
         new_upstream_data = pl.DataFrame(
             {
@@ -499,14 +499,6 @@ def test_migration_dry_run(
 
         SystemTableStorage(store_v1).push_graph_snapshot()
 
-    # Get initial data (need graph context to read with latest_only=True)
-    # Initialize to satisfy type checker - will be assigned before use
-    initial_data = pl.DataFrame()  # Placeholder
-    with upstream_downstream_v1.use(), store_v1:
-        initial_data = collect_to_polars(
-            store_v1.read_metadata(DownstreamV1, current_only=False)
-        )
-
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
     UpstreamV2 = upstream_downstream_v2.features_by_key[
@@ -516,7 +508,7 @@ def test_migration_dry_run(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2:
+    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
         # Update upstream
         new_upstream_data = pl.DataFrame(
             {
@@ -542,6 +534,11 @@ def test_migration_dry_run(
         # Record v2 snapshot before executing
         SystemTableStorage(store_v2).push_graph_snapshot()
 
+        # Get initial downstream data AFTER upstream write and snapshot, BEFORE migration
+        initial_data = collect_to_polars(
+            store_v2.read_metadata(DownstreamV2, current_only=False)
+        )
+
         # Test dry-run mode
         storage = SystemTableStorage(store_v2)
         executor = MigrationExecutor(storage)
@@ -555,16 +552,26 @@ def test_migration_dry_run(
         assert result.features_failed == 1  # Upstream fails even in dry-run
         assert result.features_skipped == 1  # Downstream skipped
 
-    # Verify data unchanged (need graph context to read with latest_only=True)
-    with upstream_downstream_v2.use(), store_v2:
+        # Verify data unchanged - read in same context
         final_data = collect_to_polars(
             store_v2.read_metadata(DownstreamV2, current_only=False)
         )
 
         assert len(final_data) == len(initial_data)
-        # Compare field_provenance (dict types can't be in sets, so compare directly)
-        final_dvs = final_data["metaxy_provenance_by_field"].to_list()
-        initial_dvs = initial_data["metaxy_provenance_by_field"].to_list()
+
+        # Sort both DataFrames by sample_uid for deterministic comparison
+        initial_sorted = initial_data.sort("sample_uid")
+        final_sorted = final_data.sort("sample_uid")
+
+        # Compare sample_uids
+        assert (
+            initial_sorted["sample_uid"].to_list()
+            == final_sorted["sample_uid"].to_list()
+        )
+
+        # Compare field_provenance (now sorted, so order-independent)
+        initial_dvs = initial_sorted["metaxy_provenance_by_field"].to_list()
+        final_dvs = final_sorted["metaxy_provenance_by_field"].to_list()
         assert final_dvs == initial_dvs
 
 
