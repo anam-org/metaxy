@@ -47,10 +47,7 @@ def migrate_store_to_graph(
     """
     new_store = InMemoryMetadataStore()
     # Copy all storage including system tables (clone DataFrames for isolation)
-    new_store._storage = {
-        key: df.clone()
-        for key, df in source_store._storage.items()
-    }
+    new_store._storage = source_store._storage.copy()
     # System tables are already copied since they're part of _storage
     return new_store
 
