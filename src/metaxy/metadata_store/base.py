@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import Frame
+from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
@@ -741,7 +741,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: Frame | pl.DataFrame,
+        df: IntoFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -752,9 +752,9 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to write metadata for
-            df: Narwhals DataFrame or Polars DataFrame containing metadata.
+            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
-                May optionally contain custom `metaxy_feature_version` and `metaxy_snapshot_version`.
+                Optionally, may also contain `metaxy_data_version_by_field`.
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
@@ -762,12 +762,11 @@ class MetadataStore(ABC):
             ValueError: If writing to a feature from a different project than expected
 
         Note:
-            - Always writes to current store, never to fallback stores.
-            - If df already contains the metaxy-managed columns, they will be used
-              as-is (no replacement). This allows migrations to write historical
-              versions. A warning is issued unless suppressed via context manager.
-            - Project validation is performed unless disabled via allow_cross_project_writes()
-            - Must be called within store.open(mode=AccessMode.WRITE) context
+            - Never writes to fallback stores.
+
+            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
+
+            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
         """
         self._check_open()
 
@@ -779,18 +778,18 @@ class MetadataStore(ABC):
             self._validate_project_write(feature)
 
         # Convert Polars to Narwhals to Polars if needed
-        if isinstance(df, (pl.DataFrame, pl.LazyFrame)):
-            df = nw.from_native(df)
+        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
+        df_nw = nw.from_native(df)
 
-        assert isinstance(df, nw.DataFrame), "df must be a Narwhal DataFrame"
+        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self.write_metadata_to_store(feature_key, df)
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
             return
 
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if PROVENANCE_BY_FIELD_COL not in df_nw.columns:
             from metaxy.metadata_store.exceptions import MetadataSchemaError
 
             raise MetadataSchemaError(
@@ -801,10 +800,10 @@ class MetadataStore(ABC):
         # warning: for dataframes that do not match the native MetadatStore implementation
         # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
         # while calculating the missing METAXY_DATA_VERSION column
-        df = self._add_system_columns(df, feature)
+        df_nw = self._add_system_columns(df_nw, feature)
 
-        self._validate_schema(df)
-        self.write_metadata_to_store(feature_key, df)
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
 
     def _add_system_columns(
         self,
