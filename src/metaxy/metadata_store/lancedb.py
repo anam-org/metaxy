@@ -16,8 +16,8 @@ from typing_extensions import Self
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature, FeatureGraph
-from metaxy.models.types import FeatureKey
+from metaxy.metadata_store.utils import is_local_path, sanitize_uri
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -30,35 +30,43 @@ class LanceDBMetadataStore(MetadataStore):
 
     LanceDB is a columnar database optimized for vector search and multimodal data.
     Each feature is stored in its own Lance table within the database directory.
+    Uses Polars components for data processing (no native SQL execution).
 
     Storage layout:
-    - Each feature gets its own table: {namespace}__{feature_name}
-    - System tables: metaxy-system__feature_versions, metaxy-system__migration_events
-    - Tables are stored as Lance format files in the uri directory
 
-    Note: Uses Polars components for data processing (no native SQL execution).
+    - Each feature gets its own table: `{namespace}__{feature_name}`
+
+    - Tables are stored as Lance format in the directory specified by the URI
+
+    - LanceDB handles schema evolution, transactions, and compaction automatically
 
     Example: Local Directory
         ```py
         from pathlib import Path
-        store = LanceDBMetadataStore(Path("./lancedb"))
+        from metaxy.metadata_store.lancedb import LanceDBMetadataStore
+
+        # Local filesystem
+        store = LanceDBMetadataStore(Path("/path/to/featuregraph"))
         ```
 
-    Example: With Hash Algorithm
+    Example: Object Storage (S3, GCS, Azure)
         ```py
+        # object store (requires credentials)
+        store = LanceDBMetadataStore("s3:///path/to/featuregraph")
+        ```
+
+    Example: LanceDB Cloud
+        ```py
+        import os
+
+        # Option 1: Environment variable
+        os.environ["LANCEDB_API_KEY"] = "your-api-key"
+        store = LanceDBMetadataStore("db://my-database")
+
+        # Option 2: Explicit credentials
         store = LanceDBMetadataStore(
-            "metadata.lance",
-            hash_algorithm=HashAlgorithm.XXHASH64
-        )
-        ```
-
-    Example: With Fallback Stores
-        ```py
-        # Local store with production fallback
-        prod_store = LanceDBMetadataStore("s3://prod-bucket/metadata")
-        dev_store = LanceDBMetadataStore(
-            "./dev-metadata",
-            fallback_stores=[prod_store]
+            "db://my-database",
+            connect_kwargs={"api_key": "your-api-key", "region": "us-east-1"}
         )
         ```
     """
@@ -70,90 +78,49 @@ class LanceDBMetadataStore(MetadataStore):
         uri: str | Path,
         *,
         fallback_stores: list[MetadataStore] | None = None,
-        auto_create_tables: bool | None = True,
         connect_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ):
         """
-        Initialize [LanceDB](https://lancedb.github.io/lancedb/) metadata store.
+        Initialize [LanceDB](https://lancedb.com/docs/) metadata store.
 
         The database directory is created automatically if it doesn't exist (local paths only).
         Tables are created on-demand when features are first written.
 
         Args:
-            uri: Directory path or URI for LanceDB tables. Can be:
-                - Local path: `"./metadata"` or `Path("./metadata")`
-                - S3 URI: `"s3://bucket/path/to/db"` (requires AWS credentials)
-                - LanceDB Cloud: `"db://database-name"` (requires API key via LANCEDB_API_KEY env var)
-                - Remote URI: Any URI supported by LanceDB (http://, https://, gs://, etc.)
+            uri: Directory path or URI for LanceDB tables. Supports:
+
+                - **Local path**: `"./metadata"` or `Path("/data/metaxy/lancedb")`
+
+                - **Object stores**: `s3://`, `gs://`, `az://` (requires cloud credentials)
+
+                - **LanceDB Cloud**: `"db://database-name"` (requires API key)
+
+                - **Remote HTTP/HTTPS**: Any URI supported by LanceDB
+
             fallback_stores: Ordered list of read-only fallback stores.
-                Used when upstream features are not in this store.
-            auto_create_tables: If True, automatically create tables when writing metadata.
-                If None (default), reads from global MetaxyConfig.
-                LanceDB always creates tables on-demand, so this mainly controls the warning.
-                Warning: Auto-create is intended for development/testing only.
+                When reading features not found in this store, Metaxy searches
+                fallback stores in order. Useful for local dev → staging → production chains.
             connect_kwargs: Extra keyword arguments passed directly to
-                [lancedb.connect](https://lancedb.com/docs/api/python/lancedb/#lancedb.connect)
-                (e.g., api_key, region). Useful when you cannot rely on
-                environment variables for credentials.
+                [lancedb.connect()](https://lancedb.github.io/lancedb/python/python/#lancedb.connect).
+                Useful for LanceDB Cloud credentials (api_key, region) when you cannot
+                rely on environment variables.
             **kwargs: Passed to [metaxy.metadata_store.base.MetadataStore][]
                 (e.g., hash_algorithm, hash_truncation_length, prefer_native)
 
         Note:
             Unlike SQL stores, LanceDB doesn't require explicit table creation.
             Tables are created automatically when writing metadata.
-
-        Example:
-            ```py
-            # Local directory
-            store = LanceDBMetadataStore("./metadata")
-
-            # With custom hash algorithm
-            store = LanceDBMetadataStore(
-                "./metadata",
-                hash_algorithm=HashAlgorithm.SHA256
-            )
-
-            # S3 backend (requires AWS credentials)
-            prod = LanceDBMetadataStore("s3://prod-bucket/metadata")
-
-            # LanceDB Cloud (requires LANCEDB_API_KEY environment variable)
-            cloud = LanceDBMetadataStore("db://my-database")
-
-            # LanceDB Cloud with explicit credentials instead of env vars
-            cloud = LanceDBMetadataStore(
-                "db://my-database",
-                connect_kwargs={"api_key": "abc", "region": "us-east-1"},
-            )
-
-            # Local with fallback to production
-            dev = LanceDBMetadataStore("./dev", fallback_stores=[prod])
-
-            # Development mode with auto-create enabled
-            dev = LanceDBMetadataStore("./dev", auto_create_tables=True)
-            ```
         """
         self.uri: str = str(uri)
         self._conn: Any | None = None
         self._connect_kwargs = connect_kwargs or {}
         super().__init__(
             fallback_stores=fallback_stores,
-            auto_create_tables=auto_create_tables,
+            auto_create_tables=True,
             versioning_engine_cls=PolarsVersioningEngine,
             **kwargs,
         )
-
-    def _get_default_hash_algorithm(self) -> HashAlgorithm:
-        """Default hash algorithm."""
-        return HashAlgorithm.XXHASH64
-
-    def _supports_native_components(self) -> bool:
-        """LanceDB store uses Polars components."""
-        return False
-
-    def native_implementation(self) -> nw.Implementation:
-        """LanceDB operations run via Polars/Narwhals."""
-        return nw.Implementation.POLARS
 
     @contextmanager
     def _create_versioning_engine(self, plan):
@@ -172,14 +139,8 @@ class LanceDBMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
-    def _create_native_components(self) -> tuple[Any, Any, Any]:
-        """Not supported - LanceDB relies on Polars fallback components."""
-        raise NotImplementedError(
-            "LanceDBMetadataStore does not support native field provenance calculations"
-        )
-
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open LanceDB connection.
 
         For local filesystem paths, creates the directory if it doesn't exist.
@@ -194,7 +155,6 @@ class LanceDBMetadataStore(MetadataStore):
             Self: The store instance
 
         Raises:
-            ImportError: If lancedb package is not installed
             ConnectionError: If remote connection fails (e.g., invalid credentials)
         """
         # Increment context depth to support nested contexts
@@ -205,9 +165,7 @@ class LanceDBMetadataStore(MetadataStore):
             if self._context_depth == 1:
                 import lancedb
 
-                # Only create directory for local filesystem paths
-                # Remote URIs (s3://, db://, http://, https://, gs://, etc.) are handled by LanceDB
-                if self._is_local_path(self.uri):
+                if is_local_path(self.uri):
                     Path(self.uri).mkdir(parents=True, exist_ok=True)
 
                 self._conn = lancedb.connect(self.uri, **self._connect_kwargs)
@@ -244,43 +202,49 @@ class LanceDBMetadataStore(MetadataStore):
 
     # Helpers -----------------------------------------------------------------
 
-    @staticmethod
-    def _is_local_path(path: str) -> bool:
-        """Check if path is a local filesystem path rather than remote URI.
-
-        Simpler logic: check for local path patterns rather than enumerating all remote schemes.
-
-        Args:
-            path: Database path or URI
-
-        Returns:
-            True if path is a local filesystem path, False if remote URI
-        """
-        # Local paths:
-        # - file:// (explicit local file URI)
-        # - local:// (explicit local storage)
-        # - No scheme (relative or absolute paths)
-        if path.startswith(("file://", "local://")):
-            return True
-
-        # If it has a scheme (contains ://), it's remote
-        # (e.g., s3://, db://, http://, https://, gs://, az://)
-        if "://" in path:
-            return False
-
-        # No scheme means it's a filesystem path (relative or absolute)
-        return True
-
     def _table_name(self, feature_key: FeatureKey) -> str:
         return feature_key.table_name
 
     def _table_exists(self, table_name: str) -> bool:
-        assert self._conn is not None, "Store must be open"
-        return table_name in self._conn.table_names()  # type: ignore[attr-defined]
+        """Check if a table exists without listing all tables.
+
+        Uses open_table() which is more efficient than listing all tables,
+        especially for remote storage (S3, GCS, etc.) where listing is expensive.
+
+        Args:
+            table_name: Name of the table to check
+
+        Returns:
+            True if table exists, False otherwise
+        """
+        try:
+            self.conn.open_table(table_name)  # type: ignore[attr-defined]
+            return True
+        except (ValueError, FileNotFoundError):
+            # LanceDB raises ValueError when table doesn't exist
+            return False
 
     def _get_table(self, table_name: str):
-        assert self._conn is not None, "Store must be open"
-        return self._conn.open_table(table_name)  # type: ignore[attr-defined]
+        return self.conn.open_table(table_name)  # type: ignore[attr-defined]
+
+    # ===== MetadataStore abstract methods =====
+
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+        """Check if feature exists in LanceDB store.
+
+        Args:
+            feature: Feature to check
+
+        Returns:
+            True if feature exists, False otherwise
+        """
+        feature_key = self._resolve_feature_key(feature)
+        table_name = self._table_name(feature_key)
+        return self._table_exists(table_name)
+
+    def _get_default_hash_algorithm(self) -> HashAlgorithm:
+        """Use XXHASH64 by default to match other non-SQL stores."""
+        return HashAlgorithm.XXHASH64
 
     # Storage ------------------------------------------------------------------
 
@@ -288,6 +252,7 @@ class LanceDBMetadataStore(MetadataStore):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """Append metadata to Lance table.
 
@@ -298,8 +263,6 @@ class LanceDBMetadataStore(MetadataStore):
             feature_key: Feature key to write to
             df: Narwhals Frame with metadata (already validated by base class)
         """
-        assert self._conn is not None, "Store must be open"
-
         # Convert Narwhals frame to Polars DataFrame
         df_polars = collect_to_polars(df)
 
@@ -314,16 +277,20 @@ class LanceDBMetadataStore(MetadataStore):
                 table.add(df_polars)  # type: ignore[attr-defined]
             else:
                 # Create table from Polars DataFrame - LanceDB handles schema
-                self._conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
-        except TypeError:
-            # Fallback to Arrow if Polars integration not available
-            logger.debug("Falling back to Arrow format for LanceDB write")
+                self.conn.create_table(table_name, data=df_polars)  # type: ignore[attr-defined]
+        except TypeError as exc:
+            if not self._should_fallback_to_arrow(exc):
+                raise
+            # Defensive fallback: Modern LanceDB (>=0.3) accepts Polars DataFrames natively,
+            # but fall back to Arrow if an older version or edge case doesn't support it.
+            # This ensures compatibility across LanceDB versions.
+            logger.debug("Falling back to Arrow format for LanceDB write: %s", exc)
             arrow_table = df_polars.to_arrow()
             if self._table_exists(table_name):
                 table = self._get_table(table_name)
                 table.add(arrow_table)  # type: ignore[attr-defined]
             else:
-                self._conn.create_table(table_name, data=arrow_table)  # type: ignore[attr-defined]
+                self.conn.create_table(table_name, data=arrow_table)  # type: ignore[attr-defined]
 
     def _drop_feature_metadata_impl(self, feature_key: FeatureKey) -> None:
         """Drop Lance table for feature.
@@ -334,18 +301,17 @@ class LanceDBMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to drop metadata for
         """
-        assert self._conn is not None, "Store must be open"
         table_name = self._table_name(feature_key)
         if self._table_exists(table_name):
-            self._conn.drop_table(table_name)  # type: ignore[attr-defined]
+            self.conn.drop_table(table_name)  # type: ignore[attr-defined]
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
-        feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """Read metadata from Lance table.
 
@@ -354,9 +320,9 @@ class LanceDBMetadataStore(MetadataStore):
 
         Args:
             feature: Feature to read
-            feature_version: Filter by specific feature_version
             filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if table not found
@@ -368,103 +334,30 @@ class LanceDBMetadataStore(MetadataStore):
             return None
 
         table = self._get_table(table_name)
-
-        try:
-            # shim for https://github.com/lancedb/lancedb/issues/1539
-            pl_lazy = table.to_polars()
-            # Smoke-test the LazyFrame to surface the batch_size issue eagerly.
-            pl_lazy.limit(0).collect()
-        except TypeError as exc:
-            if "batch_size" not in str(exc):
-                raise
-            logger.debug(
-                "Polars/LanceDB batch_size incompatibility hit; converting via Arrow"
-            )
-            # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
-            arrow_table = table.to_arrow()
-            pl_lazy = pl.DataFrame(arrow_table).lazy()
-
+        # https://github.com/lancedb/lancedb/issues/1539
+        # Fall back to eager Arrow conversion until LanceDB issue #1539 is resolved.
+        arrow_table = table.to_arrow()
+        pl_lazy = pl.DataFrame(arrow_table).lazy()
         nw_lazy = nw.from_native(pl_lazy)
 
-        if feature_version is not None:
-            nw_lazy = nw_lazy.filter(
-                nw.col("metaxy_feature_version") == feature_version
-            )
-
         if filters is not None:
-            for expr in filters:
-                nw_lazy = nw_lazy.filter(expr)
+            nw_lazy = nw_lazy.filter(filters)
 
         if columns is not None:
             nw_lazy = nw_lazy.select(columns)
 
         return nw_lazy
 
+    @staticmethod
+    def _should_fallback_to_arrow(exc: TypeError) -> bool:
+        """Return True when TypeError likely originates from Polars support gaps."""
+        message = str(exc).lower()
+        polars_markers = ("polars", "dataframe", "lazyframe", "data frame")
+        return any(marker in message for marker in polars_markers)
+
     # Display ------------------------------------------------------------------
 
     def display(self) -> str:
         """Human-readable representation with sanitized credentials."""
-        # Sanitize path to avoid exposing credentials in URIs
-        path = self._sanitize_path(self.uri)
-        details = [f"path={path}"]
-
-        if self._is_open:
-            graph = FeatureGraph.get_active()
-            features = graph.list_features()
-            details.append(f"features={len(features)}")
-        return f"LanceDBMetadataStore({', '.join(details)})"
-
-    @staticmethod
-    def _sanitize_path(path: str) -> str:
-        """Sanitize path to hide credentials in URIs.
-
-        Examples:
-            - "s3://bucket/path" -> "s3://bucket/path" (no credentials)
-            - "db://username:password@host/db" -> "db://***:***@host/db"
-            - "https://user:pass@host/db" -> "https://***:***@host/db"
-            - "./local/path" -> "./local/path" (local paths unchanged)
-
-        Args:
-            path: Database path or URI
-
-        Returns:
-            Sanitized path with credentials masked
-        """
-        from urllib.parse import urlparse, urlunparse
-
-        # If no scheme, it's a local path - return as-is
-        if "://" not in path:
-            return path
-
-        try:
-            parsed = urlparse(path)
-
-            # If no credentials, return original
-            if not parsed.username and not parsed.password:
-                return path
-
-            # Mask credentials
-            masked_netloc = parsed.netloc
-            if parsed.username or parsed.password:
-                # Replace credentials with ***
-                username = "***" if parsed.username else ""
-                password = "***" if parsed.password else ""
-                credentials = f"{username}:{password}@" if username or password else ""
-                # Reconstruct netloc without credentials
-                host_port = parsed.netloc.split("@")[-1]
-                masked_netloc = f"{credentials}{host_port}"
-
-            # Reconstruct URI with masked credentials
-            return urlunparse(
-                (
-                    parsed.scheme,
-                    masked_netloc,
-                    parsed.path,
-                    parsed.params,
-                    parsed.query,
-                    parsed.fragment,
-                )
-            )
-        except Exception:
-            # If parsing fails, mask the entire path for safety
-            return "***"
+        path = sanitize_uri(self.uri)
+        return f"LanceDBMetadataStore(path={path})"

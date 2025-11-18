@@ -5,11 +5,10 @@ storage requirements and improve readability. Hash truncation is configured
 through the global MetaxyConfig.
 """
 
-from typing import Any, cast, overload
+from typing import Any, TypeVar, overload
 
 import narwhals as nw
 import polars as pl
-from narwhals.typing import Frame
 
 # Minimum allowed truncation length
 MIN_TRUNCATION_LENGTH = 8
@@ -143,6 +142,9 @@ def truncate_string_column(
     return df.with_columns(nw.col(column_name).str.slice(0, length).alias(column_name))
 
 
+PolarsFrameT = TypeVar("PolarsFrameT", pl.DataFrame, pl.LazyFrame)
+
+
 @overload
 def truncate_struct_column(df: pl.DataFrame, struct_column: str) -> pl.DataFrame: ...
 
@@ -151,14 +153,9 @@ def truncate_struct_column(df: pl.DataFrame, struct_column: str) -> pl.DataFrame
 def truncate_struct_column(df: pl.LazyFrame, struct_column: str) -> pl.LazyFrame: ...
 
 
-@overload
-def truncate_struct_column(df: Frame, struct_column: str) -> Frame: ...
-
-
 def truncate_struct_column(
-    df: pl.DataFrame | pl.LazyFrame | Frame,
-    struct_column: str,
-) -> pl.DataFrame | pl.LazyFrame | Frame:
+    df: pl.DataFrame | pl.LazyFrame, struct_column: str
+) -> pl.DataFrame | pl.LazyFrame:
     """Truncate hash values within a struct column.
 
     Uses the global hash truncation setting from MetaxyConfig.
@@ -187,30 +184,14 @@ def truncate_struct_column(
     if length is None:
         return df
 
-    narwhals_input = isinstance(df, (nw.DataFrame, nw.LazyFrame))
-    if narwhals_input:
-        if df.implementation != nw.Implementation.POLARS:
-            raise TypeError(
-                "truncate_struct_column only supports Narwhals frames backed by Polars"
-            )
-        df_polars = cast(pl.DataFrame | pl.LazyFrame, df.to_native())
-    elif isinstance(df, (pl.DataFrame, pl.LazyFrame)):
-        df_polars = df
-    else:
+    import polars as pl
+
+    # Only handle Polars DataFrames and LazyFrames (structs are Polars-only)
+    if not isinstance(df, (pl.DataFrame, pl.LazyFrame)):
         raise TypeError(
             f"truncate_struct_column only supports Polars DataFrame/LazyFrame, got {type(df)}"
         )
 
-    result = _truncate_struct_column_polars(df_polars, struct_column, length)
-    if narwhals_input:
-        return nw.from_native(result)
-    return result
-
-
-def _truncate_struct_column_polars(
-    df: pl.DataFrame | pl.LazyFrame, struct_column: str, length: int
-) -> pl.DataFrame | pl.LazyFrame:
-    """Apply struct truncation logic to a Polars DataFrame/LazyFrame."""
     # For LazyFrame, we need to collect once to get field names
     if isinstance(df, pl.LazyFrame):
         temp_df = df.limit(1).collect()
@@ -245,4 +226,5 @@ def _truncate_struct_column_polars(
     result = df_with_fields.with_columns(struct_expr.alias(struct_column))
 
     # Drop temporary columns
-    return result.drop(field_names)
+    result = result.drop(field_names)
+    return result

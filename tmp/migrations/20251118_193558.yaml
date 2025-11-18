@@ -1,8 +1,0 @@
-migration_type: metaxy.migrations.models.DiffMigration
-id: '20251118_193558'
-created_at: '2025-11-18T19:35:58.587575+00:00'
-parent: initial
-from_snapshot_version: 40df361447a5e1815b6e57c182662d10ac736cdf94a151f935462027bf444aa1
-to_snapshot_version: 3a2d0fb17ba170465188072d7faa4932111d8e7e0cc47293ef1ff36b7d95639a
-ops:
-- type: metaxy.migrations.ops.DataVersionReconciliation

@@ -346,13 +346,12 @@ class IbisMetadataStore(MetadataStore, ABC):
 
         Args:
             feature_key: Feature key to write to
-            df: Narwhals Frame with metadata (already validated)
+            df: DataFrame with metadata (already validated)
             **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        # Handle Narwhals frame with IBIS implementation
         if df.implementation == nw.Implementation.IBIS:
             df_to_insert = df.to_native()  # Ibis expression
         else:
@@ -473,5 +472,9 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def display(self) -> str:
         """Display string for this store."""
+        from metaxy.metadata_store.utils import sanitize_uri
+
         backend_info = self.connection_string or f"{self.backend}"
-        return f"{self.__class__.__name__}(backend={backend_info})"
+        # Sanitize connection strings that may contain credentials
+        sanitized_info = sanitize_uri(backend_info)
+        return f"{self.__class__.__name__}(backend={sanitized_info})"

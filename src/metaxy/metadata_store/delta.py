@@ -18,6 +18,7 @@ from typing_extensions import Self
 from metaxy._utils import switch_implementation_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
+from metaxy.metadata_store.utils import is_local_path
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -82,9 +83,7 @@ class DeltaMetadataStore(MetadataStore):
         self.delta_write_options = delta_write_options or {}
 
         root_str = str(root_path)
-        self._is_remote = "://" in root_str and not root_str.startswith(
-            ("file://", "local://")
-        )
+        self._is_remote = not is_local_path(root_str)
 
         if self._is_remote:
             # Remote path (S3, Azure, GCS, etc.)
