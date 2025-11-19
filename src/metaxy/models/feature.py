@@ -66,6 +66,7 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
 
 class SerializedFeature(TypedDict):
     feature_spec: dict[str, Any]
+    feature_schema: dict[str, Any]
     metaxy_feature_version: str
     metaxy_feature_spec_version: str
     metaxy_full_definition_version: str
@@ -611,6 +612,7 @@ class FeatureGraph:
         for feature_key, feature_cls in self.features_by_key.items():
             feature_key_str = feature_key.to_string()
             feature_spec_dict = feature_cls.spec().model_dump(mode="json")  # type: ignore[attr-defined]
+            feature_schema_dict = feature_cls.model_json_schema()  # type: ignore[attr-defined]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
             feature_spec_version = feature_cls.spec().feature_spec_version  # type: ignore[attr-defined]
             full_definition_version = feature_cls.full_definition_version()  # type: ignore[attr-defined]
@@ -621,6 +623,7 @@ class FeatureGraph:
 
             snapshot[feature_key_str] = {  # pyright: ignore
                 "feature_spec": feature_spec_dict,
+                "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
                 FEATURE_SPEC_VERSION_COL: feature_spec_version,
                 FEATURE_TRACKING_VERSION_COL: full_definition_version,

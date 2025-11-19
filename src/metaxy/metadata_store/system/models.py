@@ -27,6 +27,7 @@ FEATURE_VERSIONS_SCHEMA = {
     METAXY_FULL_DEFINITION_VERSION: pl.String,  # Hash of feature_spec_version + project (for migration detection)   # TODO: this is probably not needed, we can just use a combination of project and metaxy_feature_version instead
     "recorded_at": pl.Datetime("us"),
     "feature_spec": pl.String,  # Full serialized FeatureSpec
+    "feature_schema": pl.String,  # Full Pydantic model schema as JSON
     "feature_class_path": pl.String,
     METAXY_SNAPSHOT_VERSION: pl.String,
     "tags": pl.String,
@@ -61,6 +62,9 @@ class FeatureVersionsModel(BaseModel):
     )
     feature_spec: str = Field(
         ..., description="Full serialized FeatureSpec as JSON string"
+    )
+    feature_schema: str = Field(
+        ..., description="Full Pydantic model schema as JSON string"
     )
     feature_class_path: str = Field(
         ..., description="Python import path to Feature class"

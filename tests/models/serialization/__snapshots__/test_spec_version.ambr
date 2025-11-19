@@ -16,6 +16,12 @@
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
     'feature_class_path': 'test_spec_version.SnapshotFeature',
+    'feature_schema': dict({
+      'properties': dict({
+      }),
+      'title': 'SnapshotFeature',
+      'type': 'object',
+    }),
     'feature_spec': dict({
       'deps': list([
       ]),

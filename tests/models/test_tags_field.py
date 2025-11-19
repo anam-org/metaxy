@@ -1,4 +1,4 @@
-"""Tests for tags field in feature_versions system table (GitHub issue #149)."""
+"""Tests for tags field and feature_schema field in feature_versions system table (GitHub issue #149)."""
 
 from __future__ import annotations
 
@@ -227,6 +227,7 @@ def test_feature_versions_model_has_tags():
         metaxy_full_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
+        feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
         metaxy_snapshot_version="jkl012",
         tags={"custom_tag": "custom_value"},
@@ -258,6 +259,7 @@ def test_feature_versions_model_has_tags():
         metaxy_full_definition_version="ghi789",
         recorded_at=datetime.now(timezone.utc),
         feature_spec='{"key": "value"}',
+        feature_schema='{"type": "object", "properties": {}}',
         feature_class_path="test.module.TestFeature",
         metaxy_snapshot_version="jkl012",
         tags={},  # Explicit empty dict triggers validator

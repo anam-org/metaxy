@@ -565,7 +565,11 @@ class SystemTableStorage:
                     {
                         "feature_key": k,
                         **{
-                            field: (json.dumps(val) if field == "feature_spec" else val)
+                            field: (
+                                json.dumps(val)
+                                if field in ("feature_spec", "feature_schema")
+                                else val
+                            )
                             for field, val in v.items()
                         },
                         METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
