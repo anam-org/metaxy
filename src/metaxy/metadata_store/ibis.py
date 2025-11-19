@@ -15,7 +15,7 @@ import narwhals as nw
 from narwhals.typing import Frame
 from typing_extensions import Self
 
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, VersioningEngineOptions
 from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
@@ -68,6 +68,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def __init__(
         self,
+        versioning_engine: VersioningEngineOptions = "auto",
         connection_string: str | None = None,
         *,
         backend: str | None = None,
@@ -79,6 +80,11 @@ class IbisMetadataStore(MetadataStore, ABC):
         Initialize Ibis metadata store.
 
         Args:
+            versioning_engine: Which versioning engine to use.
+                - "auto": Prefer the store's native engine, fall back to Polars if needed
+                - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
+                    if provided dataframes are incompatible
+                - "polars": Always use the Polars engine
             connection_string: Ibis connection string (e.g., "clickhouse://host:9000/db")
                 If provided, backend and connection_params are ignored.
             backend: Ibis backend name (e.g., "clickhouse", "postgres", "duckdb")
@@ -106,23 +112,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 )
             ```
         """
-        try:
-            import ibis
-
-            self._ibis = ibis
-        except ImportError as e:
-            raise ImportError(
-                "Ibis is required for IbisMetadataStore. "
-                "Install with: pip install ibis-framework[BACKEND] "
-                "where BACKEND is one of: duckdb, postgres, clickhouse, mysql, etc."
-            ) from e
-
-        if connection_string is None and backend is None:
-            raise ValueError(
-                "Must provide either connection_string or backend. "
-                "Example: connection_string='clickhouse://host:9000/db' "
-                "or backend='clickhouse' with connection_params"
-            )
+        import ibis
 
         self.connection_string = connection_string
         self.backend = backend
@@ -130,7 +120,11 @@ class IbisMetadataStore(MetadataStore, ABC):
         self._conn: ibis.BaseBackend | None = None
         self._table_prefix = table_prefix or ""
 
-        super().__init__(**kwargs, versioning_engine_cls=IbisVersioningEngine)
+        super().__init__(
+            **kwargs,
+            versioning_engine=versioning_engine,
+            versioning_engine_cls=IbisVersioningEngine,
+        )
 
     def get_table_name(
         self,
@@ -268,6 +262,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         Yields:
             Self: The store instance with connection open
         """
+        import ibis
+
         # Increment context depth to support nested contexts
         self._context_depth += 1
 
@@ -277,14 +273,14 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Setup: Connect to database
                 if self.connection_string:
                     # Use connection string
-                    self._conn = self._ibis.connect(self.connection_string)
+                    self._conn = ibis.connect(self.connection_string)
                 else:
                     # Use backend + params
                     # Get backend-specific connect function
                     assert self.backend is not None, (
                         "backend must be set if connection_string is None"
                     )
-                    backend_module = getattr(self._ibis, self.backend)
+                    backend_module = getattr(ibis, self.backend)
                     self._conn = backend_module.connect(**self.connection_params)
 
                 # Mark store as open and validate
@@ -473,5 +469,4 @@ class IbisMetadataStore(MetadataStore, ABC):
     def display(self) -> str:
         """Display string for this store."""
         backend_info = self.connection_string or f"{self.backend}"
-        status = "open" if self._is_open else "closed"
-        return f"IbisMetadataStore(backend={backend_info}, status={status})"
+        return f"{self.__class__.__name__}(backend={backend_info})"

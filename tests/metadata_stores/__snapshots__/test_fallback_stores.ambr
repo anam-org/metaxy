@@ -136,7 +136,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      False,
+      'native',
     ): dict({
       'added': 3,
       'changed': 0,
@@ -156,7 +156,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      True,
+      'polars',
     ): dict({
       'added': 3,
       'changed': 0,
@@ -180,7 +180,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      False,
+      'native',
     ): dict({
       'added': 3,
       'changed': 0,
@@ -200,7 +200,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      True,
+      'polars',
     ): dict({
       'added': 3,
       'changed': 0,
@@ -224,7 +224,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      False,
+      'native',
     ): dict({
       'added': 3,
       'changed': 0,
@@ -244,7 +244,7 @@
     tuple(
       'duckdb',
       'inmemory',
-      True,
+      'polars',
     ): dict({
       'added': 3,
       'changed': 0,

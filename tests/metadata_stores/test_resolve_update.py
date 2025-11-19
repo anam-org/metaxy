@@ -1,18 +1,27 @@
-"""Test resolve_update across different stores and feature graph configurations.
+"""Test resolve_update behavior across stores and feature graph configurations.
 
-This test suite verifies that resolve_update produces correct and consistent results
-across different metadata store backends, hash algorithms, and feature graph topologies.
+This file tests the BEHAVIOR of resolve_update:
+- Root feature handling (requires samples)
+- Downstream feature computation (joins, provenance)
+- Incremental updates (detecting added/changed/removed samples)
+- Lazy execution
+- Idempotency
 
-The tests use the parametric metadata generation utilities from metaxy._testing.parametric
-to avoid manual data construction and ensure correctness.
+Hash algorithm testing is handled in test_hash_algorithms.py.
+Provenance correctness is handled in test_provenance_golden_reference.py.
+
+The goal is to verify resolve_update logic works correctly, not to test
+every combination of hash algorithm × store × truncation × feature graph.
 """
+
+from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import polars.testing as pl_testing
 import pytest
-import pytest_cases
 from hypothesis.errors import NonInteractiveExampleWarning
 from pytest_cases import parametrize_with_cases
 
@@ -24,21 +33,18 @@ from metaxy import (
     FeatureKey,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,
 )
-from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    pass
 
 # Type alias for feature plan output
 FeaturePlanOutput = tuple[
@@ -205,100 +211,21 @@ class RootFeatureCases:
         return MultiFieldRoot
 
 
-# ============= STORE CONFIGURATIONS =============
-
-
-class StoreCases:
-    """Different metadata store backend configurations."""
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_inmemory(self, hash_algorithm: HashAlgorithm) -> MetadataStore:
-        """In-memory Polars-based store."""
-        try:
-            return InMemoryMetadataStore(hash_algorithm=hash_algorithm)
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by InMemoryMetadataStore"
-            )
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path) -> MetadataStore:
-        """DuckDB SQL-based store."""
-        store = DuckDBMetadataStore(
-            tmp_path / "test.duckdb",
-            hash_algorithm=hash_algorithm,
-            extensions=["hashfuncs"],
-            prefer_native=True,
-        )
-        # Check if hash algorithm is supported before opening
-        try:
-            with store:
-                pass  # Just validate
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by DuckDBMetadataStore"
-            )
-        return store
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_clickhouse(
-        self, hash_algorithm: HashAlgorithm, clickhouse_db: str
-    ) -> MetadataStore:
-        """ClickHouse SQL-based store."""
-        store = ClickHouseMetadataStore(
-            connection_string=clickhouse_db,
-            hash_algorithm=hash_algorithm,
-            prefer_native=True,
-        )
-        # Check if hash algorithm is supported before opening
-        try:
-            with store:
-                pass  # Just validate
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by ClickHouseMetadataStore"
-            )
-        return store
-
-
-class TruncationCases:
-    """Hash truncation length configurations."""
-
-    def case_none(self):
-        """No truncation."""
-        return None
-
-    def case_16(self):
-        """Truncate to 16 characters."""
-        return 16
-
-
-# ============= FIXTURES =============
-
-
-@pytest_cases.fixture
-@parametrize_with_cases("hash_truncation_length", cases=TruncationCases)
-def metaxy_config(hash_truncation_length: int | None):
-    """Configure hash truncation length for tests."""
-    old = MetaxyConfig.get()
-    cfg_struct = old.model_dump()
-    cfg_struct["hash_truncation_length"] = hash_truncation_length
-    new = MetaxyConfig.model_validate(cfg_struct)
-    MetaxyConfig.set(new)
-    yield new
-    MetaxyConfig.set(old)
+# Removed: StoreCases with hash algorithm parametrization
+# Removed: TruncationCases and metaxy_config fixture
+# Hash algorithm and truncation testing is handled in test_hash_algorithms.py
 
 
 # ============= TEST: ROOT FEATURES (NO UPSTREAM) =============
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 @parametrize_with_cases("root_feature", cases=RootFeatureCases)
 def test_resolve_update_root_feature_requires_samples(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    default_store: MetadataStore,
     root_feature: type[BaseFeature],
 ):
+    """Test root feature requires samples (using default store)."""
+    store = default_store
     """Test that resolve_update raises ValueError for root features without samples.
 
     Root features have no upstream dependencies, so provenance cannot be computed
@@ -310,14 +237,14 @@ def test_resolve_update_root_feature_requires_samples(
             store.resolve_update(root_feature, lazy=True)
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 @parametrize_with_cases("root_feature", cases=RootFeatureCases)
 def test_resolve_update_root_feature_with_samples(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     root_feature: type[BaseFeature],
     graph: FeatureGraph,
 ):
+    """Test root feature with samples (using any_store for backend coverage)."""
+    store = any_store
     """Test resolve_update for root features with provided samples.
 
     When samples are provided, resolve_update should:
@@ -379,13 +306,13 @@ def test_resolve_update_root_feature_with_samples(
 # ============= TEST: DOWNSTREAM FEATURES (WITH UPSTREAM) =============
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
 def test_resolve_update_downstream_feature(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
+    """Test downstream feature resolution (using any_store for backend coverage)."""
+    store = any_store
     """Test resolve_update for downstream features with upstream dependencies.
 
     This test verifies that:
@@ -469,13 +396,13 @@ def test_resolve_update_downstream_feature(
 # ============= TEST: INCREMENTAL UPDATES =============
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
 def test_resolve_update_detects_changes(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
+    """Test change detection (using any_store for backend coverage)."""
+    store = any_store
     """Test that resolve_update correctly detects added/changed/removed samples.
 
     This test:
@@ -567,12 +494,12 @@ def test_resolve_update_detects_changes(
 # ============= TEST: LAZY EXECUTION =============
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 def test_resolve_update_lazy_execution(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     graph: FeatureGraph,
 ):
+    """Test lazy execution (using any_store for backend coverage)."""
+    store = any_store
     """Test resolve_update with lazy=True returns lazy frames with correct implementation.
 
     This test verifies that:
@@ -706,13 +633,13 @@ def test_resolve_update_lazy_execution(
 # ============= TEST: IDEMPOTENCY =============
 
 
-@parametrize_with_cases("store", cases=StoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeatureGraphCases)
 def test_resolve_update_idempotency(
-    store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
+    """Test idempotency (using any_store for backend coverage)."""
+    store = any_store
     """Test that calling resolve_update multiple times is idempotent.
 
     After writing the increment from first resolve_update, calling it again

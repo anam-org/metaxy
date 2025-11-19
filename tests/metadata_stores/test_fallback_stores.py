@@ -5,7 +5,7 @@ based on whether upstream features are in fallback stores, and that appropriate
 warnings are issued.
 """
 
-from typing import Any
+from typing import Any, Literal
 
 import narwhals as nw
 import polars as pl
@@ -53,7 +53,7 @@ def get_available_store_types_for_fallback() -> list[str]:
 
 def create_store_for_fallback(
     store_type: str,
-    prefer_native: bool,
+    versioning_engine: Literal["auto", "native", "polars"],
     hash_algorithm: HashAlgorithm,
     params: dict[str, Any],
     suffix: str = "",
@@ -63,7 +63,7 @@ def create_store_for_fallback(
 
     Args:
         store_type: "duckdb"
-        prefer_native: Whether to prefer native components
+        versioning_engine: Versioning engine mode ("auto", "native", or "polars")
         hash_algorithm: Hash algorithm to use
         params: Store-specific parameters
         suffix: Suffix to add to database filename (for creating distinct stores)
@@ -83,7 +83,7 @@ def create_store_for_fallback(
             db_path,
             hash_algorithm=hash_algorithm,
             extensions=extensions,  # pyright: ignore[reportArgumentType]
-            prefer_native=prefer_native,
+            versioning_engine=versioning_engine,
             fallback_stores=fallback_stores,
         )
     else:
@@ -192,21 +192,21 @@ def test_fallback_store_warning_issued(
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
         fallback_store.write_metadata(RootFeature, root_data)
 
-    # Test with prefer_native=True and prefer_native=False
-    for prefer_native in [True, False]:
+    # Test with versioning_engine="native" and versioning_engine="polars"
+    for versioning_engine in ["native", "polars"]:
         # Create primary store with native component support and fallback configured
         primary_store = create_store_for_fallback(
             primary_store_type,
-            prefer_native=prefer_native,
+            versioning_engine=versioning_engine,  # pyright: ignore
             hash_algorithm=hash_algorithm,
             params=store_params,
-            suffix=f"primary_native{prefer_native}",
+            suffix=f"primary_{versioning_engine}",
             fallback_stores=[fallback_store],
         )
 
         # Test: Resolve downstream feature with primary store that has fallback
         with primary_store, fallback_store:
-            if prefer_native:
+            if versioning_engine == "native":
                 # Should warn when falling back from native to Polars
                 with pytest.warns(
                     PolarsMaterializationWarning,
@@ -214,7 +214,7 @@ def test_fallback_store_warning_issued(
                 ):
                     result = primary_store.resolve_update(DownstreamFeature)
             else:
-                # prefer_native=False means we intentionally use Polars, not a fallback
+                # versioning_engine="polars" means we intentionally use Polars, not a fallback
                 # No warning should be issued
                 import warnings
 
@@ -230,7 +230,7 @@ def test_fallback_store_warning_issued(
             ).sort("sample_uid")
             versions = added_sorted["metaxy_provenance_by_field"].to_list()
 
-            results[(primary_store_type, fallback_store_type, prefer_native)] = {
+            results[(primary_store_type, fallback_store_type, versioning_engine)] = {
                 "added": len(result.added),
                 "changed": len(result.changed),
                 "removed": len(result.removed),
@@ -269,7 +269,7 @@ def test_no_fallback_warning_when_all_local(
     """
     store = create_store_for_fallback(
         store_type,
-        prefer_native=True,
+        versioning_engine="native",
         hash_algorithm=hash_algorithm,
         params=store_params,
         suffix="single",
@@ -342,7 +342,7 @@ def test_fallback_store_switches_to_polars_components(
     # Scenario 1: All local (native components)
     store_all_local = create_store_for_fallback(
         primary_store_type,
-        prefer_native=True,
+        versioning_engine="native",
         hash_algorithm=hash_algorithm,
         params=store_params,
         suffix="all_local",
@@ -388,7 +388,7 @@ def test_fallback_store_switches_to_polars_components(
     # Create primary store with fallback configured
     primary_store = create_store_for_fallback(
         primary_store_type,
-        prefer_native=True,
+        versioning_engine="native",
         hash_algorithm=hash_algorithm,
         params=store_params,
         suffix="with_fallback",
@@ -437,26 +437,26 @@ def test_fallback_store_switches_to_polars_components(
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 @pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
 @skip_exception(HashAlgorithmNotSupportedError, "not supported")
-def test_prefer_native_false_no_warning_even_without_fallback(
+def test_versioning_engine_polars_no_warning_even_without_fallback(
     store_params: dict[str, Any],
     hash_algorithm: HashAlgorithm,
     store_type: str,
     RootFeature,
     DownstreamFeature,
 ):
-    """Test that prefer_native=False doesn't issue fallback warning.
+    """Test that versioning_engine="polars" doesn't issue fallback warning.
 
-    When prefer_native=False, the store always uses Polars components,
+    When versioning_engine="polars", the store always uses Polars components,
     so there's no "fallback" from native to Polars - it's intentional.
     The warning should only be issued when we CAN'T use native due to fallback stores.
     """
-    # Create store with prefer_native=False
+    # Create store with versioning_engine="polars"
     store = create_store_for_fallback(
         store_type,
-        prefer_native=False,  # Explicitly disable native
+        versioning_engine="polars",  # Explicitly use Polars
         hash_algorithm=hash_algorithm,
         params=store_params,
-        suffix="no_native",
+        suffix="polars_engine",
     )
 
     with store:
@@ -473,7 +473,7 @@ def test_prefer_native_false_no_warning_even_without_fallback(
         root_data = add_metaxy_provenance_column(root_data, RootFeature)
         store.write_metadata(RootFeature, root_data)
 
-        # Should be no warnings - prefer_native=False is intentional, not a fallback
+        # Should be no warnings - versioning_engine="polars" is intentional, not a fallback
         import warnings
 
         with warnings.catch_warnings():
@@ -482,3 +482,123 @@ def test_prefer_native_false_no_warning_even_without_fallback(
 
         # Verify results are correct
         assert len(result.added) == 3
+
+
+@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+@pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
+def test_versioning_engine_native_no_error_when_data_is_local_despite_fallback_configured(
+    store_params: dict[str, Any],
+    hash_algorithm: HashAlgorithm,
+    store_type: str,
+    RootFeature,
+    DownstreamFeature,
+):
+    """Test that versioning_engine="native" works when data is local even with fallback configured.
+
+    When fallback stores are configured but the data exists in the primary store,
+    versioning_engine="native" should work without errors or warnings because the
+    data is actually local (native format).
+    """
+    # Create fallback store (InMemory - Polars)
+    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+
+    # Create primary store with fallback configured and versioning_engine="native"
+    primary_store = create_store_for_fallback(
+        store_type,
+        versioning_engine="native",
+        hash_algorithm=hash_algorithm,
+        params=store_params,
+        suffix="local_data_test",
+        fallback_stores=[fallback_store],
+    )
+
+    with primary_store, fallback_store:
+        # Write data to PRIMARY store (not fallback)
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        )
+        root_data = add_metaxy_provenance_column(root_data, RootFeature)
+        primary_store.write_metadata(RootFeature, root_data)
+
+        # Data is local, so versioning_engine="native" should work without errors or warnings
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", PolarsMaterializationWarning)
+            result = primary_store.resolve_update(DownstreamFeature)
+
+        # Verify results are correct
+        assert len(result.added) == 3
+
+
+@parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+@pytest.mark.parametrize("store_type", get_available_store_types_for_fallback())
+@skip_exception(HashAlgorithmNotSupportedError, "not supported")
+def test_versioning_engine_native_warns_when_fallback_actually_used(
+    store_params: dict[str, Any],
+    hash_algorithm: HashAlgorithm,
+    store_type: str,
+    RootFeature,
+    DownstreamFeature,
+):
+    """Test that versioning_engine="native" warns (but doesn't error) when fallback is accessed.
+
+    When fallback stores are configured AND actually used (data only exists in fallback),
+    versioning_engine="native" should issue a warning but not raise an error, because
+    the implementation mismatch is due to legitimate fallback access.
+    """
+    # Create fallback store (InMemory - Polars)
+    fallback_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
+
+    # Write data ONLY to fallback store
+    with fallback_store:
+        root_data = pl.DataFrame(
+            {
+                "sample_uid": [1, 2, 3],
+                "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+            }
+        )
+        root_data = add_metaxy_provenance_column(root_data, RootFeature)
+        fallback_store.write_metadata(RootFeature, root_data)
+
+    # Create primary store with fallback configured and versioning_engine="native"
+    primary_store = create_store_for_fallback(
+        store_type,
+        versioning_engine="native",
+        hash_algorithm=hash_algorithm,
+        params=store_params,
+        suffix="fallback_access_test",
+        fallback_stores=[fallback_store],
+    )
+
+    with primary_store, fallback_store:
+        # Data is ONLY in fallback, so reading will cause implementation mismatch
+        # Should warn but NOT raise VersioningEngineMismatchError
+        with pytest.warns(
+            PolarsMaterializationWarning,
+            match="Using Polars for resolving the increment instead",
+        ):
+            result = primary_store.resolve_update(DownstreamFeature)
+
+        # Should NOT raise VersioningEngineMismatchError
+        assert len(result.added) == 3
+
+
+# NOTE: There is no test for samples with wrong implementation because:
+# 1. The code at base.py:336 correctly raises VersioningEngineMismatchError for samples
+#    with wrong implementation WITHOUT checking fallback_stores (unlike line 314 which does check)
+# 2. This is the correct behavior: samples come from user argument, not from fallback stores
+# 3. Testing this is complex because samples need proper metadata columns before the
+#    implementation check, and creating native (Ibis) samples in tests is non-trivial

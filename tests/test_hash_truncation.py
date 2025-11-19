@@ -415,8 +415,9 @@ class TestMetadataStoreTruncation:
     """Test hash truncation in metadata stores."""
 
     def test_store_truncation_property(self):
-        """Test that stores have hash_truncation_length property."""
+        """Test that stores have hash_truncation_length property that pulls from config."""
         # Default truncation (64)
+        MetaxyConfig.reset()
         with InMemoryMetadataStore() as store:
             assert store.hash_truncation_length == 64
 
@@ -426,31 +427,14 @@ class TestMetadataStoreTruncation:
         with InMemoryMetadataStore() as store:
             assert store.hash_truncation_length == 16
 
-        # Explicit truncation overrides global
-        with InMemoryMetadataStore(hash_truncation_length=20) as store:
+        # Different config value
+        config = MetaxyConfig(hash_truncation_length=20)
+        MetaxyConfig.set(config)
+        with InMemoryMetadataStore() as store:
             assert store.hash_truncation_length == 20
 
         # Clean up
         MetaxyConfig.reset()
-
-    def test_store_chain_validation(self):
-        """Test that fallback stores must have same truncation length."""
-        # Create stores with different truncation lengths
-        store2 = InMemoryMetadataStore(hash_truncation_length=20)
-
-        # Should fail when used as fallback chain
-        with pytest.raises(ValueError, match="same hash truncation length"):
-            with InMemoryMetadataStore(
-                hash_truncation_length=16, fallback_stores=[store2]
-            ) as store:
-                pass
-
-        # Same truncation should work
-        store3 = InMemoryMetadataStore(hash_truncation_length=16)
-        with InMemoryMetadataStore(
-            hash_truncation_length=16, fallback_stores=[store3]
-        ) as store:
-            assert store.hash_truncation_length == 16
 
     def test_provenance_truncation(self, graph):
         """Test that field provenances are truncated in stores."""

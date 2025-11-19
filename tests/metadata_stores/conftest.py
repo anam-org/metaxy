@@ -7,8 +7,13 @@ from typing import Any
 import pytest
 from pytest_cases import fixture, parametrize_with_cases
 
+from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
-from metaxy.metadata_store import InMemoryMetadataStore, MetadataStore
+from metaxy.metadata_store import (
+    HashAlgorithmNotSupportedError,
+    InMemoryMetadataStore,
+    MetadataStore,
+)
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.feature import FeatureGraph
@@ -217,23 +222,17 @@ class StoreCases:
     def case_inmemory(
         self, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """InMemory store case."""
-        # Registry is accessed globally via FeatureGraph.get_active()
         return (InMemoryMetadataStore, {})
 
     def case_duckdb(
         self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """DuckDB store case."""
         db_path = tmp_path / "test.duckdb"
-        # Registry is accessed globally via FeatureGraph.get_active()
         return (DuckDBMetadataStore, {"database": db_path})
 
     def case_duckdb_ducklake(
         self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """DuckDB store configured with DuckLake attachment."""
-
         db_path = tmp_path / "test_ducklake.duckdb"
         metadata_path = tmp_path / "ducklake_catalog.duckdb"
         storage_dir = tmp_path / "ducklake_storage"
@@ -254,9 +253,6 @@ class StoreCases:
     def case_clickhouse(
         self, clickhouse_db: str, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """ClickHouse store case."""
-        # Registry is accessed globally via FeatureGraph.get_active()
-        # clickhouse_db provides a clean database connection string
         return (ClickHouseMetadataStore, {"connection_string": clickhouse_db})
 
 
@@ -264,14 +260,10 @@ class BasicStoreCases:
     """Minimal store cases for backend-agnostic API tests."""
 
     def case_inmemory(self) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """Use the in-memory store implementation."""
-        # Registry is accessed globally via FeatureGraph.get_active()
         return (InMemoryMetadataStore, {})
 
     def case_duckdb(self, tmp_path: Path) -> tuple[type[MetadataStore], dict[str, Any]]:
-        """Use the DuckDB-backed store implementation."""
         db_path = tmp_path / "test.duckdb"
-        # Registry is accessed globally via FeatureGraph.get_active()
         return (DuckDBMetadataStore, {"database": db_path})
 
 
@@ -280,16 +272,159 @@ class BasicStoreCases:
 def persistent_store(
     store_config: tuple[type[MetadataStore], dict[str, Any]],
 ) -> MetadataStore:
-    """Parametrized persistent store fixture.
-
-    This fixture runs tests against the basic store matrix (in-memory + DuckDB).
-    Returns an unopened store - tests should use it with a context manager.
-
-    Usage:
-        def test_something(persistent_store, test_graph):
-            with persistent_store as store:
-                # Test code runs for all store types
-                # Access feature classes via test_graph.UpstreamFeatureA, etc.
-    """
+    """Parametrized persistent store (InMemory + DuckDB)."""
     store_type, config = store_config
     return store_type(**config)  # type: ignore[abstract]
+
+
+# ============= SIMPLIFIED FIXTURES FOR NON-HASH TESTS =============
+
+
+@pytest.fixture
+def default_store() -> InMemoryMetadataStore:
+    """Default store (InMemory, xxhash64)."""
+    from metaxy.versioning.types import HashAlgorithm
+
+    return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+
+
+@pytest.fixture
+def ibis_store(tmp_path: Path) -> DuckDBMetadataStore:
+    """Ibis store (DuckDB, xxhash64)."""
+    from metaxy.versioning.types import HashAlgorithm
+
+    return DuckDBMetadataStore(
+        database=tmp_path / "test.duckdb",
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        extensions=["hashfuncs"],
+    )
+
+
+class AnyStoreCases:
+    """Minimal store cases (InMemory + DuckDB)."""
+
+    @pytest.mark.inmemory
+    @pytest.mark.polars
+    def case_inmemory(self) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    def case_duckdb(self, tmp_path: Path) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        return DuckDBMetadataStore(
+            database=tmp_path / "test.duckdb",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            extensions=["hashfuncs"],
+        )
+
+
+class AllStoresCases:
+    """All store types (InMemory, DuckDB, ClickHouse)."""
+
+    @pytest.mark.inmemory
+    @pytest.mark.polars
+    def case_inmemory(self) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    def case_duckdb(self, tmp_path: Path) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        return DuckDBMetadataStore(
+            database=tmp_path / "test.duckdb",
+            hash_algorithm=HashAlgorithm.XXHASH64,
+            extensions=["hashfuncs"],
+        )
+
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.clickhouse
+    def case_clickhouse(self, clickhouse_db: str) -> MetadataStore:
+        from metaxy.versioning.types import HashAlgorithm
+
+        return ClickHouseMetadataStore(
+            connection_string=clickhouse_db,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+
+@fixture
+@parametrize_with_cases("store", cases=AllStoresCases)
+def any_store(store: MetadataStore) -> MetadataStore:
+    """Parametrized store (InMemory + DuckDB + ClickHouse)."""
+    return store
+
+
+@pytest.fixture
+def default_hash_algorithm():
+    """Single default hash algorithm for non-hash tests (xxhash64).
+
+    Use this fixture when you need a hash algorithm but aren't testing
+    hash algorithm behavior specifically.
+    """
+    from metaxy.versioning.types import HashAlgorithm
+
+    return HashAlgorithm.XXHASH64
+
+
+@fixture
+@parametrize_with_cases("algo", cases=HashAlgorithmCases)
+def hash_algorithm(algo):
+    """Parametrized hash algorithm fixture for hash algorithm tests.
+
+    This creates the Cartesian product with store fixtures that use it.
+    """
+    return algo
+
+
+@fixture
+def store_with_hash_algo_native(
+    any_store: MetadataStore, hash_algorithm: HashAlgorithm
+) -> MetadataStore:
+    """Parametrized store with parametrized hash algorithm.
+
+    Use with @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
+    to test all stores with all hash algorithms.
+    """
+    any_store._versioning_engine = "native"
+    any_store.hash_algorithm = hash_algorithm
+    try:
+        any_store.validate_hash_algorithm()
+    except HashAlgorithmNotSupportedError:
+        pytest.skip(
+            f"Hash algorithm {hash_algorithm} not supported by store {any_store.display()}"
+        )
+    return any_store
+
+
+@pytest.fixture
+def config_with_truncation(truncation_length):
+    """Fixture that sets MetaxyConfig with hash_truncation_length.
+
+    The test must be parametrized on truncation_length for this fixture to work.
+
+    Usage:
+        @pytest.mark.parametrize("truncation_length", [None, 8, 16, 32])
+        def test_something(config_with_truncation):
+            # Config is already set with the truncation length from the parameter
+            pass
+    """
+    from metaxy.config import MetaxyConfig
+
+    # Create config with truncation
+    config = MetaxyConfig.get().model_copy(
+        update={"hash_truncation_length": truncation_length}
+    )
+
+    # Set and restore config
+    with config.use():
+        yield config

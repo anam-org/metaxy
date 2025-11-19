@@ -1,13 +1,23 @@
 """Test metadata store provenance calculation against golden reference.
 
-Uses parametric metadata strategies to generate random upstream data, then compares
-the provenance calculation from resolve_update against the golden reference
-implementation used in the strategies.
+This file tests the CORRECTNESS of provenance calculations by comparing store
+implementations against a golden reference. It focuses on:
+- Verifying stores produce correct provenance (matches golden reference)
+- Testing deduplication logic (keep_latest_by_group)
+- Testing edge cases (duplicates, partial duplicates, etc.)
+
+Hash algorithm and truncation testing is handled in test_hash_algorithms.py.
+Store-specific behavior testing is handled in test_resolve_update.py.
+
+The goal here is to verify that the core provenance calculation is correct,
+not to test every possible combination of hash algorithm × store × truncation.
 """
+
+from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
 import polars.testing as pl_testing
@@ -24,19 +34,16 @@ from metaxy import (
     FeatureKey,
     SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy._utils import collect_to_polars
-from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    pass
 
 FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
@@ -130,27 +137,8 @@ class FeaturePlanCases:
         return graph, upstream_features, child_plan
 
 
-class TruncationCases:
-    def case_none(self):
-        return None
-
-    def case_8(self):
-        return 8
-
-
-@pytest_cases.fixture
-@parametrize_with_cases(
-    "hash_truncation_length",
-    cases=TruncationCases,
-)
-def metaxy_config(hash_truncation_length: int | None):
-    old = MetaxyConfig.get()
-    cfg_struct = old.model_dump()
-    cfg_struct["hash_truncation_length"] = hash_truncation_length
-    new = MetaxyConfig.model_validate(cfg_struct)
-    MetaxyConfig.set(new)
-    yield new
-    MetaxyConfig.set(old)
+# Removed: TruncationCases and metaxy_config fixture
+# Hash truncation is now tested in test_hash_algorithms.py
 
 
 def setup_store_with_data(
@@ -204,73 +192,34 @@ def setup_store_with_data(
     return empty_store, feature_plan_config, golden_downstream
 
 
-class EmptyStoreCases:
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path):
-        try:
-            return DuckDBMetadataStore(
-                tmp_path / "db.duckdb",
-                hash_algorithm=hash_algorithm,
-                extensions=["hashfuncs"],
-                prefer_native=True,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {DuckDBMetadataStore}"
-            )
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_clickhouse(self, hash_algorithm: HashAlgorithm, clickhouse_db: str):
-        try:
-            return ClickHouseMetadataStore(
-                connection_string=clickhouse_db,
-                hash_algorithm=hash_algorithm,
-                prefer_native=True,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {ClickHouseMetadataStore}"
-            )
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_inmemory(
-        self,
-        hash_algorithm: HashAlgorithm,
-    ) -> InMemoryMetadataStore:
-        """InMemory store case."""
-        try:
-            return InMemoryMetadataStore(
-                hash_algorithm=hash_algorithm,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
-            )
+# Removed: EmptyStoreCases with hash algorithm parametrization
+# Now using simplified fixtures from conftest.py
+# Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_store_resolve_update_matches_golden_provenance(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
     """Test metadata store provenance calculation matches golden reference.
 
     This test verifies that resolve_update computes the same provenance hashes
-    as the reference Polars calculator implementation.
+    as the reference Polars calculator implementation across all store types.
 
-    The test is parametrized over:
-    - Hash algorithms (xxhash64, xxhash32, wyhash, sha256, md5)
-    - Hash truncation lengths (None, 8)
-    - Feature plans (single_upstream, two_upstreams)
+    Tests all stores (InMemory, DuckDB, ClickHouse) to validate:
+    - Native SQL implementations (DuckDB, ClickHouse)
+    - Polars-based implementations (InMemory)
+    - Store-specific query optimizations
+
+    Uses default hash algorithm (xxhash64) and no truncation.
+    Hash algorithm and truncation testing is handled in test_hash_algorithms.py.
 
     Args:
-        hash_algorithm: Hash algorithm to test
-        hash_truncation_length: Optional hash truncation length
+        any_store: Store fixture (InMemory, DuckDB, or ClickHouse)
         feature_plan_config: Feature plan configuration from cases
-        tmp_path: Pytest fixture for temporary directory
     """
+    empty_store = any_store
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -331,13 +280,13 @@ def test_store_resolve_update_matches_golden_provenance(
 # ============= TEST: DEDUPLICATION WITH DUPLICATES =============
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_golden_reference_with_duplicate_timestamps(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
+    """Test golden reference with duplicate timestamps across all store types."""
+    empty_store = any_store
     """Test golden reference comparison with upstream metadata containing duplicate timestamps.
 
     This test verifies that:
@@ -447,12 +396,12 @@ def test_golden_reference_with_duplicate_timestamps(
         )
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 def test_golden_reference_with_all_duplicates_same_timestamp(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     graph: FeatureGraph,
 ):
+    """Test golden reference with all duplicates at same timestamp across all stores."""
+    empty_store = any_store
     """Test golden reference when all upstream samples have duplicate entries with same timestamp.
 
     This is an edge case where every sample has multiple versions with identical timestamps.
@@ -556,13 +505,13 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         )
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_golden_reference_partial_duplicates(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
+    """Test golden reference with partial duplicates across all store types."""
+    empty_store = any_store
     """Test golden reference with only some upstream samples having duplicates.
 
     This test ensures that:

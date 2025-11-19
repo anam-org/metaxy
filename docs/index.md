@@ -212,10 +212,12 @@ store.write_metadata(VoiceDetection, results)
 
 We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs.
 
-> [!WARNING] No Uniqueness Checks!
-> Metaxy doesn't attempt to perform any deduplication or uniqueness checks for performance reasons.
-> While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store.
+> [!WARNING] No Write Time Uniqueness Checks!
+> Metaxy doesn't enforce deduplication or uniqueness checks at **write time** for performance reasons.
+> While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice, it's up to the user to ensure that samples are not written multiple times to the metadata store.
 > Configuring deduplication or uniqueness checks in the store (database) is a good idea.
+> For example, the [SQLModel integration](learn/integrations/sqlmodel.md) can inject a composite primary key on `metaxy_data_version`, `metaxy_created_at` and the user-defined ID columns.
+> However, Metaxy only uses the latest version (by `metaxy_created_at`) at **read time**.
 
 ## What's Next?
 
