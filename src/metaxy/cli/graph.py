@@ -31,19 +31,16 @@ def push(
         dict[str, str] | None,
         cyclopts.Parameter(
             name=["--tags", "-t"],
-            help="Tags key-value pairs using dot-notation (e.g., --tags.git_commit abc123). `metaxy` tag is reserved for internal use.",
+            help="Arbitrary key-value pairs to attach to the pushed snapshot. Example: `--tags.git_commit abc123def`.",
         ),
     ] = None,
 ):
     """Serialize all Metaxy feature definitions (identified via feature discovery) to the metadata store.
 
     This is intended to be invoked in a CD pipeline **before** running Metaxy code in production.
-
-    Example:
-
-        $ metaxy graph push --tags.git_commit abc123def
     """
     from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.system.models import METAXY_TAG
     from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.metadata_store.types import AccessMode
 
@@ -51,6 +48,10 @@ def push(
     context.raise_command_cannot_override_project()
 
     metadata_store = context.get_store(store)
+
+    tags = tags or {}
+
+    assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
 
     with metadata_store.open(AccessMode.WRITE):
         result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
