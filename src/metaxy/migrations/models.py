@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal
 import pydantic
 from pydantic import Field as PydanticField
 from pydantic import TypeAdapter
-from pydantic.types import AwareDatetime
+from pydantic.types import AwareDatetime, ImportString
 
 if TYPE_CHECKING:
     from metaxy.graph.diff.diff_models import GraphDiff
@@ -50,7 +50,7 @@ class OperationConfig(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="allow")
 
-    type: str
+    type: ImportString[Any]
     features: list[str] = pydantic.Field(default_factory=list)
 
 
@@ -133,20 +133,14 @@ class Migration(pydantic.BaseModel, ABC):  # pyright: ignore[reportUnsafeMultipl
             # Validate structure has required fields
             op_config = OperationConfig.model_validate(op_dict)
 
-            try:
-                # Dynamically import and instantiate the operation class
-                module_path, class_name = op_config.type.rsplit(".", 1)
-                module = __import__(module_path, fromlist=[class_name])
-                op_cls = getattr(module, class_name)
+            # Use Pydantic's ImportString to automatically import the operation class
+            # ImportString validates and imports the class from the string path
+            op_cls: type = TypeAdapter(ImportString).validate_python(op_config.type)
 
-                # Pass the entire dict to the operation class (which inherits from BaseSettings)
-                # BaseSettings will extract the fields it needs and read from env vars
-                operation = op_cls.model_validate(op_dict)
-                operations.append(operation)
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to instantiate operation {op_config.type}: {e}"
-                ) from e
+            # Pass the entire dict to the operation class (which inherits from BaseSettings)
+            # BaseSettings will extract the fields it needs and read from env vars
+            operation = op_cls.model_validate(op_dict)
+            operations.append(operation)
 
         return operations
 

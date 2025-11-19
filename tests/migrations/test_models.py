@@ -289,12 +289,14 @@ def test_diff_migration_roundtrip():
 
 def test_operation_config_valid():
     """Test creating a valid OperationConfig."""
+    from metaxy.migrations.ops import DataVersionReconciliation
+
     config = OperationConfig(
         type="metaxy.migrations.ops.DataVersionReconciliation",
         features=["feature/a", "feature/b"],
     )
 
-    assert config.type == "metaxy.migrations.ops.DataVersionReconciliation"
+    assert config.type == DataVersionReconciliation
     assert config.features == ["feature/a", "feature/b"]
 
 
@@ -308,19 +310,12 @@ def test_operation_config_empty_features():
     assert config.features == []
 
 
-def test_operation_config_invalid_type_field():
-    """Test OperationConfig validates type as string."""
-    with pytest.raises(Exception):  # Pydantic validation error
-        OperationConfig(
-            type=123,  # pyright: ignore[reportArgumentType]  # Not a string - testing validation
-            features=["feature/a"],
-        )
-
-
 def test_operation_config_roundtrip():
     """Test OperationConfig serialization and deserialization with extra fields."""
+    from metaxy.migrations.ops import DataVersionReconciliation
+
     original = OperationConfig(
-        type="myproject.migrations.CustomOp",
+        type="metaxy.migrations.ops.DataVersionReconciliation",
         features=["feature/a", "feature/b"],
         custom_field="value",  # pyright: ignore[reportCallIssue]  # Extra field, allowed with extra="allow"
         batch_size=100,  # pyright: ignore[reportCallIssue]  # Extra field
@@ -332,7 +327,7 @@ def test_operation_config_roundtrip():
     # Deserialize back
     restored = OperationConfig.model_validate(dict_form)
 
-    assert restored.type == original.type
+    assert restored.type == original.type == DataVersionReconciliation
     assert restored.features == original.features
     # Extra fields are preserved
     assert dict_form["custom_field"] == "value"
@@ -402,7 +397,7 @@ def test_full_graph_migration_get_affected_features():
                 "features": ["feature/a", "feature/b"],
             },
             {
-                "type": "myproject.CustomBackfill",
+                "type": "metaxy.migrations.ops.DataVersionReconciliation",
                 "features": ["feature/c"],
             },
         ],
@@ -430,7 +425,7 @@ def test_full_graph_migration_deduplicates_features():
                 "features": ["feature/a", "feature/b"],
             },
             {
-                "type": "myproject.CustomBackfill",
+                "type": "metaxy.migrations.ops.DataVersionReconciliation",
                 "features": ["feature/b", "feature/c"],  # feature/b appears again
             },
         ],

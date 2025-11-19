@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 import tomli
 from pydantic import Field as PydanticField
 from pydantic import PrivateAttr, field_validator
+from pydantic.types import ImportString
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -98,7 +99,7 @@ class StoreConfig(BaseSettings):
         frozen=True,
     )
 
-    type: str = PydanticField(
+    type: ImportString[Any] = PydanticField(
         description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
     )
 
@@ -503,8 +504,8 @@ class MetaxyConfig(BaseSettings):
 
         store_config = self.stores[name]
 
-        # Import store class
-        store_class = self._import_class(store_config.type)
+        # Get store class (already imported by Pydantic's ImportString)
+        store_class = store_config.type
 
         # Extract configuration
         config_copy = store_config.config.copy()
@@ -564,20 +565,3 @@ class MetaxyConfig(BaseSettings):
             )
 
         return store
-
-    @staticmethod
-    def _import_class(class_path: str) -> type:
-        """Import class from module path.
-
-        Args:
-            class_path: Full import path like "metaxy.metadata_store.InMemoryMetadataStore"
-
-        Returns:
-            Imported class
-
-        Raises:
-            ImportError: If module or class not found
-        """
-        module_path, class_name = class_path.rsplit(".", 1)
-        module = __import__(module_path, fromlist=[class_name])
-        return getattr(module, class_name)
