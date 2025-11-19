@@ -25,6 +25,7 @@ from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
+    CoercibleToFeatureKey,
     FeatureKey,
     FeatureKeyAdapter,
     FieldKey,
@@ -133,72 +134,6 @@ class FeatureDep(pydantic.BaseModel):
 
     if TYPE_CHECKING:
 
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            feature: str,
-            columns: tuple[str, ...] | None = None,
-            rename: dict[str, str] | None = None,
-            fields_mapping: FieldsMapping | None = None,
-        ) -> None:
-            """Initialize from string key."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            feature: Sequence[str],
-            columns: tuple[str, ...] | None = None,
-            rename: dict[str, str] | None = None,
-            fields_mapping: FieldsMapping | None = None,
-        ) -> None:
-            """Initialize from sequence of parts."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            feature: FeatureKey,
-            columns: tuple[str, ...] | None = None,
-            rename: dict[str, str] | None = None,
-            fields_mapping: FieldsMapping | None = None,
-        ) -> None:
-            """Initialize from FeatureKey instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            feature: FeatureSpecProtocol,
-            columns: tuple[str, ...] | None = None,
-            rename: dict[str, str] | None = None,
-            fields_mapping: FieldsMapping | None = None,
-        ) -> None:
-            """Initialize from FeatureSpec instance."""
-            ...
-
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            feature: type[BaseFeature],
-            columns: tuple[str, ...] | None = None,
-            rename: dict[str, str] | None = None,
-            fields_mapping: FieldsMapping | None = None,
-        ) -> None:
-            """Initialize from BaseFeature class."""
-            ...
-
-        # Final signature combining all overloads
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             *,
@@ -221,12 +156,47 @@ IDColumns: TypeAlias = Sequence[
     str
 ]  # non-bound, should be used for feature specs with arbitrary id columns
 
+CoercibleToFeatureDep: TypeAlias = (
+    FeatureDep
+    | type["BaseFeature"]
+    | str
+    | Sequence[str]
+    | FeatureKey
+    | FeatureSpecProtocol
+)
+
 
 def _validate_id_columns(value: Any) -> tuple[str, ...]:
     """Coerce id_columns to tuple."""
     if isinstance(value, tuple):
         return value
     return tuple(value)
+
+
+def _validate_deps(value: Any) -> list[FeatureDep]:
+    """Coerce deps list, converting Feature classes to FeatureDep instances."""
+    # Import here to avoid circular dependency at module level
+    from metaxy.models.feature import BaseFeature
+
+    if not isinstance(value, list):
+        value = list(value) if hasattr(value, "__iter__") else [value]
+
+    result = []
+    for item in value:
+        if isinstance(item, FeatureDep):
+            # Already a FeatureDep, keep as-is
+            result.append(item)
+        elif isinstance(item, dict):
+            # It's a dict (from deserialization), let Pydantic construct FeatureDep from it
+            result.append(FeatureDep.model_validate(item))
+        elif isinstance(item, type) and issubclass(item, BaseFeature):
+            # It's a Feature class, convert to FeatureDep
+            result.append(FeatureDep(feature=item))
+        else:
+            # Try to construct FeatureDep from the item (handles FeatureSpec, etc.)
+            result.append(FeatureDep(feature=item))
+
+    return result
 
 
 class FeatureSpec(FrozenBaseModel):
@@ -237,7 +207,9 @@ class FeatureSpec(FrozenBaseModel):
             description="Columns that uniquely identify a sample in this feature.",
         )
     )
-    deps: list[FeatureDep] = pydantic.Field(default_factory=list)
+    deps: Annotated[list[FeatureDep], BeforeValidator(_validate_deps)] = pydantic.Field(
+        default_factory=list
+    )
     fields: Annotated[
         list[FieldSpec],
         BeforeValidator(CoersibleToFieldSpecsTypeAdapter.validate_python),
@@ -258,56 +230,41 @@ class FeatureSpec(FrozenBaseModel):
     )
 
     if TYPE_CHECKING:
-        # Overloads for type checking only - Pydantic handles actual initialization
-        @overload
+        # Overload for common case: list of FeatureDep instances
         @overload
         def __init__(
             self,
             *,
-            key: str,
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns,
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
-        @overload
+        # Overload for flexible case: list of coercible types
         @overload
         def __init__(
             self,
             *,
-            key: Sequence[str],
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns,
-            deps: list[FeatureDep] | None = None,
+            deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            key: FeatureKey,
-            id_columns: IDColumns,
-            deps: list[FeatureDep] | None = None,
-            fields: Sequence[str | FieldSpec] | None = None,
-            lineage: LineageRelationship | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
-            **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
-
-        # Final signature combining all overloads
+        # Implementation signature
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             *,
-            key: str | Sequence[str] | FeatureKey,
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns,
-            deps: list[FeatureDep] | None = None,
+            deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             lineage: LineageRelationship | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
@@ -434,53 +391,38 @@ class SampleFeatureSpec(FeatureSpec):
     )
 
     if TYPE_CHECKING:
-        # Overloads for type checking only - Pydantic handles actual initialization
-        @overload
+        # Overload for common case: list of FeatureDep instances
         @overload
         def __init__(
             self,
             *,
-            key: str,
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns | None = None,
             deps: list[FeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
-        @overload
         @overload
         def __init__(
             self,
             *,
-            key: Sequence[str],
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns | None = None,
-            deps: list[FeatureDep] | None = None,
+            deps: list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+        ) -> None: ...
 
-        @overload
-        @overload
-        def __init__(
-            self,
-            *,
-            key: FeatureKey,
-            id_columns: IDColumns | None = None,
-            deps: list[FeatureDep] | None = None,
-            fields: Sequence[str | FieldSpec] | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
-            **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
-
-        # Final signature combining all overloads
+        # Implementation signature
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             *,
-            key: str | Sequence[str] | FeatureKey,
+            key: CoercibleToFeatureKey,
             id_columns: IDColumns | None = None,
-            deps: list[FeatureDep] | None = None,
+            deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
             fields: Sequence[str | FieldSpec] | None = None,
             metadata: Mapping[str, JsonValue] | None = None,
             **kwargs: Any,
