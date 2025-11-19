@@ -15,10 +15,12 @@ from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
     SystemDataNotFoundError,
+    VersioningEngineMismatchError,
 )
 from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
 from metaxy.metadata_store.types import AccessMode
@@ -50,6 +52,7 @@ if TYPE_CHECKING:
 
 
 VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
+VersioningEngineOptions = Literal["auto", "native", "polars"]
 
 
 class MetadataStore(ABC):
@@ -76,23 +79,24 @@ class MetadataStore(ABC):
         *,
         versioning_engine_cls: type[VersioningEngineT],
         hash_algorithm: HashAlgorithm | None = None,
-        hash_truncation_length: int | None = None,
-        prefer_native: bool = True,
+        versioning_engine: VersioningEngineOptions = "auto",
         fallback_stores: list[MetadataStore] | None = None,
         auto_create_tables: bool | None = None,
     ):
         """
-        Initialize metadata store.
+        Initialize the metadata store.
 
         Args:
             hash_algorithm: Hash algorithm to use for field provenance.
                 Default: None (uses default algorithm for this store type)
-            hash_truncation_length: Length to truncate hashes to (minimum 8).
-                Default: None (uses global setting or no truncation)
-            prefer_native: If True, prefer native field provenance calculations when possible.
-                If False, always use Polars components. Default: True
+            versioning_engine: Which versioning engine to use.
+                - "auto": Prefer the store's native engine, fall back to Polars if needed
+                - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
+                    if provided dataframes are incompatible
+                - "polars": Always use the Polars engine
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
+                `VersioningEngineMismatchError` is not raised when reading from fallback stores.
             auto_create_tables: If True, automatically create tables when opening the store.
                 If None (default), reads from global MetaxyConfig (which reads from METAXY_AUTO_CREATE_TABLES env var).
                 If False, never auto-create tables.
@@ -102,11 +106,12 @@ class MetadataStore(ABC):
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
+            VersioningEngineMismatchError: If versioning_engine="native" and the user-provided dataframe has a wrong implementation
         """
         # Initialize state early so properties can check it
         self._is_open = False
         self._context_depth = 0
-        self._prefer_native = prefer_native
+        self._versioning_engine = versioning_engine
         self._allow_cross_project_writes = False
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
@@ -127,21 +132,11 @@ class MetadataStore(ABC):
 
         self.hash_algorithm = hash_algorithm
 
-        # Set hash truncation length - use explicit value or get from global setting
-        if hash_truncation_length is not None:
-            # Validate minimum length
-            if hash_truncation_length < 8:
-                raise ValueError(
-                    f"hash_truncation_length must be at least 8 characters, got {hash_truncation_length}"
-                )
-            self.hash_truncation_length = hash_truncation_length
-        else:
-            # Use global setting if available
-            from metaxy.utils.hashing import get_hash_truncation_length
-
-            self.hash_truncation_length = get_hash_truncation_length()
-
         self.fallback_stores = fallback_stores or []
+
+    @property
+    def hash_truncation_length(self) -> int:
+        return MetaxyConfig.get().hash_truncation_length or 64
 
     @overload
     def resolve_update(
@@ -151,6 +146,7 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -162,6 +158,7 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -172,6 +169,7 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -205,10 +203,12 @@ class MetadataStore(ABC):
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
             lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
                 If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
+            versioning_engine: Override the store's versioning engine for this operation.
             **kwargs: Backend-specific parameters
 
         Raises:
             ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
+            VersioningEngineMismatchError: If versioning_engine="native" and data has wrong implementation
 
         Examples:
             ```py
@@ -290,33 +290,64 @@ class MetadataStore(ABC):
         # consider (1) whether all upstream metadata has been loaded with the native implementation
         # (2) if samples have native implementation
 
-        implementation = self.native_implementation()
-        switched_to_polars = False
+        # Use parameter if provided, otherwise use store default
+        engine_mode = (
+            versioning_engine
+            if versioning_engine is not None
+            else self._versioning_engine
+        )
 
-        for upstream_key, df in upstream_by_key.items():
-            if df.implementation != implementation:
-                switched_to_polars = True
-                if self._prefer_native:
-                    PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                        expected=self.native_implementation(),
-                        actual=df.implementation,
-                        message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
-                    )
-                implementation = nw.Implementation.POLARS
-                break
-
-        if (
-            samples is not None
-            and samples.implementation != self.native_implementation()
-        ):
-            if self._prefer_native and not switched_to_polars:
-                PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                    expected=self.native_implementation(),
-                    actual=samples.implementation,
-                    message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
-                )
+        # If "polars" mode, force Polars immediately
+        if engine_mode == "polars":
             implementation = nw.Implementation.POLARS
             switched_to_polars = True
+        else:
+            implementation = self.native_implementation()
+            switched_to_polars = False
+
+            for upstream_key, df in upstream_by_key.items():
+                if df.implementation != implementation:
+                    switched_to_polars = True
+                    # Only raise error in "native" mode if no fallback stores configured.
+                    # If fallback stores exist, the implementation mismatch indicates data came
+                    # from fallback (different implementation), which is legitimate fallback access.
+                    # If data were local, it would have the native implementation.
+                    if engine_mode == "native" and not self.fallback_stores:
+                        raise VersioningEngineMismatchError(
+                            f"versioning_engine='native' but upstream feature `{upstream_key.to_string()}` "
+                            f"has implementation {df.implementation}, expected {self.native_implementation()}"
+                        )
+                    elif engine_mode == "auto" or (
+                        engine_mode == "native" and self.fallback_stores
+                    ):
+                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                            expected=self.native_implementation(),
+                            actual=df.implementation,
+                            message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
+                        )
+                    implementation = nw.Implementation.POLARS
+                    break
+
+            if (
+                samples is not None
+                and samples.implementation != self.native_implementation()
+            ):
+                if not switched_to_polars:
+                    if engine_mode == "native":
+                        # Always raise error for samples with wrong implementation, regardless
+                        # of fallback stores, because samples come from user argument, not from fallback
+                        raise VersioningEngineMismatchError(
+                            f"versioning_engine='native' but provided `samples` have implementation {samples.implementation}, "
+                            f"expected {self.native_implementation()}"
+                        )
+                    elif engine_mode == "auto":
+                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                            expected=self.native_implementation(),
+                            actual=samples.implementation,
+                            message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
+                        )
+                implementation = nw.Implementation.POLARS
+                switched_to_polars = True
 
         if switched_to_polars:
             if current_metadata:
@@ -520,16 +551,6 @@ class MetadataStore(ABC):
                     f"Fallback store {i} uses hash_algorithm='{fallback_store.hash_algorithm.value}' "
                     f"but this store uses '{self.hash_algorithm.value}'. "
                     f"All stores in a fallback chain must use the same hash algorithm."
-                )
-
-        # Validate fallback stores use the same hash truncation length
-        for i, fallback_store in enumerate(self.fallback_stores):
-            if fallback_store.hash_truncation_length != self.hash_truncation_length:
-                raise ValueError(
-                    f"Fallback store {i} uses hash_truncation_length="
-                    f"'{fallback_store.hash_truncation_length}' "
-                    f"but this store uses '{self.hash_truncation_length}'. "
-                    f"All stores in a fallback chain must use the same hash truncation length."
                 )
 
     def __exit__(

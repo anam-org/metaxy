@@ -178,4 +178,13 @@ env = [
 filterwarnings = [
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",
+  "ignore::hypothesis.errors.NonInteractiveExampleWarning",
+]
+markers = [
+  "inmemory: InMemory store tests",
+  "duckdb: DuckDB store tests",
+  "clickhouse: ClickHouse store tests",
+  "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
+  "native: Stores with native compute capabilities",
+  "polars: Stores using Polars for compute",
 ]

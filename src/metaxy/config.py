@@ -2,6 +2,8 @@
 # pyright: reportImportCycles=false
 
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -327,6 +329,26 @@ class MetaxyConfig(BaseSettings):
         """Reset the current Metaxy configuration to None."""
         _metaxy_config.set(None)
 
+    @contextmanager
+    def use(self) -> Iterator[Self]:
+        """Use this configuration temporarily, restoring previous config on exit.
+
+        Example:
+            ```py
+            config = MetaxyConfig(project="test")
+            with config.use():
+                # Code here uses test config
+                assert MetaxyConfig.get().project == "test"
+            # Previous config restored
+            ```
+        """
+        previous = _metaxy_config.get()
+        _metaxy_config.set(self)
+        try:
+            yield self
+        finally:
+            _metaxy_config.set(previous)
+
     @classmethod
     def load(
         cls,
@@ -435,7 +457,7 @@ class MetaxyConfig(BaseSettings):
             # Move to parent
             parent = current.parent
             if parent == current:
-                # Reached root
+                # Reached roothash_tru
                 break
             current = parent
 
