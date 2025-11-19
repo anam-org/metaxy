@@ -122,10 +122,12 @@ def test_field_keys_case_sensitive():
 
 def test_feature_spec_requires_id_columns():
     """Test that FeatureSpec (production API) requires id_columns parameter."""
+    from pydantic import ValidationError
+
     from metaxy.models.feature_spec import FeatureSpec
 
     # This should fail - id_columns is required
-    with pytest.raises(TypeError, match="id_columns"):
+    with pytest.raises(ValidationError, match="id_columns"):
         FeatureSpec(
             key="test/feature"
         )  # Missing id_columns  # pyright: ignore[reportCallIssue]
