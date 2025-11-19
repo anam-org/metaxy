@@ -10,29 +10,29 @@ from metaxy.metadata_store import InMemoryMetadataStore
 
 def test_store_config_basic() -> None:
     """Test basic StoreConfig structure."""
+    from metaxy import InMemoryMetadataStore
+
     config = StoreConfig(
         type="metaxy.metadata_store.InMemoryMetadataStore",
         config={},
     )
 
-    assert config.type == "metaxy.metadata_store.InMemoryMetadataStore"
+    assert config.type == InMemoryMetadataStore
     assert config.config == {}
 
 
 def test_store_config_with_options() -> None:
     """Test StoreConfig with configuration options."""
+    from metaxy import InMemoryMetadataStore
+
     config = StoreConfig(
-        type="metaxy_delta.DeltaMetadataStore",
+        type="metaxy.metadata_store.InMemoryMetadataStore",
         config={
-            "table_uri": "s3://bucket/metadata",
-            "storage_options": {"region": "us-west-2"},
             "fallback_stores": ["prod"],
         },
     )
 
-    assert config.type == "metaxy_delta.DeltaMetadataStore"
-    assert config.config["table_uri"] == "s3://bucket/metadata"
-    assert config.config["storage_options"]["region"] == "us-west-2"
+    assert config.type == InMemoryMetadataStore
     assert config.config["fallback_stores"] == ["prod"]
 
 
@@ -73,6 +73,8 @@ def test_metaxy_config_from_dict() -> None:
 
 def test_load_from_metaxy_toml(tmp_path: Path) -> None:
     """Test loading config from metaxy.toml."""
+    from metaxy import InMemoryMetadataStore
+
     # Create metaxy.toml
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text("""
@@ -96,8 +98,8 @@ fallback_stores = []
 
     assert config.store == "dev"
     assert len(config.stores) == 2
-    assert config.stores["dev"].type == "metaxy.metadata_store.InMemoryMetadataStore"
-    assert config.stores["prod"].type == "metaxy.metadata_store.InMemoryMetadataStore"
+    assert config.stores["dev"].type == InMemoryMetadataStore
+    assert config.stores["prod"].type == InMemoryMetadataStore
 
 
 def test_load_from_pyproject_toml(tmp_path: Path) -> None:
@@ -221,6 +223,8 @@ def test_get_store_nonexistent_raises() -> None:
 
 def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test environment variable override (pydantic-settings built-in)."""
+    from metaxy import InMemoryMetadataStore
+
     # Create config file
     config_file = tmp_path / "metaxy.toml"
     config_file.write_text("""
@@ -247,7 +251,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
     # Store from env var should be available
     assert "prod" in config.stores
-    assert config.stores["prod"].type == "metaxy.metadata_store.InMemoryMetadataStore"
+    assert config.stores["prod"].type == InMemoryMetadataStore
 
 
 def test_hash_algorithm_must_match_in_fallback_chain() -> None:

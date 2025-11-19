@@ -443,6 +443,8 @@ def test_full_graph_migration_operation_fails():
 
 def test_full_graph_migration_invalid_operation_class():
     """Test that migration fails when operation class cannot be loaded."""
+    from pydantic_core import ValidationError
+
     temp_module = TempFeatureModule("test_invalid_op")
 
     feature_spec = SampleFeatureSpec(
@@ -457,7 +459,7 @@ def test_full_graph_migration_invalid_operation_class():
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
-        # Create migration with non-existent operation class
+        # Migration can be created, but validation error happens when operations are accessed
         migration = FullGraphMigration(
             migration_id="test_006",
             parent="initial",
@@ -471,9 +473,9 @@ def test_full_graph_migration_invalid_operation_class():
             ],
         )
 
-        # Should raise error when trying to execute
-        with pytest.raises(ValueError, match="Failed to instantiate operation"):
-            migration.execute(store, "default", dry_run=False)
+        # ImportString validation fails when get_affected_features tries to validate the operation
+        with pytest.raises(ValidationError, match="Invalid python path"):
+            migration.get_affected_features(store, "default")
 
     temp_module.cleanup()
 
