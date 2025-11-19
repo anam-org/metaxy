@@ -252,7 +252,7 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
 def test_hash_algorithm_must_match_in_fallback_chain() -> None:
     """Test that all stores in a fallback chain must use the same hash algorithm."""
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={
@@ -288,7 +288,7 @@ def test_hash_algorithm_must_match_in_fallback_chain() -> None:
 
 def test_hash_algorithm_defaults_to_xxhash64() -> None:
     """Test that hash_algorithm defaults to XXHASH64 when not specified."""
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={
@@ -343,7 +343,7 @@ def test_hash_algorithm_conflict_raises_error() -> None:
 
 def test_store_respects_configured_hash_algorithm() -> None:
     """Test that instantiated store uses the configured hash algorithm."""
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={

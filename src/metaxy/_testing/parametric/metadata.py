@@ -18,13 +18,16 @@ from polars.testing.parametric import column, dataframes
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_CREATED_AT,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -103,7 +106,7 @@ def calculate_provenance_by_field_polars(
     Example:
         ```python
         from metaxy.data_versioning.calculators.polars import calculate_provenance_by_field_polars
-        from metaxy.provenance.types import HashAlgorithm
+        from metaxy.versioning.types import HashAlgorithm
 
         result = calculate_provenance_by_field_polars(
             joined_df,
@@ -325,6 +328,17 @@ def feature_metadata_strategy(
 
     df = df.with_columns(sample_hash.alias(METAXY_PROVENANCE))
 
+    # Add data_version columns (default to provenance values)
+    df = df.with_columns(
+        pl.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+        pl.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+    )
+
+    # Add created_at timestamp column
+    from datetime import datetime, timezone
+
+    df = df.with_columns(pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT))
+
     # If id_columns_df was provided, replace the generated ID columns with provided ones
     if id_columns_df is not None:
         # Drop the generated ID columns and add the provided ones
@@ -526,7 +540,7 @@ def downstream_metadata_strategy(
         from hypothesis import given
         from metaxy import FeatureGraph, FeatureKey
         from metaxy._testing.parametric import downstream_metadata_strategy
-        from metaxy.provenance.types import HashAlgorithm
+        from metaxy.versioning.types import HashAlgorithm
 
         graph = FeatureGraph()
         # ... define features ...
@@ -593,13 +607,13 @@ def downstream_metadata_strategy(
         )
         return ({}, downstream_df)
 
-    # Use the new PolarsProvenanceTracker to calculate provenance
+    # Use the new PolarsVersioningEngine to calculate provenance
     import narwhals as nw
 
-    from metaxy.provenance.polars import PolarsProvenanceTracker
+    from metaxy.versioning.polars import PolarsVersioningEngine
 
-    # Create tracker (only accepts plan parameter)
-    tracker = PolarsProvenanceTracker(plan=feature_plan)
+    # Create engine (only accepts plan parameter)
+    engine = PolarsVersioningEngine(plan=feature_plan)
 
     # Convert upstream_data keys from strings to FeatureKey objects and wrap in Narwhals
     # Keys are simple strings like "parent", "child" that need to be wrapped in a list
@@ -610,7 +624,7 @@ def downstream_metadata_strategy(
 
     # Load upstream with provenance calculation
     # Note: hash_length is read from MetaxyConfig.get().hash_truncation_length internally
-    downstream_df = tracker.load_upstream_with_provenance(
+    downstream_df = engine.load_upstream_with_provenance(
         upstream=upstream_dict,
         hash_algo=hash_algorithm,
         filters=None,
@@ -625,9 +639,16 @@ def downstream_metadata_strategy(
         )
 
     # Use Narwhals lit since downstream_df is a Narwhals DataFrame
+    from datetime import datetime, timezone
+
     downstream_df = downstream_df.with_columns(
         nw.lit(feature_versions[downstream_feature_key]).alias(METAXY_FEATURE_VERSION),
         nw.lit(snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+        # Add data_version columns (default to provenance)
+        nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+        nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+        # Add created_at timestamp
+        nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
     )
 
     # Convert back to native Polars DataFrame for the return type

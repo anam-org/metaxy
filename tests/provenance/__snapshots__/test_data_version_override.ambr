@@ -1,0 +1,181 @@
+# serializer version: 1
+# name: test_basic_data_version_override
+  list([
+    dict({
+      'field_data_version': dict({
+        'computed': '11963107521638063870',
+      }),
+      'field_provenance': dict({
+        'computed': '11963107521638063870',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'computed': '8435892136126567302',
+      }),
+      'field_provenance': dict({
+        'computed': '8435892136126567302',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_data_version_cleanup_in_result
+  list([
+    dict({
+      'field_data_version': dict({
+        'computed': '10525834463981181260',
+      }),
+      'field_provenance': dict({
+        'computed': '10525834463981181260',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'computed': '12548250042433492782',
+      }),
+      'field_provenance': dict({
+        'computed': '12548250042433492782',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_data_version_propagation_with_renames
+  list([
+    dict({
+      'field_data_version': dict({
+        'computed': '13446334202977689275',
+      }),
+      'field_provenance': dict({
+        'computed': '13446334202977689275',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'computed': '9255965263495477969',
+      }),
+      'field_provenance': dict({
+        'computed': '9255965263495477969',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_default_behavior_no_override
+  list([
+    dict({
+      'field_data_version': dict({
+        'computed': '10882851507332405014',
+      }),
+      'field_provenance': dict({
+        'computed': '10882851507332405014',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'computed': '4395250408419160062',
+      }),
+      'field_provenance': dict({
+        'computed': '4395250408419160062',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_multiple_upstreams_with_overrides
+  list([
+    dict({
+      'field_data_version': dict({
+        'fusion': '1012548481833254359',
+      }),
+      'field_provenance': dict({
+        'fusion': '1012548481833254359',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'fusion': '12914839798255203693',
+      }),
+      'field_provenance': dict({
+        'fusion': '12914839798255203693',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---
+# name: test_propagation_chain_with_data_version
+  dict({
+    'feature_b': list([
+      dict({
+        'field_data_version': dict({
+          'field_b': '12132375293110510062',
+        }),
+        'field_provenance': dict({
+          'field_b': '12132375293110510062',
+        }),
+        'sample_uid': 1,
+      }),
+      dict({
+        'field_data_version': dict({
+          'field_b': '12132375293110510062',
+        }),
+        'field_provenance': dict({
+          'field_b': '12132375293110510062',
+        }),
+        'sample_uid': 2,
+      }),
+    ]),
+    'feature_c': list([
+      dict({
+        'field_data_version': dict({
+          'field_c': '13542581621807655539',
+        }),
+        'field_provenance': dict({
+          'field_c': '13542581621807655539',
+        }),
+        'sample_uid': 1,
+      }),
+      dict({
+        'field_data_version': dict({
+          'field_c': '13542581621807655539',
+        }),
+        'field_provenance': dict({
+          'field_c': '13542581621807655539',
+        }),
+        'sample_uid': 2,
+      }),
+    ]),
+  })
+# ---
+# name: test_selective_field_override
+  list([
+    dict({
+      'field_data_version': dict({
+        'uses_field1': '5210969844798757423',
+        'uses_field2': '2295718472220160859',
+      }),
+      'field_provenance': dict({
+        'uses_field1': '5210969844798757423',
+        'uses_field2': '2295718472220160859',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'uses_field1': '5210969844798757423',
+        'uses_field2': '6273624679320291402',
+      }),
+      'field_provenance': dict({
+        'uses_field1': '5210969844798757423',
+        'uses_field2': '6273624679320291402',
+      }),
+      'sample_uid': 2,
+    }),
+  ])
+# ---

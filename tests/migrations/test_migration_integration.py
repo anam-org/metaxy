@@ -24,7 +24,7 @@ from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
-from metaxy.migrations import MigrationExecutor, detect_migration
+from metaxy.migrations import MigrationExecutor, detect_diff_migration
 from metaxy.models.feature import FeatureGraph
 
 
@@ -188,7 +188,7 @@ def test_basic_migration_flow(
         store_v1.write_metadata(SimpleV1, data)
 
         # Record v1 snapshot
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, simple_graph_v2)
@@ -199,7 +199,7 @@ def test_basic_migration_flow(
     with simple_graph_v2.use(), store_v2.open(AccessMode.WRITE):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
         # This compares latest snapshot in store (v1) with active graph (v2)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -220,7 +220,7 @@ def test_basic_migration_flow(
 
         # Step 4: Record v2 snapshot (BEFORE executing migration)
         # Migration needs both snapshots to be recorded
-        store_v2.record_feature_graph_snapshot()
+        SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Step 5: Execute migration
         storage = SystemTableStorage(store_v2)
@@ -296,7 +296,7 @@ def test_upstream_downstream_migration(
             store_v1.write_metadata(DownstreamV1, diff.added)
 
         # Record v1 snapshot
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Step 2: Migrate to v2 graph
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -309,7 +309,7 @@ def test_upstream_downstream_migration(
 
     with upstream_downstream_v2.use(), store_v2:
         # Step 3: Detect migration (before recording v2 snapshot)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -327,7 +327,7 @@ def test_upstream_downstream_migration(
         assert migration_summary == snapshot(name="affected_features")
 
         # Step 4: Record v2 snapshot (BEFORE executing migration)
-        store_v2.record_feature_graph_snapshot()
+        SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Step 5: Simulate user manually updating upstream (root feature)
         # This is what user must do when root features change
@@ -397,7 +397,7 @@ def test_migration_idempotency(
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, upstream_downstream_v2)
@@ -423,7 +423,7 @@ def test_migration_idempotency(
         store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Create downstream-only migration (detect before recording v2 snapshot)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -432,7 +432,7 @@ def test_migration_idempotency(
         assert migration is not None
 
         # Record v2 snapshot before executing
-        store_v2.record_feature_graph_snapshot()
+        SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Test idempotency using the detected migration (includes both upstream + downstream)
         storage = SystemTableStorage(store_v2)
@@ -497,12 +497,12 @@ def test_migration_dry_run(
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
-    # Get initial data (outside context manager to ensure it's available later)
+    # Get initial data (need graph context to read with latest_only=True)
     # Initialize to satisfy type checker - will be assigned before use
     initial_data = pl.DataFrame()  # Placeholder
-    with store_v1:
+    with upstream_downstream_v1.use(), store_v1:
         initial_data = collect_to_polars(
             store_v1.read_metadata(DownstreamV1, current_only=False)
         )
@@ -531,7 +531,7 @@ def test_migration_dry_run(
         store_v2.write_metadata(UpstreamV2, new_upstream_data)
 
         # Detect and execute with dry_run=True (detect before recording v2 snapshot)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -540,7 +540,7 @@ def test_migration_dry_run(
         assert migration is not None
 
         # Record v2 snapshot before executing
-        store_v2.record_feature_graph_snapshot()
+        SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Test dry-run mode
         storage = SystemTableStorage(store_v2)
@@ -555,7 +555,8 @@ def test_migration_dry_run(
         assert result.features_failed == 1  # Upstream fails even in dry-run
         assert result.features_skipped == 1  # Downstream skipped
 
-        # Verify data unchanged
+    # Verify data unchanged (need graph context to read with latest_only=True)
+    with upstream_downstream_v2.use(), store_v2:
         final_data = collect_to_polars(
             store_v2.read_metadata(DownstreamV2, current_only=False)
         )
@@ -649,7 +650,7 @@ def test_field_dependency_change(tmp_path):
         if len(diff.added) > 0:
             store_v1.write_metadata(DownstreamV1, diff.added)
 
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
@@ -658,7 +659,7 @@ def test_field_dependency_change(tmp_path):
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -775,7 +776,7 @@ def test_feature_dependency_swap(tmp_path):
         if len(diff.added) > 0:
             store_v1.write_metadata(down_v1, diff.added)
 
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Migrate to v2
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
@@ -785,7 +786,7 @@ def test_feature_dependency_swap(tmp_path):
 
     with graph_v2.use(), store_v2:
         # Detect migration (before recording v2 snapshot)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -818,10 +819,10 @@ def test_no_changes_detected(tmp_path, simple_graph_v1: FeatureGraph):
         )
         data = add_metaxy_provenance_column(data, SimpleV1)
         store.write_metadata(SimpleV1, data)
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         # Try to detect migration (same graph)
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -848,7 +849,7 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
         )
         data = add_metaxy_provenance_column(data, SimpleV1)
         store_v1.write_metadata(SimpleV1, data)
-        store_v1.record_feature_graph_snapshot()
+        SystemTableStorage(store_v1).push_graph_snapshot()
 
     # Create v2 with additional feature
     temp_v2 = TempFeatureModule("test_new_feature_v2")
@@ -870,11 +871,11 @@ def test_migration_with_new_feature(tmp_path, simple_graph_v1: FeatureGraph):
     store_v2 = migrate_store_to_graph(store_v1, graph_v2)
 
     with graph_v2.use(), store_v2:
-        store_v2.record_feature_graph_snapshot()
+        SystemTableStorage(store_v2).push_graph_snapshot()
 
         # Detect migration
         # Use the project from one of the features in the graph
-        migration = detect_migration(
+        migration = detect_diff_migration(
             store_v2,
             project="default",
             ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -952,7 +953,7 @@ def test_full_graph_migration_integration(tmp_path):
         if len(diff.added) > 0:
             store.write_metadata(Downstream, diff.added)
 
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         # Create FullGraphMigration using the test operation from test_operations
@@ -1001,7 +1002,7 @@ def test_full_graph_migration_empty_operations(tmp_path):
     graph = temp_module.graph
 
     with graph.use(), InMemoryMetadataStore() as store:
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
         from metaxy.migrations.models import FullGraphMigration

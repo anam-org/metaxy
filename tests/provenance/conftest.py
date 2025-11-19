@@ -10,7 +10,7 @@ from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 @pytest.fixture
@@ -26,6 +26,11 @@ def upstream_video_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"frames": "video_frame_hash_3", "audio": "video_audio_hash_3"},
                 ],
                 "metaxy_provenance": ["video_prov_1", "video_prov_2", "video_prov_3"],
+                "metaxy_data_version_by_field": [
+                    {"frames": "video_frame_hash_1", "audio": "video_audio_hash_1"},
+                    {"frames": "video_frame_hash_2", "audio": "video_audio_hash_2"},
+                    {"frames": "video_frame_hash_3", "audio": "video_audio_hash_3"},
+                ],
             }
         ).lazy()
     )
@@ -44,6 +49,11 @@ def upstream_audio_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"waveform": "audio_waveform_hash_3"},
                 ],
                 "metaxy_provenance": ["audio_prov_1", "audio_prov_2", "audio_prov_3"],
+                "metaxy_data_version_by_field": [
+                    {"waveform": "audio_waveform_hash_1"},
+                    {"waveform": "audio_waveform_hash_2"},
+                    {"waveform": "audio_waveform_hash_3"},
+                ],
             }
         ).lazy()
     )
@@ -249,6 +259,18 @@ def upstream_metadata_multi_field() -> nw.LazyFrame[pl.LazyFrame]:
                     },
                 ],
                 "metaxy_provenance": ["multi_prov_1", "multi_prov_2"],
+                "metaxy_data_version_by_field": [
+                    {
+                        "frames": "frame_hash_1",
+                        "audio": "audio_hash_1",
+                        "text": "text_hash_1",
+                    },
+                    {
+                        "frames": "frame_hash_2",
+                        "audio": "audio_hash_2",
+                        "text": "text_hash_2",
+                    },
+                ],
             }
         ).lazy()
     )

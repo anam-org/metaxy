@@ -16,6 +16,7 @@ dependencies = [
   "pydantic>=2.11.9",
   "pydantic-settings>=2.11.0",
   "pyyaml>=6.0.0",
+  "sqlglot>=27.29.0",
   "tomli>=2.3.0",
   "rich>=13.0.0",
 ]

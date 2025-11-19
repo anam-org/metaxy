@@ -2,9 +2,9 @@
 
 A few types used in Metaxy here and there.
 
-::: metaxy.provenance.types.LazyIncrement
+::: metaxy.versioning.types.LazyIncrement
 
-::: metaxy.provenance.types.Increment
+::: metaxy.versioning.types.Increment
 
 ::: metaxy.HashAlgorithm
     options:

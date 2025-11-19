@@ -12,7 +12,9 @@ pytest.importorskip("pyarrow")
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
+from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 
 def test_duckdb_table_naming(
@@ -32,7 +34,7 @@ def test_duckdb_table_naming(
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1],
-                "metaxy_provenance_by_field": [{"frames": "h1", "audio": "h1"}],
+                METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], metadata)
@@ -40,6 +42,37 @@ def test_duckdb_table_naming(
         # Check table was created with correct name using Ibis
         table_names = store.ibis_conn.list_tables()
         assert "test_stores__upstream_a" in table_names
+
+
+def test_duckdb_table_prefix_applied(
+    tmp_path: Path, test_graph, test_features: dict[str, Any]
+) -> None:
+    """Prefix should apply to feature and system tables."""
+    db_path = tmp_path / "prefixed.duckdb"
+    table_prefix = "prod_v2_"
+    feature = test_features["UpstreamFeatureA"]
+
+    with DuckDBMetadataStore(
+        db_path, auto_create_tables=True, table_prefix=table_prefix
+    ) as store:
+        metadata = pl.DataFrame(
+            {
+                "sample_uid": [1],
+                METAXY_PROVENANCE_BY_FIELD: [{"frames": "h1", "audio": "h1"}],
+            }
+        )
+        store.write_metadata(feature, metadata)
+
+        expected_feature_table = table_prefix + feature.spec().key.table_name
+        expected_system_table = table_prefix + FEATURE_VERSIONS_KEY.table_name
+
+        # Record snapshot to ensure system table is materialized
+        SystemTableStorage(store).push_graph_snapshot()
+
+        table_names = set(store.ibis_conn.list_tables())
+        assert expected_feature_table in table_names
+        assert store.get_table_name(feature.spec().key) == expected_feature_table
+        assert store.get_table_name(FEATURE_VERSIONS_KEY) == expected_system_table
 
 
 def test_duckdb_with_custom_config(
@@ -240,7 +273,7 @@ def test_duckdb_config_with_extensions() -> None:
 def test_duckdb_config_with_hash_algorithm() -> None:
     """Test DuckDB store config with specific hash algorithm."""
     from metaxy.config import MetaxyConfig, StoreConfig
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
         stores={

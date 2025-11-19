@@ -1,7 +1,7 @@
 """Migration system for metadata version updates."""
 
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.migrations.detector import detect_migration
+from metaxy.migrations.detector import detect_diff_migration
 from metaxy.migrations.executor import MigrationExecutor
 from metaxy.migrations.models import (
     DiffMigration,
@@ -26,7 +26,7 @@ __all__ = [
     "DataVersionReconciliation",
     "MetadataBackfill",
     # Migration workflow
-    "detect_migration",
+    "detect_diff_migration",
     "MigrationExecutor",
     "SystemTableStorage",
 ]

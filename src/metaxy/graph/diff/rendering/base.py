@@ -10,7 +10,7 @@ from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RenderConfig:
     """Configuration for graph rendering.
 

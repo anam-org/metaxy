@@ -9,8 +9,6 @@ can be controlled through various methods:
 
 import os
 
-from sqlmodel import Field
-
 from metaxy import FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy._testing import TempMetaxyProject
 from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
@@ -18,7 +16,7 @@ from metaxy.ext.sqlmodel import BaseSQLModelFeature
 
 
 class SQLModelFeature(BaseSQLModelFeature):
-    sample_id: str
+    sample_uid: str
 
 
 def test_auto_table_naming_enabled_by_default():
@@ -35,7 +33,6 @@ def test_auto_table_naming_enabled_by_default():
         ),
     ):
         # No __tablename__ specified
-        uid: str = Field(primary_key=True)
         value: str
 
     # Should automatically be set to "test__feature"
@@ -60,7 +57,6 @@ def test_auto_table_naming_disabled_explicit_config():
         ),
     ):
         # No __tablename__ specified - should NOT use feature key table name
-        uid: str = Field(primary_key=True)
         value: str
 
     # Should NOT have the auto-generated name from feature key
@@ -91,7 +87,6 @@ def test_auto_table_naming_still_allows_explicit():
         ),
     ):
         __tablename__: str = "custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
-        uid: str = Field(primary_key=True)
         value: str
 
     # Explicit __tablename__ should work regardless of config
@@ -126,7 +121,6 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        uid: str = Field(primary_key=True)
         value: str
 
     # Should NOT have the auto-generated name from feature key
@@ -161,7 +155,6 @@ def test_auto_table_naming_env_var():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            uid: str = Field(primary_key=True)
             value: str
 
         # Should NOT have the auto-generated name from feature key
@@ -207,7 +200,6 @@ def test_config_priority_init_over_env():
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            uid: str = Field(primary_key=True)
             value: str
 
         # Should NOT have the auto-generated name from feature key
@@ -252,7 +244,6 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        uid: str = Field(primary_key=True)
         value: str
 
     # Should NOT have the auto-generated name from feature key
@@ -281,7 +272,7 @@ def test_multiple_features_with_config_change():
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        uid: str = Field(primary_key=True)
+        pass
 
     # Should have auto-generated name
     tablename = str(Feature1.__tablename__)  # type: ignore[arg-type]
@@ -302,7 +293,7 @@ def test_multiple_features_with_config_change():
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        uid: str = Field(primary_key=True)
+        pass
 
     # Should NOT have the auto-generated name from feature key
     tablename = str(Feature2.__tablename__)  # type: ignore[arg-type]

@@ -13,6 +13,7 @@ from metaxy.graph.diff.diff_models import (
 )
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
@@ -170,7 +171,7 @@ class TestSnapshotResolver:
 
         with InMemoryMetadataStore() as store:
             # Record a snapshot
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 
@@ -383,7 +384,7 @@ class TestGraphDiffer:
 
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 

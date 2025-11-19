@@ -33,13 +33,29 @@ METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
 METAXY_FEATURE_TRACKING_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_tracking_version"
 """Hash of feature dependencies and ID columns (tracks structural changes)."""
 
+METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
+"""Field-level data version hashes (struct column mapping field names to version hashes).
+
+Similar to provenance_by_field, but can be user-overridden to implement custom versioning
+(e.g., content hashes, timestamps, semantic versions)."""
+
+METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
+"""Hash of metaxy_data_version_by_field -- a single string value."""
+
+METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
+"""Timestamp when the metadata row was created."""
+
 # --- System Column Sets ------------------------------------------------------------
 
 ALL_SYSTEM_COLUMNS = frozenset(
     {
         METAXY_PROVENANCE_BY_FIELD,
+        METAXY_PROVENANCE,
         METAXY_FEATURE_VERSION,
         METAXY_SNAPSHOT_VERSION,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
+        METAXY_CREATED_AT,
     }
 )
 """All Metaxy-managed column names that are injected into feature tables."""
@@ -49,6 +65,9 @@ _DROPPABLE_COLUMNS = frozenset(
     {
         METAXY_FEATURE_VERSION,
         METAXY_SNAPSHOT_VERSION,
+        METAXY_CREATED_AT,
+        METAXY_DATA_VERSION_BY_FIELD,
+        METAXY_DATA_VERSION,
     }
 )
 

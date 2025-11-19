@@ -16,6 +16,7 @@ from metaxy.metadata_store import (
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
 
 # Context Manager Tests
@@ -250,9 +251,7 @@ def test_has_feature_local(
 # System Tables Tests
 
 
-def test_system_tables(
-    persistent_store, test_graph, test_features: dict[str, Any]
-) -> None:
+def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
     """Test that system tables work correctly.
 
     Args:
@@ -261,9 +260,7 @@ def test_system_tables(
     """
     from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
 
-    graph, _ = test_graph
-
-    with graph.use(), persistent_store as store:
+    with persistent_store as store:
         # Write data and record version
         data = pl.DataFrame(
             {
@@ -275,7 +272,7 @@ def test_system_tables(
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data)
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         # Read system table
         version_history = collect_to_polars(

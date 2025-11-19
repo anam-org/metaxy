@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
-import polars as pl
+from narwhals.typing import Frame
 from typing_extensions import Self
 
 from metaxy.metadata_store.base import MetadataStore
@@ -22,8 +22,10 @@ from metaxy.metadata_store.exceptions import (
 )
 from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import BaseFeature
+from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.ibis import IbisVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
     import ibis
@@ -70,6 +72,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         *,
         backend: str | None = None,
         connection_params: dict[str, Any] | None = None,
+        table_prefix: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -82,6 +85,9 @@ class IbisMetadataStore(MetadataStore, ABC):
                 Used with connection_params for more control.
             connection_params: Backend-specific connection parameters
                 e.g., {"host": "localhost", "port": 9000, "database": "default"}
+            table_prefix: Optional prefix applied to all feature and system table names.
+                Useful for logically separating environments (e.g., "prod_"). Must form a valid SQL
+                identifier when combined with the generated table name.
             **kwargs: Passed to MetadataStore.__init__ (e.g., fallback_stores, hash_algorithm)
 
         Raises:
@@ -122,8 +128,28 @@ class IbisMetadataStore(MetadataStore, ABC):
         self.backend = backend
         self.connection_params = connection_params or {}
         self._conn: ibis.BaseBackend | None = None
+        self._table_prefix = table_prefix or ""
 
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, versioning_engine_cls=IbisVersioningEngine)
+
+    def get_table_name(
+        self,
+        key: FeatureKey,
+    ) -> str:
+        """Generate the storage table name for a feature or system table.
+
+        Applies the configured table_prefix (if any) to the feature key's table name.
+        Subclasses can override this method to implement custom naming logic.
+
+        Args:
+            key: Feature key to convert to storage table name.
+
+        Returns:
+            Storage table name with optional prefix applied.
+        """
+        base_name = key.table_name
+
+        return f"{self._table_prefix}{base_name}" if self._table_prefix else base_name
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for Ibis stores.
@@ -133,49 +159,41 @@ class IbisMetadataStore(MetadataStore, ABC):
         """
         return HashAlgorithm.MD5
 
-    def _supports_native_components(self) -> bool:
-        """Ibis stores support native (Ibis-based) provenance tracking when connection is open."""
-        return self._conn is not None
-
-    def native_implementation(self) -> nw.Implementation:
-        """Get native implementation for Ibis-based stores."""
-        return nw.Implementation.IBIS
-
     @contextmanager
-    def _create_provenance_tracker(self, plan):
-        """Create provenance tracker for Ibis backend as a context manager.
+    def _create_versioning_engine(
+        self, plan: FeaturePlan
+    ) -> Iterator[IbisVersioningEngine]:
+        """Create provenance engine for Ibis backend as a context manager.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            IbisProvenanceTracker with backend-specific hash functions.
+            IbisVersioningEngine with backend-specific hash functions.
 
         Note:
             Base implementation only supports MD5 (universally available).
             Subclasses can override _create_hash_functions() for backend-specific hashes.
         """
-        from metaxy.provenance.ibis import IbisProvenanceTracker
-
         if self._conn is None:
             raise RuntimeError(
-                "Cannot create provenance tracker: store is not open. "
+                "Cannot create provenance engine: store is not open. "
                 "Ensure store is used as context manager."
             )
 
         # Create hash functions for Ibis expressions
         hash_functions = self._create_hash_functions()
 
-        # Create tracker (only accepts plan and hash_functions)
-        tracker = IbisProvenanceTracker(
+        # Create engine (only accepts plan and hash_functions)
+        engine = IbisVersioningEngine(
             plan=plan,
             hash_functions=hash_functions,
         )
 
         try:
-            yield tracker
+            yield engine
         finally:
-            # No cleanup needed for Ibis tracker
+            # No cleanup needed for Ibis engine
             pass
 
     @abstractmethod
@@ -321,10 +339,10 @@ class IbisMetadataStore(MetadataStore, ABC):
         """Convert table name back to feature key."""
         return FeatureKey(table_name.split("__"))
 
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation using Ibis.
@@ -336,12 +354,18 @@ class IbisMetadataStore(MetadataStore, ABC):
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
         """
-        table_name = feature_key.table_name
+        if df.implementation == nw.Implementation.IBIS:
+            df_to_insert = df.to_native()  # Ibis expression
+        else:
+            from metaxy._utils import collect_to_polars
+
+            df_to_insert = collect_to_polars(df)  # Polars DataFrame
+
+        table_name = self.get_table_name(feature_key)
 
         try:
-            self.conn.insert(table_name, obj=df)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+            self.conn.insert(table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
         except Exception as e:
-            # Check if it's a TableNotFound error
             import ibis.common.exceptions
 
             if not isinstance(e, ibis.common.exceptions.TableNotFound):
@@ -361,7 +385,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
                 # Note: create_table(table_name, obj=df) both creates the table AND inserts the data
                 # No separate insert needed - the data from df is already written
-                self.conn.create_table(table_name, obj=df)
+                self.conn.create_table(table_name, obj=df_to_insert)
             else:
                 raise TableNotFoundError(
                     f"Table '{table_name}' does not exist for feature {feature_key.to_string()}. "
@@ -375,7 +399,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature key to drop metadata for
         """
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         if table_name in self.conn.list_tables():
@@ -402,7 +426,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             Narwhals LazyFrame with metadata, or None if not found
         """
         feature_key = self._resolve_feature_key(feature)
-        table_name = feature_key.table_name
+        table_name = self.get_table_name(feature_key)
 
         # Check if table exists
         existing_tables = self.conn.list_tables()

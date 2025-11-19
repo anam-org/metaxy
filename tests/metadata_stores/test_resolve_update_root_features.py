@@ -18,35 +18,42 @@ from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
-from tests.metadata_stores.conftest import StoreCases  # pyrefly: ignore[import-error]
+from tests.metadata_stores.conftest import (
+    BasicStoreCases,  # pyrefly: ignore[import-error]
+)
 
 
-# Define a root feature (no upstream dependencies)
-class VideoEmbeddingsFeature(
-    TestingFeature,
-    spec=SampleFeatureSpec(
-        key=FeatureKey(["test_root", "video_embeddings"]),
-        # No upstream dependencies
-        fields=[
-            FieldSpec(
-                key=FieldKey(["embedding"]),
-                code_version="1",
+def create_video_embeddings_feature(graph: FeatureGraph) -> type[TestingFeature]:
+    """Create the test root feature within the provided graph context."""
+    with graph.use():
+
+        class VideoEmbeddingsFeature(
+            TestingFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test_root", "video_embeddings"]),
+                # No upstream dependencies
+                fields=[
+                    FieldSpec(
+                        key=FieldKey(["embedding"]),
+                        code_version="1",
+                    ),
+                ],
             ),
-        ],
-    ),
-):
-    """Root feature - video embeddings with no upstream dependencies.
+        ):
+            """Root feature - video embeddings with no upstream dependencies.
 
-    Users provide provenance_by_field directly based on their video files.
-    """
+            Users provide provenance_by_field directly based on their video files.
+            """
 
-    pass
+            pass
+
+        return VideoEmbeddingsFeature
 
 
 class TestResolveUpdateRootFeatures:
     """Test resolve_update behavior for root features."""
 
-    @parametrize_with_cases("store_config", cases=StoreCases)
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_root_feature_requires_samples(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -60,14 +67,14 @@ class TestResolveUpdateRootFeatures:
         store = store_type(**config)  # type: ignore[abstract]
 
         graph = FeatureGraph()
-        graph.add_feature(VideoEmbeddingsFeature)
+        video_feature = create_video_embeddings_feature(graph)
 
         with graph.use(), store:
             # Calling resolve_update on a root feature without samples should raise ValueError
             with pytest.raises(ValueError, match="root feature"):
-                store.resolve_update(VideoEmbeddingsFeature)
+                store.resolve_update(video_feature)
 
-    @parametrize_with_cases("store_config", cases=StoreCases)
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_root_feature_with_samples_no_existing_metadata(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -80,7 +87,7 @@ class TestResolveUpdateRootFeatures:
         store = store_type(**config)  # type: ignore[abstract]
 
         graph = FeatureGraph()
-        graph.add_feature(VideoEmbeddingsFeature)
+        video_feature = create_video_embeddings_feature(graph)
 
         with graph.use(), store:
             # User provides samples
@@ -96,12 +103,10 @@ class TestResolveUpdateRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
 
             result = store.resolve_update(
-                VideoEmbeddingsFeature, samples=nw.from_native(user_samples)
+                video_feature, samples=nw.from_native(user_samples)
             )
 
             # All samples should be added
@@ -114,7 +119,7 @@ class TestResolveUpdateRootFeatures:
         reason="Requires groupby id_columns+feature_version and taking latest sample by created_at. "
         "Support for changing provenance values without changing code versions will be added later."
     )
-    @parametrize_with_cases("store_config", cases=StoreCases)
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
     def test_resolve_update_root_feature_with_samples_and_changes(
         self,
         store_config: tuple[type[MetadataStore], dict[str, Any]],
@@ -127,7 +132,7 @@ class TestResolveUpdateRootFeatures:
         store = store_type(**config)  # type: ignore[abstract]
 
         graph = FeatureGraph()
-        graph.add_feature(VideoEmbeddingsFeature)
+        video_feature = create_video_embeddings_feature(graph)
 
         with graph.use(), store:
             # Write initial metadata
@@ -142,9 +147,9 @@ class TestResolveUpdateRootFeatures:
                 }
             )
             initial_metadata = add_metaxy_provenance_column(
-                initial_metadata, VideoEmbeddingsFeature
+                initial_metadata, video_feature
             )
-            store.write_metadata(VideoEmbeddingsFeature, initial_metadata)
+            store.write_metadata(video_feature, initial_metadata)
 
             # User provides updated samples
             import narwhals as nw
@@ -159,12 +164,10 @@ class TestResolveUpdateRootFeatures:
                     ],
                 }
             )
-            user_samples = add_metaxy_provenance_column(
-                user_samples, VideoEmbeddingsFeature
-            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
 
             result = store.resolve_update(
-                VideoEmbeddingsFeature, samples=nw.from_native(user_samples)
+                video_feature, samples=nw.from_native(user_samples)
             )
 
             # Should detect changes correctly
