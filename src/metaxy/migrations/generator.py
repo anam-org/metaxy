@@ -7,6 +7,7 @@ import narwhals as nw
 
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import DiffMigration
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.types import FeatureKey
@@ -136,7 +137,7 @@ def generate_migration(
     if to_snapshot_version is None:
         # Default mode: record current active graph and use its snapshot
         # This ensures the to_snapshot is available in the store for comparison
-        snapshot_result = store.record_feature_graph_snapshot()
+        snapshot_result = SystemTableStorage(store).push_graph_snapshot()
         to_snapshot_version = snapshot_result.snapshot_version
         was_already_recorded = snapshot_result.already_recorded
         to_graph = FeatureGraph.get_active()

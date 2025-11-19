@@ -52,6 +52,7 @@ def push(
         abc123def456...
     """
     from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.system.storage import SystemTableStorage
     from metaxy.metadata_store.types import AccessMode
 
     context = AppContext.get()
@@ -60,7 +61,7 @@ def push(
     metadata_store = context.get_store(store)
 
     with metadata_store.open(AccessMode.WRITE):
-        result = metadata_store.record_feature_graph_snapshot()
+        result = SystemTableStorage(metadata_store).push_graph_snapshot()
 
         # Scenario 1: New snapshot (computational changes)
         if not result.already_recorded:

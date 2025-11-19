@@ -10,6 +10,7 @@ import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import Feature, FeatureGraph
 from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -338,7 +339,7 @@ class TestSystemTableRecording:
     """Test that system tables correctly record feature tracking versions."""
 
     def test_record_snapshot_with_tracking_version(self):
-        """Test that record_feature_graph_snapshot includes tracking version."""
+        """Test that push_graph_snapshot includes tracking version."""
         test_graph = FeatureGraph()
 
         with test_graph.use():
@@ -357,7 +358,7 @@ class TestSystemTableRecording:
 
             # Create a store and record snapshot (while the test graph is still active)
             with InMemoryMetadataStore() as store:
-                result = store.record_feature_graph_snapshot()
+                result = SystemTableStorage(store).push_graph_snapshot()
 
                 assert not result.already_recorded  # First time recording
                 snapshot_version = result.snapshot_version

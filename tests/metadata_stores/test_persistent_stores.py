@@ -16,6 +16,7 @@ from metaxy.metadata_store import (
     MetadataSchemaError,
     StoreNotOpenError,
 )
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.metadata_store.types import AccessMode
 
 # Context Manager Tests
@@ -271,7 +272,7 @@ def test_system_tables(persistent_store, test_features: dict[str, Any]) -> None:
             }
         )
         store.write_metadata(test_features["UpstreamFeatureA"], data)
-        store.record_feature_graph_snapshot()
+        SystemTableStorage(store).push_graph_snapshot()
 
         # Read system table
         version_history = collect_to_polars(

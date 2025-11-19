@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
-from datetime import datetime, timezone
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
@@ -37,8 +35,6 @@ from metaxy.metadata_store.warnings import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
-    METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -46,7 +42,7 @@ from metaxy.models.constants import (
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey, SnapshotPushResult
+from metaxy.models.types import FeatureKey
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -983,196 +979,6 @@ class MetadataStore(ABC):
         self._check_open()
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
-
-    def record_feature_graph_snapshot(self) -> SnapshotPushResult:
-        """Record all features in graph with a graph snapshot version.
-
-        This should be called during CD (Continuous Deployment) to record what
-        feature versions are being deployed. Typically invoked via `metaxy graph push`.
-
-        Records all features in the graph with the same snapshot_version, representing
-        a consistent state of the entire feature graph based on code definitions.
-
-        The snapshot_version is a deterministic hash of all feature_version hashes
-        in the graph, making it idempotent - calling multiple times with the
-        same feature definitions produces the same snapshot_version.
-
-        This method detects three scenarios:
-        1. New snapshot (computational changes): No existing rows with this snapshot_version
-        2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
-        3. No changes: Snapshot exists with identical feature_spec_versions for all features
-
-        Returns: SnapshotPushResult
-        """
-
-        from metaxy.models.feature import FeatureGraph
-
-        graph = FeatureGraph.get_active()
-
-        # Use to_snapshot() to get the snapshot dict
-        snapshot_dict = graph.to_snapshot()
-
-        # Generate deterministic snapshot_version from graph
-        snapshot_version = graph.snapshot_version
-
-        # Read existing feature versions once
-        try:
-            existing_versions_lazy = self.read_metadata_in_store(FEATURE_VERSIONS_KEY)
-            # Materialize to Polars for iteration
-            existing_versions = (
-                existing_versions_lazy.collect().to_polars()
-                if existing_versions_lazy is not None
-                else None
-            )
-        except Exception:
-            # Table doesn't exist yet
-            existing_versions = None
-
-        # Get project from any feature in the graph (all should have the same project)
-        # Default to empty string if no features in graph
-        if graph.features_by_key:
-            # Get first feature's project
-            first_feature = next(iter(graph.features_by_key.values()))
-            project_name = first_feature.project  # type: ignore[attr-defined]
-        else:
-            project_name = ""
-
-        # Check if this exact snapshot already exists for this project
-        snapshot_already_exists = False
-        existing_spec_versions: dict[str, str] = {}
-
-        if existing_versions is not None:
-            # Check if project column exists (it may not in old tables)
-            if "project" in existing_versions.columns:
-                snapshot_rows = existing_versions.filter(
-                    (pl.col(METAXY_SNAPSHOT_VERSION) == snapshot_version)
-                    & (pl.col("project") == project_name)
-                )
-            else:
-                # Old table without project column - just check snapshot_version
-                snapshot_rows = existing_versions.filter(
-                    pl.col(METAXY_SNAPSHOT_VERSION) == snapshot_version
-                )
-            snapshot_already_exists = snapshot_rows.height > 0
-
-            if snapshot_already_exists:
-                # Check if feature_spec_version column exists (backward compatibility)
-                # Old records (before issue #77) won't have this column
-                has_spec_version = METAXY_FEATURE_SPEC_VERSION in snapshot_rows.columns
-
-                if has_spec_version:
-                    # Build dict of existing feature_key -> feature_spec_version
-                    for row in snapshot_rows.iter_rows(named=True):
-                        existing_spec_versions[row["feature_key"]] = row[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ]
-                # If no spec_version column, existing_spec_versions remains empty
-                # This means we'll treat it as "no metadata changes" (conservative approach)
-
-        # Scenario 1: New snapshot (no existing rows)
-        if not snapshot_already_exists:
-            # Build records from snapshot_dict
-            records = []
-            for feature_key_str in sorted(snapshot_dict.keys()):
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                # Always record all features for this snapshot (don't skip based on feature_version alone)
-                # Each snapshot must be complete to support migration detection
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        METAXY_FEATURE_VERSION: feature_data[METAXY_FEATURE_VERSION],
-                        METAXY_FEATURE_SPEC_VERSION: feature_data[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ],
-                        METAXY_FEATURE_TRACKING_VERSION: feature_data[
-                            METAXY_FEATURE_TRACKING_VERSION
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        METAXY_SNAPSHOT_VERSION: snapshot_version,
-                    }
-                )
-
-            # Bulk write all new records at once
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=False,
-                metadata_changed=False,
-                features_with_spec_changes=[],
-            )
-
-        # Scenario 2 & 3: Snapshot exists - check for metadata changes
-        features_with_spec_changes = []
-
-        for feature_key_str, feature_data in snapshot_dict.items():
-            current_spec_version = feature_data[METAXY_FEATURE_SPEC_VERSION]
-            existing_spec_version = existing_spec_versions.get(feature_key_str)
-
-            if existing_spec_version != current_spec_version:
-                features_with_spec_changes.append(feature_key_str)
-
-        # If metadata changed, append new rows for affected features
-        if features_with_spec_changes:
-            records = []
-            for feature_key_str in features_with_spec_changes:
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        METAXY_FEATURE_VERSION: feature_data[METAXY_FEATURE_VERSION],
-                        METAXY_FEATURE_SPEC_VERSION: feature_data[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ],
-                        METAXY_FEATURE_TRACKING_VERSION: feature_data[
-                            METAXY_FEATURE_TRACKING_VERSION
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        METAXY_SNAPSHOT_VERSION: snapshot_version,
-                    }
-                )
-
-            # Bulk write updated records (append-only)
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self.write_metadata(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=True,
-                metadata_changed=True,
-                features_with_spec_changes=features_with_spec_changes,
-            )
-
-        # Scenario 3: No changes at all
-        return SnapshotPushResult(
-            snapshot_version=snapshot_version,
-            already_recorded=True,
-            metadata_changed=False,
-            features_with_spec_changes=[],
-        )
 
     @abstractmethod
     def read_metadata_in_store(

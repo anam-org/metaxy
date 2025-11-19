@@ -13,6 +13,7 @@ from metaxy import (
     FeatureKey,
     SampleFeatureSpec,
 )
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
 
@@ -1091,7 +1092,7 @@ class TestColumnSelection:
         # Create store and push snapshot
         store = InMemoryMetadataStore()
         with store:
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             _ = result.already_recorded
 
