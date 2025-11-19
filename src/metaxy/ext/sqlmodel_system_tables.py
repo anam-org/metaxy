@@ -62,6 +62,7 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
         sa_column_kwargs={"name": METAXY_FULL_DEFINITION_VERSION},
     )
     recorded_at: datetime = Field(index=True)
+    feature_schema: str = Field(description="Full Pydantic model schema as JSON string")
     metaxy_snapshot_version: str = Field(
         index=True,
         sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
