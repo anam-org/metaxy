@@ -20,20 +20,24 @@ from metaxy.models.constants import (
 from metaxy.models.lineage import LineageRelationshipType
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.feature_dep_transformer import FeatureDepTransformer
-from metaxy.provenance.renamed_df import RenamedDataFrame
-from metaxy.provenance.types import HashAlgorithm
 from metaxy.utils.hashing import get_hash_truncation_length
+from metaxy.versioning.feature_dep_transformer import FeatureDepTransformer
+from metaxy.versioning.renamed_df import RenamedDataFrame
+from metaxy.versioning.types import HashAlgorithm
 
 if TYPE_CHECKING:
-    from metaxy.provenance.lineage_handler import LineageHandler
+    from metaxy.versioning.lineage_handler import LineageHandler
 
 
-class ProvenanceTracker(ABC):
+class VersioningEngine(ABC):
     """A class responsible for tracking sample and field level provenance."""
 
     def __init__(self, plan: FeaturePlan):
         self.plan = plan
+
+    @classmethod
+    @abstractmethod
+    def implementation(cls) -> nw.Implementation: ...
 
     @cached_property
     def key(self) -> FeatureKey:
@@ -154,9 +158,18 @@ class ProvenanceTracker(ABC):
                     all_columns[col].append(feature_key)
 
             # System columns that are allowed to collide (needed for provenance calculation)
+            from metaxy.models.constants import (
+                METAXY_CREATED_AT,
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+            )
+
             allowed_system_columns = {
                 METAXY_PROVENANCE,
                 METAXY_PROVENANCE_BY_FIELD,
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_CREATED_AT,
             }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [
@@ -199,9 +212,9 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @staticmethod
     @abstractmethod
     def build_struct_column(
-        self,
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
@@ -219,9 +232,9 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @staticmethod
     @abstractmethod
     def aggregate_with_string_concat(
-        self,
         df: FrameT,
         group_by_columns: list[str],
         concat_column: str,
@@ -249,22 +262,51 @@ class ProvenanceTracker(ABC):
         """
         raise NotImplementedError()
 
+    @staticmethod
+    @abstractmethod
+    def keep_latest_by_group(
+        df: FrameT,
+        group_columns: list[str],
+        timestamp_column: str,
+    ) -> FrameT:
+        """Keep only the latest row per group based on a timestamp column.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            group_columns: Columns to group by (typically ID columns)
+            timestamp_column: Column to use for determining "latest" (typically metaxy_created_at)
+
+        Returns:
+            Narwhals DataFrame/LazyFrame with only the latest row per group
+
+        Raises:
+            ValueError: If timestamp_column doesn't exist in df
+        """
+        raise NotImplementedError()
+
     def get_renamed_provenance_by_field_col(self, feature_key: FeatureKey) -> str:
         """Get the renamed provenance_by_field column name for an upstream feature."""
         return self.feature_transformers_by_key[
             feature_key
         ].renamed_provenance_by_field_col
 
+    def get_renamed_data_version_by_field_col(self, feature_key: FeatureKey) -> str:
+        """Get the renamed data_version_by_field column name for an upstream feature."""
+        return self.feature_transformers_by_key[
+            feature_key
+        ].renamed_data_version_by_field_col
+
     def get_field_provenance_exprs(
         self,
     ) -> dict[FieldKey, dict[FQFieldKey, nw.Expr]]:
-        """Returns a a mapping from field keys to data structures that determine provenances for each field.
-        Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream provenance.
+        """Returns a mapping from field keys to data structures that determine provenances for each field.
+        Each value is itself a mapping from fully qualified field keys of upstream features to an expression that selects the corresponding upstream data version.
 
         Resolves field-level dependencies. Only actual parent fields are considered.
 
-        TODO: in the future this should be able to select upstream data_version instead of provenance,
-        once user-provided data_version is implemented.
+        Note:
+            This reads from upstream `metaxy_data_version_by_field` instead of `metaxy_provenance_by_field`,
+            enabling users to control version propagation by overriding data_version values.
         """
         res: dict[FieldKey, dict[FQFieldKey, nw.Expr]] = {}
         # THIS LINES HERE
@@ -274,8 +316,10 @@ class ProvenanceTracker(ABC):
             for fq_key, parent_field_spec in self.plan.get_parent_fields_for_field(
                 field_spec.key
             ).items():
+                # Read from data_version_by_field instead of provenance_by_field
+                # This enables user-defined versioning control
                 field_provenance[fq_key] = nw.col(
-                    self.get_renamed_provenance_by_field_col(fq_key.feature)
+                    self.get_renamed_data_version_by_field_col(fq_key.feature)
                 ).struct.field(parent_field_spec.key.to_struct_key())
             res[field_spec.key] = field_provenance
         return res
@@ -353,7 +397,7 @@ class ProvenanceTracker(ABC):
 
         # Compute sample-level provenance hash
         # Step 1: Concatenate all field hashes with separator
-        df = self.add_provenance_column(df, hash_algorithm=hash_algo)
+        df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)
 
         # Drop all temporary columns (BASE CLASS CLEANUP)
         # Drop temporary concat columns and hash columns
@@ -368,23 +412,43 @@ class ProvenanceTracker(ABC):
         current_columns = df.collect_schema().names()
         columns_to_drop = [col for col in version_columns if col in current_columns]
 
-        # Drop renamed upstream provenance columns (e.g., metaxy_provenance__raw_video)
+        # Drop renamed upstream provenance and data_version columns (e.g., metaxy_provenance__raw_video)
         # These were needed for provenance calculation but shouldn't be in final result
         for transformer in self.feature_transformers_by_key.values():
             renamed_prov_col = transformer.renamed_provenance_col
             renamed_prov_by_field_col = transformer.renamed_provenance_by_field_col
+            renamed_data_version_by_field_col = (
+                transformer.renamed_data_version_by_field_col
+            )
             if renamed_prov_col in current_columns:
                 columns_to_drop.append(renamed_prov_col)
             if renamed_prov_by_field_col in current_columns:
                 columns_to_drop.append(renamed_prov_by_field_col)
+            if renamed_data_version_by_field_col in current_columns:
+                columns_to_drop.append(renamed_data_version_by_field_col)
 
         if columns_to_drop:
             df = df.drop(*columns_to_drop)
 
+        # Add data_version columns (default to provenance values)
+        from metaxy.models.constants import (
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+        )
+
+        df = df.with_columns(
+            nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+            nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
+        )
+
         return df
 
-    def add_provenance_column(
-        self, df: FrameT, hash_algorithm: HashAlgorithm
+    def hash_struct_version_column(
+        self,
+        df: FrameT,
+        hash_algorithm: HashAlgorithm,
+        struct_column: str = METAXY_PROVENANCE_BY_FIELD,
+        hash_column: str = METAXY_PROVENANCE,
     ) -> FrameT:
         # Compute sample-level provenance from field-level provenance
         # Get all field names from the struct (we need feature spec for this)
@@ -392,26 +456,24 @@ class ProvenanceTracker(ABC):
 
         # Concatenate all field hashes with separator
         sample_components = [
-            nw.col(METAXY_PROVENANCE_BY_FIELD).struct.field(field_name)
-            for field_name in field_names
+            nw.col(struct_column).struct.field(field_name) for field_name in field_names
         ]
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))
 
         # Hash the concatenation to produce final provenance hash
-        df = self.hash_string_column(
-            df,
-            "__sample_concat",
-            METAXY_PROVENANCE,
-            hash_algorithm,
-        ).with_columns(
-            nw.col(METAXY_PROVENANCE).str.slice(0, get_hash_truncation_length())
+        return (
+            self.hash_string_column(
+                df,
+                "__sample_concat",
+                hash_column,
+                hash_algorithm,
+            )
+            .with_columns(
+                nw.col(hash_column).str.slice(0, get_hash_truncation_length())
+            )
+            .drop("__sample_concat")
         )
-
-        # Drop temporary column
-        df = df.drop("__sample_concat")
-
-        return df
 
     def resolve_increment_with_provenance(
         self,
@@ -453,7 +515,7 @@ class ProvenanceTracker(ABC):
                 warnings.warn(
                     f"Auto-computing {METAXY_PROVENANCE} from {METAXY_PROVENANCE_BY_FIELD} because it is missing in samples DataFrame"
                 )
-                expected = self.add_provenance_column(
+                expected = self.hash_struct_version_column(
                     expected, hash_algorithm=hash_algorithm
                 )
 
@@ -557,19 +619,19 @@ class ProvenanceTracker(ABC):
 
 def create_lineage_handler(
     feature_plan: FeaturePlan,
-    tracker: ProvenanceTracker,
+    engine: VersioningEngine,
 ) -> LineageHandler:
     """Factory function to create appropriate lineage handler.
 
     Args:
         feature_plan: The feature plan containing lineage information
-        tracker: The provenance tracker instance
+        engine: The provenance engine instance
 
     Returns:
         Appropriate LineageHandler instance based on lineage type
     """
     # Import handler classes at runtime to avoid circular import
-    from metaxy.provenance.lineage_handler import (
+    from metaxy.versioning.lineage_handler import (
         AggregationLineageHandler,
         ExpansionLineageHandler,
         IdentityLineageHandler,
@@ -579,10 +641,10 @@ def create_lineage_handler(
     relationship_type = lineage.relationship.type
 
     if relationship_type == LineageRelationshipType.IDENTITY:
-        return IdentityLineageHandler(feature_plan, tracker)
+        return IdentityLineageHandler(feature_plan, engine)
     elif relationship_type == LineageRelationshipType.AGGREGATION:
-        return AggregationLineageHandler(feature_plan, tracker)
+        return AggregationLineageHandler(feature_plan, engine)
     elif relationship_type == LineageRelationshipType.EXPANSION:
-        return ExpansionLineageHandler(feature_plan, tracker)
+        return ExpansionLineageHandler(feature_plan, engine)
     else:
         raise ValueError(f"Unknown lineage relationship type: {relationship_type}")

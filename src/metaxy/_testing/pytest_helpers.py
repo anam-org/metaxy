@@ -11,7 +11,7 @@ from metaxy.utils.hashing import get_hash_truncation_length
 
 if TYPE_CHECKING:
     from metaxy.models.feature import BaseFeature
-    from metaxy.provenance.types import HashAlgorithm
+    from metaxy.versioning.types import HashAlgorithm
 
 
 def add_metaxy_provenance_column(
@@ -30,8 +30,8 @@ def add_metaxy_provenance_column(
     Returns:
         Polars DataFrame with metaxy_provenance column added
     """
-    from metaxy.provenance.polars import PolarsProvenanceTracker
-    from metaxy.provenance.types import HashAlgorithm as HashAlgo
+    from metaxy.versioning.polars import PolarsVersioningEngine
+    from metaxy.versioning.types import HashAlgorithm as HashAlgo
 
     if hash_algorithm is None:
         hash_algorithm = HashAlgo.XXHASH64
@@ -39,12 +39,12 @@ def add_metaxy_provenance_column(
     # Get the feature plan from the active graph
     plan = feature.graph.get_feature_plan(feature.spec().key)
 
-    # Create tracker
-    tracker = PolarsProvenanceTracker(plan=plan)
+    # Create engine
+    engine = PolarsVersioningEngine(plan=plan)
 
     # Convert to Narwhals, add provenance column, convert back
     df_nw = nw.from_native(df.lazy())
-    df_nw = tracker.add_provenance_column(df_nw, hash_algorithm=hash_algorithm)
+    df_nw = engine.hash_struct_version_column(df_nw, hash_algorithm=hash_algorithm)
     result_df = df_nw.collect().to_native()
 
     # Apply hash truncation if specified

@@ -64,7 +64,7 @@ def generate(
     from pathlib import Path
 
     from metaxy.cli.context import AppContext
-    from metaxy.migrations.detector import detect_migration
+    from metaxy.migrations.detector import detect_diff_migration
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
@@ -88,7 +88,7 @@ def generate(
 
     with metadata_store.open(AccessMode.WRITE):
         # Detect migration and write YAML
-        migration = detect_migration(
+        migration = detect_diff_migration(
             metadata_store,
             project=project,
             from_snapshot_version=from_snapshot,

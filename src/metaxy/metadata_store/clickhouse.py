@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from metaxy.metadata_store.base import MetadataStore
 
 from metaxy.metadata_store.ibis import IbisMetadataStore
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 class ClickHouseMetadataStore(IbisMetadataStore):
@@ -95,10 +95,6 @@ class ClickHouseMetadataStore(IbisMetadataStore):
         Uses XXHASH64 which is built-in to ClickHouse.
         """
         return HashAlgorithm.XXHASH64
-
-    def _supports_native_components(self) -> bool:
-        """ClickHouse stores support native field provenance calculations when connection is open."""
-        return self._conn is not None
 
     def _create_hash_functions(self):
         """Create ClickHouse-specific hash functions for Ibis expressions.

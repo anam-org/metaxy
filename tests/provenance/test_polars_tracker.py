@@ -1,4 +1,4 @@
-"""Unit tests for PolarsProvenanceTracker."""
+"""Unit tests for PolarsVersioningEngine."""
 
 from __future__ import annotations
 
@@ -7,18 +7,18 @@ import polars as pl
 import pytest
 
 from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 
-def test_polars_tracker_initialization(
+def test_polars_engine_initialization(
     graph: FeatureGraph, simple_features: dict[str, type[TestingFeature]]
 ) -> None:
-    """Test PolarsProvenanceTracker can be initialized."""
+    """Test PolarsVersioningEngine can be initialized."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
-    assert tracker.plan is plan
+    engine = PolarsVersioningEngine(plan)
+    assert engine.plan is plan
 
 
 def test_compute_provenance_single_upstream(
@@ -32,11 +32,11 @@ def test_compute_provenance_single_upstream(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -83,14 +83,14 @@ def test_compute_provenance_multiple_upstreams(
 
     feature = multi_upstream_features["MultiUpstreamFeature"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {
         FeatureKey(["video"]): upstream_video_metadata,
         FeatureKey(["audio"]): upstream_audio_metadata,
     }
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -137,11 +137,11 @@ def test_compute_provenance_selective_field_deps(
 
     feature = selective_field_dep_features["SelectiveFeature"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["multi_field"]): upstream_metadata_multi_field}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -184,11 +184,11 @@ def test_resolve_increment_no_current(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -221,12 +221,12 @@ def test_resolve_increment_with_changes(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
     # First, compute expected provenance
-    expected = tracker.load_upstream_with_provenance(
+    expected = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -256,7 +256,7 @@ def test_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -292,12 +292,12 @@ def test_resolve_increment_all_unchanged(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
     # Compute expected provenance
-    expected = tracker.load_upstream_with_provenance(
+    expected = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -306,7 +306,7 @@ def test_resolve_increment_all_unchanged(
     # Current is same as expected (use lazy version for consistency)
     current = expected
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -344,11 +344,11 @@ def test_compute_provenance_different_algorithms_snapshot(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=hash_algo,
         filters={},
@@ -375,14 +375,14 @@ def test_prepare_upstream_applies_filters(
 
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
     # Filter to only include sample_uid > 1
     filters = {FeatureKey(["video"]): [nw.col("sample_uid") > 1]}
 
-    prepared = tracker.prepare_upstream(
+    prepared = engine.prepare_upstream(
         upstream=upstream,
         filters=filters,
     )

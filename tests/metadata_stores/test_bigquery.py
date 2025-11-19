@@ -16,7 +16,7 @@ except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
 from metaxy.models.feature import TestingFeature
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 
 @pytest.fixture
@@ -148,21 +148,6 @@ def test_bigquery_location_parameter():
     assert store.connection_params.get("location") == "EU"
 
 
-def test_bigquery_supports_native_components():
-    """Test that BigQuery reports native component support correctly."""
-    store = BigQueryMetadataStore(
-        project_id="test-project",
-        dataset_id="test_dataset",
-    )
-
-    # Should not support native when connection is None
-    assert store._supports_native_components() is False
-
-    # Should support native when connection exists
-    with patch.object(store, "_conn", Mock()):
-        assert store._supports_native_components() is True
-
-
 def test_bigquery_config_instantiation():
     """Test instantiating BigQuery store via MetaxyConfig."""
     from metaxy.config import MetaxyConfig, StoreConfig
@@ -287,7 +272,7 @@ def test_bigquery_table_operations(
             dataset_id="test_dataset",
         ) as store:
             # Mock the write operation
-            store._write_metadata_impl = MagicMock()
+            store.write_metadata_to_store = MagicMock()
 
             metadata = pl.DataFrame(
                 {
@@ -302,6 +287,6 @@ def test_bigquery_table_operations(
             store.write_metadata(test_features["UpstreamFeatureA"], metadata)
 
             # Verify write was called with correct table name
-            assert store._write_metadata_impl.called
-            call_args = store._write_metadata_impl.call_args[0]
+            assert store.write_metadata_to_store.called
+            call_args = store.write_metadata_to_store.call_args[0]
             assert call_args[0].table_name == "test_stores__upstream_a"

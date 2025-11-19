@@ -6,20 +6,22 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
+from metaxy.models.constants import (
+    METAXY_PROVENANCE_BY_FIELD,
+)
 from metaxy.models.feature import FeatureGraph, TestingFeature
 from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
+from metaxy.versioning.polars import PolarsVersioningEngine
 
 
 # Helper function to add metaxy_provenance column to test data
 def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
     """Add metaxy_provenance column (hash of provenance_by_field) to test data."""
     # For tests, we just use a simple hash-like string based on the provenance_by_field
-    # In real usage, this would be calculated by the ProvenanceTracker
+    # In real usage, this would be calculated by the VersioningEngine
     df = df.with_columns(
         pl.col("metaxy_provenance_by_field")
         .map_elements(
@@ -31,9 +33,9 @@ def add_metaxy_provenance(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-# Simple test joiner that uses ProvenanceTracker
+# Simple test joiner that uses VersioningEngine
 class TestJoiner:
-    """Test utility that wraps PolarsProvenanceTracker for ID columns tests."""
+    """Test utility that wraps PolarsVersioningEngine for ID columns tests."""
 
     def join_upstream(
         self,
@@ -43,7 +45,7 @@ class TestJoiner:
         upstream_columns: dict[str, tuple[str, ...] | None] | None = None,
         upstream_renames: dict[str, dict[str, str] | None] | None = None,
     ) -> tuple["nw.LazyFrame[Any]", dict[str, str]]:
-        """Join upstream feature metadata using PolarsProvenanceTracker.
+        """Join upstream feature metadata using PolarsVersioningEngine.
 
         Args:
             upstream_refs: Mapping of upstream feature key strings to lazy frames
@@ -69,8 +71,8 @@ class TestJoiner:
             )
             return nw.from_native(empty_df.lazy(), eager_only=False), {}
 
-        # Create a PolarsProvenanceTracker for this feature
-        tracker = PolarsProvenanceTracker(plan=feature_plan)
+        # Create a PolarsVersioningEngine for this feature
+        engine = PolarsVersioningEngine(plan=feature_plan)
 
         # Convert string keys back to FeatureKey objects and ensure data is materialized
         upstream_by_key = {}
@@ -82,7 +84,7 @@ class TestJoiner:
             upstream_by_key[FeatureKey(k)] = nw.from_native(df.lazy(), eager_only=False)
 
         # Prepare upstream (handles filtering, selecting, renaming, and joining)
-        joined = tracker.prepare_upstream(upstream_by_key, filters=None)
+        joined = engine.prepare_upstream(upstream_by_key, filters=None)
 
         # Build the mapping of upstream_key -> provenance_by_field column name
         # The new naming convention is: {column_name}{feature_key.to_column_suffix()}
@@ -156,6 +158,11 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
                     {"default": "hash2"},
                     {"default": "hash3"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
                 "extra_column": ["a", "b", "c"],
             }
         ).lazy()
@@ -207,6 +214,11 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
             {
                 "user_id": [100, 200, 300],
                 "metaxy_provenance_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "hash1"},
                     {"default": "hash2"},
                     {"default": "hash3"},
@@ -281,6 +293,12 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
                     {"default": "hash3"},
                     {"default": "hash4"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"default": "hash1"},
+                    {"default": "hash2"},
+                    {"default": "hash3"},
+                    {"default": "hash4"},
+                ],
                 "data1": ["a", "b", "c", "d"],
             }
         ).lazy()
@@ -292,6 +310,12 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
                 "user_id": [1, 1, 2, 3],
                 "session_id": [10, 20, 10, 40],
                 "metaxy_provenance_by_field": [
+                    {"default": "hash5"},
+                    {"default": "hash6"},
+                    {"default": "hash7"},
+                    {"default": "hash8"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"default": "hash5"},
                     {"default": "hash6"},
                     {"default": "hash7"},
@@ -429,6 +453,11 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                         {"profile": "user_hash2"},
                         {"profile": "user_hash3"},
                     ],
+                    "metaxy_data_version_by_field": [
+                        {"profile": "user_hash1"},
+                        {"profile": "user_hash2"},
+                        {"profile": "user_hash3"},
+                    ],
                     "username": ["alice", "bob", "charlie"],
                 }
             )
@@ -448,6 +477,11 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
                     "user_id": [100, 100, 200],
                     "session_id": [1, 2, 1],
                     "metaxy_provenance_by_field": [
+                        {"activity": "session_hash1"},
+                        {"activity": "session_hash2"},
+                        {"activity": "session_hash3"},
+                    ],
+                    "metaxy_data_version_by_field": [
                         {"activity": "session_hash1"},
                         {"activity": "session_hash2"},
                         {"activity": "session_hash3"},
@@ -595,6 +629,11 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
                 {
                     "sample_uid": [1, 2, 3],
                     "metaxy_provenance_by_field": [
+                        {"data": "hash1"},
+                        {"data": "hash2"},
+                        {"data": "hash3"},
+                    ],
+                    "metaxy_data_version_by_field": [
                         {"data": "hash1"},
                         {"data": "hash2"},
                         {"data": "hash3"},

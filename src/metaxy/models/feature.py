@@ -15,7 +15,6 @@ from metaxy.models.constants import (
 )
 from metaxy.models.feature_spec import (
     FeatureSpec,
-    FeatureSpecWithIDColumns,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
 from metaxy.models.types import FeatureKey
@@ -28,7 +27,7 @@ FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
 if TYPE_CHECKING:
     import narwhals as nw
 
-    from metaxy.provenance.types import Increment, LazyIncrement
+    from metaxy.versioning.types import Increment, LazyIncrement
 
     # TODO: These are no longer used - remove after refactoring
     # from metaxy.data_versioning.diff import MetadataDiffResolver
@@ -68,7 +67,13 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
 class FeatureGraph:
     def __init__(self):
         self.features_by_key: dict[FeatureKey, type[BaseFeature]] = {}
-        self.feature_specs_by_key: dict[FeatureKey, FeatureSpecWithIDColumns] = {}
+        self.feature_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
+        # Standalone specs registered without Feature classes (for migrations)
+        self.standalone_specs_by_key: dict[FeatureKey, FeatureSpec] = {}
+
+    @property
+    def all_specs_by_key(self) -> dict[FeatureKey, FeatureSpec]:
+        return {**self.feature_specs_by_key, **self.standalone_specs_by_key}
 
     def add_feature(self, feature: type["BaseFeature"]) -> None:
         """Add a feature to the graph.
@@ -95,7 +100,38 @@ class FeatureGraph:
         self.features_by_key[feature.spec().key] = feature
         self.feature_specs_by_key[feature.spec().key] = feature.spec()
 
-    def _validate_no_duplicate_columns(self, spec: "FeatureSpecWithIDColumns") -> None:
+    def add_feature_spec(self, spec: FeatureSpec) -> None:
+        import warnings
+
+        # Check if a Feature class already exists for this key
+        if spec.key in self.features_by_key:
+            warnings.warn(
+                f"Feature class already exists for key {spec.key.to_string()}. "
+                f"Standalone spec will be ignored - Feature class takes precedence.",
+                stacklevel=2,
+            )
+            return
+
+        # Check if a standalone spec already exists
+        if spec.key in self.standalone_specs_by_key:
+            existing = self.standalone_specs_by_key[spec.key]
+            # Only warn if it's a different spec (by comparing feature_spec_version)
+            if existing.feature_spec_version != spec.feature_spec_version:
+                raise ValueError(
+                    f"Standalone spec for key {spec.key.to_string()} already exists "
+                    f"with a different version."
+                )
+
+        # Validate that there are no duplicate columns across dependencies after renaming
+        if spec.deps:
+            self._validate_no_duplicate_columns(spec)
+
+        # Store standalone spec
+        self.standalone_specs_by_key[spec.key] = spec
+        # Also add to feature_specs_by_key for methods that only need the spec
+        self.feature_specs_by_key[spec.key] = spec
+
+    def _validate_no_duplicate_columns(self, spec: "FeatureSpec") -> None:
         """Validate that there are no duplicate column names across dependencies after renaming.
 
         This method checks that after all column selection and renaming operations,
@@ -236,20 +272,30 @@ class FeatureGraph:
     def remove_feature(self, key: FeatureKey) -> None:
         """Remove a feature from the graph.
 
+        Removes Feature class or standalone spec (whichever exists).
+
         Args:
             key: Feature key to remove
 
         Raises:
             KeyError: If no feature with the given key is registered
         """
-        if key not in self.features_by_key:
+        # Check both Feature classes and standalone specs
+        combined = {**self.feature_specs_by_key, **self.standalone_specs_by_key}
+
+        if key not in combined:
             raise KeyError(
                 f"No feature with key {key.to_string()} found in graph. "
-                f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
+                f"Available keys: {[k.to_string() for k in combined]}"
             )
 
-        del self.features_by_key[key]
-        del self.feature_specs_by_key[key]
+        # Remove from all relevant dicts
+        if key in self.features_by_key:
+            del self.features_by_key[key]
+        if key in self.standalone_specs_by_key:
+            del self.standalone_specs_by_key[key]
+        if key in self.feature_specs_by_key:
+            del self.feature_specs_by_key[key]
 
     def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
@@ -345,13 +391,13 @@ class FeatureGraph:
         ]
 
     def get_feature_plan(self, key: FeatureKey) -> FeaturePlan:
-        feature = self.feature_specs_by_key[key]
+        spec = self.all_specs_by_key[key]
 
         return FeaturePlan(
-            feature=feature,
-            deps=[self.feature_specs_by_key[dep.feature] for dep in feature.deps or []]
+            feature=spec,
+            deps=[self.feature_specs_by_key[dep.feature] for dep in spec.deps or []]
             or None,
-            feature_deps=feature.deps,  # Pass the actual FeatureDep objects with field mappings
+            feature_deps=spec.deps,  # Pass the actual FeatureDep objects with field mappings
         )
 
     def get_field_version(self, key: "FQFieldKey") -> str:
@@ -459,7 +505,8 @@ class FeatureGraph:
         Implemented using depth-first search with post-order traversal.
 
         Args:
-            feature_keys: List of feature keys to sort. If None, sorts all features in the graph.
+            feature_keys: List of feature keys to sort. If None, sorts all features
+                (both Feature classes and standalone specs) in the graph.
 
         Returns:
             List of feature keys sorted so dependencies appear before dependents
@@ -473,13 +520,14 @@ class FeatureGraph:
                 FeatureKey(["video", "scene"]),
             ])
 
-            # Sort all features in the graph
+            # Sort all features in the graph (including standalone specs)
             all_sorted = graph.topological_sort_features()
             ```
         """
         # Determine which features to sort
         if feature_keys is None:
-            keys_to_sort = set(self.features_by_key.keys())
+            # Include both Feature classes and standalone specs
+            keys_to_sort = set(self.feature_specs_by_key.keys())
         else:
             keys_to_sort = set(feature_keys)
 
@@ -693,12 +741,21 @@ class FeatureGraph:
                         module = __import__(module_path, fromlist=[class_name])
 
                     feature_cls = getattr(module, class_name)
-                except (ImportError, AttributeError) as e:
-                    raise ImportError(
-                        f"Cannot import Feature class '{class_path}' for feature graph reconstruction from snapshot. "
-                        f"Feature '{feature_key_str}' is required to reconstruct the graph, but the class "
-                        f"cannot be found at the recorded import path. "
-                    ) from e
+                except (ImportError, AttributeError):
+                    # Feature class not importable - add as standalone spec instead
+                    # This allows migrations to work even when old Feature classes are deleted/moved
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.exception(
+                        f"Cannot import Feature class '{class_path}' for '{feature_key_str}'. "
+                        f"Adding only the FeatureSpec. "
+                    )
+
+                    feature_spec = FeatureSpec.model_validate(feature_spec_dict)
+                    # Add the spec as a standalone spec
+                    graph.add_feature_spec(feature_spec)
+                    continue
 
                 # Validate the imported class matches the stored spec
                 if not hasattr(feature_cls, "spec"):
@@ -788,6 +845,15 @@ class FeatureGraph:
             _active_graph.reset(token)
 
 
+def current_graph() -> FeatureGraph:
+    """Get the currently active graph.
+
+    Returns:
+        FeatureGraph: The currently active graph.
+    """
+    return FeatureGraph.get_active()
+
+
 # Default global graph
 graph = FeatureGraph()
 
@@ -799,7 +865,7 @@ class MetaxyMeta(ModelMetaclass):
         bases: tuple[type[Any], ...],
         namespace: dict[str, Any],
         *,
-        spec: FeatureSpecWithIDColumns | None = None,
+        spec: FeatureSpec | None = None,
         **kwargs,
     ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
@@ -1120,7 +1186,7 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
 
         # Materialize to Increment if lazy=False
         if not lazy:
-            from metaxy.provenance.types import Increment
+            from metaxy.versioning.types import Increment
 
             return Increment(
                 added=lazy_result.added.collect(),

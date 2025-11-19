@@ -7,6 +7,7 @@ import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy import SystemTableStorage
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import (
     MetadataStore,
@@ -247,36 +248,36 @@ class TestProjectValidationComprehensive:
             ):
                 pass
 
-        # Write initial data
-        root_df = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "field1": [10, 20, 30],
-                "metaxy_provenance_by_field": [
-                    {"field1": "hash1"},
-                    {"field1": "hash2"},
-                    {"field1": "hash3"},
-                ],
-            }
-        )
-        child_df = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "field2": [100, 200, 300],
-                "metaxy_provenance_by_field": [
-                    {"field2": "hash4"},
-                    {"field2": "hash5"},
-                    {"field2": "hash6"},
-                ],
-            }
-        )
+            # Write initial data
+            root_df = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "field1": [10, 20, 30],
+                    "metaxy_provenance_by_field": [
+                        {"field1": "hash1"},
+                        {"field1": "hash2"},
+                        {"field1": "hash3"},
+                    ],
+                }
+            )
+            child_df = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    "field2": [100, 200, 300],
+                    "metaxy_provenance_by_field": [
+                        {"field2": "hash4"},
+                        {"field2": "hash5"},
+                        {"field2": "hash6"},
+                    ],
+                }
+            )
 
-        store.write_metadata(RootFeature, nw.from_native(root_df))
-        store.write_metadata(ChildFeature, nw.from_native(child_df))
+            store.write_metadata(RootFeature, nw.from_native(root_df))
+            store.write_metadata(ChildFeature, nw.from_native(child_df))
 
-        # Record snapshot
-        from_snapshot_version = graph.snapshot_version
-        store.record_feature_graph_snapshot()
+            # Record snapshot
+            from_snapshot_version = graph.snapshot_version
+            SystemTableStorage(store).push_graph_snapshot()
 
         # Now simulate a project change - feature moves to project_b
         MetaxyConfig.set(MetaxyConfig(project="project_b"))
@@ -308,7 +309,7 @@ class TestProjectValidationComprehensive:
 
             # Record new snapshot within graph context
             to_snapshot_version = new_graph.snapshot_version
-            store.record_feature_graph_snapshot()
+            SystemTableStorage(store).push_graph_snapshot()
 
             # Create migration operation
             op = DataVersionReconciliation()

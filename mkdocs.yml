@@ -175,6 +175,7 @@ nav:
     - Feature Discovery: learn/feature-discovery.md
     - Syntactic Sugar: learn/syntactic-sugar.md
     - Lineage Relationship: learn/relationship.md
+    - Filters: learn/filters.md
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
     - Integrations:
@@ -192,6 +193,7 @@ nav:
       - Fields Mapping: reference/api/definitions/fields-mapping.md
       - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
+      - Filters: reference/api/definitions/filters.md
     - Metadata Stores:
       - reference/api/metadata-stores/index.md
       - Databases:

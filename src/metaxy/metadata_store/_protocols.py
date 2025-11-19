@@ -8,7 +8,7 @@ from types import TracebackType
 from typing import Any, Protocol
 
 import narwhals as nw
-import polars as pl
+from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
 from metaxy.metadata_store.types import AccessMode
@@ -22,10 +22,18 @@ class MetadataStoreProtocol(Protocol):
     by defining only the methods that SystemTableStorage actually uses.
     """
 
-    def _write_metadata_impl(
+    def write_metadata(
+        self,
+        feature: FeatureKey | type[Any],
+        df: IntoFrame,
+    ) -> None:
+        """Write metadata for a feature."""
+        ...
+
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """Write metadata for a feature key."""
         ...
@@ -34,7 +42,6 @@ class MetadataStoreProtocol(Protocol):
         self,
         feature: FeatureKey,
         *,
-        feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:

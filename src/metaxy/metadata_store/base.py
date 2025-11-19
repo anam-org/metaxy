@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-import json
+import warnings
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
-from datetime import datetime, timezone
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
 import polars as pl
+from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
+from metaxy._utils import switch_implementation_to_polars
 from metaxy.metadata_store.exceptions import (
-    DependencyError,
     FeatureNotFoundError,
     StoreNotOpenError,
 )
@@ -28,32 +29,29 @@ from metaxy.metadata_store.system import (
 from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
 from metaxy.metadata_store.types import AccessMode
 from metaxy.metadata_store.utils import empty_frame_like
+from metaxy.metadata_store.warnings import (
+    MetaxyColumnMissingWarning,
+    PolarsMaterializationWarning,
+)
 from metaxy.models.constants import (
-    METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
+    ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,
+    METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
-from metaxy.models.feature import BaseFeature, FeatureGraph
-from metaxy.models.field import FieldDep, SpecialFieldDep
-from metaxy.models.plan import FeaturePlan, FQFieldKey
-from metaxy.models.types import FeatureKey, FieldKey, SnapshotPushResult
-from metaxy.provenance import ProvenanceTracker
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm, Increment, LazyIncrement
+from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
+from metaxy.models.plan import FeaturePlan
+from metaxy.models.types import FeatureKey
+from metaxy.versioning import VersioningEngine
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
 
 if TYPE_CHECKING:
     pass
 
-# Removed TRef - all stores now use Narwhals LazyFrames universally
 
-
-PROVENANCE_BY_FIELD_COL = METAXY_PROVENANCE_BY_FIELD
-FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
-SNAPSHOT_VERSION_COL = METAXY_SNAPSHOT_VERSION
-FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
-FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
+VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
 
 
 class MetadataStore(ABC):
@@ -78,6 +76,7 @@ class MetadataStore(ABC):
     def __init__(
         self,
         *,
+        versioning_engine_cls: type[VersioningEngineT],
         hash_algorithm: HashAlgorithm | None = None,
         hash_truncation_length: int | None = None,
         prefer_native: bool = True,
@@ -114,6 +113,7 @@ class MetadataStore(ABC):
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
+        self.versioning_engine_cls = versioning_engine_cls
 
         # Resolve auto_create_tables from global config if not explicitly provided
         if auto_create_tables is None:
@@ -145,7 +145,228 @@ class MetadataStore(ABC):
 
         self.fallback_stores = fallback_stores or []
 
-        # Validation happens in open()
+    @overload
+    def resolve_update(
+        self,
+        feature: type[BaseFeature],
+        *,
+        samples: Frame | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        lazy: Literal[False] = False,
+        **kwargs: Any,
+    ) -> Increment: ...
+
+    @overload
+    def resolve_update(
+        self,
+        feature: type[BaseFeature],
+        *,
+        samples: Frame | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        lazy: Literal[True],
+        **kwargs: Any,
+    ) -> LazyIncrement: ...
+
+    def resolve_update(
+        self,
+        feature: type[BaseFeature],
+        *,
+        samples: Frame | None = None,
+        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        lazy: bool = False,
+        **kwargs: Any,
+    ) -> Increment | LazyIncrement:
+        """Calculate an incremental update for a feature.
+
+        Args:
+            feature: Feature class to resolve updates for
+            samples: Pre-computed DataFrame with ID columns
+                and `PROVENANCE_BY_FIELD_COL` column. When provided, `MetadataStore` skips upstream loading, joining,
+                and field provenance calculation.
+
+                **Required for root features** (features with no upstream dependencies).
+                Root features don't have upstream to calculate `PROVENANCE_BY_FIELD_COL` from, so users
+                must provide samples with manually computed `PROVENANCE_BY_FIELD_COL` column.
+
+                For non-root features, use this when you
+                want to bypass the automatic upstream loading and field provenance calculation.
+
+                Examples:
+
+                - Loading upstream from custom sources
+
+                - Pre-computing field provenances with custom logic
+
+                - Testing specific scenarios
+
+                Setting this parameter during normal operations is not required.
+
+            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
+                Applied at read-time. May filter the current feature,
+                in this case it will also be applied to `samples` (if provided).
+                Example: {"upstream/feature": [nw.col("x") > 10], ...}
+            lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
+                If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
+            **kwargs: Backend-specific parameters
+
+        Raises:
+            ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
+
+        Examples:
+            ```py
+            # Root feature - samples required
+            samples = pl.DataFrame({
+                "sample_uid": [1, 2, 3],
+                PROVENANCE_BY_FIELD_COL: [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+            })
+            result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
+            ```
+
+            ```py
+            # Non-root feature - automatic (normal usage)
+            result = store.resolve_update(DownstreamFeature)
+            ```
+
+            ```py
+            # Non-root feature - with escape hatch (advanced)
+            custom_samples = compute_custom_field_provenance(...)
+            result = store.resolve_update(DownstreamFeature, samples=custom_samples)
+            ```
+
+        Note:
+            Users can then process only added/changed and call write_metadata().
+        """
+        import narwhals as nw
+
+        filters = filters or defaultdict(list)
+
+        graph = current_graph()
+        plan = graph.get_feature_plan(feature.spec().key)
+
+        # Root features without samples: error (samples required)
+        if not plan.deps and samples is None:
+            raise ValueError(
+                f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
+                f"Must provide 'samples' parameter with sample_uid and {METAXY_PROVENANCE_BY_FIELD} columns. "
+                f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
+            )
+
+        current_feature_filters = [*filters.get(feature.spec().key.to_string(), [])]
+
+        current_metadata = self.read_metadata_in_store(
+            feature,
+            filters=[
+                nw.col(METAXY_FEATURE_VERSION)
+                == graph.get_feature_version(feature.spec().key),
+                *current_feature_filters,
+            ],
+        )
+
+        upstream_by_key: dict[FeatureKey, nw.LazyFrame[Any]] = {}
+        filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
+
+        # if samples are provided, use them as source of truth for upstream data
+        if samples is not None:
+            # Apply filters to samples if any
+            filtered_samples = samples
+            if current_feature_filters:
+                filtered_samples = samples.filter(current_feature_filters)
+
+            # fill in METAXY_PROVENANCE column if it's missing (e.g. for root features)
+            samples = self.hash_struct_version_column(
+                plan,
+                df=filtered_samples,
+                struct_column=METAXY_PROVENANCE_BY_FIELD,
+                hash_column=METAXY_PROVENANCE,
+            )
+        else:
+            for upstream_spec in plan.deps or []:
+                upstream_feature_metadata = self.read_metadata(
+                    upstream_spec.key,
+                    filters=filters.get(upstream_spec.key.to_string(), []),
+                )
+                if upstream_feature_metadata is not None:
+                    upstream_by_key[upstream_spec.key] = upstream_feature_metadata
+
+        # determine which implementation to use for resolving the increment
+        # consider (1) whether all upstream metadata has been loaded with the native implementation
+        # (2) if samples have native implementation
+
+        implementation = self.native_implementation()
+        switched_to_polars = False
+
+        for upstream_key, df in upstream_by_key.items():
+            if df.implementation != implementation:
+                switched_to_polars = True
+                if self._prefer_native:
+                    PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                        expected=self.native_implementation(),
+                        actual=df.implementation,
+                        message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
+                    )
+                implementation = nw.Implementation.POLARS
+                break
+
+        if (
+            samples is not None
+            and samples.implementation != self.native_implementation()
+        ):
+            if self._prefer_native and not switched_to_polars:
+                PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                    expected=self.native_implementation(),
+                    actual=samples.implementation,
+                    message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
+                )
+            implementation = nw.Implementation.POLARS
+            switched_to_polars = True
+
+        if switched_to_polars:
+            if current_metadata:
+                current_metadata = switch_implementation_to_polars(current_metadata)
+            if samples:
+                samples = switch_implementation_to_polars(samples)
+            for upstream_key, df in upstream_by_key.items():
+                upstream_by_key[upstream_key] = switch_implementation_to_polars(df)
+
+        with self.create_versioning_engine(
+            plan=plan, implementation=implementation
+        ) as engine:
+            added, changed, removed = engine.resolve_increment_with_provenance(
+                current=current_metadata,
+                upstream=upstream_by_key,
+                hash_algorithm=self.hash_algorithm,
+                filters=filters_by_key,
+                sample=samples.lazy() if samples is not None else None,
+            )
+
+        # Convert None to empty DataFrames
+        if changed is None:
+            changed = empty_frame_like(added)
+        if removed is None:
+            removed = empty_frame_like(added)
+
+        if lazy:
+            return LazyIncrement(
+                added=added
+                if isinstance(added, nw.LazyFrame)
+                else nw.from_native(added),
+                changed=changed
+                if isinstance(changed, nw.LazyFrame)
+                else nw.from_native(changed),
+                removed=removed
+                if isinstance(removed, nw.LazyFrame)
+                else nw.from_native(removed),
+            )
+        else:
+            return Increment(
+                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
+                changed=changed.collect()
+                if isinstance(changed, nw.LazyFrame)
+                else changed,
+                removed=removed.collect()
+                if isinstance(removed, nw.LazyFrame)
+                else removed,
+            )
 
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
@@ -156,51 +377,97 @@ class MetadataStore(ABC):
         """
         pass
 
-    @abstractmethod
-    def _supports_native_components(self) -> bool:
-        """Check if this store can use native (non-Polars) provenance tracking.
-
-        Returns:
-            True if store has backend-specific native provenance tracking (e.g., Ibis for SQL)
-            False if store only supports Polars provenance tracking
-        """
-        pass
-
-    @abstractmethod
     def native_implementation(self) -> nw.Implementation:
-        """Get the native Narwhals implementation for this store's backend.
-
-        Returns:
-            nw.Implementation.POLARS for Polars-backed stores (InMemory, etc.)
-            nw.Implementation.IBIS for SQL-backed stores (DuckDB, ClickHouse, etc.)
-        """
-        pass
+        """Get the native Narwhals implementation for this store's backend."""
+        return self.versioning_engine_cls.implementation()
 
     @abstractmethod
     @contextmanager
-    def _create_provenance_tracker(
+    def _create_versioning_engine(
         self, plan: FeaturePlan
-    ) -> Iterator[ProvenanceTracker]:
-        """Create provenance tracker for this store as a context manager.
+    ) -> Iterator[VersioningEngineT]:
+        """Create provenance engine for this store as a context manager.
 
         Args:
             plan: Feature plan for the feature we're tracking provenance for
 
         Yields:
-            ProvenanceTracker instance appropriate for this store's backend.
-            - For SQL stores (DuckDB, ClickHouse): Returns IbisProvenanceTracker
-            - For in-memory/Polars stores: Returns PolarsProvenanceTracker
+            VersioningEngine instance appropriate for this store's backend.
+            - For SQL stores (DuckDB, ClickHouse): Returns IbisVersioningEngine
+            - For in-memory/Polars stores: Returns PolarsVersioningEngine
 
         Raises:
             NotImplementedError: If provenance tracking not supported by this store
 
         Example:
             ```python
-            with self._create_provenance_tracker(plan) as tracker:
-                result = tracker.resolve_update(...)
+            with self._create_versioning_engine(plan) as engine:
+                result = engine.resolve_update(...)
             ```
         """
         ...
+
+    @contextmanager
+    def _create_polars_versioning_engine(
+        self, plan: FeaturePlan
+    ) -> Iterator[PolarsVersioningEngine]:
+        yield PolarsVersioningEngine(plan=plan)
+
+    @contextmanager
+    def create_versioning_engine(
+        self, plan: FeaturePlan, implementation: nw.Implementation
+    ) -> Iterator[VersioningEngine | PolarsVersioningEngine]:
+        """
+        Creates an appropriate provenance engine.
+
+        Falls back to Polars implementation if the required implementation differs from the store's native implementation.
+
+        Args:
+            plan: The feature plan.
+            implementation: The desired engine implementation.
+
+        Returns:
+            An appropriate provenance engine.
+        """
+
+        if implementation == nw.Implementation.POLARS:
+            cm = self._create_polars_versioning_engine(plan)
+        elif implementation == self.native_implementation():
+            cm = self._create_versioning_engine(plan)
+        else:
+            cm = self._create_polars_versioning_engine(plan)
+
+        with cm as engine:
+            yield engine
+
+    def hash_struct_version_column(
+        self,
+        plan: FeaturePlan,
+        df: Frame,
+        struct_column: str,
+        hash_column: str,
+    ) -> Frame:
+        with self.create_versioning_engine(plan, df.implementation) as engine:
+            if (
+                isinstance(engine, PolarsVersioningEngine)
+                and df.implementation != nw.Implementation.POLARS
+            ):
+                PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                    self.native_implementation(),
+                    df.implementation,
+                    message=f"`{hash_column}` will be calculated in Polars.",
+                )
+                df = nw.from_native(df.lazy().collect().to_polars())
+
+            return cast(
+                Frame,
+                engine.hash_struct_version_column(
+                    df,  # pyright: ignore[reportArgumentType]
+                    hash_algorithm=self.hash_algorithm,
+                    struct_column=struct_column,
+                    hash_column=hash_column,
+                ),
+            )
 
     @abstractmethod
     @contextmanager
@@ -321,8 +588,8 @@ class MetadataStore(ABC):
         Raises:
             ValueError: If hash algorithm not supported by components or fallback stores
         """
-        # Validate hash algorithm support without creating a full tracker
-        # (tracker creation requires a graph which isn't available during store init)
+        # Validate hash algorithm support without creating a full engine
+        # (engine creation requires a graph which isn't available during store init)
         self._validate_hash_algorithm_support()
 
         # Check fallback stores
@@ -361,12 +628,13 @@ class MetadataStore(ABC):
         self, feature: FeatureKey | type[BaseFeature]
     ) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
+        graph = current_graph()
         if isinstance(feature, FeatureKey):
             # When given a FeatureKey, get the graph from the active context
-            return FeatureGraph.get_active().get_feature_plan(feature)
+            return graph.get_feature_plan(feature)
         else:
             # When given a Feature class, use its bound graph
-            return feature.graph.get_feature_plan(feature.spec().key)
+            return graph.get_feature_plan(feature.spec().key)
 
     # ========== Core CRUD Operations ==========
 
@@ -438,17 +706,19 @@ class MetadataStore(ABC):
             )
 
     @abstractmethod
-    def _write_metadata_impl(
+    def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
-        df: pl.DataFrame,
+        df: Frame,
     ) -> None:
         """
         Internal write implementation (backend-specific).
 
+        Backends may convert to their specific type if needed (e.g., Polars, Ibis).
+
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -457,7 +727,7 @@ class MetadataStore(ABC):
     def write_metadata(
         self,
         feature: FeatureKey | type[BaseFeature],
-        df: nw.DataFrame[Any] | pl.DataFrame,
+        df: IntoFrame,
     ) -> None:
         """
         Write metadata for a feature (immutable, append-only).
@@ -468,9 +738,9 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to write metadata for
-            df: Narwhals DataFrame or Polars DataFrame containing metadata.
+            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
-                May optionally contain `metaxy_feature_version` and `metaxy_snapshot_version` (for migrations).
+                Optionally, may also contain `metaxy_data_version_by_field`.
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
@@ -478,12 +748,11 @@ class MetadataStore(ABC):
             ValueError: If writing to a feature from a different project than expected
 
         Note:
-            - Always writes to current store, never to fallback stores.
-            - If df already contains the metaxy-managed columns, they will be used
-              as-is (no replacement). This allows migrations to write historical
-              versions. A warning is issued unless suppressed via context manager.
-            - Project validation is performed unless disabled via allow_cross_project_writes()
-            - Must be called within store.open(mode=AccessMode.WRITE) context
+            - Never writes to fallback stores.
+
+            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
+
+            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
         """
         self._check_open()
 
@@ -494,37 +763,62 @@ class MetadataStore(ABC):
         if not is_system_table:
             self._validate_project_write(feature)
 
-        # Convert Narwhals to Polars if needed
-        if isinstance(df, nw.DataFrame):
-            df = df.to_polars()
-        # nw.DataFrame also matches as DataFrame in some contexts, ensure it's Polars
-        if not isinstance(df, pl.DataFrame):
-            # Must be some other type - shouldn't happen but handle defensively
-            if hasattr(df, "to_polars"):
-                df = df.to_polars()
-            elif hasattr(df, "to_pandas"):
-                df = pl.from_pandas(df.to_pandas())
-            else:
-                raise TypeError(f"Cannot convert {type(df)} to Polars DataFrame")
+        # Convert Polars to Narwhals to Polars if needed
+        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
+        df_nw = nw.from_native(df)
+
+        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
 
         # For system tables, write directly without feature_version tracking
         if is_system_table:
-            self._validate_schema_system_table(df)
-            self._write_metadata_impl(feature_key, df)
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
             return
 
-        # For regular features: add feature_version and snapshot_version, validate, and write
+        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
+            )
+
+        # Add all required system columns
+        # warning: for dataframes that do not match the native MetadatStore implementation
+        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
+        # while calculating the missing METAXY_DATA_VERSION column
+        df_nw = self._add_system_columns(df_nw, feature)
+
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
+
+    def _add_system_columns(
+        self,
+        df: Frame,
+        feature: FeatureKey | type[BaseFeature],
+    ) -> Frame:
+        """Add all required system columns to the DataFrame.
+
+        Args:
+            df: Narwhals DataFrame/LazyFrame
+            feature: Feature class or key
+
+        Returns:
+            DataFrame with all system columns added
+        """
+        feature_key = self._resolve_feature_key(feature)
+
         # Check if feature_version and snapshot_version already exist in DataFrame
-        if FEATURE_VERSION_COL in df.columns and SNAPSHOT_VERSION_COL in df.columns:
+        if (
+            METAXY_FEATURE_VERSION in df.columns
+            and METAXY_SNAPSHOT_VERSION in df.columns
+        ):
             # DataFrame already has feature_version and snapshot_version - use as-is
             # This is intended for migrations writing historical versions
             # Issue a warning unless we're in a suppression context
             if not _suppress_feature_version_warning.get():
-                import warnings
-
                 warnings.warn(
                     f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"{FEATURE_VERSION_COL} and {SNAPSHOT_VERSION_COL} columns. This is intended for migrations only. "
+                    f"{METAXY_FEATURE_VERSION} and {METAXY_SNAPSHOT_VERSION} columns. This is intended for migrations only. "
                     "Normal code should let write_metadata() add the current versions automatically.",
                     UserWarning,
                     stacklevel=2,
@@ -548,57 +842,108 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 [
-                    pl.lit(current_feature_version).alias(FEATURE_VERSION_COL),
-                    pl.lit(current_snapshot_version).alias(SNAPSHOT_VERSION_COL),
+                    nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
+                    nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
                 ]
             )
 
-        # Validate schema first (must have metaxy_provenance_by_field)
-        self._validate_schema(df)
-        # Write metadata
-        self._write_metadata_impl(feature_key, df)
+        # These should normally be added by the provenance engine during resolve_update
+        from metaxy.models.constants import (
+            METAXY_CREATED_AT,
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+        )
 
-    def _validate_schema(self, df: pl.DataFrame) -> None:
+        if METAXY_PROVENANCE_BY_FIELD not in df.columns:
+            raise ValueError(
+                f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
+            )
+
+        if METAXY_PROVENANCE not in df.columns:
+            MetaxyColumnMissingWarning.warn_on_missing_column(
+                expected=METAXY_PROVENANCE,
+                df=df,
+                message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
+            )
+
+            df = self.hash_struct_version_column(
+                plan=self._resolve_feature_plan(feature_key),
+                df=df,
+                struct_column=METAXY_PROVENANCE_BY_FIELD,
+                hash_column=METAXY_PROVENANCE,
+            )
+
+        if METAXY_CREATED_AT not in df.columns:
+            from datetime import datetime, timezone
+
+            df = df.with_columns(
+                nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
+            )
+
+        # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
+
+        if METAXY_DATA_VERSION_BY_FIELD not in df.columns:
+            df = df.with_columns(
+                nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD)
+            )
+            df = df.with_columns(nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION))
+        elif METAXY_DATA_VERSION not in df.columns:
+            df = self.hash_struct_version_column(
+                plan=self._resolve_feature_plan(feature_key),
+                df=df,
+                struct_column=METAXY_DATA_VERSION_BY_FIELD,
+                hash_column=METAXY_DATA_VERSION,
+            )
+
+        return df
+
+    def _validate_schema(self, df: Frame) -> None:
         """
         Validate that DataFrame has required schema.
 
         Args:
-            df: DataFrame to validate
+            df: Narwhals DataFrame or LazyFrame to validate
 
         Raises:
             MetadataSchemaError: If schema is invalid
         """
         from metaxy.metadata_store.exceptions import MetadataSchemaError
 
+        schema = df.collect_schema()
+
         # Check for metaxy_provenance_by_field column
-        if PROVENANCE_BY_FIELD_COL not in df.columns:
+        if METAXY_PROVENANCE_BY_FIELD not in schema.names():
             raise MetadataSchemaError(
-                f"DataFrame must have '{PROVENANCE_BY_FIELD_COL}' column"
+                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
             )
 
         # Check that metaxy_provenance_by_field is a struct
-        provenance_type = df.schema[PROVENANCE_BY_FIELD_COL]
-        if not isinstance(provenance_type, pl.Struct):
+        provenance_dtype = schema[METAXY_PROVENANCE_BY_FIELD]
+        if not isinstance(provenance_dtype, nw.Struct):
             raise MetadataSchemaError(
-                f"'{PROVENANCE_BY_FIELD_COL}' column must be pl.Struct, got {provenance_type}"
+                f"'{METAXY_PROVENANCE_BY_FIELD}' column must be a Struct, got {provenance_dtype}"
             )
 
         # Note: metaxy_provenance is auto-computed if missing, so we don't validate it here
 
         # Check for feature_version column
-        if FEATURE_VERSION_COL not in df.columns:
+        if METAXY_FEATURE_VERSION not in schema.names():
             raise MetadataSchemaError(
-                f"DataFrame must have '{FEATURE_VERSION_COL}' column"
+                f"DataFrame must have '{METAXY_FEATURE_VERSION}' column"
             )
 
         # Check for snapshot_version column
-        if SNAPSHOT_VERSION_COL not in df.columns:
+        if METAXY_SNAPSHOT_VERSION not in schema.names():
             raise MetadataSchemaError(
-                f"DataFrame must have '{SNAPSHOT_VERSION_COL}' column"
+                f"DataFrame must have '{METAXY_SNAPSHOT_VERSION}' column"
             )
 
-    def _validate_schema_system_table(self, df: pl.DataFrame) -> None:
-        """Validate schema for system tables (minimal validation)."""
+    def _validate_schema_system_table(self, df: Frame) -> None:
+        """Validate schema for system tables (minimal validation).
+
+        Args:
+            df: Narwhals DataFrame to validate
+        """
         # System tables don't need metaxy_provenance_by_field column
         pass
 
@@ -635,202 +980,11 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
         self._drop_feature_metadata_impl(feature_key)
 
-    def record_feature_graph_snapshot(self) -> SnapshotPushResult:
-        """Record all features in graph with a graph snapshot version.
-
-        This should be called during CD (Continuous Deployment) to record what
-        feature versions are being deployed. Typically invoked via `metaxy graph push`.
-
-        Records all features in the graph with the same snapshot_version, representing
-        a consistent state of the entire feature graph based on code definitions.
-
-        The snapshot_version is a deterministic hash of all feature_version hashes
-        in the graph, making it idempotent - calling multiple times with the
-        same feature definitions produces the same snapshot_version.
-
-        This method detects three scenarios:
-        1. New snapshot (computational changes): No existing rows with this snapshot_version
-        2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
-        3. No changes: Snapshot exists with identical feature_spec_versions for all features
-
-        Returns: SnapshotPushResult
-        """
-
-        from metaxy.models.feature import FeatureGraph
-
-        graph = FeatureGraph.get_active()
-
-        # Use to_snapshot() to get the snapshot dict
-        snapshot_dict = graph.to_snapshot()
-
-        # Generate deterministic snapshot_version from graph
-        snapshot_version = graph.snapshot_version
-
-        # Read existing feature versions once
-        try:
-            existing_versions_lazy = self.read_metadata_in_store(FEATURE_VERSIONS_KEY)
-            # Materialize to Polars for iteration
-            existing_versions = (
-                existing_versions_lazy.collect().to_polars()
-                if existing_versions_lazy is not None
-                else None
-            )
-        except Exception:
-            # Table doesn't exist yet
-            existing_versions = None
-
-        # Get project from any feature in the graph (all should have the same project)
-        # Default to empty string if no features in graph
-        if graph.features_by_key:
-            # Get first feature's project
-            first_feature = next(iter(graph.features_by_key.values()))
-            project_name = first_feature.project  # type: ignore[attr-defined]
-        else:
-            project_name = ""
-
-        # Check if this exact snapshot already exists for this project
-        snapshot_already_exists = False
-        existing_spec_versions: dict[str, str] = {}
-
-        if existing_versions is not None:
-            # Check if project column exists (it may not in old tables)
-            if "project" in existing_versions.columns:
-                snapshot_rows = existing_versions.filter(
-                    (pl.col(SNAPSHOT_VERSION_COL) == snapshot_version)
-                    & (pl.col("project") == project_name)
-                )
-            else:
-                # Old table without project column - just check snapshot_version
-                snapshot_rows = existing_versions.filter(
-                    pl.col(SNAPSHOT_VERSION_COL) == snapshot_version
-                )
-            snapshot_already_exists = snapshot_rows.height > 0
-
-            if snapshot_already_exists:
-                # Check if feature_spec_version column exists (backward compatibility)
-                # Old records (before issue #77) won't have this column
-                has_spec_version = FEATURE_SPEC_VERSION_COL in snapshot_rows.columns
-
-                if has_spec_version:
-                    # Build dict of existing feature_key -> feature_spec_version
-                    for row in snapshot_rows.iter_rows(named=True):
-                        existing_spec_versions[row["feature_key"]] = row[
-                            FEATURE_SPEC_VERSION_COL
-                        ]
-                # If no spec_version column, existing_spec_versions remains empty
-                # This means we'll treat it as "no metadata changes" (conservative approach)
-
-        # Scenario 1: New snapshot (no existing rows)
-        if not snapshot_already_exists:
-            # Build records from snapshot_dict
-            records = []
-            for feature_key_str in sorted(snapshot_dict.keys()):
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                # Always record all features for this snapshot (don't skip based on feature_version alone)
-                # Each snapshot must be complete to support migration detection
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        FEATURE_VERSION_COL: feature_data[FEATURE_VERSION_COL],
-                        FEATURE_SPEC_VERSION_COL: feature_data[
-                            FEATURE_SPEC_VERSION_COL
-                        ],
-                        FEATURE_TRACKING_VERSION_COL: feature_data[
-                            FEATURE_TRACKING_VERSION_COL
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        SNAPSHOT_VERSION_COL: snapshot_version,
-                    }
-                )
-
-            # Bulk write all new records at once
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=False,
-                metadata_changed=False,
-                features_with_spec_changes=[],
-            )
-
-        # Scenario 2 & 3: Snapshot exists - check for metadata changes
-        features_with_spec_changes = []
-
-        for feature_key_str, feature_data in snapshot_dict.items():
-            current_spec_version = feature_data[FEATURE_SPEC_VERSION_COL]
-            existing_spec_version = existing_spec_versions.get(feature_key_str)
-
-            if existing_spec_version != current_spec_version:
-                features_with_spec_changes.append(feature_key_str)
-
-        # If metadata changed, append new rows for affected features
-        if features_with_spec_changes:
-            records = []
-            for feature_key_str in features_with_spec_changes:
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        FEATURE_VERSION_COL: feature_data[FEATURE_VERSION_COL],
-                        FEATURE_SPEC_VERSION_COL: feature_data[
-                            FEATURE_SPEC_VERSION_COL
-                        ],
-                        FEATURE_TRACKING_VERSION_COL: feature_data[
-                            FEATURE_TRACKING_VERSION_COL
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        SNAPSHOT_VERSION_COL: snapshot_version,
-                    }
-                )
-
-            # Bulk write updated records (append-only)
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self._write_metadata_impl(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=True,
-                metadata_changed=True,
-                features_with_spec_changes=features_with_spec_changes,
-            )
-
-        # Scenario 3: No changes at all
-        return SnapshotPushResult(
-            snapshot_version=snapshot_version,
-            already_recorded=True,
-            metadata_changed=False,
-            features_with_spec_changes=[],
-        )
-
     @abstractmethod
     def read_metadata_in_store(
         self,
         feature: FeatureKey | type[BaseFeature],
         *,
-        feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
     ) -> nw.LazyFrame[Any] | None:
@@ -839,7 +993,6 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature to read metadata for
-            feature_version: Filter by specific feature_version (applied natively in store)
             filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
 
@@ -857,6 +1010,7 @@ class MetadataStore(ABC):
         columns: Sequence[str] | None = None,
         allow_fallback: bool = True,
         current_only: bool = True,
+        latest_only: bool = True,
     ) -> nw.LazyFrame[Any]:
         """
         Read metadata with optional fallback to upstream stores.
@@ -866,10 +1020,11 @@ class MetadataStore(ABC):
             feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
             filters: Sequence of Narwhals filter expressions to apply to this feature.
                 Example: [nw.col("x") > 10, nw.col("y") < 5]
-            columns: Subset of columns to return
+            columns: Subset of columns to include. Metaxy's system columns are always included.
             allow_fallback: If True, check fallback stores on local miss
             current_only: If True, only return rows with current feature_version
                 (default: True for safety)
+            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
 
         Returns:
             Narwhals LazyFrame with metadata
@@ -878,6 +1033,9 @@ class MetadataStore(ABC):
             FeatureNotFoundError: If feature not found in any store
             ValueError: If both feature_version and current_only=True are provided
         """
+        filters = filters or []
+        columns = columns or []
+
         feature_key = self._resolve_feature_key(feature)
         is_system_table = self._is_system_table(feature_key)
 
@@ -888,34 +1046,46 @@ class MetadataStore(ABC):
                 "Use current_only=False with feature_version parameter."
             )
 
-        # Determine which feature_version to use
-        feature_version_filter = feature_version
-        if current_only and not is_system_table:
-            # Get current feature_version
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                feature_version_filter = feature.feature_version()  # type: ignore[attr-defined]
-            else:
-                from metaxy.models.feature import FeatureGraph
+        # Add feature_version filter only when needed
+        if current_only or feature_version is not None and not is_system_table:
+            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
+                current_graph().get_feature_version(feature_key)
+                if current_only
+                else feature_version
+            )
+            filters = [version_filter, *filters]
 
-                graph = FeatureGraph.get_active()
-                # Only try to get from graph if feature_key exists in graph
-                # This allows reading system tables or external features not in current graph
-                if feature_key in graph.features_by_key:
-                    feature_cls = graph.features_by_key[feature_key]
-                    feature_version_filter = feature_cls.feature_version()  # type: ignore[attr-defined]
-                else:
-                    # Feature not in graph - skip feature_version filtering
-                    feature_version_filter = None
+        if columns and not is_system_table:
+            # Add only system columns that aren't already in the user's columns list
+            columns_set = set(columns)
+            missing_system_cols = [
+                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
+            ]
+            read_columns = [*columns, *missing_system_cols]
+        else:
+            read_columns = None
 
-        # Try local first with filters
         lazy_frame = self.read_metadata_in_store(
-            feature,
-            feature_version=feature_version_filter,
-            filters=filters,  # Pass filters directly
-            columns=columns,
+            feature, filters=filters, columns=read_columns
         )
 
+        if lazy_frame is not None and not is_system_table and latest_only:
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Apply deduplication
+            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=list(
+                    self._resolve_feature_plan(feature_key).feature.id_columns
+                ),
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
         if lazy_frame is not None:
+            # After dedup, filter to requested columns if specified
+            if columns:
+                lazy_frame = lazy_frame.select(columns)
+
             return lazy_frame
 
         # Try fallback stores
@@ -926,10 +1096,11 @@ class MetadataStore(ABC):
                     return store.read_metadata(
                         feature,
                         feature_version=feature_version,
-                        filters=filters,  # Pass through filters directly
+                        filters=filters,
                         columns=columns,
                         allow_fallback=True,
-                        current_only=current_only,  # Pass through current_only
+                        current_only=current_only,
+                        latest_only=latest_only,
                     )
                 except FeatureNotFoundError:
                     # Try next fallback store
@@ -1027,7 +1198,7 @@ class MetadataStore(ABC):
             # No snapshots recorded yet
             return pl.DataFrame(
                 schema={
-                    SNAPSHOT_VERSION_COL: pl.String,
+                    METAXY_SNAPSHOT_VERSION: pl.String,
                     "recorded_at": pl.Datetime("us"),
                     "feature_count": pl.UInt32,
                 }
@@ -1037,7 +1208,7 @@ class MetadataStore(ABC):
 
         # Group by snapshot_version and get earliest recorded_at and count
         snapshots = (
-            versions_df.group_by(SNAPSHOT_VERSION_COL)
+            versions_df.group_by(METAXY_SNAPSHOT_VERSION)
             .agg(
                 [
                     pl.col("recorded_at").min().alias("recorded_at"),
@@ -1103,7 +1274,7 @@ class MetadataStore(ABC):
             graph = FeatureGraph.get_active()
             snapshot_version = graph.snapshot_version
 
-        filters = [nw.col(SNAPSHOT_VERSION_COL) == snapshot_version]
+        filters = [nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version]
         if project is not None:
             filters.append(nw.col("project") == project)
 
@@ -1298,8 +1469,8 @@ class MetadataStore(ABC):
                         # Get most recent snapshot_version by recorded_at
                         from_snapshot = (
                             versions_df.sort("recorded_at", descending=True)
-                            .select(SNAPSHOT_VERSION_COL)
-                            .head(1)[SNAPSHOT_VERSION_COL][0]
+                            .select(METAXY_SNAPSHOT_VERSION)
+                            .head(1)[METAXY_SNAPSHOT_VERSION][0]
                         )
                         logger.info(
                             f"Using latest snapshot from source: {from_snapshot}"
@@ -1335,7 +1506,7 @@ class MetadataStore(ABC):
                     import narwhals as nw
 
                     source_filtered = source_lazy.filter(
-                        nw.col(SNAPSHOT_VERSION_COL) == from_snapshot
+                        nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
                     )
 
                     # Apply filters for this feature (if any)
@@ -1357,7 +1528,7 @@ class MetadataStore(ABC):
                             )
                             # Filter destination to same snapshot_version
                             dest_for_snapshot = dest_lazy.filter(
-                                nw.col(SNAPSHOT_VERSION_COL) == from_snapshot
+                                nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
                             )
 
                             # Materialize destination sample_uids to avoid cross-backend join issues
@@ -1440,566 +1611,3 @@ class MetadataStore(ABC):
         )
 
         return {"features_copied": features_copied, "rows_copied": total_rows}
-
-    # ========== Dependency Resolution ==========
-
-    def read_upstream_metadata(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        field: FieldKey | None = None,
-        *,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        allow_fallback: bool = True,
-        current_only: bool = True,
-    ) -> dict[str, nw.LazyFrame[Any]]:
-        """
-        Read all upstream dependencies for a feature/field.
-
-        Args:
-            feature: Feature whose dependencies to load
-            field: Specific field (if None, loads all deps for feature)
-            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
-                Example: {"upstream/feature1": [nw.col("x") > 10], "upstream/feature2": [...]}
-            allow_fallback: Whether to check fallback stores
-            current_only: If True, only read current feature_version for upstream
-
-        Returns:
-            Dict mapping upstream feature keys (as strings) to Narwhals LazyFrames.
-            Each LazyFrame has a 'metaxy_provenance_by_field' column (Struct).
-
-        Raises:
-            DependencyError: If required upstream feature is missing
-        """
-        plan = self._resolve_feature_plan(feature)
-
-        # Get all upstream features we need
-        upstream_features = set()
-
-        if field is None:
-            # All fields' dependencies
-            for cont in plan.feature.fields:
-                upstream_features.update(self._get_field_dependencies(plan, cont.key))
-        else:
-            # Specific field's dependencies
-            upstream_features.update(self._get_field_dependencies(plan, field))
-
-        # Load metadata for each upstream feature
-        # Use the feature's graph to look up upstream feature classes
-        if isinstance(feature, FeatureKey):
-            from metaxy.models.feature import FeatureGraph
-
-            graph = FeatureGraph.get_active()
-        else:
-            graph = feature.graph
-
-        upstream_metadata = {}
-        for upstream_fq_key in upstream_features:
-            upstream_feature_key = upstream_fq_key.feature
-
-            # Extract filters for this specific upstream feature
-            upstream_filters = None
-            if filters:
-                upstream_key_str = upstream_feature_key.to_string()
-                if upstream_key_str in filters:
-                    upstream_filters = filters[upstream_key_str]
-
-            try:
-                # Look up the Feature class from the graph and pass it to read_metadata
-                # This way we use the bound graph instead of relying on active context
-                upstream_feature_cls = graph.features_by_key[upstream_feature_key]
-                lazy_frame = self.read_metadata(
-                    upstream_feature_cls,
-                    filters=upstream_filters,  # Pass extracted filters (Sequence or None)
-                    allow_fallback=allow_fallback,
-                    current_only=current_only,  # Pass through current_only
-                )
-                # Use string key for dict
-                upstream_metadata[upstream_feature_key.to_string()] = lazy_frame
-            except FeatureNotFoundError as e:
-                raise DependencyError(
-                    f"Missing upstream feature {upstream_feature_key.to_string()} "
-                    f"required by {plan.feature.key.to_string()}"
-                ) from e
-
-        return upstream_metadata
-
-    def _get_field_dependencies(
-        self, plan: FeaturePlan, field_key: FieldKey
-    ) -> set[FQFieldKey]:
-        """Get all upstream field dependencies for a given field."""
-        field = plan.feature.fields_by_key[field_key]
-        upstream = set()
-
-        if field.deps == SpecialFieldDep.ALL:
-            # All upstream features and fields
-            upstream.update(plan.all_parent_fields_by_key.keys())
-        elif isinstance(field.deps, list):
-            for dep in field.deps:
-                if isinstance(dep, FieldDep):
-                    if dep.fields == SpecialFieldDep.ALL:
-                        # All fields of this feature
-                        upstream_feature = plan.parent_features_by_key[dep.feature]
-                        for upstream_field in upstream_feature.fields:
-                            upstream.add(
-                                FQFieldKey(
-                                    feature=dep.feature,
-                                    field=upstream_field.key,
-                                )
-                            )
-                    elif isinstance(dep.fields, list):
-                        # Specific fields
-                        for field_key in dep.fields:
-                            upstream.add(
-                                FQFieldKey(feature=dep.feature, field=field_key)
-                            )
-
-        return upstream
-
-    # ========== Data Version Calculation ==========
-
-    # ========== Data Versioning API ==========
-
-    @overload
-    def resolve_update(
-        self,
-        feature: type[BaseFeature],
-        *,
-        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: Literal[False] = False,
-        **kwargs: Any,
-    ) -> Increment: ...
-
-    @overload
-    def resolve_update(
-        self,
-        feature: type[BaseFeature],
-        *,
-        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: Literal[True],
-        **kwargs: Any,
-    ) -> LazyIncrement: ...
-
-    def resolve_update(
-        self,
-        feature: type[BaseFeature],
-        *,
-        samples: nw.DataFrame[Any] | nw.LazyFrame[Any] | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: bool = False,
-        **kwargs: Any,
-    ) -> Increment | LazyIncrement:
-        """Calculate an incremental update for a feature.
-
-        Args:
-            feature: Feature class to resolve updates for
-            samples: Pre-computed DataFrame with ID columns
-                and `PROVENANCE_BY_FIELD_COL` column. When provided, `MetadataStore` skips upstream loading, joining,
-                and field provenance calculation.
-
-                **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate `PROVENANCE_BY_FIELD_COL` from, so users
-                must provide samples with manually computed `PROVENANCE_BY_FIELD_COL` column.
-
-                For non-root features, use this when you
-                want to bypass the automatic upstream loading and field provenance calculation.
-
-                Examples:
-
-                - Loading upstream from custom sources
-
-                - Pre-computing field provenances with custom logic
-
-                - Testing specific scenarios
-
-                Setting this parameter during normal operations is not required.
-
-            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
-                Applied when reading upstream metadata to filter samples at the source.
-                Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If `True`, return [metaxy.provenance.types.LazyIncrement][] with lazy Narwhals LazyFrames.
-                If `False`, return [metaxy.provenance.types.Increment][] with eager Narwhals DataFrames.
-            **kwargs: Backend-specific parameters
-
-        Raises:
-            ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
-
-        Examples:
-            ```py
-            # Root feature - samples required
-            samples = pl.DataFrame({
-                "sample_uid": [1, 2, 3],
-                PROVENANCE_BY_FIELD_COL: [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
-            })
-            result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
-            ```
-
-            ```py
-            # Non-root feature - automatic (normal usage)
-            result = store.resolve_update(DownstreamFeature)
-            ```
-
-            ```py
-            # Non-root feature - with escape hatch (advanced)
-            custom_samples = compute_custom_field_provenance(...)
-            result = store.resolve_update(DownstreamFeature, samples=custom_samples)
-            ```
-
-        Note:
-            Users can then process only added/changed and call write_metadata().
-        """
-        import narwhals as nw
-
-        plan = feature.graph.get_feature_plan(feature.spec().key)
-
-        # Escape hatch: if samples provided, use them directly (skip join/calculation)
-        if samples is not None:
-            import logging
-
-            logger = logging.getLogger(__name__)
-
-            # Check if samples are Polars-backed
-            is_polars_samples = samples.implementation == nw.Implementation.POLARS
-
-            # Determine which tracker to use
-            use_polars_tracker = False
-            if is_polars_samples and self._supports_native_components():
-                # User provided Polars samples but store uses native (SQL) backend
-                # Need to materialize current metadata to Polars for compatibility
-                # and use Polars tracker
-                use_polars_tracker = True
-                logger.warning(
-                    f"Feature {feature.spec().key}: samples parameter is Polars-backed but store uses native SQL backend. "
-                    f"Materializing current metadata to Polars for diff comparison. "
-                    f"For better performance, consider using samples with backend matching the store's backend."
-                )
-                # Get current metadata and materialize to Polars
-                current_lazy_native = self.read_metadata_in_store(
-                    feature, feature_version=feature.feature_version()
-                )
-                if current_lazy_native is not None:
-                    # Convert to Polars using Narwhals' built-in method
-                    current_lazy = nw.from_native(
-                        current_lazy_native.collect().to_polars().lazy()
-                    )
-                else:
-                    current_lazy = None
-            else:
-                # Same backend or no conversion needed - direct read
-                current_lazy = self.read_metadata_in_store(
-                    feature, feature_version=feature.feature_version()
-                )
-
-            # Use ProvenanceTracker to compare samples with current metadata
-            # For root features (or when samples are explicitly provided), we pass the samples
-            # to the tracker which will validate and diff them
-            # Use Polars tracker if samples are Polars-backed and we converted current to Polars
-            if use_polars_tracker:
-                from metaxy.provenance.polars import PolarsProvenanceTracker
-
-                # Polars tracker doesn't need context manager - direct instantiation
-                tracker = PolarsProvenanceTracker(plan=plan)
-                tracker_cm = None
-            else:
-                # Native tracker needs context manager
-                tracker_cm = self._create_provenance_tracker(plan)
-                tracker = tracker_cm.__enter__()
-
-            try:
-                samples = tracker.add_provenance_column(
-                    nw.from_native(samples), hash_algorithm=self.hash_algorithm
-                )
-                added, changed, removed = tracker.resolve_increment_with_provenance(
-                    current=current_lazy,
-                    upstream={},  # Empty upstream - samples already have provenance_by_field computed
-                    hash_algorithm=self.hash_algorithm,
-                    filters={},  # No additional filters - samples define the target state
-                    sample=samples.lazy(),
-                )
-
-                # Convert None to empty DataFrames
-                if changed is None:
-                    changed = empty_frame_like(added)
-                if removed is None:
-                    removed = empty_frame_like(added)
-
-                # Return as LazyIncrement or materialize to Increment
-                if lazy:
-                    return LazyIncrement(
-                        added=added
-                        if isinstance(added, nw.LazyFrame)
-                        else nw.from_native(added),
-                        changed=changed
-                        if isinstance(changed, nw.LazyFrame)
-                        else nw.from_native(changed),
-                        removed=removed
-                        if isinstance(removed, nw.LazyFrame)
-                        else nw.from_native(removed),
-                    )
-                else:
-                    return Increment(
-                        added=added.collect()
-                        if isinstance(added, nw.LazyFrame)
-                        else added,
-                        changed=changed.collect()
-                        if isinstance(changed, nw.LazyFrame)
-                        else changed,
-                        removed=removed.collect()
-                        if isinstance(removed, nw.LazyFrame)
-                        else removed,
-                    )
-            finally:
-                # Clean up tracker if it was created via context manager
-                if tracker_cm is not None:
-                    tracker_cm.__exit__(None, None, None)
-
-        # Root features without samples: error (samples required)
-        if not plan.deps:
-            raise ValueError(
-                f"Feature {feature.spec().key} has no upstream dependencies (root feature). "
-                f"Must provide 'samples' parameter with sample_uid and {PROVENANCE_BY_FIELD_COL} columns. "
-                f"Root features require manual {PROVENANCE_BY_FIELD_COL} computation."
-            )
-
-        # Non-root features without samples: automatic upstream loading
-        # Check where upstream data lives
-        upstream_location = self._check_upstream_location(feature)
-
-        if upstream_location == "all_local":
-            # All upstream in this store - use native field provenance calculations
-            return self._resolve_update_native(feature, filters=filters, lazy=lazy)
-        else:
-            # Some upstream in fallback stores - use Polars components
-            return self._resolve_update_polars(feature, filters=filters, lazy=lazy)
-
-    def _check_upstream_location(self, feature: type[BaseFeature]) -> str:
-        """Check if all upstream is in this store or in fallback stores.
-
-        Returns:
-            "all_local" if all upstream features are in this store
-            "has_fallback" if any upstream is in fallback stores
-        """
-        plan = feature.graph.get_feature_plan(feature.spec().key)
-
-        if not plan.deps:
-            return "all_local"  # No dependencies
-
-        for upstream_spec in plan.deps:
-            if not self.has_feature(upstream_spec.key, check_fallback=False):
-                return "has_fallback"  # At least one upstream is in fallback
-
-        return "all_local"
-
-    def _resolve_update_native(
-        self,
-        feature: type[BaseFeature],
-        *,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: bool = False,
-    ) -> Increment | LazyIncrement:
-        """Resolve using native provenance tracking (all data in this store).
-
-        Uses ProvenanceTracker with native backend when available (e.g., IbisProvenanceTracker for SQL stores)
-        to execute operations in the database without pulling data into memory.
-
-        For stores that support native provenance tracking (DuckDB, ClickHouse), this method:
-        - Executes joins and diffs lazily via Narwhals
-        - Computes hashes using native SQL functions (xxHash64, MD5, etc.)
-        - Does not materialize data into memory (unless lazy=False)
-
-        For stores without native support, falls back to PolarsProvenanceTracker.
-        """
-        import logging
-
-        logger = logging.getLogger(__name__)
-        plan = feature.graph.get_feature_plan(feature.spec().key)
-
-        # Root features should be handled in resolve_update() with samples parameter
-        # This method should only be called for features with upstream
-        if not plan.deps:
-            raise RuntimeError(
-                f"Internal error: _resolve_update_native called for root feature {feature.spec().key}. "
-                f"Root features should be handled in resolve_update() with samples parameter."
-            )
-
-        # Get the provenance tracker for this store (as context manager)
-        with self._create_provenance_tracker(plan) as tracker:
-            logger.debug(
-                f"Using provenance tracker for {feature.spec().key}: {tracker.__class__.__name__}"
-            )
-
-            # Load upstream as Narwhals LazyFrames (stays lazy in SQL for native stores)
-            # Build upstream dict in format: FeatureKey -> LazyFrame
-            upstream: dict[FeatureKey, nw.LazyFrame[Any]] = {}
-            filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
-
-            for upstream_spec in plan.deps or []:
-                upstream_key = upstream_spec.key
-                upstream_key_str = upstream_key.to_string()
-
-                # Extract filters for this upstream feature
-                upstream_filters = None
-                if filters and upstream_key_str in filters:
-                    upstream_filters = filters[upstream_key_str]
-                    filters_by_key[upstream_key] = list(upstream_filters)
-
-                # Get the upstream feature's current feature_version
-                # Look up the Feature class from the graph to get its feature_version
-                upstream_feature_cls = feature.graph.features_by_key[upstream_key]
-                upstream_feature_version = upstream_feature_cls.feature_version()
-
-                upstream_lazy = self.read_metadata_in_store(
-                    upstream_key,
-                    feature_version=upstream_feature_version,  # Filter to latest version
-                    filters=upstream_filters,  # Apply extracted filters
-                )
-                if upstream_lazy is not None:
-                    upstream[upstream_key] = upstream_lazy
-
-            # Get current metadata (filtered by feature_version at database level)
-            current_lazy_nw = self.read_metadata_in_store(
-                feature, feature_version=feature.feature_version()
-            )
-
-            # Use ProvenanceTracker to compute provenance and resolve increment
-            # This internally handles: joining, hashing, and diffing
-            added, changed, removed = tracker.resolve_increment_with_provenance(
-                current=current_lazy_nw,
-                upstream=upstream,
-                hash_algorithm=self.hash_algorithm,
-                filters=filters_by_key,
-                sample=None,  # We don't support sample filtering yet
-            )
-
-            # Convert None to empty DataFrames
-            if changed is None:
-                changed = empty_frame_like(added)
-            if removed is None:
-                removed = empty_frame_like(added)
-
-            # Return as LazyIncrement or materialize to Increment
-            if lazy:
-                return LazyIncrement(
-                    added=added
-                    if isinstance(added, nw.LazyFrame)
-                    else nw.from_native(added),
-                    changed=changed
-                    if isinstance(changed, nw.LazyFrame)
-                    else nw.from_native(changed),
-                    removed=removed
-                    if isinstance(removed, nw.LazyFrame)
-                    else nw.from_native(removed),
-                )
-            else:
-                return Increment(
-                    added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                    changed=changed.collect()
-                    if isinstance(changed, nw.LazyFrame)
-                    else changed,
-                    removed=removed.collect()
-                    if isinstance(removed, nw.LazyFrame)
-                    else removed,
-                )
-
-    def _resolve_update_polars(
-        self,
-        feature: type[BaseFeature],
-        *,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
-        lazy: bool = False,
-    ) -> Increment | LazyIncrement:
-        """Resolve using Polars provenance tracking (cross-store scenario).
-
-        Pulls data from all stores to Polars, performs all operations in memory.
-        Uses PolarsProvenanceTracker instead of native SQL tracker because upstream
-        data is distributed across multiple stores.
-
-        This method is called when upstream features are in fallback stores,
-        requiring materialization to join data from different sources.
-        """
-        import logging
-
-        from metaxy.models.types import FeatureKey
-
-        logger = logging.getLogger(__name__)
-
-        # Warn if native tracker is available and preferred but can't be used due to cross-store scenario
-        if self._prefer_native and self._supports_native_components():
-            logger.warning(
-                f"Feature {feature.spec().key} has upstream dependencies in fallback stores. "
-                f"Falling back to in-memory Polars processing instead of native SQL execution. "
-                f"For better performance, ensure all upstream features are in the same store."
-            )
-
-        # Load upstream from all sources (this store + fallbacks) as Narwhals LazyFrames
-        upstream_refs_str = self.read_upstream_metadata(
-            feature, filters=filters, allow_fallback=True
-        )
-
-        # Convert upstream dict from string keys to FeatureKey
-        upstream: dict[FeatureKey, nw.LazyFrame[Any]] = {}
-        filters_by_key: dict[FeatureKey, list[nw.Expr]] = {}
-
-        for upstream_key_str, upstream_lazy in upstream_refs_str.items():
-            # Parse string back to FeatureKey (split by "/" separator)
-            upstream_key = FeatureKey(upstream_key_str.split("/"))
-            upstream[upstream_key] = upstream_lazy
-
-            # Extract filters for this upstream feature
-            if filters and upstream_key_str in filters:
-                filters_by_key[upstream_key] = list(filters[upstream_key_str])
-
-        # Get feature plan
-        plan = feature.graph.get_feature_plan(feature.spec().key)
-
-        # Use Polars provenance tracker (since data spans multiple stores)
-        tracker = PolarsProvenanceTracker(plan=plan)
-        logger.debug(
-            f"Using Polars provenance tracker for cross-store scenario: {feature.spec().key}"
-        )
-
-        # Get current metadata (filtered by feature_version at database level)
-        current_lazy = self.read_metadata_in_store(
-            feature, feature_version=feature.feature_version()
-        )
-
-        # Use ProvenanceTracker to compute provenance and resolve increment
-        # This internally handles: joining, hashing, and diffing
-        added, changed, removed = tracker.resolve_increment_with_provenance(
-            current=current_lazy,
-            upstream=upstream,
-            hash_algorithm=self.hash_algorithm,
-            filters=filters_by_key,
-            sample=None,  # We don't support sample filtering yet
-        )
-
-        # Convert None to empty DataFrames
-        if changed is None:
-            changed = empty_frame_like(added)
-        if removed is None:
-            removed = empty_frame_like(added)
-
-        # Return as LazyIncrement or materialize to Increment
-        if lazy:
-            return LazyIncrement(
-                added=added
-                if isinstance(added, nw.LazyFrame)
-                else nw.from_native(added),
-                changed=changed
-                if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
-                removed=removed
-                if isinstance(removed, nw.LazyFrame)
-                else nw.from_native(removed),
-            )
-        else:
-            return Increment(
-                added=added.collect() if isinstance(added, nw.LazyFrame) else added,
-                changed=changed.collect()
-                if isinstance(changed, nw.LazyFrame)
-                else changed,
-                removed=removed.collect()
-                if isinstance(removed, nw.LazyFrame)
-                else removed,
-            )

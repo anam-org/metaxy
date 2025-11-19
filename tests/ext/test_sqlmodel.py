@@ -54,6 +54,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     class VideoFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
@@ -109,6 +110,7 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
     class MultiFieldFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "field"]),
             fields=[
@@ -145,6 +147,7 @@ def test_sqlmodel_custom_tablename() -> None:
     class CustomTableFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["custom", "table"]),
             fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
@@ -167,6 +170,7 @@ def test_automatic_tablename() -> None:
     class AutoTableFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["my", "auto", "feature"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -197,6 +201,7 @@ def test_sqlmodel_field_definitions() -> None:
     class AudioFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["audio"]),
             fields=[
@@ -243,6 +248,7 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     class VersionedFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["versioned"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -276,6 +282,7 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
     class DataVersionFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["data", "version"]),
             fields=[
@@ -315,6 +322,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ParentFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
@@ -327,6 +335,7 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ChildFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
@@ -368,6 +377,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[
@@ -384,6 +394,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -440,6 +451,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV1(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v1"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -456,6 +468,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV2(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
                 fields=[
@@ -491,6 +504,7 @@ def test_custom_graph_context() -> None:
         class CustomGraphFeature(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["custom", "graph"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -517,6 +531,7 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "test"]),
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -557,6 +572,7 @@ def test_downstream_dependency_tracking() -> None:
     class RootFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["root"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -569,6 +585,7 @@ def test_downstream_dependency_tracking() -> None:
     class MiddleFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["middle"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
@@ -582,6 +599,7 @@ def test_downstream_dependency_tracking() -> None:
     class LeafFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(feature=FeatureKey(["middle"]))],
@@ -620,6 +638,7 @@ def test_duplicate_key_raises() -> None:
     class Feature1(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["duplicate"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -636,6 +655,7 @@ def test_duplicate_key_raises() -> None:
         class Feature2(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["duplicate"]),  # Same key!
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -662,6 +682,7 @@ def test_inheritance_chain() -> None:
     class ConcreteFeature(
         BaseFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["concrete"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -698,6 +719,7 @@ def test_sqlmodel_feature_with_duckdb_store(
     class VideoFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["video", "processing"]),
             fields=[
@@ -750,8 +772,9 @@ def test_sqlmodel_feature_with_duckdb_store(
             for v in result_df["metaxy_feature_version"].to_list()
         )
 
-        # Snapshot result
-        assert result_df.to_dicts() == snapshot
+        # Snapshot result (exclude timestamp which varies between runs)
+        result_for_snapshot = result_df.drop("metaxy_created_at").to_dicts()
+        assert result_for_snapshot == snapshot
 
 
 # Custom ID Columns Tests
@@ -769,6 +792,7 @@ def test_basic_custom_id_columns() -> None:
     class UserSessionFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "session"]),
             id_columns=["user_id", "session_id"],
@@ -811,6 +835,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserActivityFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "activity"]),
             id_columns=["user_id", "session_id"],
@@ -831,6 +856,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserSummaryFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "summary"]),
             id_columns=["user_id", "session_id"],
@@ -942,10 +968,14 @@ def test_sqlmodel_duckdb_custom_id_columns(
         )
         assert sorted(child_composite_keys) == [(1, 10), (1, 20), (2, 10), (2, 30)]
 
-        # Snapshot results
+        # Snapshot results (exclude timestamp which varies between runs)
         assert {
-            "parent": parent_result_df.sort(["user_id", "session_id"]).to_dicts(),
-            "child": child_result_df.sort(["user_id", "session_id"]).to_dicts(),
+            "parent": parent_result_df.drop("metaxy_created_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
+            "child": child_result_df.drop("metaxy_created_at")
+            .sort(["user_id", "session_id"])
+            .to_dicts(),
         } == snapshot
 
 
@@ -961,6 +991,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     class MultiKeyFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "key"]),
             id_columns=["user_id", "session_id", "timestamp"],
@@ -1009,6 +1040,7 @@ def test_parent_child_different_id_columns() -> None:
     class DetailedParentFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["detailed", "parent"]),
             id_columns=["user_id", "session_id", "device_id"],
@@ -1026,6 +1058,7 @@ def test_parent_child_different_id_columns() -> None:
     class AggregatedChildFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["aggregated", "child"]),
             id_columns=["user_id", "session_id"],  # Doesn't need device_id
@@ -1075,6 +1108,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureA(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "a"]),
             id_columns=["user_id", "date"],
@@ -1091,6 +1125,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureB(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "b"]),
             id_columns=["user_id", "date"],
@@ -1108,6 +1143,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureC(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "c"]),
             id_columns=["user_id", "date"],
@@ -1221,6 +1257,7 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
         class InvalidFeature(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["invalid"]),
                 id_columns=[],  # Empty list not allowed
@@ -1244,6 +1281,7 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "ids"]),
             id_columns=["customer_id", "order_id"],
@@ -1296,6 +1334,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "rename"]),
             fields=[
@@ -1311,6 +1350,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "rename"]),
             deps=[
@@ -1354,6 +1394,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class WideUpstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["wide", "upstream"]),
             fields=[
@@ -1373,6 +1414,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class SelectiveDownstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["selective", "downstream"]),
             deps=[
@@ -1413,6 +1455,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
         class BadFeature(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["bad", "feature"]),
                 fields=[
@@ -1435,6 +1478,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class UpstreamWithStatus(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "status"]),
             fields=[
@@ -1450,6 +1494,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class DownstreamWithOwnStatus(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "status"]),
             deps=[
@@ -1485,6 +1530,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class ComplexUpstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["complex", "upstream"]),
             fields=[
@@ -1503,6 +1549,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class OptimizedDownstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["optimized", "downstream"]),
             deps=[
@@ -1547,6 +1594,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class DataUpstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["data", "upstream"]),
             fields=[
@@ -1563,6 +1611,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class MinimalDownstreamFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["minimal", "downstream"]),
             deps=[
@@ -1601,6 +1650,7 @@ def test_sqlmodel_rename_validation_with_store(
     class SourceFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["source", "feature"]),
             fields=[
@@ -1617,6 +1667,7 @@ def test_sqlmodel_rename_validation_with_store(
     class TargetFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["target", "feature"]),
             deps=[
@@ -1709,6 +1760,7 @@ def test_sqlmodel_rejects_autoincrement_primary_key_id_columns() -> None:
         class BadAutoIncrementFeature(
             SQLModelFeature,
             table=True,
+            inject_metaxy_pk=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["bad", "autoincrement"]),
                 id_columns=["id"],
@@ -1734,6 +1786,7 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
     class GoodClientIdFeature(
         SQLModelFeature,
         table=True,
+        inject_metaxy_pk=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["good", "client_id"]),
             id_columns=["user_id", "session_id"],
@@ -1748,7 +1801,7 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
         data: str
 
         # This is fine - server-generated but not an ID column
-        created_at: str = Field(sa_column_kwargs={"server_default": "NOW()"})
+        record_timestamp: str = Field(sa_column_kwargs={"server_default": "NOW()"})
 
     # Should be created successfully
     assert GoodClientIdFeature.spec().id_columns == ["user_id", "session_id"]
@@ -1756,3 +1809,134 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
     # Verify it's registered
     graph = FeatureGraph.get_active()
     assert FeatureKey(["good", "client_id"]) in graph.features_by_key
+
+
+# Composite Primary Key Injection Tests
+
+
+def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
+    """Test that inject_metaxy_pk=True (default) creates composite primary key.
+
+    Verifies that:
+    - By default, composite PK is injected
+    - PK includes: id_columns + metaxy_created_at + metaxy_data_version
+    - Works with both default and custom id_columns
+    """
+
+    class DefaultPKFeature(
+        SQLModelFeature,
+        table=True,
+        # inject_metaxy_pk=True is the default - testing that it creates composite PK
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["default", "pk"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __tablename__: str = "default_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
+        sample_uid: str = Field(primary_key=True)
+        data: str
+
+    # Check that __table_args__ contains PrimaryKeyConstraint
+    assert hasattr(DefaultPKFeature, "__table_args__")
+    table_args = DefaultPKFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+    assert isinstance(table_args, tuple)
+
+    # Find the PrimaryKeyConstraint
+    from sqlalchemy import PrimaryKeyConstraint
+
+    pk_constraints = [
+        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
+    ]
+    assert len(pk_constraints) == 1
+
+    pk_constraint = pk_constraints[0]
+    # Check columns in constraint
+    column_names = [col.name for col in pk_constraint.columns]
+    assert column_names == [
+        "sample_uid",
+        "metaxy_created_at",
+        "metaxy_data_version",
+    ]
+
+
+def test_inject_metaxy_pk_false_skips_composite_pk() -> None:
+    """Test that inject_metaxy_pk=False does NOT create composite primary key.
+
+    Verifies that:
+    - When explicitly disabled, no composite PK is created
+    - User can define their own PK strategy
+    """
+
+    class NoPKFeature(
+        SQLModelFeature,
+        table=True,
+        inject_metaxy_pk=False,  # Explicitly disable
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["no", "pk"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __tablename__: str = "no_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
+        sample_uid: str = Field(primary_key=True)
+        data: str
+
+    # Check that __table_args__ either doesn't exist or doesn't have PK constraint
+    if hasattr(NoPKFeature, "__table_args__"):
+        from sqlalchemy import PrimaryKeyConstraint
+
+        table_args = NoPKFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+        if isinstance(table_args, tuple):
+            pk_constraints = [
+                arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
+            ]
+            # Should have no composite PK constraint named 'pk_metaxy_composite'
+            for pk in pk_constraints:
+                assert pk.name != "pk_metaxy_composite"
+
+
+def test_inject_metaxy_pk_with_custom_id_columns() -> None:
+    """Test that inject_metaxy_pk works correctly with custom id_columns.
+
+    Verifies that:
+    - Composite PK is created from spec.id_columns (not hardcoded column names)
+    - PK includes: custom id_columns + metaxy_created_at + metaxy_data_version
+    - Works with multi-column id_columns
+    """
+
+    class CustomIDFeature(
+        SQLModelFeature,
+        table=True,
+        # inject_metaxy_pk=True is the default
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["custom", "id"]),
+            id_columns=["user_id", "session_id"],  # Custom ID columns
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        __tablename__: str = "custom_id"  # pyright: ignore[reportIncompatibleVariableOverride]
+        user_id: int
+        session_id: int
+        data: str
+
+    # Check that __table_args__ contains PrimaryKeyConstraint
+    assert hasattr(CustomIDFeature, "__table_args__")
+    table_args = CustomIDFeature.__table_args__  # pyright: ignore[reportAttributeAccessIssue]
+    assert isinstance(table_args, tuple)
+
+    # Find the PrimaryKeyConstraint
+    from sqlalchemy import PrimaryKeyConstraint
+
+    pk_constraints = [
+        arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
+    ]
+    assert len(pk_constraints) == 1
+
+    pk_constraint = pk_constraints[0]
+    # Check columns in constraint - should use custom id_columns from spec
+    column_names = [col.name for col in pk_constraint.columns]
+    assert column_names == [
+        "user_id",  # From spec.id_columns
+        "session_id",  # From spec.id_columns
+        "metaxy_created_at",
+        "metaxy_data_version",
+    ]

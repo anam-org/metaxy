@@ -13,6 +13,9 @@ from sqlmodel.main import SQLModelMetaclass
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_CREATED_AT,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
@@ -86,6 +89,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         namespace: dict[str, Any],
         *,
         spec: FeatureSpecWithIDColumns | None = None,
+        inject_metaxy_pk: bool = True,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Feature class.
@@ -95,6 +99,8 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             bases: Base classes
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
+            inject_metaxy_pk: If True, automatically create composite primary key
+                including id_columns + (metaxy_created_at, metaxy_data_version)
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:
@@ -134,6 +140,10 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                 and config.ext.sqlmodel.infer_db_table_names
             ):
                 namespace["__tablename__"] = spec.key.table_name
+
+            # Inject composite primary key if requested
+            if inject_metaxy_pk:
+                cls._inject_composite_primary_key(namespace, spec, cls_name)
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
@@ -199,6 +209,46 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                     f"to enable join predictions. Use client-generated IDs instead."
                 )
 
+    @staticmethod
+    def _inject_composite_primary_key(
+        namespace: dict[str, Any],
+        spec: FeatureSpecWithIDColumns,
+        cls_name: str,
+    ) -> None:
+        """Inject composite primary key constraint into the table.
+
+        Creates a composite primary key including:
+        - All user-provided id_columns
+        - metaxy_created_at
+        - metaxy_data_version
+
+        Args:
+            namespace: Class namespace to modify
+            spec: Feature specification with id_columns
+            cls_name: Name of the class being created
+        """
+        from sqlalchemy import PrimaryKeyConstraint
+
+        pk_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+        pk_constraint = PrimaryKeyConstraint(*pk_columns, name="pk_metaxy_composite")
+
+        # Add to __table_args__
+        if "__table_args__" in namespace:
+            # User already defined __table_args__, merge with it
+            existing_args = namespace["__table_args__"]
+            if isinstance(existing_args, dict):
+                # Dict format - convert to tuple + dict
+                namespace["__table_args__"] = (pk_constraint, existing_args)
+            elif isinstance(existing_args, tuple):
+                # Tuple format - append constraint
+                namespace["__table_args__"] = existing_args + (pk_constraint,)
+            else:
+                raise ValueError(
+                    f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
+                )
+        else:
+            namespace["__table_args__"] = (pk_constraint,)
+
 
 class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
     SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
@@ -259,7 +309,6 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         default=None,
         sa_column_kwargs={
             "name": METAXY_PROVENANCE,
-            "nullable": True,
         },
     )
 
@@ -268,7 +317,6 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         sa_type=JSON,
         sa_column_kwargs={
             "name": METAXY_PROVENANCE_BY_FIELD,
-            "nullable": True,
         },
     )
 
@@ -276,7 +324,6 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         default=None,
         sa_column_kwargs={
             "name": METAXY_FEATURE_VERSION,
-            "nullable": True,
         },
     )
 
@@ -284,7 +331,6 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         default=None,
         sa_column_kwargs={
             "name": METAXY_FEATURE_SPEC_VERSION,
-            "nullable": True,
         },
     )
 
@@ -292,6 +338,27 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
         default=None,
         sa_column_kwargs={
             "name": METAXY_SNAPSHOT_VERSION,
-            "nullable": True,
+        },
+    )
+
+    metaxy_data_version: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_DATA_VERSION,
+        },
+    )
+
+    metaxy_data_version_by_field: str | None = Field(
+        default=None,
+        sa_type=JSON,
+        sa_column_kwargs={
+            "name": METAXY_DATA_VERSION_BY_FIELD,
+        },
+    )
+
+    metaxy_created_at: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_CREATED_AT,
         },
     )

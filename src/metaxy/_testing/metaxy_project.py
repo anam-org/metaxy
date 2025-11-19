@@ -16,7 +16,7 @@ from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import (
     FeatureSpecWithIDColumns,
 )
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.types import HashAlgorithm
 
 DEFAULT_ID_COLUMNS = ["sample_uid"]
 

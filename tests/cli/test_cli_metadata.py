@@ -3,6 +3,7 @@
 import polars as pl
 
 from metaxy._testing import TempMetaxyProject
+from metaxy.metadata_store.system import SystemTableStorage
 
 
 def _write_sample_metadata(
@@ -12,6 +13,9 @@ def _write_sample_metadata(
     sample_uids: list[int] | None = None,
 ):
     """Helper to write sample metadata for a feature.
+
+    NOTE: This function must be called within a graph.use() context,
+    and the same graph context must be active when reading the metadata.
 
     Args:
         metaxy_project: Test project
@@ -27,8 +31,9 @@ def _write_sample_metadata(
     # Parse feature key
     feature_key = FeatureKey(feature_key_str.split("/"))
 
-    # Get feature class from graph
-    feature_cls = metaxy_project.graph.features_by_key[feature_key]
+    # Get feature class from project's graph (imported from the features module)
+    graph = metaxy_project.graph
+    feature_cls = graph.get_feature_by_key(feature_key)
 
     # Create sample data with provenance_by_field column
     sample_data = pl.DataFrame(
@@ -42,14 +47,13 @@ def _write_sample_metadata(
     )
 
     # Write metadata directly to store
-    # Must activate the graph before recording snapshot since record_feature_graph_snapshot uses get_active()
-    graph = metaxy_project.graph
+    store = metaxy_project.stores[store_name]
+    # Use the project's graph context so the store can resolve feature plans
     with graph.use():
-        store = metaxy_project.stores[store_name]
         with store:
             store.write_metadata(feature_cls, sample_data)
             # Record the feature graph snapshot so copy_metadata can determine snapshot_version
-            store.record_feature_graph_snapshot()
+            SystemTableStorage(store).push_graph_snapshot()
 
 
 def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject):
@@ -160,53 +164,58 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
             pass
 
     with metaxy_project.with_features(features):
-        # Write metadata to dev store with sample_uids [1, 2, 3]
-        _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-        )
-
-        # Write metadata to staging store with sample_uids [2, 3, 4]
-        # sample_uids 2 and 3 overlap with dev
-        _write_sample_metadata(
-            metaxy_project, "video/files", store_name="staging", sample_uids=[2, 3, 4]
-        )
-
-        # Copy from dev to staging with incremental=True (default)
-        result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "--from",
-            "dev",
-            "--to",
-            "staging",
-            "--feature",
-            "video/files",
-        )
-
-        assert result.returncode == 0
-        assert "Copy complete" in result.stderr
-
-        # Verify staging now has [1, 2, 3, 4] (no duplicates)
-        # Only sample_uid 1 should have been copied (2 and 3 were skipped)
-        store = metaxy_project.stores["staging"]
-        with store:
-            from metaxy.models.types import FeatureKey
-
-            feature_key = FeatureKey(["video", "files"])
-            metadata = store.read_metadata(
-                feature_key, allow_fallback=False, current_only=False
+        graph = metaxy_project.graph
+        with graph.use():
+            # Write metadata to dev store with sample_uids [1, 2, 3]
+            _write_sample_metadata(
+                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
             )
-            df = metadata.collect().to_polars()
 
-            # Should have 4 total rows (original 3 + 1 new)
-            assert df.height == 4
+            # Write metadata to staging store with sample_uids [2, 3, 4]
+            # sample_uids 2 and 3 overlap with dev
+            _write_sample_metadata(
+                metaxy_project,
+                "video/files",
+                store_name="staging",
+                sample_uids=[2, 3, 4],
+            )
 
-            # Check sample_uids
-            sample_uids = sorted(df["sample_uid"].to_list())
-            assert sample_uids == [1, 2, 3, 4]
+            # Copy from dev to staging with incremental=True (default)
+            result = metaxy_project.run_cli(
+                "metadata",
+                "copy",
+                "--from",
+                "dev",
+                "--to",
+                "staging",
+                "--feature",
+                "video/files",
+            )
 
-            # Verify no duplicate sample_uids
-            assert len(sample_uids) == len(set(sample_uids))
+            assert result.returncode == 0
+            assert "Copy complete" in result.stderr
+
+            # Verify staging now has [1, 2, 3, 4] (no duplicates)
+            # Only sample_uid 1 should have been copied (2 and 3 were skipped)
+            store = metaxy_project.stores["staging"]
+            with store:
+                from metaxy.models.types import FeatureKey
+
+                feature_key = FeatureKey(["video", "files"])
+                metadata = store.read_metadata(
+                    feature_key, allow_fallback=False, current_only=False
+                )
+                df = metadata.collect().to_polars()
+
+                # Should have 4 total rows (original 3 + 1 new)
+                assert df.height == 4
+
+                # Check sample_uids
+                sample_uids = sorted(df["sample_uid"].to_list())
+                assert sample_uids == [1, 2, 3, 4]
+
+                # Verify no duplicate sample_uids
+                assert len(sample_uids) == len(set(sample_uids))
 
 
 def test_metadata_copy_non_incremental_creates_duplicates(
@@ -227,52 +236,60 @@ def test_metadata_copy_non_incremental_creates_duplicates(
             pass
 
     with metaxy_project.with_features(features):
-        # Write metadata to dev store with sample_uids [1, 2, 3]
-        _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-        )
-
-        # Write metadata to staging store with sample_uids [2, 3, 4]
-        _write_sample_metadata(
-            metaxy_project, "video/files", store_name="staging", sample_uids=[2, 3, 4]
-        )
-
-        # Copy from dev to staging with incremental=False (--no-incremental)
-        result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "--from",
-            "dev",
-            "--to",
-            "staging",
-            "--feature",
-            "video/files",
-            "--no-incremental",
-        )
-
-        assert result.returncode == 0
-        assert "Copy complete" in result.stderr
-
-        # Verify staging now has duplicates for sample_uids 2 and 3
-        store = metaxy_project.stores["staging"]
-        with store:
-            from metaxy.models.types import FeatureKey
-
-            feature_key = FeatureKey(["video", "files"])
-            metadata = store.read_metadata(
-                feature_key, allow_fallback=False, current_only=False
+        graph = metaxy_project.graph
+        with graph.use():
+            # Write metadata to dev store with sample_uids [1, 2, 3]
+            _write_sample_metadata(
+                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
             )
-            df = metadata.collect().to_polars()
 
-            # Should have 6 total rows (original 3 + all 3 from dev)
-            assert df.height == 6
+            # Write metadata to staging store with sample_uids [2, 3, 4]
+            _write_sample_metadata(
+                metaxy_project,
+                "video/files",
+                store_name="staging",
+                sample_uids=[2, 3, 4],
+            )
 
-            # Check that we have duplicates
-            sample_uids = df["sample_uid"].to_list()
-            assert sample_uids.count(2) == 2  # sample_uid 2 appears twice
-            assert sample_uids.count(3) == 2  # sample_uid 3 appears twice
-            assert sample_uids.count(1) == 1  # sample_uid 1 appears once
-            assert sample_uids.count(4) == 1  # sample_uid 4 appears once
+            # Copy from dev to staging with incremental=False (--no-incremental)
+            result = metaxy_project.run_cli(
+                "metadata",
+                "copy",
+                "--from",
+                "dev",
+                "--to",
+                "staging",
+                "--feature",
+                "video/files",
+                "--no-incremental",
+            )
+
+            assert result.returncode == 0
+            assert "Copy complete" in result.stderr
+
+            # Verify staging now has duplicates for sample_uids 2 and 3
+            store = metaxy_project.stores["staging"]
+            with store:
+                from metaxy.models.types import FeatureKey
+
+                feature_key = FeatureKey(["video", "files"])
+                metadata = store.read_metadata(
+                    feature_key,
+                    allow_fallback=False,
+                    current_only=False,
+                    latest_only=False,
+                )
+                df = metadata.collect().to_polars()
+
+                # Should have 6 total rows (original 3 + all 3 from dev)
+                assert df.height == 6
+
+                # Check that we have duplicates
+                sample_uids = df["sample_uid"].to_list()
+                assert sample_uids.count(2) == 2  # sample_uid 2 appears twice
+                assert sample_uids.count(3) == 2  # sample_uid 3 appears twice
+                assert sample_uids.count(1) == 1  # sample_uid 1 appears once
+                assert sample_uids.count(4) == 1  # sample_uid 4 appears once
 
 
 def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyProject):
@@ -291,40 +308,42 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
             pass
 
     with metaxy_project.with_features(features):
-        # Write metadata to dev store only
-        _write_sample_metadata(
-            metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-        )
-
-        # Copy from dev to empty staging with incremental=True
-        result = metaxy_project.run_cli(
-            "metadata",
-            "copy",
-            "--from",
-            "dev",
-            "--to",
-            "staging",
-            "--feature",
-            "video/files",
-        )
-
-        assert result.returncode == 0
-        assert "Copy complete" in result.stderr
-
-        # Verify staging has all 3 rows
-        store = metaxy_project.stores["staging"]
-        with store:
-            from metaxy.models.types import FeatureKey
-
-            feature_key = FeatureKey(["video", "files"])
-            metadata = store.read_metadata(
-                feature_key, allow_fallback=False, current_only=False
+        graph = metaxy_project.graph
+        with graph.use():
+            # Write metadata to dev store only
+            _write_sample_metadata(
+                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
             )
-            df = metadata.collect().to_polars()
 
-            assert df.height == 3
-            sample_uids = sorted(df["sample_uid"].to_list())
-            assert sample_uids == [1, 2, 3]
+            # Copy from dev to empty staging with incremental=True
+            result = metaxy_project.run_cli(
+                "metadata",
+                "copy",
+                "--from",
+                "dev",
+                "--to",
+                "staging",
+                "--feature",
+                "video/files",
+            )
+
+            assert result.returncode == 0
+            assert "Copy complete" in result.stderr
+
+            # Verify staging has all 3 rows
+            store = metaxy_project.stores["staging"]
+            with store:
+                from metaxy.models.types import FeatureKey
+
+                feature_key = FeatureKey(["video", "files"])
+                metadata = store.read_metadata(
+                    feature_key, allow_fallback=False, current_only=False
+                )
+                df = metadata.collect().to_polars()
+
+                assert df.height == 3
+                sample_uids = sorted(df["sample_uid"].to_list())
+                assert sample_uids == [1, 2, 3]
 
 
 def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):

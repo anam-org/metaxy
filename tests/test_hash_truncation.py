@@ -8,6 +8,7 @@ import pytest
 
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import TestingFeature
 from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
 from metaxy.models.types import FeatureKey, FieldKey
@@ -502,7 +503,7 @@ class TestMigrationCompatibility:
 
     def test_migration_with_truncation(self, graph):
         """Test that migration detection works with truncated hashes."""
-        from metaxy.migrations.detector import detect_migration
+        from metaxy.migrations.detector import detect_diff_migration
 
         # Enable truncation (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=12)
@@ -519,7 +520,7 @@ class TestMigrationCompatibility:
 
         # Record snapshot
         with InMemoryMetadataStore() as store:
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_v1 = result.snapshot_version
 
@@ -540,7 +541,7 @@ class TestMigrationCompatibility:
                 pass
 
             # Detect migration - should work with truncated versions
-            migration = detect_migration(
+            migration = detect_diff_migration(
                 store,
                 project="test",  # Use the same project as in config
                 ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
@@ -608,7 +609,7 @@ class TestEndToEnd:
         # Store metadata
         with InMemoryMetadataStore() as store:
             # Record snapshot
-            result = store.record_feature_graph_snapshot()
+            result = SystemTableStorage(store).push_graph_snapshot()
 
             snapshot_version = result.snapshot_version
 

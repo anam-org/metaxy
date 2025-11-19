@@ -1,0 +1,204 @@
+# serializer version: 1
+# name: test_aggregation_lineage_load_upstream
+  list([
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '5628311751816649627',
+        'avg_temp': '3617976891696181552',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '5628311751816649627',
+        'avg_temp': '3617976891696181552',
+      }),
+      'reading_id': 'r1',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '11082500167957226052',
+        'avg_temp': '476353776943019925',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '11082500167957226052',
+        'avg_temp': '476353776943019925',
+      }),
+      'reading_id': 'r2',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '4889036169448137847',
+        'avg_temp': '5698407898779287164',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '4889036169448137847',
+        'avg_temp': '5698407898779287164',
+      }),
+      'reading_id': 'r3',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '6254943564962801944',
+        'avg_temp': '4269179259508500457',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '6254943564962801944',
+        'avg_temp': '4269179259508500457',
+      }),
+      'reading_id': 'r4',
+      'sensor_id': 's2',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '8674762312716109022',
+        'avg_temp': '10185753540023745543',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '8674762312716109022',
+        'avg_temp': '10185753540023745543',
+      }),
+      'reading_id': 'r5',
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_aggregation_lineage_resolve_increment_no_current
+  list([
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '5628311751816649627',
+        'avg_temp': '3617976891696181552',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '5628311751816649627',
+        'avg_temp': '3617976891696181552',
+      }),
+      'reading_id': 'r1',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '11082500167957226052',
+        'avg_temp': '476353776943019925',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '11082500167957226052',
+        'avg_temp': '476353776943019925',
+      }),
+      'reading_id': 'r2',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '4889036169448137847',
+        'avg_temp': '5698407898779287164',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '4889036169448137847',
+        'avg_temp': '5698407898779287164',
+      }),
+      'reading_id': 'r3',
+      'sensor_id': 's1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '6254943564962801944',
+        'avg_temp': '4269179259508500457',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '6254943564962801944',
+        'avg_temp': '4269179259508500457',
+      }),
+      'reading_id': 'r4',
+      'sensor_id': 's2',
+    }),
+    dict({
+      'field_data_version': dict({
+        'avg_humidity': '8674762312716109022',
+        'avg_temp': '10185753540023745543',
+      }),
+      'field_provenance': dict({
+        'avg_humidity': '8674762312716109022',
+        'avg_temp': '10185753540023745543',
+      }),
+      'reading_id': 'r5',
+      'sensor_id': 's2',
+    }),
+  ])
+# ---
+# name: test_expansion_lineage_load_upstream
+  list([
+    dict({
+      'field_data_version': dict({
+        'frame_embedding': '1744805689831497403',
+      }),
+      'field_provenance': dict({
+        'frame_embedding': '1744805689831497403',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'frame_embedding': '884350646134689240',
+      }),
+      'field_provenance': dict({
+        'frame_embedding': '884350646134689240',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_expansion_lineage_resolve_increment_no_current
+  list([
+    dict({
+      'field_data_version': dict({
+        'frame_embedding': '1744805689831497403',
+      }),
+      'field_provenance': dict({
+        'frame_embedding': '1744805689831497403',
+      }),
+      'video_id': 'v1',
+    }),
+    dict({
+      'field_data_version': dict({
+        'frame_embedding': '884350646134689240',
+      }),
+      'field_provenance': dict({
+        'frame_embedding': '884350646134689240',
+      }),
+      'video_id': 'v2',
+    }),
+  ])
+# ---
+# name: test_identity_lineage_load_upstream
+  list([
+    dict({
+      'field_data_version': dict({
+        'default': '9646593030270266913',
+      }),
+      'field_provenance': dict({
+        'default': '9646593030270266913',
+      }),
+      'sample_uid': 1,
+    }),
+    dict({
+      'field_data_version': dict({
+        'default': '6309806401145978549',
+      }),
+      'field_provenance': dict({
+        'default': '6309806401145978549',
+      }),
+      'sample_uid': 2,
+    }),
+    dict({
+      'field_data_version': dict({
+        'default': '7283469191670294049',
+      }),
+      'field_provenance': dict({
+        'default': '7283469191670294049',
+      }),
+      'sample_uid': 3,
+    }),
+  ])
+# ---

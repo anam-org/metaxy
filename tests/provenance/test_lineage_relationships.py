@@ -17,8 +17,8 @@ from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureKey, FieldKey
-from metaxy.provenance.polars import PolarsProvenanceTracker
-from metaxy.provenance.types import HashAlgorithm
+from metaxy.versioning.polars import PolarsVersioningEngine
+from metaxy.versioning.types import HashAlgorithm
 
 # ============================================================================
 # Fixtures for Aggregation (N:1) scenarios
@@ -108,6 +108,13 @@ def sensor_readings_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"temperature": "temp_hash_4", "humidity": "hum_hash_4"},
                     {"temperature": "temp_hash_5", "humidity": "hum_hash_5"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
+                    {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
+                    {"temperature": "temp_hash_3", "humidity": "hum_hash_3"},
+                    {"temperature": "temp_hash_4", "humidity": "hum_hash_4"},
+                    {"temperature": "temp_hash_5", "humidity": "hum_hash_5"},
+                ],
                 "metaxy_provenance": [
                     "reading_prov_1",
                     "reading_prov_2",
@@ -182,6 +189,10 @@ def video_metadata() -> nw.LazyFrame[pl.LazyFrame]:
                     {"resolution": "res_hash_1", "fps": "fps_hash_1"},
                     {"resolution": "res_hash_2", "fps": "fps_hash_2"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_hash_1", "fps": "fps_hash_1"},
+                    {"resolution": "res_hash_2", "fps": "fps_hash_2"},
+                ],
                 "metaxy_provenance": ["video_prov_1", "video_prov_2"],
             }
         ).lazy()
@@ -197,6 +208,13 @@ def video_frames_current() -> nw.LazyFrame[pl.LazyFrame]:
                 "video_id": ["v1", "v1", "v1", "v2", "v2"],
                 "frame_id": [0, 1, 2, 0, 1],
                 "metaxy_provenance_by_field": [
+                    {"frame_embedding": "frame_v1_0_hash"},
+                    {"frame_embedding": "frame_v1_1_hash"},
+                    {"frame_embedding": "frame_v1_2_hash"},
+                    {"frame_embedding": "frame_v2_0_hash"},
+                    {"frame_embedding": "frame_v2_1_hash"},
+                ],
+                "metaxy_data_version_by_field": [
                     {"frame_embedding": "frame_v1_0_hash"},
                     {"frame_embedding": "frame_v1_1_hash"},
                     {"frame_embedding": "frame_v1_2_hash"},
@@ -224,18 +242,19 @@ def test_identity_lineage_load_upstream(
     simple_features: dict[str, type[TestingFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
+    snapshot,
 ) -> None:
     """Test identity lineage (1:1) - baseline behavior."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is identity
     assert plan.feature.lineage.relationship.type.value == "1:1"
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -247,6 +266,21 @@ def test_identity_lineage_load_upstream(
     assert len(result_df) == 3
     assert set(result_df["sample_uid"].to_list()) == {1, 2, 3}
 
+    # Snapshot the identity lineage provenance
+    result_polars = result_df.to_polars()
+    provenance_data = sorted(
+        [
+            {
+                "sample_uid": result_polars["sample_uid"][i],
+                "field_provenance": result_polars["metaxy_provenance_by_field"][i],
+                "field_data_version": result_polars["metaxy_data_version_by_field"][i],
+            }
+            for i in range(len(result_polars))
+        ],
+        key=lambda x: x["sample_uid"],
+    )
+    assert provenance_data == snapshot
+
 
 def test_identity_lineage_resolve_increment(
     simple_features: dict[str, type[TestingFeature]],
@@ -256,12 +290,12 @@ def test_identity_lineage_resolve_increment(
     """Test identity lineage (1:1) increment resolution."""
     feature = simple_features["ProcessedVideo"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): upstream_video_metadata}
 
     # Compute expected provenance
-    expected = tracker.load_upstream_with_provenance(
+    expected = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -278,6 +312,11 @@ def test_identity_lineage_resolve_increment(
                     {"default": "different_hash"},  # Changed
                     expected_df["metaxy_provenance_by_field"][2],  # Unchanged
                 ],
+                "metaxy_data_version_by_field": [
+                    expected_df["metaxy_data_version_by_field"][0],  # Unchanged
+                    {"default": "different_hash"},  # Changed
+                    expected_df["metaxy_data_version_by_field"][2],  # Unchanged
+                ],
                 "metaxy_provenance": [
                     expected_df["metaxy_provenance"][0],
                     "different_prov",
@@ -287,7 +326,7 @@ def test_identity_lineage_resolve_increment(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -317,6 +356,7 @@ def test_aggregation_lineage_load_upstream(
     aggregation_features: dict[str, type[TestingFeature]],
     sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
+    snapshot,
 ) -> None:
     """Test N:1 aggregation lineage loads upstream correctly.
 
@@ -325,14 +365,14 @@ def test_aggregation_lineage_load_upstream(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is aggregation
     assert plan.feature.lineage.relationship.type.value == "N:1"
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -348,11 +388,28 @@ def test_aggregation_lineage_load_upstream(
     assert "metaxy_provenance" in result_df.columns
     assert "metaxy_provenance_by_field" in result_df.columns
 
+    # Snapshot the aggregation upstream provenance
+    result_polars = result_df.to_polars()
+    provenance_data = sorted(
+        [
+            {
+                "sensor_id": result_polars["sensor_id"][i],
+                "reading_id": result_polars["reading_id"][i],
+                "field_provenance": result_polars["metaxy_provenance_by_field"][i],
+                "field_data_version": result_polars["metaxy_data_version_by_field"][i],
+            }
+            for i in range(len(result_polars))
+        ],
+        key=lambda x: (x["sensor_id"], x["reading_id"]),
+    )
+    assert provenance_data == snapshot
+
 
 def test_aggregation_lineage_resolve_increment_no_current(
     aggregation_features: dict[str, type[TestingFeature]],
     sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
+    snapshot,
 ) -> None:
     """Test N:1 aggregation increment resolution with no current metadata.
 
@@ -360,11 +417,11 @@ def test_aggregation_lineage_resolve_increment_no_current(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -379,6 +436,22 @@ def test_aggregation_lineage_resolve_increment_no_current(
     assert removed_lazy is None
     assert len(added) == 5  # All 5 sensor readings
 
+    # Snapshot the added readings
+    added_polars = added.to_polars()
+    added_data = sorted(
+        [
+            {
+                "sensor_id": added_polars["sensor_id"][i],
+                "reading_id": added_polars["reading_id"][i],
+                "field_provenance": added_polars["metaxy_provenance_by_field"][i],
+                "field_data_version": added_polars["metaxy_data_version_by_field"][i],
+            }
+            for i in range(len(added_polars))
+        ],
+        key=lambda x: (x["sensor_id"], x["reading_id"]),
+    )
+    assert added_data == snapshot
+
 
 def test_aggregation_lineage_resolve_increment_with_changes(
     aggregation_features: dict[str, type[TestingFeature]],
@@ -392,7 +465,7 @@ def test_aggregation_lineage_resolve_increment_with_changes(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["sensor_readings"]): sensor_readings_metadata}
 
@@ -414,6 +487,16 @@ def test_aggregation_lineage_resolve_increment_with_changes(
                         "avg_humidity": "aggregated_hash_s2_OLD",
                     },
                 ],
+                "metaxy_data_version_by_field": [
+                    {
+                        "avg_temp": "aggregated_hash_s1",
+                        "avg_humidity": "aggregated_hash_s1",
+                    },
+                    {
+                        "avg_temp": "aggregated_hash_s2_OLD",
+                        "avg_humidity": "aggregated_hash_s2_OLD",
+                    },
+                ],
                 "metaxy_provenance": [
                     "aggregated_prov_s1",
                     "aggregated_prov_s2_OLD",  # This will differ from actual
@@ -422,7 +505,7 @@ def test_aggregation_lineage_resolve_increment_with_changes(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -456,7 +539,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
     """
     feature = aggregation_features["HourlyStats"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Initial upstream: 2 readings for s1 in hour 10
     upstream_v1 = nw.from_native(
@@ -470,13 +553,17 @@ def test_aggregation_lineage_new_readings_trigger_change(
                     {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
                     {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
+                    {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
+                ],
                 "metaxy_provenance": ["reading_prov_1", "reading_prov_2"],
             }
         ).lazy()
     )
 
     # First resolve: no current, so all readings are added
-    added_v1_lazy, _, _ = tracker.resolve_increment_with_provenance(
+    added_v1_lazy, _, _ = engine.resolve_increment_with_provenance(
         current=None,
         upstream={FeatureKey(["sensor_readings"]): upstream_v1},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -499,6 +586,11 @@ def test_aggregation_lineage_new_readings_trigger_change(
                 "reading_id": ["r1", "r2", "r3"],
                 "hour": ["2024-01-01T10", "2024-01-01T10", "2024-01-01T10"],
                 "metaxy_provenance_by_field": [
+                    {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
+                    {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
+                    {"temperature": "temp_hash_3", "humidity": "hum_hash_3"},  # New
+                ],
+                "metaxy_data_version_by_field": [
                     {"temperature": "temp_hash_1", "humidity": "hum_hash_1"},
                     {"temperature": "temp_hash_2", "humidity": "hum_hash_2"},
                     {"temperature": "temp_hash_3", "humidity": "hum_hash_3"},  # New
@@ -526,13 +618,19 @@ def test_aggregation_lineage_new_readings_trigger_change(
                         "avg_humidity": "old_aggregated_hash",
                     }
                 ],
+                "metaxy_data_version_by_field": [
+                    {
+                        "avg_temp": "old_aggregated_hash",
+                        "avg_humidity": "old_aggregated_hash",
+                    }
+                ],
                 "metaxy_provenance": ["old_aggregated_prov"],
             }
         ).lazy()
     )
 
     # Resolve increment with new upstream
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=current_aggregated,
         upstream={FeatureKey(["sensor_readings"]): upstream_v2},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -562,18 +660,19 @@ def test_expansion_lineage_load_upstream(
     expansion_features: dict[str, type[TestingFeature]],
     video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
+    snapshot,
 ) -> None:
     """Test 1:N expansion lineage loads upstream correctly."""
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Verify lineage is expansion
     assert plan.feature.lineage.relationship.type.value == "1:N"
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    result = tracker.load_upstream_with_provenance(
+    result = engine.load_upstream_with_provenance(
         upstream=upstream,
         hash_algo=HashAlgorithm.XXHASH64,
         filters={},
@@ -585,20 +684,36 @@ def test_expansion_lineage_load_upstream(
     assert len(result_df) == 2
     assert set(result_df["video_id"].to_list()) == {"v1", "v2"}
 
+    # Snapshot the expansion upstream provenance
+    result_polars = result_df.to_polars()
+    provenance_data = sorted(
+        [
+            {
+                "video_id": result_polars["video_id"][i],
+                "field_provenance": result_polars["metaxy_provenance_by_field"][i],
+                "field_data_version": result_polars["metaxy_data_version_by_field"][i],
+            }
+            for i in range(len(result_polars))
+        ],
+        key=lambda x: x["video_id"],
+    )
+    assert provenance_data == snapshot
+
 
 def test_expansion_lineage_resolve_increment_no_current(
     expansion_features: dict[str, type[TestingFeature]],
     video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
+    snapshot,
 ) -> None:
     """Test 1:N expansion increment resolution with no current metadata."""
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     upstream = {FeatureKey(["video"]): video_metadata}
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=None,
         upstream=upstream,
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -612,6 +727,21 @@ def test_expansion_lineage_resolve_increment_no_current(
     assert changed_lazy is None
     assert removed_lazy is None
     assert len(added) == 2  # Two videos
+
+    # Snapshot the added videos
+    added_polars = added.to_polars()
+    added_data = sorted(
+        [
+            {
+                "video_id": added_polars["video_id"][i],
+                "field_provenance": added_polars["metaxy_provenance_by_field"][i],
+                "field_data_version": added_polars["metaxy_data_version_by_field"][i],
+            }
+            for i in range(len(added_polars))
+        ],
+        key=lambda x: x["video_id"],
+    )
+    assert added_data == snapshot
 
 
 def test_expansion_lineage_resolve_increment_video_changed(
@@ -628,7 +758,7 @@ def test_expansion_lineage_resolve_increment_video_changed(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # Modified video metadata (v2's provenance changed compared to fixture)
     upstream_modified = nw.from_native(
@@ -636,6 +766,16 @@ def test_expansion_lineage_resolve_increment_video_changed(
             {
                 "video_id": ["v1", "v2"],
                 "metaxy_provenance_by_field": [
+                    {
+                        "resolution": "res_hash_1",
+                        "fps": "fps_hash_1",
+                    },  # v1 unchanged from fixture
+                    {
+                        "resolution": "res_hash_2_MODIFIED",
+                        "fps": "fps_hash_2_MODIFIED",
+                    },  # v2 changed
+                ],
+                "metaxy_data_version_by_field": [
                     {
                         "resolution": "res_hash_1",
                         "fps": "fps_hash_1",
@@ -656,7 +796,7 @@ def test_expansion_lineage_resolve_increment_video_changed(
     # Resolve increment with modified video metadata
     # The expansion handler will group video_frames_current by video_id to get one row per video
     # Then compare with upstream (which has 2 videos)
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Current frames for v1 (3 frames) and v2 (2 frames)
         upstream={FeatureKey(["video"]): upstream_modified},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -689,7 +829,7 @@ def test_expansion_lineage_new_video_added(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # New upstream includes v1, v2, and v3 (v3 is new)
     upstream_with_new_video = nw.from_native(
@@ -697,6 +837,11 @@ def test_expansion_lineage_new_video_added(
             {
                 "video_id": ["v1", "v2", "v3"],  # v3 is new
                 "metaxy_provenance_by_field": [
+                    {"resolution": "res_hash_1", "fps": "fps_hash_1"},
+                    {"resolution": "res_hash_2", "fps": "fps_hash_2"},
+                    {"resolution": "res_hash_3", "fps": "fps_hash_3"},  # New
+                ],
+                "metaxy_data_version_by_field": [
                     {"resolution": "res_hash_1", "fps": "fps_hash_1"},
                     {"resolution": "res_hash_2", "fps": "fps_hash_2"},
                     {"resolution": "res_hash_3", "fps": "fps_hash_3"},  # New
@@ -710,7 +855,7 @@ def test_expansion_lineage_new_video_added(
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Has frames for v1 and v2 only
         upstream={FeatureKey(["video"]): upstream_with_new_video},
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -744,7 +889,7 @@ def test_expansion_lineage_video_removed(
     """
     feature = expansion_features["VideoFrames"]
     plan = graph.get_feature_plan(feature.spec().key)
-    tracker = PolarsProvenanceTracker(plan)
+    engine = PolarsVersioningEngine(plan)
 
     # New upstream only has v1 (v2 is removed)
     upstream_without_v2 = nw.from_native(
@@ -754,12 +899,15 @@ def test_expansion_lineage_video_removed(
                 "metaxy_provenance_by_field": [
                     {"resolution": "res_hash_1", "fps": "fps_hash_1"},
                 ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_hash_1", "fps": "fps_hash_1"},
+                ],
                 "metaxy_provenance": ["video_prov_1"],
             }
         ).lazy()
     )
 
-    added_lazy, changed_lazy, removed_lazy = tracker.resolve_increment_with_provenance(
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
         current=video_frames_current,  # Has frames for v1 and v2
         upstream={FeatureKey(["video"]): upstream_without_v2},  # Only v1
         hash_algorithm=HashAlgorithm.XXHASH64,
@@ -779,3 +927,494 @@ def test_expansion_lineage_video_removed(
     # Removed should contain v2 (detected after grouping current by video_id)
     removed_video_ids = set(removed["video_id"].to_list())
     assert "v2" in removed_video_ids
+
+
+# ============================================================================
+# Tests for data_version changes with non-default lineage types
+# ============================================================================
+
+
+def test_aggregation_lineage_upstream_data_version_change_triggers_update(
+    aggregation_features: dict[str, type[TestingFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test N:1 aggregation detects upstream data_version changes.
+
+    When upstream readings' data_version changes (but provenance stays the same),
+    the aggregated hourly stat should be marked as changed. This verifies that
+    aggregation lineage correctly uses data_version for change detection.
+    """
+    feature = aggregation_features["HourlyStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Initial upstream with specific data_version
+    upstream_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1", "s1"],
+                "timestamp": [
+                    "2024-01-01T10:15:00",
+                    "2024-01-01T10:30:00",
+                    "2024-01-01T10:45:00",
+                ],
+                "reading_id": ["r1", "r2", "r3"],
+                "hour": ["2024-01-01T10", "2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_prov_1", "humidity": "hum_prov_1"},
+                    {"temperature": "temp_prov_2", "humidity": "hum_prov_2"},
+                    {"temperature": "temp_prov_3", "humidity": "hum_prov_3"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_v1_1", "humidity": "hum_v1_1"},
+                    {"temperature": "temp_v1_2", "humidity": "hum_v1_2"},
+                    {"temperature": "temp_v1_3", "humidity": "hum_v1_3"},
+                ],
+                "metaxy_provenance": [
+                    "reading_prov_1",
+                    "reading_prov_2",
+                    "reading_prov_3",
+                ],
+            }
+        ).lazy()
+    )
+
+    # Get initial expected state
+    expected_v1 = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings"]): upstream_v1},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    # Create mock current at aggregated level using v1 data_version
+    current_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1"],
+                "hour": ["2024-01-01T10"],
+                "metaxy_provenance_by_field": expected_v1["metaxy_provenance_by_field"][
+                    0:1
+                ],
+                "metaxy_data_version_by_field": expected_v1[
+                    "metaxy_data_version_by_field"
+                ][0:1],
+                "metaxy_provenance": [expected_v1["metaxy_provenance"][0]],
+            }
+        ).lazy()
+    )
+
+    # Upstream v2: same provenance, but data_version changed
+    # (e.g., user-provided data_version column changed even though computation didn't)
+    upstream_v2 = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1", "s1"],
+                "timestamp": [
+                    "2024-01-01T10:15:00",
+                    "2024-01-01T10:30:00",
+                    "2024-01-01T10:45:00",
+                ],
+                "reading_id": ["r1", "r2", "r3"],
+                "hour": ["2024-01-01T10", "2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_prov_1", "humidity": "hum_prov_1"},  # Same
+                    {"temperature": "temp_prov_2", "humidity": "hum_prov_2"},  # Same
+                    {"temperature": "temp_prov_3", "humidity": "hum_prov_3"},  # Same
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_v2_1", "humidity": "hum_v2_1"},  # Changed
+                    {"temperature": "temp_v2_2", "humidity": "hum_v2_2"},  # Changed
+                    {"temperature": "temp_v2_3", "humidity": "hum_v2_3"},  # Changed
+                ],
+                "metaxy_provenance": [
+                    "reading_prov_1",
+                    "reading_prov_2",
+                    "reading_prov_3",
+                ],
+            }
+        ).lazy()
+    )
+
+    # Resolve increment with changed data_version
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_v1,
+        upstream={FeatureKey(["sensor_readings"]): upstream_v2},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    added = added_lazy.collect()
+    assert changed_lazy is not None
+    changed = changed_lazy.collect()
+    assert removed_lazy is not None
+    removed = removed_lazy.collect()
+
+    # The aggregated hourly stat should be marked as changed
+    # because upstream data_version changed (even though provenance didn't)
+    assert len(added) == 0
+    assert len(changed) >= 1  # s1's hourly stat changed due to data_version
+    assert changed["sensor_id"][0] == "s1"
+    assert changed["hour"][0] == "2024-01-01T10"
+    assert len(removed) == 0
+
+
+def test_expansion_lineage_upstream_data_version_change_triggers_update(
+    expansion_features: dict[str, type[TestingFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test 1:N expansion detects upstream data_version changes.
+
+    When a video's data_version changes (but provenance stays the same),
+    ALL frames from that video should be marked as changed. This verifies
+    that expansion lineage correctly uses data_version for change detection.
+    """
+    feature = expansion_features["VideoFrames"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Initial upstream with specific data_version
+    upstream_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_prov_1", "fps": "fps_prov_1"},
+                    {"resolution": "res_prov_2", "fps": "fps_prov_2"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_v1_1", "fps": "fps_v1_1"},
+                    {"resolution": "res_v1_2", "fps": "fps_v1_2"},
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+            }
+        ).lazy()
+    )
+
+    # Get initial expected state
+    engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["video"]): upstream_v1},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    # Current frames for both videos using v1 data_version
+    current_v1 = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v1", "v1", "v2", "v2"],
+                "frame_id": [0, 1, 2, 0, 1],
+                "metaxy_provenance_by_field": [
+                    {"frame_embedding": "frame_v1_0_prov"},
+                    {"frame_embedding": "frame_v1_1_prov"},
+                    {"frame_embedding": "frame_v1_2_prov"},
+                    {"frame_embedding": "frame_v2_0_prov"},
+                    {"frame_embedding": "frame_v2_1_prov"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"frame_embedding": "frame_v1_0_dv"},
+                    {"frame_embedding": "frame_v1_1_dv"},
+                    {"frame_embedding": "frame_v1_2_dv"},
+                    {"frame_embedding": "frame_v2_0_dv"},
+                    {"frame_embedding": "frame_v2_1_dv"},
+                ],
+                "metaxy_provenance": [
+                    "frame_v1_0_prov",
+                    "frame_v1_1_prov",
+                    "frame_v1_2_prov",
+                    "frame_v2_0_prov",
+                    "frame_v2_1_prov",
+                ],
+            }
+        ).lazy()
+    )
+
+    # Upstream v2: v2's data_version changed, v1 unchanged
+    # (e.g., user-provided data_version column changed for v2)
+    upstream_v2 = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v2"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_prov_1", "fps": "fps_prov_1"},  # Same
+                    {"resolution": "res_prov_2", "fps": "fps_prov_2"},  # Same
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_v1_1", "fps": "fps_v1_1"},  # Same as v1
+                    {"resolution": "res_v2_2", "fps": "fps_v2_2"},  # Changed for v2
+                ],
+                "metaxy_provenance": ["video_prov_1", "video_prov_2"],
+            }
+        ).lazy()
+    )
+
+    # Resolve increment with changed data_version for v2
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_v1,
+        upstream={FeatureKey(["video"]): upstream_v2},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    added = added_lazy.collect()
+    assert changed_lazy is not None
+    changed = changed_lazy.collect()
+    assert removed_lazy is not None
+    removed = removed_lazy.collect()
+
+    # v2's data_version changed, so v2 should appear in changed
+    # v1's data_version didn't change, so v1 should not be in changed
+    assert len(added) == 0
+    assert len(removed) == 0
+    assert len(changed) >= 1
+
+    # Check that v2 is in changed (detected at parent level after grouping)
+    changed_video_ids = set(changed["video_id"].to_list())
+    assert "v2" in changed_video_ids
+
+
+def test_aggregation_lineage_data_version_vs_provenance_independent(
+    aggregation_features: dict[str, type[TestingFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test N:1 aggregation: data_version and provenance can change independently.
+
+    Verify that:
+    1. Changing only data_version (provenance same) → detected as changed
+    2. Changing only provenance (data_version same) → detected as changed
+    3. Changing both → detected as changed
+
+    This ensures that the aggregation logic correctly handles both columns.
+    """
+    feature = aggregation_features["HourlyStats"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Base upstream state
+    upstream_base = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "timestamp": ["2024-01-01T10:15:00", "2024-01-01T10:30:00"],
+                "reading_id": ["r1", "r2"],
+                "hour": ["2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {"temperature": "temp_prov_base", "humidity": "hum_prov_base"},
+                    {"temperature": "temp_prov_base", "humidity": "hum_prov_base"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},
+                    {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},
+                ],
+                "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+            }
+        ).lazy()
+    )
+
+    # Get base expected state
+    expected_base = engine.load_upstream_with_provenance(
+        upstream={FeatureKey(["sensor_readings"]): upstream_base},
+        hash_algo=HashAlgorithm.XXHASH64,
+        filters={},
+    ).collect()
+
+    current_base = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1"],
+                "hour": ["2024-01-01T10"],
+                "metaxy_provenance_by_field": expected_base[
+                    "metaxy_provenance_by_field"
+                ][0:1],
+                "metaxy_data_version_by_field": expected_base[
+                    "metaxy_data_version_by_field"
+                ][0:1],
+                "metaxy_provenance": [expected_base["metaxy_provenance"][0]],
+            }
+        ).lazy()
+    )
+
+    # Test 1: Only data_version changed
+    upstream_dv_changed = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "timestamp": ["2024-01-01T10:15:00", "2024-01-01T10:30:00"],
+                "reading_id": ["r1", "r2"],
+                "hour": ["2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {
+                        "temperature": "temp_prov_base",
+                        "humidity": "hum_prov_base",
+                    },  # Same
+                    {
+                        "temperature": "temp_prov_base",
+                        "humidity": "hum_prov_base",
+                    },  # Same
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_dv_NEW", "humidity": "hum_dv_NEW"},  # Changed
+                    {"temperature": "temp_dv_NEW", "humidity": "hum_dv_NEW"},  # Changed
+                ],
+                "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+            }
+        ).lazy()
+    )
+
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["sensor_readings"]): upstream_dv_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
+    assert len(changed) >= 1, "Changing only data_version should trigger change"
+
+    # Test 2: Only provenance changed
+    upstream_prov_changed = nw.from_native(
+        pl.DataFrame(
+            {
+                "sensor_id": ["s1", "s1"],
+                "timestamp": ["2024-01-01T10:15:00", "2024-01-01T10:30:00"],
+                "reading_id": ["r1", "r2"],
+                "hour": ["2024-01-01T10", "2024-01-01T10"],
+                "metaxy_provenance_by_field": [
+                    {
+                        "temperature": "temp_prov_NEW",
+                        "humidity": "hum_prov_NEW",
+                    },  # Changed
+                    {
+                        "temperature": "temp_prov_NEW",
+                        "humidity": "hum_prov_NEW",
+                    },  # Changed
+                ],
+                "metaxy_data_version_by_field": [
+                    {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},  # Same
+                    {"temperature": "temp_dv_base", "humidity": "hum_dv_base"},  # Same
+                ],
+                "metaxy_provenance": ["reading_prov_base", "reading_prov_base"],
+            }
+        ).lazy()
+    )
+
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["sensor_readings"]): upstream_prov_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
+    assert len(changed) >= 1, "Changing only provenance should trigger change"
+
+
+def test_expansion_lineage_data_version_vs_provenance_independent(
+    expansion_features: dict[str, type[TestingFeature]],
+    graph: FeatureGraph,
+) -> None:
+    """Test 1:N expansion: data_version and provenance can change independently.
+
+    Verify that:
+    1. Changing only data_version (provenance same) → detected as changed
+    2. Changing only provenance (data_version same) → detected as changed
+
+    This ensures that the expansion logic correctly handles both columns.
+    """
+    feature = expansion_features["VideoFrames"]
+    plan = graph.get_feature_plan(feature.spec().key)
+    engine = PolarsVersioningEngine(plan)
+
+    # Base upstream state
+    nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_prov_base", "fps": "fps_prov_base"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_dv_base", "fps": "fps_dv_base"},
+                ],
+                "metaxy_provenance": ["video_prov_base"],
+            }
+        ).lazy()
+    )
+
+    # Current frames
+    current_base = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1", "v1"],
+                "frame_id": [0, 1],
+                "metaxy_provenance_by_field": [
+                    {"frame_embedding": "frame_v1_0_prov"},
+                    {"frame_embedding": "frame_v1_1_prov"},
+                ],
+                "metaxy_data_version_by_field": [
+                    {"frame_embedding": "frame_v1_0_dv"},
+                    {"frame_embedding": "frame_v1_1_dv"},
+                ],
+                "metaxy_provenance": ["frame_v1_0_prov", "frame_v1_1_prov"],
+            }
+        ).lazy()
+    )
+
+    # Test 1: Only data_version changed
+    upstream_dv_changed = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_prov_base", "fps": "fps_prov_base"},  # Same
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_dv_NEW", "fps": "fps_dv_NEW"},  # Changed
+                ],
+                "metaxy_provenance": ["video_prov_base"],
+            }
+        ).lazy()
+    )
+
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["video"]): upstream_dv_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
+    assert len(changed) >= 1, "Changing only data_version should trigger change"
+    assert "v1" in set(changed["video_id"].to_list())
+
+    # Test 2: Only provenance changed
+    upstream_prov_changed = nw.from_native(
+        pl.DataFrame(
+            {
+                "video_id": ["v1"],
+                "metaxy_provenance_by_field": [
+                    {"resolution": "res_prov_NEW", "fps": "fps_prov_NEW"},  # Changed
+                ],
+                "metaxy_data_version_by_field": [
+                    {"resolution": "res_dv_base", "fps": "fps_dv_base"},  # Same
+                ],
+                "metaxy_provenance": ["video_prov_base"],
+            }
+        ).lazy()
+    )
+
+    added_lazy, changed_lazy, removed_lazy = engine.resolve_increment_with_provenance(
+        current=current_base,
+        upstream={FeatureKey(["video"]): upstream_prov_changed},
+        hash_algorithm=HashAlgorithm.XXHASH64,
+        filters={},
+        sample=None,
+    )
+
+    changed = changed_lazy.collect() if changed_lazy else nw.from_native(pl.DataFrame())
+    assert len(changed) >= 1, "Changing only provenance should trigger change"
+    assert "v1" in set(changed["video_id"].to_list())
