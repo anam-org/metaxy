@@ -2,6 +2,7 @@
 
 import json
 import warnings
+from collections.abc import Mapping
 from typing import Any
 
 from metaxy.graph.diff.diff_models import (
@@ -89,8 +90,8 @@ class GraphDiffer:
 
     def diff(
         self,
-        snapshot1_data: dict[str, dict[str, Any]],
-        snapshot2_data: dict[str, dict[str, Any]],
+        snapshot1_data: Mapping[str, Mapping[str, Any]],
+        snapshot2_data: Mapping[str, Mapping[str, Any]],
         from_snapshot_version: str = "unknown",
         to_snapshot_version: str = "unknown",
     ) -> GraphDiff:

@@ -61,13 +61,8 @@ def status(
 ) -> None:
     """Check metadata completeness and freshness for specified features."""
     from metaxy.cli.context import AppContext
-    from metaxy.graph.status import (
-        get_feature_metadata_status,
-        preview_samples,
-    )
+    from metaxy.graph.status import get_feature_metadata_status
     from metaxy.models.feature import FeatureGraph
-
-
 
     parsed_keys: list[FeatureKey] = []
     for raw_key in feature_keys:
@@ -83,7 +78,12 @@ def status(
     with metadata_store:
         # If snapshot_version provided, reconstruct graph from storage
         if snapshot_version:
-            features_df = metadata_store.read_features(
+            # TODO: Move this logic to a helper function in the storage SDK
+            # (tracked separately in downstack PR)
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            storage = SystemTableStorage(metadata_store)
+            features_df = storage.read_features(
                 current=False,
                 snapshot_version=snapshot_version,
                 project=context.project,
@@ -159,70 +159,26 @@ def status(
         for feature_key in parsed_keys:
             feature_cls = graph.features_by_key[feature_key]
 
-            # Use SDK function to get status
-            status_info = get_feature_metadata_status(feature_cls, metadata_store)
+            # Use SDK function to get status (returns Pydantic model)
+            status = get_feature_metadata_status(feature_cls, metadata_store)
 
-            added_count = status_info["added_count"]
-            changed_count = status_info["changed_count"]
-            row_count = status_info["row_count"]
-            lazy_increment = status_info["lazy_increment"]
-
-            if status_info["needs_update"]:
+            if status.needs_update:
                 needs_update = True
 
-            # Determine status display
-            if not status_info["metadata_exists"]:
-                status_icon = "[red]✗[/red]"
-                status_text = "missing metadata"
-            elif status_info["needs_update"]:
-                status_icon = "[yellow]⚠[/yellow]"
-                status_text = "needs update"
-            else:
-                status_icon = "[green]✓[/green]"
-                status_text = "up-to-date"
-
-            console.print(
-                f"{status_icon} {feature_key.to_string()} "
-                f"(rows: {row_count}, added: {added_count}, changed: {changed_count}) — {status_text}"
-            )
+            # Print status line using the model's method
+            console.print(status.format_status_line())
 
             # Verbose output with sample previews
-            if verbose and lazy_increment is not None:
+            if verbose:
                 id_columns_spec = feature_cls.spec().id_columns  # type: ignore[attr-defined]
                 id_columns_seq = (
                     tuple(id_columns_spec) if id_columns_spec is not None else None
                 )
 
-                if added_count > 0:
-                    added_preview_df = preview_samples(
-                        lazy_increment.added,
-                        id_columns_seq,
-                    )
-                    if added_preview_df.height > 0:
-                        preview_lines = [
-                            ", ".join(
-                                f"{col}={row[col]}" for col in added_preview_df.columns
-                            )
-                            for row in added_preview_df.to_dicts()
-                        ]
-                        console.print("    Added samples: " + "; ".join(preview_lines))
-
-                if changed_count > 0:
-                    changed_preview_df = preview_samples(
-                        lazy_increment.changed,
-                        id_columns_seq,
-                    )
-                    if changed_preview_df.height > 0:
-                        preview_lines = [
-                            ", ".join(
-                                f"{col}={row[col]}"
-                                for col in changed_preview_df.columns
-                            )
-                            for row in changed_preview_df.to_dicts()
-                        ]
-                        console.print(
-                            "    Changed samples: " + "; ".join(preview_lines)
-                        )
+                # Use the model's method to format sample previews
+                preview_lines = status.format_sample_previews(id_columns_seq)
+                for line in preview_lines:
+                    console.print(line)
 
         # Only fail if updates needed AND --assert-in-sync flag is set
         if assert_in_sync and needs_update:

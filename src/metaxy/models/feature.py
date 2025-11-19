@@ -1,5 +1,5 @@
 import hashlib
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
@@ -636,7 +636,7 @@ class FeatureGraph:
     @classmethod
     def from_snapshot(
         cls,
-        snapshot_data: dict[str, dict[str, Any]],
+        snapshot_data: Mapping[str, Mapping[str, Any]],
         *,
         class_path_overrides: dict[str, str] | None = None,
         force_reload: bool = False,
