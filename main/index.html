@@ -1978,10 +1978,12 @@ The returned object provides <a href="https://narwhals-dev.github.io/narwhals/">
 </span></code></pre></div>
 <p>We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by <code>MetadataStore.resolve_update</code> during future pipeline runs.</p>
 <div class="admonition warning">
-<p class="admonition-title">No Uniqueness Checks!</p>
-<p>Metaxy doesn't attempt to perform any deduplication or uniqueness checks for performance reasons.
-While <code>MetadataStore.resolve_update</code> is guaranteed to never return the same versioned sample twice (hey that's the whole point of Metaxy), it's up to the user to ensure that samples are not written multiple times to the metadata store.
-Configuring deduplication or uniqueness checks in the store (database) is a good idea.</p>
+<p class="admonition-title">No Write Time Uniqueness Checks!</p>
+<p>Metaxy doesn't enforce deduplication or uniqueness checks at <strong>write time</strong> for performance reasons.
+While <code>MetadataStore.resolve_update</code> is guaranteed to never return the same versioned sample twice, it's up to the user to ensure that samples are not written multiple times to the metadata store.
+Configuring deduplication or uniqueness checks in the store (database) is a good idea.
+For example, the <a href="learn/integrations/sqlmodel/">SQLModel integration</a> can inject a composite primary key on <code>metaxy_data_version</code>, <code>metaxy_created_at</code> and the user-defined ID columns.
+However, Metaxy only uses the latest version (by <code>metaxy_created_at</code>) at <strong>read time</strong>.</p>
 </div>
 <h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <ul>
