@@ -2332,27 +2332,19 @@
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><span title="metaxy.models.types.SnapshotPushResult.already_recorded">already_recorded</span></code></b>
+          <b><code><span title="metaxy.models.types.SnapshotPushResult.already_pushed">already_pushed</span></code></b>
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
           –
           <div class="doc-md-description">
-            <p>True if computational changes were already recorded</p>
+            <p>True if this snapshot_version was already pushed previously</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><span title="metaxy.models.types.SnapshotPushResult.metadata_changed">metadata_changed</span></code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-          –
-          <div class="doc-md-description">
-            <p>True if metadata-only changes were detected</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-          <b><code><span title="metaxy.models.types.SnapshotPushResult.features_with_spec_changes">features_with_spec_changes</span></code></b>
+          <b><code><span title="metaxy.models.types.SnapshotPushResult.updated_features">updated_features</span></code></b>
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
           –
           <div class="doc-md-description">
-            <p>List of feature keys with spec version changes</p>
+            <p>List of feature keys with updated information (changed full_definition_version)</p>
           </div>
         </li>
     </ul>

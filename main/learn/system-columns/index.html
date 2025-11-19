@@ -1616,29 +1616,59 @@ user-defined feature fields. Only the prefixed forms are supported.</p>
 <thead>
 <tr>
 <th>Canonical name</th>
-<th>Description</th>
+<th>Explanation</th>
+<th>Level</th>
+<th>Type</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>metaxy_provenance_by_field</code></td>
-<td>Struct capturing per-field provenance hashes. Sample level.</td>
+<td>Derived from upstream data versions and code version per field</td>
+<td>sample</td>
+<td>struct</td>
+</tr>
+<tr>
+<td><code>metaxy_provenance</code></td>
+<td>Hash of <code>metaxy_provenance_by_field</code></td>
+<td>sample</td>
+<td>string</td>
+</tr>
+<tr>
+<td><code>metaxy_data_version_by_field</code></td>
+<td>Defaults to <code>metaxy_provenance_by_field</code>, can be user-defined</td>
+<td>sample</td>
+<td>struct</td>
+</tr>
+<tr>
+<td><code>metaxy_data_version</code></td>
+<td>Hash of <code>metaxy_data_version_by_field</code></td>
+<td>sample</td>
+<td>string</td>
 </tr>
 <tr>
 <td><code>metaxy_feature_version</code></td>
-<td>Version of the versioned graph upstream to the feature.</td>
+<td>Derived from versions of relevant upstream fields</td>
+<td>feature</td>
+<td>string</td>
 </tr>
 <tr>
 <td><code>metaxy_snapshot_version</code></td>
-<td>Version of the entire feature graph for the Metaxy project.</td>
+<td>Derived from the entire Metaxy feature graph</td>
+<td>graph</td>
+<td>string</td>
 </tr>
 <tr>
 <td><code>metaxy_feature_spec_version</code></td>
-<td>Version of the feature spec part responsible for graph topology.</td>
+<td>Derived from the part of the feature spec responsible for versioning</td>
+<td>sample</td>
+<td>string</td>
 </tr>
 <tr>
-<td><code>metaxy_feature_tracking_version</code></td>
-<td>Hash that combines spec version and project for multi-project tracking.</td>
+<td><code>metaxy_full_definition_version</code></td>
+<td>Hash of the entire feature Pydanitc model schema and the Metaxy project</td>
+<td>string</td>
+<td>true</td>
 </tr>
 </tbody>
 </table>
