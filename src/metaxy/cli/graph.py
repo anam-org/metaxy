@@ -26,30 +26,22 @@ def push(
             help="Metadata store to use (defaults to configured default store)",
         ),
     ] = None,
+    *,
+    tags: Annotated[
+        dict[str, str] | None,
+        cyclopts.Parameter(
+            name=["--tags", "-t"],
+            help="Tags key-value pairs using dot-notation (e.g., --tags.git_commit abc123). `metaxy` tag is reserved for internal use.",
+        ),
+    ] = None,
 ):
-    """Record all feature versions (push graph snapshot).
+    """Serialize all Metaxy feature definitions (identified via feature discovery) to the metadata store.
 
-    Records all features in the active graph to the metadata store
-    with a deterministic snapshot version. This should be run after deploying
-    new feature definitions.
+    This is intended to be invoked in a CD pipeline **before** running Metaxy code in production.
 
     Example:
-        $ metaxy graph push
-        ✓ Recorded feature graph
-        abc123def456...
 
-        # Or if already recorded:
-        $ metaxy graph push
-        ℹ Snapshot already recorded (no changes)
-        abc123def456...
-
-        # Or if metadata-only changes:
-        $ metaxy graph push
-        ℹ Updated feature graph metadata (no topological changes)
-          Features with metadata changes:
-            - video/processing
-            - user/profile
-        abc123def456...
+        $ metaxy graph push --tags.git_commit abc123def
     """
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system.storage import SystemTableStorage
@@ -61,7 +53,7 @@ def push(
     metadata_store = context.get_store(store)
 
     with metadata_store.open(AccessMode.WRITE):
-        result = SystemTableStorage(metadata_store).push_graph_snapshot()
+        result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
 
         # Scenario 1: New snapshot (computational changes)
         if not result.already_pushed:

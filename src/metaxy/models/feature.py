@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
@@ -62,6 +62,15 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
     """
     graph = FeatureGraph.get_active()
     return graph.get_feature_by_key(key)
+
+
+class SerializedFeature(TypedDict):
+    feature_spec: dict[str, Any]
+    metaxy_feature_version: str
+    metaxy_feature_spec_version: str
+    metaxy_full_definition_version: str
+    feature_class_path: str
+    project: str
 
 
 class FeatureGraph:
@@ -574,21 +583,13 @@ class FeatureGraph:
             hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
         return truncate_hash(hasher.hexdigest())
 
-    def to_snapshot(self) -> dict[str, dict[str, Any]]:
+    def to_snapshot(self) -> dict[str, SerializedFeature]:
         """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
         including the import path of the Feature class for reconstruction.
 
-        Returns:
-            Dict of feature_key -> {
-                feature_spec: dict,
-                metaxy_feature_version: str,
-                metaxy_feature_spec_version: str,
-                metaxy_full_definition_version: str,
-                feature_class_path: str,
-                project: str
-            }
+        Returns: dictionary mapping feature_key (string) to feature data dict
 
         Example:
             ```py
@@ -605,7 +606,7 @@ class FeatureGraph:
             # 'myapp'
             ```
         """
-        snapshot = {}
+        snapshot: dict[str, SerializedFeature] = {}
 
         for feature_key, feature_cls in self.features_by_key.items():
             feature_key_str = feature_key.to_string()
@@ -618,7 +619,7 @@ class FeatureGraph:
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            snapshot[feature_key_str] = {
+            snapshot[feature_key_str] = {  # pyright: ignore
                 "feature_spec": feature_spec_dict,
                 FEATURE_VERSION_COL: feature_version,
                 FEATURE_SPEC_VERSION_COL: feature_spec_version,

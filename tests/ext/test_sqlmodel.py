@@ -1815,10 +1815,10 @@ def test_sqlmodel_allows_client_generated_ids() -> None:
 
 
 def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
-    """Test that inject_metaxy_pk=True (default) creates composite primary key.
+    """Test that inject_metaxy_pk=True creates composite primary key.
 
     Verifies that:
-    - By default, composite PK is injected
+    - When explicitly enabled, composite PK is injected
     - PK includes: id_columns + metaxy_created_at + metaxy_data_version
     - Works with both default and custom id_columns
     """
@@ -1826,7 +1826,7 @@ def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
     class DefaultPKFeature(
         SQLModelFeature,
         table=True,
-        # inject_metaxy_pk=True is the default - testing that it creates composite PK
+        inject_metaxy_pk=True,  # Explicitly enable composite PK injection
         spec=SampleFeatureSpec(
             key=FeatureKey(["default", "pk"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -1906,7 +1906,7 @@ def test_inject_metaxy_pk_with_custom_id_columns() -> None:
     class CustomIDFeature(
         SQLModelFeature,
         table=True,
-        # inject_metaxy_pk=True is the default
+        inject_metaxy_pk=True,  # Explicitly enable composite PK injection
         spec=SampleFeatureSpec(
             key=FeatureKey(["custom", "id"]),
             id_columns=["user_id", "session_id"],  # Custom ID columns

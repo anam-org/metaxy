@@ -9,6 +9,8 @@ can be controlled through various methods:
 
 import os
 
+from sqlmodel import Field
+
 from metaxy import FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy._testing import TempMetaxyProject
 from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
@@ -16,7 +18,7 @@ from metaxy.ext.sqlmodel import BaseSQLModelFeature
 
 
 class SQLModelFeature(BaseSQLModelFeature):
-    sample_uid: str
+    sample_uid: str = Field(primary_key=True)
 
 
 def test_auto_table_naming_enabled_by_default():
