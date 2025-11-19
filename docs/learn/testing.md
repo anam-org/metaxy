@@ -55,30 +55,6 @@ This enables:
 
 ## Testing Metadata Store Operations
 
-### Context Manager Pattern
-
-Stores must be used as context managers to ensure proper resource cleanup:
-
-```python
-def test_metadata_operations():
-    with InMemoryMetadataStore() as store:
-        # Create test data
-        df = pl.DataFrame(
-            {
-                "sample_uid": [1, 2, 3],
-                "metaxy_provenance_by_field": {...},
-                "metaxy_feature_version": "abc123",
-            }
-        )
-
-        # Write metadata
-        store.write_metadata(MyFeature, df)
-
-        # Read and verify
-        result = store.read_metadata(MyFeature)
-        assert len(result) == 3
-```
-
 ### Testing with Different Backends
 
 Use parametrized tests to verify behavior across backends:

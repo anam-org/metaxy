@@ -13,6 +13,12 @@ class FeatureNotFoundError(MetadataStoreError):
     pass
 
 
+class SystemDataNotFoundError(MetadataStoreError):
+    """Raised when system features are not found in the store."""
+
+    pass
+
+
 class FieldNotFoundError(MetadataStoreError):
     """Raised when a field is not found for a feature."""
 

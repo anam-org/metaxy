@@ -1,14 +1,14 @@
-"""Tests for feature_tracking_version that includes project in the hash.
+"""Tests for full_definition_version that includes project in the hash.
 
 The tracking version is used for system tables (feature_versions) to isolate
 features from different projects in the same metadata store. It differs from
 feature_version (used for field provenance) in that it includes the project name.
 
 Key behaviors:
-1. feature_tracking_version changes when project changes
+1. full_definition_version changes when project changes
 2. feature_version does NOT change when project changes
 3. Two identical features in different projects have different tracking versions
-4. feature_tracking_version is deterministic for the same (feature, project) pair
+4. full_definition_version is deterministic for the same (feature, project) pair
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
 
-def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) -> None:
-    """Test that feature_tracking_version changes when project changes."""
+def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -> None:
+    """Test that full_definition_version changes when project changes."""
     # Create same feature in two different projects
     config_a = MetaxyConfig(project="project_a")
     graph_a = FeatureGraph()
@@ -68,9 +68,9 @@ def test_feature_tracking_version_includes_project(snapshot: SnapshotAssertion) 
     assert FeatureInA.project == "project_a"
     assert FeatureInB.project == "project_b"
 
-    # feature_tracking_version should be DIFFERENT (includes project)
-    tracking_version_a = FeatureInA.feature_tracking_version()
-    tracking_version_b = FeatureInB.feature_tracking_version()
+    # full_definition_version should be DIFFERENT (includes project)
+    tracking_version_a = FeatureInA.full_definition_version()
+    tracking_version_b = FeatureInB.full_definition_version()
     assert tracking_version_a != tracking_version_b
 
     # But feature_version should be SAME (field provenance unchanged by project)
@@ -165,9 +165,9 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
         ):
             pass
 
-        # feature_tracking_version should be deterministic
-        tracking_1 = TestFeature.feature_tracking_version()
-        tracking_2 = TestFeature.feature_tracking_version()
+        # full_definition_version should be deterministic
+        tracking_1 = TestFeature.full_definition_version()
+        tracking_2 = TestFeature.full_definition_version()
 
         assert tracking_1 == tracking_2
         assert len(tracking_1) == 64  # SHA256 hex

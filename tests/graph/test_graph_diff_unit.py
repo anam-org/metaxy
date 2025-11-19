@@ -175,7 +175,7 @@ class TestSnapshotResolver:
 
             snapshot_version = result.snapshot_version
 
-            _ = result.already_recorded
+            _ = result.already_pushed
 
             # Resolve latest
             result = resolver.resolve_snapshot("latest", store, graph)
@@ -388,7 +388,7 @@ class TestGraphDiffer:
 
             snapshot_version = result.snapshot_version
 
-            _ = result.already_recorded
+            _ = result.already_pushed
 
             # Load snapshot data
             snapshot_data = differ.load_snapshot_data(

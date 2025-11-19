@@ -816,16 +816,12 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
         # Snapshot version now only goes to stdout
         assert len(result1.stdout.strip()) == 64
 
-    # Push v2 (metadata-only change)
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
 
-        # Should show metadata-only change message
-        assert "Updated feature graph metadata" in result2.stderr
-        assert "no topological changes" in result2.stderr
-
-        # Should list the changed feature
+        # Should show metadata update message (rename doesn't change feature_version)
+        assert "Updated feature information" in result2.stderr
         assert "downstream" in result2.stderr
 
         # Snapshot version should be in stdout
@@ -935,20 +931,19 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
         # Snapshot version now only goes to stdout
         assert len(result1.stdout.strip()) == 64
 
-    # Scenario 2: Metadata change
+    # Scenario 2: Metadata change (columns doesn't affect feature_version)
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
-        assert "Updated feature graph metadata" in result2.stderr
-        assert "no topological changes" in result2.stderr
+        assert "Updated feature information" in result2.stderr
         assert "downstream" in result2.stderr
 
     # Scenario 3: No change
+    # Note: Re-pushing the same snapshot shows "already recorded"
     with metaxy_project.with_features(features_v2):
         result3 = metaxy_project.run_cli("graph", "push")
         assert result3.returncode == 0
         assert "already recorded" in result3.stderr
-        assert "no changes" in result3.stderr
 
 
 def test_graph_push_multiple_features_metadata_changes(
@@ -1047,16 +1042,11 @@ def test_graph_push_multiple_features_metadata_changes(
         result1 = metaxy_project.run_cli("graph", "push")
         assert "Recorded feature graph" in result1.stderr
 
-    # Push v2 - multiple metadata changes
+    # Push v2 - multiple metadata changes (rename and columns don't affect feature_version)
     with metaxy_project.with_features(features_v2):
         result2 = metaxy_project.run_cli("graph", "push")
         assert result2.returncode == 0
-        assert "Updated feature graph metadata" in result2.stderr
-
+        assert "Updated feature information" in result2.stderr
         # Should list both changed features
         assert "feature_b" in result2.stderr
         assert "feature_c" in result2.stderr
-
-        # Should NOT list unchanged feature
-        # Note: feature_a might appear in deps, so we check it's not in the "Features with metadata changes" section
-        # For now, just verify the two changed features are listed

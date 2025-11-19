@@ -159,15 +159,32 @@ class MigrationExecutor:
         skipped = {}  # Track skipped features separately
         rows_affected_total = 0
 
-        # Get affected features (computed on-demand)
-        affected_features_to_process = migration.get_affected_features(store, project)
+        # Get graph for topological sorting
+        graph = FeatureGraph.get_active()
 
         # Execute operations (currently only DataVersionReconciliation is supported)
         if len(migration.operations) == 1 and isinstance(
             migration.operations[0], DataVersionReconciliation
         ):
-            # DataVersionReconciliation applies to all affected features
+            # Get features from operation config
             op = migration.operations[0]
+            op_config = OperationConfig.model_validate(migration.ops[0])
+
+            # Determine which features to process:
+            # - If features explicitly listed in operation config, use those
+            # - Otherwise, use all affected features from graph diff
+            if op_config.features:
+                # Sort features topologically
+                feature_keys = [FeatureKey(fk.split("/")) for fk in op_config.features]
+                sorted_features = graph.topological_sort_features(feature_keys)
+                affected_features_to_process = [
+                    fk.to_string() for fk in sorted_features
+                ]
+            else:
+                # Fall back to graph diff (all affected features)
+                affected_features_to_process = migration.get_affected_features(
+                    store, project
+                )
 
             for feature_key_str in affected_features_to_process:
                 # Check if already completed (resume support)
@@ -179,7 +196,6 @@ class MigrationExecutor:
 
                 # Check if any upstream dependencies failed in this migration run
                 feature_key_obj = FeatureKey(feature_key_str.split("/"))
-                graph = FeatureGraph.get_active()
                 plan = graph.get_feature_plan(feature_key_obj)
 
                 if plan.deps:

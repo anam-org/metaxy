@@ -11,7 +11,8 @@ from metaxy.graph.diff.diff_models import (
     NodeChange,
     RemovedNode,
 )
-from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY, MetadataStore
+from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 from metaxy.models.feature import FeatureGraph
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -50,7 +51,11 @@ class SnapshotResolver:
 
     def _resolve_latest(self, store: MetadataStore) -> str:
         """Resolve 'latest' to most recent snapshot in store."""
-        snapshots_df = store.read_graph_snapshots()
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        with store:
+            storage = SystemTableStorage(store)
+            snapshots_df = storage.read_graph_snapshots()
 
         if snapshots_df.height == 0:
             raise ValueError(
@@ -218,12 +223,8 @@ class GraphDiffer:
 
             # Get tracking versions for migration detection
             # Use tracking version if available (new system), otherwise fall back to feature_version
-            tracking_version1 = feature1.get(
-                "metaxy_feature_tracking_version", version1
-            )
-            tracking_version2 = feature2.get(
-                "metaxy_feature_tracking_version", version2
-            )
+            tracking_version1 = feature1.get("metaxy_full_definition_version", version1)
+            tracking_version2 = feature2.get("metaxy_full_definition_version", version2)
 
             # Check if feature tracking version changed (indicates migration needed)
             if tracking_version1 != tracking_version2:
@@ -690,8 +691,8 @@ class GraphDiffer:
                 "metaxy_feature_version": feature_version,
                 "feature_spec": feature_spec_dict,
                 "feature_class_path": feature_class_path,
-                "metaxy_feature_tracking_version": row.get(
-                    "metaxy_feature_tracking_version", feature_version
+                "metaxy_full_definition_version": row.get(
+                    "metaxy_full_definition_version", feature_version
                 ),  # Fallback for backward compatibility
             }
 
@@ -760,8 +761,8 @@ class GraphDiffer:
                 "metaxy_feature_version": feature_version,
                 "fields": fields_data,
                 "feature_spec": feature_spec,
-                "metaxy_feature_tracking_version": snapshot_dict[feature_key_str].get(
-                    "metaxy_feature_tracking_version", feature_version
+                "metaxy_full_definition_version": snapshot_dict[feature_key_str].get(
+                    "metaxy_full_definition_version", feature_version
                 ),
             }
 

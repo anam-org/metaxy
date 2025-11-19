@@ -10,8 +10,8 @@ from typing_extensions import Self
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_FULL_DEFINITION_VERSION,
 )
 from metaxy.models.feature_spec import (
     FeatureSpec,
@@ -22,7 +22,7 @@ from metaxy.utils.hashing import truncate_hash
 
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
-FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_FULL_DEFINITION_VERSION
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -585,7 +585,7 @@ class FeatureGraph:
                 feature_spec: dict,
                 metaxy_feature_version: str,
                 metaxy_feature_spec_version: str,
-                metaxy_feature_tracking_version: str,
+                metaxy_full_definition_version: str,
                 feature_class_path: str,
                 project: str
             }
@@ -597,7 +597,7 @@ class FeatureGraph:
             # 'abc12345'
             snapshot["video_processing"]["metaxy_feature_spec_version"]
             # 'def67890'
-            snapshot["video_processing"]["metaxy_feature_tracking_version"]
+            snapshot["video_processing"]["metaxy_full_definition_version"]
             # 'xyz98765'
             snapshot["video_processing"]["feature_class_path"]
             # 'myapp.features.video.VideoProcessing'
@@ -612,7 +612,7 @@ class FeatureGraph:
             feature_spec_dict = feature_cls.spec().model_dump(mode="json")  # type: ignore[attr-defined]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
             feature_spec_version = feature_cls.spec().feature_spec_version  # type: ignore[attr-defined]
-            feature_tracking_version = feature_cls.feature_tracking_version()  # type: ignore[attr-defined]
+            full_definition_version = feature_cls.full_definition_version()  # type: ignore[attr-defined]
             project = feature_cls.project  # type: ignore[attr-defined]
 
             # Get class import path (module.ClassName)
@@ -622,7 +622,7 @@ class FeatureGraph:
                 "feature_spec": feature_spec_dict,
                 FEATURE_VERSION_COL: feature_version,
                 FEATURE_SPEC_VERSION_COL: feature_spec_version,
-                FEATURE_TRACKING_VERSION_COL: feature_tracking_version,
+                FEATURE_TRACKING_VERSION_COL: full_definition_version,
                 "feature_class_path": class_path,
                 "project": project,
             }
@@ -1054,31 +1054,33 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         return cls.spec().feature_spec_version
 
     @classmethod
-    def feature_tracking_version(cls) -> str:
-        """Get hash combining feature spec version and project.
+    def full_definition_version(cls) -> str:
+        """Get hash of the complete feature definition including Pydantic schema.
 
-        This version is used in system tables to track when features move between projects
-        or when their specifications change. It combines:
-        - feature_spec_version: Complete feature specification hash
-        - project: The project this feature belongs to
+        This method computes a hash of the entire feature class definition, including:
+        - Pydantic model schema
+        - Project name
 
-        This allows the migration system to detect when a feature moves from one project
-        to another, triggering appropriate migrations.
+        Used in the `metaxy_full_definition_version` column of system tables.
 
         Returns:
-            SHA256 hex digest of feature_spec_version + project
-
-        Example:
-            ```py
-            class MyFeature(Feature, spec=FeatureSpec(...)):
-                pass
-            MyFeature.feature_tracking_version()  # Combines spec + project
-            # 'abc789...'
-            ```
+            SHA256 hex digest of the complete definition
         """
+        import json
+
         hasher = hashlib.sha256()
+
+        # Hash the Pydantic schema (includes field types, descriptions, validators, etc.)
+        schema = cls.model_json_schema()
+        schema_json = json.dumps(schema, sort_keys=True)
+        hasher.update(schema_json.encode())
+
+        # Hash the feature specification
         hasher.update(cls.feature_spec_version().encode())
+
+        # Hash the project name
         hasher.update(cls.project.encode())
+
         return truncate_hash(hasher.hexdigest())
 
     @classmethod

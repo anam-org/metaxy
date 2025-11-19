@@ -613,7 +613,6 @@ class TestEndToEnd:
 
             snapshot_version = result.snapshot_version
 
-            _ = result.already_recorded
             assert len(snapshot_version) == 16
 
             # Write parent metadata

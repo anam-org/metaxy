@@ -11,7 +11,6 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
-import polars as pl
 from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
@@ -19,16 +18,15 @@ from metaxy._utils import switch_implementation_to_polars
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
+    SystemDataNotFoundError,
 )
-from metaxy.metadata_store.system import (
-    FEATURE_VERSIONS_KEY,
-    FEATURE_VERSIONS_SCHEMA,
-    METAXY_SYSTEM_KEY_PREFIX,
-    allow_feature_version_override,
-)
-from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
+from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
 from metaxy.metadata_store.types import AccessMode
-from metaxy.metadata_store.utils import empty_frame_like
+from metaxy.metadata_store.utils import (
+    _suppress_feature_version_warning,
+    allow_feature_version_override,
+    empty_frame_like,
+)
 from metaxy.metadata_store.warnings import (
     MetaxyColumnMissingWarning,
     PolarsMaterializationWarning,
@@ -539,25 +537,11 @@ class MetadataStore(ABC):
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
-    ) -> bool:
-        """Exit context manager.
-
-        Properly cleans up the opened connection by delegating to the open() context manager.
-
-        Args:
-            exc_type: Exception type if an error occurred
-            exc_val: Exception value if an error occurred
-            exc_tb: Exception traceback if an error occurred
-
-        Returns:
-            False to propagate any exceptions
-        """
+    ) -> None:
         # Delegate to open()'s context manager (which manages _context_depth)
         if self._open_cm is not None:
             self._open_cm.__exit__(exc_type, exc_val, exc_tb)
             self._open_cm = None
-
-        return False
 
     def _check_open(self) -> None:
         """Check if store is open, raise error if not.
@@ -686,7 +670,6 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
 
         # Get the Feature class from the graph
-        from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
         if feature_key not in graph.features_by_key:
@@ -1031,6 +1014,7 @@ class MetadataStore(ABC):
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
+            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
             ValueError: If both feature_version and current_only=True are provided
         """
         filters = filters or []
@@ -1065,9 +1049,23 @@ class MetadataStore(ABC):
         else:
             read_columns = None
 
-        lazy_frame = self.read_metadata_in_store(
-            feature, filters=filters, columns=read_columns
-        )
+        lazy_frame = None
+        try:
+            lazy_frame = self.read_metadata_in_store(
+                feature, filters=filters, columns=read_columns
+            )
+        except FeatureNotFoundError as e:
+            # do not read system features from fallback stores
+            if is_system_table:
+                raise SystemDataNotFoundError(
+                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+                ) from e
+
+        # Handle case where read_metadata_in_store returns None (no exception raised)
+        if lazy_frame is None and is_system_table:
+            raise SystemDataNotFoundError(
+                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+            )
 
         if lazy_frame is not None and not is_system_table and latest_only:
             from metaxy.models.constants import METAXY_CREATED_AT
@@ -1152,143 +1150,6 @@ class MetadataStore(ABC):
             Display string (e.g., "DuckDBMetadataStore(database=/path/to/db.duckdb)")
         """
         pass
-
-    def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
-        """Read recorded graph snapshots from the feature_versions system table.
-
-        Args:
-            project: Project name to filter by. If None, returns snapshots from all projects.
-
-        Returns a DataFrame with columns:
-        - snapshot_version: Unique identifier for each graph snapshot
-        - recorded_at: Timestamp when the snapshot was recorded
-        - feature_count: Number of features in this snapshot
-
-        Returns:
-            Polars DataFrame with snapshot information, sorted by recorded_at descending
-
-        Raises:
-            StoreNotOpenError: If store is not open
-
-        Example:
-            ```py
-            with store:
-                # Get snapshots for a specific project
-                snapshots = store.read_graph_snapshots(project="my_project")
-                latest_snapshot = snapshots[SNAPSHOT_VERSION_COL][0]
-                print(f"Latest snapshot: {latest_snapshot}")
-
-                # Get snapshots across all projects
-                all_snapshots = store.read_graph_snapshots()
-            ```
-        """
-        self._check_open()
-
-        # Build filters based on project parameter
-        filters = None
-        if project is not None:
-            import narwhals as nw
-
-            filters = [nw.col("project") == project]
-
-        versions_lazy = self.read_metadata_in_store(
-            FEATURE_VERSIONS_KEY, filters=filters
-        )
-        if versions_lazy is None:
-            # No snapshots recorded yet
-            return pl.DataFrame(
-                schema={
-                    METAXY_SNAPSHOT_VERSION: pl.String,
-                    "recorded_at": pl.Datetime("us"),
-                    "feature_count": pl.UInt32,
-                }
-            )
-
-        versions_df = versions_lazy.collect().to_polars()
-
-        # Group by snapshot_version and get earliest recorded_at and count
-        snapshots = (
-            versions_df.group_by(METAXY_SNAPSHOT_VERSION)
-            .agg(
-                [
-                    pl.col("recorded_at").min().alias("recorded_at"),
-                    pl.col("feature_key").count().alias("feature_count"),
-                ]
-            )
-            .sort("recorded_at", descending=True)
-        )
-
-        return snapshots
-
-    def read_features(
-        self,
-        *,
-        current: bool = True,
-        snapshot_version: str | None = None,
-        project: str | None = None,
-    ) -> pl.DataFrame:
-        """Read feature version information from the feature_versions system table.
-
-        Args:
-            current: If True, only return features from the current code snapshot.
-                     If False, must provide snapshot_version.
-            snapshot_version: Specific snapshot version to filter by. Required if current=False.
-            project: Project name to filter by. Defaults to None.
-
-        Returns:
-            Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
-            - feature_key: Feature identifier
-            - feature_version: Version hash of the feature
-            - recorded_at: When this version was recorded
-            - feature_spec: JSON serialized feature specification
-            - feature_class_path: Python import path to the feature class
-            - snapshot_version: Graph snapshot this feature belongs to
-
-        Raises:
-            StoreNotOpenError: If store is not open
-            ValueError: If current=False but no snapshot_version provided
-
-        Examples:
-            ```py
-            # Get features from current code
-            with store:
-                features = store.read_features(current=True)
-                print(f"Current graph has {len(features)} features")
-            ```
-
-            ```py
-            # Get features from a specific snapshot
-            with store:
-                features = store.read_features(current=False, snapshot_version="abc123")
-                for row in features.iter_rows(named=True):
-                    print(f"{row['feature_key']}: {row['metaxy_feature_version']}")
-            ```
-        """
-        self._check_open()
-
-        if not current and snapshot_version is None:
-            raise ValueError("Must provide snapshot_version when current=False")
-
-        if current:
-            # Get current snapshot from active graph
-            graph = FeatureGraph.get_active()
-            snapshot_version = graph.snapshot_version
-
-        filters = [nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version]
-        if project is not None:
-            filters.append(nw.col("project") == project)
-
-        versions_lazy = self.read_metadata_in_store(
-            FEATURE_VERSIONS_KEY, filters=filters
-        )
-        if versions_lazy is None:
-            # No features recorded yet
-            return pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-
-        # Filter by snapshot_version
-        versions_df = versions_lazy.collect().to_polars()
-
-        return versions_df
 
     def copy_metadata(
         self,
@@ -1436,56 +1297,11 @@ class MetadataStore(ABC):
                     features_to_copy.append(item.spec().key)
             logger.info(f"Copying {len(features_to_copy)} specified features")
 
-        # Determine from_snapshot
-        if from_snapshot is None:
-            # Get latest snapshot from source store
-            try:
-                versions_lazy = from_store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
-                if versions_lazy is None:
-                    # No feature_versions table yet - if no features to copy, that's okay
-                    if len(features_to_copy) == 0:
-                        logger.info(
-                            "No features to copy and no snapshots in source store"
-                        )
-                        from_snapshot = None  # Will be set later if needed
-                    else:
-                        raise ValueError(
-                            "Source store has no feature_versions table. Cannot determine snapshot."
-                        )
-                elif versions_lazy is not None:
-                    versions_df = versions_lazy.collect().to_polars()
-                    if versions_df.height == 0:
-                        # Empty versions table - if no features to copy, that's okay
-                        if len(features_to_copy) == 0:
-                            logger.info(
-                                "No features to copy and no snapshots in source store"
-                            )
-                            from_snapshot = None
-                        else:
-                            raise ValueError(
-                                "Source store feature_versions table is empty. No snapshots found."
-                            )
-                    else:
-                        # Get most recent snapshot_version by recorded_at
-                        from_snapshot = (
-                            versions_df.sort("recorded_at", descending=True)
-                            .select(METAXY_SNAPSHOT_VERSION)
-                            .head(1)[METAXY_SNAPSHOT_VERSION][0]
-                        )
-                        logger.info(
-                            f"Using latest snapshot from source: {from_snapshot}"
-                        )
-            except Exception as e:
-                # If we have no features to copy, continue gracefully
-                if len(features_to_copy) == 0:
-                    logger.info(f"No features to copy: {e}")
-                    from_snapshot = None
-                else:
-                    raise ValueError(
-                        f"Could not determine latest snapshot from source store: {e}"
-                    )
+        # Log snapshot usage
+        if from_snapshot is not None:
+            logger.info(f"Filtering by snapshot: {from_snapshot}")
         else:
-            logger.info(f"Using specified from_snapshot: {from_snapshot}")
+            logger.info("Copying all data (no snapshot filter)")
 
         # Copy metadata for each feature
         total_rows = 0
@@ -1502,12 +1318,15 @@ class MetadataStore(ABC):
                         current_only=False,
                     )
 
-                    # Filter by from_snapshot
+                    # Filter by from_snapshot if specified
                     import narwhals as nw
 
-                    source_filtered = source_lazy.filter(
-                        nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                    )
+                    if from_snapshot is not None:
+                        source_filtered = source_lazy.filter(
+                            nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
+                        )
+                    else:
+                        source_filtered = source_lazy
 
                     # Apply filters for this feature (if any)
                     if filters:
@@ -1526,10 +1345,13 @@ class MetadataStore(ABC):
                                 allow_fallback=False,
                                 current_only=False,
                             )
-                            # Filter destination to same snapshot_version
-                            dest_for_snapshot = dest_lazy.filter(
-                                nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                            )
+                            # Filter destination to same snapshot_version (if specified)
+                            if from_snapshot is not None:
+                                dest_for_snapshot = dest_lazy.filter(
+                                    nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
+                                )
+                            else:
+                                dest_for_snapshot = dest_lazy
 
                             # Materialize destination sample_uids to avoid cross-backend join issues
                             # When copying between different stores (e.g., different DuckDB files),

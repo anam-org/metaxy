@@ -5,21 +5,14 @@ Provides type-safe access to migration system tables using struct-based storage.
 
 from __future__ import annotations
 
-import json
-from collections.abc import Iterator
-from contextlib import contextmanager
-from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import narwhals as nw
 import polars as pl
 
-from metaxy.metadata_store._protocols import MetadataStoreProtocol
-from metaxy.metadata_store.exceptions import TableNotFoundError
+from metaxy.metadata_store.exceptions import SystemDataNotFoundError
 from metaxy.metadata_store.system import (
     FEATURE_VERSIONS_KEY,
-    FEATURE_VERSIONS_SCHEMA,
 )
 from metaxy.metadata_store.system.events import (
     COL_EVENT_TYPE,
@@ -28,47 +21,21 @@ from metaxy.metadata_store.system.events import (
     COL_PAYLOAD,
     COL_PROJECT,
     COL_TIMESTAMP,
-    EVENTS_SCHEMA,
     Event,
     EventType,
     MigrationStatus,
 )
 from metaxy.metadata_store.system.keys import EVENTS_KEY
+from metaxy.metadata_store.system.models import POLARS_SCHEMAS
 from metaxy.models.constants import (
-    METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
-    METAXY_FEATURE_VERSION,
+    METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.models.feature import FeatureGraph
-from metaxy.models.types import SnapshotPushResult
+from metaxy.models.types import FeatureKey, SnapshotPushResult
 
-# Context variable for suppressing feature_version warning in migrations
-_suppress_feature_version_warning: ContextVar[bool] = ContextVar(
-    "_suppress_feature_version_warning", default=False
-)
-
-
-@contextmanager
-def allow_feature_version_override() -> Iterator[None]:
-    """
-    Context manager to suppress warnings when writing metadata with pre-existing metaxy_feature_version.
-
-    This should only be used in migration code where writing historical feature versions
-    is intentional and necessary.
-
-    Example:
-        ```py
-        with allow_feature_version_override():
-            # DataFrame already has metaxy_feature_version column from migration
-            store.write_metadata(MyFeature, df_with_feature_version)
-        ```
-    """
-    token = _suppress_feature_version_warning.set(True)
-    try:
-        yield
-    finally:
-        _suppress_feature_version_warning.reset(token)
+if TYPE_CHECKING:
+    from metaxy.metadata_store import MetadataStore
 
 
 class SystemTableStorage:
@@ -86,7 +53,7 @@ class SystemTableStorage:
         ```
     """
 
-    def __init__(self, store: MetadataStoreProtocol):
+    def __init__(self, store: MetadataStore):
         """Initialize storage layer.
 
         Args:
@@ -106,24 +73,23 @@ class SystemTableStorage:
 
         Returns:
             List of migration IDs that have been started/executed
+
+        Note:
+            The store must already be open when calling this method.
         """
-        with self.store:
-            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        events = self._read_system_metadata(EVENTS_KEY)
 
-            if lazy is None:
-                return []
+        # Apply project filter only if specified
+        if project is not None:
+            events = events.filter(nw.col(COL_PROJECT) == project)
 
-            if project is not None:
-                lazy = lazy.filter(nw.col(COL_PROJECT) == project)
-
-            # Select, dedupe, convert to polars, then collect
-            df = lazy.select(COL_EXECUTION_ID).unique().to_native().collect()
-            return df[COL_EXECUTION_ID].to_list()
-
-        # Unreachable - all paths return inside the with block
-        raise AssertionError("Unreachable")  # pragma: no cover
-
-    # ========== Events ==========
+        return (
+            events.select(COL_EXECUTION_ID)
+            .unique()
+            .collect()
+            .to_polars()[COL_EXECUTION_ID]
+            .to_list()
+        )
 
     def write_event(self, event: Event) -> None:
         """Write migration event to system table using typed event models.
@@ -132,6 +98,9 @@ class SystemTableStorage:
 
         Args:
             event: A typed migration event created via Event classmethods
+
+        Note:
+            The store must already be open when calling this method.
 
         Example:
             ```python
@@ -150,8 +119,7 @@ class SystemTableStorage:
             ```
         """
         record = event.to_polars()
-        with self.store:
-            self.store.write_metadata(EVENTS_KEY, record)
+        self.store.write_metadata(EVENTS_KEY, record)
 
     def get_migration_events(
         self, migration_id: str, project: str | None = None
@@ -164,24 +132,25 @@ class SystemTableStorage:
 
         Returns:
             Polars DataFrame with events sorted by timestamp
+
+        Note:
+            The store must already be open when calling this method.
         """
-        with self.store:
-            # Read the table first without project filter
-            lazy = self.store.read_metadata_in_store(
-                EVENTS_KEY,
-                filters=[nw.col(COL_EXECUTION_ID) == migration_id],
+        # Read the table first without project filter
+        events = self._read_system_metadata(EVENTS_KEY)
+        if events is None:
+            # Table doesn't exist yet, return empty DataFrame with correct schema
+            return pl.DataFrame(schema=POLARS_SCHEMAS[EVENTS_KEY])
+
+        return (
+            events.filter(
+                nw.col(COL_EXECUTION_ID) == migration_id,
+                nw.col(COL_PROJECT) == project,
             )
-
-            if lazy is None:
-                # No events yet
-                return pl.DataFrame(schema=EVENTS_SCHEMA)
-
-            lazy = lazy.filter(nw.col(COL_PROJECT) == project)
-            # Convert to Polars DataFrame
-            return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
-
-        # Unreachable - all paths return inside the with block
-        raise AssertionError("Unreachable")  # pragma: no cover
+            .sort(COL_TIMESTAMP, descending=False)
+            .collect()
+            .to_polars()
+        )
 
     def get_migration_status(
         self, migration_id: str, project: str | None = None
@@ -379,25 +348,17 @@ class SystemTableStorage:
         Returns:
             Polars DataFrame with migration events
         """
-        with self.store:
-            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        lazy = self._read_system_metadata(EVENTS_KEY)
 
-            if lazy is None:
-                # No events yet
-                return pl.DataFrame(schema=EVENTS_SCHEMA)
+        # Apply filters if specified
+        if migration_id is not None:
+            lazy = lazy.filter(nw.col(COL_EXECUTION_ID) == migration_id)
 
-            # Apply filters if specified
-            if migration_id is not None:
-                lazy = lazy.filter(nw.col(COL_EXECUTION_ID) == migration_id)
+        if project is not None:
+            lazy = lazy.filter(nw.col(COL_PROJECT) == project)
 
-            if project is not None:
-                lazy = lazy.filter(nw.col(COL_PROJECT) == project)
-
-            # Convert to Polars DataFrame
-            return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
-
-        # Unreachable - all paths return inside the with block
-        raise AssertionError("Unreachable")  # pragma: no cover
+        # Convert to Polars DataFrame
+        return lazy.sort(COL_TIMESTAMP, descending=False).collect().to_polars()
 
     def read_migration_progress(
         self, project: str | None = None
@@ -498,31 +459,27 @@ class SystemTableStorage:
             - completed_at: Timestamp when migration completed
             - features_count: Number of features affected
             - rows_affected: Total rows affected
+        Note:
+            The store must already be open when calling this method.
         """
-        # Initialize to satisfy type checker
-        completed_df = pl.DataFrame()
+        lazy = self._read_system_metadata(EVENTS_KEY)
+        if lazy is None:
+            # Table doesn't exist yet, return empty list
+            return []
 
-        with self.store:
-            lazy = self.store.read_metadata_in_store(EVENTS_KEY)
+        # Filter to only completed migrations using narwhals
+        completed_events = lazy.filter(nw.col(COL_EVENT_TYPE) == "completed")
 
-            if lazy is None:
-                return []
+        if project is not None:
+            completed_events = completed_events.filter(nw.col(COL_PROJECT) == project)
 
-            # Filter to only completed migrations using narwhals
-            completed_events = lazy.filter(nw.col(COL_EVENT_TYPE) == "completed")
+        # Convert to polars LazyFrame and collect
+        completed_df = completed_events.to_native().collect()
 
-            if project is not None:
-                completed_events = completed_events.filter(
-                    nw.col(COL_PROJECT) == project
-                )
+        if completed_df.height == 0:
+            return []
 
-            # Convert to polars LazyFrame and collect
-            completed_df = completed_events.to_native().collect()
-
-            if completed_df.height == 0:
-                return []
-
-        # Get all events for all migrations at once (this uses with self.store internally)
+        # Get all events for all migrations at once
         all_events = self.read_migration_events(project=project)
 
         # Extract rows_affected from payload using JSON path (polars operations)
@@ -578,173 +535,290 @@ class SystemTableStorage:
         2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
         3. No changes: Snapshot exists with identical feature_spec_versions for all features
 
+        Note:
+            The store must already be open when calling this method.
+
         Returns: SnapshotPushResult
         """
         graph = FeatureGraph.get_active()
 
-        # Use to_snapshot() to get the snapshot dict
-        snapshot_dict = graph.to_snapshot()
-
-        # Generate deterministic snapshot_version from graph
-        snapshot_version = graph.snapshot_version
-
-        # Read existing feature versions once
-        try:
-            existing_versions_lazy = self.store.read_metadata_in_store(
-                FEATURE_VERSIONS_KEY
-            )
-            # Materialize to Polars for iteration
-            existing_versions = (
-                existing_versions_lazy.collect().to_polars()
-                if existing_versions_lazy is not None
-                else None
-            )
-        except TableNotFoundError:
-            # Table doesn't exist yet
-            existing_versions = None
-
-        # Get project from any feature in the graph (all should have the same project)
-        # Default to empty string if no features in graph
-        if graph.features_by_key:
-            # Get first feature's project
-            first_feature = next(iter(graph.features_by_key.values()))
-            project_name = first_feature.project  # type: ignore[attr-defined]
-        else:
-            project_name = ""
-
         # Check if this exact snapshot already exists for this project
-        snapshot_already_exists = False
-        existing_spec_versions: dict[str, str] = {}
+        latest_pushed_snapshot = self._read_latest_snapshot_data(graph.snapshot_version)
+        current_snapshot_dict = graph.to_snapshot()
 
-        if existing_versions is not None:
-            # Check if project column exists (it may not in old tables)
-            if "project" in existing_versions.columns:
-                snapshot_rows = existing_versions.filter(
-                    (pl.col(METAXY_SNAPSHOT_VERSION) == snapshot_version)
-                    & (pl.col("project") == project_name)
-                )
-            else:
-                # Old table without project column - just check snapshot_version
-                snapshot_rows = existing_versions.filter(
-                    pl.col(METAXY_SNAPSHOT_VERSION) == snapshot_version
-                )
-            snapshot_already_exists = snapshot_rows.height > 0
+        # Convert to DataFrame - need to serialize feature_spec dict to JSON string
+        # and add metaxy_snapshot_version and recorded_at columns
+        import json
+        from datetime import datetime, timezone
 
-            if snapshot_already_exists:
-                # Check if feature_spec_version column exists (backward compatibility)
-                # Old records (before issue #77) won't have this column
-                has_spec_version = METAXY_FEATURE_SPEC_VERSION in snapshot_rows.columns
-
-                if has_spec_version:
-                    # Build dict of existing feature_key -> feature_spec_version
-                    for row in snapshot_rows.iter_rows(named=True):
-                        existing_spec_versions[row["feature_key"]] = row[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ]
-                # If no spec_version column, existing_spec_versions remains empty
-                # This means we'll treat it as "no metadata changes" (conservative approach)
-
-        # Scenario 1: New snapshot (no existing rows)
-        if not snapshot_already_exists:
-            # Build records from snapshot_dict
-            records = []
-            for feature_key_str in sorted(snapshot_dict.keys()):
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                # Always record all features for this snapshot (don't skip based on feature_version alone)
-                # Each snapshot must be complete to support migration detection
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        METAXY_FEATURE_VERSION: feature_data[METAXY_FEATURE_VERSION],
-                        METAXY_FEATURE_SPEC_VERSION: feature_data[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ],
-                        METAXY_FEATURE_TRACKING_VERSION: feature_data[
-                            METAXY_FEATURE_TRACKING_VERSION
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        METAXY_SNAPSHOT_VERSION: snapshot_version,
-                    }
-                )
-
-            # Bulk write all new records at once
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self.store.write_metadata(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=False,
-                metadata_changed=False,
-                features_with_spec_changes=[],
-            )
-
-        # Scenario 2 & 3: Snapshot exists - check for metadata changes
-        features_with_spec_changes = []
-
-        for feature_key_str, feature_data in snapshot_dict.items():
-            current_spec_version = feature_data[METAXY_FEATURE_SPEC_VERSION]
-            existing_spec_version = existing_spec_versions.get(feature_key_str)
-
-            if existing_spec_version != current_spec_version:
-                features_with_spec_changes.append(feature_key_str)
-
-        # If metadata changed, append new rows for affected features
-        if features_with_spec_changes:
-            records = []
-            for feature_key_str in features_with_spec_changes:
-                feature_data = snapshot_dict[feature_key_str]
-
-                # Serialize complete FeatureSpec
-                feature_spec_json = json.dumps(feature_data["feature_spec"])
-
-                records.append(
-                    {
-                        "project": project_name,
-                        "feature_key": feature_key_str,
-                        METAXY_FEATURE_VERSION: feature_data[METAXY_FEATURE_VERSION],
-                        METAXY_FEATURE_SPEC_VERSION: feature_data[
-                            METAXY_FEATURE_SPEC_VERSION
-                        ],
-                        METAXY_FEATURE_TRACKING_VERSION: feature_data[
-                            METAXY_FEATURE_TRACKING_VERSION
-                        ],
-                        "recorded_at": datetime.now(timezone.utc),
-                        "feature_spec": feature_spec_json,
-                        "feature_class_path": feature_data["feature_class_path"],
-                        METAXY_SNAPSHOT_VERSION: snapshot_version,
-                    }
-                )
-
-            # Bulk write updated records (append-only)
-            if records:
-                version_records = pl.DataFrame(
-                    records,
-                    schema=FEATURE_VERSIONS_SCHEMA,
-                )
-                self.store.write_metadata(FEATURE_VERSIONS_KEY, version_records)
-
-            return SnapshotPushResult(
-                snapshot_version=snapshot_version,
-                already_recorded=True,
-                metadata_changed=True,
-                features_with_spec_changes=features_with_spec_changes,
-            )
-
-        # Scenario 3: No changes at all
-        return SnapshotPushResult(
-            snapshot_version=snapshot_version,
-            already_recorded=True,
-            metadata_changed=False,
-            features_with_spec_changes=[],
+        current_snapshot = pl.DataFrame(
+            [
+                {
+                    "feature_key": k,
+                    **{
+                        field: (json.dumps(val) if field == "feature_spec" else val)
+                        for field, val in v.items()
+                    },
+                    METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
+                    "recorded_at": datetime.now(timezone.utc),
+                }
+                for k, v in current_snapshot_dict.items()
+            ]
         )
+
+        # Initialize to_push and already_pushed
+        to_push = current_snapshot  # Will be updated if snapshot already exists
+        already_pushed: bool
+
+        if len(latest_pushed_snapshot) != 0:
+            # this snapshot_version HAS been previously pushed
+            # let's check for any differences
+            already_pushed = True
+        else:
+            # this snapshot_version has not been previously pushed at all
+            # we are safe to push all the features in our graph!
+            to_push = current_snapshot
+            already_pushed = False
+
+        if len(latest_pushed_snapshot) != 0:
+            # let's identify features that have updated definitions since the last push
+            # Join full current snapshot with latest pushed (keeping all columns)
+            pushed_with_current = current_snapshot.join(
+                latest_pushed_snapshot.select(
+                    "feature_key",
+                    pl.col(METAXY_FULL_DEFINITION_VERSION).alias(
+                        f"{METAXY_FULL_DEFINITION_VERSION}_pushed"
+                    ),
+                ),
+                on=["feature_key"],
+                how="left",
+            )
+
+            to_push = pl.concat(
+                [
+                    # these are records that for some reason have not been pushed previously
+                    pushed_with_current.filter(
+                        pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_null()
+                    ),
+                    # these are the records with actual changes
+                    pushed_with_current.filter(
+                        pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed").is_not_null()
+                    ).filter(
+                        pl.col(METAXY_FULL_DEFINITION_VERSION)
+                        != pl.col(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+                    ),
+                ]
+            ).drop(f"{METAXY_FULL_DEFINITION_VERSION}_pushed")
+
+        if len(to_push) > 0:
+            self.store.write_metadata(FEATURE_VERSIONS_KEY, to_push)
+
+        # updated_features only populated when updating existing features
+        updated_features = (
+            to_push["feature_key"].to_list()
+            if len(latest_pushed_snapshot) != 0 and len(to_push) > 0
+            else []
+        )
+
+        return SnapshotPushResult(
+            snapshot_version=graph.snapshot_version,
+            already_pushed=already_pushed,
+            updated_features=updated_features,
+        )
+
+    def _read_system_metadata(self, key: FeatureKey) -> nw.LazyFrame[Any]:
+        """Read system metadata.
+
+        System tables are handled specially by MetadataStore.read_metadata - they don't
+        require feature plan resolution when current_only=False.
+
+        Note:
+            The store must already be open when calling this method.
+
+        Returns:
+            LazyFrame if table exists, empty LazyFrame with correct schema if it doesn't
+        """
+        try:
+            # read_metadata handles system tables specially (no feature plan needed)
+            return self.store.read_metadata(key, current_only=False)
+        except SystemDataNotFoundError:
+            return nw.from_native(pl.DataFrame(schema=POLARS_SCHEMAS[key])).lazy()
+
+    def _read_latest_snapshot_data(
+        self,
+        snapshot_version: str,
+    ) -> pl.DataFrame:
+        """Read the latest snapshot data for a given snapshot version.
+
+        The same snapshot version may include multiple features as their no-topological metadata such as Pydantic fields or spec.metadata/tags change.
+        This method retrieves the latest feature data for each feature pushed to the metadata store.
+
+        Returns:
+            Polars DataFrame (materialized) with the latest data. Empty if table doesn't exist or snapshot not found.
+        """
+        graph = FeatureGraph.get_active()
+
+        # Read system metadata
+        sys_meta = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+
+        # Filter the data
+        lazy = sys_meta.filter(
+            nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version,
+            nw.col("project") == next(iter(graph.features_by_key.values())).project
+            if len(graph.features_by_key) > 0
+            else "_empty_graph_",
+        )
+
+        # Deduplicate using Polars (collect and use native operations)
+        return (
+            lazy.collect()
+            .to_polars()
+            .sort("recorded_at", descending=True)
+            .unique(subset=["feature_key"], keep="first")
+        )
+
+    def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
+        """Read recorded graph snapshots from the feature_versions system table.
+
+        Args:
+            project: Project name to filter by. If None, returns snapshots from all projects.
+
+        Returns a DataFrame with columns:
+        - snapshot_version: Unique identifier for each graph snapshot
+        - recorded_at: Timestamp when the snapshot was recorded
+        - feature_count: Number of features in this snapshot
+
+        Returns:
+            Polars DataFrame with snapshot information, sorted by recorded_at descending
+
+        Raises:
+            StoreNotOpenError: If store is not open
+
+        Example:
+            ```py
+            with store:
+                storage = SystemTableStorage(store)
+                # Get snapshots for a specific project
+                snapshots = storage.read_graph_snapshots(project="my_project")
+                latest_snapshot = snapshots[METAXY_SNAPSHOT_VERSION][0]
+                print(f"Latest snapshot: {latest_snapshot}")
+
+                # Get snapshots across all projects
+                all_snapshots = storage.read_graph_snapshots()
+            ```
+        """
+        # Read system metadata
+        versions_lazy = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+        if versions_lazy is None:
+            # No snapshots recorded yet
+            return pl.DataFrame(
+                schema={
+                    METAXY_SNAPSHOT_VERSION: pl.String,
+                    "recorded_at": pl.Datetime("us"),
+                    "feature_count": pl.UInt32,
+                }
+            )
+
+        # Build filters based on project parameter
+        if project is not None:
+            versions_lazy = versions_lazy.filter(nw.col("project") == project)
+
+        # Materialize
+        versions_df = versions_lazy.collect().to_polars()
+
+        if versions_df.height == 0:
+            # No snapshots recorded yet
+            return pl.DataFrame(
+                schema={
+                    METAXY_SNAPSHOT_VERSION: pl.String,
+                    "recorded_at": pl.Datetime("us"),
+                    "feature_count": pl.UInt32,
+                }
+            )
+
+        # Group by snapshot_version and get earliest recorded_at and count
+        snapshots = (
+            versions_df.group_by(METAXY_SNAPSHOT_VERSION)
+            .agg(
+                [
+                    pl.col("recorded_at").min().alias("recorded_at"),
+                    pl.col("feature_key").count().alias("feature_count"),
+                ]
+            )
+            .sort("recorded_at", descending=True)
+        )
+
+        return snapshots
+
+    def read_features(
+        self,
+        *,
+        current: bool = True,
+        snapshot_version: str | None = None,
+        project: str | None = None,
+    ) -> pl.DataFrame:
+        """Read feature version information from the feature_versions system table.
+
+        Args:
+            current: If True, only return features from the current code snapshot.
+                     If False, must provide snapshot_version.
+            snapshot_version: Specific snapshot version to filter by. Required if current=False.
+            project: Project name to filter by. Defaults to None.
+
+        Returns:
+            Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
+            - feature_key: Feature identifier
+            - feature_version: Version hash of the feature
+            - recorded_at: When this version was recorded
+            - feature_spec: JSON serialized feature specification
+            - feature_class_path: Python import path to the feature class
+            - snapshot_version: Graph snapshot this feature belongs to
+
+        Raises:
+            StoreNotOpenError: If store is not open
+            ValueError: If current=False but no snapshot_version provided
+
+        Examples:
+            ```py
+            # Get features from current code
+            with store:
+                storage = SystemTableStorage(store)
+                features = storage.read_features(current=True)
+                print(f"Current graph has {len(features)} features")
+            ```
+
+            ```py
+            # Get features from a specific snapshot
+            with store:
+                storage = SystemTableStorage(store)
+                features = storage.read_features(current=False, snapshot_version="abc123")
+                for row in features.iter_rows(named=True):
+                    print(f"{row['feature_key']}: {row['metaxy_feature_version']}")
+            ```
+        """
+        if not current and snapshot_version is None:
+            raise ValueError("Must provide snapshot_version when current=False")
+
+        if current:
+            # Get current snapshot from active graph
+            graph = FeatureGraph.get_active()
+            snapshot_version = graph.snapshot_version
+
+        # Read system metadata
+        versions_lazy = self._read_system_metadata(FEATURE_VERSIONS_KEY)
+        if versions_lazy is None:
+            # No features recorded yet
+            return pl.DataFrame(schema=POLARS_SCHEMAS[FEATURE_VERSIONS_KEY])
+
+        # Build filters
+        filters = [nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version]
+        if project is not None:
+            filters.append(nw.col("project") == project)
+
+        for f in filters:
+            versions_lazy = versions_lazy.filter(f)
+
+        # Materialize
+        versions_df = versions_lazy.collect().to_polars()
+
+        return versions_df

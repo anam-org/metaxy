@@ -14,7 +14,8 @@ from metaxy.metadata_store.system import (
 @pytest.fixture
 def store():
     """Create fresh store for each test."""
-    return InMemoryMetadataStore()
+    with InMemoryMetadataStore() as s:
+        yield s
 
 
 @pytest.fixture

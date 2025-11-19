@@ -52,7 +52,7 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data - will load standalone specs since test features can't be imported
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
@@ -96,7 +96,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data - should load standalone specs
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
@@ -137,7 +137,7 @@ def test_field_key_normalization(graph: FeatureGraph):
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data (will load standalone spec since feature is in test scope)
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
