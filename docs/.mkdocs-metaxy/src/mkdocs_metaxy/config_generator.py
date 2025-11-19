@@ -59,6 +59,7 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
     if annotation is None:
         return "Any"
 
+    # Handle type representation
     type_str = str(annotation)
 
     # Clean up common patterns

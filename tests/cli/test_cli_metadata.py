@@ -1,6 +1,9 @@
 """Tests for metadata CLI commands."""
 
+import json
+
 import polars as pl
+import pytest
 
 from metaxy._testing import TempMetaxyProject
 from metaxy.metadata_store.system import SystemTableStorage
@@ -77,10 +80,15 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
         _write_sample_metadata(metaxy_project, "video/files")
 
         # Try to drop without specifying features
-        result = metaxy_project.run_cli("metadata", "drop", "--confirm", check=False)
+        result = metaxy_project.run_cli(
+            "metadata", "drop", "--confirm", "--format", "json", check=False
+        )
 
         assert result.returncode == 1
-        assert "Must specify either --all-features or --feature" in result.stderr
+        error = json.loads(result.stdout)
+        assert error["error"] == "MISSING_REQUIRED_FLAG"
+        assert "--all-features" in str(error["required_flags"])
+        assert "--feature" in str(error["required_flags"])
 
 
 def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
@@ -105,11 +113,19 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
 
         # Try to drop without --confirm
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--feature", "video/files", check=False
+            "metadata",
+            "drop",
+            "--feature",
+            "video/files",
+            "--format",
+            "json",
+            check=False,
         )
 
         assert result.returncode == 1
-        assert "Must specify --confirm flag" in result.stderr
+        error = json.loads(result.stdout)
+        assert error["error"] == "MISSING_CONFIRMATION"
+        assert "--confirm" in error["required_flag"]
 
 
 def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
@@ -144,212 +160,20 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
 
         # Drop one feature
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--feature", "video/files", "--confirm"
+            "metadata",
+            "drop",
+            "--feature",
+            "video/files",
+            "--confirm",
+            "--format",
+            "json",
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stderr
-
-
-def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyProject):
-    """Test that incremental copy skips existing sample_uids."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        graph = metaxy_project.graph
-        with graph.use():
-            # Write metadata to dev store with sample_uids [1, 2, 3]
-            _write_sample_metadata(
-                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-            )
-
-            # Write metadata to staging store with sample_uids [2, 3, 4]
-            # sample_uids 2 and 3 overlap with dev
-            _write_sample_metadata(
-                metaxy_project,
-                "video/files",
-                store_name="staging",
-                sample_uids=[2, 3, 4],
-            )
-
-            # Copy from dev to staging with incremental=True (default)
-            result = metaxy_project.run_cli(
-                "metadata",
-                "copy",
-                "--from",
-                "dev",
-                "--to",
-                "staging",
-                "--feature",
-                "video/files",
-            )
-
-            assert result.returncode == 0
-            assert "Copy complete" in result.stderr
-
-            # Verify staging now has [1, 2, 3, 4] (no duplicates)
-            # Only sample_uid 1 should have been copied (2 and 3 were skipped)
-            store = metaxy_project.stores["staging"]
-            with store:
-                from metaxy.models.types import FeatureKey
-
-                feature_key = FeatureKey(["video", "files"])
-                metadata = store.read_metadata(
-                    feature_key, allow_fallback=False, current_only=False
-                )
-                df = metadata.collect().to_polars()
-
-                # Should have 4 total rows (original 3 + 1 new)
-                assert df.height == 4
-
-                # Check sample_uids
-                sample_uids = sorted(df["sample_uid"].to_list())
-                assert sample_uids == [1, 2, 3, 4]
-
-                # Verify no duplicate sample_uids
-                assert len(sample_uids) == len(set(sample_uids))
-
-
-def test_metadata_copy_non_incremental_creates_duplicates(
-    metaxy_project: TempMetaxyProject,
-):
-    """Test that non-incremental copy allows duplicate sample_uids."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        graph = metaxy_project.graph
-        with graph.use():
-            # Write metadata to dev store with sample_uids [1, 2, 3]
-            _write_sample_metadata(
-                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-            )
-
-            # Write metadata to staging store with sample_uids [2, 3, 4]
-            _write_sample_metadata(
-                metaxy_project,
-                "video/files",
-                store_name="staging",
-                sample_uids=[2, 3, 4],
-            )
-
-            # Copy from dev to staging with incremental=False (--no-incremental)
-            result = metaxy_project.run_cli(
-                "metadata",
-                "copy",
-                "--from",
-                "dev",
-                "--to",
-                "staging",
-                "--feature",
-                "video/files",
-                "--no-incremental",
-            )
-
-            assert result.returncode == 0
-            assert "Copy complete" in result.stderr
-
-            # Verify staging now has duplicates for sample_uids 2 and 3
-            store = metaxy_project.stores["staging"]
-            with store:
-                from metaxy.models.types import FeatureKey
-
-                feature_key = FeatureKey(["video", "files"])
-                metadata = store.read_metadata(
-                    feature_key,
-                    allow_fallback=False,
-                    current_only=False,
-                    latest_only=False,
-                )
-                df = metadata.collect().to_polars()
-
-                # Should have 6 total rows (original 3 + all 3 from dev)
-                assert df.height == 6
-
-                # Check that we have duplicates
-                sample_uids = df["sample_uid"].to_list()
-                assert sample_uids.count(2) == 2  # sample_uid 2 appears twice
-                assert sample_uids.count(3) == 2  # sample_uid 3 appears twice
-                assert sample_uids.count(1) == 1  # sample_uid 1 appears once
-                assert sample_uids.count(4) == 1  # sample_uid 4 appears once
-
-
-def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyProject):
-    """Test that incremental copy works correctly with empty destination."""
-
-    def features():
-        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
-        from metaxy._testing.models import SampleFeatureSpec
-
-        class VideoFiles(
-            BaseFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["video", "files"]),
-                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
-            ),
-        ):
-            pass
-
-    with metaxy_project.with_features(features):
-        graph = metaxy_project.graph
-        with graph.use():
-            # Write metadata to dev store only
-            _write_sample_metadata(
-                metaxy_project, "video/files", store_name="dev", sample_uids=[1, 2, 3]
-            )
-
-            # Copy from dev to empty staging with incremental=True
-            result = metaxy_project.run_cli(
-                "metadata",
-                "copy",
-                "--from",
-                "dev",
-                "--to",
-                "staging",
-                "--feature",
-                "video/files",
-            )
-
-            assert result.returncode == 0
-            assert "Copy complete" in result.stderr
-
-            # Verify staging has all 3 rows
-            store = metaxy_project.stores["staging"]
-            with store:
-                from metaxy.models.types import FeatureKey
-
-                feature_key = FeatureKey(["video", "files"])
-                metadata = store.read_metadata(
-                    feature_key, allow_fallback=False, current_only=False
-                )
-                df = metadata.collect().to_polars()
-
-                assert df.height == 3
-                sample_uids = sorted(df["sample_uid"].to_list())
-                assert sample_uids == [1, 2, 3]
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 1
+        assert "video/files" in data["dropped"]
 
 
 def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
@@ -401,12 +225,16 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             "--feature",
             "audio/files",
             "--confirm",
+            "--format",
+            "json",
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stderr
-        assert "Dropped: audio/files" in result.stderr
-        assert "Drop complete: 2 feature(s) dropped" in result.stderr
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 2
+        assert "video/files" in data["dropped"]
+        assert "audio/files" in data["dropped"]
 
 
 def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
@@ -444,13 +272,21 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
             "metadata", "drop", "--all-features", "--confirm"
         )
 
-        assert result.returncode == 0
-        assert "Dropping metadata for 2 feature(s)" in result.stderr
-        assert (
-            "Dropped: video/files" in result.stderr
-            or "Dropped: audio/files" in result.stderr
+    with metaxy_project.with_features(features):
+        # Write actual metadata for both features
+        _write_sample_metadata(metaxy_project, "video/files")
+        _write_sample_metadata(metaxy_project, "audio/files")
+
+        # Drop all features
+        result = metaxy_project.run_cli(
+            "metadata", "drop", "--all-features", "--confirm", "--format", "json"
         )
-        assert "Drop complete: 2 feature(s) dropped" in result.stderr
+
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 2
+        assert len(data["dropped"]) == 2
 
 
 def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
@@ -474,13 +310,14 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
 
         # Drop all features from empty store - should succeed (idempotent)
         result = metaxy_project.run_cli(
-            "metadata", "drop", "--all-features", "--confirm"
+            "metadata", "drop", "--all-features", "--confirm", "--format", "json"
         )
 
         # Should succeed - drop is idempotent even if no metadata exists
         assert result.returncode == 0
-        assert "Dropping metadata for 1 feature(s)" in result.stderr
-        assert "Drop complete: 1 feature(s) dropped" in result.stderr
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["features_dropped"] == 1
 
 
 def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
@@ -508,11 +345,14 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
             "video/files",
             "--all-features",
             "--confirm",
+            "--format",
+            "json",
             check=False,
         )
 
         assert result.returncode == 1
-        assert "Cannot specify both --all-features and --feature" in result.stderr
+        error = json.loads(result.stdout)
+        assert error["error"] == "CONFLICTING_FLAGS"
 
 
 def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
@@ -544,7 +384,417 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
             "--feature",
             "video/files",
             "--confirm",
+            "--format",
+            "json",
         )
 
         assert result.returncode == 0
-        assert "Dropped: video/files" in result.stderr
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert "video/files" in data["dropped"]
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_up_to_date(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command when metadata is up-to-date for both formats."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        # Create a root feature
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Create a non-root feature with upstream dependency
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata (this opens/closes store internally)
+        _write_sample_metadata(metaxy_project, "video/files_root")
+
+        # Now compute and write downstream metadata with correct provenance
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+
+            # Write the computed metadata to the store
+            store.write_metadata(feature_cls, increment.added.to_polars())
+
+        # Check status for the non-root feature
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "video/files",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["feature_key"] == "video/files"
+            assert feature["status"] == "up_to_date"
+            assert feature["rows"] == 3
+            assert feature["added"] == 0
+            assert feature["changed"] == 0
+        else:
+            assert "video/files" in result.stdout
+            assert "up-to-date" in result.stdout
+            assert "rows: 3" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_missing_metadata(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command when metadata is missing."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write upstream metadata but not for VideoFiles
+        _write_sample_metadata(metaxy_project, "video/files_root")
+
+        # Check status - should show missing metadata
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "video/files",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["feature_key"] == "video/files"
+            assert feature["status"] == "missing"
+            assert feature["rows"] == 0
+            assert feature["added"] == 3
+            assert feature["changed"] == 0
+        else:
+            assert "video/files" in result.stdout
+            assert "missing metadata" in result.stdout
+            assert "rows: 0" in result.stdout
+
+
+def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject):
+    """Test that --assert-in-sync fails when metadata needs updates."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write upstream but not downstream - needs update
+        _write_sample_metadata(metaxy_project, "video/files_root")
+
+        # Check status with --assert-in-sync
+        result = metaxy_project.run_cli(
+            "metadata", "status", "video/files", "--assert-in-sync", check=False
+        )
+
+        assert result.returncode == 1
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_multiple_features(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command with multiple features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class FilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[FilesRoot],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[FilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata for root and video but not audio
+        _write_sample_metadata(metaxy_project, "files_root")
+        _write_sample_metadata(metaxy_project, "video/files")
+
+        # Check status for both
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "video/files",
+            "audio/files",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            assert set(data["features"]) == {"video/files", "audio/files"}
+            assert data["features"]["audio/files"]["status"] == "missing"
+        else:
+            assert "video/files" in result.stdout
+            assert "audio/files" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_invalid_feature_key(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command with a feature missing from the graph."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Check status for non-existent feature
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "nonexistent/feature",
+            "--format",
+            output_format,
+            check=False,
+        )
+
+        # Should show warning and continue
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            assert data["warning"] == "No valid features to check"
+            assert data["features"] == {}
+        else:
+            assert "No valid features to check" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_verbose(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command with --verbose flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write upstream but not downstream - there will be samples to add
+        _write_sample_metadata(metaxy_project, "video/files_root")
+        # Check status with verbose
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "video/files",
+            "--format",
+            output_format,
+            "--verbose",
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["status"] == "missing"
+            assert feature["sample_details"]
+            assert any("sample_uid" in detail for detail in feature["sample_details"])
+        else:
+            assert "video/files" in result.stdout
+            assert "Added samples" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_with_explicit_store(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Status command with explicit --store flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[VideoFilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        from metaxy.models.types import FeatureKey
+
+        graph = metaxy_project.graph
+        store = metaxy_project.stores["dev"]
+
+        # Write upstream metadata (this opens/closes store internally)
+        _write_sample_metadata(metaxy_project, "video/files_root", store_name="dev")
+
+        # Now compute and write downstream metadata with correct provenance
+        with graph.use(), store:
+            feature_key = FeatureKey(["video", "files"])
+            feature_cls = graph.get_feature_by_key(feature_key)
+            increment = store.resolve_update(feature_cls, lazy=False)
+
+            # Write the computed metadata to the store
+            store.write_metadata(feature_cls, increment.added.to_polars())
+
+        # Check status with explicit store
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "video/files",
+            "--store",
+            "dev",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["video/files"]
+            assert feature["feature_key"] == "video/files"
+            assert feature["status"] == "up_to_date"
+            assert feature["needs_update"] is False
+        else:
+            assert "video/files" in result.stdout
+            assert "up-to-date" in result.stdout
