@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import polars as pl
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 from metaxy.metadata_store.system.events import EVENTS_SCHEMA
@@ -18,6 +18,7 @@ from metaxy.models.constants import (
 )
 
 # Common Polars schemas for system tables
+# Note: tags field schema is omitted - Polars will infer the Struct schema from data
 FEATURE_VERSIONS_SCHEMA = {
     "project": pl.String,
     "feature_key": pl.String,
@@ -28,7 +29,12 @@ FEATURE_VERSIONS_SCHEMA = {
     "feature_spec": pl.String,  # Full serialized FeatureSpec
     "feature_class_path": pl.String,
     METAXY_SNAPSHOT_VERSION: pl.String,
+    "tags": pl.String,
 }
+
+
+METAXY_TAG = "metaxy"
+METAXY_VERSION_KEY = "version"
 
 
 class FeatureVersionsModel(BaseModel):
@@ -62,6 +68,46 @@ class FeatureVersionsModel(BaseModel):
     metaxy_snapshot_version: str = Field(
         ..., description="Deterministic hash of entire Metaxy project"
     )
+    tags: dict[str, str] | str = Field(
+        default="{}",
+        description="Snapshot tags as JSON string (key-value pairs). The metaxy tag is reserved for internal use.",
+        validate_default=True,
+    )
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def serialize_tags(cls, v: dict[str, str] | str | None) -> str:
+        """Convert tags dict to JSON string if needed."""
+        import json
+
+        # Parse to dict if string
+        tags_dict: dict[str, str]
+        if isinstance(v, str):
+            try:
+                tags_dict = json.loads(v)
+            except json.JSONDecodeError:
+                tags_dict = {}
+        else:
+            # Handle None or dict
+            tags_dict = v or {}
+
+        # Ensure metaxy.version is set
+        from metaxy._version import __version__
+
+        metaxy_tag_value = tags_dict.get(METAXY_TAG, "{}")
+        metaxy_tag_dict = (
+            json.loads(metaxy_tag_value)
+            if isinstance(metaxy_tag_value, str)
+            else metaxy_tag_value
+        )
+        if not isinstance(metaxy_tag_dict, dict):
+            metaxy_tag_dict = {}
+        metaxy_tag_dict[METAXY_VERSION_KEY] = metaxy_tag_dict.get(
+            METAXY_VERSION_KEY, __version__
+        )
+        tags_dict[METAXY_TAG] = json.dumps(metaxy_tag_dict)
+
+        return json.dumps(tags_dict)
 
     def to_polars(self) -> pl.DataFrame:
         """Convert this model instance to a single-row Polars DataFrame.
@@ -69,8 +115,8 @@ class FeatureVersionsModel(BaseModel):
         Returns:
             Polars DataFrame with one row matching FEATURE_VERSIONS_SCHEMA
         """
-        # Polars can directly convert Pydantic models to DataFrames
-        return pl.DataFrame([self], schema=FEATURE_VERSIONS_SCHEMA)
+        # tags is already a JSON string, no need to serialize
+        return pl.DataFrame([self.model_dump()], schema=FEATURE_VERSIONS_SCHEMA)
 
 
 POLARS_SCHEMAS = {

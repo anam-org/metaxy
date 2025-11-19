@@ -89,10 +89,10 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         namespace: dict[str, Any],
         *,
         spec: FeatureSpecWithIDColumns | None = None,
-        inject_metaxy_pk: bool = True,
+        inject_metaxy_pk: bool = False,
         **kwargs: Any,
     ) -> type[Any]:
-        """Create a new SQLModel + Feature class.
+        """Create a new SQLModel + Metaxy Feature class.
 
         Args:
             cls_name: Name of the class being created
@@ -100,7 +100,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
             inject_metaxy_pk: If True, automatically create composite primary key
-                including id_columns + (metaxy_created_at, metaxy_data_version)
+                including id_columns + (metaxy_created_at, metaxy_data_version).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
         Returns:

@@ -39,20 +39,16 @@ SYSTEM_TABLES: list[str] = [
 class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """SQLModel definition for the feature_versions system table.
 
-    Extends FeatureVersionsModel from system_tables.py with SQLModel-specific
-    configuration for database table creation and Alembic migrations.
+    Inherits from FeatureVersionsModel and adds SQLAlchemy-specific configuration
+    (indexes, primary keys, column mappings).
     """
 
     __tablename__: str = FEATURE_VERSIONS_KEY.table_name  # pyright: ignore[reportIncompatibleVariableOverride]
 
-    # Override fields that need SQLAlchemy-specific configuration (primary keys, indexes, column names)
-    # Composite primary key: (project, feature_key, feature_spec_version)
+    # Override fields to add SQLAlchemy-specific configuration
+    # Composite primary key: (project, feature_key, metaxy_feature_spec_version)
     project: str = Field(primary_key=True, index=True)
-    feature_key: str = Field(primary_key=True)
-    metaxy_snapshot_version: str = Field(
-        index=True,
-        sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
-    )
+    feature_key: str = Field(primary_key=True, index=True)
     metaxy_feature_version: str = Field(
         index=True,
         sa_column_kwargs={"name": METAXY_FEATURE_VERSION},
@@ -64,6 +60,16 @@ class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyrig
     metaxy_full_definition_version: str = Field(
         index=True,
         sa_column_kwargs={"name": METAXY_FULL_DEFINITION_VERSION},
+    )
+    recorded_at: datetime = Field(index=True)
+    metaxy_snapshot_version: str = Field(
+        index=True,
+        sa_column_kwargs={"name": METAXY_SNAPSHOT_VERSION},
+    )
+    # Override tags field to specify concrete str type for SQLModel (parent has union type for validation)
+    tags: str = Field(  # pyright: ignore[reportIncompatibleVariableOverride]
+        default="{}",
+        description="Snapshot tags as JSON string (key-value pairs). The metaxy tag is reserved for internal use.",
     )
 
     # Additional indexes for common queries
@@ -100,7 +106,7 @@ class MigrationEventsTable(SQLModel, table=True):
     # Event fields
     event_type: str = Field(index=True)  # Stored as string for backend compatibility
     feature_key: str | None = Field(
-        default=None, nullable=True
+        default=None, nullable=True, index=True
     )  # None for execution-level events
     payload: str = Field(default="")  # JSON string for consistency with Polars
 

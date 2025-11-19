@@ -26,7 +26,7 @@ from metaxy.metadata_store.system.events import (
     MigrationStatus,
 )
 from metaxy.metadata_store.system.keys import EVENTS_KEY
-from metaxy.metadata_store.system.models import POLARS_SCHEMAS
+from metaxy.metadata_store.system.models import POLARS_SCHEMAS, FeatureVersionsModel
 from metaxy.models.constants import (
     METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
@@ -517,7 +517,9 @@ class SystemTableStorage:
         # Convert to list of dicts
         return result_df.to_dicts()
 
-    def push_graph_snapshot(self) -> SnapshotPushResult:
+    def push_graph_snapshot(
+        self, tags: dict[str, Any] | None = None
+    ) -> SnapshotPushResult:
         """Record all features in graph with a graph snapshot version.
 
         This should be called during CD (Continuous Deployment) to record what
@@ -535,11 +537,17 @@ class SystemTableStorage:
         2. Metadata-only changes: Snapshot exists but some features have different feature_spec_version
         3. No changes: Snapshot exists with identical feature_spec_versions for all features
 
+        Args:
+            tags: Optional dictionary of custom tags to attach to the snapshot
+                     (e.g., git commit SHA).
+
         Note:
             The store must already be open when calling this method.
 
         Returns: SnapshotPushResult
         """
+        tags = tags or {}
+
         graph = FeatureGraph.get_active()
 
         # Check if this exact snapshot already exists for this project
@@ -551,17 +559,20 @@ class SystemTableStorage:
         import json
         from datetime import datetime, timezone
 
-        current_snapshot = pl.DataFrame(
+        current_snapshot = pl.concat(
             [
-                {
-                    "feature_key": k,
-                    **{
-                        field: (json.dumps(val) if field == "feature_spec" else val)
-                        for field, val in v.items()
-                    },
-                    METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
-                    "recorded_at": datetime.now(timezone.utc),
-                }
+                FeatureVersionsModel.model_validate(
+                    {
+                        "feature_key": k,
+                        **{
+                            field: (json.dumps(val) if field == "feature_spec" else val)
+                            for field, val in v.items()
+                        },
+                        METAXY_SNAPSHOT_VERSION: graph.snapshot_version,
+                        "recorded_at": datetime.now(timezone.utc),
+                        "tags": json.dumps(tags),
+                    }
+                ).to_polars()
                 for k, v in current_snapshot_dict.items()
             ]
         )
@@ -573,6 +584,7 @@ class SystemTableStorage:
         if len(latest_pushed_snapshot) != 0:
             # this snapshot_version HAS been previously pushed
             # let's check for any differences
+
             already_pushed = True
         else:
             # this snapshot_version has not been previously pushed at all
