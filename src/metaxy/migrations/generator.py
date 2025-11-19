@@ -153,34 +153,10 @@ def generate_migration(
     else:
         # Historical mode: load from snapshot with force_reload
         # force_reload ensures we get current code from disk, not cached imports
-        # Need to load the snapshot data from the store first
-        from metaxy.metadata_store.system.keys import FEATURE_VERSIONS_KEY
-
-        feature_versions = store.read_metadata(FEATURE_VERSIONS_KEY, current_only=False)
-        snapshot_data_df = nw.from_native(
-            feature_versions.filter(
-                nw.col("metaxy_snapshot_version") == to_snapshot_version
-            ).collect()
-        )
-
-        if snapshot_data_df.shape[0] == 0:
-            raise ValueError(f"Snapshot {to_snapshot_version} not found in store")
-
-        # Reconstruct snapshot data from the feature versions table
-        snapshot_data = {}
-        for row in snapshot_data_df.iter_rows(named=True):
-            feature_key_str = row["feature_key"]
-            snapshot_data[feature_key_str] = {
-                "feature_spec": row.get(
-                    "feature_spec", {}
-                ),  # This would need the actual spec
-                "metaxy_feature_version": row["metaxy_feature_version"],
-                "metaxy_feature_spec_version": row["metaxy_feature_spec_version"],
-                "feature_class_path": row.get("feature_class_path", ""),
-            }
-
-        to_graph = FeatureGraph.from_snapshot(
-            snapshot_data, class_path_overrides=class_path_overrides, force_reload=True
+        to_graph = SystemTableStorage(store).load_graph_from_snapshot(
+            snapshot_version=to_snapshot_version,
+            class_path_overrides=class_path_overrides,
+            force_reload=True,
         )
         print(f"To: snapshot {to_snapshot_version}...")
 

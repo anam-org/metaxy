@@ -72,11 +72,11 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
         # '[StoreConfig](#storeconfig) | None'
         ```
     """
-    # Handle type representation
     annotation = field_info.annotation
     if annotation is None:
         return "Any"
 
+    # Handle type representation
     type_str = str(annotation)
 
     # Clean up common patterns

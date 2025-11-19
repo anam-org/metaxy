@@ -838,3 +838,80 @@ class SystemTableStorage:
         versions_df = versions_lazy.collect().to_polars()
 
         return versions_df
+
+    def load_graph_from_snapshot(
+        self,
+        snapshot_version: str,
+        project: str | None = None,
+        *,
+        class_path_overrides: dict[str, str] | None = None,
+        force_reload: bool = False,
+    ) -> FeatureGraph:
+        """Load and reconstruct a FeatureGraph from a stored snapshot.
+
+        This is a convenience method that encapsulates the pattern of:
+        1. Reading feature metadata for a snapshot
+        2. Building the snapshot data dictionary
+        3. Reconstructing the FeatureGraph from snapshot data
+
+        Args:
+            snapshot_version: The snapshot version to load
+            project: Optional project name to filter by
+            class_path_overrides: Optional dict mapping feature_key to new class path
+                                  for features that have been moved/renamed
+            force_reload: If True, force reimport of feature classes even if cached
+
+        Returns:
+            Reconstructed FeatureGraph
+
+        Raises:
+            ValueError: If no features found for the snapshot version
+            ImportError: If feature classes cannot be imported at their recorded paths
+
+        Note:
+            The store must already be open when calling this method.
+
+        Example:
+            ```python
+            with store:
+                storage = SystemTableStorage(store)
+                graph = storage.load_graph_from_snapshot(
+                    snapshot_version="abc123",
+                    project="my_project"
+                )
+                print(f"Loaded {len(graph.features_by_key)} features")
+            ```
+        """
+        import json
+
+        # Read features for this snapshot
+        features_df = self.read_features(
+            current=False,
+            snapshot_version=snapshot_version,
+            project=project,
+        )
+
+        if features_df.height == 0:
+            raise ValueError(
+                f"No features recorded for snapshot {snapshot_version}"
+                + (f" in project {project}" if project else "")
+            )
+
+        # Build snapshot data dict for FeatureGraph.from_snapshot()
+        snapshot_data = {
+            row["feature_key"]: {
+                "feature_spec": json.loads(row["feature_spec"])
+                if isinstance(row["feature_spec"], str)
+                else row["feature_spec"],
+                "feature_class_path": row["feature_class_path"],
+                "metaxy_feature_version": row["feature_version"],
+            }
+            for row in features_df.iter_rows(named=True)
+        }
+
+        # Reconstruct graph from snapshot
+        return FeatureGraph.from_snapshot(
+            snapshot_data,
+            class_path_overrides=class_path_overrides,
+            force_reload=force_reload,
+        )

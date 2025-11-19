@@ -524,31 +524,12 @@ def render(
         from metaxy.metadata_store.system.storage import SystemTableStorage
 
         with metadata_store:
-            # Read features for this snapshot
             storage = SystemTableStorage(metadata_store)
-            features_df = storage.read_features(
-                current=False, snapshot_version=snapshot
-            )
-
-            if features_df.height == 0:
-                console.print(f"[red]✗[/red] No features found for snapshot {snapshot}")
-                raise SystemExit(1)
-
-            # Convert DataFrame to snapshot_data format expected by from_snapshot
-            import json
-
-            snapshot_data = {}
-            for row in features_df.iter_rows(named=True):
-                feature_key_str = row["feature_key"]
-                snapshot_data[feature_key_str] = {
-                    "feature_spec": json.loads(row["feature_spec"]),
-                    "feature_class_path": row["feature_class_path"],
-                    "metaxy_feature_version": row["metaxy_feature_version"],
-                }
-
-            # Reconstruct graph from snapshot
             try:
-                graph = FeatureGraph.from_snapshot(snapshot_data)
+                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+            except ValueError as e:
+                console.print(f"[red]✗[/red] {e}")
+                raise SystemExit(1)
             except ImportError as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
                 console.print(

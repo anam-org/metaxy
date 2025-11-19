@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Annotated
 
 import cyclopts
@@ -61,13 +60,7 @@ def status(
 ) -> None:
     """Check metadata completeness and freshness for specified features."""
     from metaxy.cli.context import AppContext
-    from metaxy.graph.status import (
-        get_feature_metadata_status,
-        preview_samples,
-    )
-    from metaxy.models.feature import FeatureGraph
-
-
+    from metaxy.graph.status import get_feature_metadata_status
 
     parsed_keys: list[FeatureKey] = []
     for raw_key in feature_keys:
@@ -83,33 +76,17 @@ def status(
     with metadata_store:
         # If snapshot_version provided, reconstruct graph from storage
         if snapshot_version:
-            features_df = metadata_store.read_features(
-                current=False,
-                snapshot_version=snapshot_version,
-                project=context.project,
-            )
+            from metaxy.metadata_store.system.storage import SystemTableStorage
 
-            if features_df.height == 0:
-                console.print(
-                    f"[red]✗[/red] No features recorded for snapshot {snapshot_version}."
-                )
-                raise SystemExit(1)
-
-            # Build snapshot data dict for FeatureGraph.from_snapshot()
-            snapshot_data = {
-                row["feature_key"]: {
-                    "feature_spec": json.loads(row["feature_spec"])
-                    if isinstance(row["feature_spec"], str)
-                    else row["feature_spec"],
-                    "feature_class_path": row["feature_class_path"],
-                    "metaxy_feature_version": row["feature_version"],
-                }
-                for row in features_df.iter_rows(named=True)
-            }
-
-            # Reconstruct graph from snapshot
+            storage = SystemTableStorage(metadata_store)
             try:
-                graph = FeatureGraph.from_snapshot(snapshot_data)
+                graph = storage.load_graph_from_snapshot(
+                    snapshot_version=snapshot_version,
+                    project=context.project,
+                )
+            except ValueError as e:
+                console.print(f"[red]✗[/red] {e}")
+                raise SystemExit(1)
             except ImportError as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
                 console.print(
@@ -159,70 +136,26 @@ def status(
         for feature_key in parsed_keys:
             feature_cls = graph.features_by_key[feature_key]
 
-            # Use SDK function to get status
-            status_info = get_feature_metadata_status(feature_cls, metadata_store)
+            # Use SDK function to get status (returns Pydantic model)
+            status = get_feature_metadata_status(feature_cls, metadata_store)
 
-            added_count = status_info["added_count"]
-            changed_count = status_info["changed_count"]
-            row_count = status_info["row_count"]
-            lazy_increment = status_info["lazy_increment"]
-
-            if status_info["needs_update"]:
+            if status.needs_update:
                 needs_update = True
 
-            # Determine status display
-            if not status_info["metadata_exists"]:
-                status_icon = "[red]✗[/red]"
-                status_text = "missing metadata"
-            elif status_info["needs_update"]:
-                status_icon = "[yellow]⚠[/yellow]"
-                status_text = "needs update"
-            else:
-                status_icon = "[green]✓[/green]"
-                status_text = "up-to-date"
-
-            console.print(
-                f"{status_icon} {feature_key.to_string()} "
-                f"(rows: {row_count}, added: {added_count}, changed: {changed_count}) — {status_text}"
-            )
+            # Print status line using the model's method
+            console.print(status.format_status_line())
 
             # Verbose output with sample previews
-            if verbose and lazy_increment is not None:
+            if verbose:
                 id_columns_spec = feature_cls.spec().id_columns  # type: ignore[attr-defined]
                 id_columns_seq = (
                     tuple(id_columns_spec) if id_columns_spec is not None else None
                 )
 
-                if added_count > 0:
-                    added_preview_df = preview_samples(
-                        lazy_increment.added,
-                        id_columns_seq,
-                    )
-                    if added_preview_df.height > 0:
-                        preview_lines = [
-                            ", ".join(
-                                f"{col}={row[col]}" for col in added_preview_df.columns
-                            )
-                            for row in added_preview_df.to_dicts()
-                        ]
-                        console.print("    Added samples: " + "; ".join(preview_lines))
-
-                if changed_count > 0:
-                    changed_preview_df = preview_samples(
-                        lazy_increment.changed,
-                        id_columns_seq,
-                    )
-                    if changed_preview_df.height > 0:
-                        preview_lines = [
-                            ", ".join(
-                                f"{col}={row[col]}"
-                                for col in changed_preview_df.columns
-                            )
-                            for row in changed_preview_df.to_dicts()
-                        ]
-                        console.print(
-                            "    Changed samples: " + "; ".join(preview_lines)
-                        )
+                # Use the model's method to format sample previews
+                preview_lines = status.format_sample_previews(id_columns_seq)
+                for line in preview_lines:
+                    console.print(line)
 
         # Only fail if updates needed AND --assert-in-sync flag is set
         if assert_in_sync and needs_update:
