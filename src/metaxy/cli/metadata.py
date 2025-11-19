@@ -67,9 +67,7 @@ def status(
     )
     from metaxy.models.feature import FeatureGraph
 
-    if not feature_keys:
-        console.print("[red]✗[/red] At least one FEATURE_KEY argument is required.")
-        raise SystemExit(1)
+
 
     parsed_keys: list[FeatureKey] = []
     for raw_key in feature_keys:
