@@ -32,11 +32,37 @@ Both `FeatureKey` and `FieldKey` accept:
 
 All formats produce equivalent keys, internally represented as a sequence of parts.
 
-## `FeatureSpec`
+## Feature Dep
+
+[`FeatureDep`][metaxy.FeatureDep] accepts types coercible to `FeatureKey` and additionally subclasses of `BaseFeature`:
+
+```py
+dep = FeatureDep(feature=MyFeature)
+```
+
+## Feature Spec
+
+[`FeatureSpec`][metaxy.FeatureSpec] has some syntactic sugar implemented as well.
+
+### Deps
+
+The `deps` argument accepts a sequence of types coercible to `FeatureDep`:
+
+```py
+spec = FeatureSpec(
+    ...,
+    deps=[
+        MyFeature,
+        FeatureDep(feature=["my/feature/key"]),
+        ["another/key"],
+        "very/nice",
+    ],
+)
+```
 
 ### Fields
 
-[`FieldSpec`][metaxy.FieldSpec] can be passed to [`FeatureSpec`][metaxy.FeatureSpec] as a string that represents the field key:
+`fields` elements can omit the full `FieldsSpec` and be strings (field keys) instead:
 
 ```python
 spec = FeatureSpec(
