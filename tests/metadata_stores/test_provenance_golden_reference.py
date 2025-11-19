@@ -54,11 +54,7 @@ class FeaturePlanCases:
     """Test cases for different feature plan configurations."""
 
     def case_single_upstream(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Simple parent->child feature plan with single upstream.
-
-        Returns:
-            Tuple of (graph, upstream_features_dict, child_plan)
-        """
+        """Simple parent->child feature plan with single upstream."""
 
         class ParentFeature(
             Feature,
@@ -89,11 +85,7 @@ class FeaturePlanCases:
         return graph, upstream_features, child_plan
 
     def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Feature plan with two upstream dependencies.
-
-        Returns:
-            Tuple of (graph, upstream_features_dict, child_plan)
-        """
+        """Feature plan with two upstream dependencies."""
 
         class Parent1Feature(
             Feature,
@@ -145,7 +137,6 @@ def setup_store_with_data(
     empty_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
-    """Internal helper that does the actual setup work."""
     # Unpack feature plan configuration
     graph, upstream_features, child_feature_plan = feature_plan_config
 
@@ -202,23 +193,7 @@ def test_store_resolve_update_matches_golden_provenance(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test metadata store provenance calculation matches golden reference.
-
-    This test verifies that resolve_update computes the same provenance hashes
-    as the reference Polars calculator implementation across all store types.
-
-    Tests all stores (InMemory, DuckDB, ClickHouse) to validate:
-    - Native SQL implementations (DuckDB, ClickHouse)
-    - Polars-based implementations (InMemory)
-    - Store-specific query optimizations
-
-    Uses default hash algorithm (xxhash64) and no truncation.
-    Hash algorithm and truncation testing is handled in test_hash_algorithms.py.
-
-    Args:
-        any_store: Store fixture (InMemory, DuckDB, or ClickHouse)
-        feature_plan_config: Feature plan configuration from cases
-    """
+    """Test metadata store provenance calculation matches golden reference."""
     empty_store = any_store
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
@@ -285,18 +260,8 @@ def test_golden_reference_with_duplicate_timestamps(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test golden reference with duplicate timestamps across all store types."""
+    """Test deduplication logic correctly filters older versions before computing provenance."""
     empty_store = any_store
-    """Test golden reference comparison with upstream metadata containing duplicate timestamps.
-
-    This test verifies that:
-    1. When upstream metadata contains multiple versions of the same sample (duplicates)
-    2. The resolve_update correctly deduplicates using keep_latest_by_group
-    3. The computed provenance still matches the golden reference (which has no duplicates)
-
-    This proves that the deduplication logic correctly filters older versions before
-    computing provenance.
-    """
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -400,13 +365,8 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
     any_store: MetadataStore,
     graph: FeatureGraph,
 ):
-    """Test golden reference with all duplicates at same timestamp across all stores."""
+    """Test deduplication with all samples having duplicate entries at same timestamp."""
     empty_store = any_store
-    """Test golden reference when all upstream samples have duplicate entries with same timestamp.
-
-    This is an edge case where every sample has multiple versions with identical timestamps.
-    The deduplication should still work deterministically.
-    """
 
     # Create simple feature graph
     class ParentFeature(
@@ -510,15 +470,8 @@ def test_golden_reference_partial_duplicates(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test golden reference with partial duplicates across all store types."""
+    """Test golden reference with only some upstream samples having duplicates."""
     empty_store = any_store
-    """Test golden reference with only some upstream samples having duplicates.
-
-    This test ensures that:
-    - Samples with duplicates are correctly deduplicated
-    - Samples without duplicates pass through unchanged
-    - The final provenance matches golden reference
-    """
     # Setup store with upstream data
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -606,16 +559,9 @@ def test_golden_reference_partial_duplicates(
 
 
 class KeepLatestTestDataCases:
-    """Test data cases for keep_latest_by_group tests.
-
-    Each case returns a tuple of:
-    - engine_class: The VersioningEngine class to use
-    - create_data_fn: A callable that takes Polars DataFrame and returns Narwhals DataFrame
-    - base_time: The base datetime used in test data generation
-    """
+    """Test data cases for keep_latest_by_group tests."""
 
     def case_polars(self):
-        """Test data using Polars implementation."""
         from datetime import datetime
 
         import narwhals as nw
@@ -625,13 +571,11 @@ class KeepLatestTestDataCases:
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 
         def create_data_fn(pl_df):
-            """Convert Polars DataFrame to Narwhals (Polars-backed)."""
             return nw.from_native(pl_df)
 
         return (PolarsVersioningEngine, create_data_fn, base_time)
 
     def case_ibis(self, tmp_path):
-        """Test data using Ibis implementation (via DuckDB)."""
         from datetime import datetime
 
         import ibis
@@ -646,7 +590,6 @@ class KeepLatestTestDataCases:
         table_counter = [0]  # Mutable counter for unique table names
 
         def create_data_fn(pl_df):
-            """Convert Polars DataFrame to Narwhals (Ibis-backed)."""
             # Create a unique table name for this invocation
             table_counter[0] += 1
             table_name = f"test_data_{table_counter[0]}"
@@ -662,19 +605,10 @@ class KeepLatestTestDataCases:
 @pytest_cases.fixture
 @parametrize_with_cases("test_data", cases=KeepLatestTestDataCases)
 def keep_latest_test_data(test_data):
-    """Parametrized fixture providing test data for keep_latest_by_group tests."""
     return test_data
 
 
 def test_keep_latest_by_group(keep_latest_test_data):
-    """Unit test for keep_latest_by_group method.
-
-    Creates a simple dataframe with clear duplicates (same ID, different timestamps),
-    shuffles it to ensure ordering doesn't matter, and verifies only the latest row
-    is returned per group.
-
-    Tests both Polars and Ibis implementations.
-    """
     from datetime import timedelta
 
     import polars as pl
@@ -725,14 +659,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
 
 
 def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
-    """Test keep_latest_by_group with N:1 aggregation (sensor readings → hourly stats).
-
-    Scenario: Multiple sensor readings per hour, with duplicate readings (old/new versions).
-    The deduplication should keep only the latest version of each reading before aggregation.
-
-    Group by: (sensor_id, hour, reading_id) - the granular reading ID
-    Expected: Only latest version of each reading kept
-    """
+    """Test keep_latest_by_group with N:1 aggregation (sensor readings to hourly stats)."""
     from datetime import timedelta
 
     import polars as pl
@@ -798,14 +725,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
 
 
 def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
-    """Test keep_latest_by_group with 1:N expansion (video → video frames).
-
-    Scenario: One video expands to many frames. Video metadata has duplicate versions.
-    The deduplication should keep only the latest version of each video before expansion.
-
-    Group by: (video_id) - the parent video ID
-    Expected: Only latest version of each video kept, frames inherit latest parent metadata
-    """
+    """Test keep_latest_by_group with 1:N expansion (video to video frames)."""
     from datetime import timedelta
 
     import polars as pl
