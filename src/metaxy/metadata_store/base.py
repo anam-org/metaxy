@@ -58,16 +58,6 @@ VersioningEngineOptions = Literal["auto", "native", "polars"]
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
-
-    Supports:
-    - Append-only metadata storage patterns
-
-    - Composable fallback store chains for development and testing purposes
-
-    - Backend-specific computation optimizations
-
-    Context Manager:
-        Stores must be used as context managers for resource management.
     """
 
     # Subclasses can override this to disable auto_create_tables warning
@@ -87,26 +77,32 @@ class MetadataStore(ABC):
         Initialize the metadata store.
 
         Args:
-            hash_algorithm: Hash algorithm to use for field provenance.
-                Default: None (uses default algorithm for this store type)
+            hash_algorithm: Hash algorithm to use for the versioning engine.
+
             versioning_engine: Which versioning engine to use.
+
                 - "auto": Prefer the store's native engine, fall back to Polars if needed
+
                 - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
                     if provided dataframes are incompatible
+
                 - "polars": Always use the Polars engine
+
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
                 `VersioningEngineMismatchError` is not raised when reading from fallback stores.
             auto_create_tables: If True, automatically create tables when opening the store.
                 If None (default), reads from global MetaxyConfig (which reads from METAXY_AUTO_CREATE_TABLES env var).
                 If False, never auto-create tables.
-                WARNING: Auto-create is intended for development/testing only. Do not use in production.
-                Use proper database migration tools like Alembic for production deployments.
-                Default: None (reads from global config, falls back to False for safety)
+
+                !!! warning
+                    Auto-create is intended for development/testing only.
+                    Use proper database migration tools like Alembic for production deployments.
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
-            VersioningEngineMismatchError: If versioning_engine="native" and the user-provided dataframe has a wrong implementation
+            VersioningEngineMismatchError: If a user-provided dataframe has a wrong implementation
+                and versioning_engine is set to `native`
         """
         # Initialize state early so properties can check it
         self._is_open = False
@@ -173,6 +169,8 @@ class MetadataStore(ABC):
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
+
+        This is the main workhorse in Metaxy.
 
         Args:
             feature: Feature class to resolve updates for
@@ -397,6 +395,196 @@ class MetadataStore(ABC):
                 else removed,
             )
 
+    def read_metadata(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+        allow_fallback: bool = True,
+        current_only: bool = True,
+        latest_only: bool = True,
+    ) -> nw.LazyFrame[Any]:
+        """
+        Read metadata with optional fallback to upstream stores.
+
+        Args:
+            feature: Feature to read metadata for
+            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
+            filters: Sequence of Narwhals filter expressions to apply to this feature.
+                Example: `[nw.col("x") > 10, nw.col("y") < 5]`
+            columns: Subset of columns to include. Metaxy's system columns are always included.
+            allow_fallback: If `True`, check fallback stores on local miss
+            current_only: If `True`, only return rows with current feature_version
+            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+
+        Returns:
+            Narwhals LazyFrame with metadata
+
+        Raises:
+            FeatureNotFoundError: If feature not found in any store
+            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
+            ValueError: If both feature_version and current_only=True are provided
+        """
+        filters = filters or []
+        columns = columns or []
+
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # Validate mutually exclusive parameters
+        if feature_version is not None and current_only:
+            raise ValueError(
+                "Cannot specify both feature_version and current_only=True. "
+                "Use current_only=False with feature_version parameter."
+            )
+
+        # Add feature_version filter only when needed
+        if current_only or feature_version is not None and not is_system_table:
+            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
+                current_graph().get_feature_version(feature_key)
+                if current_only
+                else feature_version
+            )
+            filters = [version_filter, *filters]
+
+        if columns and not is_system_table:
+            # Add only system columns that aren't already in the user's columns list
+            columns_set = set(columns)
+            missing_system_cols = [
+                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
+            ]
+            read_columns = [*columns, *missing_system_cols]
+        else:
+            read_columns = None
+
+        lazy_frame = None
+        try:
+            lazy_frame = self.read_metadata_in_store(
+                feature, filters=filters, columns=read_columns
+            )
+        except FeatureNotFoundError as e:
+            # do not read system features from fallback stores
+            if is_system_table:
+                raise SystemDataNotFoundError(
+                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+                ) from e
+
+        # Handle case where read_metadata_in_store returns None (no exception raised)
+        if lazy_frame is None and is_system_table:
+            raise SystemDataNotFoundError(
+                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+            )
+
+        if lazy_frame is not None and not is_system_table and latest_only:
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Apply deduplication
+            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=list(
+                    self._resolve_feature_plan(feature_key).feature.id_columns
+                ),
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
+        if lazy_frame is not None:
+            # After dedup, filter to requested columns if specified
+            if columns:
+                lazy_frame = lazy_frame.select(columns)
+
+            return lazy_frame
+
+        # Try fallback stores
+        if allow_fallback:
+            for store in self.fallback_stores:
+                try:
+                    # Use full read_metadata to handle nested fallback chains
+                    return store.read_metadata(
+                        feature,
+                        feature_version=feature_version,
+                        filters=filters,
+                        columns=columns,
+                        allow_fallback=True,
+                        current_only=current_only,
+                        latest_only=latest_only,
+                    )
+                except FeatureNotFoundError:
+                    # Try next fallback store
+                    continue
+
+        # Not found anywhere
+        raise FeatureNotFoundError(
+            f"Feature {feature_key.to_string()} not found in store"
+            + (" or fallback stores" if allow_fallback else "")
+        )
+
+    def write_metadata(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        df: IntoFrame,
+    ) -> None:
+        """
+        Write metadata for a feature (append-only by design).
+
+        Automatically adds the Metaxy system columns, unless they already exist in the DataFrame.
+
+        Args:
+            feature: Feature to write metadata for
+            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
+                Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
+                Optionally, may also contain `metaxy_data_version_by_field`.
+
+        Raises:
+            MetadataSchemaError: If DataFrame schema is invalid
+            StoreNotOpenError: If store is not open
+            ValueError: If writing to a feature from a different project than expected
+
+        Note:
+            - Never writes to fallback stores.
+
+            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
+
+            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # Validate project for non-system tables
+        if not is_system_table:
+            self._validate_project_write(feature)
+
+        # Convert Polars to Narwhals to Polars if needed
+        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
+        df_nw = nw.from_native(df)
+
+        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
+
+        # For system tables, write directly without feature_version tracking
+        if is_system_table:
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
+            return
+
+        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
+            )
+
+        # Add all required system columns
+        # warning: for dataframes that do not match the native MetadatStore implementation
+        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
+        # while calculating the missing METAXY_DATA_VERSION column
+        df_nw = self._add_system_columns(df_nw, feature)
+
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
+
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get the default hash algorithm for this store type.
@@ -521,7 +709,7 @@ class MetadataStore(ABC):
     def __enter__(self) -> Self:
         """Enter context manager - opens store in READ mode by default.
 
-        For explicit mode control, use `with store.open(mode):` instead.
+        Use [`MetadataStore.open`][metaxy.metadata_store.base.MetadataStore.open] for write access mode instead.
 
         Returns:
             Self: The opened store instance
@@ -727,73 +915,6 @@ class MetadataStore(ABC):
         Note: Subclasses implement this for their storage backend.
         """
         pass
-
-    def write_metadata(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        df: IntoFrame,
-    ) -> None:
-        """
-        Write metadata for a feature (immutable, append-only).
-
-        Automatically adds the canonical system columns (`metaxy_feature_version`,
-        `metaxy_snapshot_version`) unless they already exist in the DataFrame
-        (useful for migrations).
-
-        Args:
-            feature: Feature to write metadata for
-            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
-                Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
-                Optionally, may also contain `metaxy_data_version_by_field`.
-
-        Raises:
-            MetadataSchemaError: If DataFrame schema is invalid
-            StoreNotOpenError: If store is not open
-            ValueError: If writing to a feature from a different project than expected
-
-        Note:
-            - Never writes to fallback stores.
-
-            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
-
-            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
-        """
-        self._check_open()
-
-        feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
-
-        # Validate project for non-system tables
-        if not is_system_table:
-            self._validate_project_write(feature)
-
-        # Convert Polars to Narwhals to Polars if needed
-        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
-        df_nw = nw.from_native(df)
-
-        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
-
-        # For system tables, write directly without feature_version tracking
-        if is_system_table:
-            self._validate_schema_system_table(df_nw)
-            self.write_metadata_to_store(feature_key, df_nw)
-            return
-
-        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
-            from metaxy.metadata_store.exceptions import MetadataSchemaError
-
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
-            )
-
-        # Add all required system columns
-        # warning: for dataframes that do not match the native MetadatStore implementation
-        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
-        # while calculating the missing METAXY_DATA_VERSION column
-        df_nw = self._add_system_columns(df_nw, feature)
-
-        self._validate_schema(df_nw)
-        self.write_metadata_to_store(feature_key, df_nw)
 
     def _add_system_columns(
         self,
@@ -1004,132 +1125,6 @@ class MetadataStore(ABC):
             Narwhals LazyFrame with metadata, or None if feature not found in the store
         """
         pass
-
-    def read_metadata(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        *,
-        feature_version: str | None = None,
-        filters: Sequence[nw.Expr] | None = None,
-        columns: Sequence[str] | None = None,
-        allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
-    ) -> nw.LazyFrame[Any]:
-        """
-        Read metadata with optional fallback to upstream stores.
-
-        Args:
-            feature: Feature to read metadata for
-            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
-            filters: Sequence of Narwhals filter expressions to apply to this feature.
-                Example: [nw.col("x") > 10, nw.col("y") < 5]
-            columns: Subset of columns to include. Metaxy's system columns are always included.
-            allow_fallback: If True, check fallback stores on local miss
-            current_only: If True, only return rows with current feature_version
-                (default: True for safety)
-            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
-
-        Returns:
-            Narwhals LazyFrame with metadata
-
-        Raises:
-            FeatureNotFoundError: If feature not found in any store
-            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
-            ValueError: If both feature_version and current_only=True are provided
-        """
-        filters = filters or []
-        columns = columns or []
-
-        feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
-
-        # Validate mutually exclusive parameters
-        if feature_version is not None and current_only:
-            raise ValueError(
-                "Cannot specify both feature_version and current_only=True. "
-                "Use current_only=False with feature_version parameter."
-            )
-
-        # Add feature_version filter only when needed
-        if current_only or feature_version is not None and not is_system_table:
-            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key)
-                if current_only
-                else feature_version
-            )
-            filters = [version_filter, *filters]
-
-        if columns and not is_system_table:
-            # Add only system columns that aren't already in the user's columns list
-            columns_set = set(columns)
-            missing_system_cols = [
-                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
-            ]
-            read_columns = [*columns, *missing_system_cols]
-        else:
-            read_columns = None
-
-        lazy_frame = None
-        try:
-            lazy_frame = self.read_metadata_in_store(
-                feature, filters=filters, columns=read_columns
-            )
-        except FeatureNotFoundError as e:
-            # do not read system features from fallback stores
-            if is_system_table:
-                raise SystemDataNotFoundError(
-                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
-                ) from e
-
-        # Handle case where read_metadata_in_store returns None (no exception raised)
-        if lazy_frame is None and is_system_table:
-            raise SystemDataNotFoundError(
-                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
-            )
-
-        if lazy_frame is not None and not is_system_table and latest_only:
-            from metaxy.models.constants import METAXY_CREATED_AT
-
-            # Apply deduplication
-            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                df=lazy_frame,
-                group_columns=list(
-                    self._resolve_feature_plan(feature_key).feature.id_columns
-                ),
-                timestamp_column=METAXY_CREATED_AT,
-            )
-
-        if lazy_frame is not None:
-            # After dedup, filter to requested columns if specified
-            if columns:
-                lazy_frame = lazy_frame.select(columns)
-
-            return lazy_frame
-
-        # Try fallback stores
-        if allow_fallback:
-            for store in self.fallback_stores:
-                try:
-                    # Use full read_metadata to handle nested fallback chains
-                    return store.read_metadata(
-                        feature,
-                        feature_version=feature_version,
-                        filters=filters,
-                        columns=columns,
-                        allow_fallback=True,
-                        current_only=current_only,
-                        latest_only=latest_only,
-                    )
-                except FeatureNotFoundError:
-                    # Try next fallback store
-                    continue
-
-        # Not found anywhere
-        raise FeatureNotFoundError(
-            f"Feature {feature_key.to_string()} not found in store"
-            + (" or fallback stores" if allow_fallback else "")
-        )
 
     # ========== Feature Existence ==========
 

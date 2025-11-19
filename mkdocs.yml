@@ -201,6 +201,7 @@ nav:
         - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
         - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
       - Memory: reference/api/metadata-stores/memory.md
+      - Exceptions: reference/api/metadata-stores/exceptions.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md

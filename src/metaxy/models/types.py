@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import Any, NamedTuple, TypeAlias, overload
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, overload
 
 from pydantic import (
     BaseModel,
@@ -54,31 +54,6 @@ class _Key(BaseModel):
     model_config = ConfigDict(frozen=True, repr=False)  # pyright: ignore[reportCallIssue]  # Make immutable for hashability, use custom __repr__
 
     parts: tuple[str, ...]
-
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
-
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
-
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another instance (copy)."""
-        ...
-
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
-
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
 
     def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
         """
@@ -137,6 +112,33 @@ class _Key(BaseModel):
                 kwargs["parts"] = tuple(args)  # type: ignore[arg-type]
 
         super().__init__(**kwargs)
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __init__(self, key: str, /) -> None:
+            """Initialize from string with "/" separator."""
+            ...
+
+        @overload
+        def __init__(self, key: Sequence[str], /) -> None:
+            """Initialize from sequence of parts."""
+            ...
+
+        @overload
+        def __init__(self: Self, key: Self, /) -> None:
+            """Initialize from another instance (copy)."""
+            ...
+
+        @overload
+        def __init__(self, *parts: str) -> None:
+            """Initialize from variadic string arguments."""
+            ...
+
+        @overload
+        def __init__(self, *, parts: Sequence[str]) -> None:
+            """Initialize from parts keyword argument."""
+            ...
 
     @model_validator(mode="before")
     @classmethod
@@ -305,34 +307,40 @@ class FeatureKey(_Key):
         ```
     """
 
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
+    if TYPE_CHECKING:
 
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        @overload
+        def __init__(self, key: str, /) -> None:
+            """Initialize from string with "/" separator."""
+            ...
 
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another FeatureKey (copy)."""
-        ...
+        @overload
+        def __init__(self, key: Sequence[str], /) -> None:
+            """Initialize from sequence of parts."""
+            ...
 
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
+        @overload
+        def __init__(self, key: FeatureKey, /) -> None:
+            """Initialize from another FeatureKey (copy)."""
+            ...
 
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
+        @overload
+        def __init__(self, *parts: str) -> None:
+            """Initialize from variadic string arguments."""
+            ...
 
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """Initialize FeatureKey from various input types."""
-        super().__init__(*args, **kwargs)
+        @overload
+        def __init__(self, *, parts: Sequence[str]) -> None:
+            """Initialize from parts keyword argument."""
+            ...
+
+        # Final signature combining all overloads
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            key: str | Sequence[str] | FeatureKey | None = None,
+            *parts: str,
+            **kwargs: Any,
+        ) -> None: ...
 
     @classmethod
     def __get_validators__(cls):
@@ -395,34 +403,40 @@ class FieldKey(_Key):
         ```
     """
 
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
+    if TYPE_CHECKING:
 
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        @overload
+        def __init__(self, key: str, /) -> None:
+            """Initialize from string with "/" separator."""
+            ...
 
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another FieldKey (copy)."""
-        ...
+        @overload
+        def __init__(self, key: Sequence[str], /) -> None:
+            """Initialize from sequence of parts."""
+            ...
 
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
+        @overload
+        def __init__(self, key: FieldKey, /) -> None:
+            """Initialize from another FieldKey (copy)."""
+            ...
 
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
+        @overload
+        def __init__(self, *parts: str) -> None:
+            """Initialize from variadic string arguments."""
+            ...
 
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """Initialize FieldKey from various input types."""
-        super().__init__(*args, **kwargs)
+        @overload
+        def __init__(self, *, parts: Sequence[str]) -> None:
+            """Initialize from parts keyword argument."""
+            ...
+
+        # Final signature combining all overloads
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            key: str | Sequence[str] | FieldKey | None = None,
+            *parts: str,
+            **kwargs: Any,
+        ) -> None: ...
 
     @classmethod
     def __get_validators__(cls):
