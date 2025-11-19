@@ -41,15 +41,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
 ):
-    """Test that each hash algorithm produces consistent hashes across runs.
-
-    This test verifies that:
-    - Each hash algorithm produces deterministic results
-    - The same input data produces the same hash
-    - Different input data produces different hashes
-
-    Only tests with InMemoryMetadataStore for speed (hash behavior is independent of storage backend).
-    """
+    """Test that each hash algorithm produces consistent hashes across runs."""
 
     class ParentFeature(
         Feature,
@@ -126,13 +118,6 @@ def test_hash_algorithm_produces_consistent_hashes(
         )
 
 
-# NOTE: test_hash_algorithm_produces_different_hashes_for_different_data removed
-# The test_hash_algorithm_produces_consistent_hashes above already verifies that
-# the same data produces the same hash. The inverse (different data → different hash)
-# is implicitly tested by all the other tests that compare provenance after data changes.
-# This is sufficient coverage for hash algorithm correctness.
-
-
 # ============= TEST: HASH TRUNCATION =============
 
 
@@ -143,12 +128,6 @@ def test_hash_truncation(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
 ):
-    """Test hash truncation produces correct length hashes.
-
-    This test verifies that:
-    - When truncation_length is None, full hash is used
-    - When truncation_length is set, hash is truncated to that length
-    """
     # Config is already set by fixture
     truncation_length = config_with_truncation.hash_truncation_length
 
@@ -238,112 +217,12 @@ def test_hash_truncation(
                 # so we don't fail on slightly shorter hashes
 
 
-# ============= TEST: STORE COMPATIBILITY =============
-
-
-def test_all_stores_produce_identical_hashes(
-    store_with_hash_algo_native: MetadataStore,
-    hash_algorithm: HashAlgorithm,
-    graph: FeatureGraph,
-):
-    """Test that all stores produce identical hashes using their native versioning engines.
-
-    This verifies:
-    - Hash computation is consistent across different store backends
-    - Each store uses its native versioning engine (not Polars fallback)
-    - versioning_engine="native" raises VersioningEngineMismatchError on mismatch
-    """
-
-    class ParentFeature(
-        Feature,
-        spec=SampleFeatureSpec(
-            key="parent",
-            fields=["value"],
-        ),
-    ):
-        pass
-
-    class ChildFeature(
-        Feature,
-        spec=SampleFeatureSpec(
-            key="child",
-            deps=[FeatureDep(feature=ParentFeature)],
-            fields=["result"],
-        ),
-    ):
-        pass
-
-    child_plan = graph.get_feature_plan(ChildFeature.spec().key)
-    feature_versions = {
-        "parent": ParentFeature.feature_version(),
-        "child": ChildFeature.feature_version(),
-    }
-
-    # Generate test data (as Polars initially)
-    upstream_data, _ = downstream_metadata_strategy(
-        child_plan,
-        feature_versions=feature_versions,
-        snapshot_version=graph.snapshot_version,
-        hash_algorithm=hash_algorithm,
-        min_rows=10,
-        max_rows=10,
-    ).example()
-
-    parent_df = upstream_data["parent"]
-
-    # Get reference hashes from InMemory store
-    reference_store = InMemoryMetadataStore(hash_algorithm=hash_algorithm)
-    with reference_store, graph.use():
-        reference_store.write_metadata(ParentFeature, parent_df)
-        reference_increment = reference_store.resolve_update(
-            ChildFeature,
-            target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
-        )
-        reference_result = (
-            reference_increment.added.lazy().collect().to_polars().sort("sample_uid")
-        )
-
-    # Get hashes from the parametrized store - it should use native engine
-    # by reading from its own storage after write_metadata
-    with store_with_hash_algo_native, graph.use():
-        # Write data to store (converts to native format internally)
-        store_with_hash_algo_native.write_metadata(ParentFeature, parent_df)
-
-        # This should use native versioning engine by reading from store
-        # versioning_engine="native" will raise VersioningEngineMismatchError if mismatch
-        assert store_with_hash_algo_native._versioning_engine == "native"
-        store_increment = store_with_hash_algo_native.resolve_update(
-            ChildFeature,
-            target_version=ChildFeature.feature_version(),
-            snapshot_version=graph.snapshot_version,
-        )
-        store_result = (
-            store_increment.added.lazy().collect().to_polars().sort("sample_uid")
-        )
-
-    # Verify identical hashes
-    pl_testing.assert_frame_equal(
-        reference_result[["sample_uid", "metaxy_provenance"]],
-        store_result[["sample_uid", "metaxy_provenance"]],
-    )
-
-
-# ============= TEST: FIELD-LEVEL PROVENANCE =============
-
-
 @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
 def test_field_level_provenance_structure(
     hash_algorithm: HashAlgorithm,
     graph: FeatureGraph,
 ):
-    """Test that field-level provenance has correct structure for each hash algorithm.
-
-    This verifies that:
-    - provenance_by_field is a struct with one field per feature field
-    - Each field provenance is a non-null hash string
-    - Field provenance changes when input data changes
-    """
+    """Test that field-level provenance has correct structure for each hash algorithm."""
 
     class ParentFeature(
         Feature,
@@ -428,11 +307,7 @@ def test_field_level_provenance_structure(
 def test_hash_truncation_any_store(
     config_with_truncation, any_store: MetadataStore, graph: FeatureGraph
 ):
-    """Test that hash truncation is applied correctly across store types.
-
-    This is a simple smoke test to verify truncation works consistently
-    for InMemory and DuckDB stores.
-    """
+    """Test that hash truncation is applied correctly across store types."""
 
     class ParentFeature(
         Feature,

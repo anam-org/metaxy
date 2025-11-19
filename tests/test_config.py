@@ -9,7 +9,6 @@ from metaxy.metadata_store import InMemoryMetadataStore
 
 
 def test_store_config_basic() -> None:
-    """Test basic StoreConfig structure."""
     from metaxy import InMemoryMetadataStore
 
     config = StoreConfig(
@@ -22,7 +21,6 @@ def test_store_config_basic() -> None:
 
 
 def test_store_config_with_options() -> None:
-    """Test StoreConfig with configuration options."""
     from metaxy import InMemoryMetadataStore
 
     config = StoreConfig(
@@ -37,7 +35,6 @@ def test_store_config_with_options() -> None:
 
 
 def test_metaxy_config_default() -> None:
-    """Test MetaxyConfig with defaults."""
     config = MetaxyConfig()
 
     assert config.store == "dev"
@@ -45,7 +42,6 @@ def test_metaxy_config_default() -> None:
 
 
 def test_metaxy_config_from_dict() -> None:
-    """Test MetaxyConfig from dictionary."""
     config = MetaxyConfig(
         store="staging",
         stores={
@@ -72,7 +68,6 @@ def test_metaxy_config_from_dict() -> None:
 
 
 def test_load_from_metaxy_toml(tmp_path: Path) -> None:
-    """Test loading config from metaxy.toml."""
     from metaxy import InMemoryMetadataStore
 
     # Create metaxy.toml
@@ -103,7 +98,6 @@ fallback_stores = []
 
 
 def test_load_from_pyproject_toml(tmp_path: Path) -> None:
-    """Test loading config from pyproject.toml [tool.metaxy] section."""
     config_file = tmp_path / "pyproject.toml"
     config_file.write_text("""
 [project]
@@ -132,7 +126,6 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
 
 def test_get_store_instantiates_correctly() -> None:
-    """Test that get_store properly instantiates a store."""
     config = MetaxyConfig(
         store="dev",
         stores={
@@ -150,7 +143,6 @@ def test_get_store_instantiates_correctly() -> None:
 
 
 def test_get_store_with_fallback_chain() -> None:
-    """Test store instantiation with fallback chain."""
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
@@ -183,7 +175,6 @@ def test_get_store_with_fallback_chain() -> None:
 
 
 def test_get_store_uses_default() -> None:
-    """Test get_store without name uses store."""
     config = MetaxyConfig(
         store="staging",
         stores={
@@ -207,7 +198,6 @@ def test_get_store_uses_default() -> None:
 
 
 def test_get_store_nonexistent_raises() -> None:
-    """Test get_store raises error for nonexistent store."""
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
@@ -222,7 +212,6 @@ def test_get_store_nonexistent_raises() -> None:
 
 
 def test_config_with_env_vars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test environment variable override (pydantic-settings built-in)."""
     from metaxy import InMemoryMetadataStore
 
     # Create config file
@@ -255,7 +244,6 @@ type = "metaxy.metadata_store.InMemoryMetadataStore"
 
 
 def test_hash_algorithm_must_match_in_fallback_chain() -> None:
-    """Test that all stores in a fallback chain must use the same hash algorithm."""
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
@@ -291,7 +279,6 @@ def test_hash_algorithm_must_match_in_fallback_chain() -> None:
 
 
 def test_hash_algorithm_defaults_to_xxhash64() -> None:
-    """Test that hash_algorithm defaults to XXHASH64 when not specified."""
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(
@@ -318,7 +305,6 @@ def test_hash_algorithm_defaults_to_xxhash64() -> None:
 
 
 def test_hash_algorithm_conflict_raises_error() -> None:
-    """Test that conflicting hash_algorithm in fallback store raises error."""
     config = MetaxyConfig(
         stores={
             "dev": StoreConfig(
@@ -346,7 +332,6 @@ def test_hash_algorithm_conflict_raises_error() -> None:
 
 
 def test_store_respects_configured_hash_algorithm() -> None:
-    """Test that instantiated store uses the configured hash algorithm."""
     from metaxy.versioning.types import HashAlgorithm
 
     config = MetaxyConfig(

@@ -14,7 +14,6 @@ from metaxy.migrations.models import (
 
 
 def test_migration_type_property():
-    """Test migration_type property returns correct class path."""
     migration = DiffMigration(
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
@@ -28,7 +27,6 @@ def test_migration_type_property():
 
 
 def test_migration_to_storage_dict():
-    """Test converting migration to storage dict."""
     migration = DiffMigration(
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
@@ -51,7 +49,6 @@ def test_migration_to_storage_dict():
 
 
 def test_migration_from_storage_dict():
-    """Test deserializing migration from storage dict."""
     from metaxy.migrations.models import MigrationAdapter
 
     storage_dict = {
@@ -73,7 +70,6 @@ def test_migration_from_storage_dict():
 
 
 def test_migration_from_storage_dict_invalid_type():
-    """Test deserializing with invalid migration_type."""
     from pydantic import ValidationError
 
     from metaxy.migrations.models import MigrationAdapter
@@ -90,7 +86,6 @@ def test_migration_from_storage_dict_invalid_type():
 
 
 def test_migration_from_storage_dict_missing_type():
-    """Test deserializing without migration_type."""
     from pydantic import ValidationError
 
     from metaxy.migrations.models import MigrationAdapter
@@ -106,12 +101,7 @@ def test_migration_from_storage_dict_missing_type():
 
 
 def test_diff_migration_get_affected_features():
-    """Test DiffMigration computes affected features on-demand.
-
-    Note: This test creates a minimal migration but cannot actually compute
-    affected features without a store containing the snapshots. In real usage,
-    get_affected_features(store) would be called with a proper store.
-    """
+    """Test DiffMigration computes affected features on-demand."""
     migration = DiffMigration(
         migration_id="test_001",
         created_at=datetime(2025, 1, 1, tzinfo=timezone.utc),
@@ -128,7 +118,6 @@ def test_diff_migration_get_affected_features():
 
 
 def test_full_graph_migration():
-    """Test FullGraphMigration basic functionality."""
     migration = FullGraphMigration(
         migration_id="test_002",
         parent="initial",
@@ -146,8 +135,6 @@ def test_full_graph_migration():
 
 
 def test_custom_migration():
-    """Test custom migration by subclassing Migration directly."""
-
     class TestCustomMigration(Migration):
         custom_field: str
 
@@ -191,8 +178,6 @@ def test_custom_migration():
 
 
 def test_custom_migration_serialization():
-    """Test custom migration can be serialized with model_dump."""
-
     # Define custom migration class
     class MyCustomMigration(Migration):
         s3_bucket: str
@@ -233,7 +218,6 @@ def test_custom_migration_serialization():
 
 
 def test_migration_result_summary():
-    """Test MigrationResult summary formatting."""
     result = MigrationResult(
         migration_id="test_001",
         status="completed",
@@ -259,7 +243,6 @@ def test_migration_result_summary():
 
 
 def test_diff_migration_roundtrip():
-    """Test DiffMigration serialization roundtrip."""
     from metaxy.migrations.models import MigrationAdapter
 
     original = DiffMigration(
@@ -288,7 +271,6 @@ def test_diff_migration_roundtrip():
 
 
 def test_operation_config_valid():
-    """Test creating a valid OperationConfig."""
     from metaxy.migrations.ops import DataVersionReconciliation
 
     config = OperationConfig(
@@ -301,7 +283,6 @@ def test_operation_config_valid():
 
 
 def test_operation_config_empty_features():
-    """Test OperationConfig allows empty features list."""
     config = OperationConfig(
         type="metaxy.migrations.ops.DataVersionReconciliation",
         features=[],
@@ -311,7 +292,6 @@ def test_operation_config_empty_features():
 
 
 def test_operation_config_roundtrip():
-    """Test OperationConfig serialization and deserialization with extra fields."""
     from metaxy.migrations.ops import DataVersionReconciliation
 
     original = OperationConfig(
@@ -335,7 +315,6 @@ def test_operation_config_roundtrip():
 
 
 def test_operation_with_basesettings_env_vars():
-    """Test operation classes can read from environment variables using BaseSettings."""
     import os
 
     from metaxy.migrations.ops import BaseOperation
@@ -385,7 +364,6 @@ def test_operation_with_basesettings_env_vars():
 
 
 def test_full_graph_migration_get_affected_features():
-    """Test FullGraphMigration.get_affected_features() aggregates from all operations."""
     migration = FullGraphMigration(
         migration_id="test_full_001",
         parent="initial",
@@ -413,7 +391,6 @@ def test_full_graph_migration_get_affected_features():
 
 
 def test_full_graph_migration_deduplicates_features():
-    """Test FullGraphMigration deduplicates features across operations."""
     migration = FullGraphMigration(
         migration_id="test_full_002",
         parent="initial",
@@ -441,7 +418,6 @@ def test_full_graph_migration_deduplicates_features():
 
 
 def test_full_graph_migration_with_from_snapshot():
-    """Test FullGraphMigration can have optional from_snapshot_version."""
     migration = FullGraphMigration(
         migration_id="test_full_003",
         parent="initial",
@@ -460,21 +436,8 @@ def test_full_graph_migration_with_from_snapshot():
     assert migration.from_snapshot_version == "snap1"
 
 
-# Removed test_full_graph_migration_with_description - description field was removed
-
-
-# Removed test_full_graph_migration_with_metadata - metadata field was removed
-
-
-# Removed test_full_graph_migration_deserialize_json_fields - deserialize_json_fields validator was removed
-# Pydantic handles JSON deserialization automatically when proper types are used
-
-
 def test_get_failed_features_with_retry(store):
-    """Test that get_failed_features only returns features whose latest event is failure.
-
-    If a feature fails and then succeeds on retry, it should not appear in failed_features.
-    """
+    """Test that get_failed_features only returns features whose latest event is failure."""
     from metaxy.metadata_store.system import Event, SystemTableStorage
 
     storage = SystemTableStorage(store)

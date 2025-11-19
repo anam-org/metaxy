@@ -242,12 +242,6 @@ def test_has_feature_local(
         )
 
 
-# Data Version Calculation Tests
-# NOTE: The calculate_and_write_data_versions API was removed.
-# Field provenance calculation is now handled differently in the new architecture.
-# These tests have been removed as they tested a deprecated API.
-
-
 # System Tables Tests
 
 

@@ -59,11 +59,7 @@ class FeatureGraphCases:
     """Different feature graph topologies for testing."""
 
     def case_simple_chain(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Simple two-feature chain: Root -> Leaf.
-
-        Returns:
-            (graph, upstream_features, leaf_plan)
-        """
+        """Simple two-feature chain: Root -> Leaf."""
 
         class RootFeature(
             Feature,
@@ -90,11 +86,7 @@ class FeatureGraphCases:
         return graph, upstream_features, leaf_plan
 
     def case_diamond_graph(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Diamond dependency graph: Root -> BranchA,BranchB -> Leaf.
-
-        Returns:
-            (graph, upstream_features, leaf_plan)
-        """
+        """Diamond dependency graph: Root -> BranchA,BranchB -> Leaf."""
 
         class RootFeature(
             Feature,
@@ -148,11 +140,7 @@ class FeatureGraphCases:
         return graph, upstream_features, leaf_plan
 
     def case_multi_field(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Features with multiple fields to test field-level provenance.
-
-        Returns:
-            (graph, upstream_features, leaf_plan)
-        """
+        """Features with multiple fields to test field-level provenance."""
 
         class RootFeature(
             Feature,
@@ -183,8 +171,6 @@ class RootFeatureCases:
     """Root features (no upstream dependencies) for testing sample-based resolve_update."""
 
     def case_simple_root(self, graph: FeatureGraph) -> type[BaseFeature]:
-        """Single-field root feature."""
-
         class SimpleRoot(
             Feature,
             spec=SampleFeatureSpec(
@@ -197,8 +183,6 @@ class RootFeatureCases:
         return SimpleRoot
 
     def case_multi_field_root(self, graph: FeatureGraph) -> type[BaseFeature]:
-        """Multi-field root feature."""
-
         class MultiFieldRoot(
             Feature,
             spec=SampleFeatureSpec(
@@ -224,14 +208,8 @@ def test_resolve_update_root_feature_requires_samples(
     default_store: MetadataStore,
     root_feature: type[BaseFeature],
 ):
-    """Test root feature requires samples (using default store)."""
+    """Test that resolve_update raises ValueError for root features without samples."""
     store = default_store
-    """Test that resolve_update raises ValueError for root features without samples.
-
-    Root features have no upstream dependencies, so provenance cannot be computed
-    from upstream metadata. Users must provide samples with manually computed
-    provenance_by_field.
-    """
     with store:
         with pytest.raises(ValueError, match="root feature"):
             store.resolve_update(root_feature, lazy=True)
@@ -243,15 +221,8 @@ def test_resolve_update_root_feature_with_samples(
     root_feature: type[BaseFeature],
     graph: FeatureGraph,
 ):
-    """Test root feature with samples (using any_store for backend coverage)."""
+    """Test resolve_update for root features with provided samples."""
     store = any_store
-    """Test resolve_update for root features with provided samples.
-
-    When samples are provided, resolve_update should:
-    - Accept the samples with user-provided provenance_by_field
-    - Return all samples as "added" (first write)
-    - Compute correct metaxy_provenance from the field provenances
-    """
     # Generate sample data using the parametric strategy
     feature_spec = root_feature.spec()
     feature_version = root_feature.feature_version()
@@ -311,16 +282,8 @@ def test_resolve_update_downstream_feature(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test downstream feature resolution (using any_store for backend coverage)."""
+    """Test resolve_update for downstream features with upstream dependencies."""
     store = any_store
-    """Test resolve_update for downstream features with upstream dependencies.
-
-    This test verifies that:
-    - Upstream metadata is correctly joined
-    - Field provenance is computed from upstream dependencies
-    - Results match the golden reference implementation
-    - Behavior is consistent across all store backends
-    """
     graph, upstream_features, child_plan = feature_plan_config
 
     # Get feature versions
@@ -401,16 +364,8 @@ def test_resolve_update_detects_changes(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test change detection (using any_store for backend coverage)."""
+    """Test that resolve_update correctly detects added/changed/removed samples."""
     store = any_store
-    """Test that resolve_update correctly detects added/changed/removed samples.
-
-    This test:
-    1. Writes initial upstream metadata
-    2. Computes and writes child metadata
-    3. Modifies upstream metadata (add/change/remove samples)
-    4. Verifies resolve_update detects all changes correctly
-    """
     graph, upstream_features, child_plan = feature_plan_config
 
     # Get feature versions
@@ -498,16 +453,8 @@ def test_resolve_update_lazy_execution(
     any_store: MetadataStore,
     graph: FeatureGraph,
 ):
-    """Test lazy execution (using any_store for backend coverage)."""
+    """Test resolve_update with lazy=True returns lazy frames with correct implementation."""
     store = any_store
-    """Test resolve_update with lazy=True returns lazy frames with correct implementation.
-
-    This test verifies that:
-    - lazy=True returns LazyIncrement with lazy frames
-    - Lazy frames have correct implementation (POLARS for InMemory, IBIS for SQL stores)
-    - Lazy frames can be collected to produce results
-    - Results match eager execution
-    """
 
     # Create a feature graph with multiple parents (realistic scenario)
     class Parent1(
@@ -638,13 +585,8 @@ def test_resolve_update_idempotency(
     any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test idempotency (using any_store for backend coverage)."""
+    """Test that calling resolve_update multiple times is idempotent."""
     store = any_store
-    """Test that calling resolve_update multiple times is idempotent.
-
-    After writing the increment from first resolve_update, calling it again
-    should return empty increments (no changes).
-    """
     graph, upstream_features, child_plan = feature_plan_config
 
     child_key = child_plan.feature.key
