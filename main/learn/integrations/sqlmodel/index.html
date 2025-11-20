@@ -1097,28 +1097,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#system-managed-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        System-Managed Columns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#id-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ID Columns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#loading-features-and-populating-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1135,10 +1113,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Configuration Options
       
     </span>
   </a>
@@ -2254,28 +2232,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#system-managed-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        System-Managed Columns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#id-columns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ID Columns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#loading-features-and-populating-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2292,10 +2248,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Configuration Options
       
     </span>
   </a>
@@ -2485,11 +2441,10 @@
 <p>It is the primary way to use Metaxy with database-backed <a href="../../metadata-stores/">metadata stores</a>. The benefits of using SQLModel are mostly in the ability to use migration systems such as <a href="https://alembic.sqlalchemy.org/">Alembic</a> that can ensure schema consistency with Metaxy features, and provide the tools for schema evolution as the features change over time.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>The SQLModel integration requires the sqlmodel package:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>pip<span class="w"> </span>install<span class="w"> </span>metaxy<span class="o">[</span>sqlmodel<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[sqlmodel]&#39;</span>
 </span></code></pre></div>
-<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
-<p>The integration has to be enabled in the configuration file:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="basic-usage-metaxytoml" name="__tabbed_1" type="radio" /><input id="basic-usage-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="basic-usage-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="basic-usage-metaxytoml">metaxy.toml</label><label for="basic-usage-pyprojecttoml">pyproject.toml</label><label for="basic-usage-environment-variable">Environment Variable</label></div>
+<p>and has to be enabled explicitly:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="installation-metaxytoml" name="__tabbed_1" type="radio" /><input id="installation-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="installation-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="installation-metaxytoml">metaxy.toml</label><label for="installation-pyprojecttoml">pyproject.toml</label><label for="installation-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
@@ -2502,108 +2457,63 @@
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT_SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
-<p>This will expose Metaxy's system tables to SQLAlchemy.</p>
-<p>First, as always with Metaxy features, we would have to define our ID columns:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureSpec</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSQLModelFeature</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>
+<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<p>Let's define a feature:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxsql</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">SampleFeatureSpec</span><span class="p">(</span><span class="n">FeatureSpec</span><span class="p">):</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a>    <span class="n">id_columns</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;sample_id&quot;</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">SampleFeature</span><span class="p">(</span><span class="n">BaseSQLModelFeature</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>    <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span>
-</span></code></pre></div>
-<p>Note that ID columns <strong>cannot be server-generated</strong>, so the cannot include a Primary Key.</p>
-<p>Now we can define feature class that inherits from <code>SampleFeature</code> and specify both Metaxy's <code>spec</code> parameter and SQLModel's <code>table=True</code> parameter:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureKey</span><span class="p">,</span> <span class="n">FieldSpec</span><span class="p">,</span> <span class="n">FieldKey</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a>    <span class="n">SampleFeature</span><span class="p">,</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">SampleFeatureSpec</span><span class="p">(</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">]),</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a>        <span class="c1"># Root feature with no dependencies</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a>        <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a>            <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;frames&quot;</span><span class="p">]),</span> <span class="n">code_version</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">),</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a>            <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;duration&quot;</span><span class="p">]),</span> <span class="n">code_version</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">),</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a>        <span class="p">],</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a>    <span class="p">),</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16"></a><a href="#__codelineno-5-16"><span class="linenos" data-linenos="16 "></span></a><span class="p">):</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17"></a><a href="#__codelineno-5-17"><span class="linenos" data-linenos="17 "></span></a>    <span class="c1"># User-defined metadata columns</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18"></a><a href="#__codelineno-5-18"><span class="linenos" data-linenos="18 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19"></a><a href="#__codelineno-5-19"><span class="linenos" data-linenos="19 "></span></a>    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>    <span class="n">mxsql</span><span class="o">.</span><span class="n">BaseSQLModelFeature</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">]),</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">],</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a>        <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a>            <span class="s2">&quot;frames&quot;</span><span class="p">,</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a>            <span class="s2">&quot;duration&quot;</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a>        <span class="p">],</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a>    <span class="p">),</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">):</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a>    <span class="c1"># User-defined metadata columns</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a>    <span class="n">video_id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a>    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
 </span></code></pre></div>
 <p>This class serves dual purposes:</p>
 <ul>
 <li><strong>Metaxy feature</strong>: Tracks feature version, field versions, and dependencies</li>
 <li><strong>SQLModel table</strong>: Maps to database schema with ORM functionality</li>
 </ul>
+<div class="admonition tip">
+<p class="admonition-title">Database Migrations Generation</p>
+<p>You can use <a href="#database-migrations-with-alembic">Alembic</a> to automatically detect all your feature tables and generate migration scripts.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Do Not Use Server-Generated IDs</p>
+<p>ID columns <strong>should not be server-generated</strong> because they are typically used to determine <strong>data</strong> locations such as object storage keys, so they have to be defined before <strong>metadata</strong> is inserted into the database</p>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Automatic Table Naming</p>
+<p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video"])</code>, the table name becomes <code>"video"</code>. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in the plugin configuration.</p>
 </div>
-<p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video"])</code>, the table name becomes <code>"video"</code>. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in Metaxy's configuration.</p>
-<h3 id="system-managed-columns">System-Managed Columns<a class="headerlink" href="#system-managed-columns" title="Permanent link">&para;</a></h3>
-<p>Metaxy's metadata store automatically manages versioning columns:</p>
-<ul>
-<li><code>provenance_by_field</code>: Struct column mapping field keys to hashes</li>
-<li><code>feature_version</code>: Hash of feature specification</li>
-<li><code>snapshot_version</code>: Hash of entire graph state</li>
-</ul>
-<p>These columns need not be defined in your SQLModel class. The metadata store injects them during write and read operations.</p>
-<h3 id="id-columns">ID Columns<a class="headerlink" href="#id-columns" title="Permanent link">&para;</a></h3>
-<div class="admonition warning">
-<p class="admonition-title">ID columns must exist before database insertion</p>
-</div>
-<p>ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.</p>
-<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span><span class="n">Metaxy</span> <span class="n">validates</span> <span class="n">against</span> <span class="n">autoincrement</span> <span class="n">primary</span> <span class="n">keys</span> <span class="n">but</span> <span class="n">cannot</span> <span class="n">detect</span> <span class="nb">all</span> <span class="n">server</span><span class="o">-</span><span class="n">generated</span> <span class="n">patterns</span><span class="o">.</span> <span class="n">Ensure</span> <span class="n">your</span> <span class="n">ID</span> <span class="n">columns</span> <span class="n">use</span> <span class="n">client</span><span class="o">-</span><span class="n">provided</span> <span class="n">values</span><span class="o">.</span>
-</code></pre></div>
-<p>Example:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># ✅ Good: Client-generated ID columns</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">UserActivity</span><span class="p">(</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a>    <span class="n">SQLModelFeature</span><span class="p">,</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;activity&quot;</span><span class="p">]),</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="s2">&quot;session_id&quot;</span><span class="p">],</span>  <span class="c1"># Client provides these</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a>        <span class="o">...</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a>    <span class="p">),</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">):</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a>    <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Client-generated</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a>    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Client-generated</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a>    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">sa_column_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;server_default&quot;</span><span class="p">:</span> <span class="s2">&quot;NOW()&quot;</span><span class="p">})</span>  <span class="c1"># OK - not an ID column</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="c1"># ❌ Bad: Autoincrement ID column</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">BadFeature</span><span class="p">(</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a>    <span class="n">SQLModelFeature</span><span class="p">,</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18"></a><a href="#__codelineno-6-18"><span class="linenos" data-linenos="18 "></span></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19"></a><a href="#__codelineno-6-19"><span class="linenos" data-linenos="19 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20"></a><a href="#__codelineno-6-20"><span class="linenos" data-linenos="20 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;bad&quot;</span><span class="p">]),</span>
-</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21"></a><a href="#__codelineno-6-21"><span class="linenos" data-linenos="21 "></span></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>  <span class="c1"># This is listed as an ID column</span>
-</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22"></a><a href="#__codelineno-6-22"><span class="linenos" data-linenos="22 "></span></a>        <span class="o">...</span>
-</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23"></a><a href="#__codelineno-6-23"><span class="linenos" data-linenos="23 "></span></a>    <span class="p">),</span>
-</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24"></a><a href="#__codelineno-6-24"><span class="linenos" data-linenos="24 "></span></a><span class="p">):</span>
-</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25"></a><a href="#__codelineno-6-25"><span class="linenos" data-linenos="25 "></span></a>    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sa_column_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;autoincrement&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>  <span class="c1"># Will raise error</span>
-</span></code></pre></div>
 <h3 id="loading-features-and-populating-metadata">Loading Features and Populating Metadata<a class="headerlink" href="#loading-features-and-populating-metadata" title="Permanent link">&para;</a></h3>
 <p>When using <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;init_metaxy&lt;/span&gt;" href="../../../reference/api/#metaxy.init_metaxy">metaxy.init_metaxy</a> to discover and import feature modules, all <code>SQLModelFeature</code> classes are automatically registered in SQLModel's metadata:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span><span class="p">,</span> <span class="n">init_metaxy</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Load all features from configured entrypoints</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos="5 "></span></a><span class="n">graph</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos="6 "></span></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># All SQLModelFeature tables are now registered in SQLModel.metadata</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1"># This metadata can be used with Alembic for migrations</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos="9 "></span></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tables registered: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">SQLModel</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span><span class="p">,</span> <span class="n">init_metaxy</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Load all features from configured entrypoints</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos="5 "></span></a><span class="n">graph</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos="6 "></span></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># All SQLModelFeature tables are now registered in SQLModel.metadata</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1"># This metadata can be used with Alembic for migrations</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos="9 "></span></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tables registered: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">SQLModel</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <p>This is particularly useful when:</p>
 <ul>
@@ -2611,32 +2521,14 @@
 <li>Setting up database connections that require the complete schema</li>
 <li>Using SQLModel's <code>create_all()</code> for development/testing (Metaxy's <code>auto_create_tables</code> setting should be preferred over <code>create_all()</code>)</li>
 </ul>
-<div class="admonition tip">
-<p class="admonition-title">Migration Generation</p>
+<h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
+<div class="admonition error">
+<p class="admonition-title">Failed to process metaxy-config directive</p>
+<p>Missing required parameter: class</p>
 </div>
-<p>After calling <code>init_metaxy</code>, you can use <a href="#database-migrations-with-alembic">Alembic</a> to automatically detect all your SQLModelFeature tables and generate migration scripts.</p>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Configure automatic table naming behavior:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="configuration-metaxytoml" name="__tabbed_2" type="radio" /><input id="configuration-pyprojecttoml" name="__tabbed_2" type="radio" /><input id="configuration-environment-variable" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="configuration-metaxytoml">metaxy.toml</label><label for="configuration-pyprojecttoml">pyproject.toml</label><label for="configuration-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">infer_db_table_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># Default</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">infer_db_table_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># Default</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT_SQLMODEL_INFER_DB_TABLE_NAMES</span><span class="o">=</span><span class="nb">true</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
+<p>class: metaxy.ext.sqlmodel.SQLModelPluginConfig
+path_prefix: ext.sqlmodel
+header_level: 3</p>
 <h2 id="database-migrations-with-alembic">Database Migrations with Alembic<a class="headerlink" href="#database-migrations-with-alembic" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides SQLModel definitions for its system tables that integrate with <a href="https://alembic.sqlalchemy.org/">Alembic</a> for database migrations. This allows you to version control schema changes alongside your application code. Note that you might want to keep separate migrations per each DB-backed <code>MetadataStore</code> used with Metaxy.</p>
 <h3 id="separate-migration-management">Separate Migration Management<a class="headerlink" href="#separate-migration-management" title="Permanent link">&para;</a></h3>
@@ -2647,76 +2539,76 @@
 <p><strong>Clear Audit Trail</strong>: Separate migration histories make it trivial to distinguish framework schema changes from application schema changes. This clarity is essential during rollbacks and incident investigation.</p>
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
 <p>Enable SQLModel system tables in your metaxy configuration and set up two Alembic directories:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Standard structure</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a><a href="#__codelineno-11-2"><span class="linenos" data-linenos=" 2 "></span></a>project/
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3"></a><a href="#__codelineno-11-3"><span class="linenos" data-linenos=" 3 "></span></a>├──<span class="w"> </span>alembic/<span class="w">              </span><span class="c1"># User application migrations</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4"></a><a href="#__codelineno-11-4"><span class="linenos" data-linenos=" 4 "></span></a>│<span class="w">   </span>├──<span class="w"> </span>versions/
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5"></a><a href="#__codelineno-11-5"><span class="linenos" data-linenos=" 5 "></span></a>│<span class="w">   </span>└──<span class="w"> </span>env.py
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6"></a><a href="#__codelineno-11-6"><span class="linenos" data-linenos=" 6 "></span></a>├──<span class="w"> </span>.metaxy/
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7"></a><a href="#__codelineno-11-7"><span class="linenos" data-linenos=" 7 "></span></a>│<span class="w">   </span>└──<span class="w"> </span>alembic-system/<span class="w">   </span><span class="c1"># Metaxy system table migrations</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8"></a><a href="#__codelineno-11-8"><span class="linenos" data-linenos=" 8 "></span></a>│<span class="w">       </span>├──<span class="w"> </span>versions/
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9"></a><a href="#__codelineno-11-9"><span class="linenos" data-linenos=" 9 "></span></a>│<span class="w">       </span>└──<span class="w"> </span>env.py
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10"></a><a href="#__codelineno-11-10"><span class="linenos" data-linenos="10 "></span></a>└──<span class="w"> </span>metaxy.toml
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Standard structure</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a>project/
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a>├──<span class="w"> </span>alembic/<span class="w">              </span><span class="c1"># User application migrations</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a>│<span class="w">   </span>├──<span class="w"> </span>versions/
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a>│<span class="w">   </span>└──<span class="w"> </span>env.py
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a>├──<span class="w"> </span>.metaxy/
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a>│<span class="w">   </span>└──<span class="w"> </span>alembic-system/<span class="w">   </span><span class="c1"># Metaxy system table migrations</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a>│<span class="w">       </span>├──<span class="w"> </span>versions/
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a>│<span class="w">       </span>└──<span class="w"> </span>env.py
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a>└──<span class="w"> </span>metaxy.toml
 </span></code></pre></div>
 <p>Initialize both Alembic directories:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Initialize user migrations</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos="2 "></span></a>alembic<span class="w"> </span>init<span class="w"> </span>alembic
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><a href="#__codelineno-12-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Initialize metaxy system migrations</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5"></a><a href="#__codelineno-12-5"><span class="linenos" data-linenos="5 "></span></a>alembic<span class="w"> </span>init<span class="w"> </span>.metaxy/alembic-system
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Initialize user migrations</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a>alembic<span class="w"> </span>init<span class="w"> </span>alembic
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Initialize metaxy system migrations</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos="5 "></span></a>alembic<span class="w"> </span>init<span class="w"> </span>.metaxy/alembic-system
 </span></code></pre></div>
 <h3 id="metaxy-system-tables-configuration">Metaxy System Tables Configuration<a class="headerlink" href="#metaxy-system-tables-configuration" title="Permanent link">&para;</a></h3>
 <p>Configure <code>.metaxy/alembic-system/env.py</code> to manage only metaxy system tables:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># typical Alembic boilerplate</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos="2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_metaxy_metadata</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3"></a><a href="#__codelineno-13-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4"></a><a href="#__codelineno-13-4"><span class="linenos" data-linenos="4 "></span></a><span class="n">metaxy_system_metadata</span> <span class="o">=</span> <span class="n">get_metaxy_metadata</span><span class="p">()</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5"></a><a href="#__codelineno-13-5"><span class="linenos" data-linenos="5 "></span></a>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6"></a><a href="#__codelineno-13-6"><span class="linenos" data-linenos="6 "></span></a><span class="c1"># metaxy_system_metadata has system tables</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7"></a><a href="#__codelineno-13-7"><span class="linenos" data-linenos="7 "></span></a>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8"></a><a href="#__codelineno-13-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1"># continue with alembic boilerplate</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># typical Alembic boilerplate</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_metaxy_metadata</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos="4 "></span></a><span class="n">metaxy_system_metadata</span> <span class="o">=</span> <span class="n">get_metaxy_metadata</span><span class="p">()</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos="6 "></span></a><span class="c1"># metaxy_system_metadata has system tables</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a><a href="#__codelineno-8-7"><span class="linenos" data-linenos="7 "></span></a>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a><a href="#__codelineno-8-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1"># continue with alembic boilerplate</span>
 </span></code></pre></div>
 <p>Configure <code>.metaxy/alembic-system/alembic.ini</code> with your database URL:</p>
-<div class="language-ini highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[alembic]</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2"></a><a href="#__codelineno-14-2"><span class="linenos" data-linenos="2 "></span></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.metaxy/alembic-system</span>
+<div class="language-ini highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[alembic]</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">.metaxy/alembic-system</span>
 </span></code></pre></div>
 <h3 id="user-application-tables-configuration">User Application Tables Configuration<a class="headerlink" href="#user-application-tables-configuration" title="Permanent link">&para;</a></h3>
 <p>Configure <code>alembic/env.py</code> to manage user tables, excluding metaxy system tables:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># standard Alembic boilerplate</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2"></a><a href="#__codelineno-15-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3"></a><a href="#__codelineno-15-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4"></a><a href="#__codelineno-15-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5"></a><a href="#__codelineno-15-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6"></a><a href="#__codelineno-15-6"><span class="linenos" data-linenos=" 6 "></span></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7"></a><a href="#__codelineno-15-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1"># SQLModel.metadata now has user-defined Metaxy tables</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8"></a><a href="#__codelineno-15-8"><span class="linenos" data-linenos=" 8 "></span></a>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9"></a><a href="#__codelineno-15-9"><span class="linenos" data-linenos=" 9 "></span></a>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10"></a><a href="#__codelineno-15-10"><span class="linenos" data-linenos="10 "></span></a><span class="c1"># continue with alembic boilerplate</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># standard Alembic boilerplate</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><a href="#__codelineno-10-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><a href="#__codelineno-10-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1"># SQLModel.metadata now has user-defined Metaxy tables</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><a href="#__codelineno-10-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><a href="#__codelineno-10-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a><a href="#__codelineno-10-10"><span class="linenos" data-linenos="10 "></span></a><span class="c1"># continue with alembic boilerplate</span>
 </span></code></pre></div>
 <h3 id="migration-workflow">Migration Workflow<a class="headerlink" href="#migration-workflow" title="Permanent link">&para;</a></h3>
 <p>Generate and apply migrations separately for each concern:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># 1. Create metaxy system tables (run once during initial setup)</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a><a href="#__codelineno-16-2"><span class="linenos" data-linenos=" 2 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;create metaxy system tables&quot;</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3"></a><a href="#__codelineno-16-3"><span class="linenos" data-linenos=" 3 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>upgrade<span class="w"> </span>head
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4"></a><a href="#__codelineno-16-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5"></a><a href="#__codelineno-16-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1"># 2. Create and apply user table migrations</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6"></a><a href="#__codelineno-16-6"><span class="linenos" data-linenos=" 6 "></span></a>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;add video feature table&quot;</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7"></a><a href="#__codelineno-16-7"><span class="linenos" data-linenos=" 7 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8"></a><a href="#__codelineno-16-8"><span class="linenos" data-linenos=" 8 "></span></a>
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9"></a><a href="#__codelineno-16-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># 3. When modifying user tables, only user migrations change</span>
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10"></a><a href="#__codelineno-16-10"><span class="linenos" data-linenos="10 "></span></a>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;add processing timestamp&quot;</span>
-</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11"></a><a href="#__codelineno-16-11"><span class="linenos" data-linenos="11 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># 1. Create metaxy system tables (run once during initial setup)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a><a href="#__codelineno-11-2"><span class="linenos" data-linenos=" 2 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;create metaxy system tables&quot;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3"></a><a href="#__codelineno-11-3"><span class="linenos" data-linenos=" 3 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>upgrade<span class="w"> </span>head
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4"></a><a href="#__codelineno-11-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5"></a><a href="#__codelineno-11-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1"># 2. Create and apply user table migrations</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6"></a><a href="#__codelineno-11-6"><span class="linenos" data-linenos=" 6 "></span></a>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;add video feature table&quot;</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7"></a><a href="#__codelineno-11-7"><span class="linenos" data-linenos=" 7 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8"></a><a href="#__codelineno-11-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9"></a><a href="#__codelineno-11-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># 3. When modifying user tables, only user migrations change</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10"></a><a href="#__codelineno-11-10"><span class="linenos" data-linenos="10 "></span></a>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;add processing timestamp&quot;</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11"></a><a href="#__codelineno-11-11"><span class="linenos" data-linenos="11 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 </span></code></pre></div>
 <p>When deploying to production, always apply system table migrations before user migrations:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Production deployment order</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2"></a><a href="#__codelineno-17-2"><span class="linenos" data-linenos="2 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>upgrade<span class="w"> </span>head<span class="w">  </span><span class="c1"># System tables first</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3"></a><a href="#__codelineno-17-3"><span class="linenos" data-linenos="3 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head<span class="w">                                 </span><span class="c1"># Then user tables</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Production deployment order</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos="2 "></span></a>alembic<span class="w"> </span>-c<span class="w"> </span>.metaxy/alembic-system/alembic.ini<span class="w"> </span>upgrade<span class="w"> </span>head<span class="w">  </span><span class="c1"># System tables first</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos="3 "></span></a>alembic<span class="w"> </span>upgrade<span class="w"> </span>head<span class="w">                                 </span><span class="c1"># Then user tables</span>
 </span></code></pre></div>
 <h3 id="disabling-sqlmodel-system-tables">Disabling SQLModel System Tables<a class="headerlink" href="#disabling-sqlmodel-system-tables" title="Permanent link">&para;</a></h3>
 <p>If required, disable SQLModel system tables in <code>metaxy.toml</code>:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2"></a><a href="#__codelineno-18-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3"></a><a href="#__codelineno-18-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">system_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3"></a><a href="#__codelineno-13-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">system_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 
 

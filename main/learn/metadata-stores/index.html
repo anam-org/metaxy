@@ -608,24 +608,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -642,47 +624,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#fallback-stores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fallback Stores
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#project-write-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Project Write Validation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -2091,36 +2032,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#fallback-stores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fallback Stores
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#project-write-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Project Write Validation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2229,25 +2140,7 @@ This includes joining upstream features, hashing their versions, and filtering o
 <li>When having to use a <strong>fallback store</strong> to retrieve one of the parent features.</li>
 </ol>
 <p>All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.</p>
-<p>Learn about configuring metadata stores <a href="../../reference/configuration/#storeconfig">here</a></p>
-<h2 id="fallback-stores">Fallback Stores<a class="headerlink" href="#fallback-stores" title="Permanent link">&para;</a></h2>
-<p>Fallback stores are a powerful feature that allow stores to read feature metadata from other stores (only if it's missing in the primary store).
-This is very useful for development, as production data can be retrieved immediately without populating the development environment.
-This is especially useful for ephemeral environments such as branch/preview deployments (typically created by CI/CD for pull requests) or integration testing environments.</p>
-<h2 id="project-write-validation">Project Write Validation<a class="headerlink" href="#project-write-validation" title="Permanent link">&para;</a></h2>
-<p>By default, <code>MetadataStore</code> raises a <code>ValueError</code> when attempting to write to a project that doesn't match the expected project from <code>MetaxyConfig.get().project</code>.</p>
-<p>For legitimate cross-project operations (such as migrations that need to update features across multiple projects), an escape hatch is provided via the <code>allow_cross_project_writes()</code> context manager:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Normal operation - writes are validated against expected project</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">feature_from_my_project</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>  <span class="c1"># OK</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a>    <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">feature_from_other_project</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>  <span class="c1"># Raises ValueError</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="c1"># Migration scenario - temporarily allow cross-project writes</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">with</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">allow_cross_project_writes</span><span class="p">():</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>        <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">feature_from_project_a</span><span class="p">,</span> <span class="n">metadata_a</span><span class="p">)</span>  <span class="c1"># OK</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>        <span class="n">store</span><span class="o">.</span><span class="n">write_metadata</span><span class="p">(</span><span class="n">feature_from_project_b</span><span class="p">,</span> <span class="n">metadata_b</span><span class="p">)</span>  <span class="c1"># OK</span>
-</span></code></pre></div>
+<p>Learn about configuring metadata stores <a href="../../reference/configuration/#stores">here</a></p>
 
 
 

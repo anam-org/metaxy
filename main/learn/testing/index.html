@@ -1029,6 +1029,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#programmatic-metaxy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic Metaxy Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2226,6 +2237,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#programmatic-metaxy-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic Metaxy Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2398,6 +2420,24 @@ Multiple graphs can exist at the same time, but only one will be used for featur
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos="9 "></span></a>            <span class="k">pass</span>  <span class="c1"># Warning is emitted and captured</span>
 </span></code></pre></div>
 <p>This works even with <code>filterwarnings</code> configured, because <code>pytest.warns()</code> explicitly captures and verifies the warning.</p>
+<h3 id="programmatic-metaxy-configuration">Programmatic Metaxy Configuration<a class="headerlink" href="#programmatic-metaxy-configuration" title="Permanent link">&para;</a></h3>
+<p>When configuring Metaxy programmatically in Python code, use the following pattern (we also showcase plugin configuration):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModelPluginConfig</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">with</span> <span class="n">MetaxyConfig</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a>    <span class="n">ext</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a>        <span class="s2">&quot;sqlmodel&quot;</span><span class="p">:</span> <span class="n">SQLModelPluginConfig</span><span class="p">(</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>            <span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a>            <span class="n">infer_db_table_names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a>        <span class="p">)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a>    <span class="p">}</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="p">)</span><span class="o">.</span><span class="n">use</span><span class="p">()</span> <span class="k">as</span> <span class="n">config</span><span class="p">:</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a>    <span class="n">sqlmodel_config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get_plugin</span><span class="p">(</span><span class="s2">&quot;sqlmodel&quot;</span><span class="p">,</span> <span class="n">SQLModelPluginConfig</span><span class="p">)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a>    <span class="c1"># your code here</span>
+</span></code></pre></div>
+<p>When testing Metaxy code, it's best if this setup is performed via <code>pytest</code> fixtures.</p>
+<p>The plugin configuration is accessed via a dictionary where keys are plugin names and values are plugin-specific configuration objects.</p>
 
 
 
