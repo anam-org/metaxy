@@ -2897,13 +2897,12 @@ Subclasses can override this method to implement custom naming logic.</p>
 
 
 <a href="#metaxy.metadata_store.ibis.IbisMetadataStore.open" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;AccessMode&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;READ&lt;/span&gt;
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">open</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-class-attribute&quot;&gt;&lt;code&gt;class-attribute&lt;/code&gt;&lt;/small&gt;
-      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode.READ&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode.READ">READ</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></span> <span class="o">=</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;collections.abc.Iterator&lt;/code&gt;" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="typing_extensions.Self">Self</span></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2917,14 +2916,13 @@ Subclasses can override this method to implement custom naming logic.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>mode</code></b>
-              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;AccessMode&lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
-                  <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;READ&lt;/span&gt;
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;AccessMode&lt;/span&gt;
 
 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-class-attribute&quot;&gt;&lt;code&gt;class-attribute&lt;/code&gt;&lt;/small&gt;
-      &lt;small class=&quot;doc doc-label doc-label-instance-attribute&quot;&gt;&lt;code&gt;instance-attribute&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode.READ&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode.READ">READ</a></code>
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.metadata_store.types.AccessMode&lt;/code&gt;)" href="../#metaxy.metadata_store.types.AccessMode">AccessMode</a></code>, default:
+                  <code>&#39;read&#39;</code>
 )
           –
           <div class="doc-md-description">
@@ -2950,7 +2948,7 @@ parameters (e.g., <code>read_only</code> for DuckDB).</p>
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/metadata_store/ibis.py</code></summary>
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><a href="#__codelineno-0-256"><span class="linenos" data-linenos="256 "></span></a><span class="nd">@contextmanager</span>
-</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><a href="#__codelineno-0-257"><span class="linenos" data-linenos="257 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">AccessMode</span> <span class="o">=</span> <span class="n">AccessMode</span><span class="o">.</span><span class="n">READ</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
+</span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a><a href="#__codelineno-0-257"><span class="linenos" data-linenos="257 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">AccessMode</span> <span class="o">=</span> <span class="s2">&quot;read&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Self</span><span class="p">]:</span>
 </span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><a href="#__codelineno-0-258"><span class="linenos" data-linenos="258 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open connection to database via Ibis.</span>
 </span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><a href="#__codelineno-0-259"><span class="linenos" data-linenos="259 "></span></a>
 </span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><a href="#__codelineno-0-260"><span class="linenos" data-linenos="260 "></span></a><span class="sd">    Subclasses should override this to add backend-specific initialization</span>
@@ -4118,7 +4116,7 @@ Optionally, may also contain <code>metaxy_data_version_by_field</code>.</p>
 <p>Project validation is performed unless disabled via <code>allow_cross_project_writes()</code> context manager.</p>
 </li>
 <li>
-<p>Must be called within <code>store.open(mode=AccessMode.WRITE)</code> context manager.</p>
+<p>Must be called within <code>store.open(mode="write")</code> context manager.</p>
 </li>
 </ul>
 </details>
@@ -4151,7 +4149,7 @@ Optionally, may also contain <code>metaxy_data_version_by_field</code>.</p>
 </span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a><a href="#__codelineno-0-546"><span class="linenos" data-linenos="546 "></span></a>
 </span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a><a href="#__codelineno-0-547"><span class="linenos" data-linenos="547 "></span></a><span class="sd">        - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.</span>
 </span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a><a href="#__codelineno-0-548"><span class="linenos" data-linenos="548 "></span></a>
-</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a><a href="#__codelineno-0-549"><span class="linenos" data-linenos="549 "></span></a><span class="sd">        - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.</span>
+</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a><a href="#__codelineno-0-549"><span class="linenos" data-linenos="549 "></span></a><span class="sd">        - Must be called within `store.open(mode=&quot;write&quot;)` context manager.</span>
 </span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a><a href="#__codelineno-0-550"><span class="linenos" data-linenos="550 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a><a href="#__codelineno-0-551"><span class="linenos" data-linenos="551 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_check_open</span><span class="p">()</span>
 </span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a><a href="#__codelineno-0-552"><span class="linenos" data-linenos="552 "></span></a>
@@ -4351,7 +4349,7 @@ Optionally, may also contain <code>metaxy_data_version_by_field</code>.</p>
 </span><span id="__span-0-715"><a id="__codelineno-0-715" name="__codelineno-0-715"></a><a href="#__codelineno-0-715"><span class="linenos" data-linenos="715 "></span></a><span class="sd">        Self: The opened store instance</span>
 </span><span id="__span-0-716"><a id="__codelineno-0-716" name="__codelineno-0-716"></a><a href="#__codelineno-0-716"><span class="linenos" data-linenos="716 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-717"><a id="__codelineno-0-717" name="__codelineno-0-717"></a><a href="#__codelineno-0-717"><span class="linenos" data-linenos="717 "></span></a>    <span class="c1"># Determine mode based on auto_create_tables</span>
-</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a>    <span class="n">mode</span> <span class="o">=</span> <span class="n">AccessMode</span><span class="o">.</span><span class="n">WRITE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="k">else</span> <span class="n">AccessMode</span><span class="o">.</span><span class="n">READ</span>
+</span><span id="__span-0-718"><a id="__codelineno-0-718" name="__codelineno-0-718"></a><a href="#__codelineno-0-718"><span class="linenos" data-linenos="718 "></span></a>    <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;write&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_create_tables</span> <span class="k">else</span> <span class="s2">&quot;read&quot;</span>
 </span><span id="__span-0-719"><a id="__codelineno-0-719" name="__codelineno-0-719"></a><a href="#__codelineno-0-719"><span class="linenos" data-linenos="719 "></span></a>
 </span><span id="__span-0-720"><a id="__codelineno-0-720" name="__codelineno-0-720"></a><a href="#__codelineno-0-720"><span class="linenos" data-linenos="720 "></span></a>    <span class="c1"># Open the store (open() manages _context_depth internally)</span>
 </span><span id="__span-0-721"><a id="__codelineno-0-721" name="__codelineno-0-721"></a><a href="#__codelineno-0-721"><span class="linenos" data-linenos="721 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_open_cm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
@@ -4972,12 +4970,12 @@ configure deduplication at the storage layer.</p>
 </span><span id="__span-0-1276"><a id="__codelineno-0-1276" name="__codelineno-0-1276"></a><a href="#__codelineno-0-1276"><span class="linenos" data-linenos="1276 "></span></a>    <span class="c1"># Validate destination store is open</span>
 </span><span id="__span-0-1277"><a id="__codelineno-0-1277" name="__codelineno-0-1277"></a><a href="#__codelineno-0-1277"><span class="linenos" data-linenos="1277 "></span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span><span class="p">:</span>
 </span><span id="__span-0-1278"><a id="__codelineno-0-1278" name="__codelineno-0-1278"></a><a href="#__codelineno-0-1278"><span class="linenos" data-linenos="1278 "></span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-1279"><a id="__codelineno-0-1279" name="__codelineno-0-1279"></a><a href="#__codelineno-0-1279"><span class="linenos" data-linenos="1279 "></span></a>            <span class="s2">&quot;Destination store must be opened with store.open(AccessMode.WRITE) before use&quot;</span>
+</span><span id="__span-0-1279"><a id="__codelineno-0-1279" name="__codelineno-0-1279"></a><a href="#__codelineno-0-1279"><span class="linenos" data-linenos="1279 "></span></a>            <span class="s1">&#39;Destination store must be opened with store.open(&quot;write&quot;) before use&#39;</span>
 </span><span id="__span-0-1280"><a id="__codelineno-0-1280" name="__codelineno-0-1280"></a><a href="#__codelineno-0-1280"><span class="linenos" data-linenos="1280 "></span></a>        <span class="p">)</span>
 </span><span id="__span-0-1281"><a id="__codelineno-0-1281" name="__codelineno-0-1281"></a><a href="#__codelineno-0-1281"><span class="linenos" data-linenos="1281 "></span></a>
 </span><span id="__span-0-1282"><a id="__codelineno-0-1282" name="__codelineno-0-1282"></a><a href="#__codelineno-0-1282"><span class="linenos" data-linenos="1282 "></span></a>    <span class="c1"># Auto-open source store if not already open</span>
 </span><span id="__span-0-1283"><a id="__codelineno-0-1283" name="__codelineno-0-1283"></a><a href="#__codelineno-0-1283"><span class="linenos" data-linenos="1283 "></span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">from_store</span><span class="o">.</span><span class="n">_is_open</span><span class="p">:</span>
-</span><span id="__span-0-1284"><a id="__codelineno-0-1284" name="__codelineno-0-1284"></a><a href="#__codelineno-0-1284"><span class="linenos" data-linenos="1284 "></span></a>        <span class="k">with</span> <span class="n">from_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">AccessMode</span><span class="o">.</span><span class="n">READ</span><span class="p">):</span>
+</span><span id="__span-0-1284"><a id="__codelineno-0-1284" name="__codelineno-0-1284"></a><a href="#__codelineno-0-1284"><span class="linenos" data-linenos="1284 "></span></a>        <span class="k">with</span> <span class="n">from_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;read&quot;</span><span class="p">):</span>
 </span><span id="__span-0-1285"><a id="__codelineno-0-1285" name="__codelineno-0-1285"></a><a href="#__codelineno-0-1285"><span class="linenos" data-linenos="1285 "></span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_copy_metadata_impl</span><span class="p">(</span>
 </span><span id="__span-0-1286"><a id="__codelineno-0-1286" name="__codelineno-0-1286"></a><a href="#__codelineno-0-1286"><span class="linenos" data-linenos="1286 "></span></a>                <span class="n">from_store</span><span class="o">=</span><span class="n">from_store</span><span class="p">,</span>
 </span><span id="__span-0-1287"><a id="__codelineno-0-1287" name="__codelineno-0-1287"></a><a href="#__codelineno-0-1287"><span class="linenos" data-linenos="1287 "></span></a>                <span class="n">features</span><span class="o">=</span><span class="n">features</span><span class="p">,</span>
