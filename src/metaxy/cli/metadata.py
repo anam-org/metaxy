@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Annotated
 
 import cyclopts
@@ -62,7 +61,6 @@ def status(
     """Check metadata completeness and freshness for specified features."""
     from metaxy.cli.context import AppContext
     from metaxy.graph.status import get_feature_metadata_status
-    from metaxy.models.feature import FeatureGraph
 
     parsed_keys: list[FeatureKey] = []
     for raw_key in feature_keys:
@@ -78,38 +76,18 @@ def status(
     with metadata_store:
         # If snapshot_version provided, reconstruct graph from storage
         if snapshot_version:
-            # TODO: Move this logic to a helper function in the storage SDK
-            # (tracked separately in downstack PR)
             from metaxy.metadata_store.system.storage import SystemTableStorage
 
             storage = SystemTableStorage(metadata_store)
-            features_df = storage.read_features(
-                current=False,
-                snapshot_version=snapshot_version,
-                project=context.project,
-            )
 
-            if features_df.height == 0:
-                console.print(
-                    f"[red]✗[/red] No features recorded for snapshot {snapshot_version}."
-                )
-                raise SystemExit(1)
-
-            # Build snapshot data dict for FeatureGraph.from_snapshot()
-            snapshot_data = {
-                row["feature_key"]: {
-                    "feature_spec": json.loads(row["feature_spec"])
-                    if isinstance(row["feature_spec"], str)
-                    else row["feature_spec"],
-                    "feature_class_path": row["feature_class_path"],
-                    "metaxy_feature_version": row["feature_version"],
-                }
-                for row in features_df.iter_rows(named=True)
-            }
-
-            # Reconstruct graph from snapshot
             try:
-                graph = FeatureGraph.from_snapshot(snapshot_data)
+                graph = storage.load_graph_from_snapshot(
+                    snapshot_version=snapshot_version,
+                    project=context.project,
+                )
+            except ValueError as e:
+                console.print(f"[red]✗[/red] {e}")
+                raise SystemExit(1)
             except ImportError as e:
                 console.print(f"[red]✗[/red] Failed to load snapshot: {e}")
                 console.print(
@@ -175,8 +153,9 @@ def status(
                     tuple(id_columns_spec) if id_columns_spec is not None else None
                 )
 
-                # Use the model's method to format sample previews
-                preview_lines = status.format_sample_previews(id_columns_seq)
+                # Collect and format sample previews
+                previews = status.collect_sample_previews(id_columns=id_columns_seq)
+                preview_lines = status.format_sample_previews(previews)
                 for line in preview_lines:
                     console.print(line)
 

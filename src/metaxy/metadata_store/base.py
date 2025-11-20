@@ -143,6 +143,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        allow_fallback: bool = True,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -155,6 +156,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        allow_fallback: bool = True,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -166,6 +168,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        allow_fallback: bool = True,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -202,6 +205,8 @@ class MetadataStore(ABC):
             lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
                 If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
             versioning_engine: Override the store's versioning engine for this operation.
+            allow_fallback: If `True`, check fallback stores when reading upstream metadata.
+                Defaults to `True` to match read_metadata behavior.
             **kwargs: Backend-specific parameters
 
         Raises:
@@ -280,6 +285,7 @@ class MetadataStore(ABC):
                 upstream_feature_metadata = self.read_metadata(
                     upstream_spec.key,
                     filters=filters.get(upstream_spec.key.to_string(), []),
+                    allow_fallback=allow_fallback,
                 )
                 if upstream_feature_metadata is not None:
                     upstream_by_key[upstream_spec.key] = upstream_feature_metadata

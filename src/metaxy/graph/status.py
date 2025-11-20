@@ -21,6 +21,23 @@ if TYPE_CHECKING:
     from metaxy.versioning.types import LazyIncrement
 
 
+class SamplePreviews(BaseModel):
+    """Preview data for added and changed samples.
+
+    This model separates data collection from rendering, making it
+    reusable for different display contexts (CLI, graph viz, etc.).
+    """
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    added: pl.DataFrame | None = Field(
+        default=None, description="Preview of added samples"
+    )
+    changed: pl.DataFrame | None = Field(
+        default=None, description="Preview of changed samples"
+    )
+
+
 class FeatureMetadataStatus(BaseModel):
     """Status information for feature metadata in a metadata store.
 
@@ -74,50 +91,88 @@ class FeatureMetadataStatus(BaseModel):
             f"changed: {self.changed_count}) — {status_text}"
         )
 
-    def format_sample_previews(
+    def collect_sample_previews(
         self,
         id_columns: Sequence[str] | None = None,
         limit: int = 5,
-    ) -> list[str]:
-        """Format sample previews for added and changed samples.
+    ) -> SamplePreviews:
+        """Collect preview data for added and changed samples.
+
+        This separates data collection from formatting for reusability.
 
         Args:
             id_columns: Columns to include in previews (defaults to ["sample_uid"])
             limit: Maximum number of samples to preview per category
 
         Returns:
-            List of formatted preview lines (empty if no lazy_increment)
+            SamplePreviews with DataFrames for added/changed samples
         """
         if self.lazy_increment is None:
-            return []
+            return SamplePreviews()
 
+        display_columns = list(id_columns) if id_columns else ["sample_uid"]
+
+        added = None
+        if self.added_count > 0:
+            added = (
+                self.lazy_increment.added.select(display_columns)
+                .head(limit)
+                .collect()
+                .to_polars()
+            )
+
+        changed = None
+        if self.changed_count > 0:
+            changed = (
+                self.lazy_increment.changed.select(display_columns)
+                .head(limit)
+                .collect()
+                .to_polars()
+            )
+
+        return SamplePreviews(added=added, changed=changed)
+
+    def format_sample_previews(self, previews: SamplePreviews) -> list[str]:
+        """Format pre-collected sample previews for display.
+
+        This method only handles formatting. Use collect_sample_previews()
+        to get the preview data first.
+
+        Args:
+            previews: Pre-collected preview data from collect_sample_previews()
+
+        Returns:
+            List of formatted preview lines (empty if no data in previews)
+
+        Example:
+            ```python
+            # Collect once, format multiple times or reuse for viz
+            previews = status.collect_sample_previews(id_columns=["sample_uid"])
+
+            # Format for CLI display
+            cli_lines = status.format_sample_previews(previews)
+            for line in cli_lines:
+                console.print(line)
+
+            # Reuse for graph visualization
+            render_graph_node(node_id, previews)
+            ```
+        """
         lines: list[str] = []
 
-        if self.added_count > 0:
-            added_preview_df = preview_samples(
-                self.lazy_increment.added,
-                id_columns,
-                limit,
-            )
-            if added_preview_df.height > 0:
-                preview_lines = [
-                    ", ".join(f"{col}={row[col]}" for col in added_preview_df.columns)
-                    for row in added_preview_df.to_dicts()
-                ]
-                lines.append("    Added samples: " + "; ".join(preview_lines))
+        if previews.added is not None and previews.added.height > 0:
+            preview_lines = [
+                ", ".join(f"{col}={row[col]}" for col in previews.added.columns)
+                for row in previews.added.to_dicts()
+            ]
+            lines.append("    Added samples: " + "; ".join(preview_lines))
 
-        if self.changed_count > 0:
-            changed_preview_df = preview_samples(
-                self.lazy_increment.changed,
-                id_columns,
-                limit,
-            )
-            if changed_preview_df.height > 0:
-                preview_lines = [
-                    ", ".join(f"{col}={row[col]}" for col in changed_preview_df.columns)
-                    for row in changed_preview_df.to_dicts()
-                ]
-                lines.append("    Changed samples: " + "; ".join(preview_lines))
+        if previews.changed is not None and previews.changed.height > 0:
+            preview_lines = [
+                ", ".join(f"{col}={row[col]}" for col in previews.changed.columns)
+                for row in previews.changed.to_dicts()
+            ]
+            lines.append("    Changed samples: " + "; ".join(preview_lines))
 
         return lines
 
@@ -134,33 +189,6 @@ def count_lazy_rows(lazy_frame: nw.LazyFrame[Any]) -> int:
     return lazy_frame.select(nw.len()).collect().to_polars()["len"].item()
 
 
-def preview_samples(
-    lazy_frame: nw.LazyFrame[Any],
-    id_columns: Sequence[str] | None = None,
-    limit: int = 5,
-) -> pl.DataFrame:
-    """Return preview of samples as a Polars DataFrame.
-
-    Args:
-        lazy_frame: The LazyFrame containing samples
-        id_columns: Columns to include in the preview (defaults to ["sample_uid"])
-        limit: Maximum number of rows to include
-
-    Returns:
-        Polars DataFrame with the requested columns and row limit
-    """
-    # Determine columns to display
-    headers = list(id_columns or ["sample_uid"])
-    available_headers = [col for col in headers if col in lazy_frame.columns]
-
-    # Fallback to all columns if specified headers don't exist
-    if not available_headers:
-        available_headers = lazy_frame.columns
-
-    # Only collect limited rows
-    return lazy_frame.select(available_headers).head(limit).collect().to_polars()
-
-
 def get_feature_metadata_status(
     feature_key: FeatureKey | type[BaseFeature],
     metadata_store: MetadataStore,
@@ -172,7 +200,9 @@ def get_feature_metadata_status(
     Args:
         feature_key: The feature key or feature class to check
         metadata_store: The metadata store to query
-        use_fallback: Whether to read from fallback stores (defaults to False)
+        use_fallback: Whether to read from fallback stores when checking status.
+            Defaults to False to only check the primary store.
+            Set to True to include fallback stores in status checks.
 
     Returns:
         FeatureMetadataStatus with status information
@@ -196,12 +226,11 @@ def get_feature_metadata_status(
     target_version = feature_cls.feature_version()
 
     # Try to get the increment
-    # Note: use_fallback parameter is reserved for future use when fallback store
-    # support is added to the metadata store methods
     try:
         lazy_increment = metadata_store.resolve_update(
             feature_cls,
             lazy=True,
+            allow_fallback=use_fallback,
         )
     except FeatureNotFoundError:
         # No metadata exists at all
@@ -227,8 +256,8 @@ def get_feature_metadata_status(
     try:
         metadata_lazy = metadata_store.read_metadata(
             key,
-            feature_version=target_version,
             columns=list(id_columns_seq) if id_columns_seq is not None else None,
+            allow_fallback=use_fallback,
         )
         row_count = count_lazy_rows(metadata_lazy)
     except FeatureNotFoundError:
