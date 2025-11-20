@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from sqlalchemy import MetaData
 
+from metaxy.ext.sqlmodel import SQLModelPluginConfig
+
 
 def test_sqlmodel_system_tables_import():
     """Test that SQLModel system tables can be imported."""
@@ -34,6 +36,7 @@ def test_system_table_structure():
         FeatureVersionsTable,
         MigrationEventsTable,
     )
+
     from metaxy.metadata_store.system.events import (
         COL_EVENT_TYPE,
         COL_FEATURE_KEY,
@@ -90,8 +93,9 @@ def test_sqlmodel_config():
 
     # Test default config
     config = MetaxyConfig()
-    assert config.ext.sqlmodel.system_tables  # Default is True
-    assert not config.ext.sqlmodel.enable  # Default is False
+    sqlmode_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+    assert sqlmode_config.system_tables  # Default is True
+    assert not sqlmode_config.enable  # Default is False
 
     # Test with SQLModel enabled
     from metaxy.config import ExtConfig, SQLModelConfig
@@ -162,6 +166,7 @@ def test_migration_events_table_schema():
     from datetime import datetime
 
     from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+
     from metaxy.metadata_store.system.events import EventType
 
     # Create an event instance
@@ -186,6 +191,7 @@ def test_migration_events_feature_level():
     from datetime import datetime
 
     from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+
     from metaxy.metadata_store.system.events import EventType
 
     # Create a feature-level event
@@ -210,6 +216,7 @@ def test_migration_events_empty_payload():
     from datetime import datetime
 
     from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+
     from metaxy.metadata_store.system.events import EventType
 
     # Create event with empty payload (default)

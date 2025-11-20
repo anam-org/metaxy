@@ -6,11 +6,14 @@ to also be SQLModel table classes, enabling seamless integration with SQLAlchemy
 
 from typing import TYPE_CHECKING, Any
 
+from pydantic import Field as PydanticField
+from pydantic import model_validator
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
+from typing_extensions import Self
 
-from metaxy.config import MetaxyConfig
+from metaxy.config import MetaxyConfig, PluginConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
@@ -37,6 +40,34 @@ RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
         if name.startswith(SYSTEM_COLUMN_PREFIX)
     }
 )
+
+
+class SQLModelPluginConfig(PluginConfig):
+    """Configuration for SQLModel"""
+
+    infer_db_table_names: bool = PydanticField(
+        default=True,
+        description="Whether to automatically use `FeatureKey.table_name` for sqlalchemy's __tablename__ value.",
+    )
+
+    # Whether to use SQLModel definitions for system tables (for Alembic migrations)
+    system_tables: bool = PydanticField(
+        default=True,
+        description="Whether to use SQLModel definitions for system tables (for Alembic migrations).",
+    )
+
+    inject_metaxy_pk: bool = PydanticField(
+        default=False,
+        description="Whether to inject Metaxy composite primary key (id_columns + metaxy_created_at + metaxy_data_version) into SQLModel definitions.",
+    )
+
+    @model_validator(mode="after")
+    def import_system_tables(self) -> Self:
+        if self.system_tables:
+            import metaxy.ext.sqlmodel.system_tables as system_tables
+
+            assert system_tables
+        return self
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -89,7 +120,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         namespace: dict[str, Any],
         *,
         spec: FeatureSpecWithIDColumns | None = None,
-        inject_metaxy_pk: bool = False,
+        inject_metaxy_pk: bool | None = None,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Metaxy Feature class.
@@ -108,6 +139,11 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         """
         # If this is a concrete table (table=True) with a spec
         config = MetaxyConfig.get()
+        sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+
+        if inject_metaxy_pk is None:
+            # check global plugin configuration if not explicitly set
+            inject_metaxy_pk = sqlmodel_config.inject_metaxy_pk
 
         if kwargs.get("table") and spec is not None:
             # Prevent user-defined fields from shadowing system-managed columns
@@ -137,7 +173,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             # Automatically set __tablename__ from the feature key if not provided
             if (
                 "__tablename__" not in namespace
-                and config.ext.sqlmodel.infer_db_table_names
+                and sqlmodel_config.infer_db_table_names
             ):
                 namespace["__tablename__"] = spec.key.table_name
 

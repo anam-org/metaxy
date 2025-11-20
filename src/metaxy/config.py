@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import tomli
 from pydantic import Field as PydanticField
-from pydantic import PrivateAttr, field_validator
+from pydantic import field_validator
 from pydantic.types import ImportString
 from pydantic_settings import (
     BaseSettings,
@@ -112,53 +112,23 @@ class StoreConfig(BaseSettings):
 class PluginConfig(BaseSettings):
     """Configuration for Metaxy plugins"""
 
-    model_config = SettingsConfigDict(
-        frozen=True,
-    )
+    model_config = SettingsConfigDict(frozen=True, extra="allow")
 
     enable: bool = PydanticField(
         default=False,
         description="Whether to enable the plugin.",
     )
 
-    _plugin: str = PrivateAttr()
 
-
-class SQLModelConfig(PluginConfig):
-    """Configuration for SQLModel"""
-
-    infer_db_table_names: bool = PydanticField(
-        default=True,
-        description="Whether to automatically use `FeatureKey.table_name` for sqlalchemy's __tablename__ value.",
-    )
-
-    # Whether to use SQLModel definitions for system tables (for Alembic migrations)
-    system_tables: bool = PydanticField(
-        default=True,
-        description="Whether to use SQLModel definitions for system tables (for Alembic migrations).",
-    )
-
-    _plugin: str = PrivateAttr(default="sqlmodel")
-
-
-class ExtConfig(BaseSettings):
-    """Configuration for Metaxy integrations with third-party tools"""
-
-    model_config = SettingsConfigDict(
-        extra="allow",
-        frozen=True,
-    )
-
-    sqlmodel: SQLModelConfig = PydanticField(
-        default_factory=SQLModelConfig,
-        description="SQLModel integration configuration",
-    )
-
+PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
 
 # Context variable for storing the app context
 _metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
     "_metaxy_config", default=None
 )
+
+
+BUILTIN_PLUGINS = {"sqlmodel": "metaxy.ext.sqlmodel"}
 
 
 class MetaxyConfig(BaseSettings):
@@ -218,9 +188,10 @@ class MetaxyConfig(BaseSettings):
         description="Graph rendering theme for CLI visualization",
     )
 
-    ext: ExtConfig = PydanticField(
-        default_factory=ExtConfig,
+    ext: dict[str, PluginConfig] = PydanticField(
+        default_factory=dict,
         description="Configuration for Metaxy integrations with third-party tools",
+        frozen=False,
     )
 
     hash_truncation_length: int | None = PydanticField(
@@ -237,6 +208,35 @@ class MetaxyConfig(BaseSettings):
         default="default",
         description="Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)",
     )
+
+    @field_validator("ext", mode="after")
+    @classmethod
+    def drop_disabled_plugins(
+        cls, ext: dict[str, PluginConfig]
+    ) -> dict[str, PluginConfig]:
+        result = ext.copy()
+
+        for name, plugin in ext.items():
+            if not plugin.enable:
+                del result[name]
+
+        return result
+
+    @field_validator("ext", mode="after")
+    @classmethod
+    def register_plugins(cls, ext: dict[str, PluginConfig]) -> dict[str, PluginConfig]:
+        for name, module in BUILTIN_PLUGINS.items():
+            if (
+                name in ext and ext[name].enable
+            ):  # should only have enabled plugins by this point but whatever
+                try:
+                    __import__(module)
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
+                    ) from e
+
+        return ext
 
     @field_validator("project")
     @classmethod
@@ -265,12 +265,13 @@ class MetaxyConfig(BaseSettings):
     @property
     def plugins(self) -> list[str]:
         """Returns all enabled plugin names from ext configuration."""
-        plugins = []
-        for field_name in type(self.ext).model_fields:
-            field_value = getattr(self.ext, field_name)
-            if hasattr(field_value, "_plugin") and field_value.enable:
-                plugins.append(field_value._plugin)
-        return plugins
+        return list(self.ext.keys())
+
+    @classmethod
+    def get_plugin(cls, name: str, plugin_cls: type[PluginConfigT]) -> PluginConfigT:
+        """Get the plugin config from the global Metaxy config."""
+        plugin = plugin_cls.model_validate(cls.get().ext[name])
+        return plugin
 
     @field_validator("hash_truncation_length")
     @classmethod
