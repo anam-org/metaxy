@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/reference/api/">
+        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/metadata-stores/deltalake/">
       
       
-        <link rel="prev" href="../cli/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="definitions/">
+        <link rel="next" href="../../feature-definitions/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>API - Metaxy</title>
+        <title>Delta Lake - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/code_select.css">
+      <link rel="stylesheet" href="../../../css/code_select.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#api-reference" class="md-skip">
+        <a href="#deltametadatastore" class="md-skip">
           Skip to content
         </a>
       
@@ -102,7 +102,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              API
+              Delta Lake
             
           </span>
         </div>
@@ -244,7 +244,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -261,6 +261,8 @@
   
   
   
+    
+  
   
     
     
@@ -268,11 +270,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../learn/metadata-stores/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -297,7 +301,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/one-to-many/" class="md-tabs__link">
+        <a href="../../../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -317,7 +321,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../cli/" class="md-tabs__link">
+      <a href="../../../reference/cli/" class="md-tabs__link">
         
   
   
@@ -334,11 +338,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../reference/api/" class="md-tabs__link">
         
   
   
@@ -357,7 +359,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../configuration/" class="md-tabs__link">
+      <a href="../../../reference/configuration/" class="md-tabs__link">
         
   
   
@@ -398,7 +400,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -428,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -452,8 +454,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -481,21 +485,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -513,7 +518,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -528,8 +533,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -542,20 +549,21 @@
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
         
           
+          
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_1" >
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="">
             
   
   
@@ -573,7 +581,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -591,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/metadata-stores/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -616,8 +624,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -632,13 +642,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_1_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2_1_2" id="__nav_2_1_2_label" tabindex="0">
@@ -659,7 +667,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_1_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_1_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2_1_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -674,10 +682,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../learn/metadata-stores/deltalake/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Delta Lake
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -693,6 +728,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#object-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object Stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storage-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -721,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/feature-definitions/" class="md-nav__link">
+      <a href="../../feature-definitions/" class="md-nav__link">
         
   
   
@@ -749,7 +837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/data-versioning/" class="md-nav__link">
+      <a href="../../data-versioning/" class="md-nav__link">
         
   
   
@@ -777,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/feature-discovery/" class="md-nav__link">
+      <a href="../../feature-discovery/" class="md-nav__link">
         
   
   
@@ -805,7 +893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/syntactic-sugar/" class="md-nav__link">
+      <a href="../../syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -833,7 +921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/relationship/" class="md-nav__link">
+      <a href="../../relationship/" class="md-nav__link">
         
   
   
@@ -861,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/filters/" class="md-nav__link">
+      <a href="../../filters/" class="md-nav__link">
         
   
   
@@ -889,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -917,7 +1005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/system-columns/" class="md-nav__link">
+      <a href="../../system-columns/" class="md-nav__link">
         
   
   
@@ -955,10 +1043,13 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
@@ -967,7 +1058,7 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_10" >
         
           
-          <label class="md-nav__link" for="__nav_2_10" id="__nav_2_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_10" id="__nav_2_10_label" tabindex="">
             
   
   
@@ -1003,7 +1094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/integrations/sqlmodel/" class="md-nav__link">
+      <a href="../../integrations/sqlmodel/" class="md-nav__link">
         
   
   
@@ -1104,7 +1195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/one-to-many/" class="md-nav__link">
+      <a href="../../../examples/one-to-many/" class="md-nav__link">
         
   
   
@@ -1139,7 +1230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../../reference/cli/" class="md-nav__link">
         
   
   
@@ -1163,10 +1254,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1184,23 +1273,22 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -1218,13 +1306,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1264,13 +1352,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1280,7 +1365,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="definitions/" class="md-nav__link ">
+            <a href="../../../reference/api/definitions/" class="md-nav__link ">
               
   
   
@@ -1298,7 +1383,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_1" id="__nav_5_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1322,7 +1407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/feature-spec/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -1350,7 +1435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/feature/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/feature/" class="md-nav__link">
         
   
   
@@ -1378,7 +1463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/field/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/field/" class="md-nav__link">
         
   
   
@@ -1406,7 +1491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/fields-mapping/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -1434,7 +1519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/relationship/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -1462,7 +1547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/graph/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/graph/" class="md-nav__link">
         
   
   
@@ -1490,7 +1575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="definitions/filters/" class="md-nav__link">
+      <a href="../../../reference/api/definitions/filters/" class="md-nav__link">
         
   
   
@@ -1540,13 +1625,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1556,7 +1638,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="metadata-stores/" class="md-nav__link ">
+            <a href="../../../reference/api/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1574,7 +1656,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1623,7 +1705,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="metadata-stores/ibis/" class="md-nav__link ">
+            <a href="../../../reference/api/metadata-stores/ibis/" class="md-nav__link ">
               
   
   
@@ -1665,7 +1747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="metadata-stores/ibis/duckdb/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/ibis/duckdb/" class="md-nav__link">
         
   
   
@@ -1693,7 +1775,7 @@
   
   
     <li class="md-nav__item">
-      <a href="metadata-stores/ibis/clickhouse/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/ibis/clickhouse/" class="md-nav__link">
         
   
   
@@ -1789,7 +1871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="metadata-stores/delta/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/delta/" class="md-nav__link">
         
   
   
@@ -1817,7 +1899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="metadata-stores/memory/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/memory/" class="md-nav__link">
         
   
   
@@ -1853,7 +1935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -1889,7 +1971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="config/" class="md-nav__link">
+      <a href="../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -1917,7 +1999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="types/" class="md-nav__link">
+      <a href="../../../reference/api/types/" class="md-nav__link">
         
   
   
@@ -1945,7 +2027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="constants/" class="md-nav__link">
+      <a href="../../../reference/api/constants/" class="md-nav__link">
         
   
   
@@ -1980,7 +2062,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -2027,10 +2109,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#metaxy" class="md-nav__link">
+  <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        metaxy
+        Installation
       
     </span>
   </a>
@@ -2038,10 +2120,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#initialization" class="md-nav__link">
+  <a href="#object-stores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Initialization
+        Object Stores
       
     </span>
   </a>
@@ -2049,32 +2131,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy.init_metaxy" class="md-nav__link">
+  <a href="#storage-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;init_metaxy
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#metadata-stores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Metadata Stores
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dependency-specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependency Specification
+        Storage Layout
       
     </span>
   </a>
@@ -2099,6 +2159,90 @@
   
 
 
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Learn
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Metadata Stores
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Stores without engine
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
               
               <article class="md-content__inner md-typeset">
                 
@@ -2109,96 +2253,19 @@
   
 
 
-<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
-<h2 id="metaxy"><code>metaxy</code><a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h2>
-<p>The top-level <code>metaxy</code> module provides the main public API for Metaxy.</p>
-<h2 id="initialization">Initialization<a class="headerlink" href="#initialization" title="Permanent link">&para;</a></h2>
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="metaxy.init_metaxy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">init_metaxy</span>
-
-
-<a href="#metaxy.init_metaxy" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">init_metaxy</span><span class="p">(</span><span class="n">config_file</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">search_parents</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="config/#metaxy.MetaxyConfig">MetaxyConfig</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Main user-facing initialization function for Metaxy. It loads the configuration and features.</p>
-<p>Features are <a href="../../learn/feature-discovery/">discovered</a> from installed Python packages metadata.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>config_file</code></b>
-              (<code><a class="autorefs autorefs-external" title="&lt;code&gt;pathlib.Path&lt;/code&gt;" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path">Path</a> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Path to the configuration file. Defaults to None.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>search_parents</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
-                  <code>True</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Whether to search parent directories for configuration files. Defaults to True.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-<b><code>MetaxyConfig</code></b> (              <code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetaxyConfig&lt;/span&gt; (&lt;code&gt;metaxy.config.MetaxyConfig&lt;/code&gt;)" href="config/#metaxy.MetaxyConfig">MetaxyConfig</a></code>
-)          –
-          <div class="doc-md-description">
-            <p>The initialized Metaxy configuration.</p>
-          </div>
-        </li>
-    </ul>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>src/metaxy/__init__.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><a href="#__codelineno-0-54"><span class="linenos" data-linenos="54 "></span></a><span class="k">def</span><span class="w"> </span><span class="nf">init_metaxy</span><span class="p">(</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><a href="#__codelineno-0-55"><span class="linenos" data-linenos="55 "></span></a>    <span class="n">config_file</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">search_parents</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><a href="#__codelineno-0-56"><span class="linenos" data-linenos="56 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetaxyConfig</span><span class="p">:</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><a href="#__codelineno-0-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Main user-facing initialization function for Metaxy. It loads the configuration and features.</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><a href="#__codelineno-0-58"><span class="linenos" data-linenos="58 "></span></a>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><a href="#__codelineno-0-59"><span class="linenos" data-linenos="59 "></span></a><span class="sd">    Features are [discovered](../../learn/feature-discovery.md) from installed Python packages metadata.</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><a href="#__codelineno-0-60"><span class="linenos" data-linenos="60 "></span></a>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><a href="#__codelineno-0-61"><span class="linenos" data-linenos="61 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><a href="#__codelineno-0-62"><span class="linenos" data-linenos="62 "></span></a><span class="sd">        config_file (Path | None, optional): Path to the configuration file. Defaults to None.</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><a href="#__codelineno-0-63"><span class="linenos" data-linenos="63 "></span></a><span class="sd">        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><a href="#__codelineno-0-64"><span class="linenos" data-linenos="64 "></span></a>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><a href="#__codelineno-0-65"><span class="linenos" data-linenos="65 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><a href="#__codelineno-0-66"><span class="linenos" data-linenos="66 "></span></a><span class="sd">        MetaxyConfig: The initialized Metaxy configuration.</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><a href="#__codelineno-0-67"><span class="linenos" data-linenos="67 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><a href="#__codelineno-0-68"><span class="linenos" data-linenos="68 "></span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><a href="#__codelineno-0-69"><span class="linenos" data-linenos="69 "></span></a>        <span class="n">config_file</span><span class="o">=</span><span class="n">config_file</span><span class="p">,</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><a href="#__codelineno-0-70"><span class="linenos" data-linenos="70 "></span></a>        <span class="n">search_parents</span><span class="o">=</span><span class="n">search_parents</span><span class="p">,</span>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><a href="#__codelineno-0-71"><span class="linenos" data-linenos="71 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><a href="#__codelineno-0-72"><span class="linenos" data-linenos="72 "></span></a>    <span class="n">load_features</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">entrypoints</span><span class="p">)</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><a href="#__codelineno-0-73"><span class="linenos" data-linenos="73 "></span></a>    <span class="k">return</span> <span class="n">cfg</span>
-</span></code></pre></div>
-            </details>
-    </div>
-
-</div><h2 id="metadata-stores">Metadata Stores<a class="headerlink" href="#metadata-stores" title="Permanent link">&para;</a></h2>
-<p>Metaxy abstracts interactions with metadata through the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="metadata-stores/#metaxy.MetadataStore">MetadaStore</a> interface.</p>
-<h2 id="dependency-specification">Dependency Specification<a class="headerlink" href="#dependency-specification" title="Permanent link">&para;</a></h2>
-<p>Metaxy has a declarative <a href="definitions/">feature specification system</a> that allows users to express dependencies between their features and their versioned fields.</p>
+<h1 id="deltametadatastore">DeltaMetadataStore<a class="headerlink" href="#deltametadatastore" title="Permanent link">&para;</a></h1>
+<p>Delta Lake keeps one Delta table per feature, appends new metadata versions, and uses the in-memory Polars versioning engine for provenance calculations.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>The backend relies on <a href="https://delta-io.github.io/delta-rs/python/"><code>deltalake</code></a> which ships with Metaxy’s <code>delta</code> extras.</p>
+<h2 id="object-stores">Object Stores<a class="headerlink" href="#object-stores" title="Permanent link">&para;</a></h2>
+<p>Point <code>root_path</code> at any supported URI (<code>s3://</code>, <code>abfss://</code>, <code>gs://</code>, …) and forward credentials with <code>storage_options</code>.
+The dict is passed verbatim to <a href="https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/"><code>deltalake</code></a>.</p>
+<h2 id="storage-layout">Storage Layout<a class="headerlink" href="#storage-layout" title="Permanent link">&para;</a></h2>
+<p>Control how feature keys map to Delta directories with <code>layout</code>:</p>
+<ul>
+<li><code>flat</code> (default) keeps the current <code>your__feature_key</code> directory scheme.</li>
+<li><code>nested</code> places every key part into its own directory (e.g. <code>your/feature/key</code>).</li>
+</ul>
 
 
 
@@ -2272,12 +2339,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../javascripts/scarf.js"></script>
+        <script src="../../../javascripts/scarf.js"></script>
       
     
   </body>
