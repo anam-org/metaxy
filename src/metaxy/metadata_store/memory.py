@@ -12,8 +12,7 @@ from typing_extensions import Self
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -88,7 +87,7 @@ class InMemoryMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
-    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         feature_key = self._resolve_feature_key(feature)
         storage_key = self._get_storage_key(feature_key)
         return storage_key in self._storage
@@ -164,7 +163,7 @@ class InMemoryMetadataStore(MetadataStore):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,

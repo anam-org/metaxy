@@ -12,6 +12,7 @@ from metaxy.models.field import (
     SpecialFieldDep,
 )
 from metaxy.models.fields_mapping import FieldsMappingResolutionContext
+from metaxy.models.types import CoercibleToFieldKey, ValidatedFieldKeyAdapter
 
 # Rebuild the model now that FeatureSpec is available
 FieldsMappingResolutionContext.model_rebuild()
@@ -89,11 +90,22 @@ class FeaturePlan(FrozenBaseModel):
         return res
 
     def get_parent_fields_for_field(
-        self, key: FieldKey
+        self, key: CoercibleToFieldKey
     ) -> Mapping[FQFieldKey, FieldSpec]:
+        """Get parent fields for a given field key.
+
+        Args:
+            key: Field key to get parent fields for. Accepts string, sequence, or FieldKey.
+
+        Returns:
+            Mapping of fully qualified field keys to their specs.
+        """
+        # Validate and coerce the key
+        validated_key = ValidatedFieldKeyAdapter.validate_python(key)
+
         res = {}
 
-        field = self.feature.fields_by_key[key]
+        field = self.feature.fields_by_key[validated_key]
 
         # Get resolved dependencies (combining automatic mapping and explicit deps)
         resolved_deps = self._resolve_field_deps(field)
