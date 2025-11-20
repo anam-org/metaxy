@@ -18,6 +18,7 @@ app = cyclopts.App(
     config=cyclopts.config.Env(  # pyrefly: ignore[unexpected-keyword,implicit-import]
         "METAXY_",  # Every environment variable for setting the arguments will begin with this.  # pyrefly: ignore[bad-argument-count]
     ),
+    help_epilogue="Learn more in [Metaxy docs](https://anam-org.github.io/metaxy)",
 )
 
 
