@@ -196,7 +196,7 @@ class MetaxyConfig(BaseSettings):
 
     hash_truncation_length: int | None = PydanticField(
         default=None,
-        description="Truncate hash values to this length (minimum 8 characters). None = no truncation.",
+        description="Truncate hash values to this length (minimum 8 characters).",
     )
 
     auto_create_tables: bool = PydanticField(

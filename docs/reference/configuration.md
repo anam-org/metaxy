@@ -12,12 +12,11 @@ When the same setting is defined in multiple places, Metaxy uses the following p
 
 Configuration files are discovered automatically by searching in the current or parent directories.
 
-## Fields
+## Configuration Options
 
 ::: metaxy-config
     class: metaxy.config.MetaxyConfig
-    header_level: 2
-:::
+    header_level: 3
 
 ## Store Configuration
 
@@ -66,34 +65,23 @@ The `stores` field configures metadata store backends. Each store is defined by:
     db_path = "s3://my-bucket/metadata.duckdb"
     ```
 
-### Available Store Types
+### Available Metadata Stores
 
-| Store Type | Import Path | Description |
-|------------|-------------|-------------|
-| DuckDB | `metaxy.metadata_store.duckdb.DuckDBMetadataStore` | File-based or in-memory DuckDB backend |
-| ClickHouse | `metaxy.metadata_store.clickhouse.ClickHouseMetadataStore` | ClickHouse database backend |
-| In-Memory | `metaxy.metadata_store.memory.InMemoryMetadataStore` | In-memory backend for testing |
+- [DuckDB](api/metadata-stores/ibis/duckdb.md)
+- [ClickHouse](api/metadata-stores/ibis/clickhouse.md)
 
 ### Getting a Store Instance
 
 ```python
-from metaxy.config import MetaxyConfig
+import metaxy as mx
 
-config = MetaxyConfig.load()
-
-# Get the default store
-with config.get_store() as store:
+with mx.MetaxyConfig.load().get_store("prod") as store:
     # Use store
-    pass
-
-# Get a specific store by name
-with config.get_store("prod") as store:
-    # Use store
-    pass
+    ...
 ```
 
 ## Plugin Configuration
 
-Plugins are configured under the `ext` field. Each plugin has its own configuration options documented in the integration guides:
+Plugins are configured under the `ext` field. Each plugin has its own configuration options.
 
-- [SQLModel Plugin Configuration](../learn/integrations/sqlmodel.md#configuration)
+- [SQLModel Plugin Configuration](../learn/integrations/sqlmodel.md#configuration-options)

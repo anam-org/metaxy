@@ -11,12 +11,10 @@ It is the primary way to use Metaxy with database-backed [metadata stores](../..
 The SQLModel integration requires the sqlmodel package:
 
 ```bash
-pip install metaxy[sqlmodel]
+pip install 'metaxy[sqlmodel]'
 ```
 
-## Basic Usage
-
-The integration has to be enabled in the configuration file:
+and has to be enabled explicitly:
 
 === "metaxy.toml"
 
@@ -35,10 +33,12 @@ The integration has to be enabled in the configuration file:
 === "Environment Variable"
 
     ```bash
-    export METAXY_EXT_SQLMODEL_ENABLE=true
+    export METAXY_EXT__SQLMODEL_ENABLE=true
     ```
 
-We can define feature class that inherits from `SampleFeature` and specify both Metaxy's `spec` parameter and SQLModel's `table=True` parameter:
+## Basic Usage
+
+Let's define a feature:
 
 ```python
 import metaxy as mx
@@ -64,16 +64,22 @@ class VideoFeature(
     duration: float
 ```
 
-!!! warning
-It's better if ID columns are **not server-generated** because they would be typically used when writing **data**, so before **metadata** is inserted into the database
-
 This class serves dual purposes:
 
 - **Metaxy feature**: Tracks feature version, field versions, and dependencies
 - **SQLModel table**: Maps to database schema with ORM functionality
 
+!!! tip "Database Migrations Generation"
+
+    You can use [Alembic](#database-migrations-with-alembic) to automatically detect all your feature tables and generate migration scripts.
+
+!!! warning "Do Not Use Server-Generated IDs"
+
+    ID columns **should not be server-generated** because they are typically used to determine **data** locations such as object storage keys, so they have to be defined before **metadata** is inserted into the database
+
 !!! note "Automatic Table Naming"
-When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
+
+    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
 
 ### Loading Features and Populating Metadata
 
@@ -97,15 +103,12 @@ This is particularly useful when:
 - Setting up database connections that require the complete schema
 - Using SQLModel's `create_all()` for development/testing (Metaxy's `auto_create_tables` setting should be preferred over `create_all()`)
 
-!!! tip "Migration Generation"
-After calling `init_metaxy`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
-
-## Configuration
+## Configuration Options
 
 ::: metaxy-config
 class: metaxy.ext.sqlmodel.SQLModelPluginConfig
 path_prefix: ext.sqlmodel
-:::
+header_level: 3
 
 ## Database Migrations with Alembic
 
