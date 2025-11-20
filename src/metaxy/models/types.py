@@ -265,18 +265,6 @@ class FeatureKey(_Key):
             parts: str | Sequence[str] | FeatureKey,
         ) -> None: ...
 
-    @classmethod
-    def __get_validators__(cls):
-        """Pydantic validator for when used as a field type."""
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> FeatureKey:
-        """Convert various inputs to FeatureKey."""
-        if isinstance(value, cls):
-            return value
-        return cls(value)
-
     def model_dump(self, **kwargs: Any) -> Any:
         """Serialize to list format for backward compatibility."""
         # When serializing this key, return it as a list of parts
@@ -333,18 +321,6 @@ class FieldKey(_Key):
             self,
             parts: str | Sequence[str] | FieldKey,
         ) -> None: ...
-
-    @classmethod
-    def __get_validators__(cls):
-        """Pydantic validator for when used as a field type."""
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> FieldKey:
-        """Convert various inputs to FieldKey."""
-        if isinstance(value, cls):
-            return value
-        return cls(value)
 
     def model_dump(self, **kwargs: Any) -> Any:
         """Serialize to list format for backward compatibility."""
