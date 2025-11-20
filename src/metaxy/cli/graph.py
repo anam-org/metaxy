@@ -35,9 +35,10 @@ def push(
         ),
     ] = None,
 ):
-    """Serialize all Metaxy feature definitions (identified via feature discovery) to the metadata store.
+    """Serialize all Metaxy features to the metadata store.
 
     This is intended to be invoked in a CD pipeline **before** running Metaxy code in production.
+    Feature definitions are collected via the [feature discovery](https://anam-org.github.io/metaxy/main/learn/feature-discovery/) mechanism.
     """
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system.models import METAXY_TAG
