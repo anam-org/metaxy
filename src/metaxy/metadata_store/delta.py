@@ -107,6 +107,33 @@ class DeltaMetadataStore(MetadataStore):
 
     # ===== MetadataStore abstract methods =====
 
+    def has_feature(
+        self,
+        feature: FeatureKey | type[BaseFeature],
+        *,
+        check_fallback: bool = False,
+    ) -> bool:
+        """
+        Check if feature exists in store.
+
+        Args:
+            feature: Feature to check
+            check_fallback: If True, also check fallback stores
+
+        Returns:
+            True if feature exists, False otherwise
+        """
+        if not check_fallback:
+            return self._table_exists(
+                self._feature_uri(self._resolve_feature_key(feature))
+            )
+        else:
+            for store in self.fallback_stores:
+                if store.has_feature(feature, check_fallback=True):
+                    return True
+
+        return False
+
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Use XXHASH64 by default to match other non-SQL stores."""
         return HashAlgorithm.XXHASH64
@@ -185,10 +212,18 @@ class DeltaMetadataStore(MetadataStore):
         Works for both local and remote (object store) paths.
         Uses is_deltatable() for efficient verification without exception handling.
         """
-        return deltalake.DeltaTable.is_deltatable(
-            table_uri,
-            storage_options=self.storage_options or None,
-        )
+        # for weird reasons deltalake.DeltaTable.is_deltatable() sometimes hangs in multi-threading settings
+        # but a deltalake.DeltaTable can be constructed just fine
+        # so we are relying on DeltaTableNotFoundError to check for existence
+        from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
+
+        try:
+            _ = deltalake.DeltaTable(
+                table_uri, storage_options=self.storage_options, without_files=True
+            )
+        except DeltaTableNotFoundError:
+            return False
+        return True
 
     # ===== Storage operations =====
 
