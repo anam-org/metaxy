@@ -58,7 +58,7 @@ def launcher(
     """Metaxy CLI.
 
     Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
-    The configuration file must be present.
+    Feature definitions are collected via [feature discovery](https://anam-org.github.io/metaxy/main/learn/feature-discovery/).
     """
     import logging
     import os
