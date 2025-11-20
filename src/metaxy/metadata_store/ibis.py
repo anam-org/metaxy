@@ -126,6 +126,11 @@ class IbisMetadataStore(MetadataStore, ABC):
             versioning_engine_cls=IbisVersioningEngine,
         )
 
+    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+        feature_key = self._resolve_feature_key(feature)
+        table_name = self.get_table_name(feature_key)
+        return table_name in self.conn.list_tables()
+
     def get_table_name(
         self,
         key: FeatureKey,
@@ -330,10 +335,6 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore('postgresql://user:pass@host:5432/db') instead of "
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
-
-    def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
-        """Convert table name back to feature key."""
-        return FeatureKey(table_name.split("__"))
 
     def write_metadata_to_store(
         self,

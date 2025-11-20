@@ -88,6 +88,11 @@ class InMemoryMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
+    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+        feature_key = self._resolve_feature_key(feature)
+        storage_key = self._get_storage_key(feature_key)
+        return storage_key in self._storage
+
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
