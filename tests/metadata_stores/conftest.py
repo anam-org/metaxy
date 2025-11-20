@@ -455,7 +455,9 @@ def s3_endpoint_url() -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="function")
-def s3_bucket(s3_endpoint_url: str) -> Generator[dict[str, Any], None, None]:
+def s3_bucket_and_storage_options(
+    s3_endpoint_url: str,
+) -> tuple[str, dict[str, Any]]:
     """
     Creates a unique S3 bucket and provides storage_options
     """
@@ -482,8 +484,4 @@ def s3_bucket(s3_endpoint_url: str) -> Generator[dict[str, Any], None, None]:
         "AWS_S3_ALLOW_UNSAFE_RENAME": "true",
     }
 
-    yield {
-        "bucket_name": bucket_name,
-        "storage_options": storage_options,
-        "s3_resource": s3_resource,
-    }
+    return (bucket_name, storage_options)

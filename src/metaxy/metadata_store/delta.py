@@ -107,6 +107,18 @@ class DeltaMetadataStore(MetadataStore):
 
     # ===== MetadataStore abstract methods =====
 
+    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+        """Check if feature exists in Delta store.
+
+        Args:
+            feature: Feature to check
+
+        Returns:
+            True if feature exists, False otherwise
+        """
+        feature_key = self._resolve_feature_key(feature)
+        return self._table_exists(self._feature_uri(feature_key))
+
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Use XXHASH64 by default to match other non-SQL stores."""
         return HashAlgorithm.XXHASH64
@@ -183,12 +195,19 @@ class DeltaMetadataStore(MetadataStore):
         """Check whether the provided URI already contains a Delta table.
 
         Works for both local and remote (object store) paths.
-        Uses is_deltatable() for efficient verification without exception handling.
         """
-        return deltalake.DeltaTable.is_deltatable(
-            table_uri,
-            storage_options=self.storage_options or None,
-        )
+        # for weird reasons deltalake.DeltaTable.is_deltatable() sometimes hangs in multi-threading settings
+        # but a deltalake.DeltaTable can be constructed just fine
+        # so we are relying on DeltaTableNotFoundError to check for existence
+        from deltalake.exceptions import TableNotFoundError as DeltaTableNotFoundError
+
+        try:
+            _ = deltalake.DeltaTable(
+                table_uri, storage_options=self.storage_options, without_files=True
+            )
+        except DeltaTableNotFoundError:
+            return False
+        return True
 
     # ===== Storage operations =====
 
