@@ -36,7 +36,7 @@ def get_metaxy_metadata() -> MetaData:
         target_metadata.reflect(my_app.metadata)
         ```
     """
-    from metaxy.ext.sqlmodel_system_tables import get_system_metadata
+    from metaxy.ext.sqlmodel.system_tables import get_system_metadata
 
     return get_system_metadata()
 

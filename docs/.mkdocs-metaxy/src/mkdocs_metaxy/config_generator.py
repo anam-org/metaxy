@@ -64,7 +64,7 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
         >>> format_field_type(field_info)
         'str | None'
         >>> format_field_type(field_info, add_links=True)
-        '[StoreConfig](#storeconfig) | None'
+        '[StoreConfig](#stores) | None'
     """
     annotation = field_info.annotation
     if annotation is None:
@@ -86,7 +86,7 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
     if add_links:
         # Map of type names to anchor IDs
         type_links = {
-            "StoreConfig": "#storeconfig",
+            "StoreConfig": "#stores",
             "ExtConfig": "#extconfig",
             "SQLModelConfig": "#sqlmodelconfig",
             "PluginConfig": "#pluginconfig",
@@ -482,6 +482,8 @@ def generate_individual_field_doc(
     env_prefix: str = "METAXY_",
     env_nested_delimiter: str = "__",
     include_tool_prefix: bool = False,
+    header_level: int = 3,
+    env_var_path: list[str] | None = None,
 ) -> str:
     """Generate documentation for an individual field with tabs and env var.
 
@@ -490,15 +492,18 @@ def generate_individual_field_doc(
         env_prefix: Environment variable prefix
         env_nested_delimiter: Delimiter for nested fields
         include_tool_prefix: Whether this is for pyproject.toml (needs [tool.metaxy] prefix)
+        header_level: Heading level for the field header (1-6, default 3)
+        env_var_path: Optional path to use for env var generation (if different from field["path"])
 
     Returns:
         Markdown string for the field documentation
     """
     lines = []
 
-    # Field header
+    # Field header - no backticks so it appears properly in TOC
     field_path = get_toml_path(field["path"])
-    lines.append(f"### `{field_path}`")
+    header_prefix = "#" * header_level
+    lines.append(f"{header_prefix} {field_path}")
     lines.append("")
 
     # Description
@@ -522,9 +527,8 @@ def generate_individual_field_doc(
     lines.append("")
 
     # TOML Configuration (tabbed)
-    lines.append('=== "!metaxy.toml"')
-    lines.append("")
-    lines.append("    ```toml")
+    lines.append('=== "metaxy.toml"')
+    lines.append("\n    ```toml\n")
 
     # Generate TOML example
     if len(field["path"]) == 1:
@@ -562,13 +566,11 @@ def generate_individual_field_doc(
             lines.append("    # Optional")
             lines.append(f"    # {field['path'][-1]} = {placeholder}")
 
-    lines.append("    ```")
-    lines.append("")
+    lines.append("\n    ```\n")
 
     # pyproject.toml version
     lines.append('=== "pyproject.toml"')
-    lines.append("")
-    lines.append("    ```toml")
+    lines.append("\n    ```toml\n")
 
     if len(field["path"]) == 1:
         # Top-level field - show under [tool.metaxy]
@@ -606,14 +608,14 @@ def generate_individual_field_doc(
             lines.append("    # Optional")
             lines.append(f"    # {field['path'][-1]} = {placeholder}")
 
-    lines.append("    ```")
-    lines.append("")
+    lines.append("\n    ```\n")
 
-    # Environment variable
-    env_var = get_env_var_name(field["path"], env_prefix, env_nested_delimiter)
-    lines.append("**Environment Variable:**")
-    lines.append("")
-    lines.append("```bash")
+    # Environment variable as third tab
+    # Use env_var_path if provided (for plugin configs with custom env_prefix)
+    path_for_env = env_var_path if env_var_path is not None else field["path"]
+    env_var = get_env_var_name(path_for_env, env_prefix, env_nested_delimiter)
+    lines.append('=== "Environment Variable"')
+    lines.append("\n")
 
     # Generate example value
     if field["default"] is not None:
@@ -633,10 +635,7 @@ def generate_individual_field_doc(
     else:
         example_value = "..."
 
-    lines.append(f"export {env_var}={example_value}")
-    lines.append("```")
-    lines.append("")
-    lines.append("---")
-    lines.append("")
+    lines.append(f"    `{env_var}={example_value}`")
+    lines.append("\n---\n")
 
     return "\n".join(lines)

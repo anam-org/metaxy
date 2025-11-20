@@ -165,6 +165,9 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
+  # Metaxy custom extensions
+  - metaxy_examples
+  - metaxy_config
 
 nav:
   - Home: index.md

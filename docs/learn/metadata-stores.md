@@ -20,7 +20,7 @@ There are 3 cases where this is done in-memory instead (with the help of [polars
 
 All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
 
-Learn about configuring metadata stores [here](../reference/configuration.md/#storeconfig)
+Learn about configuring metadata stores [here](../reference/configuration.md/#stores)
 
 ## Fallback Stores
 

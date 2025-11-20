@@ -19,7 +19,6 @@ from sqlmodel import Field, SQLModel
 from metaxy.metadata_store.system import (
     EVENTS_KEY,
     FEATURE_VERSIONS_KEY,
-    METAXY_SYSTEM_KEY_PREFIX,
     FeatureVersionsModel,
 )
 from metaxy.models.constants import (
@@ -28,12 +27,6 @@ from metaxy.models.constants import (
     METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
-
-# System tables that metaxy uses internally
-SYSTEM_TABLES: list[str] = [
-    f"{METAXY_SYSTEM_KEY_PREFIX}__feature_versions",
-    f"{METAXY_SYSTEM_KEY_PREFIX}__events",
-]
 
 
 class FeatureVersionsTable(FeatureVersionsModel, SQLModel, table=True):  # pyright: ignore[reportUnsafeMultipleInheritance]

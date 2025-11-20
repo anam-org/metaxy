@@ -11,6 +11,7 @@ from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
 from metaxy.config import MetaxyConfig
+from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_CREATED_AT,
@@ -89,7 +90,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         namespace: dict[str, Any],
         *,
         spec: FeatureSpecWithIDColumns | None = None,
-        inject_metaxy_pk: bool = False,
+        inject_primary_key: bool | None = None,
         **kwargs: Any,
     ) -> type[Any]:
         """Create a new SQLModel + Metaxy Feature class.
@@ -99,7 +100,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             bases: Base classes
             namespace: Class namespace (attributes and methods)
             spec: Metaxy FeatureSpec (required for concrete features)
-            inject_metaxy_pk: If True, automatically create composite primary key
+            inject_primary_key: If True, automatically create composite primary key
                 including id_columns + (metaxy_created_at, metaxy_data_version).
             **kwargs: Additional keyword arguments (e.g., table=True for SQLModel)
 
@@ -108,6 +109,11 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         """
         # If this is a concrete table (table=True) with a spec
         config = MetaxyConfig.get()
+        sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+
+        if inject_primary_key is None:
+            # check global plugin configuration if not explicitly set
+            inject_primary_key = sqlmodel_config.inject_primary_key
 
         if kwargs.get("table") and spec is not None:
             # Prevent user-defined fields from shadowing system-managed columns
@@ -137,12 +143,12 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             # Automatically set __tablename__ from the feature key if not provided
             if (
                 "__tablename__" not in namespace
-                and config.ext.sqlmodel.infer_db_table_names
+                and sqlmodel_config.infer_db_table_names
             ):
                 namespace["__tablename__"] = spec.key.table_name
 
             # Inject composite primary key if requested
-            if inject_metaxy_pk:
+            if inject_primary_key:
                 cls._inject_composite_primary_key(namespace, spec, cls_name)
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...

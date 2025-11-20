@@ -2,12 +2,26 @@
 
 from __future__ import annotations
 
+import pytest
 from sqlalchemy import MetaData
+
+from metaxy.config import MetaxyConfig
+from metaxy.ext.sqlmodel import SQLModelPluginConfig
+
+# Fixtures
+
+
+@pytest.fixture
+def sqlmodel_enabled():
+    """Fixture that provides a MetaxyConfig with SQLModel enabled."""
+    config = MetaxyConfig(ext={"sqlmodel": SQLModelPluginConfig(enable=True)})
+    with config.use():
+        yield config
 
 
 def test_sqlmodel_system_tables_import():
     """Test that SQLModel system tables can be imported."""
-    from metaxy.ext.sqlmodel_system_tables import (
+    from metaxy.ext.sqlmodel.system_tables import (
         FeatureVersionsTable,
         MigrationEventsTable,
         get_system_metadata,
@@ -30,7 +44,7 @@ def test_sqlmodel_system_tables_import():
 
 def test_system_table_structure():
     """Test that system tables have correct structure."""
-    from metaxy.ext.sqlmodel_system_tables import (
+    from metaxy.ext.sqlmodel.system_tables import (
         FeatureVersionsTable,
         MigrationEventsTable,
     )
@@ -66,7 +80,7 @@ def test_system_table_structure():
 
 def test_system_table_metadata():
     """Test that system tables are registered in SQLModel metadata."""
-    from metaxy.ext.sqlmodel_system_tables import get_system_metadata
+    from metaxy.ext.sqlmodel.system_tables import get_system_metadata
 
     metadata = get_system_metadata()
 
@@ -90,20 +104,23 @@ def test_sqlmodel_config():
 
     # Test default config
     config = MetaxyConfig()
-    assert config.ext.sqlmodel.system_tables  # Default is True
-    assert not config.ext.sqlmodel.enable  # Default is False
+    sqlmode_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+    assert sqlmode_config.system_tables  # Default is True
+    assert not sqlmode_config.enable  # Default is False
 
     # Test with SQLModel enabled
-    from metaxy.config import ExtConfig, SQLModelConfig
-
-    ext_config = ExtConfig(sqlmodel=SQLModelConfig(enable=True, system_tables=True))
-    config = MetaxyConfig(ext=ext_config)
-    assert config.ext.sqlmodel.enable
-    assert config.ext.sqlmodel.system_tables
+    config = MetaxyConfig(
+        ext={"sqlmodel": SQLModelPluginConfig(enable=True, system_tables=True)}
+    )
+    # Access the plugin directly from the instance's ext dict
+    assert "sqlmodel" in config.ext
+    sqlmodel_config = SQLModelPluginConfig.model_validate(config.ext["sqlmodel"])
+    assert sqlmodel_config.enable
+    assert sqlmodel_config.system_tables
     assert "sqlmodel" in config.plugins
 
 
-def test_alembic_helpers():
+def test_alembic_helpers(sqlmodel_enabled):
     """Test Alembic integration helpers."""
     from metaxy.ext.alembic import (
         check_sqlmodel_enabled,
@@ -115,22 +132,8 @@ def test_alembic_helpers():
     assert isinstance(metadata, MetaData)
     assert "metaxy_system__feature_versions" in metadata.tables
 
-    # Test check_sqlmodel_enabled
-    from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
-
-    # Reset config first
-    MetaxyConfig.reset()
-
-    # With SQLModel disabled (default)
-    assert not check_sqlmodel_enabled()
-
-    # With SQLModel enabled
-    config = MetaxyConfig(ext=ExtConfig(sqlmodel=SQLModelConfig(enable=True)))
-    MetaxyConfig.set(config)
+    # Test check_sqlmodel_enabled - with SQLModel enabled via fixture
     assert check_sqlmodel_enabled()
-
-    # Clean up
-    MetaxyConfig.reset()
 
 
 def test_alembic_include_tables():
@@ -161,7 +164,7 @@ def test_migration_events_table_schema():
     """Test that MigrationEventsTable schema matches Polars EVENTS_SCHEMA."""
     from datetime import datetime
 
-    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.ext.sqlmodel.system_tables import MigrationEventsTable
     from metaxy.metadata_store.system.events import EventType
 
     # Create an event instance
@@ -185,7 +188,7 @@ def test_migration_events_feature_level():
     """Test MigrationEventsTable with feature-level event."""
     from datetime import datetime
 
-    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.ext.sqlmodel.system_tables import MigrationEventsTable
     from metaxy.metadata_store.system.events import EventType
 
     # Create a feature-level event
@@ -209,7 +212,7 @@ def test_migration_events_empty_payload():
     """Test that empty payload strings are handled correctly in SQLModel."""
     from datetime import datetime
 
-    from metaxy.ext.sqlmodel_system_tables import MigrationEventsTable
+    from metaxy.ext.sqlmodel.system_tables import MigrationEventsTable
     from metaxy.metadata_store.system.events import EventType
 
     # Create event with empty payload (default)
@@ -230,7 +233,6 @@ def test_push_graph_with_changed_feature_spec():
     This specifically tests the case where only metadata changes in the feature spec,
     which changes feature_spec_version but not necessarily feature_version.
     """
-    from metaxy.config import MetaxyConfig
     from metaxy.metadata_store.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.system import SystemTableStorage
     from metaxy.models.feature import Feature, FeatureGraph
@@ -239,9 +241,7 @@ def test_push_graph_with_changed_feature_spec():
 
     # Set project in config
     config = MetaxyConfig(project="test_project")
-    MetaxyConfig.set(config)
-
-    try:
+    with config.use():
         with DuckDBMetadataStore(database=":memory:") as store:
             # Create isolated graph
             graph = FeatureGraph()
@@ -316,6 +316,3 @@ def test_push_graph_with_changed_feature_spec():
                     test_feature_versions["metaxy_feature_spec_version"].to_list()
                 )
                 assert len(spec_versions) == 2  # Two different spec versions
-    finally:
-        # Reset config
-        MetaxyConfig.reset()

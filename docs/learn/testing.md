@@ -117,3 +117,27 @@ def test_auto_create_tables_warning():
 ```
 
 This works even with `filterwarnings` configured, because `pytest.warns()` explicitly captures and verifies the warning.
+
+### Programmatic Metaxy Configuration
+
+When configuring Metaxy programmatically in Python code, use the following pattern (we also showcase plugin configuration):
+
+```python
+from metaxy.config import MetaxyConfig
+from metaxy.ext.sqlmodel import SQLModelPluginConfig
+
+with MetaxyConfig(
+    ext={
+        "sqlmodel": SQLModelPluginConfig(
+            enable=True,
+            infer_db_table_names=True,
+        )
+    }
+).use() as config:
+    sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
+    # your code here
+```
+
+When testing Metaxy code, it's best if this setup is performed via `pytest` fixtures.
+
+The plugin configuration is accessed via a dictionary where keys are plugin names and values are plugin-specific configuration objects.

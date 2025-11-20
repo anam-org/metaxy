@@ -9,46 +9,66 @@ can be controlled through various methods:
 
 import os
 
+import pytest
 from sqlmodel import Field
 
 from metaxy import FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
 from metaxy._testing import TempMetaxyProject
-from metaxy.config import ExtConfig, MetaxyConfig, SQLModelConfig
-from metaxy.ext.sqlmodel import BaseSQLModelFeature
+from metaxy.config import MetaxyConfig
+from metaxy.ext.sqlmodel import BaseSQLModelFeature, SQLModelPluginConfig
 
 
 class SQLModelFeature(BaseSQLModelFeature):
     sample_uid: str = Field(primary_key=True)
 
 
+# Fixtures
+
+
+@pytest.fixture
+def sqlmodel_auto_naming_enabled():
+    """Fixture with SQLModel auto table naming enabled (default behavior)."""
+    config = MetaxyConfig(
+        ext={"sqlmodel": SQLModelPluginConfig(infer_db_table_names=True)}
+    )
+    with config.use():
+        yield config
+
+
+@pytest.fixture
+def sqlmodel_auto_naming_disabled():
+    """Fixture with SQLModel auto table naming disabled."""
+    config = MetaxyConfig(
+        ext={"sqlmodel": SQLModelPluginConfig(infer_db_table_names=False)}
+    )
+    with config.use():
+        yield config
+
+
 def test_auto_table_naming_enabled_by_default():
     """Test that auto table naming is enabled by default."""
-    # Clear any existing config
-    MetaxyConfig.reset()
+    # Test with clean config (default behavior)
+    config = MetaxyConfig()
+    with config.use():
 
-    class TestFeature(
-        SQLModelFeature,
-        table=True,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-        ),
-    ):
-        # No __tablename__ specified
-        value: str
+        class TestFeature(
+            SQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            # No __tablename__ specified
+            value: str
 
-    # Should automatically be set to "test__feature"
-    tablename = str(TestFeature.__tablename__)  # type: ignore[arg-type]
-    assert tablename == "test__feature"
+        # Should automatically be set to "test__feature"
+        tablename = str(TestFeature.__tablename__)  # type: ignore[arg-type]
+        assert tablename == "test__feature"
 
 
-def test_auto_table_naming_disabled_explicit_config():
+def test_auto_table_naming_disabled_explicit_config(sqlmodel_auto_naming_disabled):
     """Test disabling auto table naming through explicit config setting."""
-    # Create config with infer_db_table_names disabled
-    config = MetaxyConfig(
-        ext=ExtConfig(sqlmodel=SQLModelConfig(infer_db_table_names=False))
-    )
-    MetaxyConfig.set(config)
 
     class DisabledAutoNaming(
         SQLModelFeature,
@@ -68,17 +88,9 @@ def test_auto_table_naming_disabled_explicit_config():
     # SQLModel's default is the class name lowercased
     assert tablename == "disabledautonaming"
 
-    # Reset config
-    MetaxyConfig.reset()
 
-
-def test_auto_table_naming_still_allows_explicit():
+def test_auto_table_naming_still_allows_explicit(sqlmodel_auto_naming_disabled):
     """Test that explicit __tablename__ works regardless of config."""
-    # Test with auto naming disabled
-    config = MetaxyConfig(
-        ext=ExtConfig(sqlmodel=SQLModelConfig(infer_db_table_names=False))
-    )
-    MetaxyConfig.set(config)
 
     class ExplicitTableName(
         SQLModelFeature,
@@ -93,9 +105,6 @@ def test_auto_table_naming_still_allows_explicit():
 
     # Explicit __tablename__ should work regardless of config
     assert ExplicitTableName.__tablename__ == "custom_table"
-
-    # Reset config
-    MetaxyConfig.reset()
 
 
 def test_auto_table_naming_toml_config(tmp_path):
@@ -112,27 +121,26 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
 
     # Load config from TOML
     config = MetaxyConfig.load(config_file=project.project_dir / "metaxy.toml")
-    assert config.ext.sqlmodel.infer_db_table_names is False
-    MetaxyConfig.set(config)
+    sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+    assert sqlmodel_config.infer_db_table_names is False
 
-    class TomlConfigFeature(
-        SQLModelFeature,
-        table=True,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-        ),
-    ):
-        value: str
+    with config.use():
 
-    # Should NOT have the auto-generated name from feature key
-    tablename = str(TomlConfigFeature.__tablename__)  # type: ignore[arg-type]
-    assert tablename != "test__feature"
-    # SQLModel's default is the class name lowercased
-    assert tablename == "tomlconfigfeature"
+        class TomlConfigFeature(
+            SQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            value: str
 
-    # Reset config
-    MetaxyConfig.reset()
+        # Should NOT have the auto-generated name from feature key
+        tablename = str(TomlConfigFeature.__tablename__)  # type: ignore[arg-type]
+        assert tablename != "test__feature"
+        # SQLModel's default is the class name lowercased
+        assert tablename == "tomlconfigfeature"
 
 
 def test_auto_table_naming_env_var():
@@ -146,24 +154,25 @@ def test_auto_table_naming_env_var():
 
         # Create config - env var should override default
         config = MetaxyConfig()
-        assert config.ext.sqlmodel.infer_db_table_names is False
-        MetaxyConfig.set(config)
+        with config.use():
+            sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
+            assert sqlmodel_config.infer_db_table_names is False
 
-        class EnvVarFeature(
-            SQLModelFeature,
-            table=True,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-            ),
-        ):
-            value: str
+            class EnvVarFeature(
+                SQLModelFeature,
+                table=True,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["test", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+                ),
+            ):
+                value: str
 
-        # Should NOT have the auto-generated name from feature key
-        tablename = str(EnvVarFeature.__tablename__)  # type: ignore[arg-type]
-        assert tablename != "test__feature"
-        # SQLModel's default is the class name lowercased
-        assert tablename == "envvarfeature"
+            # Should NOT have the auto-generated name from feature key
+            tablename = str(EnvVarFeature.__tablename__)  # type: ignore[arg-type]
+            assert tablename != "test__feature"
+            # SQLModel's default is the class name lowercased
+            assert tablename == "envvarfeature"
 
     finally:
         # Restore original env var
@@ -171,9 +180,6 @@ def test_auto_table_naming_env_var():
             os.environ["METAXY_EXT__SQLMODEL__INFER_DB_TABLE_NAMES"] = original_value
         else:
             os.environ.pop("METAXY_EXT__SQLMODEL__INFER_DB_TABLE_NAMES", None)
-
-        # Reset config
-        MetaxyConfig.reset()
 
 
 def test_config_priority_init_over_env():
@@ -187,28 +193,29 @@ def test_config_priority_init_over_env():
 
         # Create config with explicit init arg to disable
         config = MetaxyConfig(
-            ext=ExtConfig(sqlmodel=SQLModelConfig(infer_db_table_names=False))
+            ext={"sqlmodel": SQLModelPluginConfig(infer_db_table_names=False)}
         )
 
-        # Init arg should win over env var
-        assert config.ext.sqlmodel.infer_db_table_names is False
-        MetaxyConfig.set(config)
+        with config.use():
+            # Init arg should win over env var
+            sqlmodel_config = MetaxyConfig.get_plugin("sqlmodel", SQLModelPluginConfig)
+            assert sqlmodel_config.infer_db_table_names is False
 
-        class PriorityFeature(
-            SQLModelFeature,
-            table=True,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-            ),
-        ):
-            value: str
+            class PriorityFeature(
+                SQLModelFeature,
+                table=True,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["test", "feature"]),
+                    fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+                ),
+            ):
+                value: str
 
-        # Should NOT have the auto-generated name from feature key
-        tablename = str(PriorityFeature.__tablename__)  # type: ignore[arg-type]
-        assert tablename != "test__feature"
-        # SQLModel's default is the class name lowercased
-        assert tablename == "priorityfeature"
+            # Should NOT have the auto-generated name from feature key
+            tablename = str(PriorityFeature.__tablename__)  # type: ignore[arg-type]
+            assert tablename != "test__feature"
+            # SQLModel's default is the class name lowercased
+            assert tablename == "priorityfeature"
 
     finally:
         # Restore original env var
@@ -216,9 +223,6 @@ def test_config_priority_init_over_env():
             os.environ["METAXY_EXT__SQLMODEL__INFER_DB_TABLE_NAMES"] = original_value
         else:
             os.environ.pop("METAXY_EXT__SQLMODEL__INFER_DB_TABLE_NAMES", None)
-
-        # Reset config
-        MetaxyConfig.reset()
 
 
 def test_pyproject_toml_config(tmp_path):
@@ -235,73 +239,70 @@ type = "metaxy.metadata_store.memory.InMemoryMetadataStore"
 
     # Load config from pyproject.toml
     config = MetaxyConfig.load(config_file=config_path)
-    assert config.ext.sqlmodel.infer_db_table_names is False
-    MetaxyConfig.set(config)
+    sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
+    assert sqlmodel_config.infer_db_table_names is False
 
-    class PyProjectFeature(
-        SQLModelFeature,
-        table=True,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["test", "feature"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-        ),
-    ):
-        value: str
+    with config.use():
 
-    # Should NOT have the auto-generated name from feature key
-    tablename = str(PyProjectFeature.__tablename__)  # type: ignore[arg-type]
-    assert tablename != "test__feature"
-    # SQLModel's default is the class name lowercased
-    assert tablename == "pyprojectfeature"
+        class PyProjectFeature(
+            SQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test", "feature"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            value: str
 
-    # Reset config
-    MetaxyConfig.reset()
+        # Should NOT have the auto-generated name from feature key
+        tablename = str(PyProjectFeature.__tablename__)  # type: ignore[arg-type]
+        assert tablename != "test__feature"
+        # SQLModel's default is the class name lowercased
+        assert tablename == "pyprojectfeature"
 
 
 def test_multiple_features_with_config_change():
     """Test that config changes affect new features correctly."""
     # Start with auto naming enabled
     config1 = MetaxyConfig(
-        ext=ExtConfig(sqlmodel=SQLModelConfig(infer_db_table_names=True))
+        ext={"sqlmodel": SQLModelPluginConfig(infer_db_table_names=True)}
     )
-    MetaxyConfig.set(config1)
 
-    class Feature1(
-        SQLModelFeature,
-        table=True,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature", "one"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config1.use():
 
-    # Should have auto-generated name
-    tablename = str(Feature1.__tablename__)  # type: ignore[arg-type]
-    assert tablename == "feature__one"
+        class Feature1(
+            SQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["feature", "one"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        # Should have auto-generated name
+        tablename = str(Feature1.__tablename__)  # type: ignore[arg-type]
+        assert tablename == "feature__one"
 
     # Now disable auto naming
     config2 = MetaxyConfig(
-        ext=ExtConfig(sqlmodel=SQLModelConfig(infer_db_table_names=False))
+        ext={"sqlmodel": SQLModelPluginConfig(infer_db_table_names=False)}
     )
-    MetaxyConfig.set(config2)
 
-    # New feature should not get auto-generated name
-    class Feature2(
-        SQLModelFeature,
-        table=True,
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["feature", "two"]),
-            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
-        ),
-    ):
-        pass
+    with config2.use():
+        # New feature should not get auto-generated name
+        class Feature2(
+            SQLModelFeature,
+            table=True,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["feature", "two"]),
+                fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+            ),
+        ):
+            pass
 
-    # Should NOT have the auto-generated name from feature key
-    tablename = str(Feature2.__tablename__)  # type: ignore[arg-type]
-    assert tablename != "feature__two"
-    # SQLModel's default is the class name lowercased
-    assert tablename == "feature2"
-
-    # Reset config
-    MetaxyConfig.reset()
+        # Should NOT have the auto-generated name from feature key
+        tablename = str(Feature2.__tablename__)  # type: ignore[arg-type]
+        assert tablename != "feature__two"
+        # SQLModel's default is the class name lowercased
+        assert tablename == "feature2"
