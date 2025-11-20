@@ -17,7 +17,6 @@ from metaxy.metadata_store import (
     StoreNotOpenError,
 )
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.metadata_store.types import AccessMode
 
 # Context Manager Tests
 
@@ -49,7 +48,7 @@ def test_store_context_manager(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that store works as a context manager."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         # Store should be open
         assert store._is_open
 
@@ -73,7 +72,7 @@ def test_write_and_read_metadata(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test basic write and read operations."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -101,7 +100,7 @@ def test_write_invalid_schema(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that writing without provenance_by_field column raises error."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         invalid_df = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -117,7 +116,7 @@ def test_write_append(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that writes are append-only."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         df1 = pl.DataFrame(
             {
                 "sample_uid": [1, 2],
@@ -152,7 +151,7 @@ def test_read_with_filters(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test reading with Polars filter expressions."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -180,7 +179,7 @@ def test_read_with_column_selection(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test reading specific columns."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         metadata = pl.DataFrame(
             {
                 "sample_uid": [1, 2, 3],
@@ -209,7 +208,7 @@ def test_read_nonexistent_feature(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test that reading nonexistent feature raises error."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         with pytest.raises(FeatureNotFoundError):
             store.read_metadata(test_features["UpstreamFeatureA"])
 
@@ -221,7 +220,7 @@ def test_has_feature_local(
     persistent_store, test_graph, test_features: dict[str, Any]
 ) -> None:
     """Test has_feature for local store."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         assert not store.has_feature(
             test_features["UpstreamFeatureA"], check_fallback=False
         )
@@ -288,7 +287,7 @@ def test_display(persistent_store) -> None:
     display_closed = persistent_store.display()
     assert len(display_closed) > 0
 
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         # Should work when open
         display_open = store.display()
         assert len(display_open) > 0
@@ -296,7 +295,7 @@ def test_display(persistent_store) -> None:
 
 def test_repr(persistent_store) -> None:
     """Test /repr/ method."""
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         repr_str = repr(store)
         assert len(repr_str) > 0
 
@@ -315,7 +314,7 @@ def test_nested_context_managers(
     """
     with persistent_store as store1:
         # Nest another context (simulates fallback opening)
-        with store1.open(AccessMode.WRITE) as store2:
+        with store1.open("write") as store2:
             assert store1 is store2
             assert store1._is_open
 
@@ -350,7 +349,7 @@ def test_multiple_features(
         persistent_store: Store fixture (unopened)
         test_graph: Registry with test features
     """
-    with persistent_store.open(AccessMode.WRITE) as store:
+    with persistent_store.open("write") as store:
         # Write feature A
         data_a = pl.DataFrame(
             {

@@ -229,7 +229,7 @@ class InMemoryMetadataStore(MetadataStore):
     # ========== Context Manager Implementation ==========
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open the in-memory store (no-op for in-memory, but accepts mode for consistency).
 
         Args:

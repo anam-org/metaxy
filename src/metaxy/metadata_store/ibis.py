@@ -254,7 +254,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return self.ibis_conn
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open connection to database via Ibis.
 
         Subclasses should override this to add backend-specific initialization

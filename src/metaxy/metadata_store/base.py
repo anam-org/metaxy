@@ -546,7 +546,7 @@ class MetadataStore(ABC):
 
             - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
 
-            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
+            - Must be called within `store.open(mode="write")` context manager.
         """
         self._check_open()
 
@@ -688,7 +688,7 @@ class MetadataStore(ABC):
 
     @abstractmethod
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open/initialize the store for operations.
 
         Context manager that opens the store with specified access mode.
@@ -715,7 +715,7 @@ class MetadataStore(ABC):
             Self: The opened store instance
         """
         # Determine mode based on auto_create_tables
-        mode = AccessMode.WRITE if self.auto_create_tables else AccessMode.READ
+        mode = "write" if self.auto_create_tables else "read"
 
         # Open the store (open() manages _context_depth internally)
         self._open_cm = self.open(mode)
@@ -761,7 +761,7 @@ class MetadataStore(ABC):
         if not self._is_open:
             raise StoreNotOpenError(
                 f"{self.__class__.__name__} must be opened before use. "
-                "Use it as a context manager: `with store: ...` or `with store.open(mode=AccessMode.WRITE): ...`"
+                'Use it as a context manager: `with store: ...` or `with store.open(mode="write"): ...`'
             )
 
     # ========== Hash Algorithm Validation ==========
@@ -1276,12 +1276,12 @@ class MetadataStore(ABC):
         # Validate destination store is open
         if not self._is_open:
             raise ValueError(
-                "Destination store must be opened with store.open(AccessMode.WRITE) before use"
+                'Destination store must be opened with store.open("write") before use'
             )
 
         # Auto-open source store if not already open
         if not from_store._is_open:
-            with from_store.open(AccessMode.READ):
+            with from_store.open("read"):
                 return self._copy_metadata_impl(
                     from_store=from_store,
                     features=features,
