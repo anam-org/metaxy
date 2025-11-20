@@ -6,15 +6,16 @@ from collections.abc import Iterator, Sequence
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, overload
 
 from pydantic import (
-    BaseModel,
     ConfigDict,
+    RootModel,
     TypeAdapter,
-    field_serializer,
     field_validator,
     model_serializer,
     model_validator,
 )
-from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 KEY_SEPARATOR = "/"
 
@@ -40,7 +41,7 @@ class SnapshotPushResult(NamedTuple):
 _CoercibleToKey: TypeAlias = Sequence[str] | str
 
 
-class _Key(BaseModel):
+class _Key(RootModel[tuple[str, ...]]):
     """
     A common class for key-like objects that contain a sequence of string parts.
 
@@ -53,91 +54,43 @@ class _Key(BaseModel):
 
     model_config = ConfigDict(frozen=True, repr=False)  # pyright: ignore[reportCallIssue]  # Make immutable for hashability, use custom __repr__
 
-    parts: tuple[str, ...]
-
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """
-        Initialize from various input types.
-
-        Args:
-            *args: Single positional argument:
-                - str: Split on "/" separator ("a/b/c" -> ["a", "b", "c"])
-                - Sequence[str]: Use as parts (["a", "b", "c"])
-                - Key instance: Copy parts
-            **kwargs: Additional keyword arguments for BaseModel (e.g., parts=...)
-
-        Examples:
-            ```py
-            FeatureKey("a/b/c")  # String with separator
-            FeatureKey(["a", "b", "c"])  # List
-            FeatureKey(parts=["a", "b", "c"])  # Keyword argument
-            ```
-        """
-        # Handle single argument construction
-        if args:
-            if len(args) == 1:
-                key = args[0]
-                # Single argument - could be str, sequence, or instance
-                if isinstance(key, str):
-                    kwargs["parts"] = tuple(key.split(KEY_SEPARATOR))
-                elif isinstance(key, self.__class__):
-                    kwargs["parts"] = key.parts
-                elif isinstance(key, dict):
-                    # Handle dict case (from Pydantic)
-                    if "parts" in key:
-                        parts_value = key["parts"]  # pyright: ignore[reportCallIssue, reportArgumentType]
-                        kwargs["parts"] = (
-                            tuple(parts_value)
-                            if not isinstance(parts_value, tuple)
-                            else parts_value
-                        )
-                    else:
-                        raise ValueError("Dict must contain 'parts' key")
-                elif isinstance(key, Sequence):
-                    kwargs["parts"] = tuple(key)
-                else:
-                    raise ValueError(
-                        f"Cannot create {self.__class__.__name__} from {type(key).__name__}"
-                    )
-            else:
-                # Multiple arguments provided - not supported
-                raise TypeError(
-                    f"{self.__class__.__name__}() takes exactly 1 positional argument ({len(args)} given)"
-                )
-
-        super().__init__(**kwargs)
+    root: tuple[str, ...]
 
     if TYPE_CHECKING:
 
         @overload
-        def __init__(self, key: str, /) -> None:
-            """Initialize from string with "/" separator."""
-            ...
+        def __init__(self, parts: str) -> None: ...
 
         @overload
-        def __init__(self, key: Sequence[str], /) -> None:
-            """Initialize from sequence of parts."""
-            ...
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
         @overload
-        def __init__(self: Self, key: Self, /) -> None:
-            """Initialize from another instance (copy)."""
-            ...
+        def __init__(self, parts: Self) -> None: ...
 
-        @overload
-        def __init__(self, *, parts: Sequence[str]) -> None:
-            """Initialize from parts keyword argument."""
-            ...
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            parts: str | Sequence[str] | Self,
+        ) -> None: ...
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_input(cls, data: Any) -> dict[str, Any]:
-        """Convert various input types to dict with parts."""
-        # If it's already a dict with parts, return it (normal Pydantic flow)
+    def _validate_input(cls, data: Any) -> Any:
+        """Convert various input types to tuple of strings."""
+        # If it's already a tuple, validate and return it
+        if isinstance(data, tuple):
+            return data
 
+        # Handle dict input (from Pydantic deserialization)
         if isinstance(data, dict):
-            if "parts" in data:
-                # Check if parts contains nested dicts (incorrect nesting from serialization)
+            # RootModel deserialization passes dict with "root" key
+            if "root" in data:
+                root_value = data["root"]
+                if isinstance(root_value, tuple):
+                    return root_value
+                elif isinstance(root_value, (list, Sequence)):
+                    return tuple(root_value)
+            # Legacy "parts" key for backward compatibility
+            elif "parts" in data:
                 parts = data["parts"]
                 if (
                     isinstance(parts, (list, tuple))
@@ -145,32 +98,31 @@ class _Key(BaseModel):
                     and isinstance(parts[0], dict)
                 ):
                     # Handle incorrectly nested structure like {'parts': [{'parts': [...]}]}
-                    # This can happen during certain deserialization paths
                     if "parts" in parts[0]:
-                        data["parts"] = tuple(parts[0]["parts"])
+                        return tuple(parts[0]["parts"])
                     else:
                         raise ValueError(f"Invalid nested structure in parts: {parts}")
-                elif not isinstance(parts, tuple):
-                    # Ensure parts is a tuple
-                    data["parts"] = tuple(parts)
-                return data
-            # Handle dict without parts (shouldn't happen normally)
-            return data
-        # Handle different input types
-        elif isinstance(data, str):
-            parts = tuple(data.split(KEY_SEPARATOR))
-        elif isinstance(data, cls):
-            parts = data.parts
-        elif isinstance(data, Sequence):
-            parts = tuple(data)
-        else:
-            raise ValueError(f"Cannot create {cls.__name__} from {type(data).__name__}")
+                return tuple(parts) if not isinstance(parts, tuple) else parts
+            # Empty dict
+            raise ValueError("Dict must contain 'root' or 'parts' key")
 
-        return {"parts": parts}
+        # Handle string input - split on separator
+        if isinstance(data, str):
+            return tuple(data.split(KEY_SEPARATOR))
 
-    @field_validator("parts", mode="after")
+        # Handle instance of same class - extract root
+        if isinstance(data, cls):
+            return data.root
+
+        # Handle sequence (list, etc.)
+        if isinstance(data, Sequence):
+            return tuple(data)
+
+        raise ValueError(f"Cannot create {cls.__name__} from {type(data).__name__}")
+
+    @field_validator("root", mode="after")
     @classmethod
-    def _validate_parts_content(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+    def _validate_root_content(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         """Validate that parts don't contain forbidden characters."""
         for part in value:
             if not isinstance(part, str):
@@ -190,11 +142,15 @@ class _Key(BaseModel):
                 )
         return value
 
-    @field_serializer("parts")
-    @classmethod
-    def _serialize_parts(cls, value: tuple[str, ...]) -> list[str]:
-        """Serialize parts as list for backward compatibility."""
-        return list(value)
+    @model_serializer
+    def _serialize_model(self) -> list[str]:
+        """Serialize to list format for backward compatibility."""
+        return list(self.parts)
+
+    @property
+    def parts(self) -> tuple[str, ...]:
+        """Backward compatibility property for accessing root as parts."""
+        return self.root
 
     def to_string(self) -> str:
         """Convert to string representation with "/" separator."""
@@ -296,30 +252,17 @@ class FeatureKey(_Key):
     if TYPE_CHECKING:
 
         @overload
-        def __init__(self, key: str, /) -> None:
-            """Initialize from string with "/" separator."""
-            ...
+        def __init__(self, parts: str) -> None: ...
 
         @overload
-        def __init__(self, key: Sequence[str], /) -> None:
-            """Initialize from sequence of parts."""
-            ...
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
         @overload
-        def __init__(self, key: FeatureKey, /) -> None:
-            """Initialize from another FeatureKey (copy)."""
-            ...
+        def __init__(self, parts: FeatureKey) -> None: ...
 
-        @overload
-        def __init__(self, *, parts: Sequence[str]) -> None:
-            """Initialize from parts keyword argument."""
-            ...
-
-        # Final signature combining all overloads
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
-            key: str | Sequence[str] | FeatureKey | None = None,
-            **kwargs: Any,
+            parts: str | Sequence[str] | FeatureKey,
         ) -> None: ...
 
     @classmethod
@@ -338,11 +281,6 @@ class FeatureKey(_Key):
         """Serialize to list format for backward compatibility."""
         # When serializing this key, return it as a list of parts
         # instead of the full Pydantic model structure
-        return list(self.parts)
-
-    @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list when used as a field in another model."""
         return list(self.parts)
 
     def __hash__(self) -> int:
@@ -383,30 +321,17 @@ class FieldKey(_Key):
     if TYPE_CHECKING:
 
         @overload
-        def __init__(self, key: str, /) -> None:
-            """Initialize from string with "/" separator."""
-            ...
+        def __init__(self, parts: str) -> None: ...
 
         @overload
-        def __init__(self, key: Sequence[str], /) -> None:
-            """Initialize from sequence of parts."""
-            ...
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
         @overload
-        def __init__(self, key: FieldKey, /) -> None:
-            """Initialize from another FieldKey (copy)."""
-            ...
+        def __init__(self, parts: FieldKey) -> None: ...
 
-        @overload
-        def __init__(self, *, parts: Sequence[str]) -> None:
-            """Initialize from parts keyword argument."""
-            ...
-
-        # Final signature combining all overloads
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
-            key: str | Sequence[str] | FieldKey | None = None,
-            **kwargs: Any,
+            parts: str | Sequence[str] | FieldKey,
         ) -> None: ...
 
     @classmethod
@@ -425,11 +350,6 @@ class FieldKey(_Key):
         """Serialize to list format for backward compatibility."""
         # When serializing this key, return it as a list of parts
         # instead of the full Pydantic model structure
-        return list(self.parts)
-
-    @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list when used as a field in another model."""
         return list(self.parts)
 
     def __hash__(self) -> int:

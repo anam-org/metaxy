@@ -113,7 +113,7 @@ class TestFeatureKey:
 
     def test_validation_multiple_args_rejected(self):
         """Test validation rejects multiple positional arguments."""
-        with pytest.raises(TypeError, match="takes exactly 1 positional argument"):
+        with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
             FeatureKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
 
     def test_empty_string_splits_to_empty_list(self):
@@ -141,7 +141,7 @@ class TestFeatureKey:
         """Test that FeatureKey is immutable (frozen)."""
         key = FeatureKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # type: ignore[misc]
+            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_iteration(self):
         """Test iteration over parts."""
@@ -237,14 +237,14 @@ class TestFieldKey:
 
     def test_validation_multiple_args_rejected(self):
         """Test validation rejects multiple positional arguments."""
-        with pytest.raises(TypeError, match="takes exactly 1 positional argument"):
+        with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
             FieldKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
 
     def test_immutability(self):
         """Test that FieldKey is immutable (frozen)."""
         key = FieldKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # type: ignore[misc]
+            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_backward_compatibility_list_operations(self):
         """Test that FieldKey still works with list-like operations."""
@@ -510,7 +510,7 @@ class TestEdgeCases:
         assert key.to_string() == ""
 
 
-feature_key = FeatureKey("/a/b")
+feature_key = FeatureKey("a/b")
 feature_spec = SampleFeatureSpec(key=feature_key, id_columns=("id",))
 
 
