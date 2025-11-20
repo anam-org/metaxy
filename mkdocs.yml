@@ -54,9 +54,6 @@ plugins:
   - search
   - metaxy-examples:
       examples_dir: "../examples"
-  - gen-files:
-      scripts:
-        - docs/.mkdocs-metaxy/src/mkdocs_metaxy/gen_config_reference.py
   - cyclopts
   - autorefs
   - section-index
@@ -151,6 +148,9 @@ markdown_extensions:
   - pymdownx.smartsymbols
   - pymdownx.snippets:
       base_path: ['examples']
+  # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
+  - metaxy_config
+  - metaxy_examples
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

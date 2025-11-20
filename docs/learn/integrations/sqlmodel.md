@@ -11,12 +11,10 @@ It is the primary way to use Metaxy with database-backed [metadata stores](../..
 The SQLModel integration requires the sqlmodel package:
 
 ```bash
-pip install metaxy[sqlmodel]
+pip install 'metaxy[sqlmodel]'
 ```
 
-## Basic Usage
-
-The integration has to be enabled in the configuration file:
+and has to be enabled explicitly:
 
 === "metaxy.toml"
 
@@ -35,48 +33,33 @@ The integration has to be enabled in the configuration file:
 === "Environment Variable"
 
     ```bash
-    export METAXY_EXT_SQLMODEL_ENABLE=true
+    export METAXY_EXT__SQLMODEL_ENABLE=true
     ```
 
-This will expose Metaxy's system tables to SQLAlchemy.
+## Basic Usage
 
-First, as always with Metaxy features, we would have to define our ID columns:
-
-```python
-from metaxy import FeatureSpec
-from metaxy.ext.sqlmodel import BaseSQLModelFeature
-
-
-class SampleFeatureSpec(FeatureSpec):
-    id_columns: tuple[str] = "sample_id"
-
-
-class SampleFeature(BaseSQLModelFeature, table=False, spec=None):
-    sample_id: str
-```
-
-Note that ID columns **cannot be server-generated**, so the cannot include a Primary Key.
-
-Now we can define feature class that inherits from `SampleFeature` and specify both Metaxy's `spec` parameter and SQLModel's `table=True` parameter:
+Let's define a feature:
 
 ```python
-from metaxy import FeatureKey, FieldSpec, FieldKey
+import metaxy as mx
+import metaxy.ext.sqlmodel as mxsql
 from sqlmodel import Field
 
 
 class VideoFeature(
-    SampleFeature,
+    mxsql.BaseSQLModelFeature,
     table=True,
-    spec=SampleFeatureSpec(
+    spec=mx.FeatureSpec(
         key=FeatureKey(["video"]),
-        # Root feature with no dependencies
+        id_columns=["video_id"],
         fields=[
-            FieldSpec(key=FieldKey(["frames"]), code_version="1"),
-            FieldSpec(key=FieldKey(["duration"]), code_version="1"),
+            "frames",
+            "duration",
         ],
     ),
 ):
     # User-defined metadata columns
+    video_id: str
     path: str
     duration: float
 ```
@@ -86,55 +69,17 @@ This class serves dual purposes:
 - **Metaxy feature**: Tracks feature version, field versions, and dependencies
 - **SQLModel table**: Maps to database schema with ORM functionality
 
+!!! tip "Database Migrations Generation"
+
+    You can use [Alembic](#database-migrations-with-alembic) to automatically detect all your feature tables and generate migration scripts.
+
+!!! warning "Do Not Use Server-Generated IDs"
+
+    ID columns **should not be server-generated** because they are typically used to determine **data** locations such as object storage keys, so they have to be defined before **metadata** is inserted into the database
+
 !!! note "Automatic Table Naming"
-When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in Metaxy's configuration.
 
-### System-Managed Columns
-
-Metaxy's metadata store automatically manages versioning columns:
-
-- `provenance_by_field`: Struct column mapping field keys to hashes
-- `feature_version`: Hash of feature specification
-- `snapshot_version`: Hash of entire graph state
-
-These columns need not be defined in your SQLModel class. The metadata store injects them during write and read operations.
-
-### ID Columns
-
-!!! warning "ID columns must exist before database insertion"
-ID columns are used for joins between features, so their values must exist before insertion into the database. This means you cannot use server-generated values (autoincrement, sequences, server_default) for ID columns.
-
-    Metaxy validates against autoincrement primary keys but cannot detect all server-generated patterns. Ensure your ID columns use client-provided values.
-
-Example:
-
-```python
-# ✅ Good: Client-generated ID columns
-class UserActivity(
-    SQLModelFeature,
-    table=True,
-    spec=FeatureSpec(
-        key=FeatureKey(["user", "activity"]),
-        id_columns=["user_id", "session_id"],  # Client provides these
-        ...
-    ),
-):
-    user_id: str = Field(primary_key=True)  # Client-generated
-    session_id: str = Field(primary_key=True)  # Client-generated
-    created_at: str = Field(sa_column_kwargs={"server_default": "NOW()"})  # OK - not an ID column
-
-# ❌ Bad: Autoincrement ID column
-class BadFeature(
-    SQLModelFeature,
-    table=True,
-    spec=FeatureSpec(
-        key=FeatureKey(["bad"]),
-        id_columns=["id"],  # This is listed as an ID column
-        ...
-    ),
-):
-    id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})  # Will raise error
-```
+    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
 
 ### Loading Features and Populating Metadata
 
@@ -158,34 +103,12 @@ This is particularly useful when:
 - Setting up database connections that require the complete schema
 - Using SQLModel's `create_all()` for development/testing (Metaxy's `auto_create_tables` setting should be preferred over `create_all()`)
 
-!!! tip "Migration Generation"
-After calling `init_metaxy`, you can use [Alembic](#database-migrations-with-alembic) to automatically detect all your SQLModelFeature tables and generate migration scripts.
+## Configuration Options
 
-## Configuration
-
-Configure automatic table naming behavior:
-
-=== "metaxy.toml"
-
-    ```toml
-    [ext.sqlmodel]
-    enable = true
-    infer_db_table_names = true  # Default
-    ```
-
-=== "pyproject.toml"
-
-    ```toml
-    [tool.metaxy.ext.sqlmodel]
-    enable = true
-    infer_db_table_names = true  # Default
-    ```
-
-=== "Environment Variable"
-
-    ```bash
-    export METAXY_EXT_SQLMODEL_INFER_DB_TABLE_NAMES=true
-    ```
+::: metaxy-config
+class: metaxy.ext.sqlmodel.SQLModelPluginConfig
+path_prefix: ext.sqlmodel
+header_level: 3
 
 ## Database Migrations with Alembic
 

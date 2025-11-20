@@ -562,66 +562,6 @@
                 }
             }
         ],
-        "./src/metaxy/ext/sqlmodel.py": [
-            {
-                "code": "reportUnknownVariableType",
-                "range": {
-                    "startColumn": 21,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportUnknownMemberType",
-                "range": {
-                    "startColumn": 34,
-                    "endColumn": 54,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportImplicitStringConcatenation",
-                "range": {
-                    "startColumn": 20,
-                    "endColumn": 84,
-                    "lineCount": 3
-                }
-            },
-            {
-                "code": "reportUnannotatedClassAttribute",
-                "range": {
-                    "startColumn": 4,
-                    "endColumn": 16,
-                    "lineCount": 1
-                }
-            }
-        ],
-        "./src/metaxy/ext/sqlmodel_system_tables.py": [
-            {
-                "code": "reportUnknownVariableType",
-                "range": {
-                    "startColumn": 21,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportUnannotatedClassAttribute",
-                "range": {
-                    "startColumn": 4,
-                    "endColumn": 18,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportUnannotatedClassAttribute",
-                "range": {
-                    "startColumn": 4,
-                    "endColumn": 18,
-                    "lineCount": 1
-                }
-            }
-        ],
         "./src/metaxy/graph/describe.py": [
             {
                 "code": "reportUnknownMemberType",

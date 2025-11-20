@@ -28,3 +28,17 @@ Metaxy has built-in support for the following metadata store types:
 ---
 
 ::: metaxy.metadata_store.base.VersioningEngineOptions
+
+
+---
+
+## Project Write Validation
+
+By default, `MetadataStore` raises a `ValueError` when attempting to write to a project that doesn't match the expected project from `MetaxyConfig.get().project`.
+
+For legitimate cross-project operations (such as migrations that need to update features across multiple projects), use `MetadataStore.allow_cross_project_writes`:
+
+```python
+with store.open("write"), store.allow_cross_project_writes():
+    store.write_metadata(ExternallyDefinedFeature, df)
+```

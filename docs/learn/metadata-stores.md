@@ -20,29 +20,4 @@ There are 3 cases where this is done in-memory instead (with the help of [polars
 
 All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.
 
-Learn about configuring metadata stores [here](../reference/configuration.md/#storeconfig)
-
-## Fallback Stores
-
-Fallback stores are a powerful feature that allow stores to read feature metadata from other stores (only if it's missing in the primary store).
-This is very useful for development, as production data can be retrieved immediately without populating the development environment.
-This is especially useful for ephemeral environments such as branch/preview deployments (typically created by CI/CD for pull requests) or integration testing environments.
-
-## Project Write Validation
-
-By default, `MetadataStore` raises a `ValueError` when attempting to write to a project that doesn't match the expected project from `MetaxyConfig.get().project`.
-
-For legitimate cross-project operations (such as migrations that need to update features across multiple projects), an escape hatch is provided via the `allow_cross_project_writes()` context manager:
-
-```python
-# Normal operation - writes are validated against expected project
-with store:
-    store.write_metadata(feature_from_my_project, metadata)  # OK
-    store.write_metadata(feature_from_other_project, metadata)  # Raises ValueError
-
-# Migration scenario - temporarily allow cross-project writes
-with store:
-    with store.allow_cross_project_writes():
-        store.write_metadata(feature_from_project_a, metadata_a)  # OK
-        store.write_metadata(feature_from_project_b, metadata_b)  # OK
-```
+Learn about configuring metadata stores [here](../reference/configuration.md/#stores)
