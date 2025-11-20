@@ -2,6 +2,7 @@
 
 import json
 import warnings
+from collections.abc import Mapping
 from typing import Any
 
 from metaxy.graph.diff.diff_models import (
@@ -89,8 +90,8 @@ class GraphDiffer:
 
     def diff(
         self,
-        snapshot1_data: dict[str, dict[str, Any]],
-        snapshot2_data: dict[str, dict[str, Any]],
+        snapshot1_data: Mapping[str, Mapping[str, Any]],
+        snapshot2_data: Mapping[str, Mapping[str, Any]],
         from_snapshot_version: str = "unknown",
         to_snapshot_version: str = "unknown",
     ) -> GraphDiff:
@@ -317,8 +318,8 @@ class GraphDiffer:
 
     def create_merged_graph_data(
         self,
-        snapshot1_data: dict[str, dict[str, Any]],
-        snapshot2_data: dict[str, dict[str, Any]],
+        snapshot1_data: Mapping[str, Mapping[str, Any]],
+        snapshot2_data: Mapping[str, Mapping[str, Any]],
         diff: GraphDiff,
     ) -> dict[str, Any]:
         """Create merged graph data structure with status annotations.
@@ -626,7 +627,7 @@ class GraphDiffer:
 
     def load_snapshot_data(
         self, store: MetadataStore, snapshot_version: str, project: str | None = None
-    ) -> dict[str, dict[str, Any]]:
+    ) -> Mapping[str, Mapping[str, Any]]:
         """Load snapshot data from store.
 
         Args:

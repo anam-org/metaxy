@@ -12,17 +12,17 @@ import polars as pl
 from metaxy.metadata_store.delta import DeltaMetadataStore
 
 
-def test_delta_s3_storage_options_passed(moto_s3_bucket, test_features) -> None:
+def test_delta_s3_storage_options_passed(
+    s3_bucket_and_storage_options, test_features
+) -> None:
     """Verify storage_options are passed to Delta operations with S3.
 
     This ensures object store credentials are correctly forwarded to delta-rs.
-    Uses moto server running as subprocess with proper threading support.
     """
-    store_path = f"s3://{moto_s3_bucket['bucket']}/delta_store"
+    bucket_name, storage_options = s3_bucket_and_storage_options
+    store_path = f"s3://{bucket_name}/delta_store"
     feature_cls = test_features["UpstreamFeatureA"]
-    storage_options = moto_s3_bucket["storage_options"]
 
-    # Simple write to verify storage_options work
     with DeltaMetadataStore(store_path, storage_options=storage_options) as store:
         metadata = pl.DataFrame(
             {
@@ -31,6 +31,4 @@ def test_delta_s3_storage_options_passed(moto_s3_bucket, test_features) -> None:
             }
         )
         store.write_metadata(feature_cls, metadata)
-
-        # Verify the write succeeded by checking feature exists
         assert store.has_feature(feature_cls, check_fallback=False)
