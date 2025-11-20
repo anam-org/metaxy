@@ -1146,48 +1146,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#recording-a-graph-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      Recording a graph snapshot
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-and-applying-migrations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Generating and applying migrations
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#visualizing-the-feature-graph" class="md-nav__link">
-    <span class="md-ellipsis">
-      Visualizing the feature graph
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2066,48 +2024,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#recording-a-graph-snapshot" class="md-nav__link">
-    <span class="md-ellipsis">
-      Recording a graph snapshot
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#generating-and-applying-migrations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Generating and applying migrations
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#visualizing-the-feature-graph" class="md-nav__link">
-    <span class="md-ellipsis">
-      Visualizing the feature graph
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2129,7 +2045,9 @@
 
 <h1 id="cli-commands">CLI Commands<a class="headerlink" href="#cli-commands" title="Permanent link">&para;</a></h1>
 <p>This section provides a comprehensive reference for all Metaxy CLI commands.</p>
-<p>Metaxy - Feature Metadata Management</p>
+<p>Metaxy CLI.</p>
+<p>Auto-discovers configuration (<code>metaxy.toml</code> or <code>pyproject.toml</code>) in current or parent directories.
+The configuration file must be present.</p>
 <h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="#metaxy-shell"><code>shell</code></a></li>
@@ -2253,8 +2171,9 @@ Computes and displays the GraphDiff between the two snapshots on-demand.</p>
 <h2 id="metaxy-graph">metaxy graph<a class="headerlink" href="#metaxy-graph" title="Permanent link">&para;</a></h2>
 <p>Manage feature graphs</p>
 <h3 id="metaxy-graph-push">metaxy graph push<a class="headerlink" href="#metaxy-graph-push" title="Permanent link">&para;</a></h3>
-<p>Serialize all Metaxy feature definitions (identified via feature discovery) to the metadata store.</p>
-<p>This is intended to be invoked in a CD pipeline <strong>before</strong> running Metaxy code in production.</p>
+<p>Serialize all Metaxy features to the metadata store.</p>
+<p>This is intended to be invoked in a CD pipeline <strong>before</strong> running Metaxy code in production.
+Feature definitions are collected via the <a href="https://anam-org.github.io/metaxy/main/learn/feature-discovery/">feature discovery</a> mechanism.</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="go">metaxy graph push [OPTIONS] [ARGS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
@@ -2410,29 +2329,6 @@ current project's feature graph.</p>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features defined in the current project's feature graph  <em>[default: --no-all-features]</em></li>
 <li><code>CONFIRM, --confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion)  <em>[default: --no-confirm]</em></li>
 </ul>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<h3 id="recording-a-graph-snapshot">Recording a graph snapshot<a class="headerlink" href="#recording-a-graph-snapshot" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Push the current feature graph to the metadata store</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a><a href="#__codelineno-16-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>push
-</span></code></pre></div>
-<p>The recommendation is to run this command in your CD pipeline.</p>
-<h3 id="generating-and-applying-migrations">Generating and applying migrations<a class="headerlink" href="#generating-and-applying-migrations" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Generate a migration for detected changes</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2"></a><a href="#__codelineno-17-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>generate<span class="w"> </span>--op<span class="w"> </span>metaxy.migrations.ops.DataVersionReconciliation
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3"></a><a href="#__codelineno-17-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4"></a><a href="#__codelineno-17-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Apply pending migrations</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5"></a><a href="#__codelineno-17-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>migrations<span class="w"> </span>apply
-</span></code></pre></div>
-<h3 id="visualizing-the-feature-graph">Visualizing the feature graph<a class="headerlink" href="#visualizing-the-feature-graph" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Render as terminal tree view</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2"></a><a href="#__codelineno-18-2"><span class="linenos" data-linenos="2 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3"></a><a href="#__codelineno-18-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4"></a><a href="#__codelineno-18-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># Render as Mermaid diagram</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5"></a><a href="#__codelineno-18-5"><span class="linenos" data-linenos="5 "></span></a>metaxy<span class="w"> </span>graph<span class="w"> </span>render<span class="w"> </span>--format<span class="w"> </span>mermaid
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6"></a><a href="#__codelineno-18-6"><span class="linenos" data-linenos="6 "></span></a>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7"></a><a href="#__codelineno-18-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># Compare two snapshots</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8"></a><a href="#__codelineno-18-8"><span class="linenos" data-linenos="8 "></span></a>metaxy<span class="w"> </span>graph-diff<span class="w"> </span>render<span class="w"> </span>&lt;snapshot-id&gt;<span class="w"> </span>current<span class="w"> </span>--format<span class="w"> </span>mermaid
-</span></code></pre></div>
 
 
 
