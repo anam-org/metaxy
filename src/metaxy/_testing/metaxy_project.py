@@ -574,6 +574,7 @@ class TempMetaxyProject(MetaxyProject):
         super().__init__(tmp_path)
         self.project_dir.mkdir(exist_ok=True)
         self._feature_modules: list[str] = []
+        self._module_counter = 0
         self._custom_config = config_content
         self._write_config()
 
@@ -638,7 +639,8 @@ database = "{staging_db_path}"
             # Generate module name if not provided
             nonlocal module_name
             if module_name is None:
-                module_name = f"features_{len(self._feature_modules)}"
+                module_name = f"features_{self._module_counter}"
+                self._module_counter += 1
 
             # Extract source code from function
             source = inspect.getsource(features_func)

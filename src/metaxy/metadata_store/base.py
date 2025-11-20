@@ -902,6 +902,7 @@ class MetadataStore(ABC):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation (backend-specific).
@@ -911,6 +912,7 @@ class MetadataStore(ABC):
         Args:
             feature_key: Feature key to write to
             df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
+            **kwargs: Backend-specific parameters
 
         Note: Subclasses implement this for their storage backend.
         """
@@ -1112,6 +1114,7 @@ class MetadataStore(ABC):
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from THIS store only without using any fallbacks stores.
@@ -1120,6 +1123,7 @@ class MetadataStore(ABC):
             feature: Feature to read metadata for
             filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
+            **kwargs: Backend-specific parameters
 
         Returns:
             Narwhals LazyFrame with metadata, or None if feature not found in the store

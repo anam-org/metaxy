@@ -97,6 +97,7 @@ class InMemoryMetadataStore(MetadataStore):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation for in-memory storage.
@@ -104,6 +105,7 @@ class InMemoryMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
         """
         df_polars: pl.DataFrame = collect_to_polars(df)
 
@@ -167,6 +169,7 @@ class InMemoryMetadataStore(MetadataStore):
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -176,6 +179,7 @@ class InMemoryMetadataStore(MetadataStore):
             feature_version: Filter by specific feature_version
             filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found

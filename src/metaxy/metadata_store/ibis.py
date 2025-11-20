@@ -340,6 +340,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation using Ibis.
@@ -347,6 +348,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
@@ -409,6 +411,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -418,6 +421,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
             filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
