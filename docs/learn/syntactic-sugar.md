@@ -15,7 +15,6 @@ from metaxy import FeatureKey
 
 key = FeatureKey("prefix/feature")
 key = FeatureKey(["prefix", "feature"])
-key = FeatureKey("prefix", "feature")
 same_key = FeatureKey(key)
 ```
 
@@ -27,7 +26,6 @@ Both `FeatureKey` and `FieldKey` accept:
 
 - **String format**: `FeatureKey("prefix/feature")`
 - **Sequence format**: `FeatureKey(["prefix", "feature"])`
-- **Variadic format**: `FeatureKey("prefix", "feature")`
 - **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts.
