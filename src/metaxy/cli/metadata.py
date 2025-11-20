@@ -76,11 +76,8 @@ def status(
     with metadata_store:
         # If snapshot_version provided, reconstruct graph from storage
         if snapshot_version:
-            from metaxy.metadata_store.system.storage import SystemTableStorage
-
-            storage = SystemTableStorage(metadata_store)
             try:
-                graph = storage.load_graph_from_snapshot(
+                graph = metadata_store.load_graph_snapshot(
                     snapshot_version=snapshot_version,
                     project=context.project,
                 )

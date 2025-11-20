@@ -153,7 +153,7 @@ def generate_migration(
     else:
         # Historical mode: load from snapshot with force_reload
         # force_reload ensures we get current code from disk, not cached imports
-        to_graph = SystemTableStorage(store).load_graph_from_snapshot(
+        to_graph = store.load_graph_snapshot(
             snapshot_version=to_snapshot_version,
             class_path_overrides=class_path_overrides,
             force_reload=True,

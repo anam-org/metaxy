@@ -1468,3 +1468,53 @@ class MetadataStore(ABC):
         )
 
         return {"features_copied": features_copied, "rows_copied": total_rows}
+
+    def load_graph_snapshot(
+        self,
+        snapshot_version: str,
+        project: str | None = None,
+        *,
+        class_path_overrides: dict[str, str] | None = None,
+        force_reload: bool = False,
+    ) -> FeatureGraph:
+        """Load and reconstruct a FeatureGraph from a stored snapshot.
+
+        This is a convenience method that abstracts away the SystemTableStorage
+        implementation details from CLI and application code.
+
+        Args:
+            snapshot_version: The snapshot version to load
+            project: Optional project name to filter by
+            class_path_overrides: Optional dict mapping feature_key to new class path
+                                  for features that have been moved/renamed
+            force_reload: If True, force reimport of feature classes even if cached
+
+        Returns:
+            Reconstructed FeatureGraph
+
+        Raises:
+            ValueError: If no features found for the snapshot version
+            ImportError: If feature classes cannot be imported at their recorded paths
+
+        Note:
+            The store must already be open when calling this method.
+
+        Example:
+            ```python
+            with store:
+                graph = store.load_graph_snapshot(
+                    snapshot_version="abc123",
+                    project="my_project"
+                )
+                print(f"Loaded {len(graph.features_by_key)} features")
+            ```
+        """
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        storage = SystemTableStorage(self)
+        return storage.load_graph_from_snapshot(
+            snapshot_version=snapshot_version,
+            project=project,
+            class_path_overrides=class_path_overrides,
+            force_reload=force_reload,
+        )

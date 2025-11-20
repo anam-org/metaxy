@@ -521,12 +521,9 @@ def render(
         # Load historical snapshot from store
         metadata_store = context.get_store(store)
 
-        from metaxy.metadata_store.system.storage import SystemTableStorage
-
         with metadata_store:
-            storage = SystemTableStorage(metadata_store)
             try:
-                graph = storage.load_graph_from_snapshot(snapshot_version=snapshot)
+                graph = metadata_store.load_graph_snapshot(snapshot_version=snapshot)
             except ValueError as e:
                 console.print(f"[red]✗[/red] {e}")
                 raise SystemExit(1)
