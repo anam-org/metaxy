@@ -1144,17 +1144,32 @@ class MetadataStore(ABC):
         Returns:
             True if feature exists, False otherwise
         """
-        # Check local
+        self._check_open()
+
         if self.read_metadata_in_store(feature) is not None:
             return True
 
         # Check fallback stores
-        if check_fallback:
+        if not check_fallback:
+            return self._has_feature_impl(feature)
+        else:
             for store in self.fallback_stores:
                 if store.has_feature(feature, check_fallback=True):
                     return True
 
         return False
+
+    @abstractmethod
+    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+        """Implementation of _has_feature.
+
+        Args:
+            feature: Feature to check
+
+        Returns:
+            True if feature exists, False otherwise
+        """
+        pass
 
     @abstractmethod
     def display(self) -> str:
