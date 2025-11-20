@@ -60,22 +60,20 @@ class _Key(BaseModel):
         Initialize from various input types.
 
         Args:
-            *args: Variadic positional arguments:
-                - Single str: Split on "/" separator ("a/b/c" -> ["a", "b", "c"])
-                - Single Sequence[str]: Use as parts (["a", "b", "c"])
-                - Single Key instance: Copy parts
-                - Multiple str: Use as parts ("a", "b", "c" -> ["a", "b", "c"])
+            *args: Single positional argument:
+                - str: Split on "/" separator ("a/b/c" -> ["a", "b", "c"])
+                - Sequence[str]: Use as parts (["a", "b", "c"])
+                - Key instance: Copy parts
             **kwargs: Additional keyword arguments for BaseModel (e.g., parts=...)
 
         Examples:
             ```py
             FeatureKey("a/b/c")  # String with separator
             FeatureKey(["a", "b", "c"])  # List
-            FeatureKey("a", "b", "c")  # Variadic
             FeatureKey(parts=["a", "b", "c"])  # Keyword argument
             ```
         """
-        # Handle variadic or single argument construction
+        # Handle single argument construction
         if args:
             if len(args) == 1:
                 key = args[0]
@@ -102,14 +100,10 @@ class _Key(BaseModel):
                         f"Cannot create {self.__class__.__name__} from {type(key).__name__}"
                     )
             else:
-                # Multiple arguments - treat as variadic parts
-                # Validate all are strings
-                if not all(isinstance(arg, str) for arg in args):
-                    raise ValueError(
-                        f"Variadic arguments to {self.__class__.__name__} must all be strings, "
-                        f"got types: {[type(arg).__name__ for arg in args]}"
-                    )
-                kwargs["parts"] = tuple(args)  # type: ignore[arg-type]
+                # Multiple arguments provided - not supported
+                raise TypeError(
+                    f"{self.__class__.__name__}() takes exactly 1 positional argument ({len(args)} given)"
+                )
 
         super().__init__(**kwargs)
 
@@ -128,11 +122,6 @@ class _Key(BaseModel):
         @overload
         def __init__(self: Self, key: Self, /) -> None:
             """Initialize from another instance (copy)."""
-            ...
-
-        @overload
-        def __init__(self, *parts: str) -> None:
-            """Initialize from variadic string arguments."""
             ...
 
         @overload
@@ -301,9 +290,6 @@ class FeatureKey(_Key):
 
         FeatureKey(FeatureKey(["a", "b", "c"]))  # FeatureKey copy
         # FeatureKey(parts=['a', 'b', 'c'])
-
-        FeatureKey("a", "b", "c")  # Variadic format
-        # FeatureKey(parts=['a', 'b', 'c'])
         ```
     """
 
@@ -325,11 +311,6 @@ class FeatureKey(_Key):
             ...
 
         @overload
-        def __init__(self, *parts: str) -> None:
-            """Initialize from variadic string arguments."""
-            ...
-
-        @overload
         def __init__(self, *, parts: Sequence[str]) -> None:
             """Initialize from parts keyword argument."""
             ...
@@ -338,7 +319,6 @@ class FeatureKey(_Key):
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             key: str | Sequence[str] | FeatureKey | None = None,
-            *parts: str,
             **kwargs: Any,
         ) -> None: ...
 
@@ -397,9 +377,6 @@ class FieldKey(_Key):
 
         FieldKey(FieldKey(["a", "b", "c"]))  # FieldKey copy
         # FieldKey(parts=['a', 'b', 'c'])
-
-        FieldKey("a", "b", "c")  # Variadic format
-        # FieldKey(parts=['a', 'b', 'c'])
         ```
     """
 
@@ -421,11 +398,6 @@ class FieldKey(_Key):
             ...
 
         @overload
-        def __init__(self, *parts: str) -> None:
-            """Initialize from variadic string arguments."""
-            ...
-
-        @overload
         def __init__(self, *, parts: Sequence[str]) -> None:
             """Initialize from parts keyword argument."""
             ...
@@ -434,7 +406,6 @@ class FieldKey(_Key):
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             key: str | Sequence[str] | FieldKey | None = None,
-            *parts: str,
             **kwargs: Any,
         ) -> None: ...
 
