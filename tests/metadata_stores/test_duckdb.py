@@ -13,7 +13,6 @@ pytest.importorskip("pyarrow")
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
-from metaxy.metadata_store.types import AccessMode
 from metaxy.models.constants import METAXY_PROVENANCE_BY_FIELD
 
 
@@ -134,7 +133,7 @@ def test_duckdb_conn_property_enforcement(
         _ = store.conn
 
     # Should work when open
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         conn = store.conn
         assert conn is not None
 
@@ -232,7 +231,7 @@ def test_duckdb_config_instantiation() -> None:
     assert store.database == ":memory:"
 
     # Verify store can be opened
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         assert store._is_open
 
 
@@ -266,7 +265,7 @@ def test_duckdb_config_with_extensions() -> None:
             extension_names.append(ext.name)
     assert "hashfuncs" in extension_names
 
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         assert store._is_open
 
 
@@ -291,7 +290,7 @@ def test_duckdb_config_with_hash_algorithm() -> None:
     assert isinstance(store, DuckDBMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         assert store._is_open
 
 
@@ -322,5 +321,5 @@ def test_duckdb_config_with_fallback_stores() -> None:
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], DuckDBMetadataStore)
 
-    with dev_store.open(AccessMode.WRITE):
+    with dev_store.open("write"):
         assert dev_store._is_open

@@ -23,7 +23,6 @@ from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.metadata_store.types import AccessMode
 from metaxy.migrations import MigrationExecutor, detect_diff_migration
 from metaxy.models.feature import FeatureGraph
 
@@ -196,7 +195,7 @@ def test_basic_migration_flow(
         FeatureKey(["test_integration", "simple"])
     ]
 
-    with simple_graph_v2.use(), store_v2.open(AccessMode.WRITE):
+    with simple_graph_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (BEFORE recording v2 snapshot)
         # This compares latest snapshot in store (v1) with active graph (v2)
         migration = detect_diff_migration(
@@ -307,7 +306,7 @@ def test_upstream_downstream_migration(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
+    with upstream_downstream_v2.use(), store_v2.open("write"):
         # Step 3: Detect migration (before recording v2 snapshot)
         migration = detect_diff_migration(
             store_v2,
@@ -408,7 +407,7 @@ def test_migration_idempotency(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
+    with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream manually
         new_upstream_data = pl.DataFrame(
             {
@@ -508,7 +507,7 @@ def test_migration_dry_run(
         FeatureKey(["test_integration", "downstream"])
     ]
 
-    with upstream_downstream_v2.use(), store_v2.open(AccessMode.WRITE):
+    with upstream_downstream_v2.use(), store_v2.open("write"):
         # Update upstream
         new_upstream_data = pl.DataFrame(
             {

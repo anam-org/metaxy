@@ -42,7 +42,6 @@ def push(
     from metaxy.cli.context import AppContext
     from metaxy.metadata_store.system.models import METAXY_TAG
     from metaxy.metadata_store.system.storage import SystemTableStorage
-    from metaxy.metadata_store.types import AccessMode
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
@@ -53,7 +52,7 @@ def push(
 
     assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
 
-    with metadata_store.open(AccessMode.WRITE):
+    with metadata_store.open("write"):
         result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
 
         # Scenario 1: New snapshot (computational changes)

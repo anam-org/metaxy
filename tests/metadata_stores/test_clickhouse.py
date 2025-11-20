@@ -13,7 +13,6 @@ except ImportError:
 
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.types import AccessMode
 from metaxy.models.feature import TestingFeature
 
 
@@ -83,7 +82,7 @@ def test_clickhouse_conn_property_enforcement(
         conn = store.conn
         assert conn is not None
 
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         conn = store.conn
         assert conn is not None
 
@@ -185,7 +184,7 @@ def test_clickhouse_config_instantiation(
     assert isinstance(store, ClickHouseMetadataStore)
 
     # Verify store can be opened
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         assert store._is_open
 
 
@@ -239,7 +238,7 @@ def test_clickhouse_config_with_hash_algorithm(
     assert isinstance(store, ClickHouseMetadataStore)
     assert store.hash_algorithm == HashAlgorithm.MD5
 
-    with store.open(AccessMode.WRITE):
+    with store.open("write"):
         assert store._is_open
 
 
@@ -272,5 +271,5 @@ def test_clickhouse_config_with_fallback_stores(
     assert len(dev_store.fallback_stores) == 1
     assert isinstance(dev_store.fallback_stores[0], ClickHouseMetadataStore)
 
-    with dev_store.open(AccessMode.WRITE):
+    with dev_store.open("write"):
         assert dev_store._is_open

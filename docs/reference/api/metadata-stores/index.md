@@ -21,7 +21,6 @@ Metaxy has built-in support for the following metadata store types:
 ::: metaxy.MetadataStore
 
 ::: metaxy.metadata_store.types.AccessMode
-    members: true
     options:
       show_if_no_docstring: true
 
