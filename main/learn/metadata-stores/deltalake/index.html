@@ -756,10 +756,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#object-stores" class="md-nav__link">
+  <a href="#using-object-stores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Object Stores
+        Using Object Stores
       
     </span>
   </a>
@@ -2120,10 +2120,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#object-stores" class="md-nav__link">
+  <a href="#using-object-stores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Object Stores
+        Using Object Stores
       
     </span>
   </a>
@@ -2254,17 +2254,21 @@
 
 
 <h1 id="deltametadatastore">DeltaMetadataStore<a class="headerlink" href="#deltametadatastore" title="Permanent link">&para;</a></h1>
-<p>Delta Lake keeps one Delta table per feature, appends new metadata versions, and uses the in-memory Polars versioning engine for provenance calculations.</p>
+<p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
+<p>It supports the local filesystem and remote object stores.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>The backend relies on <a href="https://delta-io.github.io/delta-rs/python/"><code>deltalake</code></a> which ships with Metaxy’s <code>delta</code> extras.</p>
-<h2 id="object-stores">Object Stores<a class="headerlink" href="#object-stores" title="Permanent link">&para;</a></h2>
+<p>This metadata store relies on <a href="https://delta-io.github.io/delta-rs/python/"><code>deltalake</code></a>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
+</span></code></pre></div>
+<h2 id="using-object-stores">Using Object Stores<a class="headerlink" href="#using-object-stores" title="Permanent link">&para;</a></h2>
 <p>Point <code>root_path</code> at any supported URI (<code>s3://</code>, <code>abfss://</code>, <code>gs://</code>, …) and forward credentials with <code>storage_options</code>.
 The dict is passed verbatim to <a href="https://delta-io.github.io/delta-rs/integrations/object-storage/special_configuration/"><code>deltalake</code></a>.</p>
+<p>Learn more in the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore">API docs</a>.</p>
 <h2 id="storage-layout">Storage Layout<a class="headerlink" href="#storage-layout" title="Permanent link">&para;</a></h2>
-<p>Control how feature keys map to Delta directories with <code>layout</code>:</p>
+<p>It's possible to control how feature keys map to DeltaLake table locations with the <code>layout</code> parameter:</p>
 <ul>
-<li><code>flat</code> (default) keeps the current <code>your__feature_key</code> directory scheme.</li>
-<li><code>nested</code> places every key part into its own directory (e.g. <code>your/feature/key</code>).</li>
+<li><code>nested</code> (default) places every feature in its own directory: <code>your/feature/key.delta</code></li>
+<li><code>flat</code> stores all of them in the same directory: <code>your__feature_key.delta</code></li>
 </ul>
 
 
