@@ -12,7 +12,6 @@ from metaxy.cli.console import console, error_console
 # Main app
 app = cyclopts.App(
     name="metaxy",  # pyrefly: ignore[unexpected-keyword]
-    help="Metaxy - Feature Metadata Management",  # pyrefly: ignore[unexpected-keyword]
     version=__version__,  # pyrefly: ignore[unexpected-keyword]
     console=console,  # pyrefly: ignore[unexpected-keyword]
     error_console=error_console,  # pyrefly: ignore[unexpected-keyword]
@@ -58,10 +57,8 @@ def launcher(
 ):
     """Metaxy CLI.
 
-    Auto-discovers config file (metaxy.toml or pyproject.toml) by searching
-    current directory and parent directories.
-
-    Environment variables can override config (METAXY_STORE, METAXY_MIGRATIONS_DIR, etc).
+    Auto-discovers configuration (`metaxy.toml` or `pyproject.toml`) in current or parent directories.
+    The configuration file must be present.
     """
     import logging
     import os
