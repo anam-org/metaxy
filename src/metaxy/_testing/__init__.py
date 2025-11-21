@@ -4,6 +4,7 @@ This is a private module (_testing) containing testing utilities organized into:
 - runbook: Runbook system for testing and documenting examples
 - metaxy_project: Project helpers for creating and managing temporary Metaxy projects
 - pytest_helpers: Testing helpers for pytest tests
+- models: Testing-specific model implementations
 """
 
 # Runbook system
@@ -16,6 +17,7 @@ from metaxy._testing.metaxy_project import (
     TempMetaxyProject,
     assert_all_results_equal,
 )
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.pytest_helpers import add_metaxy_provenance_column
 from metaxy._testing.runbook import (
     ApplyPatchStep,
@@ -47,4 +49,7 @@ __all__ = [
     "assert_all_results_equal",
     # Pytest helpers
     "add_metaxy_provenance_column",
+    # Testing models
+    "SampleFeatureSpec",
+    "SampleFeature",
 ]

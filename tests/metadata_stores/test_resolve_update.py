@@ -31,8 +31,8 @@ from metaxy import (
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    SampleFeatureSpec,
 )
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,

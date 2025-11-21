@@ -8,11 +8,12 @@ from unittest.mock import patch
 
 import pytest
 
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
+from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 

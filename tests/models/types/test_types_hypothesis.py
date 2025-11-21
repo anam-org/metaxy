@@ -10,7 +10,8 @@ import pytest
 from hypothesis import assume, given, settings
 from pydantic import BaseModel, ValidationError
 
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 

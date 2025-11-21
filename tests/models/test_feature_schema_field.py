@@ -7,7 +7,8 @@ import json
 import polars as pl
 from pydantic import Field
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
 from metaxy.models.feature import FeatureGraph

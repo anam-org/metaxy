@@ -212,7 +212,8 @@ def feature_metadata_strategy(
     Example:
         ```python
         from hypothesis import given
-        from metaxy import SampleFeatureSpec, FieldSpec, FieldKey
+        from metaxy import FieldSpec, FieldKey
+        from metaxy._testing.models import SampleFeatureSpec
         from metaxy._testing.parametric import feature_metadata_strategy
 
         spec = SampleFeatureSpec(
@@ -397,7 +398,8 @@ def upstream_metadata_strategy(
     Example:
         ```python
         from hypothesis import given
-        from metaxy import FeatureGraph, Feature, SampleFeatureSpec, FieldSpec, FieldKey
+        from metaxy import FeatureGraph, Feature, FieldSpec, FieldKey
+        from metaxy._testing.models import SampleFeatureSpec
         from metaxy._testing.parametric import upstream_metadata_strategy
 
         graph = FeatureGraph()

@@ -9,9 +9,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     MetadataStore,
-    SampleFeatureSpec,
 )
 from metaxy._testing import HashAlgorithmCases, TempFeatureModule
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig, StoreConfig
 from metaxy.models.feature import FeatureGraph
 
@@ -101,7 +101,8 @@ def metaxy_project(tmp_path):
     Example:
         def test_example(metaxy_project):
             def features():
-                from metaxy import Feature, SampleFeatureSpec, FeatureKey, FieldSpec, FieldKey
+                from metaxy import Feature, FeatureKey, FieldSpec, FieldKey
+                from metaxy._testing.models import SampleFeatureSpec
 
                 class MyFeature(Feature, spec=SampleFeatureSpec(
                     key=FeatureKey(["my_feature"]),

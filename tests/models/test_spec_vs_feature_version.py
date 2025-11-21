@@ -1,13 +1,7 @@
 """Tests comparing feature_spec_version and feature_version behavior."""
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import Feature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_spec_version_vs_feature_version() -> None:

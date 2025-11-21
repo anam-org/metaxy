@@ -6,13 +6,14 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.feature import FeatureGraph, TestingFeature
+from metaxy._testing.models import SampleFeature
+from metaxy.models.feature import FeatureGraph
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
 
 def test_polars_engine_initialization(
-    graph: FeatureGraph, simple_features: dict[str, type[TestingFeature]]
+    graph: FeatureGraph, simple_features: dict[str, type[SampleFeature]]
 ) -> None:
     """Test PolarsVersioningEngine can be initialized."""
     feature = simple_features["ProcessedVideo"]
@@ -22,7 +23,7 @@ def test_polars_engine_initialization(
 
 
 def test_compute_provenance_single_upstream(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -72,7 +73,7 @@ def test_compute_provenance_single_upstream(
 
 
 def test_compute_provenance_multiple_upstreams(
-    multi_upstream_features: dict[str, type[TestingFeature]],
+    multi_upstream_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     upstream_audio_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
@@ -127,7 +128,7 @@ def test_compute_provenance_multiple_upstreams(
 
 
 def test_compute_provenance_selective_field_deps(
-    selective_field_dep_features: dict[str, type[TestingFeature]],
+    selective_field_dep_features: dict[str, type[SampleFeature]],
     upstream_metadata_multi_field: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -175,7 +176,7 @@ def test_compute_provenance_selective_field_deps(
 
 
 def test_resolve_increment_no_current(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -212,7 +213,7 @@ def test_resolve_increment_no_current(
 
 
 def test_resolve_increment_with_changes(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -283,7 +284,7 @@ def test_resolve_increment_with_changes(
 
 
 def test_resolve_increment_all_unchanged(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -333,7 +334,7 @@ def test_resolve_increment_all_unchanged(
     ids=["xxhash64", "sha256", "md5"],
 )
 def test_compute_provenance_different_algorithms_snapshot(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     hash_algo: HashAlgorithm,
@@ -366,7 +367,7 @@ def test_compute_provenance_different_algorithms_snapshot(
 
 
 def test_prepare_upstream_applies_filters(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:

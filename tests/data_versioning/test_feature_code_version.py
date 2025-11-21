@@ -11,8 +11,8 @@ from metaxy import (
     FieldKey,
     FieldSpec,
 )
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
-from metaxy.models.feature_spec import SampleFeatureSpec
 
 
 def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:

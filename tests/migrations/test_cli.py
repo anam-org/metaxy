@@ -7,7 +7,8 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
     """Test migrations list with no migrations."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -33,7 +34,8 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -91,7 +93,8 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -163,7 +166,8 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -222,7 +226,8 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,

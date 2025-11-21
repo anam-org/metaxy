@@ -12,8 +12,9 @@ import os
 import pytest
 from sqlmodel import Field
 
-from metaxy import FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy import FeatureKey, FieldKey, FieldSpec
 from metaxy._testing import TempMetaxyProject
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlmodel import BaseSQLModelFeature, SQLModelPluginConfig
 

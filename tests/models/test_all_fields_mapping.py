@@ -1,13 +1,7 @@
 """Tests for AllFieldsMapping functionality."""
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import Feature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.fields_mapping import AllFieldsMapping, FieldsMapping
 

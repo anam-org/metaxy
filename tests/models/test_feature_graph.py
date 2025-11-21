@@ -11,15 +11,8 @@ Tests cover:
 
 from __future__ import annotations
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureGraph,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import Feature, FeatureDep, FeatureGraph, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 
 
 class TestBasicTopologicalSorting:

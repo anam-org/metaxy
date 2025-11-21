@@ -27,8 +27,8 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    SampleFeatureSpec,
 )
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore

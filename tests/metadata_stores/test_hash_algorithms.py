@@ -19,8 +19,9 @@ import polars.testing as pl_testing
 import pytest
 from pytest_cases import parametrize_with_cases
 
-from metaxy import Feature, FeatureDep, FeatureGraph, SampleFeatureSpec
+from metaxy import Feature, FeatureDep, FeatureGraph
 from metaxy._testing import HashAlgorithmCases
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
 )

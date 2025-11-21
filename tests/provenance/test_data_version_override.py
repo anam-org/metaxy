@@ -10,8 +10,9 @@ from __future__ import annotations
 import narwhals as nw
 import polars as pl
 
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -22,7 +23,7 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
     """Test basic case: user provides custom data_version_by_field, verify downstream uses it."""
 
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -33,7 +34,7 @@ def test_basic_data_version_override(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
@@ -119,7 +120,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
     """Test A→B→C where A has custom data_version, verify C's provenance traces back correctly."""
 
     class FeatureA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["A"]),
             fields=[
@@ -130,7 +131,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
         pass
 
     class FeatureB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["B"]),
             deps=[FeatureDep(feature=FeatureKey(["A"]))],
@@ -151,7 +152,7 @@ def test_propagation_chain_with_data_version(graph: FeatureGraph, snapshot) -> N
         pass
 
     class FeatureC(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["C"]),
             deps=[FeatureDep(feature=FeatureKey(["B"]))],
@@ -253,7 +254,7 @@ def test_selective_field_override(graph: FeatureGraph, snapshot) -> None:
     """Test overriding only some fields in data_version_by_field."""
 
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -265,7 +266,7 @@ def test_selective_field_override(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
@@ -358,7 +359,7 @@ def test_default_behavior_no_override(graph: FeatureGraph, snapshot) -> None:
     """Test that when no override is provided, data_version equals provenance."""
 
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -369,7 +370,7 @@ def test_default_behavior_no_override(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
@@ -447,7 +448,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
     """Test feature with multiple parents where some have data_version overrides."""
 
     class Parent1(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent1"]),
             fields=[
@@ -458,7 +459,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
         pass
 
     class Parent2(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent2"]),
             fields=[
@@ -469,7 +470,7 @@ def test_multiple_upstreams_with_overrides(graph: FeatureGraph, snapshot) -> Non
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[
@@ -566,7 +567,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
     """Test that data_version propagation works correctly with FeatureDep renames."""
 
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -577,7 +578,7 @@ def test_data_version_propagation_with_renames(graph: FeatureGraph, snapshot) ->
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[
@@ -675,7 +676,7 @@ def test_data_version_cleanup_in_result(graph: FeatureGraph, snapshot) -> None:
     """Test that renamed upstream data_version columns are cleaned up from result."""
 
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -686,7 +687,7 @@ def test_data_version_cleanup_in_result(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class ChildFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],

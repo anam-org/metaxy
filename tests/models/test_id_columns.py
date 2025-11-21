@@ -6,11 +6,12 @@ import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
@@ -132,7 +133,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
 
     # Create feature with default ID columns
     class UpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
         ),
@@ -140,7 +141,7 @@ def test_narwhals_joiner_default_id_columns(graph: FeatureGraph):
         pass
 
     class TargetFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -190,7 +191,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
 
     # Create features with custom ID column
     class UpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["user_id"],
@@ -199,7 +200,7 @@ def test_narwhals_joiner_custom_single_id_column(graph: FeatureGraph):
         pass
 
     class TargetFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -251,7 +252,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
 
     # Create features with composite key
     class Upstream1(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream1"]),
             id_columns=["user_id", "session_id"],
@@ -260,7 +261,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
         pass
 
     class Upstream2(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream2"]),
             id_columns=["user_id", "session_id"],
@@ -269,7 +270,7 @@ def test_narwhals_joiner_composite_key(graph: FeatureGraph):
         pass
 
     class TargetFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[
@@ -359,7 +360,7 @@ def test_narwhals_joiner_empty_upstream_custom_id(graph: FeatureGraph):
 
     # Create source feature with custom ID columns
     class SourceFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["entity_id", "timestamp"],
@@ -418,7 +419,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
 
     # Create features with custom ID columns
     class UserFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["user"]),
             id_columns=["user_id"],
@@ -430,7 +431,7 @@ def test_metadata_store_integration_with_custom_id_columns(graph: FeatureGraph):
         pass
 
     class SessionFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["session"]),
             deps=[FeatureDep(feature=FeatureKey(["user"]))],
@@ -510,7 +511,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
 
     # Create feature with default ID columns
     class Feature1(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -521,7 +522,7 @@ def test_feature_version_stability_with_id_columns(graph: FeatureGraph):
 
     # Create identical feature but with explicit custom ID columns
     class Feature2(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -575,7 +576,7 @@ def test_joiner_preserves_all_id_columns_in_result(graph: FeatureGraph):
     joiner = TestJoiner()
 
     class TripleKeyFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["triple"]),
             id_columns=["tenant_id", "user_id", "event_id"],
@@ -610,7 +611,7 @@ def test_backwards_compatibility_default_id_columns(graph: FeatureGraph):
 
     # Create feature WITHOUT specifying id_columns (backwards compatibility)
     class LegacyFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["legacy"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
