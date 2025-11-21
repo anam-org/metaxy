@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/learn/feature-definitions/">
+        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/reference/api/ext/">
       
       
-        <link rel="prev" href="../metadata-stores/deltalake/">
+        <link rel="prev" href="../constants/">
       
       
-        <link rel="next" href="../data-versioning/">
+        <link rel="next" href="sqlmodel/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>Feature Definitions - Metaxy</title>
+        <title>Integrations - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/code_select.css">
+      <link rel="stylesheet" href="../../../css/code_select.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#feature-system" class="md-skip">
+        <a href="#integrations" class="md-skip">
           Skip to content
         </a>
       
@@ -102,7 +102,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Feature Definitions
+              Integrations
             
           </span>
         </div>
@@ -244,7 +244,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -261,8 +261,6 @@
   
   
   
-    
-  
   
     
     
@@ -270,13 +268,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../metadata-stores/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../../learn/metadata-stores/" class="md-tabs__link">
           
   
   
@@ -301,7 +297,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../integrations/sqlmodel/" class="md-tabs__link">
+        <a href="../../../integrations/sqlmodel/" class="md-tabs__link">
           
   
   
@@ -323,7 +319,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/one-to-many/" class="md-tabs__link">
+        <a href="../../../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -343,7 +339,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../reference/cli/" class="md-tabs__link">
+      <a href="../../cli/" class="md-tabs__link">
         
   
   
@@ -360,9 +356,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../reference/api/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="../" class="md-tabs__link">
         
   
   
@@ -381,7 +379,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../reference/configuration/" class="md-tabs__link">
+      <a href="../../configuration/" class="md-tabs__link">
         
   
   
@@ -422,7 +420,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href="../../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -452,7 +450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -476,10 +474,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -505,22 +501,21 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -538,7 +533,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -568,13 +563,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -583,7 +575,7 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_1" >
         
           
-          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="">
+          <label class="md-nav__link" for="__nav_2_1" id="__nav_2_1_label" tabindex="0">
             
   
   
@@ -619,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../metadata-stores/" class="md-nav__link">
+      <a href="../../../learn/metadata-stores/" class="md-nav__link">
         
   
   
@@ -705,7 +697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../metadata-stores/deltalake/" class="md-nav__link">
+      <a href="../../../learn/metadata-stores/deltalake/" class="md-nav__link">
         
   
   
@@ -746,37 +738,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Feature Definitions
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../learn/feature-definitions/" class="md-nav__link">
         
   
   
@@ -792,70 +757,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#feature-definitions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Feature Definitions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#field-level-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Field-Level Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#attaching-user-defined-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Attaching user-defined metadata
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fully-qualified-field-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fully Qualified Field Key
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -868,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../data-versioning/" class="md-nav__link">
+      <a href="../../../learn/data-versioning/" class="md-nav__link">
         
   
   
@@ -896,7 +797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../feature-discovery/" class="md-nav__link">
+      <a href="../../../learn/feature-discovery/" class="md-nav__link">
         
   
   
@@ -924,7 +825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../syntactic-sugar/" class="md-nav__link">
+      <a href="../../../learn/syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -952,7 +853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../relationship/" class="md-nav__link">
+      <a href="../../../learn/relationship/" class="md-nav__link">
         
   
   
@@ -980,7 +881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../filters/" class="md-nav__link">
+      <a href="../../../learn/filters/" class="md-nav__link">
         
   
   
@@ -1008,7 +909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing/" class="md-nav__link">
+      <a href="../../../learn/testing/" class="md-nav__link">
         
   
   
@@ -1036,7 +937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../system-columns/" class="md-nav__link">
+      <a href="../../../learn/system-columns/" class="md-nav__link">
         
   
   
@@ -1131,7 +1032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrations/sqlmodel/" class="md-nav__link">
+      <a href="../../../integrations/sqlmodel/" class="md-nav__link">
         
   
   
@@ -1159,7 +1060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrations/sqlalchemy/" class="md-nav__link">
+      <a href="../../../integrations/sqlalchemy/" class="md-nav__link">
         
   
   
@@ -1252,7 +1153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/one-to-many/" class="md-nav__link">
+      <a href="../../../examples/one-to-many/" class="md-nav__link">
         
   
   
@@ -1287,7 +1188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+      <a href="../../cli/" class="md-nav__link">
         
   
   
@@ -1311,8 +1212,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1332,22 +1235,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1365,13 +1269,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1411,10 +1315,13 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
@@ -1424,7 +1331,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/definitions/" class="md-nav__link ">
+            <a href="../definitions/" class="md-nav__link ">
               
   
   
@@ -1442,7 +1349,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6_1" id="__nav_6_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6_1" id="__nav_6_1_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1466,7 +1373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/feature-spec/" class="md-nav__link">
+      <a href="../definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -1494,7 +1401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/feature/" class="md-nav__link">
+      <a href="../definitions/feature/" class="md-nav__link">
         
   
   
@@ -1522,7 +1429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/field/" class="md-nav__link">
+      <a href="../definitions/field/" class="md-nav__link">
         
   
   
@@ -1550,7 +1457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/fields-mapping/" class="md-nav__link">
+      <a href="../definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -1578,7 +1485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/relationship/" class="md-nav__link">
+      <a href="../definitions/relationship/" class="md-nav__link">
         
   
   
@@ -1606,7 +1513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/graph/" class="md-nav__link">
+      <a href="../definitions/graph/" class="md-nav__link">
         
   
   
@@ -1634,7 +1541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/filters/" class="md-nav__link">
+      <a href="../definitions/filters/" class="md-nav__link">
         
   
   
@@ -1684,10 +1591,13 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
@@ -1697,7 +1607,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/metadata-stores/" class="md-nav__link ">
+            <a href="../metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1715,7 +1625,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6_2" id="__nav_6_2_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1764,7 +1674,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/metadata-stores/ibis/" class="md-nav__link ">
+            <a href="../metadata-stores/ibis/" class="md-nav__link ">
               
   
   
@@ -1806,7 +1716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/ibis/duckdb/" class="md-nav__link">
+      <a href="../metadata-stores/ibis/duckdb/" class="md-nav__link">
         
   
   
@@ -1834,7 +1744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/ibis/clickhouse/" class="md-nav__link">
+      <a href="../metadata-stores/ibis/clickhouse/" class="md-nav__link">
         
   
   
@@ -1930,7 +1840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/delta/" class="md-nav__link">
+      <a href="../metadata-stores/delta/" class="md-nav__link">
         
   
   
@@ -1958,7 +1868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/memory/" class="md-nav__link">
+      <a href="../metadata-stores/memory/" class="md-nav__link">
         
   
   
@@ -1994,7 +1904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -2030,7 +1940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -2058,7 +1968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/types/" class="md-nav__link">
+      <a href="../types/" class="md-nav__link">
         
   
   
@@ -2086,7 +1996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/constants/" class="md-nav__link">
+      <a href="../constants/" class="md-nav__link">
         
   
   
@@ -2111,8 +2021,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -2125,21 +2037,22 @@
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
         
           
+          
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_6" >
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/ext/" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   
@@ -2157,13 +2070,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6_6" id="__nav_6_6_label" tabindex="0">
+              <label class="md-nav__link md-nav__link--active" for="__nav_6_6" id="__nav_6_6_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2181,7 +2094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/ext/sqlmodel/" class="md-nav__link">
+      <a href="sqlmodel/" class="md-nav__link">
         
   
   
@@ -2209,7 +2122,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/ext/sqlalchemy/" class="md-nav__link">
+      <a href="sqlalchemy/" class="md-nav__link">
         
   
   
@@ -2252,7 +2165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -2292,58 +2205,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#feature-definitions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Feature Definitions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#field-level-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Field-Level Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#attaching-user-defined-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Attaching user-defined metadata
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fully-qualified-field-key" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fully Qualified Field Key
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -2367,7 +2228,7 @@
   
   
     <li class="md-path__item">
-      <a href="../.." class="md-path__link">
+      <a href="../../.." class="md-path__link">
         
   <span class="md-ellipsis">
     Home
@@ -2390,10 +2251,10 @@
     
     
       <li class="md-path__item">
-        <a href="../metadata-stores/" class="md-path__link">
+        <a href="../definitions/feature-spec/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Learn
+    API
   </span>
 
         </a>
@@ -2418,107 +2279,16 @@
   
 
 
-<h1 id="feature-system">Feature System<a class="headerlink" href="#feature-system" title="Permanent link">&para;</a></h1>
-<p>Metaxy has a declarative (defined statically at class level), expressive, flexible feature system.
-It has been inspired by <a href="https://dagster.io/">Dagster</a>'s Software-Defined Assets and <a href="https://nixos.org/">Nix</a>.</p>
-<p>Features represent tabular <strong>metadata</strong>, typically containing references to external multi-modal <strong>data</strong> such as files, images, or videos.
-But it can be just pure <strong>metadata</strong> as well.</p>
-<p>I will highlight <strong>data</strong> and <strong>metadata</strong> with bold so it really stands out.</p>
-<p>Metaxy is responsible for providing correct <strong>metadata</strong> to users.
-During incremental processing, Metaxy will automatically resolve added, changed and deleted <strong>metadata</strong> rows and calculate the right <a href="../data-versioning/">sample versions</a> for them.
-Metaxy does not interact with <strong>data</strong> directly, the user is responsible for writing it, typically using <strong>metadata</strong> to identify sample locations in storage (it's a good idea to inject the sample version into the data sample identifier).
-Metaxy is designed to be used with systems that do not overwrite existing <strong>metadata</strong> (Metaxy only appends <strong>metadata</strong>) and therefore <strong>data</strong> as well (while we cannot enforce that since the user is responsible for writing the data, it's easily achievable by <strong>including the sample version into the data sample identifier</strong>).</p>
-<p>I hope we can stop using bold for <strong>data</strong> and <strong>metadata</strong> from now on, hopefully we've made our point.</p>
-<div class="admonition tip">
-<p class="admonition-title">Include sample version in your data path</p>
-<p>Include the sample version in your data path to ensure strong consistency guarantees.
-I mean it.
-Really do it!</p>
-</div>
-<p>Features live on a global <code>FeatureGraph</code> object (typically users do not need to interact with it directly).
-Features are bound to a specific Metaxy project, but can be moved between projects over time.
-Features must have unique (across all projects) <code>FeatureKey</code> associated with them.</p>
-<h2 id="feature-definitions">Feature Definitions<a class="headerlink" href="#feature-definitions" title="Permanent link">&para;</a></h2>
-<p>Metaxy provides a <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;BaseFeature&lt;/span&gt;
-
-
-  &lt;span class=&quot;doc doc-labels&quot;&gt;
-      &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
-  &lt;/span&gt;" href="../../reference/api/definitions/feature/#metaxy.BaseFeature"><code>BaseFeature</code></a> class that can be extended to create user-defined features.
-It's a <a href="https://docs.pydantic.dev/latest/">Pydantic</a> model.</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span><span class="p">,</span> <span class="n">FeatureSpec</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>    <span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">])</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">):</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span></code></pre></div>
-<p>Metaxy must know how to uniquely identify feature samples and join metadata tables, therefore, you need to attach one or more ID columns to your <code>FeatureSpec</code>.</p>
-<p>That's it!
-Since it's a root feature, it doesn't have any dependencies.
-Easy.</p>
-<p>You may now use <code>VideoFeature.spec()</code> class method to access the original feature spec: it's bound to the class.</p>
-<p>Now let's define a child feature.</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Transcript</span><span class="p">(</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="n">BaseFeature</span><span class="p">,</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/processed/transcript&quot;</span><span class="p">,</span> <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">]</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">VideoFeature</span><span class="p">]),</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="p">):</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a>    <span class="n">transcript_path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a>    <span class="n">speakers_json_path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos="7 "></span></a>    <span class="n">num_speakers</span><span class="p">:</span> <span class="nb">int</span>
-</span></code></pre></div>
-<p>Hurray! You get the idea.</p>
-<h2 id="field-level-dependencies">Field-Level Dependencies<a class="headerlink" href="#field-level-dependencies" title="Permanent link">&para;</a></h2>
-<p>A core (I'll be straight: a killer) feature of Metaxy is the concept of <strong>field-level dependencies</strong>.
-These are used to define dependencies between logical fields of features.</p>
-<p>A <strong>field</strong> is not to be confused with metadata <em>column</em> (Pydantic fields).
-Fields are completely independent from them.</p>
-<p>Columns refer to <em>metadata</em> and are stored in metadata stores (such as databases) supported by Metaxy.</p>
-<p>Fields refer to <em>data</em> and are logical -- users are free to define them as they see fit.
-Fields are supposed to represent parts of data that users care about.
-For example, a <code>Video</code> feature -- an <code>.mp4</code> file -- may have <code>frames</code> and <code>audio</code> fields.</p>
-<p>Downstream features can depend on specific fields of upstream features.
-This enables fine-grained control over field provenance, avoiding unnecessary reprocessing.</p>
-<p>At this point, careful readers have probably noticed that the <code>Transcript</code> feature from the example above should not depend on the full video: it only needs the audio track in order to generate the transcript.
-Let's express that with Metaxy:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">FieldDep</span><span class="p">,</span> <span class="n">FieldSpec</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">video_spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/video&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">,</span> <span class="s2">&quot;frames&quot;</span><span class="p">])</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">video_spec</span><span class="p">):</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">transcript_spec</span> <span class="o">=</span> <span class="n">TranscriptFeatureSpec</span><span class="p">(</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;/raw/transcript&quot;</span><span class="p">,</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a>    <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">],</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos="13 "></span></a>    <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos="14 "></span></a>        <span class="n">FieldSpec</span><span class="p">(</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos="15 "></span></a>            <span class="n">key</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos="16 "></span></a>            <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">VideoFeature</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;audio&quot;</span><span class="p">])],</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos="17 "></span></a>        <span class="p">)</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos="18 "></span></a>    <span class="p">],</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos="19 "></span></a><span class="p">)</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos="20 "></span></a>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21"></a><a href="#__codelineno-2-21"><span class="linenos" data-linenos="21 "></span></a>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22"></a><a href="#__codelineno-2-22"><span class="linenos" data-linenos="22 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">TranscriptFeature</span><span class="p">(</span><span class="n">BaseTranscriptFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">transcript_spec</span><span class="p">):</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23"></a><a href="#__codelineno-2-23"><span class="linenos" data-linenos="23 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span></code></pre></div>
-<p>Voilà!</p>
-<div class="admonition tip">
-<p class="admonition-title">Use boilerplate-free API</p>
-<p>Metaxy allows passing simplified types to some of the models like <code>FeatureSpec</code> or <code>FeatureKey</code>.
-See <a href="../syntactic-sugar/">syntactic sugar</a> for more details.</p>
-</div>
-<p>The <a href="../data-versioning/">Data Versioning</a> docs explain more about how Metaxy calculates versions for different components of a feature graph.</p>
-<h2 id="attaching-user-defined-metadata">Attaching user-defined metadata<a class="headerlink" href="#attaching-user-defined-metadata" title="Permanent link">&para;</a></h2>
-<p>Users can <a href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec.metadata">attach</a> arbitrary JSON-like metadata dictionary to feature specs, typically used for declaring ownership, providing information to third-party tooling, or documentation purposes.
-This metadata does not influence graph topology or the versioning system.</p>
-<h2 id="fully-qualified-field-key">Fully Qualified Field Key<a class="headerlink" href="#fully-qualified-field-key" title="Permanent link">&para;</a></h2>
-<p>A <strong>fully qualified field key (FQFK)</strong> is an identifier that uniquely identifies a field within the whole feature graph.
-It consists of the <strong>feature key</strong> and the <strong>field key</strong>, separated by a colon, for example: <code>/raw/video:frames</code>, <code>/raw/video:audio/english</code>.</p>
+<h1 id="integrations">Integrations<a class="headerlink" href="#integrations" title="Permanent link">&para;</a></h1>
+<p>API docs for Metaxy integrations with third-party tools.</p>
+<ul>
+<li>
+<p>The <a href="sqlmodel/">SQLModel</a> integration allows coupling Metaxy feature definitions with <code>sqlalchemy</code> tables.</p>
+</li>
+<li>
+<p>The <a href="sqlalchemy/">SQLAlchemy</a> integration provides convenience helpers for retrieving <code>sqlalchemy.MetaData</code> objects. These can be used to set up <code>alembic</code> migrations for Metaxy features backed by <code>sqlalchemy</code>.</p>
+</li>
+</ul>
 
 
 
@@ -2592,12 +2362,12 @@ It consists of the <strong>feature key</strong> and the <strong>field key</stron
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../javascripts/scarf.js"></script>
+        <script src="../../../javascripts/scarf.js"></script>
       
     
   </body>
