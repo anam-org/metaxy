@@ -4,10 +4,11 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
+import pydantic
+from pydantic import model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
-from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
@@ -934,6 +935,12 @@ class MetaxyMeta(ModelMetaclass):
         spec: FeatureSpec | None = None,
         **kwargs,
     ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
+        # Inject frozen config if not already specified in namespace
+        if "model_config" not in namespace:
+            from pydantic import ConfigDict
+
+            namespace["model_config"] = ConfigDict(frozen=True)
+
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
 
         if spec:
@@ -1020,11 +1027,25 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
-class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
+class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
     _spec: ClassVar[FeatureSpec]
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+
+    @model_validator(mode="after")
+    def _validate_id_columns_exist(self) -> Self:
+        """Validate that all id_columns from spec are present in model fields."""
+        spec = self.__class__.spec()
+        model_fields = set(self.__class__.model_fields.keys())
+
+        missing_columns = set(spec.id_columns) - model_fields
+        if missing_columns:
+            raise ValueError(
+                f"ID columns {missing_columns} specified in spec are not present in model fields. "
+                f"Available fields: {model_fields}"
+            )
+        return self
 
     @classmethod
     def spec(cls) -> FeatureSpec:  # type: ignore[override]
@@ -1263,11 +1284,3 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             )
 
         return lazy_result
-
-
-class Feature(BaseFeature, spec=None):
-    """
-    A default specialization of BaseFeature that uses a `sample_uid` ID column.
-    """
-
-    # spec: ClassVar[FeatureSpec]

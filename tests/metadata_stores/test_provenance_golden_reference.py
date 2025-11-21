@@ -28,12 +28,11 @@ from pytest_cases import parametrize_with_cases
 
 from metaxy import (
     BaseFeature,
-    Feature,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
 )
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store import (
@@ -57,16 +56,16 @@ class FeaturePlanCases:
         """Simple parent->child feature plan with single upstream."""
 
         class ParentFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class ChildFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="child",
                 deps=[FeatureDep(feature=ParentFeature)],
@@ -88,25 +87,25 @@ class FeaturePlanCases:
         """Feature plan with two upstream dependencies."""
 
         class Parent1Feature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent1",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class Parent2Feature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent2",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class ChildFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="child",
                 deps=[
@@ -370,7 +369,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
 
     # Create simple feature graph
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["value"],
@@ -379,7 +378,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         pass
 
     class ChildFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],

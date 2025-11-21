@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
@@ -31,7 +31,7 @@ def test_feature_gets_project_from_config(snapshot: SnapshotAssertion) -> None:
     try:
         # Create feature - should get project from config
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -58,7 +58,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     with graph_a.use():
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -75,7 +75,7 @@ def test_feature_project_different_configs(snapshot: SnapshotAssertion) -> None:
     with graph_b.use():
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["shared", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -235,7 +235,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
     try:
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature1"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -244,7 +244,7 @@ def test_multiple_features_same_project(snapshot: SnapshotAssertion) -> None:
             pass
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature2"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -275,7 +275,7 @@ def test_feature_project_persists_across_graph_operations(
         with graph.use():
             # Define a test feature that will get the project from config
             class SnapshotTestFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["snapshot", "test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

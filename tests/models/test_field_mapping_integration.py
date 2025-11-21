@@ -1,7 +1,7 @@
 """Test field mapping integration with FeatureDep."""
 
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.models.feature import Feature, FeatureGraph
+from metaxy.models.feature import BaseFeature, FeatureGraph
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldKey, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
@@ -13,7 +13,7 @@ def test_field_mapping_on_feature_dep(graph: FeatureGraph):
 
     # Create upstream features with various fields
     class UpstreamA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_a",
             fields=[
@@ -26,7 +26,7 @@ def test_field_mapping_on_feature_dep(graph: FeatureGraph):
         pass
 
     class UpstreamB(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_b",
             fields=[
@@ -39,7 +39,7 @@ def test_field_mapping_on_feature_dep(graph: FeatureGraph):
 
     # Test 1: Default field mapping (exact match)
     class DownstreamDefault(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="downstream_default",
             deps=[
@@ -93,7 +93,7 @@ def test_field_mapping_with_suffix_matching(graph: FeatureGraph):
     """Test field mapping with suffix matching enabled."""
 
     class UpstreamAudio(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_audio",
             fields=[
@@ -107,7 +107,7 @@ def test_field_mapping_with_suffix_matching(graph: FeatureGraph):
 
     # Use suffix matching to match "french" to "audio/french"
     class DownstreamSuffix(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="downstream_suffix",
             deps=[
@@ -150,7 +150,7 @@ def test_field_mapping_with_explicit_all(graph: FeatureGraph):
     """Test field mapping with explicit ALL mapping."""
 
     class UpstreamData(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_data",
             fields=[
@@ -163,7 +163,7 @@ def test_field_mapping_with_explicit_all(graph: FeatureGraph):
 
     # Use FieldsMapping.all() to explicitly depend on all upstream fields
     class DownstreamAll(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="downstream_all",
             deps=[
@@ -190,7 +190,7 @@ def test_explicit_deps_override_field_mapping(graph: FeatureGraph):
     """Test that explicit field deps are preserved alongside automatic mapping."""
 
     class UpstreamX(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_x",
             fields=[
@@ -202,7 +202,7 @@ def test_explicit_deps_override_field_mapping(graph: FeatureGraph):
         pass
 
     class UpstreamY(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_y",
             fields=[
@@ -214,7 +214,7 @@ def test_explicit_deps_override_field_mapping(graph: FeatureGraph):
         pass
 
     class DownstreamExplicit(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="downstream_explicit",
             deps=[
@@ -252,7 +252,7 @@ def test_field_mapping_with_exclusions(graph: FeatureGraph):
     """Test field mapping with exclusions."""
 
     class UpstreamMulti(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_multi",
             fields=[
@@ -265,7 +265,7 @@ def test_field_mapping_with_exclusions(graph: FeatureGraph):
         pass
 
     class UpstreamExcluded(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="upstream_excluded",
             fields=[
@@ -277,7 +277,7 @@ def test_field_mapping_with_exclusions(graph: FeatureGraph):
 
     # Exclude certain fields and features from auto-mapping
     class DownstreamExclusions(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="downstream_exclusions",
             deps=[
@@ -327,7 +327,7 @@ def test_no_field_mapping_specified(graph: FeatureGraph):
     """Test behavior when no field mapping is specified (should still use default)."""
 
     class SimpleUpstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="simple_upstream",
             fields=[
@@ -339,7 +339,7 @@ def test_no_field_mapping_specified(graph: FeatureGraph):
 
     # No fields_mapping specified - should use DefaultFieldsMapping()
     class SimpleDownstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="simple_downstream",
             deps=[

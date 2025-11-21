@@ -101,10 +101,10 @@ def metaxy_project(tmp_path):
     Example:
         def test_example(metaxy_project):
             def features():
-                from metaxy import Feature, FeatureKey, FieldSpec, FieldKey
+                from metaxy import BaseFeature as BaseFeature, FeatureKey, FieldSpec, FieldKey
                 from metaxy._testing.models import SampleFeatureSpec
 
-                class MyFeature(Feature, spec=SampleFeatureSpec(
+                class MyFeature(BaseFeature, spec=SampleFeatureSpec(
                     key=FeatureKey(["my_feature"]),
 
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")]

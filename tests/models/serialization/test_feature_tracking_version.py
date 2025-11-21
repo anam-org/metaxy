@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
@@ -32,7 +32,7 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
     with graph_a.use():
 
         class FeatureInA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -49,7 +49,7 @@ def test_full_definition_version_includes_project(snapshot: SnapshotAssertion) -
     with graph_b.use():
 
         class FeatureInB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -102,7 +102,7 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     with graph_1.use():
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["data", "feature"]),
                 fields=[
@@ -119,7 +119,7 @@ def test_feature_version_unchanged_by_project(snapshot: SnapshotAssertion) -> No
     with graph_2.use():
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["data", "feature"]),
                 fields=[
@@ -151,7 +151,7 @@ def test_tracking_version_deterministic(snapshot: SnapshotAssertion) -> None:
     try:
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "deterministic"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -182,7 +182,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
     with graph_a.use():
 
         class UpstreamA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -191,7 +191,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             pass
 
         class DownstreamA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -209,7 +209,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
     with graph_b.use():
 
         class UpstreamB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -218,7 +218,7 @@ def test_feature_with_deps_different_projects(snapshot: SnapshotAssertion) -> No
             pass
 
         class DownstreamB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -263,7 +263,7 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
         with graph.use():
 
             class Feature1(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature1"]),
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -272,7 +272,7 @@ def test_project_in_graph_snapshot(snapshot: SnapshotAssertion) -> None:
                 pass
 
             class Feature2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature2"]),
                     fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -318,7 +318,7 @@ def test_provenance_by_field_unchanged_by_project(
     with graph_a.use():
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["multi", "field"]),
                 fields=[
@@ -335,7 +335,7 @@ def test_provenance_by_field_unchanged_by_project(
     with graph_b.use():
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["multi", "field"]),
                 fields=[

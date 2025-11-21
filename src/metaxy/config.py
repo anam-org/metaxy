@@ -128,7 +128,10 @@ _metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
 )
 
 
-BUILTIN_PLUGINS = {"sqlmodel": "metaxy.ext.sqlmodel"}
+BUILTIN_PLUGINS = {
+    "sqlmodel": "metaxy.ext.sqlmodel",
+    "alembic": "metaxy.ext.alembic",
+}
 
 
 class MetaxyConfig(BaseSettings):

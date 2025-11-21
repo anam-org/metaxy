@@ -7,7 +7,7 @@ import polars as pl
 import pytest
 
 from metaxy import (
-    Feature,
+    BaseFeature,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
@@ -28,7 +28,7 @@ from metaxy.metadata_store import (
 @pytest.fixture
 def features(graph: FeatureGraph):
     class UpstreamFeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "a"]),
             fields=[
@@ -40,7 +40,7 @@ def features(graph: FeatureGraph):
         pass
 
     class UpstreamFeatureB(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "b"]),
             fields=[
@@ -51,7 +51,7 @@ def features(graph: FeatureGraph):
         pass
 
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
@@ -81,12 +81,12 @@ def features(graph: FeatureGraph):
 
 
 @pytest.fixture
-def UpstreamFeatureA(features: dict[str, type[Feature]]):
+def UpstreamFeatureA(features: dict[str, type[BaseFeature]]):
     return features["UpstreamFeatureA"]
 
 
 @pytest.fixture
-def UpstreamFeatureB(features: dict[str, type[Feature]]):
+def UpstreamFeatureB(features: dict[str, type[BaseFeature]]):
     return features["UpstreamFeatureB"]
 
 

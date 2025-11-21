@@ -1,5 +1,5 @@
 from metaxy import (
-    Feature,
+    BaseFeature,
     FeatureDep,
     FeatureSpec,
     FieldDep,
@@ -8,7 +8,7 @@ from metaxy import (
 
 
 class Video(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key="example/video",
         fields=[
@@ -32,7 +32,7 @@ class Video(
 
 
 class Crop(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key="example/crop",
         deps=[FeatureDep(feature=Video)],
@@ -65,7 +65,7 @@ class Crop(
 
 
 class FaceDetection(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key="example/face_detection",
         deps=[
@@ -92,7 +92,7 @@ class FaceDetection(
 
 
 class SpeechToText(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key="example/stt",
         deps=[

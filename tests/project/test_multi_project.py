@@ -8,11 +8,12 @@ from unittest.mock import patch
 
 import pytest
 
+from metaxy._testing import SampleFeature
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import Feature, FeatureGraph
+from metaxy.models.feature import FeatureGraph
 from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -94,7 +95,7 @@ class TestProjectDetection:
             with patch("metaxy.config.MetaxyConfig.get", return_value=config):
                 # Create a feature with generic module name (no entry points for this module)
                 class TestFeature(
-                    Feature,
+                    SampleFeature,
                     spec=SampleFeatureSpec(
                         key="test_feature", fields=[FieldSpec(key="field1")]
                     ),
@@ -172,7 +173,7 @@ class TestFeatureTrackingVersion:
         with test_graph.use():
             # Create a feature with a specific project
             class TestFeature(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -207,7 +208,7 @@ class TestFeatureTrackingVersion:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -246,7 +247,7 @@ class TestMultiProjectIsolation:
         with test_graph.use():
             # Create first feature
             class FeatureA(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature", "a"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -259,7 +260,7 @@ class TestMultiProjectIsolation:
 
             # Create second feature
             class FeatureB(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature", "b"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -291,7 +292,7 @@ class TestMultiProjectIsolation:
         with graph1.use():
 
             class FeatureV1(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -310,7 +311,7 @@ class TestMultiProjectIsolation:
         with graph2.use():
 
             class FeatureV2(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),  # Same key
                     fields=[
@@ -345,7 +346,7 @@ class TestSystemTableRecording:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -449,7 +450,7 @@ class TestProjectValidation:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],

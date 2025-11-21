@@ -147,7 +147,7 @@ def _write_to_store(db_path: Path, sample_id: str, result_queue: Any) -> None:
     """Helper function to write to store in a separate process."""
     try:
         # Import here to avoid pickling issues
-        from metaxy.models.feature import Feature, FeatureGraph, FeatureSpec
+        from metaxy.models.feature import BaseFeature, FeatureGraph, FeatureSpec
         from metaxy.models.field import FieldSpec
         from metaxy.models.types import FeatureKey
 
@@ -156,7 +156,7 @@ def _write_to_store(db_path: Path, sample_id: str, result_queue: Any) -> None:
         with graph.use():
 
             class UpstreamFeatureA(
-                Feature,
+                BaseFeature,
                 spec=FeatureSpec(
                     key=FeatureKey(["test_stores", "upstream_a"]),
                     id_columns=["sample_uid"],

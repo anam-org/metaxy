@@ -55,7 +55,7 @@ class TempFeatureModule:
         """
         code_lines = [
             "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy import BaseFeature as Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
             "from metaxy._testing.models import SampleFeatureSpec",
             "from metaxy.models.feature import FeatureGraph",
             "",
@@ -550,7 +550,7 @@ class TempMetaxyProject(MetaxyProject):
         project = TempMetaxyProject(tmp_path)
 
         def features():
-            from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+            from metaxy import BaseFeature as Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
             class MyFeature(Feature, spec=FeatureSpec(
                 key=FeatureKey(["my_feature"]),
@@ -624,7 +624,7 @@ database = "{staging_db_path}"
         Example:
             ```py
             def my_features():
-                from metaxy import Feature, FeatureSpec, FeatureKey
+                from metaxy import BaseFeature as Feature, FeatureSpec, FeatureKey
 
                 class MyFeature(Feature, spec=...):
                     pass

@@ -19,9 +19,9 @@ import polars.testing as pl_testing
 import pytest
 from pytest_cases import parametrize_with_cases
 
-from metaxy import Feature, FeatureDep, FeatureGraph
+from metaxy import BaseFeature, FeatureDep, FeatureGraph
 from metaxy._testing import HashAlgorithmCases
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
 )
@@ -45,7 +45,7 @@ def test_hash_algorithm_produces_consistent_hashes(
     """Test that each hash algorithm produces consistent hashes across runs."""
 
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["value"],
@@ -54,7 +54,7 @@ def test_hash_algorithm_produces_consistent_hashes(
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],
@@ -150,7 +150,7 @@ def test_hash_truncation(
         )
 
     class ParentFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["value"],
@@ -159,7 +159,7 @@ def test_hash_truncation(
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],
@@ -226,7 +226,7 @@ def test_field_level_provenance_structure(
     """Test that field-level provenance has correct structure for each hash algorithm."""
 
     class ParentFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["field_a", "field_b", "field_c"],
@@ -235,7 +235,7 @@ def test_field_level_provenance_structure(
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],
@@ -311,7 +311,7 @@ def test_hash_truncation_any_store(
     """Test that hash truncation is applied correctly across store types."""
 
     class ParentFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["value"],
@@ -320,7 +320,7 @@ def test_hash_truncation_any_store(
         pass
 
     class ChildFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],

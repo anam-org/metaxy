@@ -1,11 +1,11 @@
 """Test features for project detection."""
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 
 
 class TestFeature(
-    Feature,
+    BaseFeature,
     spec=SampleFeatureSpec(
         key=FeatureKey(["test", "feature"]),
         fields=[
@@ -19,7 +19,7 @@ class TestFeature(
 
 
 class AnotherTestFeature(
-    Feature,
+    BaseFeature,
     spec=SampleFeatureSpec(
         key=FeatureKey(["test", "another"]),
         fields=[
