@@ -107,6 +107,12 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         Returns:
             New class that is both a SQLModel table and a Metaxy feature
         """
+        # Override frozen config for SQLModel - instances need to be mutable for ORM
+        if "model_config" not in namespace:
+            from pydantic import ConfigDict
+
+            namespace["model_config"] = ConfigDict(frozen=False)
+
         # If this is a concrete table (table=True) with a spec
         config = MetaxyConfig.get()
         sqlmodel_config = config.get_plugin("sqlmodel", SQLModelPluginConfig)
@@ -256,7 +262,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
             namespace["__table_args__"] = (pk_constraint,)
 
 
-class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride]
+class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, reportUnsafeMultipleInheritance]
     SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
 ):  # type: ignore[misc]
     """Base class for features that are also SQLModel tables.

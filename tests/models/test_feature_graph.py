@@ -11,7 +11,14 @@ Tests cover:
 
 from __future__ import annotations
 
-from metaxy import Feature, FeatureDep, FeatureGraph, FeatureKey, FieldKey, FieldSpec
+from metaxy import (
+    BaseFeature,
+    FeatureDep,
+    FeatureGraph,
+    FeatureKey,
+    FieldKey,
+    FieldSpec,
+)
 from metaxy._testing.models import SampleFeatureSpec
 
 
@@ -22,7 +29,7 @@ class TestBasicTopologicalSorting:
         """Test sorting a simple linear dependency chain A -> B -> C."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -31,7 +38,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -41,7 +48,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -65,7 +72,7 @@ class TestBasicTopologicalSorting:
         """Test sorting a diamond dependency pattern: A -> B, A -> C, B -> D, C -> D."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -74,7 +81,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -84,7 +91,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -94,7 +101,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureD(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "d"]),
                 fields=[FieldSpec(key=FieldKey(["w"]))],
@@ -123,7 +130,7 @@ class TestBasicTopologicalSorting:
         """Test sorting features with no dependencies (all independent)."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -132,7 +139,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -141,7 +148,7 @@ class TestBasicTopologicalSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -162,7 +169,7 @@ class TestBasicTopologicalSorting:
         """Test sorting a graph with a single feature."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -183,7 +190,7 @@ class TestSubsetSorting:
         """Test sorting a subset of features from a linear chain."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -192,7 +199,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -202,7 +209,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -212,7 +219,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureD(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "d"]),
                 fields=[FieldSpec(key=FieldKey(["w"]))],
@@ -234,7 +241,7 @@ class TestSubsetSorting:
         """Test that dependencies outside the subset are handled correctly."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -243,7 +250,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -253,7 +260,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -273,7 +280,7 @@ class TestSubsetSorting:
         """Test subset where multiple features depend on same parent (not in subset)."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -282,7 +289,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -292,7 +299,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -314,7 +321,7 @@ class TestSubsetSorting:
         """Test subset where both parent and child are in the subset."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -323,7 +330,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -333,7 +340,7 @@ class TestSubsetSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -358,7 +365,7 @@ class TestAllFeaturesSorting:
         """Test that feature_keys=None sorts all features in the graph."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -367,7 +374,7 @@ class TestAllFeaturesSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -377,7 +384,7 @@ class TestAllFeaturesSorting:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -403,7 +410,7 @@ class TestAllFeaturesSorting:
         """Test that calling without parameter sorts all features."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -412,7 +419,7 @@ class TestAllFeaturesSorting:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -437,7 +444,7 @@ class TestDeterministicOrdering:
         """Test features at same level are sorted alphabetically."""
 
         class FeatureParent(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "parent"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -447,7 +454,7 @@ class TestDeterministicOrdering:
 
         # Create children with names in non-alphabetical order
         class FeatureZ(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "z"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -457,7 +464,7 @@ class TestDeterministicOrdering:
             pass
 
         class FeatureM(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "m"]),
                 fields=[FieldSpec(key=FieldKey(["m"]))],
@@ -467,7 +474,7 @@ class TestDeterministicOrdering:
             pass
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["a"]))],
@@ -491,7 +498,7 @@ class TestDeterministicOrdering:
 
         # Root level - multiple roots
         class FeatureZ(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "z"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -500,7 +507,7 @@ class TestDeterministicOrdering:
             pass
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -510,7 +517,7 @@ class TestDeterministicOrdering:
 
         # Second level - depend on roots
         class FeatureM2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "m2"]),
                 fields=[FieldSpec(key=FieldKey(["m"]))],
@@ -520,7 +527,7 @@ class TestDeterministicOrdering:
             pass
 
         class FeatureB2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b2"]),
                 fields=[FieldSpec(key=FieldKey(["b"]))],
@@ -546,7 +553,7 @@ class TestDeterministicOrdering:
         """Test that alphabetical ordering is case-insensitive."""
 
         class FeatureParent(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "parent"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -556,7 +563,7 @@ class TestDeterministicOrdering:
 
         # Create children with mixed case names
         class FeatureZ(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "Z"]),
                 fields=[FieldSpec(key=FieldKey(["z"]))],
@@ -566,7 +573,7 @@ class TestDeterministicOrdering:
             pass
 
         class Featurea(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["a"]))],
@@ -576,7 +583,7 @@ class TestDeterministicOrdering:
             pass
 
         class FeatureM(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "M"]),
                 fields=[FieldSpec(key=FieldKey(["m"]))],
@@ -609,7 +616,7 @@ class TestEdgeCases:
         """Test sorting an empty subset returns empty list."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -624,7 +631,7 @@ class TestEdgeCases:
         """Test sorting a single feature from a larger graph."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -633,7 +640,7 @@ class TestEdgeCases:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -651,7 +658,7 @@ class TestEdgeCases:
 
         # Component 1: A -> B
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -660,7 +667,7 @@ class TestEdgeCases:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -671,7 +678,7 @@ class TestEdgeCases:
 
         # Component 2: X -> Y (independent from A and B)
         class FeatureX(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "x"]),
                 fields=[FieldSpec(key=FieldKey(["x2"]))],
@@ -680,7 +687,7 @@ class TestEdgeCases:
             pass
 
         class FeatureY(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "y"]),
                 fields=[FieldSpec(key=FieldKey(["y2"]))],
@@ -707,7 +714,7 @@ class TestEdgeCases:
         """Test feature that has no downstream dependents (leaf node)."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -716,7 +723,7 @@ class TestEdgeCases:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["y"]))],
@@ -741,7 +748,7 @@ class TestComplexGraphs:
         """Test graph with 5+ levels of dependencies."""
 
         class FeatureL1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "l1"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -750,7 +757,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureL2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "l2"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -760,7 +767,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureL3(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "l3"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -770,7 +777,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureL4(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "l4"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -780,7 +787,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureL5(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "l5"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -805,7 +812,7 @@ class TestComplexGraphs:
         """Test graph with many features at same level depending on same parent."""
 
         class FeatureParent(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "parent"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -819,7 +826,7 @@ class TestComplexGraphs:
             child_name = f"child_{i:02d}"
 
             class ChildFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", child_name]),
                     fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -850,7 +857,7 @@ class TestComplexGraphs:
 
         # Create 5 root features
         class FeatureR1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "r1"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -859,7 +866,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureR2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "r2"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -868,7 +875,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureR3(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "r3"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -877,7 +884,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureR4(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "r4"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -886,7 +893,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureR5(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "r5"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -912,7 +919,7 @@ class TestComplexGraphs:
         # Path 2: A -> C -> D
         # Path 3: A -> E -> F -> D
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "a"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -921,7 +928,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "b"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -931,7 +938,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "c"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -941,7 +948,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureE(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "e"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -951,7 +958,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureF(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "f"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -961,7 +968,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureD(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "d"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -1005,7 +1012,7 @@ class TestComplexGraphs:
         """Test that topological sort works with nested namespace keys."""
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "raw", "frames"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -1014,7 +1021,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "processed", "embeddings"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],
@@ -1024,7 +1031,7 @@ class TestComplexGraphs:
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["audio", "raw", "waveform"]),
                 fields=[FieldSpec(key=FieldKey(["x"]))],

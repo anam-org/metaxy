@@ -21,7 +21,6 @@ from metaxy.migrations import (
 )
 from metaxy.models.feature import (
     BaseFeature,
-    Feature,
     FeatureGraph,
     current_graph,
     get_feature_by_key,
@@ -88,7 +87,6 @@ def init_metaxy(
 __all__ = [
     "BaseFeature",
     "FeatureGraph",
-    "Feature",
     "graph",
     "FeatureSpec",
     "get_feature_by_key",

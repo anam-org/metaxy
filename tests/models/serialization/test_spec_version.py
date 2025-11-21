@@ -236,14 +236,14 @@ def test_feature_spec_version_with_column_selection_and_rename(
 
 def test_feature_feature_spec_version_classmethod() -> None:
     """Test that Feature.feature_spec_version() classmethod works correctly."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "classmethod"]),
                 fields=[
@@ -269,14 +269,14 @@ def test_feature_feature_spec_version_classmethod() -> None:
 
 def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) -> None:
     """Test that feature_spec_version is included in graph snapshots."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
 
         class SnapshotFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["snapshot", "test"]),
                 fields=[
@@ -318,7 +318,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 ) -> None:
     """Test that feature_spec_version is recorded when pushing to metadata store."""
 
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
     from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
@@ -326,7 +326,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
     with graph.use():
 
         class RecordedFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["recorded", "feature"]),
                 fields=[
@@ -387,7 +387,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
 def test_feature_spec_version_idempotent_snapshot_recording() -> None:
     """Test that recording the same snapshot twice preserves feature_spec_version."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
     from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
@@ -395,7 +395,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
     with graph.use():
 
         class IdempotentFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["idempotent", "test"]),
                 fields=[
@@ -447,14 +447,14 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
     - feature_spec_version: Direct JSON serialization of SampleFeatureSpec (all properties)
     - feature_version: Graph-based computation including dependency chains
     """
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
         # Test with root feature (no deps)
         class RootFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["root"]),
                 fields=[
@@ -466,7 +466,7 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
 
         # Test with downstream feature (with deps)
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["root"]))],

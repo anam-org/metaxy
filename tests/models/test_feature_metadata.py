@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 from pydantic.types import JsonValue
 
-from metaxy import Feature, FeatureKey
+from metaxy import BaseFeature, FeatureKey
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
@@ -16,7 +16,7 @@ def test_metadata_does_not_affect_version() -> None:
     with graph_a.use():
 
         class MetadataFeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["tests", "metadata", "same"]),
                 metadata={"owner": "team-a"},
@@ -30,7 +30,7 @@ def test_metadata_does_not_affect_version() -> None:
     with graph_b.use():
 
         class MetadataFeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["tests", "metadata", "same"]),
                 metadata={"owner": "team-b"},

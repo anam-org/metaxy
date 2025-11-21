@@ -13,7 +13,7 @@ import pytest
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (
-    Feature,
+    BaseFeature,
     FeatureDep,
     FeatureKey,
     FieldDep,
@@ -96,7 +96,7 @@ def create_store_for_fallback(
 @pytest.fixture
 def features(graph: FeatureGraph):
     class RootFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["fallback_test", "root"]),
             fields=[
@@ -109,7 +109,7 @@ def features(graph: FeatureGraph):
         pass
 
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["fallback_test", "downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["fallback_test", "root"]))],

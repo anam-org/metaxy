@@ -4,7 +4,7 @@ Initial feature implementation.
 """
 
 from metaxy import (
-    Feature,
+    BaseFeature,
     FeatureDep,
     FeatureKey,
     FeatureSpec,
@@ -15,7 +15,7 @@ from metaxy import (
 
 
 class ParentFeature(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key=FeatureKey(["examples", "parent"]),
         fields=[
@@ -33,7 +33,7 @@ class ParentFeature(
 
 
 class ChildFeature(
-    Feature,
+    BaseFeature,
     spec=FeatureSpec(
         key=FeatureKey(["examples", "child"]),
         deps=[FeatureDep(feature=ParentFeature.spec().key)],

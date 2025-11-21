@@ -8,10 +8,8 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Protocol,
     TypeAlias,
     overload,
-    runtime_checkable,
 )
 
 import pydantic
@@ -40,24 +38,6 @@ if TYPE_CHECKING:
     # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
     # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
     from metaxy.models.feature import BaseFeature
-
-
-# Runtime-checkable protocols for type checking without circular imports
-@runtime_checkable
-class FeatureSpecProtocol(Protocol):
-    """Protocol for FeatureSpec instances."""
-
-    key: FeatureKey
-    deps: list[Any] | None
-    fields: list[FieldSpec]
-
-
-@runtime_checkable
-class FeatureClassProtocol(Protocol):
-    """Protocol for BaseFeature classes."""
-
-    @classmethod
-    def spec(cls) -> FeatureSpecProtocol: ...
 
 
 class FeatureDep(pydantic.BaseModel):
@@ -122,11 +102,7 @@ class FeatureDep(pydantic.BaseModel):
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
             *,
-            feature: str
-            | Sequence[str]
-            | FeatureKey
-            | FeatureSpecProtocol
-            | type[BaseFeature],
+            feature: str | Sequence[str] | FeatureKey | type[BaseFeature],
             columns: tuple[str, ...] | None = None,
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
@@ -142,12 +118,7 @@ IDColumns: TypeAlias = Sequence[
 ]  # non-bound, should be used for feature specs with arbitrary id columns
 
 CoercibleToFeatureDep: TypeAlias = (
-    FeatureDep
-    | type["BaseFeature"]
-    | str
-    | Sequence[str]
-    | FeatureKey
-    | FeatureSpecProtocol
+    FeatureDep | type["BaseFeature"] | str | Sequence[str] | FeatureKey
 )
 
 

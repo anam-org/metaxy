@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     # context: https://github.com/microsoft/pyright/issues/1825
     # however, considering the recursive nature of graphs, and the syntactic sugar that we want to support,
     # I decided to just put these errors into `.basedpyright/baseline.json` (after ensuring this is the only error produced by basedpyright)
-    from metaxy.models.feature import Feature
+    from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_spec import FeatureSpec
 
 
@@ -32,14 +32,14 @@ class SpecialFieldDep(Enum):
 def _validate_field_dep_feature(value: Any) -> FeatureKey:
     """Coerce various input types to FeatureKey for FieldDep."""
     # Import here to avoid circular dependency at module level
-    from metaxy.models.feature import Feature
+    from metaxy.models.feature import BaseFeature
     from metaxy.models.feature_spec import FeatureSpec
 
     if isinstance(value, FeatureKey):
         return value
     elif isinstance(value, FeatureSpec):
         return value.key
-    elif isinstance(value, type) and issubclass(value, Feature):
+    elif isinstance(value, type) and issubclass(value, BaseFeature):
         return value.spec().key
     else:
         # Handle str, Sequence[str], etc.
@@ -116,16 +116,20 @@ class FieldDep(BaseModel):
         @overload
         def __init__(
             self,
-            feature: type["Feature"],
+            feature: type["BaseFeature"],
             **kwargs: Any,
         ) -> None:
-            """Initialize from Feature instance."""
+            """Initialize from BaseFeature class."""
             ...
 
         # Final signature combining all overloads
         def __init__(  # pyright: ignore[reportMissingSuperCall]
             self,
-            feature: str | Sequence[str] | FeatureKey | "FeatureSpec" | type["Feature"],
+            feature: str
+            | Sequence[str]
+            | FeatureKey
+            | "FeatureSpec"
+            | type["BaseFeature"],
             fields: list[CoercibleToFieldKey]
             | Literal[SpecialFieldDep.ALL] = SpecialFieldDep.ALL,
             **kwargs: Any,

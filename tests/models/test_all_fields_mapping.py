@@ -1,6 +1,6 @@
 """Tests for AllFieldsMapping functionality."""
 
-from metaxy import Feature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import SpecialFieldDep
 from metaxy.models.fields_mapping import AllFieldsMapping, FieldsMapping
@@ -11,7 +11,7 @@ def test_all_fields_mapping_returns_all():
 
     # Define upstream feature
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -24,7 +24,7 @@ def test_all_fields_mapping_returns_all():
 
     # Define downstream feature with AllFieldsMapping
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
@@ -51,7 +51,7 @@ def test_fields_mapping_all_classmethod():
 
     # Define upstream feature
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -64,7 +64,7 @@ def test_fields_mapping_all_classmethod():
 
     # Use FieldsMapping.all() classmethod
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
@@ -98,7 +98,7 @@ def test_all_fields_mapping_with_multiple_upstreams():
 
     # Define first upstream feature
     class Upstream1(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
             fields=[
@@ -110,7 +110,7 @@ def test_all_fields_mapping_with_multiple_upstreams():
 
     # Define second upstream feature
     class Upstream2(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
             fields=[
@@ -122,7 +122,7 @@ def test_all_fields_mapping_with_multiple_upstreams():
 
     # Use AllFieldsMapping to depend on all fields from both upstreams
     class Downstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
@@ -172,7 +172,7 @@ def test_all_fields_mapping_vs_explicit_all():
 
     # Define upstream feature
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -184,7 +184,7 @@ def test_all_fields_mapping_vs_explicit_all():
 
     # One field with AllFieldsMapping on FeatureDep
     class WithMapping(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "with_mapping"]),
             deps=[
@@ -203,7 +203,7 @@ def test_all_fields_mapping_vs_explicit_all():
 
     # Another field with explicit SpecialFieldDep.ALL
     class WithExplicit(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "with_explicit"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
@@ -233,7 +233,7 @@ def test_all_fields_mapping_with_no_upstreams():
 
     # Root feature with no dependencies
     class RootFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "root"]),
             # No dependencies

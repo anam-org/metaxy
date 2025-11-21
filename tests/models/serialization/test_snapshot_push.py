@@ -10,7 +10,7 @@ from __future__ import annotations
 import polars as pl
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
@@ -49,7 +49,7 @@ def test_record_snapshot_first_time():
     with graph.use():
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
@@ -94,7 +94,7 @@ def test_record_snapshot_metadata_only_changes():
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -103,7 +103,7 @@ def test_record_snapshot_metadata_only_changes():
             pass
 
         class Downstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],  # No rename yet
@@ -133,7 +133,7 @@ def test_record_snapshot_metadata_only_changes():
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -142,7 +142,7 @@ def test_record_snapshot_metadata_only_changes():
                     pass
 
                 class Downstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
@@ -215,7 +215,7 @@ def test_record_snapshot_no_changes():
     with graph.use():
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
@@ -257,7 +257,7 @@ def test_record_snapshot_partial_metadata_changes():
     with graph_v1.use():
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -266,7 +266,7 @@ def test_record_snapshot_partial_metadata_changes():
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
@@ -276,7 +276,7 @@ def test_record_snapshot_partial_metadata_changes():
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
@@ -294,7 +294,7 @@ def test_record_snapshot_partial_metadata_changes():
             with graph_v2.use():
 
                 class FeatureA2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_a"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -303,7 +303,7 @@ def test_record_snapshot_partial_metadata_changes():
                     pass
 
                 class FeatureB2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_b"]),
                         deps=[
@@ -318,7 +318,7 @@ def test_record_snapshot_partial_metadata_changes():
                     pass
 
                 class FeatureC2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_c"]),
                         deps=[
@@ -358,7 +358,7 @@ def test_record_snapshot_append_only_behavior():
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -367,7 +367,7 @@ def test_record_snapshot_append_only_behavior():
             pass
 
         class MyFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -400,7 +400,7 @@ def test_record_snapshot_append_only_behavior():
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -409,7 +409,7 @@ def test_record_snapshot_append_only_behavior():
                     pass
 
                 class MyFeature2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         deps=[
@@ -476,7 +476,7 @@ def test_record_snapshot_computational_change():
     with graph_v1.use():
 
         class MyFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -495,7 +495,7 @@ def test_record_snapshot_computational_change():
             with graph_v2.use():
 
                 class MyFeature2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         fields=[
@@ -531,7 +531,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -540,7 +540,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             pass
 
         class Downstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -574,7 +574,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -583,7 +583,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                     pass
 
                 class Downstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
@@ -647,7 +647,7 @@ def test_feature_info_changes_trigger_repush():
     with graph_v1.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test_feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -679,7 +679,7 @@ def test_feature_info_changes_trigger_repush():
             with graph_v2.use():
 
                 class TestFeature2(  # type: ignore
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["test_feature"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],

@@ -7,7 +7,7 @@ import json
 import polars as pl
 from pydantic import Field
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY, SystemTableStorage
@@ -21,7 +21,7 @@ def test_push_graph_snapshot_stores_feature_schema():
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -83,7 +83,7 @@ def test_feature_schema_differs_between_features():
     with graph.use():
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature", "one"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -94,7 +94,7 @@ def test_feature_schema_differs_between_features():
             field_a: str
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature", "two"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -151,7 +151,7 @@ def test_feature_schema_included_in_snapshot():
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -227,7 +227,7 @@ def test_feature_schema_for_feature_without_custom_fields():
     with graph.use():
 
         class SimpleFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["simple", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],

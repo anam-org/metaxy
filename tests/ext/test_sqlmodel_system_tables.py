@@ -235,7 +235,7 @@ def test_push_graph_with_changed_feature_spec():
     """
     from metaxy.metadata_store.duckdb import DuckDBMetadataStore
     from metaxy.metadata_store.system import SystemTableStorage
-    from metaxy.models.feature import Feature, FeatureGraph
+    from metaxy.models.feature import BaseFeature, FeatureGraph
     from metaxy.models.feature_spec import FeatureSpec
     from metaxy.models.types import FeatureKey
 
@@ -249,7 +249,7 @@ def test_push_graph_with_changed_feature_spec():
             with graph.use():
                 # Define feature with metadata v1
                 class TestFeature(
-                    Feature,
+                    BaseFeature,
                     spec=FeatureSpec(
                         key=FeatureKey(["test_feature"]),
                         fields=[],
@@ -273,7 +273,7 @@ def test_push_graph_with_changed_feature_spec():
             with graph2.use():
                 # Same feature but different metadata (changes feature_spec_version)
                 class TestFeature(  # type: ignore
-                    Feature,
+                    BaseFeature,
                     spec=FeatureSpec(
                         key=FeatureKey(["test_feature"]),
                         fields=[],

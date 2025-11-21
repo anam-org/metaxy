@@ -27,12 +27,11 @@ from pytest_cases import parametrize_with_cases
 
 from metaxy import (
     BaseFeature,
-    Feature,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
 )
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,
@@ -62,7 +61,7 @@ class FeatureGraphCases:
         """Simple two-feature chain: Root -> Leaf."""
 
         class RootFeature(
-            Feature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key="root",
                 fields=["value"],
@@ -71,7 +70,7 @@ class FeatureGraphCases:
             pass
 
         class LeafFeature(
-            Feature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key="leaf",
                 deps=[FeatureDep(feature=RootFeature)],
@@ -89,7 +88,7 @@ class FeatureGraphCases:
         """Diamond dependency graph: Root -> BranchA,BranchB -> Leaf."""
 
         class RootFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="root",
                 fields=["value"],
@@ -98,7 +97,7 @@ class FeatureGraphCases:
             pass
 
         class BranchAFeature(
-            Feature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key="branch_a",
                 deps=[FeatureDep(feature=RootFeature)],
@@ -108,7 +107,7 @@ class FeatureGraphCases:
             pass
 
         class BranchBFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="branch_b",
                 deps=[FeatureDep(feature=RootFeature)],
@@ -118,7 +117,7 @@ class FeatureGraphCases:
             pass
 
         class LeafFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="leaf",
                 deps=[
@@ -143,7 +142,7 @@ class FeatureGraphCases:
         """Features with multiple fields to test field-level provenance."""
 
         class RootFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="root",
                 fields=["field_a", "field_b", "field_c"],
@@ -152,7 +151,7 @@ class FeatureGraphCases:
             pass
 
         class LeafFeature(
-            Feature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key="leaf",
                 deps=[FeatureDep(feature=RootFeature)],
@@ -172,7 +171,7 @@ class RootFeatureCases:
 
     def case_simple_root(self, graph: FeatureGraph) -> type[BaseFeature]:
         class SimpleRoot(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="simple_root",
                 fields=["value"],
@@ -184,7 +183,7 @@ class RootFeatureCases:
 
     def case_multi_field_root(self, graph: FeatureGraph) -> type[BaseFeature]:
         class MultiFieldRoot(
-            Feature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key="multi_root",
                 fields=["field_a", "field_b", "field_c"],
@@ -458,7 +457,7 @@ def test_resolve_update_lazy_execution(
 
     # Create a feature graph with multiple parents (realistic scenario)
     class Parent1(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent1",
             fields=["field_a", "field_b"],
@@ -467,7 +466,7 @@ def test_resolve_update_lazy_execution(
         pass
 
     class Parent2(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent2",
             fields=["field_c"],
@@ -476,7 +475,7 @@ def test_resolve_update_lazy_execution(
         pass
 
     class Child(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[

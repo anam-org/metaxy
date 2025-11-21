@@ -4,8 +4,8 @@ import polars as pl
 import pytest
 from hypothesis import given, settings
 
-from metaxy import Feature, FeatureDep, FeatureGraph, FeatureKey
-from metaxy._testing.models import SampleFeatureSpec
+from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import (
     downstream_metadata_strategy,
     feature_metadata_strategy,
@@ -24,7 +24,7 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
     """Test basic metadata generation for a single feature."""
 
     class MyFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="my/feature",
             fields=["field1", "field2"],
@@ -84,7 +84,7 @@ def test_feature_metadata_strategy_with_id_columns_df(graph: FeatureGraph) -> No
     """Test that id_columns_df parameter properly aligns ID values."""
 
     class MyFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="my/feature",
             fields=["field1"],
@@ -123,7 +123,7 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
     """Test metadata generation for a plan with one upstream feature."""
 
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["parent_field"],
@@ -132,7 +132,7 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature="parent")],
@@ -192,7 +192,7 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
     """Test metadata generation for a plan with multiple upstream features."""
 
     class ParentA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent_a",
             fields=["field_a"],
@@ -201,7 +201,7 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
         pass
 
     class ParentB(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent_b",
             fields=["field_b"],
@@ -210,7 +210,7 @@ def test_upstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) -> N
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[
@@ -288,7 +288,7 @@ def test_upstream_metadata_strategy_no_deps(graph: FeatureGraph) -> None:
     """Test that strategy returns empty dict when feature has no dependencies."""
 
     class RootFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="root",
             fields=["field1"],
@@ -317,7 +317,7 @@ def test_upstream_metadata_strategy_missing_version_error(graph: FeatureGraph) -
     """Test that missing feature versions raise clear errors."""
 
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["field1"],
@@ -326,7 +326,7 @@ def test_upstream_metadata_strategy_missing_version_error(graph: FeatureGraph) -
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature="parent")],
@@ -350,7 +350,7 @@ def test_feature_metadata_strategy_exact_rows(graph: FeatureGraph) -> None:
     """Test that num_rows parameter creates exact row count."""
 
     class MyFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="my/feature",
             fields=["field1"],
@@ -381,7 +381,7 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
     """Test downstream metadata generation with correct provenance calculation."""
 
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["parent_field"],
@@ -390,7 +390,7 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature="parent")],
@@ -460,7 +460,7 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
     """Test downstream metadata with multiple upstream features."""
 
     class ParentA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent_a",
             fields=["field_a"],
@@ -469,7 +469,7 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         pass
 
     class ParentB(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent_b",
             fields=["field_b"],
@@ -478,7 +478,7 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         pass
 
     class ChildFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[
@@ -545,7 +545,7 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
     """Test downstream metadata without hash truncation."""
 
     class ParentFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["field1"],
@@ -554,7 +554,7 @@ def test_downstream_metadata_strategy_no_truncation(graph: FeatureGraph) -> None
         pass
 
     class ChildFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature="parent")],

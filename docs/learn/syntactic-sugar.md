@@ -11,7 +11,7 @@ This is fully typed and only affects **constructor arguments**, so accessing **a
 Some examples:
 
 ```py
-from metaxy import FeatureKey
+from metaxy import BaseFeature as FeatureKey
 
 key = FeatureKey("prefix/feature")
 key = FeatureKey(["prefix", "feature"])

@@ -8,8 +8,8 @@ import pytest
 from pydantic import ValidationError
 from typing_extensions import assert_type
 
+from metaxy import BaseFeature
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.models.feature import Feature
 from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.types import (
     FeatureKey,
@@ -521,7 +521,7 @@ def test_feature_dep_key_overloads():
     # Note: FeatureDep doesn't accept spec instances directly anymore
     # _ = FeatureDep(feature=feature_spec)
 
-    class TestFeature(Feature, spec=feature_spec): ...
+    class TestFeature(BaseFeature, spec=feature_spec): ...
 
     _ = FeatureDep(feature=TestFeature)
 
@@ -578,7 +578,7 @@ class TestCoercibleToFeatureKey:
         class MyModel(BaseModel):
             key: ValidatedFeatureKey
 
-        class TestFeature(Feature, spec=feature_spec): ...
+        class TestFeature(BaseFeature, spec=feature_spec): ...
 
         model = MyModel(key=TestFeature)  # pyright: ignore[reportArgumentType]
         assert isinstance(model.key, FeatureKey)
@@ -613,7 +613,7 @@ class TestCoercibleToFeatureKey:
         """Test ValidatedFeatureKeyAdapter.validate_python with Feature class."""
         from metaxy.models.types import ValidatedFeatureKeyAdapter
 
-        class TestFeature(Feature, spec=feature_spec): ...
+        class TestFeature(BaseFeature, spec=feature_spec): ...
 
         result = ValidatedFeatureKeyAdapter.validate_python(TestFeature)
         assert isinstance(result, FeatureKey)
@@ -641,7 +641,7 @@ class TestCoercibleToFeatureKey:
         assert dep3.feature.to_string() == "a/b/c"
 
         # Feature class
-        class TestFeature(Feature, spec=feature_spec): ...
+        class TestFeature(BaseFeature, spec=feature_spec): ...
 
         dep4 = FeatureDep(feature=TestFeature)
         assert dep4.feature == feature_key

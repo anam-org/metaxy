@@ -6,18 +6,18 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 
 
 @pytest.fixture
-def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
+def sample_features(graph) -> Iterator[tuple[type[BaseFeature], type[BaseFeature]]]:
     """Create sample features for testing."""
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature_a"]),
             fields=[FieldSpec(key=FieldKey("field_a"), code_version="1")],
@@ -28,7 +28,7 @@ def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
         pass
 
     class FeatureB(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature_b"]),
             fields=[FieldSpec(key=FieldKey("field_b"), code_version="1")],
@@ -42,7 +42,7 @@ def sample_features(graph) -> Iterator[tuple[type[Feature], type[Feature]]]:
 
 
 def test_copy_metadata_all_features(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying all features from one store to another."""
     FeatureA, FeatureB = sample_features
@@ -120,7 +120,7 @@ def test_copy_metadata_all_features(
 
 
 def test_copy_metadata_specific_features(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying specific features."""
     FeatureA, FeatureB = sample_features
@@ -179,7 +179,7 @@ def test_copy_metadata_specific_features(
 
 
 def test_copy_metadata_with_snapshot_filter(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying metadata filtered by snapshot version."""
     FeatureA, FeatureB = sample_features
@@ -270,7 +270,7 @@ def test_copy_metadata_empty_source() -> None:
 
 
 def test_copy_metadata_missing_feature(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying a feature that doesn't exist in source."""
     FeatureA, FeatureB = sample_features
@@ -311,7 +311,7 @@ def test_copy_metadata_missing_feature(
 
 
 def test_copy_metadata_preserves_feature_version(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test that feature_version is preserved during copy."""
     FeatureA, _ = sample_features
@@ -365,7 +365,7 @@ def test_copy_metadata_store_not_open() -> None:
 
 
 def test_copy_metadata_preserves_snapshot_version(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test that snapshot_version is preserved during copy."""
     FeatureA, _ = sample_features
@@ -408,7 +408,7 @@ def test_copy_metadata_preserves_snapshot_version(
 
 
 def test_copy_metadata_no_rows_for_snapshot(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying when no rows match the specified snapshot."""
     FeatureA, _ = sample_features
@@ -441,7 +441,7 @@ def test_copy_metadata_no_rows_for_snapshot(
 
 
 def test_copy_metadata_with_global_filters(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying with global filters applied to all features."""
     FeatureA, FeatureB = sample_features
@@ -516,7 +516,7 @@ def test_copy_metadata_with_global_filters(
 
 
 def test_copy_metadata_with_per_feature_filters(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying with per-feature filters."""
     FeatureA, FeatureB = sample_features
@@ -596,7 +596,7 @@ def test_copy_metadata_with_per_feature_filters(
 
 
 def test_copy_metadata_with_mixed_filters(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test copying with multiple filters combined."""
     FeatureA, FeatureB = sample_features
@@ -677,7 +677,7 @@ def test_copy_metadata_with_mixed_filters(
 
 
 def test_copy_metadata_with_mixed_feature_types(
-    sample_features: tuple[type[Feature], type[Feature]],
+    sample_features: tuple[type[BaseFeature], type[BaseFeature]],
 ) -> None:
     """Test that we can use different filter configurations for different features."""
     FeatureA, FeatureB = sample_features

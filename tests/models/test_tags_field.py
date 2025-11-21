@@ -6,7 +6,7 @@ import json
 
 import polars as pl
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
 from metaxy._testing.models import SampleFeatureSpec
 from metaxy._version import __version__
 from metaxy.metadata_store.memory import InMemoryMetadataStore
@@ -21,7 +21,7 @@ def test_push_graph_snapshot_with_default_tags():
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -55,7 +55,7 @@ def test_push_graph_snapshot_with_custom_tags():
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -97,7 +97,7 @@ def test_push_graph_snapshot_tags_persist_across_pushes():
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -141,7 +141,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes():
     with graph_v1.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -160,7 +160,7 @@ def test_push_graph_snapshot_tags_updated_with_feature_changes():
             with graph_v2.use():
 
                 class TestFeature2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["test", "feature"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],

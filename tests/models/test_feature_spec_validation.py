@@ -2,8 +2,8 @@
 
 import pytest
 
+from metaxy import BaseFeature
 from metaxy._testing.models import SampleFeatureSpec
-from metaxy.models.feature import BaseFeature
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
