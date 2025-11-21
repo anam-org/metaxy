@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Annotated
 import cyclopts
 
 from metaxy.cli.console import console, error_console
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 
 if TYPE_CHECKING:
-    from metaxy.models.feature import BaseFeature
+    pass
 
 # Metadata subcommand app
 app = cyclopts.App(
@@ -113,7 +113,7 @@ def copy(
         raise SystemExit(1)
 
     # Parse feature keys
-    feature_keys: list[FeatureKey | type[BaseFeature]] | None = None
+    feature_keys: list[CoercibleToFeatureKey] | None = None
     if features:
         feature_keys = []
         for feature_str in features:

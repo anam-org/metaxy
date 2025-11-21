@@ -522,3 +522,200 @@ def test_feature_dep_key_overloads():
     class TestFeature(Feature, spec=feature_spec): ...
 
     _ = FeatureDep(feature=TestFeature)
+
+
+class TestCoercibleToFeatureKey:
+    """Tests for CoercibleToFeatureKey type and adapter."""
+
+    def test_coercible_in_pydantic_model_with_string(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts string."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_list(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts list."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_feature_key(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts FeatureKey."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        feature_key = FeatureKey("a/b/c")
+        model = MyModel(key=feature_key)
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_feature_class(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts Feature class."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        class TestFeature(Feature, spec=feature_spec): ...
+
+        model = MyModel(key=TestFeature)  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key == feature_key
+
+    def test_coercible_adapter_with_string(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with string."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        result = ValidatedFeatureKeyAdapter.validate_python("a/b/c")
+        assert isinstance(result, FeatureKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_list(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with list."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        result = ValidatedFeatureKeyAdapter.validate_python(["a", "b", "c"])
+        assert isinstance(result, FeatureKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_feature_key(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with FeatureKey."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        feature_key = FeatureKey("a/b/c")
+        result = ValidatedFeatureKeyAdapter.validate_python(feature_key)
+        assert isinstance(result, FeatureKey)
+        assert result == feature_key
+
+    def test_coercible_adapter_with_feature_class(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with Feature class."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        class TestFeature(Feature, spec=feature_spec): ...
+
+        result = ValidatedFeatureKeyAdapter.validate_python(TestFeature)
+        assert isinstance(result, FeatureKey)
+        assert result == feature_key
+
+    def test_coercible_adapter_invalid_input(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with invalid input."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        with pytest.raises(ValidationError):
+            ValidatedFeatureKeyAdapter.validate_python(123)
+
+    def test_feature_dep_accepts_all_types(self):
+        """Test FeatureDep accepts all CoercibleToFeatureKey types."""
+        # String
+        dep1 = FeatureDep(feature="a/b/c")
+        assert dep1.feature.to_string() == "a/b/c"
+
+        # List
+        dep2 = FeatureDep(feature=["a", "b", "c"])
+        assert dep2.feature.to_string() == "a/b/c"
+
+        # FeatureKey
+        dep3 = FeatureDep(feature=FeatureKey("a/b/c"))
+        assert dep3.feature.to_string() == "a/b/c"
+
+        # Feature class
+        class TestFeature(Feature, spec=feature_spec): ...
+
+        dep4 = FeatureDep(feature=TestFeature)
+        assert dep4.feature == feature_key
+
+
+class TestCoercibleToFieldKey:
+    """Tests for CoercibleToFieldKey type and adapter."""
+
+    def test_coercible_in_pydantic_model_with_string(self):
+        """Test ValidatedFieldKey in Pydantic model accepts string."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_list(self):
+        """Test ValidatedFieldKey in Pydantic model accepts list."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_field_key(self):
+        """Test ValidatedFieldKey in Pydantic model accepts FieldKey."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        field_key = FieldKey("a/b/c")
+        model = MyModel(key=field_key)
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_string(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with string."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        result = ValidatedFieldKeyAdapter.validate_python("a/b/c")
+        assert isinstance(result, FieldKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_list(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with list."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        result = ValidatedFieldKeyAdapter.validate_python(["a", "b", "c"])
+        assert isinstance(result, FieldKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_field_key(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with FieldKey."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        field_key = FieldKey("a/b/c")
+        result = ValidatedFieldKeyAdapter.validate_python(field_key)
+        assert isinstance(result, FieldKey)
+        assert result == field_key
+
+    def test_coercible_adapter_invalid_input(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with invalid input."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        with pytest.raises(ValidationError):
+            ValidatedFieldKeyAdapter.validate_python(123)

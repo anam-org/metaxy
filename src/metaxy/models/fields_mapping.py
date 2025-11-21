@@ -14,7 +14,12 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 from pydantic import Field as PydanticField
 from typing_extensions import Self
 
-from metaxy.models.types import FeatureKey, FieldKey
+from metaxy.models.types import (
+    CoercibleToFieldKey,
+    FeatureKey,
+    FieldKey,
+    ValidatedFieldKeyAdapter,
+)
 
 if TYPE_CHECKING:
     from metaxy.models.feature_spec import FeatureSpec
@@ -246,16 +251,28 @@ class FieldsMapping(BaseModel):
         )
 
     @classmethod
-    def specific(cls, mapping: dict[FieldKey, set[FieldKey]]) -> Self:
+    def specific(
+        cls, mapping: dict[CoercibleToFieldKey, set[CoercibleToFieldKey]]
+    ) -> Self:
         """Create a field mapping that maps downstream field keys into specific upstream field keys.
 
         Args:
-            mapping: Mapping of downstream field keys to sets of upstream field keys
+            mapping: Mapping of downstream field keys to sets of upstream field keys.
+                Keys and values can be strings, sequences, or FieldKey instances.
 
         Returns:
             Configured FieldsMapping instance.
         """
-        return cls(mapping=SpecificFieldsMapping(mapping=mapping))
+        # Validate and coerce the mapping keys and values
+        validated_mapping: dict[FieldKey, set[FieldKey]] = {}
+        for key, value_set in mapping.items():
+            validated_key = ValidatedFieldKeyAdapter.validate_python(key)
+            validated_values = {
+                ValidatedFieldKeyAdapter.validate_python(v) for v in value_set
+            }
+            validated_mapping[validated_key] = validated_values
+
+        return cls(mapping=SpecificFieldsMapping(mapping=validated_mapping))
 
     @classmethod
     def all(cls) -> Self:

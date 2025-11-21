@@ -1,6 +1,6 @@
 # Types
 
-A few types used in Metaxy here and there.
+## Versioning Engine
 
 ::: metaxy.versioning.types.LazyIncrement
 
@@ -9,6 +9,50 @@ A few types used in Metaxy here and there.
 ::: metaxy.HashAlgorithm
     options:
       show_if_no_docstring: true
+
+## Keys
+
+Types for working with feature and field keys.
+
+### Canonical Keys
+
+::: metaxy.FeatureKey
+
+::: metaxy.FieldKey
+
+### Type Annotations
+
+These are typically used to annotate function parameters. Most APIs in Metaxy accepts them and perform type coercion into [canonical types](#canonical-keys).
+
+::: metaxy.CoercibleToFeatureKey
+
+::: metaxy.CoercibleToFieldKey
+
+### Pydantic Type Annotations
+
+These types are used for type coercion into [canonical types](#canonical-keys) with Pydantic.
+
+::: metaxy.ValidatedFeatureKey
+
+::: metaxy.ValidatedFieldKey
+
+::: metaxy.ValidatedFeatureKeySequence
+
+::: metaxy.ValidatedFieldKeySequence
+
+### Adapters
+
+These can perform type coercsion into [canonical types](#canonical-keys) in non-pydantic code.
+
+::: metaxy.ValidatedFeatureKeyAdapter
+
+::: metaxy.ValidatedFeatureKeySequenceAdapter
+
+::: metaxy.ValidatedFieldKeyAdapter
+
+::: metaxy.ValidatedFieldKeySequenceAdapter
+
+## Other Types
 
 ::: metaxy.models.types.SnapshotPushResult
 

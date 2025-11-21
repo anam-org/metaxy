@@ -42,7 +42,11 @@ from metaxy.models.constants import (
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    FeatureKey,
+    ValidatedFeatureKeyAdapter,
+)
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -397,7 +401,7 @@ class MetadataStore(ABC):
 
     def read_metadata(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
@@ -522,7 +526,7 @@ class MetadataStore(ABC):
 
     def write_metadata(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         df: IntoFrame,
     ) -> None:
         """
@@ -808,26 +812,26 @@ class MetadataStore(ABC):
         """Check if feature key is a system table."""
         return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
-    def _resolve_feature_key(
-        self, feature: FeatureKey | type[BaseFeature]
-    ) -> FeatureKey:
-        """Resolve a Feature class or FeatureKey to FeatureKey."""
-        if isinstance(feature, FeatureKey):
-            return feature
-        else:
-            return feature.spec().key
+    def _resolve_feature_key(self, feature: CoercibleToFeatureKey) -> FeatureKey:
+        """Resolve various types to FeatureKey.
 
-    def _resolve_feature_plan(
-        self, feature: FeatureKey | type[BaseFeature]
-    ) -> FeaturePlan:
+        Accepts types that can be converted into a FeatureKey.
+
+        Args:
+            feature: Feature to resolve to FeatureKey
+
+        Returns:
+            FeatureKey instance
+        """
+        return ValidatedFeatureKeyAdapter.validate_python(feature)
+
+    def _resolve_feature_plan(self, feature: CoercibleToFeatureKey) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
+        # First resolve to FeatureKey
+        feature_key = self._resolve_feature_key(feature)
+        # Then get the plan
         graph = current_graph()
-        if isinstance(feature, FeatureKey):
-            # When given a FeatureKey, get the graph from the active context
-            return graph.get_feature_plan(feature)
-        else:
-            # When given a Feature class, use its bound graph
-            return graph.get_feature_plan(feature.spec().key)
+        return graph.get_feature_plan(feature_key)
 
     # ========== Core CRUD Operations ==========
 
@@ -856,7 +860,7 @@ class MetadataStore(ABC):
         finally:
             self._allow_cross_project_writes = previous_value
 
-    def _validate_project_write(self, feature: FeatureKey | type[BaseFeature]) -> None:
+    def _validate_project_write(self, feature: CoercibleToFeatureKey) -> None:
         """Validate that writing to a feature matches the expected project from config.
 
         Args:
@@ -921,7 +925,7 @@ class MetadataStore(ABC):
     def _add_system_columns(
         self,
         df: Frame,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
     ) -> Frame:
         """Add all required system columns to the DataFrame.
 
@@ -1085,7 +1089,7 @@ class MetadataStore(ABC):
         """
         pass
 
-    def drop_feature_metadata(self, feature: FeatureKey | type[BaseFeature]) -> None:
+    def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
         This removes all stored metadata for the specified feature from the store.
@@ -1110,7 +1114,7 @@ class MetadataStore(ABC):
     @abstractmethod
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
@@ -1134,7 +1138,7 @@ class MetadataStore(ABC):
 
     def has_feature(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         check_fallback: bool = False,
     ) -> bool:
@@ -1164,7 +1168,7 @@ class MetadataStore(ABC):
         return False
 
     @abstractmethod
-    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         """Implementation of _has_feature.
 
         Args:
@@ -1189,7 +1193,7 @@ class MetadataStore(ABC):
     def copy_metadata(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature]] | None = None,
+        features: list[CoercibleToFeatureKey] | None = None,
         *,
         from_snapshot: str | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1303,7 +1307,7 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature]] | None,
+        features: list[CoercibleToFeatureKey] | None,
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
@@ -1322,14 +1326,8 @@ class MetadataStore(ABC):
                 f"Copying all features from active graph: {len(features_to_copy)} features"
             )
         else:
-            # Convert all to FeatureKey
-            features_to_copy = []
-            for item in features:
-                if isinstance(item, FeatureKey):
-                    features_to_copy.append(item)
-                else:
-                    # Must be Feature class
-                    features_to_copy.append(item.spec().key)
+            # Convert all to FeatureKey using the adapter
+            features_to_copy = [self._resolve_feature_key(item) for item in features]
             logger.info(f"Copying {len(features_to_copy)} specified features")
 
         # Log snapshot usage

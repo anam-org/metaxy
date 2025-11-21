@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
 
 from pydantic import (
+    BeforeValidator,
     ConfigDict,
+    Field,
     RootModel,
     TypeAdapter,
     field_validator,
@@ -236,7 +238,8 @@ class FeatureKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Examples:
+    Example:
+
         ```py
         FeatureKey("a/b/c")  # String format
         # FeatureKey(parts=['a', 'b', 'c'])
@@ -293,7 +296,8 @@ class FieldKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Examples:
+    Example:
+
         ```py
         FieldKey("a/b/c")  # String format
         # FieldKey(parts=['a', 'b', 'c'])
@@ -339,8 +343,7 @@ class FieldKey(_Key):
         return super().__eq__(other)
 
 
-CoercibleToFeatureKey: TypeAlias = _CoercibleToKey | FeatureKey
-CoercibleToFieldKey: TypeAlias = _CoercibleToKey | FieldKey
+_CoercibleToFeatureKey: TypeAlias = _CoercibleToKey | FeatureKey
 
 FeatureKeyAdapter = TypeAdapter(
     FeatureKey
@@ -348,5 +351,125 @@ FeatureKeyAdapter = TypeAdapter(
 FieldKeyAdapter = TypeAdapter(
     FieldKey
 )  # can call .validate_python() to transform acceptable types into a FieldKey
+
+
+def _coerce_to_feature_key(value: Any) -> FeatureKey:
+    """Convert various types to FeatureKey.
+
+    Accepts:
+
+    - slashed `str`: `"a/b/c"`
+
+    - `Sequence[str]`: `["a", "b", "c"]`
+
+    - `FeatureKey`: pass through
+
+    - `type[BaseFeature]`: extracts .spec().key
+
+    Args:
+        value: Value to coerce to `FeatureKey`
+
+    Returns:
+        canonical `FeatureKey` instance
+
+    Raises:
+        ValidationError: If value cannot be coerced to FeatureKey
+    """
+    if isinstance(value, FeatureKey):
+        return value
+
+    # Check if it's a BaseFeature class
+    # Import here to avoid circular dependency at module level
+    from metaxy.models.feature import BaseFeature
+
+    if isinstance(value, type) and issubclass(value, BaseFeature):
+        return value.spec().key
+
+    # Handle str, Sequence[str]
+    return FeatureKeyAdapter.validate_python(value)
+
+
+def _coerce_to_field_key(value: Any) -> FieldKey:
+    """Convert various types to FieldKey.
+
+    Accepts:
+
+        - slashed `str`: `"a/b/c"`
+
+        - `Sequence[str]`: `["a", "b", "c"]`
+
+        - `FieldKey`: pass through
+
+    Args:
+        value: Value to coerce to `FieldKey`
+
+    Returns:
+        canonical `FieldKey` instance
+
+    Raises:
+        ValidationError: If value cannot be coerced to `FieldKey`
+    """
+    if isinstance(value, FieldKey):
+        return value
+
+    # Handle str, Sequence[str]
+    return FieldKeyAdapter.validate_python(value)
+
+
+if TYPE_CHECKING:
+    from metaxy.models.feature import BaseFeature
+
+# Type unions - what inputs are accepted
+CoercibleToFeatureKey: TypeAlias = (
+    str | Sequence[str] | FeatureKey | type["BaseFeature"]
+)
+CoercibleToFieldKey: TypeAlias = str | Sequence[str] | FieldKey
+
+# Annotated types for Pydantic field annotations - automatically validate
+# After validation, these ARE FeatureKey/FieldKey (not unions)
+ValidatedFeatureKey: TypeAlias = Annotated[
+    FeatureKey,
+    BeforeValidator(_coerce_to_feature_key),
+    Field(
+        description="Feature key. Accepts a slashed string ('a/b/c'), a sequence of strings, a FeatureKey instance, or a child class of BaseFeature"
+    ),
+]
+
+ValidatedFieldKey: TypeAlias = Annotated[
+    FieldKey,
+    BeforeValidator(_coerce_to_field_key),
+    Field(
+        description="Field key. Accepts a slashed string ('a/b/c'), a sequence of strings, or a FieldKey instance."
+    ),
+]
+
+# TypeAdapters for non-Pydantic usage (e.g., in metadata_store/base.py)
+ValidatedFeatureKeyAdapter: TypeAdapter[ValidatedFeatureKey] = TypeAdapter(
+    ValidatedFeatureKey
+)
+ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(
+    ValidatedFieldKey
+)
+
+
+# Collection types for common patterns - automatically validate sequences
+# Pydantic will validate each element using ValidatedFeatureKey/ValidatedFieldKey
+ValidatedFeatureKeySequence: TypeAlias = Annotated[
+    Sequence[ValidatedFeatureKey],
+    Field(description="Sequence items coerced into FeatureKey."),
+]
+
+ValidatedFieldKeySequence: TypeAlias = Annotated[
+    Sequence[ValidatedFieldKey],
+    Field(description="Sequence items coerced into FieldKey."),
+]
+
+# TypeAdapters for non-Pydantic usage
+ValidatedFeatureKeySequenceAdapter: TypeAdapter[ValidatedFeatureKeySequence] = (
+    TypeAdapter(ValidatedFeatureKeySequence)
+)
+ValidatedFieldKeySequenceAdapter: TypeAdapter[ValidatedFieldKeySequence] = TypeAdapter(
+    ValidatedFieldKeySequence
+)
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]

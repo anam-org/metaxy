@@ -47,7 +47,21 @@ from metaxy.models.fields_mapping import (
     FieldsMappingType,
 )
 from metaxy.models.lineage import LineageRelationship
-from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    CoercibleToFieldKey,
+    FeatureDepMetadata,
+    FeatureKey,
+    FieldKey,
+    ValidatedFeatureKey,
+    ValidatedFeatureKeyAdapter,
+    ValidatedFeatureKeySequence,
+    ValidatedFeatureKeySequenceAdapter,
+    ValidatedFieldKey,
+    ValidatedFieldKeyAdapter,
+    ValidatedFieldKeySequence,
+    ValidatedFieldKeySequenceAdapter,
+)
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -95,6 +109,12 @@ __all__ = [
     "SpecialFieldDep",
     "FeatureKey",
     "FieldKey",
+    "CoercibleToFeatureKey",
+    "CoercibleToFieldKey",
+    "ValidatedFeatureKey",
+    "ValidatedFieldKey",
+    "ValidatedFeatureKeySequence",
+    "ValidatedFieldKeySequence",
     "MetadataStore",
     "InMemoryMetadataStore",
     "load_features",
@@ -118,4 +138,8 @@ __all__ = [
     "LineageRelationship",
     "AccessMode",
     "current_graph",
+    "ValidatedFeatureKeyAdapter",
+    "ValidatedFieldKeyAdapter",
+    "ValidatedFeatureKeySequenceAdapter",
+    "ValidatedFieldKeySequenceAdapter",
 ]

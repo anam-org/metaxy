@@ -21,9 +21,8 @@ from metaxy.metadata_store.exceptions import (
     TableNotFoundError,
 )
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -126,7 +125,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             versioning_engine_cls=IbisVersioningEngine,
         )
 
-    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         feature_key = self._resolve_feature_key(feature)
         table_name = self.get_table_name(feature_key)
         return table_name in self.conn.list_tables()
@@ -406,7 +405,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,

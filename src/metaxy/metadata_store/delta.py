@@ -18,9 +18,8 @@ from typing_extensions import Self
 from metaxy._utils import switch_implementation_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -107,7 +106,7 @@ class DeltaMetadataStore(MetadataStore):
 
     # ===== MetadataStore abstract methods =====
 
-    def _has_feature_impl(self, feature: FeatureKey | type[BaseFeature]) -> bool:
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
         """Check if feature exists in Delta store.
 
         Args:
@@ -275,7 +274,7 @@ class DeltaMetadataStore(MetadataStore):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,

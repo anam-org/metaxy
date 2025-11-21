@@ -29,6 +29,7 @@ from metaxy.models.types import (
     FeatureKey,
     FeatureKeyAdapter,
     FieldKey,
+    ValidatedFeatureKey,
 )
 from metaxy.utils.hashing import truncate_hash
 
@@ -60,27 +61,12 @@ class FeatureClassProtocol(Protocol):
     def spec(cls) -> FeatureSpecProtocol: ...
 
 
-def _validate_feature_dep_feature(value: Any) -> FeatureKey:
-    """Coerce various input types to FeatureKey for FeatureDep."""
-    if isinstance(value, FeatureKey):
-        return value
-    # Check if it's a FeatureSpec instance (using Protocol)
-    elif isinstance(value, FeatureSpecProtocol):
-        return value.key
-    # Check if it's a Feature class (using Protocol for runtime check)
-    elif isinstance(value, type) and hasattr(value, "spec"):
-        return value.spec().key
-    else:
-        # Must be a CoercibleToFeatureKey (str or list of str)
-        return FeatureKeyAdapter.validate_python(value)
-
-
 class FeatureDep(pydantic.BaseModel):
     """Feature dependency specification with optional column selection and renaming.
 
     Attributes:
         key: The feature key to depend on. Accepts string ("a/b/c"), list (["a", "b", "c"]),
-            or FeatureKey instance.
+            FeatureKey instance, or BaseFeature class.
         columns: Optional tuple of column names to select from upstream feature.
             - None (default): Keep all columns from upstream
             - Empty tuple (): Keep only system columns (sample_uid, provenance_by_field, etc.)
@@ -123,7 +109,7 @@ class FeatureDep(pydantic.BaseModel):
         ```
     """
 
-    feature: Annotated[FeatureKey, BeforeValidator(_validate_feature_dep_feature)]
+    feature: ValidatedFeatureKey
     columns: tuple[str, ...] | None = (
         None  # None = all columns, () = only system columns
     )
