@@ -188,6 +188,7 @@ nav:
     - integrations/index.md
     - SQLModel: integrations/sqlmodel.md
     - SQLAlchemy: integrations/sqlalchemy.md
+    - Dagster: learn/integrations/dagster.md
   - Examples:
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
@@ -219,6 +220,7 @@ nav:
       - reference/api/ext/index.md
       - SQLModel: reference/api/ext/sqlmodel.md
       - SQLAlchemy: reference/api/ext/sqlalchemy.md
+      - Dagster: reference/api/extensions/dagster.md
   - Configuration: reference/configuration.md
 
 extra:

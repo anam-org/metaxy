@@ -280,13 +280,38 @@ class MetadataStore(ABC):
                 hash_column=METAXY_PROVENANCE,
             )
         else:
+            from metaxy.metadata_store.exceptions import FeatureNotFoundError
+
             for upstream_spec in plan.deps or []:
-                upstream_feature_metadata = self.read_metadata(
-                    upstream_spec.key,
-                    filters=filters.get(upstream_spec.key.to_string(), []),
+                try:
+                    upstream_feature_metadata = self.read_metadata(
+                        upstream_spec.key,
+                        filters=filters.get(upstream_spec.key.to_string(), []),
+                    )
+                    if upstream_feature_metadata is not None:
+                        upstream_by_key[upstream_spec.key] = upstream_feature_metadata
+                except FeatureNotFoundError:
+                    # Upstream feature not materialized yet - this is OK for first run
+                    # The increment will be computed based on available upstream data
+                    pass
+
+            # If we have dependencies but no upstream data was found,
+            # this indicates a problem with execution order or missing data
+            if plan.deps and len(upstream_by_key) == 0:
+                from metaxy.metadata_store.exceptions import FeatureNotFoundError
+
+                missing_deps = [dep.key.to_string() for dep in plan.deps]
+                raise FeatureNotFoundError(
+                    f"Cannot resolve increment for feature {feature.spec().key.to_string()}: "
+                    f"all upstream dependencies are missing from the store.\n"
+                    f"Missing: {', '.join(missing_deps)}\n\n"
+                    f"This usually means:\n"
+                    f"1. Upstream features have not been materialized yet\n"
+                    f"2. This feature is being executed out of order\n"
+                    f"3. The metadata store was cleared/reset\n\n"
+                    f"In Dagster: ensure upstream assets run before this one, "
+                    f"or materialize the full asset graph from the root."
                 )
-                if upstream_feature_metadata is not None:
-                    upstream_by_key[upstream_spec.key] = upstream_feature_metadata
 
         # determine which implementation to use for resolving the increment
         # consider (1) whether all upstream metadata has been loaded with the native implementation
@@ -504,16 +529,18 @@ class MetadataStore(ABC):
         if allow_fallback:
             for store in self.fallback_stores:
                 try:
-                    # Use full read_metadata to handle nested fallback chains
-                    return store.read_metadata(
-                        feature,
-                        feature_version=feature_version,
-                        filters=filters,
-                        columns=columns,
-                        allow_fallback=True,
-                        current_only=current_only,
-                        latest_only=latest_only,
-                    )
+                    # Open fallback store if not already open
+                    with store:
+                        # Use full read_metadata to handle nested fallback chains
+                        return store.read_metadata(
+                            feature,
+                            feature_version=feature_version,
+                            filters=filters,
+                            columns=columns,
+                            allow_fallback=True,
+                            current_only=current_only,
+                            latest_only=latest_only,
+                        )
                 except FeatureNotFoundError:
                     # Try next fallback store
                     continue

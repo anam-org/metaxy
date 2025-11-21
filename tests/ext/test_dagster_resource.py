@@ -1,13 +1,10 @@
-"""Comprehensive tests for Dagster integration.
+"""Tests for Dagster MetaxyMetadataStoreResource.
 
 Tests the MetaxyMetadataStoreResource class which provides Metaxy metadata stores
 as Dagster resources. Covers:
 1. Config loading (explicit, auto-discovery, already-set context)
 2. Fallback store validation and error handling
 3. Store creation and configuration
-
-These tests focus on the core functionality (_load_config, _resolve_fallback_stores,
-_validate_fallback_store), resource creation logic, and Dagster integration points.
 """
 
 from __future__ import annotations
@@ -439,11 +436,19 @@ config.database = "{tmp_path / "fallback.duckdb"}"
 
     try:
         with dg.build_resources({"metaxy_store": resource}) as resources:
-            store = resources.metaxy_store
-            assert isinstance(store, DuckDBMetadataStore)
-            assert store.fallback_stores is not None
-            assert isinstance(store.fallback_stores[0], DuckDBMetadataStore)
-            assert store.fallback_stores[0].hash_algorithm == store.hash_algorithm
+            store_wrapper = resources.metaxy_store
+            # Now we receive the wrapper, not the unwrapped store
+            assert isinstance(store_wrapper, MetaxyMetadataStoreResource)
+
+            # The wrapper can be used to get the actual store
+            actual_store = store_wrapper.get_store()
+            assert isinstance(actual_store, DuckDBMetadataStore)
+            assert actual_store.fallback_stores is not None
+            assert isinstance(actual_store.fallback_stores[0], DuckDBMetadataStore)
+            assert (
+                actual_store.fallback_stores[0].hash_algorithm
+                == actual_store.hash_algorithm
+            )
     finally:
         MetaxyConfig.reset()
 
@@ -470,10 +475,15 @@ config.database = "{tmp_path / "primary.duckdb"}"
 
         @dg.asset(required_resource_keys={"metaxy_store"})
         def uses_metaxy_store(context) -> str:
-            store = context.resources.metaxy_store
-            assert isinstance(store, DuckDBMetadataStore)
+            store_wrapper = context.resources.metaxy_store
+            # Assets now receive the wrapper resource, not the unwrapped store
+            assert isinstance(store_wrapper, MetaxyMetadataStoreResource)
+
+            # Get the actual store to check properties
+            actual_store = store_wrapper.get_store()
+            assert isinstance(actual_store, DuckDBMetadataStore)
             # Return a stable attribute to assert on
-            return str(store.database)
+            return str(actual_store.database)
 
         result = dg.materialize(
             [uses_metaxy_store],

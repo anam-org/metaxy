@@ -1,0 +1,17 @@
+[project]
+name = "example-integration-dagster"
+version = "0.1.0"
+description = "Dagster integration example for Metaxy"
+readme = "README.md"
+authors = [
+  { name = "danielgafni", email = "danielgafni16@gmail.com" },
+  { name = "Georg Heiler", email = "georg.kf.heiler@gmail.com" },
+]
+requires-python = ">=3.10"
+dependencies = [
+  "metaxy[dagster]",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"

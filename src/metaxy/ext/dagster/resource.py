@@ -1,3 +1,9 @@
+"""Dagster resource for Metaxy metadata stores.
+
+This module provides MetaxyMetadataStoreResource, a Dagster ConfigurableResource
+that wraps Metaxy's MetadataStore for use in Dagster pipelines.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -24,9 +30,17 @@ class MetaxyMetadataStoreResource(dg.ConfigurableResource):  # pyright: ignore[r
     search_parents: bool = True
     auto_discovery_start: str | None = None
 
-    def create_resource(self, context: dg.InitResourceContext) -> MetadataStore:  # noqa: ARG002
-        """Dagster hook to provide the concrete MetadataStore to assets."""
-        return self.get_store()
+    def create_resource(
+        self,
+        context: dg.InitResourceContext,  # noqa: ARG002
+    ) -> MetaxyMetadataStoreResource:
+        """Dagster hook to provide the resource wrapper to assets.
+
+        Returning ``self`` keeps the ConfigurableResource wrapper available in
+        Dagster assets/IO managers so they can call ``get_store()`` or use the
+        context manager APIs instead of receiving the unwrapped ``MetadataStore``.
+        """
+        return self
 
     def __enter__(self) -> MetaxyMetadataStoreResource:
         """Context manager entry - opens the underlying store and returns self.

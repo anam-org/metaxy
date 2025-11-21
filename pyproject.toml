@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 authors = [
   { name = "Daniel Gafni", email = "danielgafni16@gmail.com" },
+  { name = "Georg Heiler", email = "georg.kf.heiler@gmail.com" },
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -82,6 +83,7 @@ dev = [
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
   "dagster>=1.12.3",
+  "dagster-webserver>=1.12.3",
 ]
 
 examples = [
