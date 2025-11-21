@@ -211,6 +211,10 @@ nav:
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md
+    - Integrations:
+      - reference/api/ext/index.md
+      - SQLModel: reference/api/ext/sqlmodel.md
+      - SQLAlchemy: reference/api/ext/sqlalchemy.md
   - Configuration: reference/configuration.md
 
 extra:

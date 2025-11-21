@@ -4,7 +4,11 @@ The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy featur
 
 This integration combines Metaxy's versioning and dependency tracking with SQLModel's database mapping and query capabilities.
 
-It is the primary way to use Metaxy with database-backed [metadata stores](../learn/metadata-stores.md). The benefits of using SQLModel are mostly in the ability to use migration systems such as [Alembic](https://alembic.sqlalchemy.org/) that can ensure schema consistency with Metaxy features, and provide the tools for schema evolution as the features change over time.
+It is the primary way to use Metaxy with database-backed [metadata stores](../learn/metadata-stores.md). This integration can also expose `sqlalchemy` metadata to database migration tooling such as [Alembic](https://alembic.sqlalchemy.org/).
+
+!!! tip
+
+    Check out our [sqlalchemy integration](../integrations/sqlalchemy.md) for Alembic instructions.
 
 ## Installation
 
@@ -38,7 +42,7 @@ and has to be enabled explicitly:
 
 ## Usage
 
-Let's define a feature:
+The SQLModel integration provides [`BaseSQLModelFeature`][metaxy.ext.sqlmodel.BaseSQLModelFeature] which combines the functionality of a Metaxy feature and an SQLModel table.
 
 ```python
 import metaxy as mx
@@ -84,3 +88,7 @@ class VideoFeature(
     path_prefix: ext.sqlmodel
     header_level: 3
 <!-- dprint-ignore-end -->
+
+# Reference
+
+- [API docs](../reference/api/ext/sqlmodel.md)
