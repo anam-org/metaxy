@@ -122,6 +122,7 @@ def get_system_metadata(
         MetaData containing system table definitions
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import get_system_metadata
 
@@ -161,6 +162,7 @@ def get_metaxy_system_metadata(
         SQLAlchemy MetaData containing metaxy system table definitions
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import get_metaxy_system_metadata
 
@@ -202,6 +204,7 @@ def add_metaxy_system_metadata(
         The same metadata object with metaxy tables added
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import add_metaxy_system_metadata
         from myapp.models import metadata
@@ -294,6 +297,7 @@ def get_store_metadata_and_url(
         AttributeError: If store doesn't have sqlalchemy_url property
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import get_store_metadata_and_url
 
@@ -342,6 +346,7 @@ def get_features_sqlalchemy_metadata(
         ImportError: If SQLModel is not installed
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import get_features_sqlalchemy_metadata
         from metaxy import init_metaxy
@@ -429,6 +434,7 @@ def get_features_store_metadata_and_url(
         ImportError: If SQLModel is not installed
 
     Example:
+
         ```py
         from metaxy.ext.sqlalchemy import get_features_store_metadata_and_url
         from metaxy import init_metaxy

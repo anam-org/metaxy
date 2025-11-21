@@ -163,13 +163,7 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, reportUnsafeMultipleInheritance]
     SQLModel, BaseFeature, metaclass=SQLModelFeatureMeta, spec=None
 ):  # type: ignore[misc]
-    """Base class for features that are also SQLModel tables.
-
-    !!! note
-
-        Unlike regular Feature classes, `BaseSQLModelFeature` instances are mutable
-        to support SQLModel ORM operations. Only the spec and graph class attributes
-        are used from BaseFeature, not the instance behavior.
+    """Base class for `Metaxy` features that are also `SQLModel` tables.
 
     !!! example
 

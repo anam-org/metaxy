@@ -1,69 +1,37 @@
 # Alembic Integration
 
-Metaxy provides helpers for integrating with [Alembic](https://alembic.sqlalchemy.org/) database migrations.
+Metaxy provides helpers for integrating with [SQLAlchemy](https://www.sqlalchemy.org/).
+The helpers allow to construct `sqlalchemy.MetaData` objects for Metaxy system tables and user-defined feature tables.
 
-## Installation
+This integration is convenient for setting up [Alembic](https://alembic.sqlalchemy.org/en/latest/) migrations.
 
-Install Metaxy and Alembic:
+!!! tip
 
-```bash
-pip install metaxy alembic
+    Check out our [SQLModel integration](../integrations/sqlmodel.md)
+
+## Usage
+
+The integration has to be enabled in `metaxy.toml`:
+
+```toml
+[sqlalchemy]
+enabled = true
 ```
 
-## Helper Functions
+See [API reference](../reference/api/ext/sqlalchemy.md) for the exact set of provided functions.
 
-### `get_metaxy_system_metadata`
+## Configuration Options
 
-Get metadata for Metaxy system tables:
+<!-- dprint-ignore-start -->
+::: metaxy-config
+    class: metaxy.ext.sqlalchemy.SQLAlchemyPluginConfig
+    path_prefix: ext.sqlalchemy
+    header_level: 3
+<!-- dprint-ignore-end -->
 
-```python
-from metaxy.ext.sqlalchemy import get_metaxy_system_metadata
+## Alembic Example
 
-# In your .metaxy/alembic-system/env.py
-target_metadata = get_metaxy_system_metadata()
-```
-
-### `get_features_sqlalchemy_metadata`
-
-Get metadata for user-defined SQLModel feature tables, with optional project filtering:
-
-```python
-from metaxy.ext.sqlalchemy import get_features_sqlalchemy_metadata
-from metaxy import init_metaxy
-
-# In your alembic/env.py
-init_metaxy()  # Load all features
-
-# Get metadata for current project only (default)
-target_metadata = get_features_sqlalchemy_metadata()
-
-# Get metadata for all projects
-target_metadata = get_features_sqlalchemy_metadata(filter_by_project=False)
-```
-
-> **Note**: This function is specific to SQLModel-based features. For non-SQLModel features,
-> you'll need to manage your own metadata.
-
-### Database Connection
-
-Get the SQLAlchemy connection URL from a configured [`MetadataStore`][metaxy.MetadataStore]:
-
-```python
-from metaxy.ext.sqlalchemy import get_store_sqlalchemy_url
-
-# Get URL from default store
-url = get_store_sqlalchemy_url()
-
-# Get URL from named store
-url = get_store_sqlalchemy_url("prod")
-
-# Use in alembic/env.py
-config.set_main_option("sqlalchemy.url", url)
-```
-
-## Example: Alembic's `env.py`
-
-Complete example for user feature migrations:
+Here is an example `env.py` that makes use of the integration:
 
 ```python
 from logging.config import fileConfig
@@ -103,7 +71,7 @@ type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 config = { database = "prod_metadata.duckdb" }
 ```
 
-Then create multiple Alembic migration sets:
+Then create multiple Alembic directories:
 
 ```ini
 [dev]
@@ -120,5 +88,8 @@ Use the `-n` argument to specify the environment:
 ```
 alembic -n dev upgrade head
 alembic -n prod upgrade head
-``
 ```
+
+# Reference
+
+- [API docs](../reference/api/ext/sqlalchemy.md)
