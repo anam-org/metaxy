@@ -106,7 +106,7 @@ Metaxy is:
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
-    - integrations with popular tools such as [SQLModel](./learn/integrations/sqlmodel.md), Dagster, and Ray.
+    - integrations with popular tools such as [SQLModel](./integrations/sqlmodel.md), Dagster, and Ray.
     - [testing helpers](./learn/testing.md) that you're going to appreciate
 
 ## Feature Dependencies
@@ -216,7 +216,7 @@ We have now successfully recorded the metadata for the computed samples! Process
 > Metaxy doesn't enforce deduplication or uniqueness checks at **write time** for performance reasons.
 > While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice, it's up to the user to ensure that samples are not written multiple times to the metadata store.
 > Configuring deduplication or uniqueness checks in the store (database) is a good idea.
-> For example, the [SQLModel integration](learn/integrations/sqlmodel.md) can inject a composite primary key on `metaxy_data_version`, `metaxy_created_at` and the user-defined ID columns.
+> For example, the [SQLModel integration](integrations/sqlmodel.md) can inject a composite primary key on `metaxy_data_version`, `metaxy_created_at` and the user-defined ID columns.
 > However, Metaxy only uses the latest version (by `metaxy_created_at`) at **read time**.
 
 ## What's Next?
