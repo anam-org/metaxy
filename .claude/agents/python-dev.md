@@ -126,6 +126,10 @@ When refactoring:
 5. Update type annotations as needed
 6. Document significant architectural changes
 
+When debugging:
+
+1. Use @mcp-pdb MCP to debug with breakpoints
+
 ## Quality Checklist
 
 Before considering code complete, verify:

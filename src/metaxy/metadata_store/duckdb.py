@@ -187,6 +187,27 @@ class DuckDBMetadataStore(IbisMetadataStore):
             **kwargs,
         )
 
+    @property
+    def sqlalchemy_url(self) -> str:
+        """Get SQLAlchemy-compatible connection URL for DuckDB.
+
+        Constructs a DuckDB SQLAlchemy URL from the database parameter.
+
+        Returns:
+            SQLAlchemy-compatible URL string (e.g., "duckdb:///path/to/db.db")
+
+        Example:
+            ```python
+            store = DuckDBMetadataStore(":memory:")
+            print(store.sqlalchemy_url)  # duckdb:///:memory:
+
+            store = DuckDBMetadataStore("metadata.db")
+            print(store.sqlalchemy_url)  # duckdb:///metadata.db
+            ```
+        """
+        # DuckDB SQLAlchemy URL format: duckdb:///database_path
+        return f"duckdb:///{self.database}"
+
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
         """Get default hash algorithm for DuckDB stores.
 

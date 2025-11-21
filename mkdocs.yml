@@ -181,8 +181,9 @@ nav:
     - Filters: learn/filters.md
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
-    - Integrations:
-        - SQLModel: learn/integrations/sqlmodel.md
+  - Integrations:
+    - SQLModel: integrations/sqlmodel.md
+    - SQLAlchemy: integrations/sqlalchemy.md
   - Examples:
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md

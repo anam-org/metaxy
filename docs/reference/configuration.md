@@ -14,9 +14,11 @@ Configuration files are discovered automatically by searching in the current or 
 
 ## Configuration Options
 
+<!-- dprint-ignore-start -->
 ::: metaxy-config
     class: metaxy.config.MetaxyConfig
     header_level: 3
+<!-- dprint-ignore-end -->
 
 ## Store Configuration
 
@@ -84,4 +86,4 @@ with mx.MetaxyConfig.load().get_store("prod") as store:
 
 Plugins are configured under the `ext` field. Each plugin has its own configuration options.
 
-- [SQLModel Plugin Configuration](../learn/integrations/sqlmodel.md#configuration-options)
+- [SQLModel Plugin Configuration](../integrations/sqlmodel.md#configuration-options)

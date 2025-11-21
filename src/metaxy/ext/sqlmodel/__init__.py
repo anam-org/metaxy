@@ -1,11 +1,11 @@
-from metaxy.ext.sqlmodel.base_feature import (
+from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
+from metaxy.ext.sqlmodel.plugin import (
     BaseSQLModelFeature,
     SQLModelFeatureMeta,
 )
-from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 
 __all__ = [
     "SQLModelFeatureMeta",
-    "SQLModelPluginConfig",
     "BaseSQLModelFeature",
+    "SQLModelPluginConfig",
 ]
