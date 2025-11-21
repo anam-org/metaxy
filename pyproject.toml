@@ -32,6 +32,9 @@ mermaid = [
 graphviz = [
   "pygraphviz>=1.14",
 ]
+dagster = [
+  "dagster>=1.12.3",
+]
 sqlmodel = [
   "sqlmodel>=0.0.27",
 ]
@@ -78,6 +81,7 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
+  "dagster>=1.12.3",
 ]
 
 examples = [
