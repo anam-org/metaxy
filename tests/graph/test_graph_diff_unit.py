@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.diff_models import (
     AddedNode,
     FieldChange,
@@ -14,8 +15,6 @@ from metaxy.graph.diff.diff_models import (
 from metaxy.graph.diff.differ import GraphDiffer, SnapshotResolver
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -137,7 +136,7 @@ class TestSnapshotResolver:
         resolver = SnapshotResolver()
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -161,7 +160,7 @@ class TestSnapshotResolver:
         resolver = SnapshotResolver()
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -374,7 +373,7 @@ class TestGraphDiffer:
         differ = GraphDiffer()
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

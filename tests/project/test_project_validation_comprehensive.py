@@ -7,6 +7,7 @@ import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import (
     MetadataStore,
@@ -16,7 +17,7 @@ from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.ops import DataVersionReconciliation
 from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FieldSpec, SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 

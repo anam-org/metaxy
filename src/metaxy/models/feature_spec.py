@@ -8,7 +8,6 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Literal,
     Protocol,
     TypeAlias,
     overload,
@@ -345,71 +344,4 @@ class FeatureSpec(FrozenBaseModel):
 
 FeatureSpecWithIDColumns: TypeAlias = FeatureSpec
 
-
-DefaultFeatureCols: TypeAlias = tuple[Literal["sample_uid"],]
-
-
-TestingUIDCols: TypeAlias = list[str]
-
 CoercibleToFieldSpec: TypeAlias = str | FieldSpec
-
-
-def _validate_sample_feature_spec_id_columns(
-    value: Any,
-) -> list[str]:
-    """Coerce id_columns to list for SampleFeatureSpec."""
-    if value is None:
-        return ["sample_uid"]
-    if isinstance(value, list):
-        return value
-    return list(value)
-
-
-class SampleFeatureSpec(FeatureSpec):
-    """A testing implementation of FeatureSpec that has a `sample_uid` ID column. Has to be moved to tests."""
-
-    id_columns: Annotated[  # pyright: ignore[reportIncompatibleVariableOverride]
-        pydantic.SkipValidation[list[str]],
-        BeforeValidator(_validate_sample_feature_spec_id_columns),
-    ] = pydantic.Field(
-        default_factory=lambda: ["sample_uid"],
-        description="List of columns that uniquely identify a row. They will be used by Metaxy in joins.",
-    )
-
-    if TYPE_CHECKING:
-        # Overload for common case: list of FeatureDep instances
-        @overload
-        def __init__(
-            self,
-            *,
-            key: CoercibleToFeatureKey,
-            id_columns: IDColumns | None = None,
-            deps: list[FeatureDep] | None = None,
-            fields: Sequence[str | FieldSpec] | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
-            **kwargs: Any,
-        ) -> None: ...
-
-        @overload
-        def __init__(
-            self,
-            *,
-            key: CoercibleToFeatureKey,
-            id_columns: IDColumns | None = None,
-            deps: list[CoercibleToFeatureDep] | None = None,
-            fields: Sequence[str | FieldSpec] | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
-            **kwargs: Any,
-        ) -> None: ...
-
-        # Implementation signature
-        def __init__(  # pyright: ignore[reportMissingSuperCall]
-            self,
-            *,
-            key: CoercibleToFeatureKey,
-            id_columns: IDColumns | None = None,
-            deps: list[FeatureDep] | list[CoercibleToFeatureDep] | None = None,
-            fields: Sequence[str | FieldSpec] | None = None,
-            metadata: Mapping[str, JsonValue] | None = None,
-            **kwargs: Any,
-        ) -> None: ...  # pyright: ignore[reportMissingSuperCall]

@@ -5,7 +5,8 @@ import pytest
 from pydantic import ValidationError
 from pydantic.types import JsonValue
 
-from metaxy import Feature, FeatureKey, SampleFeatureSpec
+from metaxy import Feature, FeatureKey
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 

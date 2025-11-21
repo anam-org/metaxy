@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 import narwhals as nw
 import polars as pl
-import pytest
 
 from metaxy.utils.hashing import get_hash_truncation_length
 
@@ -64,6 +63,8 @@ def skip_exception(exception: type[Exception], reason: str):
                 # Try to run the test
                 return f(*args, **kwargs)
             except exception:
+                import pytest
+
                 # If exception of given type happens
                 # just swallow it and raise pytest.Skip with given reason
                 pytest.skip(f"skipped {exception.__name__}: {reason}")

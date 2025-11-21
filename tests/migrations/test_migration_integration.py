@@ -17,9 +17,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage

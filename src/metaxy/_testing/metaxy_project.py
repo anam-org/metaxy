@@ -55,7 +55,8 @@ class TempFeatureModule:
         """
         code_lines = [
             "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, SampleFeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy import Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy._testing.models import SampleFeatureSpec",
             "from metaxy.models.feature import FeatureGraph",
             "",
             "# Use a dedicated graph for this temp module",

@@ -2,15 +2,8 @@
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import Feature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:

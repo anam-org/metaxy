@@ -8,8 +8,9 @@ import pytest
 from pydantic import ValidationError
 from typing_extensions import assert_type
 
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import Feature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.types import (
     FeatureKey,
     FieldKey,
@@ -382,7 +383,7 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_string_key(self):
         """Test SampleFeatureSpec accepts FeatureKey as string."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         spec = SampleFeatureSpec(key="my/feature")
 
@@ -392,7 +393,7 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_list_key(self):
         """Test SampleFeatureSpec accepts FeatureKey as list."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         spec = SampleFeatureSpec(key=["my", "feature"])
 
@@ -402,7 +403,7 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_feature_key_instance(self):
         """Test SampleFeatureSpec accepts FeatureKey instance."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         key = FeatureKey(["my", "feature"])
         spec = SampleFeatureSpec(key=key)
@@ -467,7 +468,8 @@ class TestFeatureSpecIntegration:
 
     def test_complete_feature_spec_with_list_keys(self):
         """Test complete SampleFeatureSpec with all keys created using list format."""
-        from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
+        from metaxy.models.feature_spec import FeatureDep
         from metaxy.models.field import FieldSpec
 
         spec = SampleFeatureSpec(

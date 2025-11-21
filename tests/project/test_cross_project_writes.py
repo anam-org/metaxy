@@ -10,7 +10,8 @@ import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.models.feature import FeatureGraph

@@ -1271,7 +1271,3 @@ class Feature(BaseFeature, spec=None):
     """
 
     # spec: ClassVar[FeatureSpec]
-
-
-class TestingFeature(BaseFeature, spec=None):
-    sample_uid: str | None = None

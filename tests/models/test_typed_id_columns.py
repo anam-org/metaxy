@@ -6,11 +6,12 @@ import narwhals as nw
 import polars as pl
 import pytest
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import FeatureKey, FieldKey
@@ -121,7 +122,7 @@ def test_narwhals_joiner_empty_upstream(graph: FeatureGraph):
 
     # Create source feature with custom ID columns (just names, no types)
     class SourceFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["source"]),
             id_columns=["user_uuid", "event_time", "score"],
@@ -155,7 +156,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
 
     # Feature with one set of ID columns
     class Feature1(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test1"]),
             id_columns=["entity_id"],
@@ -165,7 +166,7 @@ def test_feature_version_changes_with_different_id_columns(graph: FeatureGraph):
 
     # Feature with different ID columns
     class Feature2(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test2"]),
             id_columns=["user_id", "session_id"],
@@ -183,7 +184,7 @@ def test_composite_key(graph: FeatureGraph):
 
     # Create feature with composite key
     class CompositeKeyFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["composite"]),
             id_columns=["tenant_id", "user_id", "timestamp", "is_active"],
@@ -215,7 +216,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
 
     # Create upstream with custom ID column
     class UpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             id_columns=["content_id"],
@@ -225,7 +226,7 @@ def test_joining_with_custom_id_columns(graph: FeatureGraph):
 
     # Create target depending on upstream with same ID column
     class TargetFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["target"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -284,7 +285,7 @@ def test_metadata_store_with_custom_id_columns(graph: FeatureGraph):
 
     # Create feature with custom ID
     class CustomIDFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["custom_id"]),
             id_columns=["uuid"],

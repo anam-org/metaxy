@@ -19,13 +19,13 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    SampleFeatureSpec,
 )
 from metaxy._testing import (
     HashAlgorithmCases,
     add_metaxy_provenance_column,
     assert_all_results_equal,
 )
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._testing.pytest_helpers import skip_exception
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,

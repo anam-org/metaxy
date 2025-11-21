@@ -6,7 +6,8 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.metadata_store.base import allow_feature_version_override
 

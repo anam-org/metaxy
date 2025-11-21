@@ -6,11 +6,11 @@ from contextvars import copy_context
 import polars as pl
 import pytest
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
+from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import (
     MIN_TRUNCATION_LENGTH,
@@ -241,7 +241,7 @@ class TestFeatureVersionTruncation:
 
         # Create feature without truncation
         class TestFeature1(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature1"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -258,7 +258,7 @@ class TestFeatureVersionTruncation:
         with config.use():
 
             class TestFeature2(
-                TestingFeature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -274,7 +274,7 @@ class TestFeatureVersionTruncation:
         """Test that snapshot versions are truncated."""
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -298,7 +298,7 @@ class TestFeatureVersionTruncation:
         """Test that field versions are truncated."""
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[
@@ -397,7 +397,7 @@ class TestMetadataStoreTruncation:
 
         # Create feature
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -446,7 +446,7 @@ class TestMigrationCompatibility:
         with config.use():
 
             class TestFeature(
-                TestingFeature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -466,7 +466,7 @@ class TestMigrationCompatibility:
                 graph.remove_feature(FeatureKey(["test", "feature"]))
 
                 class TestFeature(  # noqa: F811
-                    TestingFeature,
+                    SampleFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["test", "feature"]),
                         fields=[
@@ -513,7 +513,7 @@ class TestEndToEnd:
         with config.use():
             # Create features
             class ParentFeature(
-                TestingFeature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["parent"]),
                     fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -524,7 +524,7 @@ class TestEndToEnd:
             from metaxy.models.feature_spec import FeatureDep
 
             class ChildFeature(
-                TestingFeature,
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["child"]),
                     fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],

@@ -7,7 +7,8 @@ def test_graph_push_first_time(metaxy_project: TempMetaxyProject):
     """Test graph push records snapshot on first run."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -31,7 +32,8 @@ def test_graph_push_already_recorded(metaxy_project: TempMetaxyProject):
     """Test graph push shows 'already recorded' on second run."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -58,7 +60,8 @@ def test_graph_history_empty(metaxy_project: TempMetaxyProject):
     """Test graph history with no snapshots recorded."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -80,7 +83,8 @@ def test_graph_history_with_snapshots(metaxy_project: TempMetaxyProject):
     """Test graph history displays recorded snapshots."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -110,7 +114,8 @@ def test_graph_history_with_limit(metaxy_project: TempMetaxyProject):
     """Test graph history with --limit flag."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -136,7 +141,8 @@ def test_graph_describe_current(metaxy_project: TempMetaxyProject):
     """Test graph describe shows current graph metrics."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -164,7 +170,8 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
     """Test graph describe with dependent features shows correct depth."""
 
     def root_features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -183,8 +190,8 @@ def test_graph_describe_with_dependencies(metaxy_project: TempMetaxyProject):
             FieldDep,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             Feature,
@@ -226,7 +233,8 @@ def test_graph_describe_historical_snapshot(metaxy_project: TempMetaxyProject):
     """Test graph describe with specific snapshot version."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -264,7 +272,8 @@ def test_graph_commands_with_store_flag(metaxy_project: TempMetaxyProject):
     """Test graph commands work with --store flag."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -287,7 +296,8 @@ def test_graph_workflow_integration(metaxy_project: TempMetaxyProject):
     """Test complete workflow: push -> history -> describe."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -339,7 +349,8 @@ def test_graph_render_terminal_basic(metaxy_project: TempMetaxyProject):
     """Test basic terminal rendering."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -364,7 +375,8 @@ def test_graph_render_cards_format(metaxy_project: TempMetaxyProject):
     """Test cards format rendering."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -388,7 +400,8 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
     """Test rendering graph with dependencies shows edges."""
 
     def root_features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -407,8 +420,8 @@ def test_graph_render_with_dependencies(metaxy_project: TempMetaxyProject):
             FieldDep,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             Feature,
@@ -452,7 +465,8 @@ def test_graph_render_mermaid_format(metaxy_project: TempMetaxyProject):
     """Test Mermaid format rendering."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -476,7 +490,8 @@ def test_graph_render_minimal_preset(metaxy_project: TempMetaxyProject):
     """Test minimal preset hides version information."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -500,7 +515,8 @@ def test_graph_render_verbose_preset(metaxy_project: TempMetaxyProject):
     """Test verbose preset shows all information."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -526,7 +542,8 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
     """Test graph rendering with focus feature filtering."""
 
     def root_features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -544,8 +561,8 @@ def test_graph_render_with_filtering(metaxy_project: TempMetaxyProject):
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             Feature,
@@ -578,7 +595,8 @@ def test_graph_render_output_to_file(metaxy_project: TempMetaxyProject):
     """Test rendering output to file."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -614,7 +632,8 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
     """Test that field dependencies are shown in rendering."""
 
     def root_features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -633,8 +652,8 @@ def test_graph_render_field_dependencies(metaxy_project: TempMetaxyProject):
             FieldDep,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoProcessing(
             Feature,
@@ -676,7 +695,8 @@ def test_graph_render_custom_flags(metaxy_project: TempMetaxyProject):
     """Test custom rendering flags."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -709,8 +729,8 @@ def test_graph_render_graphviz_format(metaxy_project: TempMetaxyProject, snapsho
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class Parent(
             Feature,
@@ -752,8 +772,8 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class Upstream(
             Feature,
@@ -781,8 +801,8 @@ def test_graph_push_metadata_only_changes(metaxy_project: TempMetaxyProject):
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class Upstream(
             Feature,
@@ -832,7 +852,8 @@ def test_graph_push_no_changes(metaxy_project: TempMetaxyProject):
     """Test CLI output when nothing changed (GitHub issue #86)."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
             Feature,
@@ -867,8 +888,8 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class Upstream(
             Feature,
@@ -896,8 +917,8 @@ def test_graph_push_three_scenarios_integration(metaxy_project: TempMetaxyProjec
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class Upstream(
             Feature,
@@ -958,8 +979,8 @@ def test_graph_push_multiple_features_metadata_changes(
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class FeatureA(
             Feature,
@@ -997,8 +1018,8 @@ def test_graph_push_multiple_features_metadata_changes(
             FeatureKey,
             FieldKey,
             FieldSpec,
-            SampleFeatureSpec,
         )
+        from metaxy._testing.models import SampleFeatureSpec
 
         class FeatureA(
             Feature,

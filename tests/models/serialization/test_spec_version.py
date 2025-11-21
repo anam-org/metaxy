@@ -5,13 +5,8 @@ import json
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.system import SystemTableStorage
 
 

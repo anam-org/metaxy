@@ -13,9 +13,9 @@ import pytest
 from pytest_cases import parametrize_with_cases
 
 from metaxy._testing import add_metaxy_provenance_column
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.metadata_store.base import MetadataStore
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from tests.metadata_stores.conftest import (
@@ -23,12 +23,12 @@ from tests.metadata_stores.conftest import (
 )
 
 
-def create_video_embeddings_feature(graph: FeatureGraph) -> type[TestingFeature]:
+def create_video_embeddings_feature(graph: FeatureGraph) -> type[SampleFeature]:
     """Create the test root feature within the provided graph context."""
     with graph.use():
 
         class VideoEmbeddingsFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test_root", "video_embeddings"]),
                 # No upstream dependencies

@@ -22,9 +22,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations import detect_diff_migration
 
