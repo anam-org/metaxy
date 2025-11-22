@@ -12,9 +12,8 @@ from sqlmodel import Field
 from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy import (
-    get_features_sqlalchemy_metadata,
-    get_metaxy_system_metadata,
-    get_store_sqlalchemy_url,
+    get_feature_sqla_metadata_for_store,
+    get_system_sqla_metadata_for_store,
 )
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 
@@ -40,6 +39,13 @@ def config_project_a(_clear_sqlmodel_metadata):
     """Config for project A with both project_a and project_b features defined."""
     config = MetaxyConfig(
         project="project_a",
+        store="test_store",
+        stores={  # pyright: ignore[reportArgumentType]
+            "test_store": {
+                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "config": {"database": ":memory:"},
+            }
+        },
     )
     with config.use():
         # Define ProjectAFeature within the config context
@@ -85,6 +91,13 @@ def config_project_b(_clear_sqlmodel_metadata):
     """Config for project B."""
     config = MetaxyConfig(
         project="project_b",
+        store="test_store",
+        stores={  # pyright: ignore[reportArgumentType]
+            "test_store": {
+                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "config": {"database": ":memory:"},
+            }
+        },
     )
     with config.use():
         # Define ProjectBFeature within the config context
@@ -110,6 +123,13 @@ def config_no_filter(_clear_sqlmodel_metadata):
     """Config with filtering disabled."""
     config = MetaxyConfig(
         project="project_a",
+        store="test_store",
+        stores={  # pyright: ignore[reportArgumentType]
+            "test_store": {
+                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "config": {"database": ":memory:"},
+            }
+        },
     )
     with config.use():
         # Define both features for the no-filter test
@@ -149,16 +169,28 @@ def config_no_filter(_clear_sqlmodel_metadata):
 
 def test_get_metaxy_system_metadata():
     """Test retrieving system table metadata."""
-    metadata = get_metaxy_system_metadata()
+    config = MetaxyConfig(
+        project="test",
+        store="test_store",
+        stores={  # pyright: ignore[reportArgumentType]
+            "test_store": {
+                "type": "metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                "config": {"database": ":memory:"},
+            }
+        },
+    )
 
-    # Should contain system tables
-    assert "metaxy_system__feature_versions" in metadata.tables
-    assert "metaxy_system__events" in metadata.tables
+    with config.use():
+        url, metadata = get_system_sqla_metadata_for_store()
+
+        # Should contain system tables
+        assert "metaxy_system__feature_versions" in metadata.tables
+        assert "metaxy_system__events" in metadata.tables
 
 
 def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
     """Test that user features are filtered by project."""
-    metadata = get_features_sqlalchemy_metadata()
+    url, metadata = get_feature_sqla_metadata_for_store()
 
     # Should only contain project_a features
     assert "project_a__feature" in metadata.tables
@@ -167,7 +199,7 @@ def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
     """Test filtering for a different project."""
-    metadata = get_features_sqlalchemy_metadata()
+    url, metadata = get_feature_sqla_metadata_for_store()
 
     # Should only contain project_b features
     assert "project_b__feature" in metadata.tables
@@ -177,7 +209,7 @@ def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
 def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
     """Test explicit project parameter."""
     # Get metadata for project_b even though current project is project_a
-    metadata = get_features_sqlalchemy_metadata(project="project_b")
+    url, metadata = get_feature_sqla_metadata_for_store(project="project_b")
 
     assert "project_b__feature" in metadata.tables
     assert "project_a__feature" not in metadata.tables
@@ -185,7 +217,7 @@ def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_no_filter(config_no_filter):
     """Test that filtering can be disabled."""
-    metadata = get_features_sqlalchemy_metadata(filter_by_project=False)
+    url, metadata = get_feature_sqla_metadata_for_store(filter_by_project=False)
 
     # Should contain all features when filtering is disabled
     assert "project_a__feature" in metadata.tables
@@ -206,7 +238,7 @@ def test_get_store_sqlalchemy_url_default_store():
     )
 
     with config.use():
-        url = get_store_sqlalchemy_url()
+        url, metadata = get_system_sqla_metadata_for_store()
         assert url == "duckdb:///test.db"
 
 
@@ -227,8 +259,8 @@ def test_get_store_sqlalchemy_url_named_store():
     )
 
     with config.use():
-        url1 = get_store_sqlalchemy_url("store1")
-        url2 = get_store_sqlalchemy_url("store2")
+        url1, metadata1 = get_system_sqla_metadata_for_store("store1")
+        url2, metadata2 = get_system_sqla_metadata_for_store("store2")
         assert url1 == "duckdb:///store1.db"
         assert url2 == "duckdb:///store2.db"
 
@@ -249,7 +281,7 @@ def test_get_store_sqlalchemy_url_error_no_property():
         with pytest.raises(
             AttributeError, match="does not have a `sqlalchemy_url` property"
         ):
-            get_store_sqlalchemy_url("memory_store")
+            get_system_sqla_metadata_for_store("memory_store")
 
 
 def test_get_store_sqlalchemy_url_error_no_url():

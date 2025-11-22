@@ -6,7 +6,7 @@ It is the primary way to use Metaxy with database-backed [metadata stores](../le
 
 !!! tip
 
-    This integration should be used together with the [SQLAlchemy integration](sqlalchemy.md). See [Alembic instructions](sqlalchemy.md#alembic) for more details on how to set up database migrations.
+    This integration should be used together with the [SQLAlchemy integration](sqlalchemy.md). See [Alembic instructions](sqlalchemy.md#alembic-integration) for more details on how to set up database migrations.
 
 ## Installation
 

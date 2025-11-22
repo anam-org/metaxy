@@ -105,164 +105,41 @@ def create_system_tables(
     return feature_versions_table, events_table
 
 
-def get_system_metadata(
-    table_prefix: str = "",
-    inject_primary_key: bool = False,
-) -> MetaData:
-    """Get SQLAlchemy metadata containing only system tables.
-
-    Returns a new MetaData object with system table definitions.
-    This can be used with database migration tools like Alembic.
+# Internal helper for getting store's table_prefix
+def _get_table_prefix(store_name: str | None = None) -> str:
+    """Get table_prefix from a metadata store.
 
     Args:
-        table_prefix: Optional prefix to prepend to table names (e.g., "dev_")
-        inject_primary_key: If True, include primary key constraints
+        store_name: Name of the metadata store. If None, uses default store.
 
     Returns:
-        MetaData containing system table definitions
-
-    Example:
-
-        ```py
-        from metaxy.ext.sqlalchemy import get_system_metadata
-
-        # Use with Alembic target_metadata
-        target_metadata = get_system_metadata()
-
-        # With custom prefix
-        target_metadata = get_system_metadata(table_prefix="dev_")
-        ```
-    """
-    metadata = MetaData()
-    create_system_tables(
-        metadata, inject_primary_key=inject_primary_key, table_prefix=table_prefix
-    )
-    return metadata
-
-
-# Helper Functions
-
-
-def get_metaxy_system_metadata(
-    store_name: str | None = None,
-    inject_primary_key: bool = False,
-) -> MetaData:
-    """Get SQLAlchemy metadata containing metaxy system tables.
-
-    This function returns the metadata object containing metaxy system tables
-    which can be used with migration tools like Alembic. If a store_name is provided,
-    the table_prefix from that store will be used.
-
-    Args:
-        store_name: Name of the metadata store to get table_prefix from.
-                   If None, uses default store.
-        inject_primary_key: If True, include primary key constraints
-
-    Returns:
-        SQLAlchemy MetaData containing metaxy system table definitions
-
-    Example:
-
-        ```py
-        from metaxy.ext.sqlalchemy import get_metaxy_system_metadata
-
-        # Get system tables metadata for migrations
-        target_metadata = get_metaxy_system_metadata()
-
-        # Get metadata for specific store (with its table_prefix)
-        target_metadata = get_metaxy_system_metadata(store_name="prod")
-        ```
+        Table prefix string (empty string if not set)
     """
     config = MetaxyConfig.get()
     store = config.get_store(store_name)
-
-    # Get table_prefix from store if available
-    table_prefix = getattr(store, "table_prefix", "")
-
-    return get_system_metadata(
-        table_prefix=table_prefix,
-        inject_primary_key=inject_primary_key,
-    )
+    return getattr(store, "table_prefix", "")
 
 
-def add_metaxy_system_metadata(
-    target_metadata: MetaData,
-    store_name: str | None = None,
-) -> MetaData:
-    """Include metaxy system tables in existing metadata.
-
-    This is a convenience function that adds metaxy system tables
-    to your existing SQLAlchemy metadata object. If a store_name is provided,
-    the table_prefix from that store will be used.
-
-    Args:
-        target_metadata: Your application's metadata object
-        store_name: Name of the metadata store to get table_prefix from.
-                   If None, uses default store.
-
-    Returns:
-        The same metadata object with metaxy tables added
-
-    Example:
-
-        ```py
-        from metaxy.ext.sqlalchemy import add_metaxy_system_metadata
-        from myapp.models import metadata
-
-        # Add metaxy tables to your metadata
-        target_metadata = add_metaxy_system_metadata(metadata)
-
-        # Add tables for specific store (with its table_prefix)
-        target_metadata = add_metaxy_system_metadata(metadata, store_name="prod")
-        ```
-    """
-    metaxy_metadata = get_metaxy_system_metadata(store_name=store_name)
-
-    # Copy tables from metaxy metadata to target metadata
-    for table_name, table in metaxy_metadata.tables.items():
-        if table_name not in target_metadata.tables:
-            # Create a new table with the same definition in target metadata
-            table.to_metadata(target_metadata)
-
-    return target_metadata
-
-
-def get_store_sqlalchemy_url(store_name: str | None = None) -> str:
+def _get_store_sqlalchemy_url(store_name: str | None = None) -> str:
     """Get SQLAlchemy URL from a configured MetadataStore.
 
-    This helper retrieves the sqlalchemy_url property from a named
-    MetadataStore in the MetaxyConfig.
-
     Args:
-        store_name: Name of the store in MetaxyConfig.stores.
-                   If None, uses the default store (MetaxyConfig.store)
+        store_name: Name of the store. If None, uses default store.
 
     Returns:
         SQLAlchemy connection URL string
 
     Raises:
-        ValueError: If store not found or doesn't support sqlalchemy_url
         AttributeError: If store doesn't have sqlalchemy_url property
-
-    Example:
-        ```py
-        from metaxy.ext.sqlalchemy import get_store_sqlalchemy_url
-
-        # Get URL from default store
-        sqlalchemy_url = get_store_sqlalchemy_url()
-
-        # Get URL from specific store
-        sqlalchemy_url = get_store_sqlalchemy_url("prod")
-        ```
+        ValueError: If sqlalchemy_url is empty
     """
     config = MetaxyConfig.get()
     store = config.get_store(store_name)
 
-    # Check if store has sqlalchemy_url property
     if not hasattr(store, "sqlalchemy_url"):
         raise AttributeError(
             f"MetadataStore '{store_name or config.store}' (type: {type(store).__name__}) "
-            f"does not have a `sqlalchemy_url` property. "
+            f"does not have a `sqlalchemy_url` property."
         )
 
     url = getattr(store, "sqlalchemy_url")
@@ -275,91 +152,86 @@ def get_store_sqlalchemy_url(store_name: str | None = None) -> str:
     return url
 
 
-def get_store_metadata_and_url(
-    store_name: str | None = None,
+def _get_system_metadata(
+    table_prefix: str = "",
     inject_primary_key: bool = False,
-) -> tuple[str, MetaData]:
-    """Get both SQLAlchemy URL and system table metadata for a metadata store.
-
-    This is a convenience function that retrieves both the connection URL
-    and system table metadata for a store, with the store's table_prefix
-    automatically applied to table names.
+) -> MetaData:
+    """Create SQLAlchemy metadata containing system tables.
 
     Args:
-        store_name: Name of the metadata store. If None, uses default store.
+        table_prefix: Optional prefix to prepend to table names
         inject_primary_key: If True, include primary key constraints
 
     Returns:
-        Tuple of (sqlalchemy_url, system_metadata_with_table_prefix)
+        MetaData containing system table definitions
+    """
+    metadata = MetaData()
+    create_system_tables(
+        metadata, inject_primary_key=inject_primary_key, table_prefix=table_prefix
+    )
+    return metadata
+
+
+def get_system_sqla_metadata_for_store(
+    store_name: str | None = None,
+    inject_primary_key: bool = False,
+) -> tuple[str, MetaData]:
+    """Get SQLAlchemy URL and system table metadata for a metadata store.
+
+    This function retrieves both the connection URL and system table metadata
+    for a store, with the store's table_prefix automatically applied to table names.
+
+    Args:
+        store_name: Name of the metadata store. If None, uses default store.
+        inject_primary_key: If True, include primary key constraints.
+
+    Returns:
+        Tuple of (sqlalchemy_url, system_metadata)
 
     Raises:
-        ValueError: If store doesn't support sqlalchemy_url
         AttributeError: If store doesn't have sqlalchemy_url property
+        ValueError: If store's sqlalchemy_url is empty
 
     Example:
 
         ```py
-        from metaxy.ext.sqlalchemy import get_store_metadata_and_url
+        from metaxy.ext.sqlalchemy import get_system_sqla_metadata_for_store
 
         # Get URL and metadata for default store
-        url, metadata = get_store_metadata_and_url()
+        url, metadata = get_system_sqla_metadata_for_store()
 
         # Get URL and metadata for specific store
-        url, metadata = get_store_metadata_and_url("prod")
+        url, metadata = get_system_sqla_metadata_for_store("prod")
 
-        # Use with Alembic
+        # Use with Alembic env.py
         from alembic import context
-        url, target_metadata = get_store_metadata_and_url()
+        url, target_metadata = get_system_sqla_metadata_for_store()
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-    url = get_store_sqlalchemy_url(store_name)
-    metadata = get_metaxy_system_metadata(
-        store_name, inject_primary_key=inject_primary_key
+    url = _get_store_sqlalchemy_url(store_name)
+    table_prefix = _get_table_prefix(store_name)
+    metadata = _get_system_metadata(
+        table_prefix=table_prefix, inject_primary_key=inject_primary_key
     )
     return url, metadata
 
 
-def get_features_sqlalchemy_metadata(
+def _get_features_metadata(
     project: str | None = None,
     filter_by_project: bool = True,
 ) -> MetaData:
-    """Get SQLAlchemy metadata for user-defined feature tables filtered by project.
-
-    This function returns metadata containing only feature tables that belong
-    to the specified project. By default, uses the project from MetaxyConfig
-    and filters by that project.
-
-    Note:
-        This function requires SQLModel to be installed and looks for tables
-        registered in SQLModel.metadata.
+    """Get SQLAlchemy metadata for user-defined feature tables.
 
     Args:
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
-                          If False, include all SQLModel tables.
 
     Returns:
-        SQLAlchemy MetaData containing filtered feature table definitions
+        SQLAlchemy MetaData containing feature table definitions
 
     Raises:
         ImportError: If SQLModel is not installed
-
-    Example:
-
-        ```py
-        from metaxy.ext.sqlalchemy import get_features_sqlalchemy_metadata
-        from metaxy import init_metaxy
-
-        # Load features
-        init_metaxy()
-
-        # Get metadata for current project only (default)
-        target_metadata = get_features_sqlalchemy_metadata()
-
-        # Get metadata for all projects
-        target_metadata = get_features_sqlalchemy_metadata(filter_by_project=False)
-        ```
     """
     from sqlalchemy import MetaData
     from sqlmodel import SQLModel
@@ -382,8 +254,6 @@ def get_features_sqlalchemy_metadata(
 
     # Filter tables by project using Feature.project class attribute
     for table_name, table in SQLModel.metadata.tables.items():
-        # Find the corresponding Feature class
-        # Iterate through all registered SQLModelFeature classes
         should_include = False
 
         for feature_cls in BaseSQLModelFeature.__subclasses__():
@@ -404,16 +274,16 @@ def get_features_sqlalchemy_metadata(
     return filtered_metadata
 
 
-def get_features_store_metadata_and_url(
+def get_feature_sqla_metadata_for_store(
     store_name: str | None = None,
     project: str | None = None,
     filter_by_project: bool = True,
 ) -> tuple[str, MetaData]:
-    """Get both SQLAlchemy URL and feature metadata for a metadata store.
+    """Get SQLAlchemy URL and feature table metadata for a metadata store.
 
-    This is a convenience function that retrieves both the connection URL
-    and feature table metadata for a store. This makes it easy to configure
-    migration tools like Alembic.
+    This function retrieves both the connection URL and feature table metadata
+    for a store. By default, filters tables to include only features belonging
+    to the specified project.
 
     Note:
         This function requires SQLModel to be installed and looks for tables
@@ -429,28 +299,31 @@ def get_features_store_metadata_and_url(
         Tuple of (sqlalchemy_url, feature_metadata)
 
     Raises:
-        ValueError: If store doesn't support sqlalchemy_url
         AttributeError: If store doesn't have sqlalchemy_url property
+        ValueError: If store's sqlalchemy_url is empty
         ImportError: If SQLModel is not installed
 
     Example:
 
         ```py
-        from metaxy.ext.sqlalchemy import get_features_store_metadata_and_url
+        from metaxy.ext.sqlalchemy import get_feature_sqla_metadata_for_store
         from metaxy import init_metaxy
 
-        # Load features
+        # Load features first
         init_metaxy()
 
         # Get URL and metadata for default store
-        url, metadata = get_features_store_metadata_and_url()
+        url, metadata = get_feature_sqla_metadata_for_store()
 
-        # Use with Alembic
+        # Get URL and metadata for specific store and project
+        url, metadata = get_feature_sqla_metadata_for_store("prod", "my_project")
+
+        # Use with Alembic env.py
         from alembic import context
-        url, target_metadata = get_features_store_metadata_and_url()
+        url, target_metadata = get_feature_sqla_metadata_for_store()
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-    url = get_store_sqlalchemy_url(store_name)
-    metadata = get_features_sqlalchemy_metadata(project, filter_by_project)
+    url = _get_store_sqlalchemy_url(store_name)
+    metadata = _get_features_metadata(project, filter_by_project)
     return url, metadata
