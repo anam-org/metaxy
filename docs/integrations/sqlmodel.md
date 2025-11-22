@@ -1,14 +1,12 @@
-# SQLModel Integration
+# Metaxy + SQLModel
 
-The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to function as both metadata-tracked features and SQLAlchemy ORM models.
+The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to also act as [SQLAlchemy](https://www.sqlalchemy.org/) ORM models. It exposes user-defined feature tables to SQLAlchemy.
 
-This integration combines Metaxy's versioning and dependency tracking with SQLModel's database mapping and query capabilities.
-
-It is the primary way to use Metaxy with database-backed [metadata stores](../learn/metadata-stores.md). This integration can also expose `sqlalchemy` metadata to database migration tooling such as [Alembic](https://alembic.sqlalchemy.org/).
+It is the primary way to use Metaxy with database-backed [metadata stores](../learn/metadata-stores.md).
 
 !!! tip
 
-    Check out our [sqlalchemy integration](../integrations/sqlalchemy.md) for Alembic instructions.
+    This integration should be used together with the [SQLAlchemy integration](sqlalchemy.md). See [Alembic instructions](sqlalchemy.md#alembic) for more details on how to set up database migrations.
 
 ## Installation
 
@@ -68,17 +66,13 @@ class VideoFeature(
     duration: float
 ```
 
-!!! tip "Database Migrations Generation"
-
-    You can use Alembic with the [sqlalchemy integration](sqlalchemy.md) to automatically detect feature tables and generate migration scripts.
-
 !!! warning "Do Not Use Server-Generated IDs"
 
     ID columns **should not be server-generated** because they are typically used to determine **data** locations such as object storage keys, so they have to be defined before **metadata** is inserted into the database
 
 !!! note "Automatic Table Naming"
 
-    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video"])`, the table name becomes `"video"`. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
+    When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
 
 ## Configuration Options
 

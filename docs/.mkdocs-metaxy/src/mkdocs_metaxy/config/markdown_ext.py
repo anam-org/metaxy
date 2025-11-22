@@ -11,6 +11,7 @@ and generate comprehensive documentation for each field.
 from __future__ import annotations
 
 import importlib
+import logging
 import re
 from typing import Any
 
@@ -24,6 +25,9 @@ from mkdocs_metaxy.config_generator import (
     generate_individual_field_doc,
     get_toml_path,
 )
+
+# Use MkDocs logging pattern for proper integration with --strict mode
+log = logging.getLogger("mkdocs.plugins.metaxy_config")
 
 
 class MetaxyConfigPreprocessor(Preprocessor):
@@ -90,6 +94,8 @@ class MetaxyConfigPreprocessor(Preprocessor):
                 markdown = self._process_directive(directive_content)
                 result_lines.append(markdown)
             except Exception as e:
+                # Log warning so strict mode fails
+                log.warning(f"Failed to process metaxy-config directive: {e}")
                 # Render error as admonition
                 error_msg = (
                     f'!!! error "Failed to process metaxy-config directive"\n\n'
