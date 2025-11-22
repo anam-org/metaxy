@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#alembic-integration" class="md-skip">
+        <a href="#metaxy-sqlalchemy" class="md-skip">
           Skip to content
         </a>
       
@@ -1142,13 +1142,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extsqlalchemyenable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.sqlalchemy.enable
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#alembic-example" class="md-nav__link">
+  <a href="#alembic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alembic Example
+        Alembic
       
     </span>
   </a>
@@ -2313,13 +2330,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extsqlalchemyenable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.sqlalchemy.enable
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#alembic-example" class="md-nav__link">
+  <a href="#alembic" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alembic Example
+        Alembic
       
     </span>
   </a>
@@ -2405,13 +2439,13 @@
   
 
 
-<h1 id="alembic-integration">Alembic Integration<a class="headerlink" href="#alembic-integration" title="Permanent link">&para;</a></h1>
+<h1 id="metaxy-sqlalchemy">Metaxy + SQLAlchemy<a class="headerlink" href="#metaxy-sqlalchemy" title="Permanent link">&para;</a></h1>
 <p>Metaxy provides helpers for integrating with <a href="https://www.sqlalchemy.org/">SQLAlchemy</a>.
-The helpers allow to construct <code>sqlalchemy.MetaData</code> objects for Metaxy system tables and user-defined feature tables.</p>
+These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for user-defined feature tables and for Metaxy system tables.</p>
 <p>This integration is convenient for setting up <a href="https://alembic.sqlalchemy.org/en/latest/">Alembic</a> migrations.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Check out our <a href="../sqlmodel/">SQLModel integration</a></p>
+<p>Check out our <a href="../sqlmodel/">SQLModel integration</a> to learn how to set up <code>sqlalchemy</code> metadata for user-defined feature tables.</p>
 </div>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>The integration has to be enabled in <code>metaxy.toml</code>:</p>
@@ -2421,57 +2455,72 @@ The helpers allow to construct <code>sqlalchemy.MetaData</code> objects for Meta
 <p>See <a href="../../reference/api/ext/sqlalchemy/">API reference</a> for the exact set of provided functions.</p>
 <h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
-<div class="admonition error">
-<p class="admonition-title">Failed to process metaxy-config directive</p>
-<p>Failed to import class 'metaxy.ext.sqlalchemy.SQLAlchemyPluginConfig': module 'metaxy.ext.sqlalchemy' has no attribute 'SQLAlchemyPluginConfig'</p>
+<h3 id="extsqlalchemyenable"><code>ext.sqlalchemy.enable</code><a class="headerlink" href="#extsqlalchemyenable" title="Permanent link">&para;</a></h3>
+<p>Whether to enable the plugin.</p>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="extsqlalchemyenable-metaxytoml" name="__tabbed_1" type="radio" /><input id="extsqlalchemyenable-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="extsqlalchemyenable-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="extsqlalchemyenable-metaxytoml">metaxy.toml</label><label for="extsqlalchemyenable-pyprojecttoml">pyproject.toml</label><label for="extsqlalchemyenable-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlalchemy]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
 </div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlalchemy]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLALCHEMY_ENABLE</span><span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
 <!-- dprint-ignore-end -->
 
-<h2 id="alembic-example">Alembic Example<a class="headerlink" href="#alembic-example" title="Permanent link">&para;</a></h2>
-<p>Here is an example <code>env.py</code> that makes use of the integration:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">logging.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">fileConfig</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">engine_from_config</span><span class="p">,</span> <span class="n">pool</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_features_sqlalchemy_metadata</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_store_sqlalchemy_url</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># Alembic Config object</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1"># Interpret the config file for logging</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">config_file_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a>    <span class="n">fileConfig</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">config_file_name</span><span class="p">)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1"># Load features and get metadata</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="n">target_metadata</span> <span class="o">=</span> <span class="n">get_features_sqlalchemy_metadata</span><span class="p">()</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="c1"># Get database URL from metadata store</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a><span class="n">config</span><span class="o">.</span><span class="n">set_main_option</span><span class="p">(</span><span class="s2">&quot;sqlalchemy.url&quot;</span><span class="p">,</span> <span class="n">get_store_sqlalchemy_url</span><span class="p">(</span><span class="s2">&quot;my-store&quot;</span><span class="p">))</span>
+<h2 id="alembic">Alembic<a class="headerlink" href="#alembic" title="Permanent link">&para;</a></h2>
+<p><a href="https://alembic.sqlalchemy.org/en/latest/">Alembic</a> is a database migration toolkit for SQLAlchemy.
+Here is an example Alembic <code>env.py</code> that makes use of the Metaxy integration with SQLAlchemy:</p>
+<div class="language-python highlight"><span class="filename">env.py</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a>    <span class="n">get_features_sqlalchemy_metadata</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a>    <span class="n">get_store_sqlalchemy_url</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># Alembic Config object</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1"># Load features and get metadata</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a><span class="n">target_metadata</span> <span class="o">=</span> <span class="n">get_features_sqlalchemy_metadata</span><span class="p">()</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1"># Get database URL from metadata store</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="n">config</span><span class="o">.</span><span class="n">set_main_option</span><span class="p">(</span><span class="s2">&quot;sqlalchemy.url&quot;</span><span class="p">,</span> <span class="n">get_store_sqlalchemy_url</span><span class="p">(</span><span class="s2">&quot;my-store&quot;</span><span class="p">))</span>
 </span></code></pre></div>
 <h2 id="multi-store-setup">Multi-Store Setup<a class="headerlink" href="#multi-store-setup" title="Permanent link">&para;</a></h2>
 <p>Configure separate Alembic stores for different environments:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[stores.dev]</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;dev_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="k">[stores.prod]</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;prod_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
+<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[stores.dev]</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;dev_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos="5 "></span></a><span class="k">[stores.prod]</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos="7 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;prod_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
 </span></code></pre></div>
 <p>Then create multiple Alembic directories:</p>
-<div class="language-ini highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[dev]</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="na">alembic_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;alembic/dev&quot;</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">[prod]</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos="5 "></span></a><span class="na">alembic_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;alembic/prod&quot;</span>
+<div class="language-ini highlight"><span class="filename">alembic.ini</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[dev]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="na">alembic_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;alembic/dev&quot;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">[prod]</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos="5 "></span></a><span class="na">alembic_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;alembic/prod&quot;</span>
 </span></code></pre></div>
 <p>Each should have a <code>env.py</code> file.</p>
 <p>Use the <code>-n</code> argument to specify the environment:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">alembic</span> <span class="o">-</span><span class="n">n</span> <span class="n">dev</span> <span class="n">upgrade</span> <span class="n">head</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">alembic</span> <span class="o">-</span><span class="n">n</span> <span class="n">prod</span> <span class="n">upgrade</span> <span class="n">head</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev<span class="w"> </span>upgrade<span class="w"> </span>head
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>alembic<span class="w"> </span>-n<span class="w"> </span>prod<span class="w"> </span>upgrade<span class="w"> </span>head
 </span></code></pre></div>
 <h1 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h1>
 <ul>

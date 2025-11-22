@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#sqlmodel-integration" class="md-skip">
+        <a href="#metaxy-sqlmodel" class="md-skip">
           Skip to content
         </a>
       
@@ -2439,13 +2439,12 @@
   
 
 
-<h1 id="sqlmodel-integration">SQLModel Integration<a class="headerlink" href="#sqlmodel-integration" title="Permanent link">&para;</a></h1>
-<p>The <a href="https://sqlmodel.tiangolo.com/">SQLModel</a> integration enables Metaxy features to function as both metadata-tracked features and SQLAlchemy ORM models.</p>
-<p>This integration combines Metaxy's versioning and dependency tracking with SQLModel's database mapping and query capabilities.</p>
-<p>It is the primary way to use Metaxy with database-backed <a href="../../learn/metadata-stores/">metadata stores</a>. This integration can also expose <code>sqlalchemy</code> metadata to database migration tooling such as <a href="https://alembic.sqlalchemy.org/">Alembic</a>.</p>
+<h1 id="metaxy-sqlmodel">Metaxy + SQLModel<a class="headerlink" href="#metaxy-sqlmodel" title="Permanent link">&para;</a></h1>
+<p>The <a href="https://sqlmodel.tiangolo.com/">SQLModel</a> integration enables Metaxy features to also act as <a href="https://www.sqlalchemy.org/">SQLAlchemy</a> ORM models. It exposes user-defined feature tables to SQLAlchemy.</p>
+<p>It is the primary way to use Metaxy with database-backed <a href="../../learn/metadata-stores/">metadata stores</a>.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Check out our <a href="../sqlalchemy/">sqlalchemy integration</a> for Alembic instructions.</p>
+<p>This integration should be used together with the <a href="../sqlalchemy/">SQLAlchemy integration</a>. See <a href="../sqlalchemy/#alembic">Alembic instructions</a> for more details on how to set up database migrations.</p>
 </div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>The SQLModel integration requires the sqlmodel package:</p>
@@ -2499,17 +2498,13 @@
 </span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 </span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a>    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
 </span></code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Database Migrations Generation</p>
-<p>You can use Alembic with the <a href="../sqlalchemy/">sqlalchemy integration</a> to automatically detect feature tables and generate migration scripts.</p>
-</div>
 <div class="admonition warning">
 <p class="admonition-title">Do Not Use Server-Generated IDs</p>
 <p>ID columns <strong>should not be server-generated</strong> because they are typically used to determine <strong>data</strong> locations such as object storage keys, so they have to be defined before <strong>metadata</strong> is inserted into the database</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Automatic Table Naming</p>
-<p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video"])</code>, the table name becomes <code>"video"</code>. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in the plugin configuration.</p>
+<p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in the plugin configuration.</p>
 </div>
 <h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
