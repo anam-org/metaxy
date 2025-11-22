@@ -182,6 +182,7 @@ nav:
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
   - Integrations:
+    - integrations/index.md
     - SQLModel: integrations/sqlmodel.md
     - SQLAlchemy: integrations/sqlalchemy.md
   - Examples:

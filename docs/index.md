@@ -2,9 +2,9 @@
 
 Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
-It's [agnostic](#about-metaxy) to everything: compute engines, data storage, [metadata storage](learn/metadata-stores.md).
+It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](learn/metadata-stores.md).
 
-It has no strict infrastructure requirements and can use external databases for computations or run locally.
+It has no strict infrastructure requirements and can run computations in external databases or locally.
 
 It can scale to handle large amounts of **big metadata**.
 
@@ -34,9 +34,9 @@ But correctly distinguishing these scenarios from cases where the feature **shou
 Tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated.
 Until now, a general solution for this problem did not exist, but this is not the case anymore.
 
-## Metaxy to the rescue
+## Metaxy's solution
 
-Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second with a **migrations** system.
+Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second set with a **migrations** system.
 
 Metaxy builds a *versioned graphs* from feature definitions and tracks version changes.
 This graph can be snapshotted and saved at any point of time, typically during pipeline deployment.
@@ -106,7 +106,7 @@ Metaxy is:
     - comprehensive **type hints** and Pydantic integration for excellent IDE support
     - first-class support for **local development, testing, preview environments, CI/CD**
     - [CLI](./reference/cli.md) tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats
-    - integrations with popular tools such as [SQLModel](./integrations/sqlmodel.md), Dagster, and Ray.
+    - [integrations](integrations/index.md) with popular tools such as SQLModel and Dagster.
     - [testing helpers](./learn/testing.md) that you're going to appreciate
 
 ## Feature Dependencies
@@ -221,7 +221,9 @@ We have now successfully recorded the metadata for the computed samples! Process
 
 ## What's Next?
 
-- Learn more about feature [definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
+- Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
+
+- Explore [Metaxy integrations](integrations/index.md)
 
 - Use Metaxy [from the command line](./reference/cli.md)
 
