@@ -29,34 +29,38 @@ See [API reference](../reference/api/ext/sqlalchemy.md) for the exact set of pro
     header_level: 3
 <!-- dprint-ignore-end -->
 
-## Alembic
+## Alembic Integration
 
 [Alembic](https://alembic.sqlalchemy.org/en/latest/) is a database migration toolkit for SQLAlchemy.
-Here is an example Alembic `env.py` that makes use of the Metaxy integration with SQLAlchemy:
+
+The two helper functions: [`get_feature_sqla_metadata_for_store`][metaxy.ext.sqlalchemy.get_feature_sqla_metadata_for_store] and [`get_system_sqla_metadata_for_store`][metaxy.ext.sqlalchemy.get_system_sqla_metadata_for_store] can be used to retrieve an SQLAlchemy URL and `MetaData` object for a given [`metaxy.MetadataStore`][metaxy.MetadataStore] (given it's backed by an SQL database).
+
+`get_feature_sqla_metadata_for_store` returns table metadata for the user-defined tables, while `get_system_sqla_metadata_for_store` returns metadata for Metaxy's system tables.
+
+Here is an example Alembic `env.py` that uses the Metaxy SQLAlchemy integration:
 
 ```python title="env.py"
 from alembic import context
-
 from metaxy import init_metaxy
-from metaxy.ext.sqlalchemy import (
-    get_features_sqlalchemy_metadata,
-    get_store_sqlalchemy_url,
-)
+from metaxy.ext.sqlalchemy import get_feature_sqla_metadata_for_store
 
 # Alembic Config object
 config = context.config
 
-# Load features and get metadata
+# Load features and get URL + metadata from store
 init_metaxy()
-target_metadata = get_features_sqlalchemy_metadata()
+url, target_metadata = get_feature_sqla_metadata_for_store("my_store")
 
-# Get database URL from metadata store
-config.set_main_option("sqlalchemy.url", get_store_sqlalchemy_url("my-store"))
+# Configure Alembic
+config.set_main_option("sqlalchemy.url", url)
+
+
+# continue with the standard Alembic workflow
 ```
 
 ## Multi-Store Setup
 
-Configure separate Alembic stores for different environments:
+You can configure separate metadata stores for different environments:
 
 ```toml title="metaxy.toml"
 [stores.dev]
@@ -68,24 +72,45 @@ type = "metaxy.metadata_store.duckdb.DuckDBMetadataStore"
 config = { database = "prod_metadata.duckdb" }
 ```
 
-Then create multiple Alembic directories:
+Then create multiple Alembic directories and register them with Alembic:
 
 ```ini title="alembic.ini"
 [dev]
-alembic_dir = "alembic/dev"
+script_location = alembic/dev
 
 [prod]
-alembic_dir = "alembic/prod"
+script_location = alembic/prod
 ```
 
-Each should have a `env.py` file.
+The two environments now can be managed independently:
 
-Use the `-n` argument to specify the environment:
+=== "dev"
 
-```bash {linenums="0"}
-alembic -n dev upgrade head
-alembic -n prod upgrade head
-```
+    ```python title="alembic/dev/env.py" hl_lines="2"
+    url, target_metadata = get_feature_sqla_metadata_for_store(
+        store_name="dev"
+    )
+    ```
+
+    The `-n` argument can be used to specify the target Alembic directory:
+
+    ```bash
+    alembic -n dev upgrade head
+    ```
+
+=== "prod"
+
+    ```python title="alembic/prod/env.py"  hl_lines="2"
+    url, target_metadata = get_feature_sqla_metadata_for_store(
+        store_name="prod"
+    )
+    ```
+
+    The `-n` argument can be used to specify the target Alembic directory:
+
+    ```bash
+    alembic -n prod upgrade head
+    ```
 
 # Reference
 
