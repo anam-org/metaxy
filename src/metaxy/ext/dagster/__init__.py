@@ -8,6 +8,7 @@ from metaxy.ext.dagster.helpers import (
     create_video_partitions_def,
     filter_increment_by_partition,
     filter_samples_by_partition,
+    iter_dataframe_with_progress,
     limit_increment,
     sampling_config_schema,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "filter_increment_by_partition",
     "filter_samples_by_partition",
     "limit_increment",
+    "iter_dataframe_with_progress",
     "sampling_config_schema",
     "apply_sampling",
     "apply_increment_filter",

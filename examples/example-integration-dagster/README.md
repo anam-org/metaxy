@@ -5,11 +5,9 @@ They include metaxy specific progress logging and telemetry.
 
 This example bundle includes:
 
-- **Minimal** (`minimal.py`): Smallest end-to-end wiring.
-- **Data Parallel** (`data_parallel.py`): Process all samples at once.
-- **Event Parallel** (`event_parallel.py`): Process one entity (e.g., video) at a time through the entire pipeline.
-- **Subsampled + Key Filtered** (`subsampled.py`): Read a subsample from a fallback store and only process configured IDs.
-- **Branching Subset** (`branch_subset.py`): Use a branch store with production fallback and process only targeted keys.
+- **Non-Partitioned** (`non_partitioned.py`): Process all samples at once.
+- **Partitioned** (`partitioned.py`): Process one category at a time; each partition groups multiple videos, and each video has multiple rows (e.g., many frames).
+- **Branch + Subsample** (`branch_subsampled.py`): Read from production fallback into a branch store, and subsample per run (random size or explicit keys).
 
 ## Setup
 
@@ -67,6 +65,14 @@ dagster dev -m example_integration_dagster.branch_subsampled
 #     config:
 #       sample_mode: keys
 #       sample_keys: ["video_123", "video_456"]
+```
+
+### Progress/Logging Example
+
+Process in chunks with a tqdm-style progress bar (in TTY) and log updates:
+
+```bash
+dagster dev -m example_integration_dagster.progress_logging
 ```
 
 ## Key Concepts

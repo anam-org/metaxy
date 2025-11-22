@@ -7,7 +7,7 @@ import hashlib
 import inspect
 import json
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import dagster as dg
@@ -23,6 +23,20 @@ else:  # pragma: no cover - runtime imports only needed outside type checking
 from metaxy.models.field import FieldDep, SpecialFieldDep
 
 F = TypeVar("F", bound=Callable[..., Any])
+__all__ = [
+    "build_asset_spec_from_feature",
+    "build_asset_in_from_feature",
+    "build_partitioned_asset_spec_from_feature",
+    "filter_increment_by_partition",
+    "limit_increment",
+    "iter_dataframe_with_progress",
+    "apply_increment_filter",
+    "filter_samples_by_partition",
+    "create_video_partitions_def",
+    "asset",
+    "sampling_config_schema",
+    "apply_sampling",
+]
 
 
 def _sanitize_tag_value(value: str) -> str:
@@ -507,6 +521,119 @@ def limit_increment(increment: Increment, limit: int) -> Increment:
         added=increment.added.head(limit),
         changed=increment.changed.head(limit),
         removed=increment.removed.head(limit),
+    )
+
+
+def iter_dataframe_with_progress(
+    df: nw.DataFrame[Any],
+    *,
+    chunk_size: int = 500,
+    desc: str = "processing",
+    log_fn: Callable[[str], Any] | Any | None = None,
+    log_level: str = "info",
+    failed_count: int | Callable[[], int] | None = None,
+    show_eta: bool = True,
+    echo_to_stderr: bool = False,
+) -> Iterator[nw.DataFrame[Any]]:
+    """Yield a dataframe in chunks while emitting progress signals.
+
+    - Tries to render a tqdm progress bar when running in a TTY (optional dependency).
+    - Logs simple progress messages via ``log_fn`` (e.g., ``context.log.info``).
+
+    Args:
+        df: Narwhals DataFrame to iterate over.
+        chunk_size: Number of rows per chunk.
+        desc: Label for the tqdm bar/log messages.
+        log_fn: Optional logger (or callable) that accepts a string (e.g., Dagster context log).
+        log_level: Logging level to use when ``log_fn`` is a logger object (default: "info").
+        failed_count: Optional counter (int or callable returning int) to include in final summary.
+        show_eta: Whether to include estimated completion time in progress logs.
+
+    Yields:
+        DataFrame slices of up to ``chunk_size`` rows each.
+    """
+    import sys
+    import time
+
+    total = len(df)
+    if total == 0 or chunk_size <= 0:
+        return
+
+    bar = None
+    try:
+        from tqdm import tqdm  # type: ignore[import-not-found]
+
+        if sys.stdout.isatty():
+            bar = tqdm(total=total, desc=desc, leave=False)
+    except Exception:
+        bar = None
+
+    def _emit(message: str) -> None:
+        if log_fn is None:
+            if echo_to_stderr:
+                sys.stderr.write(f"{message}\n")
+                sys.stderr.flush()
+            return
+        # If a logger-like object is provided, respect the requested level
+        if hasattr(log_fn, "__self__"):
+            logger_obj = getattr(log_fn, "__self__", None)
+            target = getattr(logger_obj, log_level, None)
+            if callable(target):
+                target(message)
+            else:
+                log_fn(message)  # Fallback to callable
+        elif callable(log_fn):
+            log_fn(message)
+        if echo_to_stderr:
+            sys.stderr.write(f"{message}\n")
+            sys.stderr.flush()
+
+    def _format_duration(seconds: float) -> str:
+        if seconds < 1:
+            return f"{seconds:.2f}s"
+        minutes, secs = divmod(int(seconds), 60)
+        hours, mins = divmod(minutes, 60)
+        if hours:
+            return f"{hours}h {mins}m {secs}s"
+        if mins:
+            return f"{mins}m {secs}s"
+        return f"{secs}s"
+
+    processed = 0
+    start = 0
+    start_time = time.monotonic()
+    while start < total:
+        chunk_source = cast(Any, df)
+        if hasattr(chunk_source, "slice"):
+            chunk = chunk_source.slice(start, chunk_size)
+        elif hasattr(chunk_source, "iloc"):
+            chunk = chunk_source.iloc[start : start + chunk_size]
+        else:  # Basic slicing fallback
+            chunk = chunk_source[start : start + chunk_size]
+        processed += len(chunk)
+        if bar is not None:
+            bar.update(len(chunk))
+        if show_eta:
+            elapsed = time.monotonic() - start_time
+            rate = processed / elapsed if elapsed > 0 else 0
+            remaining = total - processed
+            eta = remaining / rate if rate > 0 else None
+            eta_str = _format_duration(eta) if eta is not None else "n/a"
+            message = f"{desc}: {processed}/{total} rows (ETA {eta_str})"
+        else:
+            message = f"{desc}: {processed}/{total} rows"
+        _emit(message)
+        yield chunk
+        start += chunk_size
+
+    if bar is not None:
+        bar.close()
+
+    elapsed = time.monotonic() - start_time
+    failed_total = failed_count() if callable(failed_count) else failed_count or 0
+    _emit(
+        f"{desc} completed: processed={processed}, failed={failed_total}, "
+        f"elapsed={_format_duration(elapsed)}"
     )
 
 
