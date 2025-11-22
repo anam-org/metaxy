@@ -19,9 +19,9 @@ class FeatureDepTransformer:
     def __init__(self, dep: FeatureDep, plan: FeaturePlan):
         """A class responsible for applying transformations that live on the [metaxy.models.feature_spec.FeatureDep][]:
 
+            - Filters (from FeatureDep.filters)
             - Renames
             - Selections
-            - In the future, filters
 
         This is supposed to always run before the upstream metadata is joined.
 
@@ -46,25 +46,33 @@ class FeatureDepTransformer:
         return self.plan.parent_features_by_key[self.dep.feature]
 
     def transform(
-        self, df: FrameT, filters: Sequence[nw.Expr] | None
+        self, df: FrameT, filters: Sequence[nw.Expr] | None = None
     ) -> RenamedDataFrame[FrameT]:
         """Apply the transformation specified by the feature dependency.
 
         Args:
             df: The dataframe to transform, it's expected to represent the raw upstream feature metadata
                 as it resides in the metadata store.
-            filters: Optional sequence of filters to apply to the dataframe **after renames**.
+            filters: Optional sequence of additional filters to apply to the dataframe **after renames**.
+                These are combined with the static filters from FeatureDep.filters.
 
         Returns:
             The transformed dataframe coupled with the renamed ID columns
 
         """
+        # Combine static filters from FeatureDep with any additional filters passed as arguments
+        combined_filters: list[nw.Expr] = []
+        if self.dep.filters is not None:
+            combined_filters.extend(self.dep.filters)
+        if filters:
+            combined_filters.extend(filters)
+
         return (
             RenamedDataFrame(
                 df=df, id_columns=list(self.upstream_feature_spec.id_columns)
             )
             .rename(self.renames)
-            .filter(filters)
+            .filter(combined_filters if combined_filters else None)
             .select(self.renamed_columns)
         )
 

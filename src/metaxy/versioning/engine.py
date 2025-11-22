@@ -115,14 +115,18 @@ class VersioningEngine(ABC):
 
         This includes, in order:
 
-           - filtering
-
-           - selecting
+           - filtering (static filters from FeatureDep.filters + additional runtime filters)
 
            - renaming
 
+           - selecting
+
         based on [metaxy.models.feature_spec.FeatureDep][], and joining
             on the intersection of id_columns of all feature specs.
+
+        Args:
+            upstream: Dictionary of upstream dataframes keyed by FeatureKey
+            filters: Optional additional runtime filters to apply (combined with FeatureDep.filters)
         """
         assert len(upstream) > 0, "No upstream dataframes provided"
 
@@ -338,7 +342,7 @@ class VersioningEngine(ABC):
             key: Feature key to compute provenance for
             upstream: Dictionary of upstream dataframes
             hash_algo: Hash algorithm to use
-            filters: Optional filters to apply to upstream data
+            filters: Optional additional runtime filters to apply to upstream data (combined with FeatureDep.filters)
 
         Returns:
             DataFrame with metaxy_provenance_by_field and metaxy_provenance columns added
@@ -491,7 +495,7 @@ class VersioningEngine(ABC):
             current: Current metadata for this feature, if available.
             upstream: A dictionary of upstream data frames.
             hash_algorithm: The hash algorithm to use.
-            filters: A mapping of feature keys to sequences of expressions.
+            filters: Additional runtime filters (combined with FeatureDep.filters by FeatureDepTransformer).
             sample: For root features this is used instead of the upstream dataframe.
                 Must contain both metaxy_provenance_by_field (struct of field hashes)
                 and metaxy_provenance (hash of all field hashes concatenated).

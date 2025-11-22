@@ -4,14 +4,9 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import (
-    TYPE_CHECKING,
-    Annotated,
-    Any,
-    TypeAlias,
-    overload,
-)
+from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, overload
 
+import narwhals as nw
 import pydantic
 from pydantic import BeforeValidator
 from pydantic.types import JsonValue
@@ -20,6 +15,7 @@ from typing_extensions import Self
 from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.field import CoersibleToFieldSpecsTypeAdapter, FieldSpec
 from metaxy.models.fields_mapping import FieldsMapping
+from metaxy.models.filter_expression import parse_filter_string
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import (
     CoercibleToFeatureKey,
@@ -55,6 +51,10 @@ class FeatureDep(pydantic.BaseModel):
         fields_mapping: Optional field mapping configuration for automatic field dependency resolution.
             When provided, fields without explicit deps will automatically map to matching upstream fields.
             Defaults to using `[FieldsMapping.default()][metaxy.models.fields_mapping.DefaultFieldsMapping]`.
+        filters: Optional SQL-like filter strings applied to this dependency. Automatically parsed into
+            Narwhals expressions (accessible via the `filters` property). Filters are automatically
+            applied by FeatureDepTransformer after renames during all FeatureDep operations (including
+            resolve_update and version computation).
 
     Examples:
         ```py
@@ -85,6 +85,12 @@ class FeatureDep(pydantic.BaseModel):
             columns=("col1", "col2"),
             rename={"col1": "upstream_col1"}
         )
+
+        # SQL filters
+        FeatureDep(
+            feature="upstream",
+            filters=["age >= 25", "status = 'active'"]
+        )
         ```
     """
 
@@ -96,6 +102,12 @@ class FeatureDep(pydantic.BaseModel):
     fields_mapping: FieldsMapping = pydantic.Field(
         default_factory=FieldsMapping.default
     )
+    sql_filters: tuple[str, ...] | None = pydantic.Field(
+        default=None,
+        description="SQL-like filter strings applied to this dependency.",
+        validation_alias=pydantic.AliasChoices("filters", "sql_filters"),
+        serialization_alias="filters",
+    )
 
     if TYPE_CHECKING:
 
@@ -106,7 +118,15 @@ class FeatureDep(pydantic.BaseModel):
             columns: tuple[str, ...] | None = None,
             rename: dict[str, str] | None = None,
             fields_mapping: FieldsMapping | None = None,
+            filters: Sequence[str] | None = None,
         ) -> None: ...  # pyright: ignore[reportMissingSuperCall]
+
+    @cached_property
+    def filters(self) -> tuple[nw.Expr, ...]:
+        """Parse sql_filters into Narwhals expressions."""
+        if self.sql_filters is None:
+            return ()
+        return tuple(parse_filter_string(filter_str) for filter_str in self.sql_filters)
 
     def table_name(self) -> str:
         """Get SQL-like table name for this feature spec."""
