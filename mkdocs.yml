@@ -129,6 +129,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
       emoji_index: !!python/name:material.extensions.emoji.twemoji
+      options:
+        custom_icons:
+          - docs/.icons
   - pymdownx.highlight:
       default_lang: python
       use_pygments: true

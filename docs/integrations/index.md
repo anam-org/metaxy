@@ -5,7 +5,7 @@
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :material-database:{ .lg .middle } __SQLAlchemy__
+-   :custom-sqlalchemy:{ .lg .middle } __SQLAlchemy__
 
     ---
 
@@ -15,11 +15,11 @@
 
     [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlalchemy.md)
 
--   :material-database-settings:{ .lg .middle } __SQLModel__
+-   :custom-sqlmodel:{ .lg .middle } __SQLModel__
 
     ---
 
-    Combine SQLAlchemy table definitions with Metaxy features.
+    Adds `SQLModel` capabilities to `metaxy.BaseFeature` class.
 
     [:octicons-arrow-right-24: Integration docs](sqlmodel.md)
 
