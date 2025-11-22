@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/integrations/sqlalchemy/">
+        <link rel="canonical" href="https://anam-org.github.io/metaxy/main/integrations/">
       
       
-        <link rel="prev" href="../sqlmodel/">
+        <link rel="prev" href="../learn/system-columns/">
       
       
-        <link rel="next" href="../../examples/one-to-many/">
+        <link rel="next" href="sqlmodel/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
     
     
       
-        <title>SQLAlchemy - Metaxy</title>
+        <title>Integrations - Metaxy</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/code_select.css">
+      <link rel="stylesheet" href="../css/code_select.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#metaxy-sqlalchemy" class="md-skip">
+        <a href="#metaxy-integrations" class="md-skip">
           Skip to content
         </a>
       
@@ -102,7 +102,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href=".." title="Metaxy" class="md-header__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -122,7 +122,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SQLAlchemy
+              Integrations
             
           </span>
         </div>
@@ -244,7 +244,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -272,7 +272,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../learn/metadata-stores/" class="md-tabs__link">
+        <a href="../learn/metadata-stores/" class="md-tabs__link">
           
   
   
@@ -297,7 +297,7 @@
   
   
     <li class="md-tabs__item md-tabs__item--active">
-      <a href="../" class="md-tabs__link">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -318,7 +318,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../examples/one-to-many/" class="md-tabs__link">
+        <a href="../examples/one-to-many/" class="md-tabs__link">
           
   
   
@@ -338,7 +338,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../reference/cli/" class="md-tabs__link">
+      <a href="../reference/cli/" class="md-tabs__link">
         
   
   
@@ -357,7 +357,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../reference/api/" class="md-tabs__link">
+      <a href="../reference/api/" class="md-tabs__link">
         
   
   
@@ -376,7 +376,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../reference/configuration/" class="md-tabs__link">
+      <a href="../reference/configuration/" class="md-tabs__link">
         
   
   
@@ -417,7 +417,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
+    <a href=".." title="Metaxy" class="md-nav__button md-logo" aria-label="Metaxy" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -447,7 +447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -608,7 +608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/metadata-stores/" class="md-nav__link">
+      <a href="../learn/metadata-stores/" class="md-nav__link">
         
   
   
@@ -694,7 +694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/metadata-stores/deltalake/" class="md-nav__link">
+      <a href="../learn/metadata-stores/deltalake/" class="md-nav__link">
         
   
   
@@ -738,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/feature-definitions/" class="md-nav__link">
+      <a href="../learn/feature-definitions/" class="md-nav__link">
         
   
   
@@ -766,7 +766,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/data-versioning/" class="md-nav__link">
+      <a href="../learn/data-versioning/" class="md-nav__link">
         
   
   
@@ -794,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/feature-discovery/" class="md-nav__link">
+      <a href="../learn/feature-discovery/" class="md-nav__link">
         
   
   
@@ -822,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/syntactic-sugar/" class="md-nav__link">
+      <a href="../learn/syntactic-sugar/" class="md-nav__link">
         
   
   
@@ -850,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/relationship/" class="md-nav__link">
+      <a href="../learn/relationship/" class="md-nav__link">
         
   
   
@@ -878,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/filters/" class="md-nav__link">
+      <a href="../learn/filters/" class="md-nav__link">
         
   
   
@@ -906,7 +906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/testing/" class="md-nav__link">
+      <a href="../learn/testing/" class="md-nav__link">
         
   
   
@@ -934,7 +934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../learn/system-columns/" class="md-nav__link">
+      <a href="../learn/system-columns/" class="md-nav__link">
         
   
   
@@ -997,7 +997,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   
@@ -1015,7 +1015,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+              <label class="md-nav__link md-nav__link--active" for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -1039,7 +1039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sqlmodel/" class="md-nav__link">
+      <a href="sqlmodel/" class="md-nav__link">
         
   
   
@@ -1064,37 +1064,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SQLAlchemy
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="sqlalchemy/" class="md-nav__link">
         
   
   
@@ -1110,87 +1083,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#extsqlalchemyenable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ext.sqlalchemy.enable
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#alembic-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Alembic Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-store-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Store Setup
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1268,7 +1160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/one-to-many/" class="md-nav__link">
+      <a href="../examples/one-to-many/" class="md-nav__link">
         
   
   
@@ -1303,7 +1195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/" class="md-nav__link">
+      <a href="../reference/cli/" class="md-nav__link">
         
   
   
@@ -1363,7 +1255,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/" class="md-nav__link ">
+            <a href="../reference/api/" class="md-nav__link ">
               
   
   
@@ -1440,7 +1332,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/definitions/" class="md-nav__link ">
+            <a href="../reference/api/definitions/" class="md-nav__link ">
               
   
   
@@ -1482,7 +1374,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/feature-spec/" class="md-nav__link">
+      <a href="../reference/api/definitions/feature-spec/" class="md-nav__link">
         
   
   
@@ -1510,7 +1402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/feature/" class="md-nav__link">
+      <a href="../reference/api/definitions/feature/" class="md-nav__link">
         
   
   
@@ -1538,7 +1430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/field/" class="md-nav__link">
+      <a href="../reference/api/definitions/field/" class="md-nav__link">
         
   
   
@@ -1566,7 +1458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/fields-mapping/" class="md-nav__link">
+      <a href="../reference/api/definitions/fields-mapping/" class="md-nav__link">
         
   
   
@@ -1594,7 +1486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/relationship/" class="md-nav__link">
+      <a href="../reference/api/definitions/relationship/" class="md-nav__link">
         
   
   
@@ -1622,7 +1514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/graph/" class="md-nav__link">
+      <a href="../reference/api/definitions/graph/" class="md-nav__link">
         
   
   
@@ -1650,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/definitions/filters/" class="md-nav__link">
+      <a href="../reference/api/definitions/filters/" class="md-nav__link">
         
   
   
@@ -1713,7 +1605,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/metadata-stores/" class="md-nav__link ">
+            <a href="../reference/api/metadata-stores/" class="md-nav__link ">
               
   
   
@@ -1780,7 +1672,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/metadata-stores/ibis/" class="md-nav__link ">
+            <a href="../reference/api/metadata-stores/ibis/" class="md-nav__link ">
               
   
   
@@ -1822,7 +1714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/ibis/duckdb/" class="md-nav__link">
+      <a href="../reference/api/metadata-stores/ibis/duckdb/" class="md-nav__link">
         
   
   
@@ -1850,7 +1742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/ibis/clickhouse/" class="md-nav__link">
+      <a href="../reference/api/metadata-stores/ibis/clickhouse/" class="md-nav__link">
         
   
   
@@ -1946,7 +1838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/delta/" class="md-nav__link">
+      <a href="../reference/api/metadata-stores/delta/" class="md-nav__link">
         
   
   
@@ -1974,7 +1866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/memory/" class="md-nav__link">
+      <a href="../reference/api/metadata-stores/memory/" class="md-nav__link">
         
   
   
@@ -2010,7 +1902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/metadata-stores/exceptions/" class="md-nav__link">
+      <a href="../reference/api/metadata-stores/exceptions/" class="md-nav__link">
         
   
   
@@ -2046,7 +1938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/config/" class="md-nav__link">
+      <a href="../reference/api/config/" class="md-nav__link">
         
   
   
@@ -2074,7 +1966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/types/" class="md-nav__link">
+      <a href="../reference/api/types/" class="md-nav__link">
         
   
   
@@ -2102,7 +1994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/constants/" class="md-nav__link">
+      <a href="../reference/api/constants/" class="md-nav__link">
         
   
   
@@ -2155,7 +2047,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/api/ext/" class="md-nav__link ">
+            <a href="../reference/api/ext/" class="md-nav__link ">
               
   
   
@@ -2197,7 +2089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/ext/sqlmodel/" class="md-nav__link">
+      <a href="../reference/api/ext/sqlmodel/" class="md-nav__link">
         
   
   
@@ -2225,7 +2117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/api/ext/sqlalchemy/" class="md-nav__link">
+      <a href="../reference/api/ext/sqlalchemy/" class="md-nav__link">
         
   
   
@@ -2268,7 +2160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/configuration/" class="md-nav__link">
+      <a href="../reference/configuration/" class="md-nav__link">
         
   
   
@@ -2315,60 +2207,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
+  <a href="#databases-orms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration Options
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration Options">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#extsqlalchemyenable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ext.sqlalchemy.enable
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#alembic-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Alembic Integration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#multi-store-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Store Setup
+        Databases &amp; ORMs
       
     </span>
   </a>
@@ -2393,46 +2235,6 @@
   
 
 
-  <nav class="md-path" aria-label="Navigation" >
-    <ol class="md-path__list">
-      
-        
-  
-  
-    <li class="md-path__item">
-      <a href="../.." class="md-path__link">
-        
-  <span class="md-ellipsis">
-    Home
-  </span>
-
-      </a>
-    </li>
-  
-
-      
-      
-        
-  
-  
-    
-    
-      <li class="md-path__item">
-        <a href="../sqlmodel/" class="md-path__link">
-          
-  <span class="md-ellipsis">
-    Integrations
-  </span>
-
-        </a>
-      </li>
-    
-  
-
-      
-    </ol>
-  </nav>
-
               
               <article class="md-content__inner md-typeset">
                 
@@ -2443,112 +2245,28 @@
   
 
 
-<h1 id="metaxy-sqlalchemy">Metaxy + SQLAlchemy<a class="headerlink" href="#metaxy-sqlalchemy" title="Permanent link">&para;</a></h1>
-<p>Metaxy provides helpers for integrating with <a href="https://www.sqlalchemy.org/">SQLAlchemy</a>.
-These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for user-defined feature tables and for Metaxy system tables.</p>
-<p>This integration is convenient for setting up <a href="https://alembic.sqlalchemy.org/en/latest/">Alembic</a> migrations.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Check out our <a href="../sqlmodel/">SQLModel integration</a> to learn how to set up <code>sqlalchemy</code> metadata for user-defined feature tables.</p>
-</div>
-<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>The integration has to be enabled in <code>metaxy.toml</code>:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[sqlalchemy]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</span></code></pre></div>
-<p>See <a href="../../reference/api/ext/sqlalchemy/">API reference</a> for the exact set of provided functions.</p>
-<h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
+<h1 id="metaxy-integrations">Metaxy Integrations<a class="headerlink" href="#metaxy-integrations" title="Permanent link">&para;</a></h1>
+<h2 id="databases-orms">Databases &amp; ORMs<a class="headerlink" href="#databases-orms" title="Permanent link">&para;</a></h2>
+<div class="grid cards">
 <!-- dprint-ignore-start -->
-<h3 id="extsqlalchemyenable"><code>ext.sqlalchemy.enable</code><a class="headerlink" href="#extsqlalchemyenable" title="Permanent link">&para;</a></h3>
-<p>Whether to enable the plugin.</p>
-<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="extsqlalchemyenable-metaxytoml" name="__tabbed_1" type="radio" /><input id="extsqlalchemyenable-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="extsqlalchemyenable-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="extsqlalchemyenable-metaxytoml">metaxy.toml</label><label for="extsqlalchemyenable-pyprojecttoml">pyproject.toml</label><label for="extsqlalchemyenable-environment-variable">Environment Variable</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlalchemy]</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlalchemy]</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLALCHEMY_ENABLE</span><span class="o">=</span><span class="nb">false</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<hr />
-<!-- dprint-ignore-end -->
-
-<h2 id="alembic-integration">Alembic Integration<a class="headerlink" href="#alembic-integration" title="Permanent link">&para;</a></h2>
-<p><a href="https://alembic.sqlalchemy.org/en/latest/">Alembic</a> is a database migration toolkit for SQLAlchemy.</p>
-<p>The two helper functions: <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_feature_sqla_metadata_for_store&lt;/span&gt;" href="../../reference/api/ext/sqlalchemy/#metaxy.ext.sqlalchemy.get_feature_sqla_metadata_for_store"><code>get_feature_sqla_metadata_for_store</code></a> and <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;get_system_sqla_metadata_for_store&lt;/span&gt;" href="../../reference/api/ext/sqlalchemy/#metaxy.ext.sqlalchemy.get_system_sqla_metadata_for_store"><code>get_system_sqla_metadata_for_store</code></a> can be used to retrieve an SQLAlchemy URL and <code>MetaData</code> object for a given <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="../../reference/api/metadata-stores/#metaxy.MetadataStore"><code>metaxy.MetadataStore</code></a> (given it's backed by an SQL database).</p>
-<p><code>get_feature_sqla_metadata_for_store</code> returns table metadata for the user-defined tables, while <code>get_system_sqla_metadata_for_store</code> returns metadata for Metaxy's system tables.</p>
-<p>Here is an example Alembic <code>env.py</code> that uses the Metaxy SQLAlchemy integration:</p>
-<div class="language-python highlight"><span class="filename">env.py</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_feature_sqla_metadata_for_store</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1"># Alembic Config object</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">config</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1"># Load features and get URL + metadata from store</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">get_feature_sqla_metadata_for_store</span><span class="p">(</span><span class="s2">&quot;my_store&quot;</span><span class="p">)</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1"># Configure Alembic</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">config</span><span class="o">.</span><span class="n">set_main_option</span><span class="p">(</span><span class="s2">&quot;sqlalchemy.url&quot;</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1"># continue with the standard Alembic workflow</span>
-</span></code></pre></div>
-<h2 id="multi-store-setup">Multi-Store Setup<a class="headerlink" href="#multi-store-setup" title="Permanent link">&para;</a></h2>
-<p>You can configure separate metadata stores for different environments:</p>
-<div class="language-toml highlight"><span class="filename">metaxy.toml</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[stores.dev]</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;dev_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos="5 "></span></a><span class="k">[stores.prod]</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos="7 "></span></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">database</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;prod_metadata.duckdb&quot;</span><span class="w"> </span><span class="p">}</span>
-</span></code></pre></div>
-<p>Then create multiple Alembic directories and register them with Alembic:</p>
-<div class="language-ini highlight"><span class="filename">alembic.ini</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[dev]</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">alembic/dev</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">[prod]</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos="5 "></span></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">alembic/prod</span>
-</span></code></pre></div>
-<p>The two environments now can be managed independently:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="multi-store-setup-dev" name="__tabbed_2" type="radio" /><input id="multi-store-setup-prod" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="multi-store-setup-dev">dev</label><label for="multi-store-setup-prod">prod</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/dev/env.py</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">get_feature_sqla_metadata_for_store</span><span class="p">(</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="hll"><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="n">store_name</span><span class="o">=</span><span class="s2">&quot;dev&quot;</span>
-</span></span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a><span class="p">)</span>
-</span></code></pre></div>
-<p>The <code>-n</code> argument can be used to specify the target Alembic directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev<span class="w"> </span>upgrade<span class="w"> </span>head
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/prod/env.py</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">get_feature_sqla_metadata_for_store</span><span class="p">(</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="hll"><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="n">store_name</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span>
-</span></span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos="3 "></span></a><span class="p">)</span>
-</span></code></pre></div>
-<p>The <code>-n</code> argument can be used to specify the target Alembic directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a>alembic<span class="w"> </span>-n<span class="w"> </span>prod<span class="w"> </span>upgrade<span class="w"> </span>head
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<h1 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h1>
 <ul>
-<li><a href="../../reference/api/ext/sqlalchemy/">API docs</a></li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4M4 9v3c0 2.21 3.58 4 8 4s8-1.79 8-4V9c0 2.21-3.58 4-8 4s-8-1.79-8-4m0 5v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4s-8-1.79-8-4"/></svg></span> <strong>SQLAlchemy</strong></p>
+<hr />
+<p>Retrieve SQLAlchemy URLs and <code>MetaData</code> for the current Metaxy project from Metaxy <code>MetadataStore</code> objects.</p>
+<p><a href="sqlalchemy/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Integration docs</a></p>
+<p><a href="../reference/api/ext/sqlalchemy/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> API docs</a></p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 22h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3c0 2.21-3.58 4-8 4s-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4s8-1.79 8-4v3c0 1.19-1.05 2.27-2.71 3H6.71C5.05 19.27 4 18.19 4 17z"/></svg></span> <strong>SQLModel</strong></p>
+<hr />
+<p>Combine SQLAlchemy table definitions with Metaxy features.</p>
+<p><a href="sqlmodel/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Integration docs</a></p>
+<p><a href="../reference/api/ext/sqlmodel/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> API docs</a></p>
+</li>
 </ul>
+<!-- dprint-ignore-end -->
+</div>
 
 
 
@@ -2622,12 +2340,12 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
       
-        <script src="../../javascripts/scarf.js"></script>
+        <script src="../javascripts/scarf.js"></script>
       
     
   </body>

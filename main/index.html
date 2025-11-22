@@ -294,20 +294,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="integrations/sqlmodel/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="integrations/" class="md-tabs__link">
+        
   
   
     
   
   Integrations
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -519,10 +516,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy-to-the-rescue" class="md-nav__link">
+  <a href="#metaxys-solution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Metaxy to the rescue
+        Metaxy's solution
       
     </span>
   </a>
@@ -1168,8 +1165,9 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="integrations/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -1183,8 +1181,14 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
@@ -2383,10 +2387,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#metaxy-to-the-rescue" class="md-nav__link">
+  <a href="#metaxys-solution" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Metaxy to the rescue
+        Metaxy's solution
       
     </span>
   </a>
@@ -2528,8 +2532,8 @@
 
 <h1 id="metaxy">Metaxy 🌌<a class="headerlink" href="#metaxy" title="Permanent link">&para;</a></h1>
 <p>Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks <strong>metadata</strong>: sample <a href="learn/data-versioning/">versions</a>, dependencies, and data lineage across complex computational graphs.</p>
-<p>It's <a href="#about-metaxy">agnostic</a> to everything: compute engines, data storage, <a href="learn/metadata-stores/">metadata storage</a>.</p>
-<p>It has no strict infrastructure requirements and can use external databases for computations or run locally.</p>
+<p>It's <a href="#about-metaxy">agnostic</a> to orchestration frameworks, compute engines, data and <a href="learn/metadata-stores/">metadata storage</a>.</p>
+<p>It has no strict infrastructure requirements and can run computations in external databases or locally.</p>
 <p>It can scale to handle large amounts of <strong>big metadata</strong>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Giga Alpha</p>
@@ -2562,8 +2566,8 @@ Therefore, it becomes crucially important to correctly implement incremental pro
 </ul>
 <p>Tracking and propagating these changes correctly to the right subset of samples and features can become incredibly complicated.
 Until now, a general solution for this problem did not exist, but this is not the case anymore.</p>
-<h2 id="metaxy-to-the-rescue">Metaxy to the rescue<a class="headerlink" href="#metaxy-to-the-rescue" title="Permanent link">&para;</a></h2>
-<p>Metaxy solves the first set of problems with a <strong>feature</strong> and <strong>field</strong> dependency system, and the second with a <strong>migrations</strong> system.</p>
+<h2 id="metaxys-solution">Metaxy's solution<a class="headerlink" href="#metaxys-solution" title="Permanent link">&para;</a></h2>
+<p>Metaxy solves the first set of problems with a <strong>feature</strong> and <strong>field</strong> dependency system, and the second set with a <strong>migrations</strong> system.</p>
 <p>Metaxy builds a <em>versioned graphs</em> from feature definitions and tracks version changes.
 This graph can be snapshotted and saved at any point of time, typically during pipeline deployment.
 Here is an example of a graph diff produced by a <strong>code_version</strong> update on the <code>audio</code> field of the <code>example/video</code> feature:</p>
@@ -2635,7 +2639,7 @@ color="#CC0000"&gt;ac412b&lt;/font&gt; → &lt;font color="#00AA00"&gt;058410&lt
 <li>comprehensive <strong>type hints</strong> and Pydantic integration for excellent IDE support</li>
 <li>first-class support for <strong>local development, testing, preview environments, CI/CD</strong></li>
 <li><a href="reference/cli/">CLI</a> tool for easy interaction, inspection and visualization of feature graphs, enriched with real metadata and stats</li>
-<li>integrations with popular tools such as <a href="integrations/sqlmodel/">SQLModel</a>, Dagster, and Ray.</li>
+<li><a href="integrations/">integrations</a> with popular tools such as SQLModel and Dagster.</li>
 <li><a href="learn/testing/">testing helpers</a> that you're going to appreciate</li>
 </ul>
 </li>
@@ -2726,7 +2730,10 @@ However, Metaxy only uses the latest version (by <code>metaxy_created_at</code>)
 <h2 id="whats-next">What's Next?<a class="headerlink" href="#whats-next" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
-<p>Learn more about feature <a href="learn/feature-definitions/">definitions</a> or <a href="learn/data-versioning/">versioning</a></p>
+<p>Learn more about <a href="learn/feature-definitions/">feature definitions</a> or <a href="learn/data-versioning/">versioning</a></p>
+</li>
+<li>
+<p>Explore <a href="integrations/">Metaxy integrations</a></p>
 </li>
 <li>
 <p>Use Metaxy <a href="reference/cli/">from the command line</a></p>
