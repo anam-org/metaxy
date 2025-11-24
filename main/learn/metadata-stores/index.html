@@ -2836,6 +2836,10 @@ This includes joining upstream features, hashing their versions, and filtering o
 <p>All 3 cases cannot be accidental and require preconfigured settings or explicit user action. In the third case, Metaxy will also issue a warning just in case the user has accidentally configured a fallback store in production.</p>
 <h2 id="metadata-store-implementations">Metadata Store Implementations<a class="headerlink" href="#metadata-store-implementations" title="Permanent link">&para;</a></h2>
 <p>Metaxy provides ready <code>MetadataStore</code> [implementations](../integrations/metadata-stores] for popular databases and storage systems.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Metaxy does not handle infrastructure setup. Make sure to have large tables partitioned as appropriate for your use case.</p>
+</div>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Learn about configuring metadata stores <a href="../../reference/configuration/#stores">here</a></p>
 
