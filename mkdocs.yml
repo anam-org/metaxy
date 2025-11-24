@@ -6,6 +6,8 @@ repo_name: anam-org/metaxy
 
 theme:
   name: material
+  logo: assets/metaxy.svg
+  favicon: assets/favicon.ico
   features:
     # Content features
     - content.code.copy
@@ -58,6 +60,7 @@ plugins:
   - autorefs
   - section-index
   - gh-admonitions
+  # - social
 
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:

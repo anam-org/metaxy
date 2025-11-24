@@ -1,11 +1,19 @@
-# 🌌 Metaxy
+# Metaxy
+
+<p align="center">
+  <img src="assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
+</p>
+
+---
+
+> [!WARNING]
+> This project is as raw as a steak still saying ‘moo.’
+
+---
 
 Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, (partial) data dependencies, and lineage across complex computation graphs.
 
 Metaxy's goal is to provide a standard instrument for any kind of multi-modal (or just tabular) **incremental** pipelines, standardizing dependency specification, versioning, partial data dependencies, manipulations over metadata, migrations, and more.
-
-> [!WARNING]
-> This project is as raw as a steak still saying ‘moo.’
 
 Read the [docs](https://anam-org.github.io/metaxy) to learn more.
 
