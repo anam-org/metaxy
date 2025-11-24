@@ -2,7 +2,7 @@
 
 The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy features to also act as [SQLAlchemy](https://www.sqlalchemy.org/) ORM models. It exposes user-defined feature tables to SQLAlchemy.
 
-It is the primary way to use Metaxy with database-backed [metadata stores](../learn/metadata-stores.md).
+It is the primary way to use Metaxy with database-backed [metadata stores](../../learn/metadata-stores.md).
 
 !!! tip
 
@@ -85,4 +85,4 @@ class VideoFeature(
 
 # Reference
 
-- [API docs](../reference/api/ext/sqlmodel.md)
+- [API docs](../../reference/api/ext/sqlmodel.md)

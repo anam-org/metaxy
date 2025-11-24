@@ -2,7 +2,7 @@
 
 Integration with [SQLAlchemy](https://www.sqlalchemy.org/).
 
-Learn more about the integration and its configuration [here](../../../integrations/sqlalchemy.md).
+Learn more about the integration and its configuration [here](../../../integrations/plugins/sqlalchemy.md).
 
 ---
 

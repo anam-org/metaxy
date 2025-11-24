@@ -171,11 +171,10 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Overview:
+    - Quickstart: overview/quickstart.md
   - Learn:
-    - Metadata Stores:
-      - Overview: learn/metadata-stores.md
-      - Stores without engine:
-          - Delta Lake: learn/metadata-stores/deltalake.md
+    - Metadata Stores: learn/metadata-stores.md
     - Feature Definitions: learn/feature-definitions.md
     - Versioning: learn/data-versioning.md
     - Feature Discovery: learn/feature-discovery.md
@@ -186,8 +185,12 @@ nav:
     - System Columns: learn/system-columns.md
   - Integrations:
     - integrations/index.md
-    - SQLModel: integrations/sqlmodel.md
-    - SQLAlchemy: integrations/sqlalchemy.md
+    - Metadata Stores:
+      - Storage Only:
+        - Delta Lake: integrations/metadata-stores/storage/delta.md
+    - Plugins:
+      - SQLModel: integrations/plugins/sqlmodel.md
+      - SQLAlchemy: integrations/plugins/sqlalchemy.md
   - Examples:
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
@@ -202,23 +205,24 @@ nav:
       - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
       - Filters: reference/api/definitions/filters.md
-    - Metadata Stores:
-      - reference/api/metadata-stores/index.md
-      - Databases:
-        - reference/api/metadata-stores/ibis/index.md
-        - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
-        - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-      - Stores without engine:
-          - Delta Lake: reference/api/metadata-stores/delta.md
-          - Memory: reference/api/metadata-stores/memory.md
-      - Exceptions: reference/api/metadata-stores/exceptions.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md
     - Integrations:
       - reference/api/ext/index.md
-      - SQLModel: reference/api/ext/sqlmodel.md
-      - SQLAlchemy: reference/api/ext/sqlalchemy.md
+      - Metadata Stores:
+        - reference/api/metadata-stores/index.md
+        - Databases:
+          - reference/api/metadata-stores/ibis/index.md
+          - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
+          - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
+        - Storage Only:
+            - Delta Lake: reference/api/metadata-stores/delta.md
+            - Memory: reference/api/metadata-stores/memory.md
+        - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Plugins:
+        - SQLModel: reference/api/ext/sqlmodel.md
+        - SQLAlchemy: reference/api/ext/sqlalchemy.md
   - Configuration: reference/configuration.md
 
 extra:

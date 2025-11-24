@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
@@ -132,6 +132,9 @@ BUILTIN_PLUGINS = {
     "sqlmodel": "metaxy.ext.sqlmodel",
     "alembic": "metaxy.ext.alembic",
 }
+
+
+StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
 class MetaxyConfig(BaseSettings):
@@ -466,11 +469,25 @@ class MetaxyConfig(BaseSettings):
 
         return None
 
-    def get_store(self, name: str | None = None) -> "MetadataStore":
+    @overload
+    def get_store(
+        self, name: str | None = None, *, expected_type: Literal[None] = None
+    ) -> "MetadataStore": ...
+
+    @overload
+    def get_store(
+        self, name: str | None = None, *, expected_type: type[StoreTypeT]
+    ) -> StoreTypeT: ...
+
+    def get_store(
+        self, name: str | None = None, *, expected_type: type[StoreTypeT] | None = None
+    ) -> "MetadataStore | StoreTypeT":
         """Instantiate metadata store by name.
 
         Args:
             name: Store name (uses config.store if None)
+            expected_type: Expected type of the store.
+                If the actual store type does not match the expected type, a `TypeError` is raised.
 
         Returns:
             Instantiated metadata store
@@ -479,6 +496,7 @@ class MetaxyConfig(BaseSettings):
             ValueError: If store name not found in config, or if fallback stores
                 have different hash algorithms than the parent store
             ImportError: If store class cannot be imported
+            TypeError: If the actual store type does not match the expected type
 
         Example:
             ```py
@@ -508,6 +526,9 @@ class MetaxyConfig(BaseSettings):
 
         # Get store class (already imported by Pydantic's ImportString)
         store_class = store_config.type
+
+        if expected_type is not None and not issubclass(store_class, expected_type):
+            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
 
         # Extract configuration
         config_copy = store_config.config.copy()
@@ -565,5 +586,8 @@ class MetaxyConfig(BaseSettings):
                 f"'{store.hash_algorithm.value}'. The store class may have overridden "
                 f"the hash algorithm. All stores must use the same hash algorithm."
             )
+
+        if expected_type is not None and not isinstance(store, expected_type):
+            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
 
         return store
