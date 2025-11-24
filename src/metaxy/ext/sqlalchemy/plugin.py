@@ -265,13 +265,13 @@ def _inject_constraints(
 
     if inject_primary_key:
         # Add primary key constraint
-        pk_constraint = PrimaryKeyConstraint(*key_columns, name="pk_metaxy_composite")
+        pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
         table.append_constraint(pk_constraint)
 
     if inject_index:
         # Add composite index
         idx = Index(
-            f"idx_{table.name}_metaxy_composite",
+            "metaxy_idx",
             *key_columns,
         )
         table.append_constraint(idx)

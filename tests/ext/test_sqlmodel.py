@@ -64,7 +64,6 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "video"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str  # Metadata column: where video is stored
 
@@ -120,7 +119,6 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "multi_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str
 
@@ -139,25 +137,26 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
 
 def test_sqlmodel_custom_tablename() -> None:
-    """Test that __tablename__ can be customized.
+    """Test that custom __tablename__ is forbidden.
 
-    Verifies that SQLModel __tablename__ attribute works as expected.
+    Custom __tablename__ is not allowed because it would be inconsistent with
+    the metadata store's get_table_name() method.
     """
 
-    class CustomTableFeature(
-        SQLModelFeature,
-        table=True,
-        inject_primary_key=False,  # Disable composite PK for legacy test
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["custom", "table"]),
-            fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
-        ),
-    ):
-        __tablename__: str = "my_custom_table_name"  # pyright: ignore[reportIncompatibleVariableOverride]
-        uid: str = Field(primary_key=True)
-        path: str
+    with pytest.raises(ValueError, match="Cannot define custom __tablename__"):
 
-    assert CustomTableFeature.__tablename__ == "my_custom_table_name"  # pyright: ignore[reportIncompatibleVariableOverride]
+        class CustomTableFeature(
+            SQLModelFeature,
+            table=True,
+            inject_primary_key=False,  # Disable composite PK for legacy test
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["custom", "table"]),
+                fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+            ),
+        ):
+            __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+            uid: str = Field(primary_key=True)
+            path: str
 
 
 def test_automatic_tablename() -> None:
@@ -210,7 +209,6 @@ def test_sqlmodel_field_definitions() -> None:
             ],
         ),
     ):
-        __tablename__: str = "audio"  # pyright: ignore[reportIncompatibleVariableOverride]
         # SQLModel columns for metadata
         uid: str = Field(primary_key=True)
         path: str  # Where audio file is stored
@@ -254,7 +252,6 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "versioned"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         data: str
 
@@ -291,7 +288,6 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "metaxy_provenance_by_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         source_path: str  # Metadata column
         timestamp: int  # Metadata column
@@ -328,7 +324,6 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
             fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "parent"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         parent_data: str
 
@@ -342,7 +337,6 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
             fields=[FieldSpec(key=FieldKey(["child_data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "child"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         child_data: str
 
@@ -386,7 +380,6 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         video_path: str  # Metadata column: where video is stored
         created_at: int  # Metadata column: timestamp
@@ -415,7 +408,6 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         processed: str
 
@@ -457,7 +449,6 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "feature_v1"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             data: str
 
@@ -476,7 +467,6 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
                 ],  # Changed!
             ),
         ):
-            __tablename__: str = "feature_v2"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             data: str
 
@@ -510,7 +500,6 @@ def test_custom_graph_context() -> None:
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "custom_graph"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
 
         # Should be in custom graph
@@ -537,7 +526,6 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "snapshot_test"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         value: int
 
@@ -578,7 +566,6 @@ def test_downstream_dependency_tracking() -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "root"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         data: str
 
@@ -592,7 +579,6 @@ def test_downstream_dependency_tracking() -> None:
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "middle"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         processed: str
 
@@ -606,7 +592,6 @@ def test_downstream_dependency_tracking() -> None:
             fields=[FieldSpec(key=FieldKey(["final"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "leaf"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         final: str
 
@@ -644,7 +629,6 @@ def test_duplicate_key_raises() -> None:
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "feature1"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
 
     # Try to create another with same key
@@ -661,7 +645,6 @@ def test_duplicate_key_raises() -> None:
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "feature2"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
 
 
@@ -688,7 +671,6 @@ def test_inheritance_chain() -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "concrete"  # pyright: ignore[reportIncompatibleVariableOverride]
         data: str
 
     # Check concrete feature registered
@@ -728,7 +710,6 @@ def test_sqlmodel_feature_with_duckdb_store(
             ],
         ),
     ):
-        __tablename__: str = "video_processing"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str
         duration: float
@@ -801,7 +782,6 @@ def test_basic_custom_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "user_session"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: str = Field(primary_key=True)
         session_id: str = Field(primary_key=True)
         activity: str
@@ -845,7 +825,6 @@ def test_sqlmodel_duckdb_custom_id_columns(
             ],
         ),
     ):
-        __tablename__: str = "user_activity"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         activity_type: str
@@ -875,7 +854,6 @@ def test_sqlmodel_duckdb_custom_id_columns(
             ],
         ),
     ):
-        __tablename__: str = "user_summary"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         total_duration: float
@@ -1001,7 +979,6 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "multi_key"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         timestamp: int = Field(primary_key=True)
@@ -1049,7 +1026,6 @@ def test_parent_child_different_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "detailed_parent"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         device_id: str = Field(primary_key=True)
@@ -1068,7 +1044,6 @@ def test_parent_child_different_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "aggregated_child"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         summary: str
@@ -1117,7 +1092,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_a"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         value_a: float
@@ -1134,7 +1108,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_b"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         value_b: float
@@ -1169,7 +1142,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_c"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         combined: float
@@ -1266,7 +1238,6 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
                 ],
             ),
         ):
-            __tablename__: str = "invalid"  # pyright: ignore[reportIncompatibleVariableOverride]
             data: str
 
 
@@ -1290,7 +1261,6 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "snapshot_ids"  # pyright: ignore[reportIncompatibleVariableOverride]
         customer_id: int = Field(primary_key=True)
         order_id: int = Field(primary_key=True)
         amount: float
@@ -1342,7 +1312,6 @@ def test_sqlmodel_with_column_rename() -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream_rename"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # This could conflict with downstream
         priority: int
@@ -1367,7 +1336,6 @@ def test_sqlmodel_with_column_rename() -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream_rename"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status field - no conflict due to rename
         result: str
@@ -1403,7 +1371,6 @@ def test_sqlmodel_with_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "wide_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         col1: str
         col2: str
@@ -1428,7 +1395,6 @@ def test_sqlmodel_with_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "selective_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         summary: str
 
@@ -1463,7 +1429,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
                 ],
             ),
         ):
-            __tablename__: str = "bad_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             feature_version: str = Field()  # This SHOULD conflict!  # pyright: ignore[reportIncompatibleMethodOverride]
 
@@ -1486,7 +1451,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream_status"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Regular user column
         timestamp: int
@@ -1508,7 +1472,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream_status"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status - no conflict thanks to rename
 
@@ -1538,7 +1501,6 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             ],
         ),
     ):
-        __tablename__: str = "complex_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         important1: str
         important2: str
@@ -1568,7 +1530,6 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             ],
         ),
     ):
-        __tablename__: str = "optimized_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status, no conflict due to rename
         result: str
@@ -1602,7 +1563,6 @@ def test_sqlmodel_empty_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "data_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         metadata1: str
         metadata2: str
@@ -1625,7 +1585,6 @@ def test_sqlmodel_empty_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "minimal_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         computed: float
 
@@ -1658,7 +1617,6 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        __tablename__: str = "source_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
         status: str
         priority: int
@@ -1682,7 +1640,6 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        __tablename__: str = "target_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
         status: str  # Own status field
         result: str
@@ -1762,7 +1719,6 @@ def test_inject_primary_key_default_creates_composite_pk() -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "default_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: str = Field(primary_key=True)
         data: str
 
@@ -1806,7 +1762,6 @@ def test_inject_primary_key_false_skips_composite_pk() -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "no_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: str = Field(primary_key=True)
         data: str
 
@@ -1819,9 +1774,9 @@ def test_inject_primary_key_false_skips_composite_pk() -> None:
             pk_constraints = [
                 arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
             ]
-            # Should have no composite PK constraint named 'pk_metaxy_composite'
+            # Should have no composite PK constraint named 'metaxy_pk'
             for pk in pk_constraints:
-                assert pk.name != "pk_metaxy_composite"
+                assert pk.name != "metaxy_pk"
 
 
 def test_inject_primary_key_with_custom_id_columns() -> None:
@@ -1843,7 +1798,6 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "custom_id"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int
         session_id: int
         data: str
