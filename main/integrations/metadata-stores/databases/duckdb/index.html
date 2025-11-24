@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/duckdb/">
       
       
-        <link rel="prev" href="../../../">
+        <link rel="prev" href="../clickhouse/">
       
       
         <link rel="next" href="../../storage/delta/">
@@ -1081,6 +1081,8 @@
       
         
       
+        
+      
     
     
     
@@ -1125,6 +1127,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clickhouse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ClickHouse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1208,6 +1238,17 @@
     <span class="md-ellipsis">
       
         Extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2666,6 +2707,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2719,7 +2771,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../clickhouse/" class="md-path__link">
           
   <span class="md-ellipsis">
     Integrations
@@ -2748,7 +2800,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../clickhouse/" class="md-path__link">
           
   <span class="md-ellipsis">
     Metadata Stores
@@ -2769,7 +2821,7 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../clickhouse/" class="md-path__link">
           
   <span class="md-ellipsis">
     Databases
@@ -2796,14 +2848,23 @@
 
 <h1 id="duckdbmetadatastore">DuckDBMetadataStore<a class="headerlink" href="#duckdbmetadatastore" title="Permanent link">&para;</a></h1>
 <p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DuckDBMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/ibis/duckdb/#metaxy.metadata_store.duckdb.DuckDBMetadataStore"><code>DuckDBMetadataStore</code></a>. It uses <a href="https://duckdb.org/">DuckDB</a> as metadata storage and versioning engine.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>DuckDB does not (currently) support concurrent writes. If multiple writers are a requirement (e.g. with distributed data processing), consider either using DuckLake with a <code>PostgreSQL</code> catalog, or refer to <a href="https://duckdb.org/docs/stable/connect/concurrency#writing-to-duckdb-from-multiple-processes">DuckDB's documentation</a> to learn about implementing application-side work-arounds.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The <a href="../../storage/delta/">Delta Lake metadata store</a> might be a better alternative for concurrent writes.</p>
+</div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[duckdb]&#39;</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[duckdb]&#39;</span>
 </span></code></pre></div>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
 <p>DuckDB extensions can be loaded automatically:</p>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">DuckDBMetadataStore</span><span class="p">(</span><span class="s2">&quot;metadata.db&quot;</span><span class="p">,</span> <span class="n">extensions</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;hashfuncs&quot;</span><span class="p">,</span> <span class="s2">&quot;spatial&quot;</span><span class="p">])</span>
 </span></code></pre></div>
 <p><code>hashfuncs</code> is typically used by the versioning engine.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <p>Learn more in the <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DuckDBMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/ibis/duckdb/#metaxy.metadata_store.duckdb.DuckDBMetadataStore">API docs</a>.</p>
 
 

@@ -1079,6 +1079,8 @@
       
         
       
+        
+      
     
     
     
@@ -1125,6 +1127,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../databases/clickhouse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ClickHouse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2741,7 +2771,7 @@
     
     
       <li class="md-path__item">
-        <a href="../../databases/duckdb/" class="md-path__link">
+        <a href="../../databases/clickhouse/" class="md-path__link">
           
   <span class="md-ellipsis">
     Integrations
@@ -2770,7 +2800,7 @@
     
     
       <li class="md-path__item">
-        <a href="../../databases/duckdb/" class="md-path__link">
+        <a href="../../databases/clickhouse/" class="md-path__link">
           
   <span class="md-ellipsis">
     Metadata Stores
@@ -2820,8 +2850,7 @@
 <p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
 <p>It supports the local filesystem and remote object stores.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>This metadata store relies on <a href="https://delta-io.github.io/delta-rs/python/"><code>deltalake</code></a>:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[delta]&#39;</span>
 </span></code></pre></div>
 <h2 id="using-object-stores">Using Object Stores<a class="headerlink" href="#using-object-stores" title="Permanent link">&para;</a></h2>
 <p>Point <code>root_path</code> at any supported URI (<code>s3://</code>, <code>abfss://</code>, <code>gs://</code>, …) and forward credentials with <code>storage_options</code>.
