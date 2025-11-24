@@ -2973,7 +2973,8 @@
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s2">&quot;/tmp/metaxy.delta&quot;</span><span class="w"> </span><span class="p">}</span>
 </span></code></pre></div>
 <h2 id="define-a-root-feature">Define a root feature<a class="headerlink" href="#define-a-root-feature" title="Permanent link">&para;</a></h2>
-<p>Every Metaxy project must define one or more root features -- features without upstream dependencies.</p>
+<p>Every Metaxy project must define at least one root feature.
+Such features do not have upstream dependencies and act as inputs to the feature graph.</p>
 <div class="language-python highlight"><span class="filename">features.py</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
