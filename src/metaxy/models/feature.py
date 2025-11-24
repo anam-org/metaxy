@@ -1,28 +1,34 @@
 import hashlib
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
+import pydantic
+from pydantic import model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from typing_extensions import Self
 
-from metaxy.models.bases import FrozenBaseModel
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
-    METAXY_FEATURE_TRACKING_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_FULL_DEFINITION_VERSION,
 )
 from metaxy.models.feature_spec import (
     FeatureSpec,
 )
 from metaxy.models.plan import FeaturePlan, FQFieldKey
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    FeatureKey,
+    ValidatedFeatureKeyAdapter,
+    ValidatedFeatureKeySequenceAdapter,
+)
 from metaxy.utils.hashing import truncate_hash
 
 FEATURE_VERSION_COL = METAXY_FEATURE_VERSION
 FEATURE_SPEC_VERSION_COL = METAXY_FEATURE_SPEC_VERSION
-FEATURE_TRACKING_VERSION_COL = METAXY_FEATURE_TRACKING_VERSION
+FEATURE_TRACKING_VERSION_COL = METAXY_FULL_DEFINITION_VERSION
 
 if TYPE_CHECKING:
     import narwhals as nw
@@ -39,13 +45,13 @@ _active_graph: ContextVar["FeatureGraph | None"] = ContextVar(
 )
 
 
-def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
+def get_feature_by_key(key: CoercibleToFeatureKey) -> type["BaseFeature"]:
     """Get a feature class by its key from the active graph.
 
     Convenience function that retrieves Metaxy feature class from the currently active [feature graph][metaxy.FeatureGraph]. Can be useful when receiving a feature key from storage or across process boundaries.
 
     Args:
-        key: Feature key to look up
+        key: Feature key to look up. Accepts types that can be converted into a feature key..
 
     Returns:
         Feature class
@@ -58,10 +64,23 @@ def get_feature_by_key(key: "FeatureKey") -> type["BaseFeature"]:
         from metaxy import get_feature_by_key, FeatureKey
         parent_key = FeatureKey(["examples", "parent"])
         ParentFeature = get_feature_by_key(parent_key)
+
+        # Or use string notation
+        ParentFeature = get_feature_by_key("examples/parent")
         ```
     """
     graph = FeatureGraph.get_active()
     return graph.get_feature_by_key(key)
+
+
+class SerializedFeature(TypedDict):
+    feature_spec: dict[str, Any]
+    feature_schema: dict[str, Any]
+    metaxy_feature_version: str
+    metaxy_feature_spec_version: str
+    metaxy_full_definition_version: str
+    feature_class_path: str
+    project: str
 
 
 class FeatureGraph:
@@ -269,39 +288,42 @@ class FeatureGraph:
                 "or use 'columns' to select only the columns you need."
             )
 
-    def remove_feature(self, key: FeatureKey) -> None:
+    def remove_feature(self, key: CoercibleToFeatureKey) -> None:
         """Remove a feature from the graph.
 
         Removes Feature class or standalone spec (whichever exists).
 
         Args:
-            key: Feature key to remove
+            key: Feature key to remove. Accepts types that can be converted into a feature key..
 
         Raises:
             KeyError: If no feature with the given key is registered
         """
+        # Validate and coerce the key
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
         # Check both Feature classes and standalone specs
         combined = {**self.feature_specs_by_key, **self.standalone_specs_by_key}
 
-        if key not in combined:
+        if validated_key not in combined:
             raise KeyError(
-                f"No feature with key {key.to_string()} found in graph. "
+                f"No feature with key {validated_key.to_string()} found in graph. "
                 f"Available keys: {[k.to_string() for k in combined]}"
             )
 
         # Remove from all relevant dicts
-        if key in self.features_by_key:
-            del self.features_by_key[key]
-        if key in self.standalone_specs_by_key:
-            del self.standalone_specs_by_key[key]
-        if key in self.feature_specs_by_key:
-            del self.feature_specs_by_key[key]
+        if validated_key in self.features_by_key:
+            del self.features_by_key[validated_key]
+        if validated_key in self.standalone_specs_by_key:
+            del self.standalone_specs_by_key[validated_key]
+        if validated_key in self.feature_specs_by_key:
+            del self.feature_specs_by_key[validated_key]
 
-    def get_feature_by_key(self, key: FeatureKey) -> type["BaseFeature"]:
+    def get_feature_by_key(self, key: CoercibleToFeatureKey) -> type["BaseFeature"]:
         """Get a feature class by its key.
 
         Args:
-            key: Feature key to look up
+            key: Feature key to look up. Accepts types that can be converted into a feature key..
 
         Returns:
             Feature class
@@ -314,14 +336,20 @@ class FeatureGraph:
             graph = FeatureGraph.get_active()
             parent_key = FeatureKey(["examples", "parent"])
             ParentFeature = graph.get_feature_by_key(parent_key)
+
+            # Or use string notation
+            ParentFeature = graph.get_feature_by_key("examples/parent")
             ```
         """
-        if key not in self.features_by_key:
+        # Validate and coerce the key
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
+        if validated_key not in self.features_by_key:
             raise KeyError(
-                f"No feature with key {key.to_string()} found in graph. "
+                f"No feature with key {validated_key.to_string()} found in graph. "
                 f"Available keys: {[k.to_string() for k in self.features_by_key.keys()]}"
             )
-        return self.features_by_key[key]
+        return self.features_by_key[validated_key]
 
     def list_features(
         self,
@@ -390,8 +418,19 @@ class FeatureGraph:
             if self.features_by_key[key].project in project_list
         ]
 
-    def get_feature_plan(self, key: FeatureKey) -> FeaturePlan:
-        spec = self.all_specs_by_key[key]
+    def get_feature_plan(self, key: CoercibleToFeatureKey) -> FeaturePlan:
+        """Get a feature plan for a given feature key.
+
+        Args:
+            key: Feature key to get plan for. Accepts types that can be converted into a feature key..
+
+        Returns:
+            FeaturePlan instance with feature spec and dependencies.
+        """
+        # Validate and coerce the key
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
+        spec = self.all_specs_by_key[validated_key]
 
         return FeaturePlan(
             feature=spec,
@@ -414,44 +453,64 @@ class FeatureGraph:
 
         return truncate_hash(hasher.hexdigest())
 
-    def get_feature_version_by_field(self, key: FeatureKey) -> dict[str, str]:
+    def get_feature_version_by_field(
+        self, key: CoercibleToFeatureKey
+    ) -> dict[str, str]:
         """Computes the field provenance map for a feature.
 
         Hash together field provenance entries with the feature code version.
+
+        Args:
+            key: Feature key to get field versions for. Accepts types that can be converted into a feature key..
 
         Returns:
             dict[str, str]: The provenance hash for each field in the feature plan.
                 Keys are field names as strings.
         """
+        # Validate and coerce the key
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
         res = {}
 
-        plan = self.get_feature_plan(key)
+        plan = self.get_feature_plan(validated_key)
 
         for k, v in plan.feature.fields_by_key.items():
             res[k.to_string()] = self.get_field_version(
-                FQFieldKey(field=k, feature=key)
+                FQFieldKey(field=k, feature=validated_key)
             )
 
         return res
 
-    def get_feature_version(self, key: FeatureKey) -> str:
-        """Computes the feature version as a single string"""
+    def get_feature_version(self, key: CoercibleToFeatureKey) -> str:
+        """Computes the feature version as a single string.
+
+        Args:
+            key: Feature key to get version for. Accepts types that can be converted into a feature key..
+
+        Returns:
+            Truncated SHA256 hash representing the feature version.
+        """
+        # Validate and coerce the key
+        validated_key = ValidatedFeatureKeyAdapter.validate_python(key)
+
         hasher = hashlib.sha256()
-        provenance_by_field = self.get_feature_version_by_field(key)
+        provenance_by_field = self.get_feature_version_by_field(validated_key)
         for field_key in sorted(provenance_by_field):
             hasher.update(field_key.encode())
             hasher.update(provenance_by_field[field_key].encode())
 
         return truncate_hash(hasher.hexdigest())
 
-    def get_downstream_features(self, sources: list[FeatureKey]) -> list[FeatureKey]:
+    def get_downstream_features(
+        self, sources: Sequence[CoercibleToFeatureKey]
+    ) -> list[FeatureKey]:
         """Get all features downstream of sources, topologically sorted.
 
         Performs a depth-first traversal of the dependency graph to find all
         features that transitively depend on any of the source features.
 
         Args:
-            sources: List of source feature keys
+            sources: List of source feature keys. Each element can be string, sequence, FeatureKey, or BaseFeature class.
 
         Returns:
             List of downstream feature keys in topological order (dependencies first).
@@ -463,9 +522,15 @@ class FeatureGraph:
             #      A -> C -> D
             graph.get_downstream_features([FeatureKey(["A"])])
             # [FeatureKey(["B"]), FeatureKey(["C"]), FeatureKey(["D"])]
+
+            # Or use string notation
+            graph.get_downstream_features(["A"])
             ```
         """
-        source_set = set(sources)
+        # Validate and coerce the source keys
+        validated_sources = ValidatedFeatureKeySequenceAdapter.validate_python(sources)
+
+        source_set = set(validated_sources)
         visited = set()
         post_order = []  # Reverse topological order
 
@@ -486,7 +551,7 @@ class FeatureGraph:
             post_order.append(key)
 
         # Visit all sources
-        for source in sources:
+        for source in validated_sources:
             visit(source)
 
         # Remove sources from result, reverse to get topological order
@@ -495,7 +560,7 @@ class FeatureGraph:
 
     def topological_sort_features(
         self,
-        feature_keys: list[FeatureKey] | None = None,
+        feature_keys: Sequence[CoercibleToFeatureKey] | None = None,
     ) -> list[FeatureKey]:
         """Sort feature keys in topological order (dependencies first).
 
@@ -505,7 +570,8 @@ class FeatureGraph:
         Implemented using depth-first search with post-order traversal.
 
         Args:
-            feature_keys: List of feature keys to sort. If None, sorts all features
+            feature_keys: List of feature keys to sort. Each element can be string, sequence,
+                FeatureKey, or BaseFeature class. If None, sorts all features
                 (both Feature classes and standalone specs) in the graph.
 
         Returns:
@@ -520,6 +586,9 @@ class FeatureGraph:
                 FeatureKey(["video", "scene"]),
             ])
 
+            # Or use string notation
+            sorted_keys = graph.topological_sort_features(["video/raw", "video/scene"])
+
             # Sort all features in the graph (including standalone specs)
             all_sorted = graph.topological_sort_features()
             ```
@@ -529,7 +598,11 @@ class FeatureGraph:
             # Include both Feature classes and standalone specs
             keys_to_sort = set(self.feature_specs_by_key.keys())
         else:
-            keys_to_sort = set(feature_keys)
+            # Validate and coerce the feature keys
+            validated_keys = ValidatedFeatureKeySequenceAdapter.validate_python(
+                feature_keys
+            )
+            keys_to_sort = set(validated_keys)
 
         visited = set()
         result = []  # Topological order (dependencies first)
@@ -574,21 +647,13 @@ class FeatureGraph:
             hasher.update(self.get_feature_version(feature_key).encode("utf-8"))
         return truncate_hash(hasher.hexdigest())
 
-    def to_snapshot(self) -> dict[str, dict[str, Any]]:
+    def to_snapshot(self) -> dict[str, SerializedFeature]:
         """Serialize graph to snapshot format.
 
         Returns a dict mapping feature_key (string) to feature data dict,
         including the import path of the Feature class for reconstruction.
 
-        Returns:
-            Dict of feature_key -> {
-                feature_spec: dict,
-                metaxy_feature_version: str,
-                metaxy_feature_spec_version: str,
-                metaxy_feature_tracking_version: str,
-                feature_class_path: str,
-                project: str
-            }
+        Returns: dictionary mapping feature_key (string) to feature data dict
 
         Example:
             ```py
@@ -597,7 +662,7 @@ class FeatureGraph:
             # 'abc12345'
             snapshot["video_processing"]["metaxy_feature_spec_version"]
             # 'def67890'
-            snapshot["video_processing"]["metaxy_feature_tracking_version"]
+            snapshot["video_processing"]["metaxy_full_definition_version"]
             # 'xyz98765'
             snapshot["video_processing"]["feature_class_path"]
             # 'myapp.features.video.VideoProcessing'
@@ -605,24 +670,26 @@ class FeatureGraph:
             # 'myapp'
             ```
         """
-        snapshot = {}
+        snapshot: dict[str, SerializedFeature] = {}
 
         for feature_key, feature_cls in self.features_by_key.items():
             feature_key_str = feature_key.to_string()
             feature_spec_dict = feature_cls.spec().model_dump(mode="json")  # type: ignore[attr-defined]
+            feature_schema_dict = feature_cls.model_json_schema()  # type: ignore[attr-defined]
             feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
             feature_spec_version = feature_cls.spec().feature_spec_version  # type: ignore[attr-defined]
-            feature_tracking_version = feature_cls.feature_tracking_version()  # type: ignore[attr-defined]
+            full_definition_version = feature_cls.full_definition_version()  # type: ignore[attr-defined]
             project = feature_cls.project  # type: ignore[attr-defined]
 
             # Get class import path (module.ClassName)
             class_path = f"{feature_cls.__module__}.{feature_cls.__name__}"
 
-            snapshot[feature_key_str] = {
+            snapshot[feature_key_str] = {  # pyright: ignore
                 "feature_spec": feature_spec_dict,
+                "feature_schema": feature_schema_dict,
                 FEATURE_VERSION_COL: feature_version,
                 FEATURE_SPEC_VERSION_COL: feature_spec_version,
-                FEATURE_TRACKING_VERSION_COL: feature_tracking_version,
+                FEATURE_TRACKING_VERSION_COL: full_definition_version,
                 "feature_class_path": class_path,
                 "project": project,
             }
@@ -632,7 +699,7 @@ class FeatureGraph:
     @classmethod
     def from_snapshot(
         cls,
-        snapshot_data: dict[str, dict[str, Any]],
+        snapshot_data: Mapping[str, Mapping[str, Any]],
         *,
         class_path_overrides: dict[str, str] | None = None,
         force_reload: bool = False,
@@ -868,6 +935,12 @@ class MetaxyMeta(ModelMetaclass):
         spec: FeatureSpec | None = None,
         **kwargs,
     ) -> type[Self]:  # pyright: ignore[reportGeneralTypeIssues]
+        # Inject frozen config if not already specified in namespace
+        if "model_config" not in namespace:
+            from pydantic import ConfigDict
+
+            namespace["model_config"] = ConfigDict(frozen=True)
+
         new_cls = super().__new__(cls, cls_name, bases, namespace, **kwargs)
 
         if spec:
@@ -954,11 +1027,25 @@ class _FeatureSpecDescriptor:
         return owner.spec
 
 
-class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
+class BaseFeature(pydantic.BaseModel, metaclass=MetaxyMeta, spec=None):
     _spec: ClassVar[FeatureSpec]
 
     graph: ClassVar[FeatureGraph]
     project: ClassVar[str]
+
+    @model_validator(mode="after")
+    def _validate_id_columns_exist(self) -> Self:
+        """Validate that all id_columns from spec are present in model fields."""
+        spec = self.__class__.spec()
+        model_fields = set(self.__class__.model_fields.keys())
+
+        missing_columns = set(spec.id_columns) - model_fields
+        if missing_columns:
+            raise ValueError(
+                f"ID columns {missing_columns} specified in spec are not present in model fields. "
+                f"Available fields: {model_fields}"
+            )
+        return self
 
     @classmethod
     def spec(cls) -> FeatureSpec:  # type: ignore[override]
@@ -1054,31 +1141,33 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
         return cls.spec().feature_spec_version
 
     @classmethod
-    def feature_tracking_version(cls) -> str:
-        """Get hash combining feature spec version and project.
+    def full_definition_version(cls) -> str:
+        """Get hash of the complete feature definition including Pydantic schema.
 
-        This version is used in system tables to track when features move between projects
-        or when their specifications change. It combines:
-        - feature_spec_version: Complete feature specification hash
-        - project: The project this feature belongs to
+        This method computes a hash of the entire feature class definition, including:
+        - Pydantic model schema
+        - Project name
 
-        This allows the migration system to detect when a feature moves from one project
-        to another, triggering appropriate migrations.
+        Used in the `metaxy_full_definition_version` column of system tables.
 
         Returns:
-            SHA256 hex digest of feature_spec_version + project
-
-        Example:
-            ```py
-            class MyFeature(Feature, spec=FeatureSpec(...)):
-                pass
-            MyFeature.feature_tracking_version()  # Combines spec + project
-            # 'abc789...'
-            ```
+            SHA256 hex digest of the complete definition
         """
+        import json
+
         hasher = hashlib.sha256()
+
+        # Hash the Pydantic schema (includes field types, descriptions, validators, etc.)
+        schema = cls.model_json_schema()
+        schema_json = json.dumps(schema, sort_keys=True)
+        hasher.update(schema_json.encode())
+
+        # Hash the feature specification
         hasher.update(cls.feature_spec_version().encode())
+
+        # Hash the project name
         hasher.update(cls.project.encode())
+
         return truncate_hash(hasher.hexdigest())
 
     @classmethod
@@ -1195,15 +1284,3 @@ class BaseFeature(FrozenBaseModel, metaclass=MetaxyMeta, spec=None):
             )
 
         return lazy_result
-
-
-class Feature(BaseFeature, spec=None):
-    """
-    A default specialization of BaseFeature that uses a `sample_uid` ID column.
-    """
-
-    # spec: ClassVar[FeatureSpec]
-
-
-class TestingFeature(BaseFeature, spec=None):
-    sample_uid: str | None = None

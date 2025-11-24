@@ -10,10 +10,19 @@ user-defined feature fields. Only the prefixed forms are supported.
 
 ## Canonical column names
 
-| Canonical name                    | Description                                                             |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| `metaxy_provenance_by_field`      | Struct capturing per-field provenance hashes. Sample level.             |
-| `metaxy_feature_version`          | Version of the versioned graph upstream to the feature.                 |
-| `metaxy_snapshot_version`         | Version of the entire feature graph for the Metaxy project.             |
-| `metaxy_feature_spec_version`     | Version of the feature spec part responsible for graph topology.        |
-| `metaxy_feature_tracking_version` | Hash that combines spec version and project for multi-project tracking. |
+| Canonical name                   | Explanation                                                             | Level   | Type   |
+| -------------------------------- | ----------------------------------------------------------------------- | ------- | ------ |
+| `metaxy_provenance_by_field`     | Derived from upstream data versions and code version per field          | sample  | struct |
+| `metaxy_provenance`              | Hash of `metaxy_provenance_by_field`                                    | sample  | string |
+| `metaxy_data_version_by_field`   | Defaults to `metaxy_provenance_by_field`, can be user-defined           | sample  | struct |
+| `metaxy_data_version`            | Hash of `metaxy_data_version_by_field`                                  | sample  | string |
+| `metaxy_feature_version`         | Derived from versions of relevant upstream fields                       | feature | string |
+| `metaxy_snapshot_version`        | Derived from the entire Metaxy feature graph                            | graph   | string |
+| `metaxy_feature_spec_version`    | Derived from the part of the feature spec responsible for versioning    | sample  | string |
+| `metaxy_full_definition_version` | Hash of the entire feature Pydanitc model schema and the Metaxy project | string  | true   |
+| `metaxy_created_at`              | Timestamp when the metadata row was created                             | sample  | string |
+| `metaxy_materialization_id`      | External orchestration run ID (e.g., Dagster, Airflow) for tracking     | run     | string |
+
+## Orchestration Integration
+
+The `metaxy_materialization_id` column enables integration with external orchestration systems like Dagster, Airflow, or Prefect. This column allows you to track which orchestration run produced specific metadata records, simplifying debugging, monitoring, and filtering.

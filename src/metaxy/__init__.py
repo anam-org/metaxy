@@ -21,9 +21,7 @@ from metaxy.migrations import (
 )
 from metaxy.models.feature import (
     BaseFeature,
-    Feature,
     FeatureGraph,
-    TestingFeature,
     current_graph,
     get_feature_by_key,
     graph,
@@ -33,7 +31,6 @@ from metaxy.models.feature_spec import (
     FeatureSpec,
     FeatureSpecWithIDColumns,
     IDColumns,
-    SampleFeatureSpec,
 )
 from metaxy.models.field import (
     FieldDep,
@@ -47,7 +44,21 @@ from metaxy.models.fields_mapping import (
     FieldsMappingType,
 )
 from metaxy.models.lineage import LineageRelationship
-from metaxy.models.types import FeatureDepMetadata, FeatureKey, FieldKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    CoercibleToFieldKey,
+    FeatureDepMetadata,
+    FeatureKey,
+    FieldKey,
+    ValidatedFeatureKey,
+    ValidatedFeatureKeyAdapter,
+    ValidatedFeatureKeySequence,
+    ValidatedFeatureKeySequenceAdapter,
+    ValidatedFieldKey,
+    ValidatedFieldKeyAdapter,
+    ValidatedFieldKeySequence,
+    ValidatedFieldKeySequenceAdapter,
+)
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -76,11 +87,8 @@ def init_metaxy(
 __all__ = [
     "BaseFeature",
     "FeatureGraph",
-    "Feature",
-    "TestingFeature",
     "graph",
     "FeatureSpec",
-    "SampleFeatureSpec",
     "get_feature_by_key",
     "FeatureDep",
     "FeatureDepMetadata",
@@ -95,6 +103,12 @@ __all__ = [
     "SpecialFieldDep",
     "FeatureKey",
     "FieldKey",
+    "CoercibleToFeatureKey",
+    "CoercibleToFieldKey",
+    "ValidatedFeatureKey",
+    "ValidatedFieldKey",
+    "ValidatedFeatureKeySequence",
+    "ValidatedFieldKeySequence",
     "MetadataStore",
     "InMemoryMetadataStore",
     "load_features",
@@ -118,4 +132,8 @@ __all__ = [
     "LineageRelationship",
     "AccessMode",
     "current_graph",
+    "ValidatedFeatureKeyAdapter",
+    "ValidatedFieldKeyAdapter",
+    "ValidatedFeatureKeySequenceAdapter",
+    "ValidatedFieldKeySequenceAdapter",
 ]

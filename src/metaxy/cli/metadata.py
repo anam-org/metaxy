@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Annotated
 import cyclopts
 
 from metaxy.cli.console import console, error_console
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 
 if TYPE_CHECKING:
-    from metaxy.models.feature import BaseFeature
+    pass
 
 # Metadata subcommand app
 app = cyclopts.App(
@@ -113,7 +113,7 @@ def copy(
         raise SystemExit(1)
 
     # Parse feature keys
-    feature_keys: list[FeatureKey | type[BaseFeature]] | None = None
+    feature_keys: list[CoercibleToFeatureKey] | None = None
     if features:
         feature_keys = []
         for feature_str in features:
@@ -125,8 +125,6 @@ def copy(
                 # Single-part key
                 feature_keys.append(FeatureKey([feature_str]))
 
-    from metaxy.metadata_store.types import AccessMode
-
     # Get stores
     console.print(f"[cyan]Source store:[/cyan] {from_store}")
     console.print(f"[cyan]Destination store:[/cyan] {to_store}")
@@ -135,7 +133,7 @@ def copy(
     dest_store = config.get_store(to_store)
 
     # Open both stores and copy
-    with source_store.open(), dest_store.open(AccessMode.WRITE):
+    with source_store.open(), dest_store.open("write"):
         console.print("\n[bold]Starting copy operation...[/bold]\n")
 
         try:
@@ -245,12 +243,10 @@ def drop(
                 # Single-part key
                 feature_keys.append(FeatureKey([feature_str]))
 
-    from metaxy.metadata_store.types import AccessMode
-
     # Get store
     metadata_store = context.get_store(store)
 
-    with metadata_store.open(AccessMode.WRITE):
+    with metadata_store.open("write"):
         # If all_features, get all feature keys from the active feature graph
         if all_features:
             from metaxy.models.feature import FeatureGraph

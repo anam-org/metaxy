@@ -1,10 +1,10 @@
 """Test field version computation in load_snapshot_data()."""
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.graph.diff.differ import GraphDiffer
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
 from metaxy.models.field import FieldSpec
 from metaxy.models.plan import FQFieldKey
 from metaxy.models.types import FeatureKey, FieldKey
@@ -23,7 +23,7 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
 
     # Create parent feature with two fields with different code versions
     class ParentFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[
@@ -52,7 +52,7 @@ def test_load_snapshot_data_computes_proper_field_versions(graph: FeatureGraph):
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data - will load standalone specs since test features can't be imported
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
@@ -79,7 +79,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
     # Create a feature defined in test scope (will not be importable)
     class TestFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[
@@ -96,7 +96,7 @@ def test_load_snapshot_data_fallback_when_graph_reconstruction_fails(
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data - should load standalone specs
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)
@@ -121,7 +121,7 @@ def test_field_key_normalization(graph: FeatureGraph):
     differ = GraphDiffer()
 
     class TestFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test"]),
             fields=[
@@ -137,7 +137,7 @@ def test_field_key_normalization(graph: FeatureGraph):
 
         snapshot_version = result.snapshot_version
 
-        _ = result.already_recorded
+        _ = result.already_pushed
 
         # Load snapshot data (will load standalone spec since feature is in test scope)
         snapshot_data = differ.load_snapshot_data(store, snapshot_version)

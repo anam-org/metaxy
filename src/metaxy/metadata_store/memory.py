@@ -12,8 +12,7 @@ from typing_extensions import Self
 from metaxy._utils import collect_to_polars
 from metaxy.metadata_store.base import MetadataStore
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -88,10 +87,16 @@ class InMemoryMetadataStore(MetadataStore):
             # No cleanup needed for Polars engine
             pass
 
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+        feature_key = self._resolve_feature_key(feature)
+        storage_key = self._get_storage_key(feature_key)
+        return storage_key in self._storage
+
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation for in-memory storage.
@@ -99,6 +104,7 @@ class InMemoryMetadataStore(MetadataStore):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
         """
         df_polars: pl.DataFrame = collect_to_polars(df)
 
@@ -157,11 +163,12 @@ class InMemoryMetadataStore(MetadataStore):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -171,6 +178,7 @@ class InMemoryMetadataStore(MetadataStore):
             feature_version: Filter by specific feature_version
             filters: List of Narwhals filter expressions
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
@@ -220,7 +228,7 @@ class InMemoryMetadataStore(MetadataStore):
     # ========== Context Manager Implementation ==========
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open the in-memory store (no-op for in-memory, but accepts mode for consistency).
 
         Args:

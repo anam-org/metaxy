@@ -11,11 +11,10 @@ This is fully typed and only affects **constructor arguments**, so accessing **a
 Some examples:
 
 ```py
-from metaxy import FeatureKey
+from metaxy import BaseFeature as FeatureKey
 
 key = FeatureKey("prefix/feature")
 key = FeatureKey(["prefix", "feature"])
-key = FeatureKey("prefix", "feature")
 same_key = FeatureKey(key)
 ```
 
@@ -27,16 +26,41 @@ Both `FeatureKey` and `FieldKey` accept:
 
 - **String format**: `FeatureKey("prefix/feature")`
 - **Sequence format**: `FeatureKey(["prefix", "feature"])`
-- **Variadic format**: `FeatureKey("prefix", "feature")`
 - **Same type**: `FeatureKey(another_feature_key)` -- for full Inception mode
 
 All formats produce equivalent keys, internally represented as a sequence of parts.
 
-## `FeatureSpec`
+## Feature Dep
+
+[`FeatureDep`][metaxy.FeatureDep] accepts types coercible to `FeatureKey` and additionally subclasses of `BaseFeature`:
+
+```py
+dep = FeatureDep(feature=MyFeature)
+```
+
+## Feature Spec
+
+[`FeatureSpec`][metaxy.FeatureSpec] has some syntactic sugar implemented as well.
+
+### Deps
+
+The `deps` argument accepts a sequence of types coercible to `FeatureDep`:
+
+```py
+spec = FeatureSpec(
+    ...,
+    deps=[
+        MyFeature,
+        FeatureDep(feature=["my/feature/key"]),
+        ["another/key"],
+        "very/nice",
+    ],
+)
+```
 
 ### Fields
 
-[`FieldSpec`][metaxy.FieldSpec] can be passed to [`FeatureSpec`][metaxy.FeatureSpec] as a string that represents the field key:
+`fields` elements can omit the full `FieldsSpec` and be strings (field keys) instead:
 
 ```python
 spec = FeatureSpec(

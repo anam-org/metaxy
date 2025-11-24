@@ -11,24 +11,24 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast, overload
 
 import narwhals as nw
-import polars as pl
 from narwhals.typing import Frame, IntoFrame
 from typing_extensions import Self
 
 from metaxy._utils import switch_implementation_to_polars
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.exceptions import (
     FeatureNotFoundError,
     StoreNotOpenError,
+    SystemDataNotFoundError,
+    VersioningEngineMismatchError,
 )
-from metaxy.metadata_store.system import (
-    FEATURE_VERSIONS_KEY,
-    FEATURE_VERSIONS_SCHEMA,
-    METAXY_SYSTEM_KEY_PREFIX,
-    allow_feature_version_override,
-)
-from metaxy.metadata_store.system.storage import _suppress_feature_version_warning
+from metaxy.metadata_store.system.keys import METAXY_SYSTEM_KEY_PREFIX
 from metaxy.metadata_store.types import AccessMode
-from metaxy.metadata_store.utils import empty_frame_like
+from metaxy.metadata_store.utils import (
+    _suppress_feature_version_warning,
+    allow_feature_version_override,
+    empty_frame_like,
+)
 from metaxy.metadata_store.warnings import (
     MetaxyColumnMissingWarning,
     PolarsMaterializationWarning,
@@ -42,7 +42,11 @@ from metaxy.models.constants import (
 )
 from metaxy.models.feature import BaseFeature, FeatureGraph, current_graph
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import (
+    CoercibleToFeatureKey,
+    FeatureKey,
+    ValidatedFeatureKeyAdapter,
+)
 from metaxy.versioning import VersioningEngine
 from metaxy.versioning.polars import PolarsVersioningEngine
 from metaxy.versioning.types import HashAlgorithm, Increment, LazyIncrement
@@ -52,21 +56,12 @@ if TYPE_CHECKING:
 
 
 VersioningEngineT = TypeVar("VersioningEngineT", bound=VersioningEngine)
+VersioningEngineOptions = Literal["auto", "native", "polars"]
 
 
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
-
-    Supports:
-    - Append-only metadata storage patterns
-
-    - Composable fallback store chains for development and testing purposes
-
-    - Backend-specific computation optimizations
-
-    Context Manager:
-        Stores must be used as context managers for resource management.
     """
 
     # Subclasses can override this to disable auto_create_tables warning
@@ -78,38 +73,52 @@ class MetadataStore(ABC):
         *,
         versioning_engine_cls: type[VersioningEngineT],
         hash_algorithm: HashAlgorithm | None = None,
-        hash_truncation_length: int | None = None,
-        prefer_native: bool = True,
+        versioning_engine: VersioningEngineOptions = "auto",
         fallback_stores: list[MetadataStore] | None = None,
         auto_create_tables: bool | None = None,
+        materialization_id: str | None = None,
     ):
         """
-        Initialize metadata store.
+        Initialize the metadata store.
 
         Args:
-            hash_algorithm: Hash algorithm to use for field provenance.
-                Default: None (uses default algorithm for this store type)
-            hash_truncation_length: Length to truncate hashes to (minimum 8).
-                Default: None (uses global setting or no truncation)
-            prefer_native: If True, prefer native field provenance calculations when possible.
-                If False, always use Polars components. Default: True
+            hash_algorithm: Hash algorithm to use for the versioning engine.
+
+            versioning_engine: Which versioning engine to use.
+
+                - "auto": Prefer the store's native engine, fall back to Polars if needed
+
+                - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
+                    if provided dataframes are incompatible
+
+                - "polars": Always use the Polars engine
+
             fallback_stores: Ordered list of read-only fallback stores.
                 Used when upstream features are not in this store.
+                `VersioningEngineMismatchError` is not raised when reading from fallback stores.
             auto_create_tables: If True, automatically create tables when opening the store.
                 If None (default), reads from global MetaxyConfig (which reads from METAXY_AUTO_CREATE_TABLES env var).
                 If False, never auto-create tables.
-                WARNING: Auto-create is intended for development/testing only. Do not use in production.
-                Use proper database migration tools like Alembic for production deployments.
-                Default: None (reads from global config, falls back to False for safety)
+
+                !!! warning
+                    Auto-create is intended for development/testing only.
+                    Use proper database migration tools like Alembic for production deployments.
+
+            materialization_id: Optional external orchestration ID.
+                If provided, all metadata writes will include this ID in the `metaxy_materialization_id` column.
+                Can be overridden per [`MetadataStore.write_metadata`][metaxy.MetadataStore.write_metadata] call.
 
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
+            VersioningEngineMismatchError: If a user-provided dataframe has a wrong implementation
+                and versioning_engine is set to `native`
         """
         # Initialize state early so properties can check it
         self._is_open = False
         self._context_depth = 0
-        self._prefer_native = prefer_native
+        self._versioning_engine = versioning_engine
         self._allow_cross_project_writes = False
+        self._materialization_id = materialization_id
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
@@ -129,21 +138,11 @@ class MetadataStore(ABC):
 
         self.hash_algorithm = hash_algorithm
 
-        # Set hash truncation length - use explicit value or get from global setting
-        if hash_truncation_length is not None:
-            # Validate minimum length
-            if hash_truncation_length < 8:
-                raise ValueError(
-                    f"hash_truncation_length must be at least 8 characters, got {hash_truncation_length}"
-                )
-            self.hash_truncation_length = hash_truncation_length
-        else:
-            # Use global setting if available
-            from metaxy.utils.hashing import get_hash_truncation_length
-
-            self.hash_truncation_length = get_hash_truncation_length()
-
         self.fallback_stores = fallback_stores or []
+
+    @property
+    def hash_truncation_length(self) -> int:
+        return MetaxyConfig.get().hash_truncation_length or 64
 
     @overload
     def resolve_update(
@@ -153,6 +152,7 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -164,6 +164,7 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -174,9 +175,12 @@ class MetadataStore(ABC):
         samples: Frame | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
+        versioning_engine: Literal["auto", "native", "polars"] | None = None,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
+
+        This is the main workhorse in Metaxy.
 
         Args:
             feature: Feature class to resolve updates for
@@ -207,10 +211,12 @@ class MetadataStore(ABC):
                 Example: {"upstream/feature": [nw.col("x") > 10], ...}
             lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
                 If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
+            versioning_engine: Override the store's versioning engine for this operation.
             **kwargs: Backend-specific parameters
 
         Raises:
             ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
+            VersioningEngineMismatchError: If versioning_engine="native" and data has wrong implementation
 
         Examples:
             ```py
@@ -292,33 +298,64 @@ class MetadataStore(ABC):
         # consider (1) whether all upstream metadata has been loaded with the native implementation
         # (2) if samples have native implementation
 
-        implementation = self.native_implementation()
-        switched_to_polars = False
+        # Use parameter if provided, otherwise use store default
+        engine_mode = (
+            versioning_engine
+            if versioning_engine is not None
+            else self._versioning_engine
+        )
 
-        for upstream_key, df in upstream_by_key.items():
-            if df.implementation != implementation:
-                switched_to_polars = True
-                if self._prefer_native:
-                    PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                        expected=self.native_implementation(),
-                        actual=df.implementation,
-                        message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
-                    )
-                implementation = nw.Implementation.POLARS
-                break
-
-        if (
-            samples is not None
-            and samples.implementation != self.native_implementation()
-        ):
-            if self._prefer_native and not switched_to_polars:
-                PolarsMaterializationWarning.warn_on_implementation_mismatch(
-                    expected=self.native_implementation(),
-                    actual=samples.implementation,
-                    message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
-                )
+        # If "polars" mode, force Polars immediately
+        if engine_mode == "polars":
             implementation = nw.Implementation.POLARS
             switched_to_polars = True
+        else:
+            implementation = self.native_implementation()
+            switched_to_polars = False
+
+            for upstream_key, df in upstream_by_key.items():
+                if df.implementation != implementation:
+                    switched_to_polars = True
+                    # Only raise error in "native" mode if no fallback stores configured.
+                    # If fallback stores exist, the implementation mismatch indicates data came
+                    # from fallback (different implementation), which is legitimate fallback access.
+                    # If data were local, it would have the native implementation.
+                    if engine_mode == "native" and not self.fallback_stores:
+                        raise VersioningEngineMismatchError(
+                            f"versioning_engine='native' but upstream feature `{upstream_key.to_string()}` "
+                            f"has implementation {df.implementation}, expected {self.native_implementation()}"
+                        )
+                    elif engine_mode == "auto" or (
+                        engine_mode == "native" and self.fallback_stores
+                    ):
+                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                            expected=self.native_implementation(),
+                            actual=df.implementation,
+                            message=f"Using Polars for resolving the increment instead. This was caused by upstream feature `{upstream_key.to_string()}`.",
+                        )
+                    implementation = nw.Implementation.POLARS
+                    break
+
+            if (
+                samples is not None
+                and samples.implementation != self.native_implementation()
+            ):
+                if not switched_to_polars:
+                    if engine_mode == "native":
+                        # Always raise error for samples with wrong implementation, regardless
+                        # of fallback stores, because samples come from user argument, not from fallback
+                        raise VersioningEngineMismatchError(
+                            f"versioning_engine='native' but provided `samples` have implementation {samples.implementation}, "
+                            f"expected {self.native_implementation()}"
+                        )
+                    elif engine_mode == "auto":
+                        PolarsMaterializationWarning.warn_on_implementation_mismatch(
+                            expected=self.native_implementation(),
+                            actual=samples.implementation,
+                            message=f"Provided `samples` have implementation {samples.implementation}. Using Polars for resolving the increment instead.",
+                        )
+                implementation = nw.Implementation.POLARS
+                switched_to_polars = True
 
         if switched_to_polars:
             if current_metadata:
@@ -367,6 +404,202 @@ class MetadataStore(ABC):
                 if isinstance(removed, nw.LazyFrame)
                 else removed,
             )
+
+    def read_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        feature_version: str | None = None,
+        filters: Sequence[nw.Expr] | None = None,
+        columns: Sequence[str] | None = None,
+        allow_fallback: bool = True,
+        current_only: bool = True,
+        latest_only: bool = True,
+    ) -> nw.LazyFrame[Any]:
+        """
+        Read metadata with optional fallback to upstream stores.
+
+        Args:
+            feature: Feature to read metadata for
+            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
+            filters: Sequence of Narwhals filter expressions to apply to this feature.
+                Example: `[nw.col("x") > 10, nw.col("y") < 5]`
+            columns: Subset of columns to include. Metaxy's system columns are always included.
+            allow_fallback: If `True`, check fallback stores on local miss
+            current_only: If `True`, only return rows with current feature_version
+            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
+
+        Returns:
+            Narwhals LazyFrame with metadata
+
+        Raises:
+            FeatureNotFoundError: If feature not found in any store
+            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
+            ValueError: If both feature_version and current_only=True are provided
+        """
+        filters = filters or []
+        columns = columns or []
+
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # Validate mutually exclusive parameters
+        if feature_version is not None and current_only:
+            raise ValueError(
+                "Cannot specify both feature_version and current_only=True. "
+                "Use current_only=False with feature_version parameter."
+            )
+
+        # Add feature_version filter only when needed
+        if current_only or feature_version is not None and not is_system_table:
+            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
+                current_graph().get_feature_version(feature_key)
+                if current_only
+                else feature_version
+            )
+            filters = [version_filter, *filters]
+
+        if columns and not is_system_table:
+            # Add only system columns that aren't already in the user's columns list
+            columns_set = set(columns)
+            missing_system_cols = [
+                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
+            ]
+            read_columns = [*columns, *missing_system_cols]
+        else:
+            read_columns = None
+
+        lazy_frame = None
+        try:
+            lazy_frame = self.read_metadata_in_store(
+                feature, filters=filters, columns=read_columns
+            )
+        except FeatureNotFoundError as e:
+            # do not read system features from fallback stores
+            if is_system_table:
+                raise SystemDataNotFoundError(
+                    f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+                ) from e
+
+        # Handle case where read_metadata_in_store returns None (no exception raised)
+        if lazy_frame is None and is_system_table:
+            raise SystemDataNotFoundError(
+                f"System Metaxy data with key {feature_key} is missing in {self.display()}. Invoke `metaxy graph push` before attempting to read system data."
+            )
+
+        if lazy_frame is not None and not is_system_table and latest_only:
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            # Apply deduplication
+            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=list(
+                    self._resolve_feature_plan(feature_key).feature.id_columns
+                ),
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
+        if lazy_frame is not None:
+            # After dedup, filter to requested columns if specified
+            if columns:
+                lazy_frame = lazy_frame.select(columns)
+
+            return lazy_frame
+
+        # Try fallback stores
+        if allow_fallback:
+            for store in self.fallback_stores:
+                try:
+                    # Use full read_metadata to handle nested fallback chains
+                    return store.read_metadata(
+                        feature,
+                        feature_version=feature_version,
+                        filters=filters,
+                        columns=columns,
+                        allow_fallback=True,
+                        current_only=current_only,
+                        latest_only=latest_only,
+                    )
+                except FeatureNotFoundError:
+                    # Try next fallback store
+                    continue
+
+        # Not found anywhere
+        raise FeatureNotFoundError(
+            f"Feature {feature_key.to_string()} not found in store"
+            + (" or fallback stores" if allow_fallback else "")
+        )
+
+    def write_metadata(
+        self,
+        feature: CoercibleToFeatureKey,
+        df: IntoFrame,
+        materialization_id: str | None = None,
+    ) -> None:
+        """
+        Write metadata for a feature (append-only by design).
+
+        Automatically adds the Metaxy system columns, unless they already exist in the DataFrame.
+
+        Args:
+            feature: Feature to write metadata for
+            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
+                Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
+                Optionally, may also contain `metaxy_data_version_by_field`.
+            materialization_id: Optional external orchestration ID for this write.
+                Overrides the store's default `materialization_id` if provided.
+                Useful for tracking which orchestration run produced this metadata.
+
+        Raises:
+            MetadataSchemaError: If DataFrame schema is invalid
+            StoreNotOpenError: If store is not open
+            ValueError: If writing to a feature from a different project than expected
+
+        Note:
+            - Never writes to fallback stores.
+
+            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
+
+            - Must be called within `store.open(mode="write")` context manager.
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+        is_system_table = self._is_system_table(feature_key)
+
+        # Validate project for non-system tables
+        if not is_system_table:
+            self._validate_project_write(feature)
+
+        # Convert Polars to Narwhals to Polars if needed
+        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
+        df_nw = nw.from_native(df)
+
+        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
+
+        # For system tables, write directly without feature_version tracking
+        if is_system_table:
+            self._validate_schema_system_table(df_nw)
+            self.write_metadata_to_store(feature_key, df_nw)
+            return
+
+        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
+            from metaxy.metadata_store.exceptions import MetadataSchemaError
+
+            raise MetadataSchemaError(
+                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
+            )
+
+        # Add all required system columns
+        # warning: for dataframes that do not match the native MetadataStore implementation
+        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
+        # while calculating the missing METAXY_DATA_VERSION column
+        df_nw = self._add_system_columns(
+            df_nw, feature, materialization_id=materialization_id
+        )
+
+        self._validate_schema(df_nw)
+        self.write_metadata_to_store(feature_key, df_nw)
 
     @abstractmethod
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
@@ -471,7 +704,7 @@ class MetadataStore(ABC):
 
     @abstractmethod
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open/initialize the store for operations.
 
         Context manager that opens the store with specified access mode.
@@ -492,13 +725,13 @@ class MetadataStore(ABC):
     def __enter__(self) -> Self:
         """Enter context manager - opens store in READ mode by default.
 
-        For explicit mode control, use `with store.open(mode):` instead.
+        Use [`MetadataStore.open`][metaxy.metadata_store.base.MetadataStore.open] for write access mode instead.
 
         Returns:
             Self: The opened store instance
         """
         # Determine mode based on auto_create_tables
-        mode = AccessMode.WRITE if self.auto_create_tables else AccessMode.READ
+        mode = "write" if self.auto_create_tables else "read"
 
         # Open the store (open() manages _context_depth internally)
         self._open_cm = self.open(mode)
@@ -524,40 +757,16 @@ class MetadataStore(ABC):
                     f"All stores in a fallback chain must use the same hash algorithm."
                 )
 
-        # Validate fallback stores use the same hash truncation length
-        for i, fallback_store in enumerate(self.fallback_stores):
-            if fallback_store.hash_truncation_length != self.hash_truncation_length:
-                raise ValueError(
-                    f"Fallback store {i} uses hash_truncation_length="
-                    f"'{fallback_store.hash_truncation_length}' "
-                    f"but this store uses '{self.hash_truncation_length}'. "
-                    f"All stores in a fallback chain must use the same hash truncation length."
-                )
-
     def __exit__(
         self,
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
-    ) -> bool:
-        """Exit context manager.
-
-        Properly cleans up the opened connection by delegating to the open() context manager.
-
-        Args:
-            exc_type: Exception type if an error occurred
-            exc_val: Exception value if an error occurred
-            exc_tb: Exception traceback if an error occurred
-
-        Returns:
-            False to propagate any exceptions
-        """
+    ) -> None:
         # Delegate to open()'s context manager (which manages _context_depth)
         if self._open_cm is not None:
             self._open_cm.__exit__(exc_type, exc_val, exc_tb)
             self._open_cm = None
-
-        return False
 
     def _check_open(self) -> None:
         """Check if store is open, raise error if not.
@@ -568,7 +777,7 @@ class MetadataStore(ABC):
         if not self._is_open:
             raise StoreNotOpenError(
                 f"{self.__class__.__name__} must be opened before use. "
-                "Use it as a context manager: `with store: ...` or `with store.open(mode=AccessMode.WRITE): ...`"
+                'Use it as a context manager: `with store: ...` or `with store.open(mode="write"): ...`'
             )
 
     # ========== Hash Algorithm Validation ==========
@@ -615,26 +824,26 @@ class MetadataStore(ABC):
         """Check if feature key is a system table."""
         return len(feature_key) >= 1 and feature_key[0] == METAXY_SYSTEM_KEY_PREFIX
 
-    def _resolve_feature_key(
-        self, feature: FeatureKey | type[BaseFeature]
-    ) -> FeatureKey:
-        """Resolve a Feature class or FeatureKey to FeatureKey."""
-        if isinstance(feature, FeatureKey):
-            return feature
-        else:
-            return feature.spec().key
+    def _resolve_feature_key(self, feature: CoercibleToFeatureKey) -> FeatureKey:
+        """Resolve various types to FeatureKey.
 
-    def _resolve_feature_plan(
-        self, feature: FeatureKey | type[BaseFeature]
-    ) -> FeaturePlan:
+        Accepts types that can be converted into a FeatureKey.
+
+        Args:
+            feature: Feature to resolve to FeatureKey
+
+        Returns:
+            FeatureKey instance
+        """
+        return ValidatedFeatureKeyAdapter.validate_python(feature)
+
+    def _resolve_feature_plan(self, feature: CoercibleToFeatureKey) -> FeaturePlan:
         """Resolve to FeaturePlan for dependency resolution."""
+        # First resolve to FeatureKey
+        feature_key = self._resolve_feature_key(feature)
+        # Then get the plan
         graph = current_graph()
-        if isinstance(feature, FeatureKey):
-            # When given a FeatureKey, get the graph from the active context
-            return graph.get_feature_plan(feature)
-        else:
-            # When given a Feature class, use its bound graph
-            return graph.get_feature_plan(feature.spec().key)
+        return graph.get_feature_plan(feature_key)
 
     # ========== Core CRUD Operations ==========
 
@@ -663,7 +872,7 @@ class MetadataStore(ABC):
         finally:
             self._allow_cross_project_writes = previous_value
 
-    def _validate_project_write(self, feature: FeatureKey | type[BaseFeature]) -> None:
+    def _validate_project_write(self, feature: CoercibleToFeatureKey) -> None:
         """Validate that writing to a feature matches the expected project from config.
 
         Args:
@@ -686,7 +895,6 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
 
         # Get the Feature class from the graph
-        from metaxy.models.feature import FeatureGraph
 
         graph = FeatureGraph.get_active()
         if feature_key not in graph.features_by_key:
@@ -710,6 +918,7 @@ class MetadataStore(ABC):
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation (backend-specific).
@@ -719,88 +928,25 @@ class MetadataStore(ABC):
         Args:
             feature_key: Feature key to write to
             df: [Narwhals](https://narwhals-dev.github.io/narwhals/)-compatible DataFrame with metadata to write
+            **kwargs: Backend-specific parameters
 
         Note: Subclasses implement this for their storage backend.
         """
         pass
 
-    def write_metadata(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        df: IntoFrame,
-    ) -> None:
-        """
-        Write metadata for a feature (immutable, append-only).
-
-        Automatically adds the canonical system columns (`metaxy_feature_version`,
-        `metaxy_snapshot_version`) unless they already exist in the DataFrame
-        (useful for migrations).
-
-        Args:
-            feature: Feature to write metadata for
-            df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
-                Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
-                Optionally, may also contain `metaxy_data_version_by_field`.
-
-        Raises:
-            MetadataSchemaError: If DataFrame schema is invalid
-            StoreNotOpenError: If store is not open
-            ValueError: If writing to a feature from a different project than expected
-
-        Note:
-            - Never writes to fallback stores.
-
-            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
-
-            - Must be called within `store.open(mode=AccessMode.WRITE)` context manager.
-        """
-        self._check_open()
-
-        feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
-
-        # Validate project for non-system tables
-        if not is_system_table:
-            self._validate_project_write(feature)
-
-        # Convert Polars to Narwhals to Polars if needed
-        # if isinstance(df_nw, (pl.DataFrame, pl.LazyFrame)):
-        df_nw = nw.from_native(df)
-
-        assert isinstance(df_nw, nw.DataFrame), "df must be a Narwhal DataFrame"
-
-        # For system tables, write directly without feature_version tracking
-        if is_system_table:
-            self._validate_schema_system_table(df_nw)
-            self.write_metadata_to_store(feature_key, df_nw)
-            return
-
-        if METAXY_PROVENANCE_BY_FIELD not in df_nw.columns:
-            from metaxy.metadata_store.exceptions import MetadataSchemaError
-
-            raise MetadataSchemaError(
-                f"DataFrame must have '{METAXY_PROVENANCE_BY_FIELD}' column"
-            )
-
-        # Add all required system columns
-        # warning: for dataframes that do not match the native MetadatStore implementation
-        # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
-        # while calculating the missing METAXY_DATA_VERSION column
-        df_nw = self._add_system_columns(df_nw, feature)
-
-        self._validate_schema(df_nw)
-        self.write_metadata_to_store(feature_key, df_nw)
-
     def _add_system_columns(
         self,
         df: Frame,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
+        materialization_id: str | None = None,
     ) -> Frame:
         """Add all required system columns to the DataFrame.
 
         Args:
             df: Narwhals DataFrame/LazyFrame
             feature: Feature class or key
+            materialization_id: Optional external orchestration ID for this write.
+                Overrides the store's default if provided.
 
         Returns:
             DataFrame with all system columns added
@@ -878,6 +1024,21 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
+            )
+
+        # Add materialization_id if not already present
+        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+        if METAXY_MATERIALIZATION_ID not in df.columns:
+            # Use provided materialization_id, fall back to store's default
+            mat_id = (
+                materialization_id
+                if materialization_id is not None
+                else self._materialization_id
+            )
+            # Cast to string to avoid NULL-typed columns (which some backends don't support)
+            df = df.with_columns(
+                nw.lit(mat_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
             )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
@@ -958,7 +1119,7 @@ class MetadataStore(ABC):
         """
         pass
 
-    def drop_feature_metadata(self, feature: FeatureKey | type[BaseFeature]) -> None:
+    def drop_feature_metadata(self, feature: CoercibleToFeatureKey) -> None:
         """Drop all metadata for a feature.
 
         This removes all stored metadata for the specified feature from the store.
@@ -983,10 +1144,11 @@ class MetadataStore(ABC):
     @abstractmethod
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from THIS store only without using any fallbacks stores.
@@ -995,128 +1157,18 @@ class MetadataStore(ABC):
             feature: Feature to read metadata for
             filters: List of Narwhals filter expressions for this specific feature.
             columns: Subset of columns to return
+            **kwargs: Backend-specific parameters
 
         Returns:
             Narwhals LazyFrame with metadata, or None if feature not found in the store
         """
         pass
 
-    def read_metadata(
-        self,
-        feature: FeatureKey | type[BaseFeature],
-        *,
-        feature_version: str | None = None,
-        filters: Sequence[nw.Expr] | None = None,
-        columns: Sequence[str] | None = None,
-        allow_fallback: bool = True,
-        current_only: bool = True,
-        latest_only: bool = True,
-    ) -> nw.LazyFrame[Any]:
-        """
-        Read metadata with optional fallback to upstream stores.
-
-        Args:
-            feature: Feature to read metadata for
-            feature_version: Explicit feature_version to filter by (mutually exclusive with current_only=True)
-            filters: Sequence of Narwhals filter expressions to apply to this feature.
-                Example: [nw.col("x") > 10, nw.col("y") < 5]
-            columns: Subset of columns to include. Metaxy's system columns are always included.
-            allow_fallback: If True, check fallback stores on local miss
-            current_only: If True, only return rows with current feature_version
-                (default: True for safety)
-            latest_only: Whether to deduplicate samples within `id_columns` groups ordered by `metaxy_created_at`.
-
-        Returns:
-            Narwhals LazyFrame with metadata
-
-        Raises:
-            FeatureNotFoundError: If feature not found in any store
-            ValueError: If both feature_version and current_only=True are provided
-        """
-        filters = filters or []
-        columns = columns or []
-
-        feature_key = self._resolve_feature_key(feature)
-        is_system_table = self._is_system_table(feature_key)
-
-        # Validate mutually exclusive parameters
-        if feature_version is not None and current_only:
-            raise ValueError(
-                "Cannot specify both feature_version and current_only=True. "
-                "Use current_only=False with feature_version parameter."
-            )
-
-        # Add feature_version filter only when needed
-        if current_only or feature_version is not None and not is_system_table:
-            version_filter = nw.col(METAXY_FEATURE_VERSION) == (
-                current_graph().get_feature_version(feature_key)
-                if current_only
-                else feature_version
-            )
-            filters = [version_filter, *filters]
-
-        if columns and not is_system_table:
-            # Add only system columns that aren't already in the user's columns list
-            columns_set = set(columns)
-            missing_system_cols = [
-                c for c in ALL_SYSTEM_COLUMNS if c not in columns_set
-            ]
-            read_columns = [*columns, *missing_system_cols]
-        else:
-            read_columns = None
-
-        lazy_frame = self.read_metadata_in_store(
-            feature, filters=filters, columns=read_columns
-        )
-
-        if lazy_frame is not None and not is_system_table and latest_only:
-            from metaxy.models.constants import METAXY_CREATED_AT
-
-            # Apply deduplication
-            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
-                df=lazy_frame,
-                group_columns=list(
-                    self._resolve_feature_plan(feature_key).feature.id_columns
-                ),
-                timestamp_column=METAXY_CREATED_AT,
-            )
-
-        if lazy_frame is not None:
-            # After dedup, filter to requested columns if specified
-            if columns:
-                lazy_frame = lazy_frame.select(columns)
-
-            return lazy_frame
-
-        # Try fallback stores
-        if allow_fallback:
-            for store in self.fallback_stores:
-                try:
-                    # Use full read_metadata to handle nested fallback chains
-                    return store.read_metadata(
-                        feature,
-                        feature_version=feature_version,
-                        filters=filters,
-                        columns=columns,
-                        allow_fallback=True,
-                        current_only=current_only,
-                        latest_only=latest_only,
-                    )
-                except FeatureNotFoundError:
-                    # Try next fallback store
-                    continue
-
-        # Not found anywhere
-        raise FeatureNotFoundError(
-            f"Feature {feature_key.to_string()} not found in store"
-            + (" or fallback stores" if allow_fallback else "")
-        )
-
     # ========== Feature Existence ==========
 
     def has_feature(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         check_fallback: bool = False,
     ) -> bool:
@@ -1130,17 +1182,32 @@ class MetadataStore(ABC):
         Returns:
             True if feature exists, False otherwise
         """
-        # Check local
+        self._check_open()
+
         if self.read_metadata_in_store(feature) is not None:
             return True
 
         # Check fallback stores
-        if check_fallback:
+        if not check_fallback:
+            return self._has_feature_impl(feature)
+        else:
             for store in self.fallback_stores:
                 if store.has_feature(feature, check_fallback=True):
                     return True
 
         return False
+
+    @abstractmethod
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+        """Implementation of _has_feature.
+
+        Args:
+            feature: Feature to check
+
+        Returns:
+            True if feature exists, False otherwise
+        """
+        pass
 
     @abstractmethod
     def display(self) -> str:
@@ -1153,147 +1220,10 @@ class MetadataStore(ABC):
         """
         pass
 
-    def read_graph_snapshots(self, project: str | None = None) -> pl.DataFrame:
-        """Read recorded graph snapshots from the feature_versions system table.
-
-        Args:
-            project: Project name to filter by. If None, returns snapshots from all projects.
-
-        Returns a DataFrame with columns:
-        - snapshot_version: Unique identifier for each graph snapshot
-        - recorded_at: Timestamp when the snapshot was recorded
-        - feature_count: Number of features in this snapshot
-
-        Returns:
-            Polars DataFrame with snapshot information, sorted by recorded_at descending
-
-        Raises:
-            StoreNotOpenError: If store is not open
-
-        Example:
-            ```py
-            with store:
-                # Get snapshots for a specific project
-                snapshots = store.read_graph_snapshots(project="my_project")
-                latest_snapshot = snapshots[SNAPSHOT_VERSION_COL][0]
-                print(f"Latest snapshot: {latest_snapshot}")
-
-                # Get snapshots across all projects
-                all_snapshots = store.read_graph_snapshots()
-            ```
-        """
-        self._check_open()
-
-        # Build filters based on project parameter
-        filters = None
-        if project is not None:
-            import narwhals as nw
-
-            filters = [nw.col("project") == project]
-
-        versions_lazy = self.read_metadata_in_store(
-            FEATURE_VERSIONS_KEY, filters=filters
-        )
-        if versions_lazy is None:
-            # No snapshots recorded yet
-            return pl.DataFrame(
-                schema={
-                    METAXY_SNAPSHOT_VERSION: pl.String,
-                    "recorded_at": pl.Datetime("us"),
-                    "feature_count": pl.UInt32,
-                }
-            )
-
-        versions_df = versions_lazy.collect().to_polars()
-
-        # Group by snapshot_version and get earliest recorded_at and count
-        snapshots = (
-            versions_df.group_by(METAXY_SNAPSHOT_VERSION)
-            .agg(
-                [
-                    pl.col("recorded_at").min().alias("recorded_at"),
-                    pl.col("feature_key").count().alias("feature_count"),
-                ]
-            )
-            .sort("recorded_at", descending=True)
-        )
-
-        return snapshots
-
-    def read_features(
-        self,
-        *,
-        current: bool = True,
-        snapshot_version: str | None = None,
-        project: str | None = None,
-    ) -> pl.DataFrame:
-        """Read feature version information from the feature_versions system table.
-
-        Args:
-            current: If True, only return features from the current code snapshot.
-                     If False, must provide snapshot_version.
-            snapshot_version: Specific snapshot version to filter by. Required if current=False.
-            project: Project name to filter by. Defaults to None.
-
-        Returns:
-            Polars DataFrame with columns from FEATURE_VERSIONS_SCHEMA:
-            - feature_key: Feature identifier
-            - feature_version: Version hash of the feature
-            - recorded_at: When this version was recorded
-            - feature_spec: JSON serialized feature specification
-            - feature_class_path: Python import path to the feature class
-            - snapshot_version: Graph snapshot this feature belongs to
-
-        Raises:
-            StoreNotOpenError: If store is not open
-            ValueError: If current=False but no snapshot_version provided
-
-        Examples:
-            ```py
-            # Get features from current code
-            with store:
-                features = store.read_features(current=True)
-                print(f"Current graph has {len(features)} features")
-            ```
-
-            ```py
-            # Get features from a specific snapshot
-            with store:
-                features = store.read_features(current=False, snapshot_version="abc123")
-                for row in features.iter_rows(named=True):
-                    print(f"{row['feature_key']}: {row['metaxy_feature_version']}")
-            ```
-        """
-        self._check_open()
-
-        if not current and snapshot_version is None:
-            raise ValueError("Must provide snapshot_version when current=False")
-
-        if current:
-            # Get current snapshot from active graph
-            graph = FeatureGraph.get_active()
-            snapshot_version = graph.snapshot_version
-
-        filters = [nw.col(METAXY_SNAPSHOT_VERSION) == snapshot_version]
-        if project is not None:
-            filters.append(nw.col("project") == project)
-
-        versions_lazy = self.read_metadata_in_store(
-            FEATURE_VERSIONS_KEY, filters=filters
-        )
-        if versions_lazy is None:
-            # No features recorded yet
-            return pl.DataFrame(schema=FEATURE_VERSIONS_SCHEMA)
-
-        # Filter by snapshot_version
-        versions_df = versions_lazy.collect().to_polars()
-
-        return versions_df
-
     def copy_metadata(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature]] | None = None,
+        features: list[CoercibleToFeatureKey] | None = None,
         *,
         from_snapshot: str | None = None,
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
@@ -1380,12 +1310,12 @@ class MetadataStore(ABC):
         # Validate destination store is open
         if not self._is_open:
             raise ValueError(
-                "Destination store must be opened with store.open(AccessMode.WRITE) before use"
+                'Destination store must be opened with store.open("write") before use'
             )
 
         # Auto-open source store if not already open
         if not from_store._is_open:
-            with from_store.open(AccessMode.READ):
+            with from_store.open("read"):
                 return self._copy_metadata_impl(
                     from_store=from_store,
                     features=features,
@@ -1407,7 +1337,7 @@ class MetadataStore(ABC):
     def _copy_metadata_impl(
         self,
         from_store: MetadataStore,
-        features: list[FeatureKey | type[BaseFeature]] | None,
+        features: list[CoercibleToFeatureKey] | None,
         from_snapshot: str | None,
         filters: Mapping[str, Sequence[nw.Expr]] | None,
         incremental: bool,
@@ -1426,66 +1356,15 @@ class MetadataStore(ABC):
                 f"Copying all features from active graph: {len(features_to_copy)} features"
             )
         else:
-            # Convert all to FeatureKey
-            features_to_copy = []
-            for item in features:
-                if isinstance(item, FeatureKey):
-                    features_to_copy.append(item)
-                else:
-                    # Must be Feature class
-                    features_to_copy.append(item.spec().key)
+            # Convert all to FeatureKey using the adapter
+            features_to_copy = [self._resolve_feature_key(item) for item in features]
             logger.info(f"Copying {len(features_to_copy)} specified features")
 
-        # Determine from_snapshot
-        if from_snapshot is None:
-            # Get latest snapshot from source store
-            try:
-                versions_lazy = from_store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
-                if versions_lazy is None:
-                    # No feature_versions table yet - if no features to copy, that's okay
-                    if len(features_to_copy) == 0:
-                        logger.info(
-                            "No features to copy and no snapshots in source store"
-                        )
-                        from_snapshot = None  # Will be set later if needed
-                    else:
-                        raise ValueError(
-                            "Source store has no feature_versions table. Cannot determine snapshot."
-                        )
-                elif versions_lazy is not None:
-                    versions_df = versions_lazy.collect().to_polars()
-                    if versions_df.height == 0:
-                        # Empty versions table - if no features to copy, that's okay
-                        if len(features_to_copy) == 0:
-                            logger.info(
-                                "No features to copy and no snapshots in source store"
-                            )
-                            from_snapshot = None
-                        else:
-                            raise ValueError(
-                                "Source store feature_versions table is empty. No snapshots found."
-                            )
-                    else:
-                        # Get most recent snapshot_version by recorded_at
-                        from_snapshot = (
-                            versions_df.sort("recorded_at", descending=True)
-                            .select(METAXY_SNAPSHOT_VERSION)
-                            .head(1)[METAXY_SNAPSHOT_VERSION][0]
-                        )
-                        logger.info(
-                            f"Using latest snapshot from source: {from_snapshot}"
-                        )
-            except Exception as e:
-                # If we have no features to copy, continue gracefully
-                if len(features_to_copy) == 0:
-                    logger.info(f"No features to copy: {e}")
-                    from_snapshot = None
-                else:
-                    raise ValueError(
-                        f"Could not determine latest snapshot from source store: {e}"
-                    )
+        # Log snapshot usage
+        if from_snapshot is not None:
+            logger.info(f"Filtering by snapshot: {from_snapshot}")
         else:
-            logger.info(f"Using specified from_snapshot: {from_snapshot}")
+            logger.info("Copying all data (no snapshot filter)")
 
         # Copy metadata for each feature
         total_rows = 0
@@ -1502,12 +1381,15 @@ class MetadataStore(ABC):
                         current_only=False,
                     )
 
-                    # Filter by from_snapshot
+                    # Filter by from_snapshot if specified
                     import narwhals as nw
 
-                    source_filtered = source_lazy.filter(
-                        nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                    )
+                    if from_snapshot is not None:
+                        source_filtered = source_lazy.filter(
+                            nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
+                        )
+                    else:
+                        source_filtered = source_lazy
 
                     # Apply filters for this feature (if any)
                     if filters:
@@ -1526,10 +1408,13 @@ class MetadataStore(ABC):
                                 allow_fallback=False,
                                 current_only=False,
                             )
-                            # Filter destination to same snapshot_version
-                            dest_for_snapshot = dest_lazy.filter(
-                                nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
-                            )
+                            # Filter destination to same snapshot_version (if specified)
+                            if from_snapshot is not None:
+                                dest_for_snapshot = dest_lazy.filter(
+                                    nw.col(METAXY_SNAPSHOT_VERSION) == from_snapshot
+                                )
+                            else:
+                                dest_for_snapshot = dest_lazy
 
                             # Materialize destination sample_uids to avoid cross-backend join issues
                             # When copying between different stores (e.g., different DuckDB files),

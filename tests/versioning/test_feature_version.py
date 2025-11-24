@@ -2,22 +2,15 @@
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_version_deterministic(snapshot: SnapshotAssertion) -> None:
     """Test that feature_version is deterministic."""
 
     class TestFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[
@@ -54,7 +47,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
     with graph_v1.use():
 
         class FeatureV1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "feature", "test_v1"]),
                 fields=[
@@ -67,7 +60,7 @@ def test_feature_version_changes_with_code_version(snapshot: SnapshotAssertion) 
     with graph_v2.use():
 
         class FeatureV2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "feature", "test_v2"]),
                 fields=[
@@ -91,7 +84,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
     """Test that feature_version changes when dependencies change."""
 
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_deps", "upstream"]),
             fields=[
@@ -102,7 +95,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
         pass
 
     class DownstreamNoDeps(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "no_deps"]),
             # No dependencies
@@ -114,7 +107,7 @@ def test_feature_version_changes_with_dependencies(snapshot: SnapshotAssertion) 
         pass
 
     class DownstreamWithDeps(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_deps", "downstream", "with_deps"]),
             deps=[
@@ -141,7 +134,7 @@ def test_feature_version_multi_field(snapshot: SnapshotAssertion) -> None:
     """Test feature_version with multiple fields."""
 
     class MultiField(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi"]),
             fields=[
@@ -166,7 +159,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
     """Test feature_version includes field-level dependencies."""
 
     class Upstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_field_deps", "upstream"]),
             fields=[
@@ -178,7 +171,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
         pass
 
     class DownstreamNoDeps(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_field_deps", "downstream", "no_deps"]),
             deps=[FeatureDep(feature=FeatureKey(["test_field_deps", "upstream"]))],
@@ -194,7 +187,7 @@ def test_feature_version_with_field_deps(snapshot: SnapshotAssertion) -> None:
         pass
 
     class DownstreamWithFieldDeps(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test_field_deps", "downstream", "with_deps"]),
             deps=[FeatureDep(feature=FeatureKey(["test_field_deps", "upstream"]))],

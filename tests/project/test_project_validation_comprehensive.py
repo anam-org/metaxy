@@ -7,16 +7,17 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import SystemTableStorage
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.base import (
     MetadataStore,
 )
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.metadata_store.memory import InMemoryMetadataStore
+from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.ops import DataVersionReconciliation
-from metaxy.models.feature import Feature, FeatureGraph
-from metaxy.models.feature_spec import FeatureDep, FieldSpec, SampleFeatureSpec
+from metaxy.models.feature import BaseFeature, FeatureGraph
+from metaxy.models.feature_spec import FeatureDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 
 
@@ -56,7 +57,7 @@ class TestProjectValidationComprehensive:
         with test_graph.use():
             # 1. Default case - uses global config (default project)
             class DefaultFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["default_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -72,7 +73,7 @@ class TestProjectValidationComprehensive:
         with test_graph.use():
 
             class TestFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
@@ -89,7 +90,7 @@ class TestProjectValidationComprehensive:
         with test_graph.use():
 
             class CustomFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["custom_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field3"]), code_version="1")],
@@ -109,7 +110,7 @@ class TestProjectValidationComprehensive:
         with test_graph.use():
             # Create a feature with the correct project
             class ValidFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["valid_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -148,7 +149,7 @@ class TestProjectValidationComprehensive:
         with graph_a.use():
 
             class FeatureA(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -186,7 +187,7 @@ class TestProjectValidationComprehensive:
         with graph_a.use():
 
             class FeatureA(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["feature_a"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -230,7 +231,7 @@ class TestProjectValidationComprehensive:
         with graph.use():
 
             class RootFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -239,7 +240,7 @@ class TestProjectValidationComprehensive:
                 pass
 
             class ChildFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field2"]), code_version="1")],
@@ -287,7 +288,7 @@ class TestProjectValidationComprehensive:
         with new_graph.use():
 
             class RootFeatureV2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["root_feature_v2"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -296,7 +297,7 @@ class TestProjectValidationComprehensive:
                 pass
 
             class ChildFeatureV2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["child_feature_v2"]),
                     fields=[
@@ -378,7 +379,7 @@ class TestProjectValidationComprehensive:
                 "feature_key": ["test/feature"],
                 "metaxy_feature_version": ["v1"],
                 "metaxy_feature_spec_version": ["spec1"],
-                "metaxy_feature_tracking_version": ["track1"],
+                "metaxy_full_definition_version": ["track1"],
                 "recorded_at": [datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)],
                 "feature_spec": ["{}"],
                 "feature_class_path": ["test.TestFeature"],
@@ -397,7 +398,7 @@ class TestProjectValidationComprehensive:
         with test_graph.use():
 
             class FixtureFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["fixture_feature"]),
                     fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],

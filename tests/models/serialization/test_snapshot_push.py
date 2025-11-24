@@ -10,14 +10,8 @@ from __future__ import annotations
 import polars as pl
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
@@ -28,22 +22,19 @@ def test_snapshot_push_result_model():
     """Test SnapshotPushResult NamedTuple structure and backward compatibility."""
     result = SnapshotPushResult(
         snapshot_version="abc123",
-        already_recorded=False,
-        metadata_changed=False,
-        features_with_spec_changes=[],
+        already_pushed=False,
+        updated_features=[],
     )
 
     # Test fields
     assert result.snapshot_version == "abc123"
-    assert result.already_recorded is False
-    assert result.metadata_changed is False
-    assert result.features_with_spec_changes == []
+    assert result.already_pushed is False
+    assert result.updated_features == []
 
-    # Test tuple unpacking for backward compatibility
-    snapshot_version, already_recorded, metadata_changed, features = result
+    # Test tuple unpacking
+    snapshot_version, already_pushed, features = result
     assert snapshot_version == "abc123"
-    assert already_recorded is False
-    assert metadata_changed is False
+    assert already_pushed is False
     assert features == []
 
 
@@ -51,14 +42,14 @@ def test_record_snapshot_first_time():
     """Test recording a brand new snapshot (computational changes).
 
     Scenario 1: Empty store, first push.
-    Expected: already_recorded=False, metadata_changed=False
+    Expected: already_pushed=False, updated_features=[]
     """
     graph = FeatureGraph()
 
     with graph.use():
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
@@ -71,9 +62,8 @@ def test_record_snapshot_first_time():
 
             # Verify result
             assert isinstance(result, SnapshotPushResult)
-            assert result.already_recorded is False
-            assert result.metadata_changed is False
-            assert result.features_with_spec_changes == []
+            assert result.already_pushed is False
+            assert result.updated_features == []
             assert result.snapshot_version == graph.snapshot_version
 
             # Verify data was written to feature_versions table
@@ -104,7 +94,7 @@ def test_record_snapshot_metadata_only_changes():
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -113,7 +103,7 @@ def test_record_snapshot_metadata_only_changes():
             pass
 
         class Downstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],  # No rename yet
@@ -129,8 +119,7 @@ def test_record_snapshot_metadata_only_changes():
         # First push
         with InMemoryMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
-            assert result1.already_recorded is False
-            assert result1.metadata_changed is False
+            assert result1.already_pushed is False
 
             # Verify initial state
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
@@ -144,7 +133,7 @@ def test_record_snapshot_metadata_only_changes():
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -153,7 +142,7 @@ def test_record_snapshot_metadata_only_changes():
                     pass
 
                 class Downstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
@@ -188,38 +177,45 @@ def test_record_snapshot_metadata_only_changes():
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Verify result
-                assert result2.already_recorded is True
-                assert result2.metadata_changed is True
-                assert "downstream" in result2.features_with_spec_changes
-                assert "upstream" not in result2.features_with_spec_changes
+                # Class name changes update feature info but don't change snapshot_version
+                assert result2.already_pushed is True  # Same snapshot_version
+                assert "downstream" in result2.updated_features
+                assert "upstream" in result2.updated_features  # Class name changed
                 assert result2.snapshot_version == snapshot_v2
 
                 # Verify new rows were appended
                 versions_lazy_after = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_after is not None
                 versions_df_after = versions_lazy_after.collect().to_polars()
-                # Old rows + new row for downstream (upstream unchanged)
-                assert versions_df_after.height == 3
+                # Old rows + new rows for both (class names changed)
+                assert versions_df_after.height == 4
 
-                # Verify only downstream has new row
+                # Verify both have new rows
                 downstream_rows = versions_df_after.filter(
                     pl.col("feature_key") == "downstream"
                 )
                 assert downstream_rows.height == 2  # Two versions of downstream
+
+                upstream_rows = versions_df_after.filter(
+                    pl.col("feature_key") == "upstream"
+                )
+                assert (
+                    upstream_rows.height == 2
+                )  # Two versions of upstream (class name changed)
 
 
 def test_record_snapshot_no_changes():
     """Test recording when nothing changed.
 
     Scenario 3: Snapshot exists with identical code.
-    Expected: already_recorded=True, metadata_changed=False
+    Expected: already_pushed=True, updated_features=[]
     """
     graph = FeatureGraph()
 
     with graph.use():
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["path"]), code_version="1")],
@@ -230,15 +226,14 @@ def test_record_snapshot_no_changes():
         with InMemoryMetadataStore() as store:
             # First push
             result1 = SystemTableStorage(store).push_graph_snapshot()
-            assert result1.already_recorded is False
+            assert result1.already_pushed is False
 
             # Second push - identical code
             result2 = SystemTableStorage(store).push_graph_snapshot()
 
             # Verify result
-            assert result2.already_recorded is True
-            assert result2.metadata_changed is False
-            assert result2.features_with_spec_changes == []
+            assert result2.already_pushed is True
+            assert result2.updated_features == []
             assert result2.snapshot_version == graph.snapshot_version
 
             # Verify no new rows appended
@@ -253,7 +248,7 @@ def test_record_snapshot_no_changes():
 def test_record_snapshot_partial_metadata_changes():
     """Test metadata changes for SOME features (not all).
 
-    Only changed features should appear in features_with_spec_changes.
+    Only changed features should appear in updated_features.
     """
     from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
@@ -262,7 +257,7 @@ def test_record_snapshot_partial_metadata_changes():
     with graph_v1.use():
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -271,7 +266,7 @@ def test_record_snapshot_partial_metadata_changes():
             pass
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
@@ -281,7 +276,7 @@ def test_record_snapshot_partial_metadata_changes():
             pass
 
         class FeatureC(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_c"]),
                 deps=[FeatureDep(feature=FeatureKey(["feature_a"]))],
@@ -292,14 +287,14 @@ def test_record_snapshot_partial_metadata_changes():
 
         with InMemoryMetadataStore() as store:
             result1 = SystemTableStorage(store).push_graph_snapshot()
-            assert result1.already_recorded is False
+            assert result1.already_pushed is False
 
             # Version 2: Change metadata for FeatureB and FeatureC (not FeatureA)
             graph_v2 = FeatureGraph()
             with graph_v2.use():
 
                 class FeatureA2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_a"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -308,7 +303,7 @@ def test_record_snapshot_partial_metadata_changes():
                     pass
 
                 class FeatureB2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_b"]),
                         deps=[
@@ -323,7 +318,7 @@ def test_record_snapshot_partial_metadata_changes():
                     pass
 
                 class FeatureC2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["feature_c"]),
                         deps=[
@@ -339,20 +334,19 @@ def test_record_snapshot_partial_metadata_changes():
 
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
-                # Verify: only B and C changed, not A
-                assert result2.already_recorded is True
-                assert result2.metadata_changed is True
-                assert "feature_b" in result2.features_with_spec_changes
-                assert "feature_c" in result2.features_with_spec_changes
-                assert "feature_a" not in result2.features_with_spec_changes
-                assert len(result2.features_with_spec_changes) == 2
+                # Verify: all changed due to class name changes (info updates, not computational)
+                assert result2.already_pushed is True  # Same snapshot_version
+                assert "feature_b" in result2.updated_features
+                assert "feature_c" in result2.updated_features
+                assert "feature_a" in result2.updated_features  # Class name changed
+                assert len(result2.updated_features) == 3
 
                 # Verify correct rows appended
                 versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy is not None
                 versions_df = versions_lazy.collect().to_polars()
-                # Original 3 + 2 new rows (B and C)
-                assert versions_df.height == 5
+                # Original 3 + 3 new rows (all class names changed)
+                assert versions_df.height == 6
 
 
 def test_record_snapshot_append_only_behavior():
@@ -364,7 +358,7 @@ def test_record_snapshot_append_only_behavior():
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -373,7 +367,7 @@ def test_record_snapshot_append_only_behavior():
             pass
 
         class MyFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -406,7 +400,7 @@ def test_record_snapshot_append_only_behavior():
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -415,7 +409,7 @@ def test_record_snapshot_append_only_behavior():
                     pass
 
                 class MyFeature2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         deps=[
@@ -434,16 +428,16 @@ def test_record_snapshot_append_only_behavior():
                     "Metadata-only change should keep same snapshot_version"
                 )
 
-                result2 = SystemTableStorage(store).push_graph_snapshot()
-                assert result2.metadata_changed is True
+                SystemTableStorage(store).push_graph_snapshot()
 
                 # Verify append-only: old rows still exist
                 versions_lazy_v2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
                 assert versions_lazy_v2 is not None
                 versions_df_v2 = versions_lazy_v2.collect().to_polars()
 
-                # Total rows: original 2 (upstream + my_feature) + 1 new (my_feature updated)
-                assert versions_df_v2.height == 3
+                # Total rows: original 2 (upstream + my_feature) + 2 new (upstream2 + my_feature2)
+                # Class name changes trigger re-push even with same feature_key
+                assert versions_df_v2.height == 4
 
                 # Find my_feature rows
                 my_feature_rows = versions_df_v2.filter(
@@ -476,13 +470,13 @@ def test_record_snapshot_append_only_behavior():
 def test_record_snapshot_computational_change():
     """Test computational change (code_version change) creates NEW snapshot.
 
-    This is NOT a metadata-only change - it should return already_recorded=False.
+    This is NOT a metadata-only change - it should return already_pushed=False.
     """
     graph_v1 = FeatureGraph()
     with graph_v1.use():
 
         class MyFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["my_feature"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -501,7 +495,7 @@ def test_record_snapshot_computational_change():
             with graph_v2.use():
 
                 class MyFeature2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["my_feature"]),
                         fields=[
@@ -521,8 +515,7 @@ def test_record_snapshot_computational_change():
                 result2 = SystemTableStorage(store).push_graph_snapshot()
 
                 # Should be treated as NEW snapshot (not metadata-only)
-                assert result2.already_recorded is False
-                assert result2.metadata_changed is False
+                assert result2.already_pushed is False
                 assert result2.snapshot_version == snapshot_v2
 
 
@@ -538,7 +531,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
     with graph_v1.use():
 
         class Upstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["upstream"]),
                 fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -547,7 +540,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             pass
 
         class Downstream(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -561,9 +554,8 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             results.append(
                 {
                     "push": 1,
-                    "already_recorded": result1.already_recorded,
-                    "metadata_changed": result1.metadata_changed,
-                    "features_with_spec_changes": result1.features_with_spec_changes,
+                    "already_pushed": result1.already_pushed,
+                    "updated_features": result1.updated_features,
                 }
             )
 
@@ -572,9 +564,8 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             results.append(
                 {
                     "push": 2,
-                    "already_recorded": result2.already_recorded,
-                    "metadata_changed": result2.metadata_changed,
-                    "features_with_spec_changes": result2.features_with_spec_changes,
+                    "already_pushed": result2.already_pushed,
+                    "updated_features": result2.updated_features,
                 }
             )
 
@@ -583,7 +574,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
             with graph_v2.use():
 
                 class Upstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["upstream"]),
                         fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -592,7 +583,7 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                     pass
 
                 class Downstream2(
-                    Feature,
+                    BaseFeature,
                     spec=SampleFeatureSpec(
                         key=FeatureKey(["downstream"]),
                         deps=[
@@ -610,9 +601,8 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                 results.append(
                     {
                         "push": 3,
-                        "already_recorded": result3.already_recorded,
-                        "metadata_changed": result3.metadata_changed,
-                        "features_with_spec_changes": result3.features_with_spec_changes,
+                        "already_pushed": result3.already_pushed,
+                        "updated_features": result3.updated_features,
                     }
                 )
 
@@ -637,3 +627,101 @@ def test_snapshot_push_result_snapshot_comparison(snapshot: SnapshotAssertion):
                     "final_versions_count": len(versions_dict),
                     "versions": versions_dict,
                 } == snapshot
+
+
+def test_feature_info_changes_trigger_repush():
+    """Test that changing feature info (metadata, descriptions) triggers feature repush.
+
+    Verifies that:
+    1. Feature info changes (like metadata) are detected as updates
+    2. recorded_at timestamp is updated on repush
+    3. already_pushed=True (same snapshot_version)
+    4. Feature appears in updated_features
+    """
+    import time
+
+    from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
+
+    # Version 1: Original feature with metadata
+    graph_v1 = FeatureGraph()
+    with graph_v1.use():
+
+        class TestFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["test_feature"]),
+                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                metadata={"owner": "team_a", "sla": "24h"},
+            ),
+        ):
+            pass
+
+        snapshot_v1 = graph_v1.snapshot_version
+
+        # First push
+        with InMemoryMetadataStore() as store:
+            result1 = SystemTableStorage(store).push_graph_snapshot()
+            assert result1.already_pushed is False
+            assert result1.snapshot_version == snapshot_v1
+
+            # Get initial recorded_at
+            versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+            assert versions_lazy is not None
+            versions_df1 = versions_lazy.collect().to_polars()
+            assert versions_df1.height == 1
+            recorded_at_1 = versions_df1["recorded_at"][0]
+
+            # Wait a bit to ensure timestamp difference
+            time.sleep(0.01)
+
+            # Version 2: Modified feature info (changed metadata)
+            graph_v2 = FeatureGraph()
+            with graph_v2.use():
+
+                class TestFeature2(  # type: ignore
+                    BaseFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["test_feature"]),
+                        fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                        metadata={
+                            "owner": "team_b",
+                            "sla": "12h",
+                            "pii": True,
+                        },  # Changed
+                    ),
+                ):
+                    pass
+
+                snapshot_v2 = graph_v2.snapshot_version
+
+                # Snapshot version should be same (metadata not in feature_version)
+                assert snapshot_v1 == snapshot_v2
+
+                # Second push - should detect info change
+                result2 = SystemTableStorage(store).push_graph_snapshot()
+
+                # Verify result
+                assert result2.already_pushed is True  # Same snapshot_version
+                assert (
+                    "test_feature" in result2.updated_features
+                )  # Feature info updated
+                assert result2.snapshot_version == snapshot_v2
+
+                # Verify new row was appended with updated recorded_at
+                versions_lazy2 = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
+                assert versions_lazy2 is not None
+                versions_df2 = versions_lazy2.collect().to_polars()
+                assert versions_df2.height == 2  # Original + updated
+
+                # Get both recorded_at timestamps
+                feature_rows = versions_df2.filter(
+                    pl.col("feature_key") == "test_feature"
+                ).sort("recorded_at")
+                assert feature_rows.height == 2
+
+                recorded_at_old = feature_rows["recorded_at"][0]
+                recorded_at_new = feature_rows["recorded_at"][1]
+
+                # Verify recorded_at was updated
+                assert recorded_at_new > recorded_at_old
+                assert recorded_at_old == recorded_at_1  # Old one unchanged

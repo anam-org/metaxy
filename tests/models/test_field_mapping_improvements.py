@@ -1,13 +1,7 @@
 """Tests for improved DefaultFieldsMapping functionality."""
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.fields_mapping import FieldsMapping
 
 
@@ -16,7 +10,7 @@ def test_default_fields_mapping_is_default():
 
     # Define upstream feature
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -30,7 +24,7 @@ def test_default_fields_mapping_is_default():
     # Define downstream feature without explicitly specifying deps
     # Should use DefaultFieldsMapping by default
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=UpstreamFeature)],
@@ -63,7 +57,7 @@ def test_exclude_fields():
 
     # Define upstream features with same field names
     class Upstream1(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream1"]),
             fields=[
@@ -75,7 +69,7 @@ def test_exclude_fields():
         pass
 
     class Upstream2(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream2"]),
             fields=[
@@ -88,7 +82,7 @@ def test_exclude_fields():
 
     # Use exclude_fields to prevent metadata from being mapped
     class Downstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[
@@ -115,7 +109,7 @@ def test_backward_compat_with_explicit_all():
     """Test that explicitly using FieldsMapping.all() works as expected."""
 
     class Upstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -127,7 +121,7 @@ def test_backward_compat_with_explicit_all():
 
     # Explicitly use FieldsMapping.all()
     class Downstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=Upstream, fields_mapping=FieldsMapping.all())],
@@ -153,7 +147,7 @@ def test_default_mapping_with_no_upstream_deps():
     # Root feature with no dependencies
     # DefaultFieldsMapping should fallback to ALL behavior
     class RootFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "root"]),
             # No dependencies
@@ -178,7 +172,7 @@ def test_exclude_fields_with_suffix_matching():
     """Test that exclude_fields works with suffix matching."""
 
     class Upstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "upstream"]),
             fields=[
@@ -192,7 +186,7 @@ def test_exclude_fields_with_suffix_matching():
 
     # Exclude audio/french but allow video/french with suffix matching
     class Downstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "downstream"]),
             deps=[FeatureDep(feature=Upstream)],

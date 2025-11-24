@@ -5,13 +5,8 @@ import json
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.system import SystemTableStorage
 
 
@@ -241,14 +236,14 @@ def test_feature_spec_version_with_column_selection_and_rename(
 
 def test_feature_feature_spec_version_classmethod() -> None:
     """Test that Feature.feature_spec_version() classmethod works correctly."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "classmethod"]),
                 fields=[
@@ -274,14 +269,14 @@ def test_feature_feature_spec_version_classmethod() -> None:
 
 def test_feature_spec_version_stored_in_snapshot(snapshot: SnapshotAssertion) -> None:
     """Test that feature_spec_version is included in graph snapshots."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
 
         class SnapshotFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["snapshot", "test"]),
                 fields=[
@@ -323,7 +318,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 ) -> None:
     """Test that feature_spec_version is recorded when pushing to metadata store."""
 
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
     from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
@@ -331,7 +326,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
     with graph.use():
 
         class RecordedFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["recorded", "feature"]),
                 fields=[
@@ -345,15 +340,16 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
         with store:
             # Record the feature graph snapshot
-            result = SystemTableStorage(store).push_graph_snapshot()
+            storage = SystemTableStorage(store)
+            result = storage.push_graph_snapshot()
 
-            is_existing = result.already_recorded
+            is_existing = result.already_pushed
 
             # Should be a new snapshot
             assert not is_existing
 
             # Read the feature_versions system table
-            features_df = store.read_features(current=True)
+            features_df = storage.read_features(current=True)
 
             # Should have one feature
             assert len(features_df) == 1
@@ -391,7 +387,7 @@ def test_feature_spec_version_recorded_in_metadata_store(
 
 def test_feature_spec_version_idempotent_snapshot_recording() -> None:
     """Test that recording the same snapshot twice preserves feature_spec_version."""
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
     from metaxy.metadata_store import InMemoryMetadataStore
 
     graph = FeatureGraph()
@@ -399,7 +395,7 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
     with graph.use():
 
         class IdempotentFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["idempotent", "test"]),
                 fields=[
@@ -413,28 +409,29 @@ def test_feature_spec_version_idempotent_snapshot_recording() -> None:
 
         with store:
             # First push
-            result = SystemTableStorage(store).push_graph_snapshot()
+            storage = SystemTableStorage(store)
+            result = storage.push_graph_snapshot()
 
             snapshot_v1 = result.snapshot_version
 
-            is_existing_1 = result.already_recorded
+            is_existing_1 = result.already_pushed
             assert not is_existing_1
 
-            features_df_1 = store.read_features(current=True)
+            features_df_1 = storage.read_features(current=True)
             feature_spec_version_1 = features_df_1.to_dicts()[0][
                 "metaxy_feature_spec_version"
             ]
 
             # Second push (identical graph)
-            result = SystemTableStorage(store).push_graph_snapshot()
+            result = storage.push_graph_snapshot()
 
             snapshot_v2 = result.snapshot_version
 
-            is_existing_2 = result.already_recorded
+            is_existing_2 = result.already_pushed
             assert is_existing_2  # Should detect existing snapshot
             assert snapshot_v1 == snapshot_v2  # Same snapshot version
 
-            features_df_2 = store.read_features(current=True)
+            features_df_2 = storage.read_features(current=True)
             feature_spec_version_2 = features_df_2.to_dicts()[0][
                 "metaxy_feature_spec_version"
             ]
@@ -450,14 +447,14 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
     - feature_spec_version: Direct JSON serialization of SampleFeatureSpec (all properties)
     - feature_version: Graph-based computation including dependency chains
     """
-    from metaxy import Feature, FeatureGraph
+    from metaxy import BaseFeature, FeatureGraph
 
     graph = FeatureGraph()
 
     with graph.use():
         # Test with root feature (no deps)
         class RootFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["root"]),
                 fields=[
@@ -469,7 +466,7 @@ def test_feature_spec_version_different_from_feature_version_always() -> None:
 
         # Test with downstream feature (with deps)
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["root"]))],

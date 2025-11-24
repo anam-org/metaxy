@@ -55,7 +55,8 @@ class TempFeatureModule:
         """
         code_lines = [
             "# Auto-generated test feature module",
-            "from metaxy import Feature, FeatureSpec, SampleFeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy import BaseFeature as Feature, FeatureSpec, FieldSpec, FieldKey, FeatureDep, FeatureKey, FieldDep, SpecialFieldDep",
+            "from metaxy._testing.models import SampleFeatureSpec",
             "from metaxy.models.feature import FeatureGraph",
             "",
             "# Use a dedicated graph for this temp module",
@@ -292,15 +293,25 @@ class MetaxyProject:
             cmd_env.update(env)
 
         # Run CLI command
-        result = subprocess.run(
-            [sys.executable, "-m", "metaxy.cli.app", *args],
-            cwd=str(self.project_dir),
-            capture_output=True,
-            text=True,
-            env=cmd_env,
-            check=check,
-            **kwargs,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "metaxy.cli.app", *args],
+                cwd=str(self.project_dir),
+                capture_output=True,
+                text=True,
+                env=cmd_env,
+                check=check,
+                **kwargs,
+            )
+        except subprocess.CalledProcessError as e:
+            # Re-raise with stderr output for better debugging
+            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg += f"Exit code: {e.returncode}\n"
+            if e.stdout:
+                error_msg += f"STDOUT:\n{e.stdout}\n"
+            if e.stderr:
+                error_msg += f"STDERR:\n{e.stderr}\n"
+            raise RuntimeError(error_msg) from e
 
         return result
 
@@ -539,7 +550,7 @@ class TempMetaxyProject(MetaxyProject):
         project = TempMetaxyProject(tmp_path)
 
         def features():
-            from metaxy import Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
+            from metaxy import BaseFeature as Feature, FeatureSpec, FeatureKey, FieldSpec, FieldKey
 
             class MyFeature(Feature, spec=FeatureSpec(
                 key=FeatureKey(["my_feature"]),
@@ -564,6 +575,7 @@ class TempMetaxyProject(MetaxyProject):
         super().__init__(tmp_path)
         self.project_dir.mkdir(exist_ok=True)
         self._feature_modules: list[str] = []
+        self._module_counter = 0
         self._custom_config = config_content
         self._write_config()
 
@@ -612,7 +624,7 @@ database = "{staging_db_path}"
         Example:
             ```py
             def my_features():
-                from metaxy import Feature, FeatureSpec, FeatureKey
+                from metaxy import BaseFeature as Feature, FeatureSpec, FeatureKey
 
                 class MyFeature(Feature, spec=...):
                     pass
@@ -628,7 +640,8 @@ database = "{staging_db_path}"
             # Generate module name if not provided
             nonlocal module_name
             if module_name is None:
-                module_name = f"features_{len(self._feature_modules)}"
+                module_name = f"features_{self._module_counter}"
+                self._module_counter += 1
 
             # Extract source code from function
             source = inspect.getsource(features_func)
@@ -706,15 +719,25 @@ database = "{staging_db_path}"
             cmd_env.update(env)
 
         # Run CLI command
-        result = subprocess.run(
-            [sys.executable, "-m", "metaxy.cli.app", *args],
-            cwd=str(self.project_dir),
-            capture_output=True,
-            text=True,
-            env=cmd_env,
-            check=check,
-            **kwargs,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "metaxy.cli.app", *args],
+                cwd=str(self.project_dir),
+                capture_output=True,
+                text=True,
+                env=cmd_env,
+                check=check,
+                **kwargs,
+            )
+        except subprocess.CalledProcessError as e:
+            # Re-raise with stderr output for better debugging
+            error_msg = f"CLI command failed: {' '.join(args)}\n"
+            error_msg += f"Exit code: {e.returncode}\n"
+            if e.stdout:
+                error_msg += f"STDOUT:\n{e.stdout}\n"
+            if e.stderr:
+                error_msg += f"STDERR:\n{e.stderr}\n"
+            raise RuntimeError(error_msg) from e
 
         return result
 

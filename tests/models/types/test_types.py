@@ -8,8 +8,9 @@ import pytest
 from pydantic import ValidationError
 from typing_extensions import assert_type
 
-from metaxy.models.feature import Feature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy import BaseFeature
+from metaxy._testing.models import SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.types import (
     FeatureKey,
     FieldKey,
@@ -31,38 +32,6 @@ class TestFeatureKey:
         assert_type(key.parts, tuple[str, ...])
         assert list(key.parts) == ["a", "b", "c"]
         assert key.to_string() == "a/b/c"
-
-    def test_variadic_input(self):
-        """Test FeatureKey construction with variadic arguments."""
-        key = FeatureKey("a", "b", "c")
-        assert_type(key, FeatureKey)
-        assert_type(key.parts, tuple[str, ...])
-        assert list(key.parts) == ["a", "b", "c"]
-        assert key.to_string() == "a/b/c"
-
-    def test_variadic_single_part(self):
-        """Test FeatureKey construction with single variadic argument."""
-        key = FeatureKey("single")
-        assert_type(key, FeatureKey)
-        assert list(key.parts) == ["single"]
-        assert key.to_string() == "single"
-
-    def test_variadic_many_parts(self):
-        """Test FeatureKey construction with many variadic arguments."""
-        key = FeatureKey("a", "b", "c", "d", "e")
-        assert list(key.parts) == ["a", "b", "c", "d", "e"]
-        assert key.to_string() == "a/b/c/d/e"
-
-    def test_variadic_vs_string_equivalence(self):
-        """Test that variadic and string formats produce identical keys."""
-        key_variadic = FeatureKey("a", "b", "c")
-        key_string = FeatureKey("a/b/c")
-        key_list = FeatureKey(["a", "b", "c"])
-
-        assert key_variadic == key_string
-        assert key_variadic == key_list
-        assert key_string == key_list
-        assert hash(key_variadic) == hash(key_string) == hash(key_list)
 
     def test_list_input(self):
         """Test FeatureKey construction with list."""
@@ -94,18 +63,8 @@ class TestFeatureKey:
         key2 = FeatureKey(["a", "b", "c"])
         assert key1 == key2
 
-    def test_equality_variadic(self):
-        """Test equality between variadic and other construction methods."""
-        key_string = FeatureKey("a/b/c")
-        key_list = FeatureKey(["a", "b", "c"])
-        key_variadic = FeatureKey("a", "b", "c")
-
-        assert key_string == key_list
-        assert key_string == key_variadic
-        assert key_list == key_variadic
-
         # All should have same hash
-        assert hash(key_string) == hash(key_list) == hash(key_variadic)
+        assert hash(key1) == hash(key2)
 
     def test_inequality(self):
         """Test inequality comparison."""
@@ -153,15 +112,10 @@ class TestFeatureKey:
         with pytest.raises(ValidationError, match="Input should be a valid string"):
             FeatureKey([1, 2, 3])  # pyright: ignore[reportCallIssue,reportArgumentType]
 
-    def test_validation_variadic_non_string(self):
-        """Test validation rejects non-string variadic arguments."""
-        with pytest.raises(ValueError, match="must all be strings"):
-            FeatureKey("a", "b", 123)  # pyright: ignore[reportCallIssue,reportArgumentType]
-
-    def test_validation_variadic_double_underscore(self):
-        """Test validation rejects double underscores in variadic arguments."""
-        with pytest.raises(ValidationError, match="cannot contain double underscores"):
-            FeatureKey("a", "b__c", "d")
+    def test_validation_multiple_args_rejected(self):
+        """Test validation rejects multiple positional arguments."""
+        with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
+            FeatureKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
 
     def test_empty_string_splits_to_empty_list(self):
         """Test empty string handling."""
@@ -188,7 +142,7 @@ class TestFeatureKey:
         """Test that FeatureKey is immutable (frozen)."""
         key = FeatureKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # type: ignore[misc]
+            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_iteration(self):
         """Test iteration over parts."""
@@ -215,29 +169,6 @@ class TestFieldKey:
         key = FieldKey("a/b/c")
         assert list(key.parts) == ["a", "b", "c"]
         assert key.to_string() == "a/b/c"
-
-    def test_variadic_input(self):
-        """Test FieldKey construction with variadic arguments."""
-        key = FieldKey("a", "b", "c")
-        assert list(key.parts) == ["a", "b", "c"]
-        assert key.to_string() == "a/b/c"
-
-    def test_variadic_single_part(self):
-        """Test FieldKey construction with single variadic argument."""
-        key = FieldKey("single")
-        assert list(key.parts) == ["single"]
-        assert key.to_string() == "single"
-
-    def test_variadic_vs_string_equivalence(self):
-        """Test that variadic and string formats produce identical keys."""
-        key_variadic = FieldKey("a", "b", "c")
-        key_string = FieldKey("a/b/c")
-        key_list = FieldKey(["a", "b", "c"])
-
-        assert key_variadic == key_string
-        assert key_variadic == key_list
-        assert key_string == key_list
-        assert hash(key_variadic) == hash(key_string) == hash(key_list)
 
     def test_list_input(self):
         """Test FieldKey construction with list."""
@@ -266,18 +197,8 @@ class TestFieldKey:
         assert key1 == key2
         assert key2 == key2
 
-    def test_equality_variadic(self):
-        """Test equality between variadic and other construction methods."""
-        key_string = FieldKey("a/b/c")
-        key_list = FieldKey(["a", "b", "c"])
-        key_variadic = FieldKey("a", "b", "c")
-
-        assert key_string == key_list
-        assert key_string == key_variadic
-        assert key_list == key_variadic
-
         # All should have same hash
-        assert hash(key_string) == hash(key_list) == hash(key_variadic)
+        assert hash(key1) == hash(key2)
 
     def test_inequality(self):
         """Test inequality comparison."""
@@ -315,21 +236,16 @@ class TestFieldKey:
         with pytest.raises(ValidationError, match="Input should be a valid string"):
             FieldKey([1, 2, 3])  # pyright: ignore[reportCallIssue,reportArgumentType]
 
-    def test_validation_variadic_non_string(self):
-        """Test validation rejects non-string variadic arguments."""
-        with pytest.raises(ValueError, match="must all be strings"):
-            FieldKey("a", "b", 123)  # pyright: ignore[reportCallIssue,reportArgumentType]
-
-    def test_validation_variadic_double_underscore(self):
-        """Test validation rejects double underscores in variadic arguments."""
-        with pytest.raises(ValidationError, match="cannot contain double underscores"):
-            FieldKey("a", "b__c", "d")
+    def test_validation_multiple_args_rejected(self):
+        """Test validation rejects multiple positional arguments."""
+        with pytest.raises(TypeError, match="takes from 1 to 2 positional arguments"):
+            FieldKey("a", "b", "c")  # pyright: ignore[reportCallIssue]
 
     def test_immutability(self):
         """Test that FieldKey is immutable (frozen)."""
         key = FieldKey("a/b/c")
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = ("x", "y", "z")  # type: ignore[misc]
+            key.parts = ("x", "y", "z")  # pyright: ignore[reportAttributeAccessIssue]
 
     def test_backward_compatibility_list_operations(self):
         """Test that FieldKey still works with list-like operations."""
@@ -352,17 +268,15 @@ class TestTypeChecking:
         key_list = FeatureKey(["a", "b", "c"])
         key_tuple = FeatureKey(("a", "b", "c"))
         key_copy = FeatureKey(key_str)
-        key_variadic = FeatureKey("a", "b", "c")
 
         # All should produce FeatureKey instances
         assert isinstance(key_str, FeatureKey)
         assert isinstance(key_list, FeatureKey)
         assert isinstance(key_tuple, FeatureKey)
         assert isinstance(key_copy, FeatureKey)
-        assert isinstance(key_variadic, FeatureKey)
 
         # All should be equal
-        assert key_str == key_list == key_tuple == key_copy == key_variadic
+        assert key_str == key_list == key_tuple == key_copy
 
 
 class TestJSONSerialization:
@@ -385,14 +299,6 @@ class TestJSONSerialization:
         assert isinstance(json_data, list)
         assert json_data == ["a", "b", "c"]
 
-    def test_feature_key_json_serialization_from_variadic(self):
-        """Test that FeatureKey from variadic args serializes to list format."""
-        key = FeatureKey("a", "b", "c")
-        json_data = key.model_dump()
-
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
-
     def test_field_key_json_serialization_from_string(self):
         """Test that FieldKey from string serializes to list format."""
         key = FieldKey("a/b/c")
@@ -409,19 +315,11 @@ class TestJSONSerialization:
         assert isinstance(json_data, list)
         assert json_data == ["a", "b", "c"]
 
-    def test_field_key_json_serialization_from_variadic(self):
-        """Test that FieldKey from variadic args serializes to list format."""
-        key = FieldKey("a", "b", "c")
-        json_data = key.model_dump()
-
-        assert isinstance(json_data, list)
-        assert json_data == ["a", "b", "c"]
-
     def test_feature_key_json_roundtrip(self):
         """Test that FeatureKey can be serialized and deserialized."""
         import json
 
-        key = FeatureKey("a", "b", "c")
+        key = FeatureKey("a/b/c")
         json_str = json.dumps(key.model_dump())
 
         # Should serialize to ["a", "b", "c"]
@@ -437,7 +335,7 @@ class TestJSONSerialization:
         """Test that FieldKey can be serialized and deserialized."""
         import json
 
-        key = FieldKey("x", "y", "z")
+        key = FieldKey("x/y/z")
         json_str = json.dumps(key.model_dump())
 
         # Should serialize to ["x", "y", "z"]
@@ -456,8 +354,8 @@ class TestJSONSerialization:
         class MyModel(BaseModel):
             key: FeatureKey
 
-        # Create with variadic
-        model = MyModel(key=FeatureKey("a", "b", "c"))
+        # Create with list
+        model = MyModel(key=FeatureKey(["a", "b", "c"]))
         json_data = model.model_dump()
 
         # key should be serialized as a list
@@ -471,8 +369,8 @@ class TestJSONSerialization:
         class MyModel(BaseModel):
             key: FieldKey
 
-        # Create with variadic
-        model = MyModel(key=FieldKey("x", "y"))
+        # Create with list
+        model = MyModel(key=FieldKey(["x", "y"]))
         json_data = model.model_dump()
 
         # key should be serialized as a list
@@ -485,7 +383,7 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_string_key(self):
         """Test SampleFeatureSpec accepts FeatureKey as string."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         spec = SampleFeatureSpec(key="my/feature")
 
@@ -495,7 +393,7 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_list_key(self):
         """Test SampleFeatureSpec accepts FeatureKey as list."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         spec = SampleFeatureSpec(key=["my", "feature"])
 
@@ -505,27 +403,14 @@ class TestFeatureSpecIntegration:
 
     def test_feature_spec_with_feature_key_instance(self):
         """Test SampleFeatureSpec accepts FeatureKey instance."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
-        key = FeatureKey("my", "feature")
+        key = FeatureKey(["my", "feature"])
         spec = SampleFeatureSpec(key=key)
 
         assert isinstance(spec.key, FeatureKey)
         assert spec.key.to_string() == "my/feature"
         assert list(spec.key.parts) == ["my", "feature"]
-
-    def test_feature_spec_serialization_with_variadic_key(self):
-        """Test SampleFeatureSpec serialization when key created with variadic args."""
-        from metaxy.models.feature_spec import SampleFeatureSpec
-
-        spec = SampleFeatureSpec(
-            key=FeatureKey("a", "b", "c"),
-        )
-        json_data = spec.model_dump(mode="json")
-
-        # key should be serialized as list
-        assert isinstance(json_data["key"], list)
-        assert json_data["key"] == ["a", "b", "c"]
 
     def test_feature_dep_with_string_key(self):
         """Test FeatureDep accepts key as string."""
@@ -545,11 +430,11 @@ class TestFeatureSpecIntegration:
         assert isinstance(dep.feature, FeatureKey)
         assert dep.feature.to_string() == "upstream/feature"
 
-    def test_feature_dep_with_feature_key_variadic(self):
-        """Test FeatureDep accepts FeatureKey created with variadic args."""
+    def test_feature_dep_with_feature_key_instance(self):
+        """Test FeatureDep accepts FeatureKey instance."""
         from metaxy.models.feature_spec import FeatureDep
 
-        dep = FeatureDep(feature=FeatureKey("upstream", "feature"))
+        dep = FeatureDep(feature=FeatureKey(["upstream", "feature"]))
 
         assert isinstance(dep.feature, FeatureKey)
         assert dep.feature.to_string() == "upstream/feature"
@@ -572,29 +457,30 @@ class TestFeatureSpecIntegration:
         assert isinstance(field.key, FieldKey)
         assert field.key.to_string() == "my/field"
 
-    def test_field_spec_with_field_key_variadic(self):
-        """Test FieldSpec accepts FieldKey created with variadic args."""
+    def test_field_spec_with_field_key_instance(self):
+        """Test FieldSpec accepts FieldKey instance."""
         from metaxy.models.field import FieldSpec
 
-        field = FieldSpec(key=FieldKey("my", "field"), code_version="1")
+        field = FieldSpec(key=FieldKey(["my", "field"]), code_version="1")
 
         assert isinstance(field.key, FieldKey)
         assert field.key.to_string() == "my/field"
 
-    def test_complete_feature_spec_with_variadic_keys(self):
-        """Test complete SampleFeatureSpec with all keys created using variadic format."""
-        from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+    def test_complete_feature_spec_with_list_keys(self):
+        """Test complete SampleFeatureSpec with all keys created using list format."""
+        from metaxy._testing.models import SampleFeatureSpec
+        from metaxy.models.feature_spec import FeatureDep
         from metaxy.models.field import FieldSpec
 
         spec = SampleFeatureSpec(
-            key=FeatureKey("my", "complete", "feature"),
+            key=FeatureKey(["my", "complete", "feature"]),
             deps=[
-                FeatureDep(feature=FeatureKey("upstream", "one")),
-                FeatureDep(feature=FeatureKey("upstream", "two")),
+                FeatureDep(feature=FeatureKey(["upstream", "one"])),
+                FeatureDep(feature=FeatureKey(["upstream", "two"])),
             ],
             fields=[
-                FieldSpec(key=FieldKey("field", "one"), code_version="1"),
-                FieldSpec(key=FieldKey("field", "two"), code_version="1"),
+                FieldSpec(key=FieldKey(["field", "one"]), code_version="1"),
+                FieldSpec(key=FieldKey(["field", "two"]), code_version="1"),
             ],
         )
 
@@ -626,7 +512,7 @@ class TestEdgeCases:
         assert key.to_string() == ""
 
 
-feature_key = FeatureKey("/a/b")
+feature_key = FeatureKey("a/b")
 feature_spec = SampleFeatureSpec(key=feature_key, id_columns=("id",))
 
 
@@ -635,6 +521,203 @@ def test_feature_dep_key_overloads():
     # Note: FeatureDep doesn't accept spec instances directly anymore
     # _ = FeatureDep(feature=feature_spec)
 
-    class TestFeature(Feature, spec=feature_spec): ...
+    class TestFeature(BaseFeature, spec=feature_spec): ...
 
     _ = FeatureDep(feature=TestFeature)
+
+
+class TestCoercibleToFeatureKey:
+    """Tests for CoercibleToFeatureKey type and adapter."""
+
+    def test_coercible_in_pydantic_model_with_string(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts string."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_list(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts list."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_feature_key(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts FeatureKey."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        feature_key = FeatureKey("a/b/c")
+        model = MyModel(key=feature_key)
+        assert isinstance(model.key, FeatureKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_feature_class(self):
+        """Test ValidatedFeatureKey in Pydantic model accepts Feature class."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFeatureKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFeatureKey
+
+        class TestFeature(BaseFeature, spec=feature_spec): ...
+
+        model = MyModel(key=TestFeature)  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FeatureKey)
+        assert model.key == feature_key
+
+    def test_coercible_adapter_with_string(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with string."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        result = ValidatedFeatureKeyAdapter.validate_python("a/b/c")
+        assert isinstance(result, FeatureKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_list(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with list."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        result = ValidatedFeatureKeyAdapter.validate_python(["a", "b", "c"])
+        assert isinstance(result, FeatureKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_feature_key(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with FeatureKey."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        feature_key = FeatureKey("a/b/c")
+        result = ValidatedFeatureKeyAdapter.validate_python(feature_key)
+        assert isinstance(result, FeatureKey)
+        assert result == feature_key
+
+    def test_coercible_adapter_with_feature_class(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with Feature class."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        class TestFeature(BaseFeature, spec=feature_spec): ...
+
+        result = ValidatedFeatureKeyAdapter.validate_python(TestFeature)
+        assert isinstance(result, FeatureKey)
+        assert result == feature_key
+
+    def test_coercible_adapter_invalid_input(self):
+        """Test ValidatedFeatureKeyAdapter.validate_python with invalid input."""
+        from metaxy.models.types import ValidatedFeatureKeyAdapter
+
+        with pytest.raises(ValidationError):
+            ValidatedFeatureKeyAdapter.validate_python(123)
+
+    def test_feature_dep_accepts_all_types(self):
+        """Test FeatureDep accepts all CoercibleToFeatureKey types."""
+        # String
+        dep1 = FeatureDep(feature="a/b/c")
+        assert dep1.feature.to_string() == "a/b/c"
+
+        # List
+        dep2 = FeatureDep(feature=["a", "b", "c"])
+        assert dep2.feature.to_string() == "a/b/c"
+
+        # FeatureKey
+        dep3 = FeatureDep(feature=FeatureKey("a/b/c"))
+        assert dep3.feature.to_string() == "a/b/c"
+
+        # Feature class
+        class TestFeature(BaseFeature, spec=feature_spec): ...
+
+        dep4 = FeatureDep(feature=TestFeature)
+        assert dep4.feature == feature_key
+
+
+class TestCoercibleToFieldKey:
+    """Tests for CoercibleToFieldKey type and adapter."""
+
+    def test_coercible_in_pydantic_model_with_string(self):
+        """Test ValidatedFieldKey in Pydantic model accepts string."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        model = MyModel(key="a/b/c")  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_list(self):
+        """Test ValidatedFieldKey in Pydantic model accepts list."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        model = MyModel(key=["a", "b", "c"])  # pyright: ignore[reportArgumentType]
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_in_pydantic_model_with_field_key(self):
+        """Test ValidatedFieldKey in Pydantic model accepts FieldKey."""
+        from pydantic import BaseModel
+
+        from metaxy.models.types import ValidatedFieldKey
+
+        class MyModel(BaseModel):
+            key: ValidatedFieldKey
+
+        field_key = FieldKey("a/b/c")
+        model = MyModel(key=field_key)
+        assert isinstance(model.key, FieldKey)
+        assert model.key.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_string(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with string."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        result = ValidatedFieldKeyAdapter.validate_python("a/b/c")
+        assert isinstance(result, FieldKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_list(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with list."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        result = ValidatedFieldKeyAdapter.validate_python(["a", "b", "c"])
+        assert isinstance(result, FieldKey)
+        assert result.to_string() == "a/b/c"
+
+    def test_coercible_adapter_with_field_key(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with FieldKey."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        field_key = FieldKey("a/b/c")
+        result = ValidatedFieldKeyAdapter.validate_python(field_key)
+        assert isinstance(result, FieldKey)
+        assert result == field_key
+
+    def test_coercible_adapter_invalid_input(self):
+        """Test ValidatedFieldKeyAdapter.validate_python with invalid input."""
+        from metaxy.models.types import ValidatedFieldKeyAdapter
+
+        with pytest.raises(ValidationError):
+            ValidatedFieldKeyAdapter.validate_python(123)

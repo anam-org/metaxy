@@ -6,8 +6,9 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.types import HashAlgorithm
@@ -60,7 +61,7 @@ def upstream_audio_metadata() -> nw.LazyFrame[pl.LazyFrame]:
 
 
 @pytest.fixture
-def simple_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
+def simple_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
     """Create simple test features for basic provenance testing.
 
     Structure:
@@ -69,7 +70,7 @@ def simple_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
     """
 
     class VideoRoot(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
@@ -81,7 +82,7 @@ def simple_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
         pass
 
     class ProcessedVideo(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["processed"]),
             deps=[FeatureDep(feature=FeatureKey(["video"]))],
@@ -99,7 +100,7 @@ def simple_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
 
 
 @pytest.fixture
-def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
+def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
     """Create features with multiple upstream dependencies.
 
     Structure:
@@ -109,7 +110,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[TestingFeatur
     """
 
     class VideoRoot(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
@@ -121,7 +122,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[TestingFeatur
         pass
 
     class AudioRoot(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["audio"]),
             fields=[
@@ -132,7 +133,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[TestingFeatur
         pass
 
     class MultiUpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi"]),
             deps=[
@@ -165,7 +166,7 @@ def multi_upstream_features(graph: FeatureGraph) -> dict[str, type[TestingFeatur
 @pytest.fixture
 def selective_field_dep_features(
     graph: FeatureGraph,
-) -> dict[str, type[TestingFeature]]:
+) -> dict[str, type[SampleFeature]]:
     """Create features with selective field-level dependencies.
 
     Structure:
@@ -174,7 +175,7 @@ def selective_field_dep_features(
     """
 
     class MultiFieldRoot(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi_field"]),
             fields=[
@@ -187,7 +188,7 @@ def selective_field_dep_features(
         pass
 
     class SelectiveFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["selective"]),
             deps=[FeatureDep(feature=FeatureKey(["multi_field"]))],

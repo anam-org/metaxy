@@ -5,21 +5,21 @@ from hypothesis import strategies as st
 from syrupy.assertion import SnapshotAssertion
 
 from metaxy import (
-    Feature,
+    BaseFeature,
     FeatureDep,
     FeatureKey,
     FieldKey,
     FieldSpec,
 )
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
-from metaxy.models.feature_spec import SampleFeatureSpec
 
 
 def test_code_version_single_field(snapshot: SnapshotAssertion) -> None:
     """Test code_version with a single field."""
 
     class SingleFieldFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "single_field"]),
             fields=[
@@ -54,7 +54,7 @@ def test_code_version_multiple_fields(snapshot: SnapshotAssertion) -> None:
     """Test code_version with multiple fields."""
 
     class MultiFieldFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "multi_field"]),
             fields=[
@@ -88,7 +88,7 @@ def test_code_version_changes_with_field_code_version() -> None:
     with graph_v1.use():
 
         class FeatureV1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "test_v1"]),
                 fields=[
@@ -101,7 +101,7 @@ def test_code_version_changes_with_field_code_version() -> None:
     with graph_v2.use():
 
         class FeatureV2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "test_v2"]),
                 fields=[
@@ -127,7 +127,7 @@ def test_code_version_independence_from_dependencies() -> None:
     with graph1.use():
 
         class ParentV1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "parent_v1"]),
                 fields=[
@@ -138,7 +138,7 @@ def test_code_version_independence_from_dependencies() -> None:
             pass
 
         class ChildV1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "child_v1"]),
                 deps=[
@@ -155,7 +155,7 @@ def test_code_version_independence_from_dependencies() -> None:
     with graph2.use():
 
         class ParentV2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "parent_v2"]),
                 fields=[
@@ -166,7 +166,7 @@ def test_code_version_independence_from_dependencies() -> None:
             pass
 
         class ChildV2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["independence_test", "child_v2"]),
                 deps=[
@@ -195,7 +195,7 @@ def test_code_version_determinism() -> None:
     """Test that code_version is deterministic for same inputs."""
 
     class TestFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["determinism_test"]),
             fields=[
@@ -224,7 +224,7 @@ def test_code_version_field_order_invariance() -> None:
     with graph1.use():
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["order_test", "feature1"]),
                 fields=[
@@ -240,7 +240,7 @@ def test_code_version_field_order_invariance() -> None:
     with graph2.use():
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["order_test", "feature2"]),
                 fields=[
@@ -261,7 +261,7 @@ def test_code_version_no_dependencies_no_fields_edge_case() -> None:
     """Test code_version with default field (single field with code_version="1")."""
 
     class MinimalFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["minimal"]),
             # Uses default field: [FieldSpec(key=FieldKey(["default"]), code_version="1")]
@@ -283,7 +283,7 @@ def test_code_version_complex_dependency_chain() -> None:
     with graph.use():
 
         class A(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["chain", "a"]),
                 fields=[
@@ -294,7 +294,7 @@ def test_code_version_complex_dependency_chain() -> None:
             pass
 
         class B(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["chain", "b"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "a"]))],
@@ -306,7 +306,7 @@ def test_code_version_complex_dependency_chain() -> None:
             pass
 
         class C(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["chain", "c"]),
                 deps=[FeatureDep(feature=FeatureKey(["chain", "b"]))],
@@ -350,7 +350,7 @@ def test_property_code_version_deterministic(code_version: str) -> None:
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "deterministic"]),
                 fields=[
@@ -382,7 +382,7 @@ def test_property_code_version_changes_with_code(
     with graph1.use():
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "changes", "f1"]),
                 fields=[
@@ -395,7 +395,7 @@ def test_property_code_version_changes_with_code(
     with graph2.use():
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "changes", "f2"]),
                 fields=[
@@ -432,7 +432,7 @@ def test_property_code_version_multiple_fields(num_fields: int) -> None:
     with graph.use():
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "multi"]),
                 fields=fields,
@@ -483,7 +483,7 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
     with graph1.use():
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "order1"]),
                 fields=fields1,
@@ -494,7 +494,7 @@ def test_property_code_version_field_names_dont_affect_hash_if_sorted(
     with graph2.use():
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "order2"]),
                 fields=fields2,
@@ -519,7 +519,7 @@ def test_property_code_version_independent_of_parent(
     with graph.use():
 
         class Parent(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "parent"]),
                 fields=[
@@ -532,7 +532,7 @@ def test_property_code_version_independent_of_parent(
             pass
 
         class Child(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "child"]),
                 deps=[FeatureDep(feature=FeatureKey(["property_test", "parent"]))],
@@ -554,7 +554,7 @@ def test_property_code_version_independent_of_parent(
     with graph2.use():
 
         class Parent2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "parent2"]),
                 fields=[
@@ -570,7 +570,7 @@ def test_property_code_version_independent_of_parent(
             pass
 
         class Child2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["property_test", "child2"]),
                 deps=[FeatureDep(feature=FeatureKey(["property_test", "parent2"]))],

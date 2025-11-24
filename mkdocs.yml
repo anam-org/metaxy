@@ -54,9 +54,6 @@ plugins:
   - search
   - metaxy-examples:
       examples_dir: "../examples"
-  - gen-files:
-      scripts:
-        - docs/.mkdocs-metaxy/src/mkdocs_metaxy/gen_config_reference.py
   - cyclopts
   - autorefs
   - section-index
@@ -133,13 +130,15 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
       emoji_index: !!python/name:material.extensions.emoji.twemoji
+      options:
+        custom_icons:
+          - docs/.icons
   - pymdownx.highlight:
       default_lang: python
       use_pygments: true
       pygments_lang_class: true
       anchor_linenums: true
       line_spans: __span
-      linenums: true
       linenums_style: pymdownx-inline
   - pymdownx.inlinehilite
   - pymdownx.keys
@@ -152,6 +151,9 @@ markdown_extensions:
   - pymdownx.smartsymbols
   - pymdownx.snippets:
       base_path: ['examples']
+  # Metaxy custom extensions (must be before superfences to inject fenced code blocks)
+  - metaxy_config
+  - metaxy_examples
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -180,8 +182,18 @@ nav:
     - Filters: learn/filters.md
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
-    - Integrations:
-        - SQLModel: learn/integrations/sqlmodel.md
+  - Integrations:
+    - integrations/index.md
+    - Metadata Stores:
+      - Databases:
+        - BigQuery: integrations/metadata-stores/databases/bigquery.md
+        - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
+        - DuckDB: integrations/metadata-stores/databases/duckdb.md
+      - Storage Only:
+        - Delta Lake: integrations/metadata-stores/storage/delta.md
+    - Plugins:
+      - SQLModel: integrations/plugins/sqlmodel.md
+      - SQLAlchemy: integrations/plugins/sqlalchemy.md
   - Examples:
     - One To Many: examples/one-to-many.md
   - CLI: reference/cli.md
@@ -196,16 +208,25 @@ nav:
       - Lineage Relationship: reference/api/definitions/relationship.md
       - Graph: reference/api/definitions/graph.md
       - Filters: reference/api/definitions/filters.md
-    - Metadata Stores:
-      - reference/api/metadata-stores/index.md
-      - Databases:
-        - reference/api/metadata-stores/ibis/index.md
-        - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
-        - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-      - Memory: reference/api/metadata-stores/memory.md
     - Config: reference/api/config.md
     - Types: reference/api/types.md
     - Constants: reference/api/constants.md
+    - Integrations:
+      - reference/api/ext/index.md
+      - Metadata Stores:
+        - reference/api/metadata-stores/index.md
+        - Databases:
+          - reference/api/metadata-stores/ibis/index.md
+          - BigQuery: reference/api/metadata-stores/ibis/bigquery.md
+          - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
+          - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
+        - Storage Only:
+            - Delta Lake: reference/api/metadata-stores/delta.md
+            - Memory: reference/api/metadata-stores/memory.md
+        - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Plugins:
+        - SQLModel: reference/api/ext/sqlmodel.md
+        - SQLAlchemy: reference/api/ext/sqlalchemy.md
   - Configuration: reference/configuration.md
 
 extra:

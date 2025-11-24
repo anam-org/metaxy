@@ -2,7 +2,7 @@ import metaxy as mx
 
 
 class Video(
-    mx.Feature,
+    mx.BaseFeature,
     spec=mx.FeatureSpec(
         key="video/raw",
         id_columns=["video_id"],
@@ -17,7 +17,7 @@ class Video(
 
 
 class VideoChunk(
-    mx.Feature,
+    mx.BaseFeature,
     spec=mx.FeatureSpec(
         key=["video", "chunk"],
         id_columns=["video_chunk_id"],
@@ -32,7 +32,7 @@ class VideoChunk(
 
 
 class FaceRecognition(
-    mx.Feature,
+    mx.BaseFeature,
     spec=mx.FeatureSpec(
         key=["video", "faces"],
         id_columns=["video_chunk_id"],

@@ -5,7 +5,7 @@ from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.feature import FeatureGraph
 
 
-def test_record_feature_graph_snapshot_stability(
+def test_push_graph_snapshot_stability(
     store: MetadataStore, test_graph: FeatureGraph
 ) -> None:
     """Test that push_graph_snapshot produces consistent snapshot_versions.
@@ -27,10 +27,10 @@ def test_record_feature_graph_snapshot_stability(
             # Serialize the graph for the first time
             result_1 = SystemTableStorage(store).push_graph_snapshot()
             snapshot_version_1 = result_1.snapshot_version
-            was_already_recorded_1 = result_1.already_recorded
+            was_already_pushed_1 = result_1.already_pushed
 
             # Should not be recorded yet (first time)
-            assert not was_already_recorded_1, (
+            assert not was_already_pushed_1, (
                 "First serialization should not be marked as already recorded"
             )
 
@@ -42,10 +42,10 @@ def test_record_feature_graph_snapshot_stability(
             # Serialize again - should be idempotent
             result_2 = SystemTableStorage(store).push_graph_snapshot()
             snapshot_version_2 = result_2.snapshot_version
-            was_already_recorded_2 = result_2.already_recorded
+            was_already_pushed_2 = result_2.already_pushed
 
             # Should be marked as already recorded
-            assert was_already_recorded_2, (
+            assert was_already_pushed_2, (
                 "Second serialization should be marked as already recorded"
             )
 
@@ -70,7 +70,7 @@ def test_record_feature_graph_snapshot_stability(
 def test_serialize_uses_to_snapshot(
     store: MetadataStore, test_graph: FeatureGraph
 ) -> None:
-    """Test that record_feature_graph_snapshot correctly uses to_snapshot().
+    """Test that push_graph_snapshot correctly uses to_snapshot().
 
     Verifies that the serialization format matches what to_snapshot() produces.
     """
@@ -87,10 +87,10 @@ def test_serialize_uses_to_snapshot(
 
             snapshot_version = result.snapshot_version
 
-            _ = result.already_recorded
+            _ = result.already_pushed
 
             # Read back the serialized data from the store
-            from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+            from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
             versions_lazy = store.read_metadata_in_store(FEATURE_VERSIONS_KEY)
             assert versions_lazy is not None, "Feature versions should be recorded"

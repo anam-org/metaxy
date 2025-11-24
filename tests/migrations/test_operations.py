@@ -14,9 +14,9 @@ from metaxy import (
     FieldKey,
     FieldSpec,
     InMemoryMetadataStore,
-    SampleFeatureSpec,
 )
 from metaxy._testing import TempFeatureModule, add_metaxy_provenance_column
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.migrations.models import FullGraphMigration
@@ -38,14 +38,11 @@ def setup_default_config():
 
 
 def test_base_operation_is_abstract():
-    """Test BaseOperation cannot be instantiated directly."""
     with pytest.raises(TypeError):
         _ = BaseOperation()  # pyright: ignore[reportAbstractUsage]
 
 
 def test_base_operation_requires_execute_for_feature():
-    """Test BaseOperation subclass must implement execute_for_feature()."""
-
     # Create a subclass without implementing execute_for_feature
     class IncompleteOperation(BaseOperation):  # pyright: ignore[reportImplicitAbstractClass]
         pass
@@ -55,8 +52,6 @@ def test_base_operation_requires_execute_for_feature():
 
 
 def test_base_operation_subclass_implements_interface():
-    """Test BaseOperation subclass can implement the interface correctly."""
-
     class TestOperation(BaseOperation):
         value: int = 42
 
@@ -80,8 +75,6 @@ def test_base_operation_subclass_implements_interface():
 
 
 def test_base_operation_with_custom_fields():
-    """Test BaseOperation subclass can have custom fields."""
-
     class CustomOperation(BaseOperation):
         s3_bucket: str
         s3_prefix: str
@@ -123,7 +116,6 @@ class _TestBackfillOperation(BaseOperation):
         from_snapshot_version=None,
         dry_run=False,
     ) -> int:
-        """Simple test implementation."""
         if dry_run:
             return 10
         # Write test data
@@ -151,7 +143,6 @@ class _FailingOperation(BaseOperation):
 
 
 def test_full_graph_migration_single_operation_single_feature():
-    """Test executing migration with single operation and single feature."""
     # Create a simple test graph
     temp_module = TempFeatureModule("test_single_op_single_feat")
 
@@ -233,7 +224,6 @@ def test_full_graph_migration_single_operation_single_feature():
 
 
 def test_full_graph_migration_single_operation_multiple_features():
-    """Test executing migration with single operation and multiple features."""
     temp_module = TempFeatureModule("test_single_op_multi_feat")
 
     feature_a_spec = SampleFeatureSpec(
@@ -279,7 +269,6 @@ def test_full_graph_migration_single_operation_multiple_features():
 
 
 def test_full_graph_migration_multiple_operations():
-    """Test executing migration with multiple operations."""
     temp_module = TempFeatureModule("test_multi_op")
 
     feature_a_spec = SampleFeatureSpec(
@@ -331,7 +320,6 @@ def test_full_graph_migration_multiple_operations():
 
 
 def test_full_graph_migration_topological_sorting():
-    """Test that features are executed in topological order (deps before dependents)."""
     temp_module = TempFeatureModule("test_topo_sort")
 
     upstream_spec = SampleFeatureSpec(
@@ -394,7 +382,6 @@ def test_full_graph_migration_topological_sorting():
 
 
 def test_full_graph_migration_operation_fails():
-    """Test that migration continues when one feature fails."""
     temp_module = TempFeatureModule("test_op_fails")
 
     feature_a_spec = SampleFeatureSpec(
@@ -442,7 +429,8 @@ def test_full_graph_migration_operation_fails():
 
 
 def test_full_graph_migration_invalid_operation_class():
-    """Test that migration fails when operation class cannot be loaded."""
+    from pydantic_core import ValidationError
+
     temp_module = TempFeatureModule("test_invalid_op")
 
     feature_spec = SampleFeatureSpec(
@@ -457,7 +445,7 @@ def test_full_graph_migration_invalid_operation_class():
         SystemTableStorage(store).push_graph_snapshot()
         snapshot_version = graph.snapshot_version
 
-        # Create migration with non-existent operation class
+        # Migration can be created, but validation error happens when operations are accessed
         migration = FullGraphMigration(
             migration_id="test_006",
             parent="initial",
@@ -471,15 +459,14 @@ def test_full_graph_migration_invalid_operation_class():
             ],
         )
 
-        # Should raise error when trying to execute
-        with pytest.raises(ValueError, match="Failed to instantiate operation"):
-            migration.execute(store, "default", dry_run=False)
+        # ImportString validation fails when get_affected_features tries to validate the operation
+        with pytest.raises(ValidationError, match="Invalid python path"):
+            migration.get_affected_features(store, "default")
 
     temp_module.cleanup()
 
 
 def test_full_graph_migration_dry_run():
-    """Test that dry run doesn't write events or modify data."""
     temp_module = TempFeatureModule("test_dry_run")
 
     feature_spec = SampleFeatureSpec(
@@ -525,7 +512,6 @@ def test_full_graph_migration_dry_run():
 
 
 def test_full_graph_migration_resume_after_partial_failure():
-    """Test that migration can be resumed after partial failure (idempotent)."""
     temp_module = TempFeatureModule("test_resume")
 
     upstream_spec = SampleFeatureSpec(
@@ -610,7 +596,6 @@ def test_full_graph_migration_resume_after_partial_failure():
 
 
 def test_full_graph_migration_operation_specific_config():
-    """Test that operation-specific config is passed correctly."""
     temp_module = TempFeatureModule("test_op_config")
 
     feature_spec = SampleFeatureSpec(
@@ -650,7 +635,6 @@ def test_full_graph_migration_operation_specific_config():
 
 
 def test_full_graph_migration_events_tracking():
-    """Test that migration events are written correctly."""
     temp_module = TempFeatureModule("test_events")
 
     feature_spec = SampleFeatureSpec(
@@ -697,7 +681,6 @@ def test_full_graph_migration_events_tracking():
 
 
 def test_data_version_reconciliation_requires_from_snapshot():
-    """Test DataVersionReconciliation requires from_snapshot_version."""
     temp_module = TempFeatureModule("test_dvr_from_snap")
 
     upstream_spec = SampleFeatureSpec(
@@ -748,7 +731,6 @@ def test_data_version_reconciliation_requires_from_snapshot():
 
 
 def test_data_version_reconciliation_root_feature_error():
-    """Test DataVersionReconciliation fails for root features."""
     temp_module = TempFeatureModule("test_dvr_root")
 
     root_spec = SampleFeatureSpec(

@@ -2,8 +2,8 @@
 
 import pytest
 
-from metaxy.models.feature import BaseFeature
-from metaxy.models.feature_spec import SampleFeatureSpec
+from metaxy import BaseFeature
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.field import FieldSpec
 from metaxy.models.types import FieldKey
 
@@ -122,10 +122,12 @@ def test_field_keys_case_sensitive():
 
 def test_feature_spec_requires_id_columns():
     """Test that FeatureSpec (production API) requires id_columns parameter."""
+    from pydantic import ValidationError
+
     from metaxy.models.feature_spec import FeatureSpec
 
     # This should fail - id_columns is required
-    with pytest.raises(TypeError, match="id_columns"):
+    with pytest.raises(ValidationError, match="id_columns"):
         FeatureSpec(
             key="test/feature"
         )  # Missing id_columns  # pyright: ignore[reportCallIssue]
@@ -133,3 +135,83 @@ def test_feature_spec_requires_id_columns():
     # This should work
     spec = FeatureSpec(key="test/feature", id_columns=["sample_uid"])
     assert spec.id_columns == ("sample_uid",)
+
+
+def test_feature_dep_from_feature_class():
+    """Test that FeatureDep can be created directly from a Feature class."""
+    from metaxy.models.feature_spec import FeatureDep
+    from metaxy.models.types import FeatureKey
+
+    # Create a parent feature
+    class ParentFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["test", "parent_for_dep"]),
+            fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    # Test 1: Create FeatureDep directly from Feature class
+    dep = FeatureDep(feature=ParentFeature)
+    assert dep.feature == ParentFeature.spec().key
+    assert dep.columns is None
+    assert dep.rename is None
+
+    # Test 2: Create FeatureDep from Feature class with options
+    dep_with_columns = FeatureDep(
+        feature=ParentFeature,
+        columns=("value",),
+        rename={"value": "parent_value"},
+    )
+    assert dep_with_columns.feature == ParentFeature.spec().key
+    assert dep_with_columns.columns == ("value",)
+    assert dep_with_columns.rename == {"value": "parent_value"}
+
+    # Test 3: Verify FeatureDep works in FeatureSpec.deps
+    child_spec = SampleFeatureSpec(
+        key="test/child_with_dep",
+        deps=[dep],
+        fields=[FieldSpec(key=FieldKey(["result"]), code_version="1")],
+    )
+    assert len(child_spec.deps) == 1
+    assert child_spec.deps[0].feature == ParentFeature.spec().key
+
+
+def test_feature_spec_deps_mixed_types():
+    """Test that FeatureSpec.deps accepts all coercible types in a single list."""
+    from metaxy.models.feature_spec import FeatureDep, FeatureSpec
+    from metaxy.models.types import FeatureKey
+
+    # Create a Feature class
+    class MyFeature(
+        BaseFeature,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["my", "feature"]),
+            fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
+        ),
+    ):
+        pass
+
+    # Test all coercible types in a single deps list
+    spec = FeatureSpec(
+        key=FeatureKey(["test", "mixed_deps"]),
+        id_columns=["sample_uid"],
+        deps=[
+            MyFeature,  # Feature class
+            FeatureDep(feature=["my", "feature", "key"]),  # FeatureDep with list key
+            ["another", "key"],  # List of strings
+            "very/nice",  # String with separator
+        ],
+        fields=[FieldSpec(key=FieldKey(["output"]), code_version="1")],
+    )
+
+    # Verify all were converted to FeatureDep
+    assert len(spec.deps) == 4
+    assert all(isinstance(dep, FeatureDep) for dep in spec.deps)
+
+    # Verify the feature keys are correct
+    assert spec.deps[0].feature == FeatureKey(["my", "feature"])
+    assert spec.deps[1].feature == FeatureKey(["my", "feature", "key"])
+    assert spec.deps[2].feature == FeatureKey(["another", "key"])
+    assert spec.deps[3].feature == FeatureKey(["very", "nice"])

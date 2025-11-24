@@ -3,10 +3,11 @@
 import narwhals as nw
 import polars as pl
 
+from metaxy import BaseFeature
 from metaxy._testing import add_metaxy_provenance_column
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.memory import InMemoryMetadataStore
-from metaxy.models.feature import BaseFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec
 from metaxy.models.lineage import LineageRelationship
 

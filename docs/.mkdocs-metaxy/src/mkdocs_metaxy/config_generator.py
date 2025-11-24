@@ -51,21 +51,6 @@ def get_toml_path(field_path: list[str]) -> str:
 
 
 def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
-    """Format a field type for display in documentation.
-
-    Args:
-        field_info: Pydantic field info
-        add_links: Whether to add markdown links to config types
-
-    Returns:
-        Human-readable type string with optional links
-
-    Example:
-        >>> format_field_type(field_info)
-        'str | None'
-        >>> format_field_type(field_info, add_links=True)
-        '[StoreConfig](#storeconfig) | None'
-    """
     annotation = field_info.annotation
     if annotation is None:
         return "Any"
@@ -86,7 +71,7 @@ def format_field_type(field_info: FieldInfo, add_links: bool = False) -> str:
     if add_links:
         # Map of type names to anchor IDs
         type_links = {
-            "StoreConfig": "#storeconfig",
+            "StoreConfig": "#stores",
             "ExtConfig": "#extconfig",
             "SQLModelConfig": "#sqlmodelconfig",
             "PluginConfig": "#pluginconfig",
@@ -281,14 +266,7 @@ def generate_toml_example(
             else:
                 lines.append("# Optional")
 
-            # Use appropriate placeholder based on type
-            if "dict" in field["type"].lower():
-                placeholder = "{}"
-            elif "list" in field["type"].lower():
-                placeholder = "[]"
-            else:
-                placeholder = "null"
-
+            placeholder = _get_field_placeholder(field["type"])
             lines.append(f"# {field['name']} = {placeholder}")
 
     # Generate nested sections
@@ -337,14 +315,7 @@ def generate_toml_example(
                 else:
                     lines.append("# Optional")
 
-                # Use appropriate placeholder based on type
-                if "dict" in field["type"].lower():
-                    placeholder = "{}"
-                elif "list" in field["type"].lower():
-                    placeholder = "[]"
-                else:
-                    placeholder = "null"
-
+                placeholder = _get_field_placeholder(field["type"])
                 lines.append(f"# {field['path'][-1]} = {placeholder}")
 
     return "\n".join(lines)
@@ -376,6 +347,153 @@ def format_toml_value(value: Any) -> str:
         return "{}"
     else:
         return str(value)
+
+
+def generate_toml_code_block(content: str, indent_level: int = 1) -> list[str]:
+    """Generate a properly formatted TOML code block for pymdownx.tabbed.
+
+    Args:
+        content: TOML content (without code fences)
+        indent_level: Indentation level (1 = 4 spaces for pymdownx.tabbed)
+
+    Returns:
+        List of lines ready to be joined
+
+    Example:
+        >>> lines = generate_toml_code_block("store = \\"dev\\"", indent_level=1)
+        >>> print("\\n".join(lines))
+
+            ```toml
+
+            store = "dev"
+            ```
+
+    """
+    indent = "    " * indent_level
+    lines = []
+    lines.append("")  # Blank line before code block
+    lines.append(f"{indent}```toml")
+    lines.append("")  # CRITICAL: Blank line after opening fence for proper rendering
+
+    # Add content lines with proper indentation
+    for line in content.split("\n"):
+        if line.strip():  # Only indent non-empty lines
+            lines.append(f"{indent}{line}")
+        else:
+            lines.append("")  # Empty lines stay empty
+
+    lines.append(f"{indent}```")
+    lines.append("")  # Blank line after code block
+
+    return lines
+
+
+def _get_field_placeholder(field_type: str) -> str:
+    """Get appropriate placeholder value for a field type.
+
+    Args:
+        field_type: Field type string
+
+    Returns:
+        Placeholder value string
+    """
+    type_lower = field_type.lower()
+    if "dict" in type_lower:
+        return "{}"
+    elif "list" in type_lower:
+        return "[]"
+    else:
+        return "null"
+
+
+def _generate_toml_field_lines(
+    field: dict[str, Any],
+    section_prefix: str = "",
+    indent: str = "    ",
+) -> list[str]:
+    """Generate TOML lines for a field with proper formatting.
+
+    Args:
+        field: Field information dictionary
+        section_prefix: Optional prefix for section headers (e.g., "tool.metaxy")
+        indent: Indentation string for code block content
+
+    Returns:
+        List of TOML lines with proper indentation
+    """
+    lines = []
+
+    # Handle section header for nested fields
+    if len(field["path"]) > 1:
+        section_path = ".".join(field["path"][:-1])
+        full_section = (
+            f"{section_prefix}.{section_path}" if section_prefix else section_path
+        )
+        lines.append(f"{indent}[{full_section}]")
+    elif section_prefix:
+        # Top-level field with section prefix
+        lines.append(f"{indent}[{section_prefix}]")
+
+    # Generate field value or placeholder
+    field_name = field["path"][-1] if len(field["path"]) > 1 else field["name"]
+
+    if field["default"] is not None:
+        value = format_toml_value(field["default"])
+        lines.append(f"{indent}{field_name} = {value}")
+    else:
+        # Show optional fields as commented out
+        placeholder = _get_field_placeholder(field["type"])
+        lines.append(f"{indent}# Optional")
+        lines.append(f"{indent}# {field_name} = {placeholder}")
+
+    return lines
+
+
+def _format_env_example_value(value: Any) -> str:
+    """Format a value for use in environment variable examples.
+
+    Args:
+        value: Value to format
+
+    Returns:
+        Formatted string suitable for env var assignment
+    """
+    if value is None:
+        return "..."
+    elif isinstance(value, bool):
+        return "true" if value else "false"
+    elif isinstance(value, str):
+        return value
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, (list, dict)):
+        return "[]" if isinstance(value, list) else "{}"
+    else:
+        return str(value)
+
+
+def _generate_type_and_default_line(field: dict[str, Any]) -> str:
+    """Generate the Type | Default | Required line for field documentation.
+
+    Args:
+        field: Field information dictionary
+
+    Returns:
+        Formatted line with type and default/required information
+    """
+    # Don't wrap type in backticks if it contains markdown links
+    if "[" in field["type"] and "](" in field["type"]:
+        type_part = f"**Type:** {field['type']}"
+    else:
+        type_part = f"**Type:** `{field['type']}`"
+
+    # Add default or required indicator
+    if field["default"] is not None:
+        return f"{type_part} | **Default:** {format_default_value(field['default'])}"
+    elif field["required"]:
+        return f"{type_part} | **Required**"
+    else:
+        return type_part
 
 
 def generate_env_var_section(
@@ -482,6 +600,8 @@ def generate_individual_field_doc(
     env_prefix: str = "METAXY_",
     env_nested_delimiter: str = "__",
     include_tool_prefix: bool = False,
+    header_level: int = 3,
+    env_var_path: list[str] | None = None,
 ) -> str:
     """Generate documentation for an individual field with tabs and env var.
 
@@ -490,6 +610,8 @@ def generate_individual_field_doc(
         env_prefix: Environment variable prefix
         env_nested_delimiter: Delimiter for nested fields
         include_tool_prefix: Whether this is for pyproject.toml (needs [tool.metaxy] prefix)
+        header_level: Header level (default 3 for ###)
+        env_var_path: Optional path for env var generation (defaults to field["path"])
 
     Returns:
         Markdown string for the field documentation
@@ -498,7 +620,8 @@ def generate_individual_field_doc(
 
     # Field header
     field_path = get_toml_path(field["path"])
-    lines.append(f"### `{field_path}`")
+    header_prefix = "#" * header_level
+    lines.append(f"{header_prefix} `{field_path}`")
     lines.append("")
 
     # Description
@@ -507,134 +630,40 @@ def generate_individual_field_doc(
         lines.append("")
 
     # Type with default value
-    # Don't wrap type in backticks if it contains markdown links
-    if "[" in field["type"] and "](" in field["type"]:
-        # Contains markdown links, don't wrap in backticks
-        lines.append(f"**Type:** {field['type']}")
-    else:
-        # No links, wrap in backticks for code formatting
-        lines.append(f"**Type:** `{field['type']}`")
-
-    if field["default"] is not None:
-        lines.append(f" | **Default:** {format_default_value(field['default'])}")
-    elif field["required"]:
-        lines.append(" | **Required**")
+    lines.append(_generate_type_and_default_line(field))
     lines.append("")
 
-    # TOML Configuration (tabbed)
-    lines.append('=== "!metaxy.toml"')
+    # TOML Configuration tab (metaxy.toml)
+    lines.append('=== "metaxy.toml"')
     lines.append("")
     lines.append("    ```toml")
-
-    # Generate TOML example
-    if len(field["path"]) == 1:
-        # Top-level field
-        if field["default"] is not None:
-            value = format_toml_value(field["default"])
-            lines.append(f"    {field['name']} = {value}")
-        else:
-            # Use appropriate placeholder based on type
-            if "dict" in field["type"].lower():
-                placeholder = "{}"
-            elif "list" in field["type"].lower():
-                placeholder = "[]"
-            else:
-                placeholder = "null"
-
-            lines.append("    # Optional")
-            lines.append(f"    # {field['name']} = {placeholder}")
-    else:
-        # Nested field
-        section_path = ".".join(field["path"][:-1])
-        lines.append(f"    [{section_path}]")
-        if field["default"] is not None:
-            value = format_toml_value(field["default"])
-            lines.append(f"    {field['path'][-1]} = {value}")
-        else:
-            # Use appropriate placeholder based on type
-            if "dict" in field["type"].lower():
-                placeholder = "{}"
-            elif "list" in field["type"].lower():
-                placeholder = "[]"
-            else:
-                placeholder = "null"
-
-            lines.append("    # Optional")
-            lines.append(f"    # {field['path'][-1]} = {placeholder}")
-
+    lines.append("")  # CRITICAL: Blank line after opening fence for proper rendering
+    lines.extend(_generate_toml_field_lines(field, section_prefix="", indent="    "))
     lines.append("    ```")
     lines.append("")
 
-    # pyproject.toml version
+    # TOML Configuration tab (pyproject.toml)
     lines.append('=== "pyproject.toml"')
     lines.append("")
     lines.append("    ```toml")
-
-    if len(field["path"]) == 1:
-        # Top-level field - show under [tool.metaxy]
-        lines.append("    [tool.metaxy]")
-        if field["default"] is not None:
-            value = format_toml_value(field["default"])
-            lines.append(f"    {field['name']} = {value}")
-        else:
-            # Use appropriate placeholder based on type
-            if "dict" in field["type"].lower():
-                placeholder = "{}"
-            elif "list" in field["type"].lower():
-                placeholder = "[]"
-            else:
-                placeholder = "null"
-
-            lines.append("    # Optional")
-            lines.append(f"    # {field['name']} = {placeholder}")
-    else:
-        # Nested field - only show the nested section header
-        section_path = ".".join(field["path"][:-1])
-        lines.append(f"    [tool.metaxy.{section_path}]")
-        if field["default"] is not None:
-            value = format_toml_value(field["default"])
-            lines.append(f"    {field['path'][-1]} = {value}")
-        else:
-            # Use appropriate placeholder based on type
-            if "dict" in field["type"].lower():
-                placeholder = "{}"
-            elif "list" in field["type"].lower():
-                placeholder = "[]"
-            else:
-                placeholder = "null"
-
-            lines.append("    # Optional")
-            lines.append(f"    # {field['path'][-1]} = {placeholder}")
-
+    lines.append("")  # CRITICAL: Blank line after opening fence for proper rendering
+    lines.extend(
+        _generate_toml_field_lines(field, section_prefix="tool.metaxy", indent="    ")
+    )
     lines.append("    ```")
     lines.append("")
 
-    # Environment variable
-    env_var = get_env_var_name(field["path"], env_prefix, env_nested_delimiter)
-    lines.append("**Environment Variable:**")
+    # Environment Variable tab
+    lines.append('=== "Environment Variable"')
     lines.append("")
-    lines.append("```bash")
+    lines.append("    ```bash")
 
-    # Generate example value
-    if field["default"] is not None:
-        example_value = field["default"]
-        if isinstance(example_value, bool):
-            example_value = "true" if example_value else "false"
-        elif isinstance(example_value, str):
-            example_value = example_value
-        elif isinstance(example_value, (int, float)):
-            example_value = str(example_value)
-        elif isinstance(example_value, list):
-            example_value = "[]"
-        elif isinstance(example_value, dict):
-            example_value = "{}"
-        else:
-            example_value = str(example_value)
-    else:
-        example_value = "..."
+    var_path = env_var_path if env_var_path is not None else field["path"]
+    env_var = get_env_var_name(var_path, env_prefix, env_nested_delimiter)
+    example_value = _format_env_example_value(field["default"])
 
-    lines.append(f"export {env_var}={example_value}")
-    lines.append("```")
+    lines.append(f"    export {env_var}={example_value}")
+    lines.append("    ```")
     lines.append("")
     lines.append("---")
     lines.append("")

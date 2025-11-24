@@ -6,3 +6,4 @@ from_snapshot_version: d49e39c7ad7523cd9d25e26f9f350b73c66c979abccf2f0caee84e489
 to_snapshot_version: 155f26076028a45ebcf937aad81704f62c8d84efd204965ce5aa8d46ba8eec9e
 ops:
 - type: metaxy.migrations.ops.DataVersionReconciliation
+  features: ["examples/child"]

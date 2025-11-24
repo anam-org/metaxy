@@ -7,10 +7,11 @@ def test_migrations_list_empty(metaxy_project: TempMetaxyProject):
     """Test migrations list with no migrations."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -33,10 +34,11 @@ def test_migrations_list_single_migration(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -91,10 +93,11 @@ def test_migrations_list_multiple_migrations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -163,10 +166,11 @@ def test_migrations_list_multiple_operations(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -222,10 +226,11 @@ def test_migrations_list_invalid_chain(metaxy_project: TempMetaxyProject):
     import yaml
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

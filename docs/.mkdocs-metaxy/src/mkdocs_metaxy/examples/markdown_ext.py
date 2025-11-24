@@ -64,7 +64,7 @@ class MetaxyExamplesPreprocessor(Preprocessor):
 
         # Create directory for generated files (patched versions)
         self.generated_dir = self.examples_dir / ".generated"
-        self.generated_dir.mkdir(exist_ok=True)
+        self.generated_dir.mkdir(parents=True, exist_ok=True)
 
         # Cache for patch enumerations per example
         self._patch_enumerations: dict[str, dict[str, int]] = {}

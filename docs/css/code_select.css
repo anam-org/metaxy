@@ -1,3 +1,37 @@
 .highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
     user-select: none;
 }
+
+/* Custom integration icon colors */
+/* Target SVGs from custom icon set */
+.twemoji svg[xmlns="http://www.w3.org/2000/svg"] path,
+.twemoji svg[xmlns="http://www.w3.org/2000/svg"] ellipse {
+    fill: currentColor;
+}
+
+/* SQLAlchemy icon - red color from their brand */
+.twemoji svg title:first-child {
+    display: none;
+}
+
+.twemoji svg path[d*="M11.8 15.955"] {
+    fill: #d71f00;
+}
+
+/* SQLModel icon - purple color from their brand */
+.twemoji svg path[d*="m 23.306972,14.003592"],
+.twemoji svg path[d*="m 23.287109,6.1171875"],
+.twemoji svg ellipse[cx="12.210595"] {
+    fill: #7e56c2;
+}
+
+/* Adjust for dark mode - make icons slightly brighter */
+[data-md-color-scheme="slate"] .twemoji svg path[d*="M11.8 15.955"] {
+    fill: #ff3333;
+}
+
+[data-md-color-scheme="slate"] .twemoji svg path[d*="m 23.306972,14.003592"],
+[data-md-color-scheme="slate"] .twemoji svg path[d*="m 23.287109,6.1171875"],
+[data-md-color-scheme="slate"] .twemoji svg ellipse[cx="12.210595"] {
+    fill: #9b7dd4;
+}

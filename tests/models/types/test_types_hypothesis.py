@@ -10,7 +10,8 @@ import pytest
 from hypothesis import assume, given, settings
 from pydantic import BaseModel, ValidationError
 
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeatureSpec
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.types import FeatureKey, FieldKey
 
@@ -256,7 +257,7 @@ class TestFeatureKeyProperties:
         key = FeatureKey(parts)
 
         with pytest.raises(ValidationError, match="frozen"):
-            key.parts = tuple(["x", "y", "z"])  # type: ignore[misc]
+            key.parts = tuple(["x", "y", "z"])  # pyright: ignore[reportAttributeAccessIssue]
 
     @given(parts1=key_parts_list(), parts2=key_parts_list())
     def test_feature_key_ordering(self, parts1: list[str], parts2: list[str]):
