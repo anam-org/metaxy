@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -4832,16 +4862,16 @@
 <p>Hashable for use as dict keys in registries.
 Parts cannot contain forward slashes (/) or double underscores (__).</p>
 <p>Example:</p>
-<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="err">```</span><span class="n">py</span>
-<span class="linenos" data-linenos=" 2 "></span><span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span>  <span class="c1"># String format</span>
-<span class="linenos" data-linenos=" 3 "></span><span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos=" 4 "></span>
-<span class="linenos" data-linenos=" 5 "></span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span>  <span class="c1"># List format</span>
-<span class="linenos" data-linenos=" 6 "></span><span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos=" 7 "></span>
-<span class="linenos" data-linenos=" 8 "></span><span class="n">FeatureKey</span><span class="p">(</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]))</span>  <span class="c1"># FeatureKey copy</span>
-<span class="linenos" data-linenos=" 9 "></span><span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos="10 "></span><span class="err">```</span>
+<div class="language-python highlight"><pre><span></span><code><span class="err">```</span><span class="n">py</span>
+<span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span>  <span class="c1"># String format</span>
+<span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+
+<span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span>  <span class="c1"># List format</span>
+<span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+
+<span class="n">FeatureKey</span><span class="p">(</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]))</span>  <span class="c1"># FeatureKey copy</span>
+<span class="c1"># FeatureKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+<span class="err">```</span>
 </code></pre></div>
 
 
@@ -5428,16 +5458,16 @@ Parts cannot contain forward slashes (/) or double underscores (__).</p>
 <p>Hashable for use as dict keys in registries.
 Parts cannot contain forward slashes (/) or double underscores (__).</p>
 <p>Example:</p>
-<div class="language-python highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span><span class="err">```</span><span class="n">py</span>
-<span class="linenos" data-linenos=" 2 "></span><span class="n">FieldKey</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span>  <span class="c1"># String format</span>
-<span class="linenos" data-linenos=" 3 "></span><span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos=" 4 "></span>
-<span class="linenos" data-linenos=" 5 "></span><span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span>  <span class="c1"># List format</span>
-<span class="linenos" data-linenos=" 6 "></span><span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos=" 7 "></span>
-<span class="linenos" data-linenos=" 8 "></span><span class="n">FieldKey</span><span class="p">(</span><span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]))</span>  <span class="c1"># FieldKey copy</span>
-<span class="linenos" data-linenos=" 9 "></span><span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
-<span class="linenos" data-linenos="10 "></span><span class="err">```</span>
+<div class="language-python highlight"><pre><span></span><code><span class="err">```</span><span class="n">py</span>
+<span class="n">FieldKey</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span>  <span class="c1"># String format</span>
+<span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+
+<span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">])</span>  <span class="c1"># List format</span>
+<span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+
+<span class="n">FieldKey</span><span class="p">(</span><span class="n">FieldKey</span><span class="p">([</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]))</span>  <span class="c1"># FieldKey copy</span>
+<span class="c1"># FieldKey(parts=[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;])</span>
+<span class="err">```</span>
 </code></pre></div>
 
 

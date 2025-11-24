@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -1290,6 +1320,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#database-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Migrations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1317,6 +1358,17 @@
     <span class="md-ellipsis">
       
         ext.sqlmodel.inject_primary_key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extsqlmodelinject_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.sqlmodel.inject_index
       
     </span>
   </a>
@@ -2580,6 +2632,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#database-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Migrations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuration-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2607,6 +2670,17 @@
     <span class="md-ellipsis">
       
         ext.sqlmodel.inject_primary_key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extsqlmodelinject_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ext.sqlmodel.inject_index
       
     </span>
   </a>
@@ -2724,28 +2798,28 @@
 <p>The <a href="https://sqlmodel.tiangolo.com/">SQLModel</a> integration enables Metaxy features to also act as <a href="https://www.sqlalchemy.org/">SQLAlchemy</a> ORM models. It exposes user-defined feature tables to SQLAlchemy.</p>
 <p>It is the primary way to use Metaxy with database-backed <a href="../../../learn/metadata-stores/">metadata stores</a>.</p>
 <div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>This integration should be used together with the <a href="../sqlalchemy/">SQLAlchemy integration</a>. See <a href="../sqlalchemy/#alembic-integration">Alembic instructions</a> for more details on how to set up database migrations.</p>
+<p class="admonition-title">Database Migrations</p>
+<p>For database migration management with Alembic, see the <a href="../sqlalchemy/#alembic-integration">SQLAlchemy integration guide</a>.</p>
 </div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>The SQLModel integration requires the sqlmodel package:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[sqlmodel]&#39;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[sqlmodel]&#39;</span>
 </span></code></pre></div>
 <p>and has to be enabled explicitly:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="installation-metaxytoml" name="__tabbed_1" type="radio" /><input id="installation-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="installation-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="installation-metaxytoml">metaxy.toml</label><label for="installation-pyprojecttoml">pyproject.toml</label><label for="installation-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[ext.sqlmodel]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -2757,27 +2831,27 @@
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../../reference/api/ext/sqlmodel/#metaxy.ext.sqlmodel.BaseSQLModelFeature"><code>BaseSQLModelFeature</code></a> which combines the functionality of a Metaxy feature and an SQLModel table.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxsql</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>    <span class="n">mxsql</span><span class="o">.</span><span class="n">BaseSQLModelFeature</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">]),</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">],</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a>        <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a>            <span class="s2">&quot;frames&quot;</span><span class="p">,</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a>            <span class="s2">&quot;duration&quot;</span><span class="p">,</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a>        <span class="p">],</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a>    <span class="p">),</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">):</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a>    <span class="c1"># User-defined metadata columns</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a>    <span class="n">video_id</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a>    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxsql</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">VideoFeature</span><span class="p">(</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">mxsql</span><span class="o">.</span><span class="n">BaseSQLModelFeature</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">spec</span><span class="o">=</span><span class="n">mx</span><span class="o">.</span><span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="n">key</span><span class="o">=</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">]),</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>        <span class="n">id_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;video_id&quot;</span><span class="p">],</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">fields</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>            <span class="s2">&quot;frames&quot;</span><span class="p">,</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>            <span class="s2">&quot;duration&quot;</span><span class="p">,</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>        <span class="p">],</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="p">),</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">):</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="c1"># User-defined metadata columns</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="n">video_id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Do Not Use Server-Generated IDs</p>
@@ -2787,6 +2861,37 @@
 <p class="admonition-title">Automatic Table Naming</p>
 <p>When <code>__tablename__</code> is not specified, it is automatically generated from the feature key. For <code>FeatureKey(["video", "processing"])</code>, it becomes <code>"video__processing"</code>. This behavior can be disabled in the plugin configuration.</p>
 </div>
+<h2 id="database-migrations">Database Migrations<a class="headerlink" href="#database-migrations" title="Permanent link">&para;</a></h2>
+<p>When using SQLModel features with Alembic or other migration tools, use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;filter_feature_sqlmodel_metadata&lt;/span&gt;" href="../../../reference/api/ext/sqlmodel/#metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata"><code>filter_feature_sqlmodel_metadata()</code></a> to transform table names and filter metadata.</p>
+<div class="admonition info">
+<p class="admonition-title">Table Name Transformation</p>
+<p>Pass <code>SQLModel.metadata</code> to <code>filter_feature_sqlmodel_metadata()</code> and it will transform table names by adding the store's <code>table_prefix</code>. The returned metadata will have prefixed table names that match the actual database tables.</p>
+</div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLModel</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.ext.sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_feature_sqlmodel_metadata</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetaxyConfig</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">()</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Transform SQLModel metadata with table_prefix</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqlmodel_metadata</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">SQLModel</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Use with Alembic env.py</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="kn">from</span><span class="w"> </span><span class="nn">alembic</span><span class="w"> </span><span class="kn">import</span> <span class="n">context</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">context</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span><span class="o">=</span><span class="n">target_metadata</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The <code>filter_feature_sqlmodel_metadata()</code> function:</p>
+<ul>
+<li>Transforms table names by adding the store's <code>table_prefix</code></li>
+<li>Filters tables by project (configurable)</li>
+<li>Returns the SQLAlchemy URL for the store</li>
+<li>Optionally injects primary key and index constraints</li>
+</ul>
+<p>See the <a href="../sqlalchemy/#alembic-integration">SQLAlchemy integration guide</a> for complete Alembic setup examples.</p>
 <h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
 <h3 id="extsqlmodelenable"><code>ext.sqlmodel.enable</code><a class="headerlink" href="#extsqlmodelenable" title="Permanent link">&para;</a></h3>
@@ -2795,39 +2900,61 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="extsqlmodelenable-metaxytoml" name="__tabbed_2" type="radio" /><input id="extsqlmodelenable-pyprojecttoml" name="__tabbed_2" type="radio" /><input id="extsqlmodelenable-environment-variable" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="extsqlmodelenable-metaxytoml">metaxy.toml</label><label for="extsqlmodelenable-pyprojecttoml">pyproject.toml</label><label for="extsqlmodelenable-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[ext.sqlmodel]</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">false</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_ENABLE</span><span class="o">=</span><span class="nb">false</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <hr />
 <h3 id="extsqlmodelinject_primary_key"><code>ext.sqlmodel.inject_primary_key</code><a class="headerlink" href="#extsqlmodelinject_primary_key" title="Permanent link">&para;</a></h3>
-<p>Automatically inject composite primary key constraints on SQLModel tables</p>
+<p>Automatically inject composite primary key constraints on SQLModel tables. The key is composed of ID columns, <code>metaxy_created_at</code>, and <code>metaxy_data_version</code>.</p>
 <p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="extsqlmodelinject_primary_key-metaxytoml" name="__tabbed_3" type="radio" /><input id="extsqlmodelinject_primary_key-pyprojecttoml" name="__tabbed_3" type="radio" /><input id="extsqlmodelinject_primary_key-environment-variable" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="extsqlmodelinject_primary_key-metaxytoml">metaxy.toml</label><label for="extsqlmodelinject_primary_key-pyprojecttoml">pyproject.toml</label><label for="extsqlmodelinject_primary_key-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[ext.sqlmodel]</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">inject_primary_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">[ext.sqlmodel]</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">inject_primary_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">inject_primary_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">inject_primary_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_INJECT_PRIMARY_KEY</span><span class="o">=</span><span class="nb">false</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_INJECT_PRIMARY_KEY</span><span class="o">=</span><span class="nb">false</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="extsqlmodelinject_index"><code>ext.sqlmodel.inject_index</code><a class="headerlink" href="#extsqlmodelinject_index" title="Permanent link">&para;</a></h3>
+<p>Automatically inject composite index on SQLModel tables. The index covers ID columns, <code>metaxy_created_at</code>, and <code>metaxy_data_version</code>.</p>
+<p><strong>Type:</strong> <code>bool</code> | <strong>Default:</strong> <code>False</code></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="extsqlmodelinject_index-metaxytoml" name="__tabbed_4" type="radio" /><input id="extsqlmodelinject_index-pyprojecttoml" name="__tabbed_4" type="radio" /><input id="extsqlmodelinject_index-environment-variable" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="extsqlmodelinject_index-metaxytoml">metaxy.toml</label><label for="extsqlmodelinject_index-pyprojecttoml">pyproject.toml</label><label for="extsqlmodelinject_index-environment-variable">Environment Variable</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">[ext.sqlmodel]</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">inject_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">[tool.metaxy.ext.sqlmodel]</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">inject_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_EXT__SQLMODEL_INJECT_INDEX</span><span class="o">=</span><span class="nb">false</span>
 </span></code></pre></div>
 </div>
 </div>

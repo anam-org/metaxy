@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -2731,11 +2761,11 @@
 Different ways to provide them are automatically coerced into canonical internal models.
 This is fully typed and only affects <strong>constructor arguments</strong>, so accessing <strong>attributes</strong> on Metaxy models will always return only the canonical types.</p>
 <p>Some examples:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span> <span class="k">as</span> <span class="n">FeatureKey</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix/feature&quot;</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">])</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="n">same_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseFeature</span> <span class="k">as</span> <span class="n">FeatureKey</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="s2">&quot;prefix/feature&quot;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;prefix&quot;</span><span class="p">,</span> <span class="s2">&quot;feature&quot;</span><span class="p">])</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">same_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Metaxy really loves you, the user!</p>
 <h2 id="keys">Keys<a class="headerlink" href="#keys" title="Permanent link">&para;</a></h2>
@@ -2753,7 +2783,7 @@ This is fully typed and only affects <strong>constructor arguments</strong>, so 
   &lt;span class=&quot;doc doc-labels&quot;&gt;
       &lt;small class=&quot;doc doc-label doc-label-pydantic-model&quot;&gt;&lt;code&gt;pydantic-model&lt;/code&gt;&lt;/small&gt;
   &lt;/span&gt;" href="../../reference/api/definitions/feature-spec/#metaxy.FeatureDep"><code>FeatureDep</code></a> accepts types coercible to <code>FeatureKey</code> and additionally subclasses of <code>BaseFeature</code>:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">dep</span> <span class="o">=</span> <span class="n">FeatureDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">dep</span> <span class="o">=</span> <span class="n">FeatureDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="feature-spec">Feature Spec<a class="headerlink" href="#feature-spec" title="Permanent link">&para;</a></h2>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;FeatureSpec&lt;/span&gt;
@@ -2764,36 +2794,36 @@ This is fully typed and only affects <strong>constructor arguments</strong>, so 
   &lt;/span&gt;" href="../../reference/api/definitions/feature-spec/#metaxy.FeatureSpec"><code>FeatureSpec</code></a> has some syntactic sugar implemented as well.</p>
 <h3 id="deps">Deps<a class="headerlink" href="#deps" title="Permanent link">&para;</a></h3>
 <p>The <code>deps</code> argument accepts a sequence of types coercible to <code>FeatureDep</code>:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="o">...</span><span class="p">,</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a>        <span class="n">MyFeature</span><span class="p">,</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a>        <span class="n">FeatureDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my/feature/key&quot;</span><span class="p">]),</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a>        <span class="p">[</span><span class="s2">&quot;another/key&quot;</span><span class="p">],</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a>        <span class="s2">&quot;very/nice&quot;</span><span class="p">,</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos="8 "></span></a>    <span class="p">],</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos="9 "></span></a><span class="p">)</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="o">...</span><span class="p">,</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">deps</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">MyFeature</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="n">FeatureDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my/feature/key&quot;</span><span class="p">]),</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="p">[</span><span class="s2">&quot;another/key&quot;</span><span class="p">],</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;very/nice&quot;</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="p">],</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
 <p><code>fields</code> elements can omit the full <code>FieldsSpec</code> and be strings (field keys) instead:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="o">...</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my/field&quot;</span><span class="p">,</span> <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;field/with/version&quot;</span><span class="p">,</span> <span class="n">code_version</span><span class="o">=</span><span class="s2">&quot;v1.2.3&quot;</span><span class="p">)]</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">spec</span> <span class="o">=</span> <span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="o">...</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my/field&quot;</span><span class="p">,</span> <span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;field/with/version&quot;</span><span class="p">,</span> <span class="n">code_version</span><span class="o">=</span><span class="s2">&quot;v1.2.3&quot;</span><span class="p">)]</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="fields-mapping">Fields Mapping<a class="headerlink" href="#fields-mapping" title="Permanent link">&para;</a></h3>
 <p>Metaxy uses a bunch of common sense heuristics <a href="../../reference/api/definitions/fields-mapping/">automatically find parent fields</a> by matching on their names. This is enabled by default. For example, using the same field names in upstream and downstream features will automatically create a dependency between these fields:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">(</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="o">...</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a>    <span class="o">...</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Parent</span><span class="p">(</span><span class="n">BaseFeature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="o">...</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="o">...</span>
 </span></code></pre></div>
 <p>is equivalent to:</p>
-<div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a>    <span class="o">...</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Grandchild</span><span class="p">(</span><span class="n">Child</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;my_field&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">Parent</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">&quot;my_field&quot;</span><span class="p">)])],</span> <span class="o">...</span><span class="p">):</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos="5 "></span></a>    <span class="o">...</span>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Child</span><span class="p">(</span><span class="n">Parent</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;my_field&quot;</span><span class="p">],</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="o">...</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">Grandchild</span><span class="p">(</span><span class="n">Child</span><span class="p">,</span> <span class="n">spec</span><span class="o">=</span><span class="n">FeatureSpec</span><span class="p">(</span><span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="n">FieldSpec</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;my_field&quot;</span><span class="p">,</span> <span class="n">deps</span><span class="o">=</span><span class="p">[</span><span class="n">FieldDep</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">Parent</span><span class="o">.</span><span class="n">spec</span><span class="p">()</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">&quot;my_field&quot;</span><span class="p">)])],</span> <span class="o">...</span><span class="p">):</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="o">...</span>
 </span></code></pre></div>
 
 

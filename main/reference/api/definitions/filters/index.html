@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -2636,8 +2666,8 @@ dotted identifiers, and literal values (strings, numbers, booleans, <code>NULL</
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">parse_filter_string</span><span class="p">(</span><span class="s2">&quot;NOT (status = &#39;deleted&#39;) AND deleted_at = NULL&quot;</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># Returns: (~(nw.col(&quot;status&quot;) == &quot;deleted&quot;)) &amp; nw.col(&quot;deleted_at&quot;).is_null()</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">parse_filter_string</span><span class="p">(</span><span class="s2">&quot;NOT (status = &#39;deleted&#39;) AND deleted_at = NULL&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Returns: (~(nw.col(&quot;status&quot;) == &quot;deleted&quot;)) &amp; nw.col(&quot;deleted_at&quot;).is_null()</span>
 </span></code></pre></div>
 </details>
 

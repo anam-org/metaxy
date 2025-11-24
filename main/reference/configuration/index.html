@@ -488,6 +488,8 @@
       
         
       
+        
+      
     
     
     
@@ -550,6 +552,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -2863,16 +2893,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="store-metaxytoml" name="__tabbed_1" type="radio" /><input id="store-pyprojecttoml" name="__tabbed_1" type="radio" /><input id="store-environment-variable" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="store-metaxytoml">metaxy.toml</label><label for="store-pyprojecttoml">pyproject.toml</label><label for="store-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORE</span><span class="o">=</span>dev
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORE</span><span class="o">=</span>dev
 </span></code></pre></div>
 </div>
 </div>
@@ -2884,18 +2914,18 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="stores-metaxytoml" name="__tabbed_2" type="radio" /><input id="stores-pyprojecttoml" name="__tabbed_2" type="radio" /><input id="stores-environment-variable" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="stores-metaxytoml">metaxy.toml</label><label for="stores-pyprojecttoml">pyproject.toml</label><label for="stores-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># stores = {}</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Optional</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># stores = {}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="c1"># stores = {}</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># stores = {}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_STORES</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -2907,16 +2937,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="3:3"><input checked="checked" id="migrations_dir-metaxytoml" name="__tabbed_3" type="radio" /><input id="migrations_dir-pyprojecttoml" name="__tabbed_3" type="radio" /><input id="migrations_dir-environment-variable" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="migrations_dir-metaxytoml">metaxy.toml</label><label for="migrations_dir-pyprojecttoml">pyproject.toml</label><label for="migrations_dir-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">migrations_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.metaxy/migrations&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_MIGRATIONS_DIR</span><span class="o">=</span>.metaxy/migrations
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_MIGRATIONS_DIR</span><span class="o">=</span>.metaxy/migrations
 </span></code></pre></div>
 </div>
 </div>
@@ -2928,18 +2958,18 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="entrypoints-metaxytoml" name="__tabbed_4" type="radio" /><input id="entrypoints-pyprojecttoml" name="__tabbed_4" type="radio" /><input id="entrypoints-environment-variable" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="entrypoints-metaxytoml">metaxy.toml</label><label for="entrypoints-pyprojecttoml">pyproject.toml</label><label for="entrypoints-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># entrypoints = []</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Optional</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="c1"># entrypoints = []</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos="3 "></span></a><span class="c1"># entrypoints = []</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># entrypoints = []</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_ENTRYPOINTS</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_ENTRYPOINTS</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -2951,16 +2981,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="theme-metaxytoml" name="__tabbed_5" type="radio" /><input id="theme-pyprojecttoml" name="__tabbed_5" type="radio" /><input id="theme-environment-variable" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="theme-metaxytoml">metaxy.toml</label><label for="theme-pyprojecttoml">pyproject.toml</label><label for="theme-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">theme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_THEME</span><span class="o">=</span>default
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_THEME</span><span class="o">=</span>default
 </span></code></pre></div>
 </div>
 </div>
@@ -2972,18 +3002,18 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="6:3"><input checked="checked" id="hash_truncation_length-metaxytoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-pyprojecttoml" name="__tabbed_6" type="radio" /><input id="hash_truncation_length-environment-variable" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="hash_truncation_length-metaxytoml">metaxy.toml</label><label for="hash_truncation_length-pyprojecttoml">pyproject.toml</label><label for="hash_truncation_length-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2"></a><a href="#__codelineno-15-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># hash_truncation_length = null</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Optional</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="c1"># hash_truncation_length = null</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a><a href="#__codelineno-16-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># Optional</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3"></a><a href="#__codelineno-16-3"><span class="linenos" data-linenos="3 "></span></a><span class="c1"># hash_truncation_length = null</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="c1"># Optional</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="c1"># hash_truncation_length = null</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_HASH_TRUNCATION_LENGTH</span><span class="o">=</span>...
 </span></code></pre></div>
 </div>
 </div>
@@ -2995,16 +3025,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="7:3"><input checked="checked" id="auto_create_tables-metaxytoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-pyprojecttoml" name="__tabbed_7" type="radio" /><input id="auto_create_tables-environment-variable" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="auto_create_tables-metaxytoml">metaxy.toml</label><label for="auto_create_tables-pyprojecttoml">pyproject.toml</label><label for="auto_create_tables-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><a href="#__codelineno-19-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2"></a><a href="#__codelineno-19-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">auto_create_tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><a href="#__codelineno-20-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_AUTO_CREATE_TABLES</span><span class="o">=</span><span class="nb">false</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_AUTO_CREATE_TABLES</span><span class="o">=</span><span class="nb">false</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -3016,16 +3046,16 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="project-metaxytoml" name="__tabbed_8" type="radio" /><input id="project-pyprojecttoml" name="__tabbed_8" type="radio" /><input id="project-environment-variable" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="project-metaxytoml">metaxy.toml</label><label for="project-pyprojecttoml">pyproject.toml</label><label for="project-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1"></a><a href="#__codelineno-21-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1"></a><a href="#__codelineno-22-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2"></a><a href="#__codelineno-22-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;default&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1"></a><a href="#__codelineno-23-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>default
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">METAXY_PROJECT</span><span class="o">=</span>default
 </span></code></pre></div>
 </div>
 </div>
@@ -3043,37 +3073,37 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="example-multiple-stores-with-fallback-stores-metaxytoml" name="__tabbed_9" type="radio" /><input id="example-multiple-stores-with-fallback-stores-pyprojecttoml" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="example-multiple-stores-with-fallback-stores-metaxytoml">metaxy.toml</label><label for="example-multiple-stores-with-fallback-stores-pyprojecttoml">pyproject.toml</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1"></a><a href="#__codelineno-24-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Default store to use</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2"></a><a href="#__codelineno-24-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3"></a><a href="#__codelineno-24-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4"></a><a href="#__codelineno-24-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># Development store (in-memory) with fallback to production</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5"></a><a href="#__codelineno-24-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">[stores.dev]</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6"></a><a href="#__codelineno-24-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7"></a><a href="#__codelineno-24-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">[stores.dev.config]</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8"></a><a href="#__codelineno-24-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;:memory:&quot;</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9"></a><a href="#__codelineno-24-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10"></a><a href="#__codelineno-24-10"><span class="linenos" data-linenos="10 "></span></a>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11"></a><a href="#__codelineno-24-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1"># Production store</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12"></a><a href="#__codelineno-24-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">[stores.prod]</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13"></a><a href="#__codelineno-24-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14"></a><a href="#__codelineno-24-14"><span class="linenos" data-linenos="14 "></span></a><span class="k">[stores.prod.config]</span>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15"></a><a href="#__codelineno-24-15"><span class="linenos" data-linenos="15 "></span></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/metadata.duckdb&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Default store to use</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># Development store (in-memory) with fallback to production</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="k">[stores.dev]</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="k">[stores.dev.config]</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;:memory:&quot;</span>
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="c1"># Production store</span>
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="k">[stores.prod]</span>
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="k">[stores.prod.config]</span>
+</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/metadata.duckdb&quot;</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1"></a><a href="#__codelineno-25-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2"></a><a href="#__codelineno-25-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3"></a><a href="#__codelineno-25-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4"></a><a href="#__codelineno-25-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">[tool.metaxy.stores.dev]</span>
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5"></a><a href="#__codelineno-25-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6"></a><a href="#__codelineno-25-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">[tool.metaxy.stores.dev.config]</span>
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7"></a><a href="#__codelineno-25-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;:memory:&quot;</span>
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8"></a><a href="#__codelineno-25-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
-</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9"></a><a href="#__codelineno-25-9"><span class="linenos" data-linenos=" 9 "></span></a>
-</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10"></a><a href="#__codelineno-25-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">[tool.metaxy.stores.prod]</span>
-</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11"></a><a href="#__codelineno-25-11"><span class="linenos" data-linenos="11 "></span></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
-</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12"></a><a href="#__codelineno-25-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">[tool.metaxy.stores.prod.config]</span>
-</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13"></a><a href="#__codelineno-25-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/metadata.duckdb&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="k">[tool.metaxy.stores.dev]</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="k">[tool.metaxy.stores.dev.config]</span>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;:memory:&quot;</span>
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="n">fallback_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prod&quot;</span><span class="p">]</span>
+</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
+</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="k">[tool.metaxy.stores.prod]</span>
+</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;metaxy.metadata_store.duckdb.DuckDBMetadataStore&quot;</span>
+</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="k">[tool.metaxy.stores.prod.config]</span>
+</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="n">db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;s3://my-bucket/metadata.duckdb&quot;</span>
 </span></code></pre></div>
 </div>
 </div>

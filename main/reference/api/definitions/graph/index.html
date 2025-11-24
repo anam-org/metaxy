@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -3346,12 +3376,12 @@
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">parent_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;examples&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">])</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">ParentFeature</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">get_feature_by_key</span><span class="p">(</span><span class="n">parent_key</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="c1"># Or use string notation</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">ParentFeature</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">get_feature_by_key</span><span class="p">(</span><span class="s2">&quot;examples/parent&quot;</span><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">parent_key</span> <span class="o">=</span> <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;examples&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">])</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">ParentFeature</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">get_feature_by_key</span><span class="p">(</span><span class="n">parent_key</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Or use string notation</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">ParentFeature</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">get_feature_by_key</span><span class="p">(</span><span class="s2">&quot;examples/parent&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3455,18 +3485,18 @@ If False, return all features regardless of project.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Get all features for current project</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">()</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1"># Get features for specific project</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">projects</span><span class="o">=</span><span class="s2">&quot;myproject&quot;</span><span class="p">)</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1"># Get features for multiple projects</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">projects</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;project1&quot;</span><span class="p">,</span> <span class="s2">&quot;project2&quot;</span><span class="p">])</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1"># Get all features regardless of project</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="n">all_features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">only_current_project</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Get all features for current project</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Get features for specific project</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">projects</span><span class="o">=</span><span class="s2">&quot;myproject&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Get features for multiple projects</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">projects</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;project1&quot;</span><span class="p">,</span> <span class="s2">&quot;project2&quot;</span><span class="p">])</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Get all features regardless of project</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">all_features</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">list_features</span><span class="p">(</span><span class="n">only_current_project</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -3851,13 +3881,13 @@ features that transitively depend on any of the source features.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># DAG: A -&gt; B -&gt; D</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1">#      A -&gt; C -&gt; D</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">graph</span><span class="o">.</span><span class="n">get_downstream_features</span><span class="p">([</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">])])</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># [FeatureKey([&quot;B&quot;]), FeatureKey([&quot;C&quot;]), FeatureKey([&quot;D&quot;])]</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="c1"># Or use string notation</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a><span class="n">graph</span><span class="o">.</span><span class="n">get_downstream_features</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">])</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># DAG: A -&gt; B -&gt; D</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1">#      A -&gt; C -&gt; D</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">graph</span><span class="o">.</span><span class="n">get_downstream_features</span><span class="p">([</span><span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">])])</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># [FeatureKey([&quot;B&quot;]), FeatureKey([&quot;C&quot;]), FeatureKey([&quot;D&quot;])]</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Or use string notation</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">graph</span><span class="o">.</span><span class="n">get_downstream_features</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">])</span>
 </span></code></pre></div>
 </details>
 
@@ -3985,18 +4015,18 @@ FeatureKey, or BaseFeature class. If None, sorts all features
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1"># Sort specific features</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">([</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a>    <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;raw&quot;</span><span class="p">]),</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>    <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;scene&quot;</span><span class="p">]),</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">])</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1"># Or use string notation</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">([</span><span class="s2">&quot;video/raw&quot;</span><span class="p">,</span> <span class="s2">&quot;video/scene&quot;</span><span class="p">])</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1"># Sort all features in the graph (including standalone specs)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="n">all_sorted</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">()</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># Sort specific features</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">([</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;raw&quot;</span><span class="p">]),</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">FeatureKey</span><span class="p">([</span><span class="s2">&quot;video&quot;</span><span class="p">,</span> <span class="s2">&quot;scene&quot;</span><span class="p">]),</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">])</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Or use string notation</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">sorted_keys</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">([</span><span class="s2">&quot;video/raw&quot;</span><span class="p">,</span> <span class="s2">&quot;video/scene&quot;</span><span class="p">])</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Sort all features in the graph (including standalone specs)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">all_sorted</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">topological_sort_features</span><span class="p">()</span>
 </span></code></pre></div>
 </details>
 
@@ -4105,17 +4135,17 @@ including the import path of the Feature class for reconstruction.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">snapshot</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_snapshot</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_feature_version&quot;</span><span class="p">]</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="c1"># &#39;abc12345&#39;</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_feature_spec_version&quot;</span><span class="p">]</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1"># &#39;def67890&#39;</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_full_definition_version&quot;</span><span class="p">]</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1"># &#39;xyz98765&#39;</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;feature_class_path&quot;</span><span class="p">]</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># &#39;myapp.features.video.VideoProcessing&#39;</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;project&quot;</span><span class="p">]</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1"># &#39;myapp&#39;</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">snapshot</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_snapshot</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_feature_version&quot;</span><span class="p">]</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># &#39;abc12345&#39;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_feature_spec_version&quot;</span><span class="p">]</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># &#39;def67890&#39;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;metaxy_full_definition_version&quot;</span><span class="p">]</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># &#39;xyz98765&#39;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;feature_class_path&quot;</span><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># &#39;myapp.features.video.VideoProcessing&#39;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">snapshot</span><span class="p">[</span><span class="s2">&quot;video_processing&quot;</span><span class="p">][</span><span class="s2">&quot;project&quot;</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># &#39;myapp&#39;</span>
 </span></code></pre></div>
 </details>
 
@@ -4261,16 +4291,16 @@ as returned by to_snapshot() or loaded from DB</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># Load snapshot from metadata store</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">historical_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">from_snapshot</span><span class="p">(</span><span class="n">snapshot_data</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># With override for moved feature</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">historical_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">from_snapshot</span><span class="p">(</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a>    <span class="n">snapshot_data</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>    <span class="n">class_path_overrides</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a>        <span class="s2">&quot;video_processing&quot;</span><span class="p">:</span> <span class="s2">&quot;myapp.features_v2.VideoProcessing&quot;</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>    <span class="p">}</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Load snapshot from metadata store</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">historical_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">from_snapshot</span><span class="p">(</span><span class="n">snapshot_data</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># With override for moved feature</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">historical_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">from_snapshot</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">snapshot_data</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">class_path_overrides</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="s2">&quot;video_processing&quot;</span><span class="p">:</span> <span class="s2">&quot;myapp.features_v2.VideoProcessing&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="p">}</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -4460,12 +4490,12 @@ the default global graph.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># Normal usage - returns default graph</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">reg</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># With custom graph in context</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="k">with</span> <span class="n">my_graph</span><span class="o">.</span><span class="n">use</span><span class="p">():</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a>    <span class="n">reg</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>  <span class="c1"># Returns my_graph</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Normal usage - returns default graph</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">reg</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># With custom graph in context</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">with</span> <span class="n">my_graph</span><span class="o">.</span><span class="n">use</span><span class="p">():</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">reg</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>  <span class="c1"># Returns my_graph</span>
 </span></code></pre></div>
 </details>
 
@@ -4535,12 +4565,12 @@ Typically used in application setup code or test fixtures.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># In application setup</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">my_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="p">()</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">FeatureGraph</span><span class="o">.</span><span class="n">set_active</span><span class="p">(</span><span class="n">my_graph</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="c1"># Now all operations use my_graph</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>  <span class="c1"># Returns my_graph</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># In application setup</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">my_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">FeatureGraph</span><span class="o">.</span><span class="n">set_active</span><span class="p">(</span><span class="n">my_graph</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Now all operations use my_graph</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">FeatureGraph</span><span class="o">.</span><span class="n">get_active</span><span class="p">()</span>  <span class="c1"># Returns my_graph</span>
 </span></code></pre></div>
 </details>
 
@@ -4605,14 +4635,14 @@ The graph is automatically restored when the context exits.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">test_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">with</span> <span class="n">test_graph</span><span class="o">.</span><span class="n">use</span><span class="p">():</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>    <span class="c1"># All operations use test_graph</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>    <span class="k">class</span><span class="w"> </span><span class="nc">TestFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=...</span><span class="p">):</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a>        <span class="k">pass</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1"># Outside context, back to previous graph</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">test_graph</span> <span class="o">=</span> <span class="n">FeatureGraph</span><span class="p">()</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">test_graph</span><span class="o">.</span><span class="n">use</span><span class="p">():</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># All operations use test_graph</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">class</span><span class="w"> </span><span class="nc">TestFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">,</span> <span class="n">spec</span><span class="o">=...</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="k">pass</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Outside context, back to previous graph</span>
 </span></code></pre></div>
 </details>
 

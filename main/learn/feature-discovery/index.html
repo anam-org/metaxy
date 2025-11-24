@@ -490,6 +490,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/feature-dependencies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Dependencies
   
 
     
@@ -2773,22 +2803,22 @@
 <p>The most powerful discovery mechanism uses Python's standard entry point system via a well-known <code>"metaxy.project"</code> entrypoint group in the package metadata.</p>
 <h3 id="creating-a-feature-plugin">Creating a Feature Plugin<a class="headerlink" href="#creating-a-feature-plugin" title="Permanent link">&para;</a></h3>
 <p>Structure your feature package:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">my</span><span class="o">-</span><span class="n">video</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="err">├──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="err">└──</span> <span class="n">src</span><span class="o">/</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>    <span class="err">└──</span> <span class="n">my_video_features</span><span class="o">/</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>        <span class="err">├──</span> <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a>        <span class="err">├──</span> <span class="n">detection</span><span class="o">.</span><span class="n">py</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>        <span class="err">└──</span> <span class="n">transcription</span><span class="o">.</span><span class="n">py</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">my</span><span class="o">-</span><span class="n">video</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="err">├──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="err">└──</span> <span class="n">src</span><span class="o">/</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="err">└──</span> <span class="n">my_video_features</span><span class="o">/</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="err">├──</span> <span class="fm">__init__</span><span class="o">.</span><span class="n">py</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="err">├──</span> <span class="n">detection</span><span class="o">.</span><span class="n">py</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="err">└──</span> <span class="n">transcription</span><span class="o">.</span><span class="n">py</span>
 </span></code></pre></div>
 <p>Declare entry points in <code>pyproject.toml</code>:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[project]</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-video-features&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;metaxy&quot;</span><span class="p">]</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos="7 "></span></a><span class="n">my-video-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_video_features&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[project]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-video-features&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;metaxy&quot;</span><span class="p">]</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">my-video-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my_video_features&quot;</span>
 </span></code></pre></div>
 <p>The entry point name is your project name. The value can be either:</p>
 <ul>
@@ -2802,39 +2832,39 @@
 </div>
 <h3 id="installing-and-using-feature-plugins">Installing and Using Feature Plugins<a class="headerlink" href="#installing-and-using-feature-plugins" title="Permanent link">&para;</a></h3>
 <p>Install the package:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a>pip<span class="w"> </span>install<span class="w"> </span>my-video-features
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="c1"># Or in a monorepo:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>./packages/my-video-features
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>my-video-features
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Or in a monorepo:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>./packages/my-video-features
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">UV Package Manager: Entry Point Changes</p>
 <p>If you're using <code>uv</code> and modify entry points in <code>pyproject.toml</code>, <code>uv sync</code> will <strong>not</strong> recreate the editable package metadata. You must explicitly reinstall:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a>uv<span class="w"> </span>sync<span class="w"> </span>--reinstall-package<span class="w"> </span>my-video-features<span class="w"> </span>my-video-features
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--reinstall-package<span class="w"> </span>my-video-features<span class="w"> </span>my-video-features
 </span></code></pre></div>
 </div>
 <h2 id="monorepo-patterns">Monorepo Patterns<a class="headerlink" href="#monorepo-patterns" title="Permanent link">&para;</a></h2>
 <p>In monorepos, use entry points to manage feature collections across teams:</p>
 <h3 id="team-owned-feature-packages">Team-Owned Feature Packages<a class="headerlink" href="#team-owned-feature-packages" title="Permanent link">&para;</a></h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">monorepo</span><span class="o">/</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="err">├──</span> <span class="n">packages</span><span class="o">/</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="err">│</span>   <span class="err">├──</span> <span class="n">core</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="err">│</span>   <span class="err">│</span>   <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="err">│</span>   <span class="err">├──</span> <span class="n">ml</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="err">│</span>   <span class="err">│</span>   <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="err">│</span>   <span class="err">└──</span> <span class="n">experimental</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="err">│</span>       <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="err">└──</span> <span class="n">apps</span><span class="o">/</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>    <span class="err">└──</span> <span class="n">main</span><span class="o">-</span><span class="n">pipeline</span><span class="o">/</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>        <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># depends on feature packages</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">monorepo</span><span class="o">/</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="err">├──</span> <span class="n">packages</span><span class="o">/</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="err">│</span>   <span class="err">├──</span> <span class="n">core</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="err">│</span>   <span class="err">│</span>   <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="err">│</span>   <span class="err">├──</span> <span class="n">ml</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="err">│</span>   <span class="err">│</span>   <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="err">│</span>   <span class="err">└──</span> <span class="n">experimental</span><span class="o">-</span><span class="n">features</span><span class="o">/</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="err">│</span>       <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># [project.entry-points.&quot;metaxy.features&quot;]</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="err">└──</span> <span class="n">apps</span><span class="o">/</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="err">└──</span> <span class="n">main</span><span class="o">-</span><span class="n">pipeline</span><span class="o">/</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>        <span class="err">└──</span> <span class="n">pyproject</span><span class="o">.</span><span class="n">toml</span>  <span class="c1"># depends on feature packages</span>
 </span></code></pre></div>
 <p>Each team maintains their features independently:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># packages/ml-features/pyproject.toml</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">ml-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ml_features.load&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># packages/ml-features/pyproject.toml</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">ml-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ml_features.load&quot;</span>
 </span></code></pre></div>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># packages/core-features/pyproject.toml</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">core-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;core_features.load&quot;</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># packages/core-features/pyproject.toml</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;metaxy.project&quot;</span><span class="k">]</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">core-features</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;core_features.load&quot;</span>
 </span></code></pre></div>
 <p>The main application imports features from all installed packages, and each feature automatically knows its project based on the entry point.</p>
 <h2 id="config-based-discovery">Config-Based Discovery<a class="headerlink" href="#config-based-discovery" title="Permanent link">&para;</a></h2>
@@ -2842,20 +2872,20 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="config-based-discovery-metaxytoml" name="__tabbed_1" type="radio" /><input id="config-based-discovery-pyprojecttoml" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="config-based-discovery-metaxytoml">metaxy.toml</label><label for="config-based-discovery-pyprojecttoml">pyproject.toml</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="s2">&quot;myapp.features.audio&quot;</span><span class="p">,</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos="5 "></span></a><span class="p">]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="s2">&quot;myapp.features.audio&quot;</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">]</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">[tool.metaxy]</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="s2">&quot;myapp.features.audio&quot;</span><span class="p">,</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">]</span>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">[tool.metaxy]</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">project</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-project&quot;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">entrypoints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="s2">&quot;myapp.features.video&quot;</span><span class="p">,</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="s2">&quot;myapp.features.audio&quot;</span><span class="p">,</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="p">]</span>
 </span></code></pre></div>
 </div>
 </div>
