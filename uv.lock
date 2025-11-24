@@ -1958,6 +1958,7 @@ delta = [
     { name = "deltalake" },
 ]
 duckdb = [
+    { name = "duckdb" },
     { name = "ibis-framework", extra = ["duckdb"] },
 ]
 graphviz = [
@@ -2025,6 +2026,7 @@ examples = [
 requires-dist = [
     { name = "cyclopts", git = "https://github.com/BrianPugh/cyclopts.git?branch=mkdocs-plugin" },
     { name = "deltalake", marker = "extra == 'delta'", specifier = ">=1.2.1" },
+    { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=1.4.1" },
     { name = "ibis-framework", marker = "extra == 'ibis'", specifier = ">=11.0.0" },
     { name = "ibis-framework", extras = ["bigquery"], marker = "extra == 'bigquery'", specifier = ">=11.0.0" },
     { name = "ibis-framework", extras = ["clickhouse"], marker = "extra == 'clickhouse'", specifier = ">=11.0.0" },

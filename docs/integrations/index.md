@@ -18,6 +18,18 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta.md)
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/delta.md)
+
+-   :custom-duckdb:{ .lg .middle } __DuckDB__
+
+    ---
+
+    :material-tag-outline: Database
+
+    Store metadata in DuckDB with support for local files, in-memory databases, and MotherDuck cloud.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/duckdb.md)
 <!-- dprint-ignore-end -->
 
 </div>
