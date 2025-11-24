@@ -39,37 +39,10 @@ Until now, a general solution for this problem did not exist, but this is not th
 Metaxy solves the first set of problems with a **feature** and **field** dependency system, and the second set with a **migrations** system.
 
 Metaxy builds a *versioned graphs* from feature definitions and tracks version changes.
-This graph can be snapshotted and saved at any point of time, typically during pipeline deployment.
-Here is an example of a graph diff produced by a **code_version** update on the `audio` field of the `example/video` feature:
 
-```mermaid
----
-title: Propagation Of Changes
----
-flowchart TB
-    %%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}, 'themeVariables': {'fontSize': '14px'}}}%%
+## Quickstart
 
-    example_video["<div style="text-align:left"><b>example/video</b><br/><font color="#CC0000">bc9ca8</font> → <font
-color="#00AA00">6db302</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
-color="#CC0000">227423</font> → <font color="#00AA00">09c839</font>)<br/>- frames (794116)</div>"]
-    style example_video stroke:#FFA500,stroke-width:3px
-    example_crop["<div style="text-align:left"><b>example/crop</b><br/><font color="#CC0000">3ac04d</font> → <font
-color="#00AA00">54dc7f</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">audio</font> (<font
-color="#CC0000">76c8bd</font> → <font color="#00AA00">f3130c</font>)<br/>- frames (abc790)</div>"]
-    style example_crop stroke:#FFA500,stroke-width:3px
-    example_face_detection["<div style="text-align:left"><b>example/face_detection</b><br/>1ac83b<br/><font
-color="#999">---</font><br/>- faces (2d75f0)</div>"]
-    example_stt["<div style="text-align:left"><b>example/stt</b><br/><font color="#CC0000">c83a75</font> → <font
-color="#00AA00">066d34</font><br/><font color="#999">---</font><br/>- <font color="#FFAA00">transcription</font> (<font
-color="#CC0000">ac412b</font> → <font color="#00AA00">058410</font>)</div>"]
-    style example_stt stroke:#FFA500,stroke-width:3px
-
-    example_video --> example_crop
-    example_crop --> example_face_detection
-    example_video --> example_stt
-```
-
-The key observation here is that `example/face_detection`'s `faces` field **did not receive a new version**, because it does not depend on the `audio` field that has been updated upstream.
+Head to [./overview/quickstart.md]!
 
 ## About Metaxy
 
@@ -109,117 +82,9 @@ Metaxy is:
     - [integrations](integrations/index.md) with popular tools such as SQLModel and Dagster.
     - [testing helpers](./learn/testing.md) that you're going to appreciate
 
-## Feature Dependencies
-
-Features form a DAG where each feature declares its upstream dependencies. Consider an video processing pipeline:
-
-```python
-class Video(
-    Feature,
-    spec=FeatureSpec(
-        key="video",
-        fields=[
-            # simple field with only the key defined and the default code_version used
-            "frames",
-            # let's version this one!
-            FieldSpec(name="audio", code_version="1"),
-        ],
-    ),
-):
-    path: str = Field(description="Path to the video file")
-    duration: float = Field(description="Duration of the video in seconds")
-
-
-class VoiceDetection(
-    Feature,
-    spec=FeatureSpec(
-        key="voice_detection",
-        deps=[Video],
-        fields=[
-            "frames",   # dependency automatically mapped into Video.frames
-            "audio",  # dependency automatically mapped into Video.audio
-        ]
-    ),
-):
-    path: str = Field(description="Path to the voice detection json file")
-```
-
-> [!NOTE]
-> This API will be improved with more ergonomic alternatives.
-> See [issue #70](https://github.com/anam-org/metaxy/issues/70) for details.
-
-When `Video` changes, Metaxy automatically identifies that `VoiceDetection` requires recomputation.
-
-## Versioned Change Propagation
-
-Every feature definition produces a deterministic version hash computed from its dependencies, fields, and code versions.
-When you modify a feature—whether changing its dependencies, adding fields, or updating transformation logic, Metaxy detects the change and propagates it downstream.
-This is done on multiple levels: `Feature` level, field level, and of course on sample level: each _row_ in the metadata store tracks the version of _each field_ and the feature-level version.
-
-This ensures that when feature definitions evolve, every feature that transitively depends on it can be systematically updated. Because Metaxy supports declaring dependencies on fields, it can identify when a feature _does not_ require recomputation, even if one of its parents has been changed (but only irrelevant fields did).
-This is a huge factor in improving efficiency and reducing unnecessary computations (and costs!).
-
-Because Metaxy feature graphs are static, Metaxy can calculate field provenance changes ahead of the actual computation.
-This enables patterns such as **computation preview** and **computation cost prediction**.
-
-## Typical User Workflow
-
-### 1. Record Metaxy feature graph in CI/CD
-
-Invoke the `metaxy` CLI:
-
-```bash
-metaxy graph push
-```
-
-This can be skipped in non-production environments.
-
-### 2. Get a resolved metadata increment from Metaxy
-
-Use `metaxy.MetadataStore.resolve_update` to identify samples requiring recomputation:
-
-```py
-import metaxy as mx
-
-# discover and load Metaxy features
-mx.init_metaxy()
-
-# can be DuckDBMetadataStore locally and ClickHouseMetadataStore in production
-store: mx.MetadataStore = ...
-diff = store.resolve_update(VoiceDetection)
-```
-
-[`resolve_update`][metaxy.MetadataStore.resolve_update] runs in the database with an optional fallback to use Polars in-memory (and the two workflows are guaranteed to produce consistent results).
-The returned object provides [Narwhals](https://narwhals-dev.github.io/narwhals/) lazy dataframes which are backend agnostic -- can run on Polars, Pandas, PySpark, or an extenral DB, and have all the field provenances already computed.
-
-### 3. Run user-defined computation over the metadata increment
-
-Metaxy is not involved in this step at all.
-
-```py
-if (len(diff.added) + len(diff.changed)) > 0:
-    # run your computation, this can be done in a distributed manner
-    results = run_voice_detection(diff, ...)
-```
-
-### 4. Record metadata for computed samples
-
-This can be done in a distributed manner as well, and the recommended pattern is to write metadata as soon as it becomes available to avoid losing progress in case of interruptions or failures.
-
-```py
-store.write_metadata(VoiceDetection, results)
-```
-
-We have now successfully recorded the metadata for the computed samples! Processed samples will no longer be returned by `MetadataStore.resolve_update` during future pipeline runs.
-
-> [!WARNING] No Write Time Uniqueness Checks!
-> Metaxy doesn't enforce deduplication or uniqueness checks at **write time** for performance reasons.
-> While `MetadataStore.resolve_update` is guaranteed to never return the same versioned sample twice, it's up to the user to ensure that samples are not written multiple times to the metadata store.
-> Configuring deduplication or uniqueness checks in the store (database) is a good idea.
-> For example, the [SQLModel integration](integrations/sqlmodel.md) can inject a composite primary key on `metaxy_data_version`, `metaxy_created_at` and the user-defined ID columns.
-> However, Metaxy only uses the latest version (by `metaxy_created_at`) at **read time**.
-
 ## What's Next?
+
+- Itching to write some Metaxy code? Continue to [./overview/quickstart.md].
 
 - Learn more about [feature definitions](./learn/feature-definitions.md) or [versioning](./learn/data-versioning.md)
 

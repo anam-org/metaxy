@@ -11,7 +11,7 @@
 
     Retrieve SQLAlchemy URLs and `MetaData` for the current Metaxy project from Metaxy `MetadataStore` objects.
 
-    [:octicons-arrow-right-24: Integration docs](sqlalchemy.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlalchemy.md)
 
     [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlalchemy.md)
 
@@ -21,7 +21,7 @@
 
     Adds `SQLModel` capabilities to `metaxy.BaseFeature` class.
 
-    [:octicons-arrow-right-24: Integration docs](sqlmodel.md)
+    [:octicons-arrow-right-24: Integration docs](plugins/sqlmodel.md)
 
     [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlmodel.md)
 <!-- dprint-ignore-end -->

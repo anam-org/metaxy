@@ -67,23 +67,10 @@ The `stores` field configures metadata store backends. Each store is defined by:
     db_path = "s3://my-bucket/metadata.duckdb"
     ```
 
-### Available Metadata Stores
+## Configuring Metadata Stores
 
-- [DuckDB](api/metadata-stores/ibis/duckdb.md)
-- [ClickHouse](api/metadata-stores/ibis/clickhouse.md)
+Configuration options for metadata stores can be found at the respective store documentation page.
 
-### Getting a Store Instance
+## Configuring Metaxy Plugins
 
-```python
-import metaxy as mx
-
-with mx.MetaxyConfig.load().get_store("prod") as store:
-    # Use store
-    ...
-```
-
-## Plugin Configuration
-
-Plugins are configured under the `ext` field. Each plugin has its own configuration options.
-
-- [SQLModel Plugin Configuration](../integrations/sqlmodel.md#configuration-options)
+Configuration options for Metaxy plugins can be found at the respective plugin documentation page.

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, DateTime, Index, MetaData, String, Table
 
 from metaxy.config import MetaxyConfig
+from metaxy.ext.sqlalchemy.config import SQLAlchemyConfig
 from metaxy.metadata_store.system import EVENTS_KEY, FEATURE_VERSIONS_KEY
 from metaxy.models.constants import (
     METAXY_FEATURE_SPEC_VERSION,
@@ -18,9 +19,10 @@ from metaxy.models.constants import (
     METAXY_FULL_DEFINITION_VERSION,
     METAXY_SNAPSHOT_VERSION,
 )
+from metaxy.models.feature_spec import FeatureSpec
 
 if TYPE_CHECKING:
-    pass
+    from metaxy.metadata_store.ibis import IbisMetadataStore
 
 
 # System Tables
@@ -28,15 +30,14 @@ if TYPE_CHECKING:
 
 def create_system_tables(
     metadata: MetaData,
-    inject_primary_key: bool = False,
     table_prefix: str = "",
 ) -> tuple[Table, Table]:
     """Create system table definitions in the given metadata.
 
+    System tables always include primary key constraints since they are controlled by metaxy.
+
     Args:
         metadata: SQLAlchemy MetaData object to add tables to
-        inject_primary_key: If True, include primary key constraints.
-                           If False, create tables without primary keys (default).
         table_prefix: Optional prefix to prepend to table names (e.g., "dev_")
 
     Returns:
@@ -52,12 +53,12 @@ def create_system_tables(
         feature_versions_name,
         metadata,
         # Composite primary key
-        Column("project", String, primary_key=inject_primary_key, index=True),
-        Column("feature_key", String, primary_key=inject_primary_key, index=True),
+        Column("project", String, primary_key=True, index=True),
+        Column("feature_key", String, primary_key=True, index=True),
         Column(
             METAXY_FEATURE_SPEC_VERSION,
             String,
-            primary_key=inject_primary_key,
+            primary_key=True,
         ),
         # Versioning columns
         Column(METAXY_FEATURE_VERSION, String, index=True),
@@ -86,9 +87,9 @@ def create_system_tables(
         events_name,
         metadata,
         # Composite primary key matching Polars append-only storage
-        Column("project", String, primary_key=inject_primary_key, index=True),
-        Column("execution_id", String, primary_key=inject_primary_key, index=True),
-        Column("timestamp", DateTime, primary_key=inject_primary_key),
+        Column("project", String, primary_key=True, index=True),
+        Column("execution_id", String, primary_key=True, index=True),
+        Column("timestamp", DateTime, primary_key=True),
         # Event fields
         Column("event_type", String, index=True),
         Column("feature_key", String, nullable=True, index=True),
@@ -105,225 +106,283 @@ def create_system_tables(
     return feature_versions_table, events_table
 
 
-# Internal helper for getting store's table_prefix
-def _get_table_prefix(store_name: str | None = None) -> str:
-    """Get table_prefix from a metadata store.
+def _get_store_sqlalchemy_url(store: IbisMetadataStore) -> str:
+    """Get SQLAlchemy URL from an IbisMetadataStore instance.
 
     Args:
-        store_name: Name of the metadata store. If None, uses default store.
-
-    Returns:
-        Table prefix string (empty string if not set)
-    """
-    config = MetaxyConfig.get()
-    store = config.get_store(store_name)
-    return getattr(store, "table_prefix", "")
-
-
-def _get_store_sqlalchemy_url(store_name: str | None = None) -> str:
-    """Get SQLAlchemy URL from a configured MetadataStore.
-
-    Args:
-        store_name: Name of the store. If None, uses default store.
+        store: IbisMetadataStore instance
 
     Returns:
         SQLAlchemy connection URL string
 
     Raises:
-        AttributeError: If store doesn't have sqlalchemy_url property
         ValueError: If sqlalchemy_url is empty
     """
-    config = MetaxyConfig.get()
-    store = config.get_store(store_name)
+    if not store.sqlalchemy_url:
+        raise ValueError("IbisMetadataStore has an empty `sqlalchemy_url`.")
 
-    if not hasattr(store, "sqlalchemy_url"):
-        raise AttributeError(
-            f"MetadataStore '{store_name or config.store}' (type: {type(store).__name__}) "
-            f"does not have a `sqlalchemy_url` property."
-        )
-
-    url = getattr(store, "sqlalchemy_url")
-
-    if not url:
-        raise ValueError(
-            f"MetadataStore '{store_name or config.store}' has an empty `sqlalchemy_url`."
-        )
-
-    return url
+    return store.sqlalchemy_url
 
 
 def _get_system_metadata(
     table_prefix: str = "",
-    inject_primary_key: bool = False,
 ) -> MetaData:
     """Create SQLAlchemy metadata containing system tables.
 
+    System tables always include primary key constraints.
+
     Args:
         table_prefix: Optional prefix to prepend to table names
-        inject_primary_key: If True, include primary key constraints
 
     Returns:
         MetaData containing system table definitions
     """
     metadata = MetaData()
-    create_system_tables(
-        metadata, inject_primary_key=inject_primary_key, table_prefix=table_prefix
-    )
+    create_system_tables(metadata, table_prefix=table_prefix)
     return metadata
 
 
-def get_system_sqla_metadata_for_store(
-    store_name: str | None = None,
-    inject_primary_key: bool = False,
+def get_system_slqa_metadata(
+    store: IbisMetadataStore,
 ) -> tuple[str, MetaData]:
-    """Get SQLAlchemy URL and system table metadata for a metadata store.
+    """Get SQLAlchemy URL and Metaxy system tables metadata for a metadata store.
 
     This function retrieves both the connection URL and system table metadata
-    for a store, with the store's table_prefix automatically applied to table names.
+    for a store, with the store's `table_prefix` automatically applied to table names.
 
     Args:
-        store_name: Name of the metadata store. If None, uses default store.
-        inject_primary_key: If True, include primary key constraints.
+        store: IbisMetadataStore instance
 
     Returns:
         Tuple of (sqlalchemy_url, system_metadata)
 
     Raises:
-        AttributeError: If store doesn't have sqlalchemy_url property
         ValueError: If store's sqlalchemy_url is empty
 
     Example:
 
         ```py
-        from metaxy.ext.sqlalchemy import get_system_sqla_metadata_for_store
+        from metaxy.ext.sqlalchemy import get_system_slqa_metadata
+        from metaxy.config import MetaxyConfig
 
-        # Get URL and metadata for default store
-        url, metadata = get_system_sqla_metadata_for_store()
+        # Get the store instance
+        config = MetaxyConfig.get()
+        store = config.get_store()
 
-        # Get URL and metadata for specific store
-        url, metadata = get_system_sqla_metadata_for_store("prod")
+        # Get URL and metadata
+        url, metadata = get_system_slqa_metadata(store)
 
         # Use with Alembic env.py
         from alembic import context
-        url, target_metadata = get_system_sqla_metadata_for_store()
+        url, target_metadata = get_system_slqa_metadata(store)
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-    url = _get_store_sqlalchemy_url(store_name)
-    table_prefix = _get_table_prefix(store_name)
-    metadata = _get_system_metadata(
-        table_prefix=table_prefix, inject_primary_key=inject_primary_key
-    )
+    url = _get_store_sqlalchemy_url(store)
+    metadata = _get_system_metadata(table_prefix=store._table_prefix)
     return url, metadata
 
 
 def _get_features_metadata(
+    source_metadata: MetaData,
+    store: IbisMetadataStore,
     project: str | None = None,
     filter_by_project: bool = True,
+    inject_primary_key: bool | None = None,
+    inject_index: bool | None = None,
 ) -> MetaData:
-    """Get SQLAlchemy metadata for user-defined feature tables.
+    """Filter user-defined feature tables from source metadata by project.
+
+    This function must be called after init_metaxy() to ensure features are loaded.
 
     Args:
+        source_metadata: Source SQLAlchemy MetaData to filter (e.g., SQLModel.metadata)
+        store: IbisMetadataStore instance (used to get table_prefix)
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
+        inject_primary_key: If True, inject composite primary key constraints.
+                           If False, do not inject. If None, uses config default.
+        inject_index: If True, inject composite index.
+                     If False, do not inject. If None, uses config default.
 
     Returns:
-        SQLAlchemy MetaData containing feature table definitions
-
-    Raises:
-        ImportError: If SQLModel is not installed
+        Filtered SQLAlchemy MetaData containing only project-scoped feature tables
     """
-    from sqlalchemy import MetaData
-    from sqlmodel import SQLModel
-
-    from metaxy.ext.sqlmodel.plugin import BaseSQLModelFeature
+    from metaxy.models.feature import FeatureGraph
 
     config = MetaxyConfig.get()
 
     if project is None:
         project = config.project
 
-    # Create new metadata to hold filtered tables
+    # Check plugin config for defaults
+    sqlalchemy_config = config.get_plugin("sqlalchemy", SQLAlchemyConfig)
+    if inject_primary_key is None:
+        inject_primary_key = sqlalchemy_config.inject_primary_key
+    if inject_index is None:
+        inject_index = sqlalchemy_config.inject_index
+
+    # Get table_prefix from store
+    table_prefix = store._table_prefix
+
+    # Get the active feature graph
+    graph = FeatureGraph.get_active()
+
+    # Compute expected table names for features in the project
+    expected_table_names = set()
+    feature_specs_by_table_name = {}
+
+    for feature_key, feature_cls in graph.features_by_key.items():
+        # Filter by project if requested
+        if filter_by_project and hasattr(feature_cls, "project"):
+            feature_project = getattr(feature_cls, "project")
+            if feature_project != project:
+                continue
+
+        # Compute table name using same logic as IbisMetadataStore.get_table_name
+        base_name = feature_key.table_name
+        table_name = f"{table_prefix}{base_name}" if table_prefix else base_name
+
+        expected_table_names.add(table_name)
+        feature_specs_by_table_name[table_name] = feature_cls.spec()
+
+    # Filter source metadata to only include expected tables
     filtered_metadata = MetaData()
 
-    # If filtering is disabled, return all SQLModel tables
-    if not filter_by_project:
-        for table_name, table in SQLModel.metadata.tables.items():
-            table.to_metadata(filtered_metadata)
-        return filtered_metadata
+    for table_name, table in source_metadata.tables.items():
+        if table_name in expected_table_names:
+            # Copy table to filtered metadata
+            new_table = table.to_metadata(filtered_metadata)
 
-    # Filter tables by project using Feature.project class attribute
-    for table_name, table in SQLModel.metadata.tables.items():
-        should_include = False
-
-        for feature_cls in BaseSQLModelFeature.__subclasses__():
-            # Check if this feature class owns this table
-            if hasattr(feature_cls, "__tablename__"):
-                tablename = getattr(feature_cls, "__tablename__", None)
-                if tablename == table_name:
-                    # Check if the feature belongs to the target project
-                    if hasattr(feature_cls, "project"):
-                        feature_project = getattr(feature_cls, "project", None)
-                        if feature_project == project:
-                            should_include = True
-                            break
-
-        if should_include:
-            table.to_metadata(filtered_metadata)
+            # Inject constraints if requested
+            spec = feature_specs_by_table_name[table_name]
+            _inject_constraints(
+                table=new_table,
+                spec=spec,
+                inject_primary_key=inject_primary_key,
+                inject_index=inject_index,
+            )
 
     return filtered_metadata
 
 
-def get_feature_sqla_metadata_for_store(
-    store_name: str | None = None,
+def _inject_constraints(
+    table: Table,
+    spec: FeatureSpec,
+    inject_primary_key: bool,
+    inject_index: bool,
+) -> None:
+    """Inject primary key and/or index constraints on a table.
+
+    Args:
+        table: SQLAlchemy Table to modify
+        spec: Feature specification with id_columns
+        inject_primary_key: If True, inject composite primary key
+        inject_index: If True, inject composite index
+    """
+    from sqlalchemy import PrimaryKeyConstraint
+
+    from metaxy.models.constants import METAXY_CREATED_AT, METAXY_DATA_VERSION
+
+    # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
+    key_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+
+    if inject_primary_key:
+        # Add primary key constraint
+        pk_constraint = PrimaryKeyConstraint(*key_columns, name="pk_metaxy_composite")
+        table.append_constraint(pk_constraint)
+
+    if inject_index:
+        # Add composite index
+        idx = Index(
+            f"idx_{table.name}_metaxy_composite",
+            *key_columns,
+        )
+        table.append_constraint(idx)
+
+
+def filter_feature_sqla_metadata(
+    store: IbisMetadataStore,
+    source_metadata: MetaData | None = None,
     project: str | None = None,
     filter_by_project: bool = True,
+    inject_primary_key: bool | None = None,
+    inject_index: bool | None = None,
 ) -> tuple[str, MetaData]:
     """Get SQLAlchemy URL and feature table metadata for a metadata store.
 
-    This function retrieves both the connection URL and feature table metadata
-    for a store. By default, filters tables to include only features belonging
-    to the specified project.
+    This function filters the source metadata to include only feature tables
+    belonging to the specified project, and returns the connection URL for the store.
 
-    Note:
-        This function requires SQLModel to be installed and looks for tables
-        registered in SQLModel.metadata.
+    This function must be called after init_metaxy() to ensure features are loaded.
 
     Args:
-        store_name: Name of the metadata store. If None, uses default store.
+        store: IbisMetadataStore instance
+        source_metadata: Source SQLAlchemy MetaData to filter. If None, uses SQLModel.metadata
+                        (requires SQLModel to be installed).
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
-                          If False, include all SQLModel tables.
+                          If False, include all features.
+        inject_primary_key: If True, inject composite primary key constraints.
+                           If False, do not inject. If None, uses config default.
+        inject_index: If True, inject composite index.
+                     If False, do not inject. If None, uses config default.
 
     Returns:
-        Tuple of (sqlalchemy_url, feature_metadata)
+        Tuple of (sqlalchemy_url, filtered_metadata)
 
     Raises:
-        AttributeError: If store doesn't have sqlalchemy_url property
         ValueError: If store's sqlalchemy_url is empty
-        ImportError: If SQLModel is not installed
+        ImportError: If source_metadata is None and SQLModel is not installed
 
     Example:
 
         ```py
-        from metaxy.ext.sqlalchemy import get_feature_sqla_metadata_for_store
+        from metaxy.ext.sqlalchemy import filter_feature_sqla_metadata
         from metaxy import init_metaxy
+        from metaxy.config import MetaxyConfig
 
         # Load features first
         init_metaxy()
 
-        # Get URL and metadata for default store
-        url, metadata = get_feature_sqla_metadata_for_store()
+        # Get store instance
+        config = MetaxyConfig.get()
+        store = config.get_store()
 
-        # Get URL and metadata for specific store and project
-        url, metadata = get_feature_sqla_metadata_for_store("prod", "my_project")
+        # With SQLModel (default)
+        url, metadata = filter_feature_sqla_metadata(store)
+
+        # With custom metadata
+        from sqlalchemy import MetaData
+        my_metadata = MetaData()
+        # ... define tables in my_metadata ...
+        url, metadata = filter_feature_sqla_metadata(store, source_metadata=my_metadata)
 
         # Use with Alembic env.py
         from alembic import context
-        url, target_metadata = get_feature_sqla_metadata_for_store()
+        url, target_metadata = filter_feature_sqla_metadata(store)
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
-    url = _get_store_sqlalchemy_url(store_name)
-    metadata = _get_features_metadata(project, filter_by_project)
+    # Default to SQLModel.metadata if not provided
+    if source_metadata is None:
+        try:
+            from sqlmodel import SQLModel
+
+            source_metadata = SQLModel.metadata
+        except ImportError as e:
+            raise ImportError(
+                "source_metadata is required when SQLModel is not installed. "
+                "Either install SQLModel or provide a MetaData object explicitly."
+            ) from e
+
+    url = _get_store_sqlalchemy_url(store)
+    metadata = _get_features_metadata(
+        source_metadata=source_metadata,
+        store=store,
+        project=project,
+        filter_by_project=filter_by_project,
+        inject_primary_key=inject_primary_key,
+        inject_index=inject_index,
+    )
     return url, metadata

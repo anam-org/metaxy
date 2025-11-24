@@ -12,10 +12,11 @@ from sqlmodel import Field
 from metaxy import FeatureKey, FeatureSpec, FieldKey, FieldSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlalchemy import (
-    get_feature_sqla_metadata_for_store,
-    get_system_sqla_metadata_for_store,
+    filter_feature_sqla_metadata,
+    get_system_slqa_metadata,
 )
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
+from metaxy.metadata_store.ibis import IbisMetadataStore
 
 # Test fixtures and helper classes
 
@@ -181,7 +182,8 @@ def test_get_metaxy_system_metadata():
     )
 
     with config.use():
-        url, metadata = get_system_sqla_metadata_for_store()
+        store = config.get_store(expected_type=IbisMetadataStore)
+        url, metadata = get_system_slqa_metadata(store)
 
         # Should contain system tables
         assert "metaxy_system__feature_versions" in metadata.tables
@@ -190,7 +192,8 @@ def test_get_metaxy_system_metadata():
 
 def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
     """Test that user features are filtered by project."""
-    url, metadata = get_feature_sqla_metadata_for_store()
+    store = config_project_a.get_store()
+    url, metadata = filter_feature_sqla_metadata(store)
 
     # Should only contain project_a features
     assert "project_a__feature" in metadata.tables
@@ -199,7 +202,8 @@ def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
     """Test filtering for a different project."""
-    url, metadata = get_feature_sqla_metadata_for_store()
+    store = config_project_b.get_store()
+    url, metadata = filter_feature_sqla_metadata(store)
 
     # Should only contain project_b features
     assert "project_b__feature" in metadata.tables
@@ -209,7 +213,8 @@ def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
 def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
     """Test explicit project parameter."""
     # Get metadata for project_b even though current project is project_a
-    url, metadata = get_feature_sqla_metadata_for_store(project="project_b")
+    store = config_project_a.get_store()
+    url, metadata = filter_feature_sqla_metadata(store, project="project_b")
 
     assert "project_b__feature" in metadata.tables
     assert "project_a__feature" not in metadata.tables
@@ -217,7 +222,8 @@ def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_no_filter(config_no_filter):
     """Test that filtering can be disabled."""
-    url, metadata = get_feature_sqla_metadata_for_store(filter_by_project=False)
+    store = config_no_filter.get_store()
+    url, metadata = filter_feature_sqla_metadata(store, filter_by_project=False)
 
     # Should contain all features when filtering is disabled
     assert "project_a__feature" in metadata.tables
@@ -238,7 +244,8 @@ def test_get_store_sqlalchemy_url_default_store():
     )
 
     with config.use():
-        url, metadata = get_system_sqla_metadata_for_store()
+        store = config.get_store(expected_type=IbisMetadataStore)
+        url, metadata = get_system_slqa_metadata(store)
         assert url == "duckdb:///test.db"
 
 
@@ -259,12 +266,17 @@ def test_get_store_sqlalchemy_url_named_store():
     )
 
     with config.use():
-        url1, metadata1 = get_system_sqla_metadata_for_store("store1")
-        url2, metadata2 = get_system_sqla_metadata_for_store("store2")
+        store1 = config.get_store("store1", expected_type=IbisMetadataStore)
+        store2 = config.get_store("store2", expected_type=IbisMetadataStore)
+        url1, metadata1 = get_system_slqa_metadata(store1)
+        url2, metadata2 = get_system_slqa_metadata(store2)
         assert url1 == "duckdb:///store1.db"
         assert url2 == "duckdb:///store2.db"
 
 
+@pytest.mark.skip(
+    reason="Function now requires IbisMetadataStore - non-Ibis stores are not supported"
+)
 def test_get_store_sqlalchemy_url_error_no_property():
     """Test error when store doesn't support sqlalchemy_url."""
     config = MetaxyConfig(
@@ -278,10 +290,11 @@ def test_get_store_sqlalchemy_url_error_no_property():
     )
 
     with config.use():
+        store = config.get_store("memory_store", expected_type=IbisMetadataStore)  # type: ignore[arg-type]
         with pytest.raises(
             AttributeError, match="does not have a `sqlalchemy_url` property"
         ):
-            get_system_sqla_metadata_for_store("memory_store")
+            get_system_slqa_metadata(store)
 
 
 def test_get_store_sqlalchemy_url_error_no_url():
