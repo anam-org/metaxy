@@ -5,18 +5,9 @@ These helpers allow to construct `sqlalchemy.MetaData` objects for user-defined 
 
 This integration is convenient for setting up [Alembic](https://alembic.sqlalchemy.org/en/latest/) migrations.
 
-!!! tip
+!!! tip "SQLModel Features"
 
-    Check out our [SQLModel integration](./sqlmodel.md) to learn how to set up `sqlalchemy` metadata for user-defined feature tables.
-
-## Usage
-
-The integration has to be enabled in `metaxy.toml`:
-
-```toml
-[sqlalchemy]
-enabled = true
-```
+    Check out our [SQLModel integration](./sqlmodel.md) for metaclass features that combine Metaxy features with SQLModel ORM models. This is the recommended way to use Metaxy with SQLAlchemy.
 
 See [API reference](../../reference/api/ext/sqlalchemy.md) for the exact set of provided functions.
 

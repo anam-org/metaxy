@@ -138,7 +138,6 @@ markdown_extensions:
       pygments_lang_class: true
       anchor_linenums: true
       line_spans: __span
-      linenums: true
       linenums_style: pymdownx-inline
   - pymdownx.inlinehilite
   - pymdownx.keys
@@ -173,6 +172,7 @@ nav:
   - Home: index.md
   - Overview:
     - Quickstart: overview/quickstart.md
+    - Feature Dependencies: overview/feature-dependencies.md
   - Learn:
     - Metadata Stores: learn/metadata-stores.md
     - Feature Definitions: learn/feature-definitions.md

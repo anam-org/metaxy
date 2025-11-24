@@ -4,9 +4,9 @@ The [SQLModel](https://sqlmodel.tiangolo.com/) integration enables Metaxy featur
 
 It is the primary way to use Metaxy with database-backed [metadata stores](../../learn/metadata-stores.md).
 
-!!! tip
+!!! tip "Database Migrations"
 
-    This integration should be used together with the [SQLAlchemy integration](sqlalchemy.md). See [Alembic instructions](sqlalchemy.md#alembic-integration) for more details on how to set up database migrations.
+    For database migration management with Alembic, see the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration).
 
 ## Installation
 
@@ -73,6 +73,42 @@ class VideoFeature(
 !!! note "Automatic Table Naming"
 
     When `__tablename__` is not specified, it is automatically generated from the feature key. For `FeatureKey(["video", "processing"])`, it becomes `"video__processing"`. This behavior can be disabled in the plugin configuration.
+
+## Database Migrations
+
+When using SQLModel features with Alembic or other migration tools, use [`filter_feature_sqlmodel_metadata()`][metaxy.ext.sqlmodel.filter_feature_sqlmodel_metadata] to transform table names and filter metadata.
+
+!!! info "Table Name Transformation"
+
+    Pass `SQLModel.metadata` to `filter_feature_sqlmodel_metadata()` and it will transform table names by adding the store's `table_prefix`. The returned metadata will have prefixed table names that match the actual database tables.
+
+```python
+from sqlmodel import SQLModel
+from metaxy.ext.sqlmodel import filter_feature_sqlmodel_metadata
+from metaxy.config import MetaxyConfig
+from metaxy import init_metaxy
+
+init_metaxy()
+config = MetaxyConfig.get()
+store = config.get_store()
+
+# Transform SQLModel metadata with table_prefix
+url, target_metadata = filter_feature_sqlmodel_metadata(store, SQLModel.metadata)
+
+# Use with Alembic env.py
+from alembic import context
+
+context.configure(url=url, target_metadata=target_metadata)
+```
+
+The `filter_feature_sqlmodel_metadata()` function:
+
+- Transforms table names by adding the store's `table_prefix`
+- Filters tables by project (configurable)
+- Returns the SQLAlchemy URL for the store
+- Optionally injects primary key and index constraints
+
+See the [SQLAlchemy integration guide](sqlalchemy.md#alembic-integration) for complete Alembic setup examples.
 
 ## Configuration Options
 

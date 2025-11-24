@@ -158,25 +158,6 @@ def get_system_slqa_metadata(
 
     Raises:
         ValueError: If store's sqlalchemy_url is empty
-
-    Example:
-
-        ```py
-        from metaxy.ext.sqlalchemy import get_system_slqa_metadata
-        from metaxy.config import MetaxyConfig
-
-        # Get the store instance
-        config = MetaxyConfig.get()
-        store = config.get_store()
-
-        # Get URL and metadata
-        url, metadata = get_system_slqa_metadata(store)
-
-        # Use with Alembic env.py
-        from alembic import context
-        url, target_metadata = get_system_slqa_metadata(store)
-        context.configure(url=url, target_metadata=target_metadata)
-        ```
     """
     url = _get_store_sqlalchemy_url(store)
     metadata = _get_system_metadata(table_prefix=store._table_prefix)
@@ -222,9 +203,6 @@ def _get_features_metadata(
     if inject_index is None:
         inject_index = sqlalchemy_config.inject_index
 
-    # Get table_prefix from store
-    table_prefix = store._table_prefix
-
     # Get the active feature graph
     graph = FeatureGraph.get_active()
 
@@ -239,9 +217,7 @@ def _get_features_metadata(
             if feature_project != project:
                 continue
 
-        # Compute table name using same logic as IbisMetadataStore.get_table_name
-        base_name = feature_key.table_name
-        table_name = f"{table_prefix}{base_name}" if table_prefix else base_name
+        table_name = store.get_table_name(feature_key)
 
         expected_table_names.add(table_name)
         feature_specs_by_table_name[table_name] = feature_cls.spec()
@@ -303,7 +279,7 @@ def _inject_constraints(
 
 def filter_feature_sqla_metadata(
     store: IbisMetadataStore,
-    source_metadata: MetaData | None = None,
+    source_metadata: MetaData,
     project: str | None = None,
     filter_by_project: bool = True,
     inject_primary_key: bool | None = None,
@@ -318,8 +294,7 @@ def filter_feature_sqla_metadata(
 
     Args:
         store: IbisMetadataStore instance
-        source_metadata: Source SQLAlchemy MetaData to filter. If None, uses SQLModel.metadata
-                        (requires SQLModel to be installed).
+        source_metadata: Source SQLAlchemy MetaData to filter.
         project: Project name to filter by. If None, uses MetaxyConfig.get().project
         filter_by_project: If True, only include features for the specified project.
                           If False, include all features.
@@ -335,7 +310,7 @@ def filter_feature_sqla_metadata(
         ValueError: If store's sqlalchemy_url is empty
         ImportError: If source_metadata is None and SQLModel is not installed
 
-    Example:
+    Example: Basic Usage
 
         ```py
         from metaxy.ext.sqlalchemy import filter_feature_sqla_metadata
@@ -347,35 +322,25 @@ def filter_feature_sqla_metadata(
 
         # Get store instance
         config = MetaxyConfig.get()
-        store = config.get_store()
-
-        # With SQLModel (default)
-        url, metadata = filter_feature_sqla_metadata(store)
+        store = config.get_store("my_store")
 
         # With custom metadata
         from sqlalchemy import MetaData
         my_metadata = MetaData()
         # ... define tables in my_metadata ...
-        url, metadata = filter_feature_sqla_metadata(store, source_metadata=my_metadata)
 
-        # Use with Alembic env.py
-        from alembic import context
-        url, target_metadata = filter_feature_sqla_metadata(store)
-        context.configure(url=url, target_metadata=target_metadata)
+        # apply the filter function
+        url, metadata = filter_feature_sqla_metadata(store, source_metadata=my_metadata)
+        ```
+
+    Example: With SQLModel
+
+        ```py
+        # With SQLModel
+        from sqlmodel import SQLModel
+        url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
         ```
     """
-    # Default to SQLModel.metadata if not provided
-    if source_metadata is None:
-        try:
-            from sqlmodel import SQLModel
-
-            source_metadata = SQLModel.metadata
-        except ImportError as e:
-            raise ImportError(
-                "source_metadata is required when SQLModel is not installed. "
-                "Either install SQLModel or provide a MetaData object explicitly."
-            ) from e
-
     url = _get_store_sqlalchemy_url(store)
     metadata = _get_features_metadata(
         source_metadata=source_metadata,
