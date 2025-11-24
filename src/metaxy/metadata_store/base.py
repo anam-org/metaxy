@@ -184,63 +184,41 @@ class MetadataStore(ABC):
 
         Args:
             feature: Feature class to resolve updates for
-            samples: Pre-computed DataFrame with ID columns
-                and `PROVENANCE_BY_FIELD_COL` column. When provided, `MetadataStore` skips upstream loading, joining,
-                and field provenance calculation.
+            samples: A dataframe with joined upstream metadata and `"metaxy_provenance_by_field"` column set.
+                When provided, `MetadataStore` skips loading upstream feature metadata and provenance calculations.
 
-                **Required for root features** (features with no upstream dependencies).
-                Root features don't have upstream to calculate `PROVENANCE_BY_FIELD_COL` from, so users
-                must provide samples with manually computed `PROVENANCE_BY_FIELD_COL` column.
+                !!! info "Required for root features"
+                    Metaxy doesn't know how to populate input metadata for root features,
+                    so `samples` argument for **must** be provided for them.
 
-                For non-root features, use this when you
-                want to bypass the automatic upstream loading and field provenance calculation.
-
-                Examples:
-
-                - Loading upstream from custom sources
-
-                - Pre-computing field provenances with custom logic
-
-                - Testing specific scenarios
+                !!! tip
+                    For non-root features, use `samples` to customize the automatic upstream loading and field provenance calculation.
+                    For example, it can be used to requires processing for specific sample IDs.
 
                 Setting this parameter during normal operations is not required.
 
-            filters: Dict mapping feature keys (as strings) to lists of Narwhals filter expressions.
+            filters: A mapping from feature keys (as strings) to lists of Narwhals filter expressions.
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
-                Example: {"upstream/feature": [nw.col("x") > 10], ...}
-            lazy: If `True`, return [metaxy.versioning.types.LazyIncrement][] with lazy Narwhals LazyFrames.
-                If `False`, return [metaxy.versioning.types.Increment][] with eager Narwhals DataFrames.
+                Example: `{"upstream/feature": [nw.col("x") > 10], ...}`
+            lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             **kwargs: Backend-specific parameters
 
         Raises:
-            ValueError: If no `samples` DataFrame has been provided when resolving an update for a root feature.
-            VersioningEngineMismatchError: If versioning_engine="native" and data has wrong implementation
+            ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.
+            VersioningEngineMismatchError: If `versioning_engine` has been set to `"native"`
+                and a dataframe of a different implementation has been encountered during `resolve_update`.
 
-        Examples:
+        !!! example "With a root feature"
+
             ```py
-            # Root feature - samples required
             samples = pl.DataFrame({
                 "sample_uid": [1, 2, 3],
-                PROVENANCE_BY_FIELD_COL: [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
+                "metaxy_provenance_by_field": [{"field": "h1"}, {"field": "h2"}, {"field": "h3"}],
             })
             result = store.resolve_update(RootFeature, samples=nw.from_native(samples))
             ```
-
-            ```py
-            # Non-root feature - automatic (normal usage)
-            result = store.resolve_update(DownstreamFeature)
-            ```
-
-            ```py
-            # Non-root feature - with escape hatch (advanced)
-            custom_samples = compute_custom_field_provenance(...)
-            result = store.resolve_update(DownstreamFeature, samples=custom_samples)
-            ```
-
-        Note:
-            Users can then process only added/changed and call write_metadata().
         """
         import narwhals as nw
 
@@ -556,11 +534,14 @@ class MetadataStore(ABC):
             ValueError: If writing to a feature from a different project than expected
 
         Note:
-            - Never writes to fallback stores.
+            - Must be called within a `MetadataStore.open(mode="write")` context manager.
 
-            - Project validation is performed unless disabled via `allow_cross_project_writes()` context manager.
+            - Metaxy always performs an "append" operation. Metadata is never deleted or mutated.
 
-            - Must be called within `store.open(mode="write")` context manager.
+            - Fallback stores are never used for writes.
+
+            - Features from other Metaxy projects cannot be written to, unless project validation has been disabled with [MetadataStore.allow_cross_project_writes][].
+
         """
         self._check_open()
 
