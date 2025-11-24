@@ -30,6 +30,18 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/duckdb.md)
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/duckdb.md)
+
+-   :custom-clickhouse:{ .lg .middle } __ClickHouse__
+
+    ---
+
+    :material-tag-outline: Database
+
+    Leverage ClickHouse for large metadata volumes and high-throughput setups.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/clickhouse.md)
 <!-- dprint-ignore-end -->
 
 </div>
