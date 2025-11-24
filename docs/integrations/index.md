@@ -7,7 +7,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-deltalake:{ .lg .middle } __Delta Lake__
+-   :custom-deltalake:{ .lg .middle } [**Delta Lake**](metadata-stores/storage/delta.md)
 
     ---
 
@@ -19,7 +19,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/delta.md)
 
--   :custom-duckdb:{ .lg .middle } __DuckDB__
+-   :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb.md)
 
     ---
 
@@ -31,7 +31,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/duckdb.md)
 
--   :custom-clickhouse:{ .lg .middle } __ClickHouse__
+-   :custom-clickhouse:{ .lg .middle } [**ClickHouse**](metadata-stores/databases/clickhouse.md)
 
     ---
 
@@ -43,7 +43,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/clickhouse.md)
 
--   :custom-bigquery:{ .lg .middle } __BigQuery__
+-   :custom-bigquery-blue:{ .lg .middle } [**BigQuery**](metadata-stores/databases/bigquery.md)
 
     ---
 
@@ -63,7 +63,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 <div class="grid cards" markdown>
 
 <!-- dprint-ignore-start -->
--   :custom-sqlalchemy:{ .lg .middle } __SQLAlchemy__
+-   :custom-sqlalchemy:{ .lg .middle } [**SQLAlchemy**](plugins/sqlalchemy.md)
 
     ---
 
@@ -75,7 +75,7 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: API docs](../reference/api/ext/sqlalchemy.md)
 
--   :custom-sqlmodel:{ .lg .middle } __SQLModel__
+-   :custom-sqlmodel:{ .lg .middle } [**SQLModel**](plugins/sqlmodel.md)
 
     ---
 
