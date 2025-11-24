@@ -6,10 +6,8 @@ It supports the local filesystem and remote object stores.
 
 ## Installation
 
-This metadata store relies on [`deltalake`](https://delta-io.github.io/delta-rs/python/):
-
 ```shell
-$ pip install 'metaxy[delta]'
+pip install 'metaxy[delta]'
 ```
 
 ## Using Object Stores

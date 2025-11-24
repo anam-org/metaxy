@@ -187,6 +187,7 @@ nav:
     - integrations/index.md
     - Metadata Stores:
       - Databases:
+        - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
       - Storage Only:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
