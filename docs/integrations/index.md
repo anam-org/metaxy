@@ -42,6 +42,18 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
     [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/clickhouse.md)
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/clickhouse.md)
+
+-   :custom-bigquery:{ .lg .middle } __BigQuery__
+
+    ---
+
+    :material-tag-outline: Database
+
+    Use Google BigQuery as a scalable serverless metadata store on GCP.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/bigquery.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/ibis/bigquery.md)
 <!-- dprint-ignore-end -->
 
 </div>
