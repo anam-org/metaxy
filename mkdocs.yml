@@ -186,6 +186,8 @@ nav:
   - Integrations:
     - integrations/index.md
     - Metadata Stores:
+      - Databases:
+        - DuckDB: integrations/metadata-stores/databases/duckdb.md
       - Storage Only:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
     - Plugins:
