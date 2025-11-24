@@ -76,6 +76,7 @@ class MetadataStore(ABC):
         versioning_engine: VersioningEngineOptions = "auto",
         fallback_stores: list[MetadataStore] | None = None,
         auto_create_tables: bool | None = None,
+        materialization_id: str | None = None,
     ):
         """
         Initialize the metadata store.
@@ -103,6 +104,10 @@ class MetadataStore(ABC):
                     Auto-create is intended for development/testing only.
                     Use proper database migration tools like Alembic for production deployments.
 
+            materialization_id: Optional external orchestration ID.
+                If provided, all metadata writes will include this ID in the `metaxy_materialization_id` column.
+                Can be overridden per [`MetadataStore.write_metadata`][metaxy.MetadataStore.write_metadata] call.
+
         Raises:
             ValueError: If fallback stores use different hash algorithms or truncation lengths
             VersioningEngineMismatchError: If a user-provided dataframe has a wrong implementation
@@ -113,6 +118,7 @@ class MetadataStore(ABC):
         self._context_depth = 0
         self._versioning_engine = versioning_engine
         self._allow_cross_project_writes = False
+        self._materialization_id = materialization_id
         self._open_cm: AbstractContextManager[Self] | None = (
             None  # Track the open() context manager
         )
@@ -528,6 +534,7 @@ class MetadataStore(ABC):
         self,
         feature: CoercibleToFeatureKey,
         df: IntoFrame,
+        materialization_id: str | None = None,
     ) -> None:
         """
         Write metadata for a feature (append-only by design).
@@ -539,6 +546,9 @@ class MetadataStore(ABC):
             df: Metadata DataFrame of any type supported by [Narwhals](https://narwhals-dev.github.io/narwhals/).
                 Must have `metaxy_provenance_by_field` column of type Struct with fields matching feature's fields.
                 Optionally, may also contain `metaxy_data_version_by_field`.
+            materialization_id: Optional external orchestration ID for this write.
+                Overrides the store's default `materialization_id` if provided.
+                Useful for tracking which orchestration run produced this metadata.
 
         Raises:
             MetadataSchemaError: If DataFrame schema is invalid
@@ -581,10 +591,12 @@ class MetadataStore(ABC):
             )
 
         # Add all required system columns
-        # warning: for dataframes that do not match the native MetadatStore implementation
+        # warning: for dataframes that do not match the native MetadataStore implementation
         # and are missing the METAXY_DATA_VERSION column, this call will lead to materializing the equivalent Polars DataFrame
         # while calculating the missing METAXY_DATA_VERSION column
-        df_nw = self._add_system_columns(df_nw, feature)
+        df_nw = self._add_system_columns(
+            df_nw, feature, materialization_id=materialization_id
+        )
 
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
@@ -926,12 +938,15 @@ class MetadataStore(ABC):
         self,
         df: Frame,
         feature: CoercibleToFeatureKey,
+        materialization_id: str | None = None,
     ) -> Frame:
         """Add all required system columns to the DataFrame.
 
         Args:
             df: Narwhals DataFrame/LazyFrame
             feature: Feature class or key
+            materialization_id: Optional external orchestration ID for this write.
+                Overrides the store's default if provided.
 
         Returns:
             DataFrame with all system columns added
@@ -1009,6 +1024,21 @@ class MetadataStore(ABC):
 
             df = df.with_columns(
                 nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT)
+            )
+
+        # Add materialization_id if not already present
+        from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+        if METAXY_MATERIALIZATION_ID not in df.columns:
+            # Use provided materialization_id, fall back to store's default
+            mat_id = (
+                materialization_id
+                if materialization_id is not None
+                else self._materialization_id
+            )
+            # Cast to string to avoid NULL-typed columns (which some backends don't support)
+            df = df.with_columns(
+                nw.lit(mat_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
             )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)

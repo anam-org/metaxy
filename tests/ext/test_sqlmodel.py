@@ -1870,3 +1870,34 @@ def test_inject_primary_key_with_custom_id_columns() -> None:
         "metaxy_created_at",
         "metaxy_data_version",
     ]
+
+
+def test_sqlmodel_has_materialization_id_field() -> None:
+    """Test that BaseSQLModelFeature includes metaxy_materialization_id field."""
+    from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+    class TestFeature(
+        BaseSQLModelFeature,
+        table=True,
+        inject_primary_key=False,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["test"]),
+            fields=[FieldSpec(key=FieldKey(["field"]), code_version="1")],
+        ),
+    ):
+        uid: str = Field(primary_key=True)
+
+    # Verify field exists in model fields
+    assert "metaxy_materialization_id" in TestFeature.model_fields
+
+    # Verify field is optional (has default None)
+    field_info = TestFeature.model_fields["metaxy_materialization_id"]
+    assert field_info.default is None
+    assert not field_info.is_required()
+
+    # Verify field maps to correct column name via __table__
+    # The actual column name mapping happens through SQLModel's sa_column_kwargs
+    # which is processed when the table is created
+    if hasattr(TestFeature, "__table__"):
+        table_columns = {col.name for col in TestFeature.__table__.columns}  # pyright: ignore
+        assert METAXY_MATERIALIZATION_ID in table_columns

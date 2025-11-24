@@ -19,6 +19,7 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
@@ -286,6 +287,13 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         default=None,
         sa_column_kwargs={
             "name": METAXY_CREATED_AT,
+        },
+    )
+
+    metaxy_materialization_id: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_MATERIALIZATION_ID,
         },
     )
 

@@ -20,3 +20,9 @@ user-defined feature fields. Only the prefixed forms are supported.
 | `metaxy_snapshot_version`        | Derived from the entire Metaxy feature graph                            | graph   | string |
 | `metaxy_feature_spec_version`    | Derived from the part of the feature spec responsible for versioning    | sample  | string |
 | `metaxy_full_definition_version` | Hash of the entire feature Pydanitc model schema and the Metaxy project | string  | true   |
+| `metaxy_created_at`              | Timestamp when the metadata row was created                             | sample  | string |
+| `metaxy_materialization_id`      | External orchestration run ID (e.g., Dagster, Airflow) for tracking     | run     | string |
+
+## Orchestration Integration
+
+The `metaxy_materialization_id` column enables integration with external orchestration systems like Dagster, Airflow, or Prefect. This column allows you to track which orchestration run produced specific metadata records, simplifying debugging, monitoring, and filtering.
