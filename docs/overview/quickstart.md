@@ -2,7 +2,7 @@
 
 ## Installation
 
-Install Metaxy with `deltalake` -- an easy way to setup a [`MetadataStore`](../learn/metadata-stores.md):
+Install Metaxy with `deltalake` --- an easy way to setup a [`MetadataStore`](../learn/metadata-stores.md) locally:
 
 ```shell
 pip install 'metaxy[delta]'

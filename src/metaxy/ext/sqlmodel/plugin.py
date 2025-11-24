@@ -6,10 +6,12 @@ to also be SQLModel table classes, enabling seamless integration with SQLAlchemy
 
 from typing import TYPE_CHECKING, Any
 
+from pydantic import BaseModel
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
+from metaxy import FeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.ext.sqlmodel.config import SQLModelPluginConfig
 from metaxy.models.constants import (
@@ -19,6 +21,7 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_SPEC_VERSION,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
@@ -26,6 +29,7 @@ from metaxy.models.constants import (
 )
 from metaxy.models.feature import BaseFeature, MetaxyMeta
 from metaxy.models.feature_spec import FeatureSpecWithIDColumns
+from metaxy.models.types import ValidatedFeatureKey
 
 if TYPE_CHECKING:
     from sqlalchemy import MetaData
@@ -40,6 +44,10 @@ RESERVED_SQLMODEL_FIELD_NAMES = frozenset(
         if name.startswith(SYSTEM_COLUMN_PREFIX)
     }
 )
+
+
+class MetaxyTableInfo(BaseModel):
+    feature_key: ValidatedFeatureKey
 
 
 class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[reportUnsafeMultipleInheritance]
@@ -86,6 +94,14 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
 
         # If this is a concrete table (table=True) with a spec
         if kwargs.get("table") and spec is not None:
+            # Forbid custom __tablename__ since it won't work with metadata store's get_table_name()
+            if "__tablename__" in namespace:
+                raise ValueError(
+                    f"Cannot define custom __tablename__ in {cls_name}. "
+                    "The table name is automatically derived from the feature key. "
+                    "If you need a different table name, adjust the feature key instead."
+                )
+
             # Prevent user-defined fields from shadowing system-managed columns
             conflicts = {
                 attr_name
@@ -110,15 +126,13 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
                     f"Reserved columns: {reserved}"
                 )
 
-            # Automatically set __tablename__ from the feature key if not provided
-            if "__tablename__" not in namespace:
-                namespace["__tablename__"] = spec.key.table_name
+            # Automatically set __tablename__ from the feature key
+            namespace["__tablename__"] = spec.key.table_name
 
-            # Inject constraints if requested
-            if inject_primary_key or inject_index:
-                cls._inject_constraints(
-                    namespace, spec, cls_name, inject_primary_key, inject_index
-                )
+            # Inject table args (info metadata + optional constraints)
+            cls._inject_table_args(
+                namespace, spec, cls_name, inject_primary_key, inject_index
+            )
 
         # Call super().__new__ which follows MRO: MetaxyMeta -> SQLModelMetaclass -> ...
         # MetaxyMeta will consume the spec parameter and pass remaining kwargs to SQLModelMetaclass
@@ -129,64 +143,103 @@ class SQLModelFeatureMeta(MetaxyMeta, SQLModelMetaclass):  # pyright: ignore[rep
         return new_class
 
     @staticmethod
-    def _inject_constraints(
+    def _inject_table_args(
         namespace: dict[str, Any],
-        spec: FeatureSpecWithIDColumns,
+        spec: FeatureSpec,
         cls_name: str,
         inject_primary_key: bool,
         inject_index: bool,
     ) -> None:
-        """Inject composite primary key and/or index constraints into the table.
+        """Inject Metaxy table args (info metadata + optional constraints) via __table_args__.
 
-        Creates constraints including:
-        - All user-provided id_columns
-        - metaxy_created_at
-        - metaxy_data_version
+        This method handles:
+
+        1. Always injects info metadata with feature key for efficient lookup
+
+        2. Optionally injects composite primary key and/or index constraints
 
         Args:
             namespace: Class namespace to modify
-            spec: Feature specification with id_columns
+            spec: Feature specification with key and id_columns
             cls_name: Name of the class being created
             inject_primary_key: If True, inject composite primary key
             inject_index: If True, inject composite index
         """
+
         from sqlalchemy import Index, PrimaryKeyConstraint
 
-        # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
-        key_columns = list(spec.id_columns) + [METAXY_CREATED_AT, METAXY_DATA_VERSION]
+        # Prepare info dict with Metaxy metadata (always added)
+        metaxy_info = {
+            "metaxy-system": MetaxyTableInfo(feature_key=spec.key).model_dump()
+        }
 
+        # Prepare constraints if requested
         constraints = []
-        if inject_primary_key:
-            pk_constraint = PrimaryKeyConstraint(
-                *key_columns, name="pk_metaxy_composite"
-            )
-            constraints.append(pk_constraint)
+        if inject_primary_key or inject_index:
+            # Composite key/index columns: id_columns + metaxy_created_at + metaxy_data_version
+            key_columns = list(spec.id_columns) + [
+                METAXY_CREATED_AT,
+                METAXY_DATA_VERSION,
+            ]
 
-        if inject_index:
-            # Note: table name will be available after SQLModel creates the table
-            # We use a placeholder name here, it will be finalized by SQLModel
-            idx = Index("idx_metaxy_composite", *key_columns)
-            constraints.append(idx)
+            if inject_primary_key:
+                pk_constraint = PrimaryKeyConstraint(*key_columns, name="metaxy_pk")
+                constraints.append(pk_constraint)
 
-        if not constraints:
-            return
+            if inject_index:
+                idx = Index("metaxy_idx", *key_columns)
+                constraints.append(idx)
 
-        # Add to __table_args__
+        # Merge with existing __table_args__
         if "__table_args__" in namespace:
-            # User already defined __table_args__, merge with it
             existing_args = namespace["__table_args__"]
+
             if isinstance(existing_args, dict):
-                # Dict format - convert to tuple + dict
-                namespace["__table_args__"] = tuple(constraints) + (existing_args,)
+                # Dict format: merge info, convert to tuple if we have constraints
+                existing_info = existing_args.get("info", {})
+                existing_info.update(metaxy_info)
+                existing_args["info"] = existing_info
+
+                if constraints:
+                    # Convert to tuple format with constraints
+                    namespace["__table_args__"] = tuple(constraints) + (existing_args,)
+                # else: keep as dict
+
             elif isinstance(existing_args, tuple):
-                # Tuple format - append constraints
-                namespace["__table_args__"] = existing_args + tuple(constraints)
+                # Tuple format: append constraints and merge info in table kwargs dict
+                # Extract existing constraints and table kwargs
+                if existing_args and isinstance(existing_args[-1], dict):
+                    # Has table kwargs dict at the end
+                    existing_constraints = existing_args[:-1]
+                    table_kwargs = dict(existing_args[-1])
+                else:
+                    # No table kwargs dict
+                    existing_constraints = existing_args
+                    table_kwargs = {}
+
+                # Merge info
+                existing_info = table_kwargs.get("info", {})
+                existing_info.update(metaxy_info)
+                table_kwargs["info"] = existing_info
+
+                # Combine: existing constraints + new constraints + table kwargs
+                namespace["__table_args__"] = (
+                    existing_constraints + tuple(constraints) + (table_kwargs,)
+                )
             else:
                 raise ValueError(
                     f"Invalid __table_args__ type in {cls_name}: {type(existing_args)}"
                 )
         else:
-            namespace["__table_args__"] = tuple(constraints)
+            # No existing __table_args__
+            if constraints:
+                # Create tuple format with constraints + info
+                namespace["__table_args__"] = tuple(constraints) + (
+                    {"info": metaxy_info},
+                )
+            else:
+                # Just info, use dict format
+                namespace["__table_args__"] = {"info": metaxy_info}
 
 
 class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, reportUnsafeMultipleInheritance]
@@ -289,6 +342,13 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         },
     )
 
+    metaxy_materialization_id: str | None = Field(
+        default=None,
+        sa_column_kwargs={
+            "name": METAXY_MATERIALIZATION_ID,
+        },
+    )
+
 
 # Convenience wrappers for filtering SQLModel metadata
 
@@ -353,6 +413,7 @@ def filter_feature_sqlmodel_metadata(
         context.configure(url=url, target_metadata=target_metadata)
         ```
     """
+
     from sqlalchemy import MetaData
 
     config = MetaxyConfig.get()
@@ -375,11 +436,23 @@ def filter_feature_sqlmodel_metadata(
     # Create new metadata with transformed table names
     filtered_metadata = MetaData()
 
-    # Build a mapping of table names to feature classes
-    table_to_feature: dict[str, type[BaseSQLModelFeature]] = {}
-    for feature_cls in BaseSQLModelFeature.__subclasses__():
-        # Skip if this is not a concrete table (no __table__)
-        if not hasattr(feature_cls, "__table__"):
+    # Get the FeatureGraph to look up feature classes by key
+    from metaxy.models.feature import FeatureGraph
+
+    feature_graph = FeatureGraph.get_active()
+
+    # Iterate over tables in source metadata
+    for table_name, original_table in source_metadata.tables.items():
+        # Check if this table has Metaxy feature metadata
+        if metaxy_system_info := original_table.info.get("metaxy-system"):
+            metaxy_info = MetaxyTableInfo.model_validate(metaxy_system_info)
+            feature_key = metaxy_info.feature_key
+        else:
+            continue
+        # Look up the feature class from the FeatureGraph
+        feature_cls = feature_graph.features_by_key.get(feature_key)
+        if feature_cls is None:
+            # Skip tables for features that aren't registered
             continue
 
         # Filter by project if requested
@@ -388,20 +461,8 @@ def filter_feature_sqlmodel_metadata(
             if feature_project != project:
                 continue
 
-        # Get the unprefixed table name from SQLModel
-        unprefixed_name: str = getattr(feature_cls, "__tablename__")
-        table_to_feature[unprefixed_name] = feature_cls
-
-    # Iterate over tables in source metadata
-    for table_name, original_table in source_metadata.tables.items():
-        # Check if this table corresponds to a SQLModel feature
-        if table_name not in table_to_feature:
-            continue
-
-        feature_cls = table_to_feature[table_name]
-
         # Compute prefixed name using store's table_prefix
-        prefixed_name = store.get_table_name(feature_cls.spec().key)
+        prefixed_name = store.get_table_name(feature_key)
 
         # Copy table to new metadata with prefixed name
         new_table = original_table.to_metadata(filtered_metadata, name=prefixed_name)

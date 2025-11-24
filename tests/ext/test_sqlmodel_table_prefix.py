@@ -229,3 +229,42 @@ def test_filter_feature_sqlmodel_metadata_with_project_filtering_and_prefix():
         # No unprefixed versions
         assert "feature1" not in metadata.tables
         assert "feature2" not in metadata.tables
+
+
+def test_custom_tablename_raises_error():
+    """Test that defining custom __tablename__ raises an error.
+
+    Custom __tablename__ is forbidden because it would be inconsistent with
+    the metadata store's get_table_name() method.
+    """
+
+    # Create config
+    config = MetaxyConfig(
+        project="test_project",
+        stores={
+            "default_store": StoreConfig(
+                type="metaxy.metadata_store.duckdb.DuckDBMetadataStore",
+                config={"database": ":memory:"},
+            )
+        },
+        store="default_store",
+        ext={"sqlmodel": SQLModelPluginConfig(enable=True)},
+    )
+
+    with config.use():
+        # Attempting to define custom __tablename__ should raise ValueError
+        with pytest.raises(ValueError, match="Cannot define custom __tablename__"):
+
+            class CustomTableFeature(
+                BaseSQLModelFeature,
+                table=True,
+                spec=FeatureSpec(
+                    key=FeatureKey(["my", "feature"]),
+                    id_columns=["id"],
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+                project = "test_project"
+                id: str = Field(primary_key=True)
+                value: str

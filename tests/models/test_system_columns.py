@@ -24,3 +24,13 @@ def test_is_droppable_system_column_requires_canonical_name() -> None:
 
     # Not system columns at all
     assert not sys_cols.is_droppable_system_column("user_column")
+
+
+def test_materialization_id_is_system_column() -> None:
+    """Test that metaxy_materialization_id is recognized as a system column."""
+    assert sys_cols.is_system_column(sys_cols.METAXY_MATERIALIZATION_ID)
+
+
+def test_materialization_id_is_droppable() -> None:
+    """Test that metaxy_materialization_id is droppable during joins."""
+    assert sys_cols.is_droppable_system_column(sys_cols.METAXY_MATERIALIZATION_ID)

@@ -22,6 +22,7 @@ from metaxy.models.constants import (
     METAXY_DATA_VERSION,
     METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
@@ -338,7 +339,10 @@ def feature_metadata_strategy(
     # Add created_at timestamp column
     from datetime import datetime, timezone
 
-    df = df.with_columns(pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT))
+    df = df.with_columns(
+        pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        pl.lit(None).cast(pl.Utf8).alias(METAXY_MATERIALIZATION_ID),
+    )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
     if id_columns_df is not None:
@@ -651,6 +655,8 @@ def downstream_metadata_strategy(
         nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
         # Add created_at timestamp
         nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+        # Add materialization_id (nullable)
+        nw.lit(None, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID),
     )
 
     # Convert back to native Polars DataFrame for the return type

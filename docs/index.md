@@ -1,5 +1,8 @@
 # Metaxy 🌌
 
+> [!WARNING]
+> Metaxy hasn't been publicly released yet.
+
 Metaxy is a metadata layer for multi-modal Data and ML pipelines that manages and tracks **metadata**: sample [versions](learn/data-versioning.md), dependencies, and data lineage across complex computational graphs.
 
 It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, data and [metadata storage](learn/metadata-stores.md).
@@ -7,9 +10,6 @@ It's [agnostic](#about-metaxy) to orchestration frameworks, compute engines, dat
 It has no strict infrastructure requirements and can run computations in external databases or locally.
 
 It can scale to handle large amounts of **big metadata**.
-
-> [!WARNING] Giga Alpha
-> This project is as raw as a steak still saying ‘moo.’
 
 ## What problem exactly does Metaxy solve?
 

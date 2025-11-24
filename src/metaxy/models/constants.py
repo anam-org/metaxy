@@ -52,6 +52,9 @@ METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
 METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 """Timestamp when the metadata row was created."""
 
+METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
+"""External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
+
 # --- System Column Sets ------------------------------------------------------------
 
 ALL_SYSTEM_COLUMNS = frozenset(
@@ -63,6 +66,7 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_CREATED_AT,
+        METAXY_MATERIALIZATION_ID,
     }
 )
 """All Metaxy-managed column names that are injected into feature tables."""
@@ -75,6 +79,7 @@ _DROPPABLE_COLUMNS = frozenset(
         METAXY_CREATED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
+        METAXY_MATERIALIZATION_ID,
     }
 )
 
