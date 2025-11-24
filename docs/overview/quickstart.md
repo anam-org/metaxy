@@ -20,7 +20,8 @@ config = { path = "/tmp/metaxy.delta" }
 
 ## Define a root feature
 
-Every Metaxy project must define one or more root features -- features without upstream dependencies.
+Every Metaxy project must define at least one root feature.
+Such features do not have upstream dependencies and act as inputs to the feature graph.
 
 ```python {title="features.py"}
 import metaxy as mx
