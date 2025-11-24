@@ -980,6 +980,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#orchestration-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Orchestration Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2668,6 +2679,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#orchestration-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Orchestration Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2802,8 +2824,22 @@ user-defined feature fields. Only the prefixed forms are supported.</p>
 <td>string</td>
 <td>true</td>
 </tr>
+<tr>
+<td><code>metaxy_created_at</code></td>
+<td>Timestamp when the metadata row was created</td>
+<td>sample</td>
+<td>string</td>
+</tr>
+<tr>
+<td><code>metaxy_materialization_id</code></td>
+<td>External orchestration run ID (e.g., Dagster, Airflow) for tracking</td>
+<td>run</td>
+<td>string</td>
+</tr>
 </tbody>
 </table>
+<h2 id="orchestration-integration">Orchestration Integration<a class="headerlink" href="#orchestration-integration" title="Permanent link">&para;</a></h2>
+<p>The <code>metaxy_materialization_id</code> column enables integration with external orchestration systems like Dagster, Airflow, or Prefect. This column allows you to track which orchestration run produced specific metadata records, simplifying debugging, monitoring, and filtering.</p>
 
 
 
