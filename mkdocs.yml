@@ -187,6 +187,7 @@ nav:
     - integrations/index.md
     - Metadata Stores:
       - Databases:
+        - BigQuery: integrations/metadata-stores/databases/bigquery.md
         - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
       - Storage Only:
@@ -217,6 +218,7 @@ nav:
         - reference/api/metadata-stores/index.md
         - Databases:
           - reference/api/metadata-stores/ibis/index.md
+          - BigQuery: reference/api/metadata-stores/ibis/bigquery.md
           - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
           - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
         - Storage Only:
