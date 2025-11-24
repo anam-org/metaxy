@@ -13,6 +13,12 @@ class FeatureNotFoundError(MetadataStoreError):
     pass
 
 
+class SystemDataNotFoundError(MetadataStoreError):
+    """Raised when system features are not found in the store."""
+
+    pass
+
+
 class FieldNotFoundError(MetadataStoreError):
     """Raised when a field is not found for a feature."""
 
@@ -45,5 +51,11 @@ class HashAlgorithmNotSupportedError(MetadataStoreError):
 
 class TableNotFoundError(MetadataStoreError):
     """Raised when a table does not exist and auto_create_tables is disabled."""
+
+    pass
+
+
+class VersioningEngineMismatchError(Exception):
+    """Raised when versioning_engine='native' is requested but data has wrong implementation."""
 
     pass

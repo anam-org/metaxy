@@ -59,7 +59,11 @@ def detect_diff_migration(
 
     # Get from_snapshot_version (use latest if not specified)
     if from_snapshot_version is None:
-        snapshots = store.read_graph_snapshots(project=project)
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
+        with store:
+            storage = SystemTableStorage(store)
+            snapshots = storage.read_graph_snapshots(project=project)
         if snapshots.height == 0:
             # No snapshots in store for this project - nothing to migrate from
             return None

@@ -1,32 +1,36 @@
 # serializer version: 1
 # name: test_snapshot_push_result_snapshot_comparison
   dict({
-    'final_versions_count': 3,
+    'final_versions_count': 4,
     'results': list([
       dict({
-        'already_recorded': False,
-        'features_with_spec_changes': list([
-        ]),
-        'metadata_changed': False,
+        'already_pushed': False,
         'push': 1,
-      }),
-      dict({
-        'already_recorded': True,
-        'features_with_spec_changes': list([
+        'updated_features': list([
         ]),
-        'metadata_changed': False,
-        'push': 2,
       }),
       dict({
-        'already_recorded': True,
-        'features_with_spec_changes': list([
+        'already_pushed': True,
+        'push': 2,
+        'updated_features': list([
+        ]),
+      }),
+      dict({
+        'already_pushed': True,
+        'push': 3,
+        'updated_features': list([
+          'upstream',
           'downstream',
         ]),
-        'metadata_changed': True,
-        'push': 3,
       }),
     ]),
     'versions': list([
+      dict({
+        'feature_key': 'upstream',
+        'metaxy_feature_spec_version': 'be58694e7398104f76d33fc257c74f73a10acd90451fde582e09e84584b3cc66',
+        'metaxy_feature_version': '8a2ffeab8da447095c5ee7a77e5635a1e16e7f3605021732f50f7002fa258398',
+        'metaxy_snapshot_version': '1ab4ecd9d7af535b843dc22416dd99d5e430317c0a2bcd01fe83ffc2d7392da8',
+      }),
       dict({
         'feature_key': 'downstream',
         'metaxy_feature_spec_version': '7afbb10181081ac830bb44ed1d018a79979f9a56ee5bd8b2d912f56da8cf3a41',

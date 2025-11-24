@@ -162,6 +162,7 @@ class VersioningEngine(ABC):
                 METAXY_CREATED_AT,
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_MATERIALIZATION_ID,
             )
 
             allowed_system_columns = {
@@ -170,6 +171,7 @@ class VersioningEngine(ABC):
                 METAXY_DATA_VERSION,
                 METAXY_DATA_VERSION_BY_FIELD,
                 METAXY_CREATED_AT,
+                METAXY_MATERIALIZATION_ID,
             }
             id_cols = set(self.shared_id_columns)
             colliding_columns = [

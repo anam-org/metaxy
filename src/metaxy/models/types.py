@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import Any, NamedTuple, TypeAlias, overload
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple, TypeAlias, overload
 
 from pydantic import (
-    BaseModel,
+    BeforeValidator,
     ConfigDict,
+    Field,
+    RootModel,
     TypeAdapter,
-    field_serializer,
     field_validator,
     model_serializer,
     model_validator,
 )
-from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 KEY_SEPARATOR = "/"
 
@@ -28,21 +31,19 @@ class SnapshotPushResult(NamedTuple):
 
     Attributes:
         snapshot_version: The deterministic hash of the graph snapshot
-        already_recorded: True if computational changes were already recorded
-        metadata_changed: True if metadata-only changes were detected
-        features_with_spec_changes: List of feature keys with spec version changes
+        already_pushed: True if this snapshot_version was already pushed previously
+        updated_features: List of feature keys with updated information (changed full_definition_version)
     """
 
     snapshot_version: str
-    already_recorded: bool
-    metadata_changed: bool
-    features_with_spec_changes: list[str]
+    already_pushed: bool
+    updated_features: list[str]
 
 
 _CoercibleToKey: TypeAlias = Sequence[str] | str
 
 
-class _Key(BaseModel):
+class _Key(RootModel[tuple[str, ...]]):
     """
     A common class for key-like objects that contain a sequence of string parts.
 
@@ -55,100 +56,43 @@ class _Key(BaseModel):
 
     model_config = ConfigDict(frozen=True, repr=False)  # pyright: ignore[reportCallIssue]  # Make immutable for hashability, use custom __repr__
 
-    parts: tuple[str, ...]
+    root: tuple[str, ...]
 
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
+    if TYPE_CHECKING:
 
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        @overload
+        def __init__(self, parts: str) -> None: ...
 
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another instance (copy)."""
-        ...
+        @overload
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
+        @overload
+        def __init__(self, parts: Self) -> None: ...
 
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
-
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """
-        Initialize from various input types.
-
-        Args:
-            *args: Variadic positional arguments:
-                - Single str: Split on "/" separator ("a/b/c" -> ["a", "b", "c"])
-                - Single Sequence[str]: Use as parts (["a", "b", "c"])
-                - Single Key instance: Copy parts
-                - Multiple str: Use as parts ("a", "b", "c" -> ["a", "b", "c"])
-            **kwargs: Additional keyword arguments for BaseModel (e.g., parts=...)
-
-        Examples:
-            ```py
-            FeatureKey("a/b/c")  # String with separator
-            FeatureKey(["a", "b", "c"])  # List
-            FeatureKey("a", "b", "c")  # Variadic
-            FeatureKey(parts=["a", "b", "c"])  # Keyword argument
-            ```
-        """
-        # Handle variadic or single argument construction
-        if args:
-            if len(args) == 1:
-                key = args[0]
-                # Single argument - could be str, sequence, or instance
-                if isinstance(key, str):
-                    kwargs["parts"] = tuple(key.split(KEY_SEPARATOR))
-                elif isinstance(key, self.__class__):
-                    kwargs["parts"] = key.parts
-                elif isinstance(key, dict):
-                    # Handle dict case (from Pydantic)
-                    if "parts" in key:
-                        parts_value = key["parts"]  # pyright: ignore[reportCallIssue, reportArgumentType]
-                        kwargs["parts"] = (
-                            tuple(parts_value)
-                            if not isinstance(parts_value, tuple)
-                            else parts_value
-                        )
-                    else:
-                        raise ValueError("Dict must contain 'parts' key")
-                elif isinstance(key, Sequence):
-                    kwargs["parts"] = tuple(key)
-                else:
-                    raise ValueError(
-                        f"Cannot create {self.__class__.__name__} from {type(key).__name__}"
-                    )
-            else:
-                # Multiple arguments - treat as variadic parts
-                # Validate all are strings
-                if not all(isinstance(arg, str) for arg in args):
-                    raise ValueError(
-                        f"Variadic arguments to {self.__class__.__name__} must all be strings, "
-                        f"got types: {[type(arg).__name__ for arg in args]}"
-                    )
-                kwargs["parts"] = tuple(args)  # type: ignore[arg-type]
-
-        super().__init__(**kwargs)
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            parts: str | Sequence[str] | Self,
+        ) -> None: ...
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_input(cls, data: Any) -> dict[str, Any]:
-        """Convert various input types to dict with parts."""
-        # If it's already a dict with parts, return it (normal Pydantic flow)
+    def _validate_input(cls, data: Any) -> Any:
+        """Convert various input types to tuple of strings."""
+        # If it's already a tuple, validate and return it
+        if isinstance(data, tuple):
+            return data
 
+        # Handle dict input (from Pydantic deserialization)
         if isinstance(data, dict):
-            if "parts" in data:
-                # Check if parts contains nested dicts (incorrect nesting from serialization)
+            # RootModel deserialization passes dict with "root" key
+            if "root" in data:
+                root_value = data["root"]
+                if isinstance(root_value, tuple):
+                    return root_value
+                elif isinstance(root_value, (list, Sequence)):
+                    return tuple(root_value)
+            # Legacy "parts" key for backward compatibility
+            elif "parts" in data:
                 parts = data["parts"]
                 if (
                     isinstance(parts, (list, tuple))
@@ -156,32 +100,31 @@ class _Key(BaseModel):
                     and isinstance(parts[0], dict)
                 ):
                     # Handle incorrectly nested structure like {'parts': [{'parts': [...]}]}
-                    # This can happen during certain deserialization paths
                     if "parts" in parts[0]:
-                        data["parts"] = tuple(parts[0]["parts"])
+                        return tuple(parts[0]["parts"])
                     else:
                         raise ValueError(f"Invalid nested structure in parts: {parts}")
-                elif not isinstance(parts, tuple):
-                    # Ensure parts is a tuple
-                    data["parts"] = tuple(parts)
-                return data
-            # Handle dict without parts (shouldn't happen normally)
-            return data
-        # Handle different input types
-        elif isinstance(data, str):
-            parts = tuple(data.split(KEY_SEPARATOR))
-        elif isinstance(data, cls):
-            parts = data.parts
-        elif isinstance(data, Sequence):
-            parts = tuple(data)
-        else:
-            raise ValueError(f"Cannot create {cls.__name__} from {type(data).__name__}")
+                return tuple(parts) if not isinstance(parts, tuple) else parts
+            # Empty dict
+            raise ValueError("Dict must contain 'root' or 'parts' key")
 
-        return {"parts": parts}
+        # Handle string input - split on separator
+        if isinstance(data, str):
+            return tuple(data.split(KEY_SEPARATOR))
 
-    @field_validator("parts", mode="after")
+        # Handle instance of same class - extract root
+        if isinstance(data, cls):
+            return data.root
+
+        # Handle sequence (list, etc.)
+        if isinstance(data, Sequence):
+            return tuple(data)
+
+        raise ValueError(f"Cannot create {cls.__name__} from {type(data).__name__}")
+
+    @field_validator("root", mode="after")
     @classmethod
-    def _validate_parts_content(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+    def _validate_root_content(cls, value: tuple[str, ...]) -> tuple[str, ...]:
         """Validate that parts don't contain forbidden characters."""
         for part in value:
             if not isinstance(part, str):
@@ -201,11 +144,15 @@ class _Key(BaseModel):
                 )
         return value
 
-    @field_serializer("parts")
-    @classmethod
-    def _serialize_parts(cls, value: tuple[str, ...]) -> list[str]:
-        """Serialize parts as list for backward compatibility."""
-        return list(value)
+    @model_serializer
+    def _serialize_model(self) -> list[str]:
+        """Serialize to list format for backward compatibility."""
+        return list(self.parts)
+
+    @property
+    def parts(self) -> tuple[str, ...]:
+        """Backward compatibility property for accessing root as parts."""
+        return self.root
 
     def to_string(self) -> str:
         """Convert to string representation with "/" separator."""
@@ -291,7 +238,8 @@ class FeatureKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Examples:
+    Example:
+
         ```py
         FeatureKey("a/b/c")  # String format
         # FeatureKey(parts=['a', 'b', 'c'])
@@ -301,62 +249,29 @@ class FeatureKey(_Key):
 
         FeatureKey(FeatureKey(["a", "b", "c"]))  # FeatureKey copy
         # FeatureKey(parts=['a', 'b', 'c'])
-
-        FeatureKey("a", "b", "c")  # Variadic format
-        # FeatureKey(parts=['a', 'b', 'c'])
         ```
     """
 
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
+    if TYPE_CHECKING:
 
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        @overload
+        def __init__(self, parts: str) -> None: ...
 
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another FeatureKey (copy)."""
-        ...
+        @overload
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
+        @overload
+        def __init__(self, parts: FeatureKey) -> None: ...
 
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
-
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """Initialize FeatureKey from various input types."""
-        super().__init__(*args, **kwargs)
-
-    @classmethod
-    def __get_validators__(cls):
-        """Pydantic validator for when used as a field type."""
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> FeatureKey:
-        """Convert various inputs to FeatureKey."""
-        if isinstance(value, cls):
-            return value
-        return cls(value)
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            parts: str | Sequence[str] | FeatureKey,
+        ) -> None: ...
 
     def model_dump(self, **kwargs: Any) -> Any:
         """Serialize to list format for backward compatibility."""
         # When serializing this key, return it as a list of parts
         # instead of the full Pydantic model structure
-        return list(self.parts)
-
-    @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list when used as a field in another model."""
         return list(self.parts)
 
     def __hash__(self) -> int:
@@ -381,7 +296,8 @@ class FieldKey(_Key):
     Hashable for use as dict keys in registries.
     Parts cannot contain forward slashes (/) or double underscores (__).
 
-    Examples:
+    Example:
+
         ```py
         FieldKey("a/b/c")  # String format
         # FieldKey(parts=['a', 'b', 'c'])
@@ -391,62 +307,29 @@ class FieldKey(_Key):
 
         FieldKey(FieldKey(["a", "b", "c"]))  # FieldKey copy
         # FieldKey(parts=['a', 'b', 'c'])
-
-        FieldKey("a", "b", "c")  # Variadic format
-        # FieldKey(parts=['a', 'b', 'c'])
         ```
     """
 
-    @overload
-    def __init__(self, key: str, /) -> None:
-        """Initialize from string with "/" separator."""
-        ...
+    if TYPE_CHECKING:
 
-    @overload
-    def __init__(self, key: Sequence[str], /) -> None:
-        """Initialize from sequence of parts."""
-        ...
+        @overload
+        def __init__(self, parts: str) -> None: ...
 
-    @overload
-    def __init__(self: Self, key: Self, /) -> None:
-        """Initialize from another FieldKey (copy)."""
-        ...
+        @overload
+        def __init__(self, parts: Sequence[str]) -> None: ...
 
-    @overload
-    def __init__(self, *parts: str) -> None:
-        """Initialize from variadic string arguments."""
-        ...
+        @overload
+        def __init__(self, parts: FieldKey) -> None: ...
 
-    @overload
-    def __init__(self, *, parts: Sequence[str]) -> None:
-        """Initialize from parts keyword argument."""
-        ...
-
-    def __init__(self, *args: str | _CoercibleToKey | Self, **kwargs: Any) -> None:
-        """Initialize FieldKey from various input types."""
-        super().__init__(*args, **kwargs)
-
-    @classmethod
-    def __get_validators__(cls):
-        """Pydantic validator for when used as a field type."""
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> FieldKey:
-        """Convert various inputs to FieldKey."""
-        if isinstance(value, cls):
-            return value
-        return cls(value)
+        def __init__(  # pyright: ignore[reportMissingSuperCall]
+            self,
+            parts: str | Sequence[str] | FieldKey,
+        ) -> None: ...
 
     def model_dump(self, **kwargs: Any) -> Any:
         """Serialize to list format for backward compatibility."""
         # When serializing this key, return it as a list of parts
         # instead of the full Pydantic model structure
-        return list(self.parts)
-
-    @model_serializer
-    def _serialize_model(self) -> list[str]:
-        """Serialize to list when used as a field in another model."""
         return list(self.parts)
 
     def __hash__(self) -> int:
@@ -460,8 +343,7 @@ class FieldKey(_Key):
         return super().__eq__(other)
 
 
-CoercibleToFeatureKey: TypeAlias = _CoercibleToKey | FeatureKey
-CoercibleToFieldKey: TypeAlias = _CoercibleToKey | FieldKey
+_CoercibleToFeatureKey: TypeAlias = _CoercibleToKey | FeatureKey
 
 FeatureKeyAdapter = TypeAdapter(
     FeatureKey
@@ -469,5 +351,125 @@ FeatureKeyAdapter = TypeAdapter(
 FieldKeyAdapter = TypeAdapter(
     FieldKey
 )  # can call .validate_python() to transform acceptable types into a FieldKey
+
+
+def _coerce_to_feature_key(value: Any) -> FeatureKey:
+    """Convert various types to FeatureKey.
+
+    Accepts:
+
+    - slashed `str`: `"a/b/c"`
+
+    - `Sequence[str]`: `["a", "b", "c"]`
+
+    - `FeatureKey`: pass through
+
+    - `type[BaseFeature]`: extracts .spec().key
+
+    Args:
+        value: Value to coerce to `FeatureKey`
+
+    Returns:
+        canonical `FeatureKey` instance
+
+    Raises:
+        ValidationError: If value cannot be coerced to FeatureKey
+    """
+    if isinstance(value, FeatureKey):
+        return value
+
+    # Check if it's a BaseFeature class
+    # Import here to avoid circular dependency at module level
+    from metaxy.models.feature import BaseFeature
+
+    if isinstance(value, type) and issubclass(value, BaseFeature):
+        return value.spec().key
+
+    # Handle str, Sequence[str]
+    return FeatureKeyAdapter.validate_python(value)
+
+
+def _coerce_to_field_key(value: Any) -> FieldKey:
+    """Convert various types to FieldKey.
+
+    Accepts:
+
+        - slashed `str`: `"a/b/c"`
+
+        - `Sequence[str]`: `["a", "b", "c"]`
+
+        - `FieldKey`: pass through
+
+    Args:
+        value: Value to coerce to `FieldKey`
+
+    Returns:
+        canonical `FieldKey` instance
+
+    Raises:
+        ValidationError: If value cannot be coerced to `FieldKey`
+    """
+    if isinstance(value, FieldKey):
+        return value
+
+    # Handle str, Sequence[str]
+    return FieldKeyAdapter.validate_python(value)
+
+
+if TYPE_CHECKING:
+    from metaxy.models.feature import BaseFeature
+
+# Type unions - what inputs are accepted
+CoercibleToFeatureKey: TypeAlias = (
+    str | Sequence[str] | FeatureKey | type["BaseFeature"]
+)
+CoercibleToFieldKey: TypeAlias = str | Sequence[str] | FieldKey
+
+# Annotated types for Pydantic field annotations - automatically validate
+# After validation, these ARE FeatureKey/FieldKey (not unions)
+ValidatedFeatureKey: TypeAlias = Annotated[
+    FeatureKey,
+    BeforeValidator(_coerce_to_feature_key),
+    Field(
+        description="Feature key. Accepts a slashed string ('a/b/c'), a sequence of strings, a FeatureKey instance, or a child class of BaseFeature"
+    ),
+]
+
+ValidatedFieldKey: TypeAlias = Annotated[
+    FieldKey,
+    BeforeValidator(_coerce_to_field_key),
+    Field(
+        description="Field key. Accepts a slashed string ('a/b/c'), a sequence of strings, or a FieldKey instance."
+    ),
+]
+
+# TypeAdapters for non-Pydantic usage (e.g., in metadata_store/base.py)
+ValidatedFeatureKeyAdapter: TypeAdapter[ValidatedFeatureKey] = TypeAdapter(
+    ValidatedFeatureKey
+)
+ValidatedFieldKeyAdapter: TypeAdapter[ValidatedFieldKey] = TypeAdapter(
+    ValidatedFieldKey
+)
+
+
+# Collection types for common patterns - automatically validate sequences
+# Pydantic will validate each element using ValidatedFeatureKey/ValidatedFieldKey
+ValidatedFeatureKeySequence: TypeAlias = Annotated[
+    Sequence[ValidatedFeatureKey],
+    Field(description="Sequence items coerced into FeatureKey."),
+]
+
+ValidatedFieldKeySequence: TypeAlias = Annotated[
+    Sequence[ValidatedFieldKey],
+    Field(description="Sequence items coerced into FieldKey."),
+]
+
+# TypeAdapters for non-Pydantic usage
+ValidatedFeatureKeySequenceAdapter: TypeAdapter[ValidatedFeatureKeySequence] = (
+    TypeAdapter(ValidatedFeatureKeySequence)
+)
+ValidatedFieldKeySequenceAdapter: TypeAdapter[ValidatedFieldKeySequence] = TypeAdapter(
+    ValidatedFieldKeySequence
+)
 
 FeatureDepMetadata: TypeAlias = dict[str, Any]

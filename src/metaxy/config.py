@@ -2,13 +2,16 @@
 # pyright: reportImportCycles=false
 
 import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 import tomli
 from pydantic import Field as PydanticField
-from pydantic import PrivateAttr, field_validator
+from pydantic import field_validator
+from pydantic.types import ImportString
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -96,7 +99,7 @@ class StoreConfig(BaseSettings):
         frozen=True,
     )
 
-    type: str = PydanticField(
+    type: ImportString[Any] = PydanticField(
         description="Full import path to metadata store class (e.g., 'metaxy.metadata_store.duckdb.DuckDBMetadataStore')",
     )
 
@@ -109,53 +112,29 @@ class StoreConfig(BaseSettings):
 class PluginConfig(BaseSettings):
     """Configuration for Metaxy plugins"""
 
-    model_config = SettingsConfigDict(
-        frozen=True,
-    )
+    model_config = SettingsConfigDict(frozen=True, extra="allow")
 
     enable: bool = PydanticField(
         default=False,
         description="Whether to enable the plugin.",
     )
 
-    _plugin: str = PrivateAttr()
 
-
-class SQLModelConfig(PluginConfig):
-    """Configuration for SQLModel"""
-
-    infer_db_table_names: bool = PydanticField(
-        default=True,
-        description="Whether to automatically use `FeatureKey.table_name` for sqlalchemy's __tablename__ value.",
-    )
-
-    # Whether to use SQLModel definitions for system tables (for Alembic migrations)
-    system_tables: bool = PydanticField(
-        default=True,
-        description="Whether to use SQLModel definitions for system tables (for Alembic migrations).",
-    )
-
-    _plugin: str = PrivateAttr(default="sqlmodel")
-
-
-class ExtConfig(BaseSettings):
-    """Configuration for Metaxy integrations with third-party tools"""
-
-    model_config = SettingsConfigDict(
-        extra="allow",
-        frozen=True,
-    )
-
-    sqlmodel: SQLModelConfig = PydanticField(
-        default_factory=SQLModelConfig,
-        description="SQLModel integration configuration",
-    )
-
+PluginConfigT = TypeVar("PluginConfigT", bound=PluginConfig)
 
 # Context variable for storing the app context
 _metaxy_config: ContextVar["MetaxyConfig | None"] = ContextVar(
     "_metaxy_config", default=None
 )
+
+
+BUILTIN_PLUGINS = {
+    "sqlmodel": "metaxy.ext.sqlmodel",
+    "alembic": "metaxy.ext.alembic",
+}
+
+
+StoreTypeT = TypeVar("StoreTypeT", bound="MetadataStore")
 
 
 class MetaxyConfig(BaseSettings):
@@ -215,14 +194,15 @@ class MetaxyConfig(BaseSettings):
         description="Graph rendering theme for CLI visualization",
     )
 
-    ext: ExtConfig = PydanticField(
-        default_factory=ExtConfig,
+    ext: dict[str, PluginConfig] = PydanticField(
+        default_factory=dict,
         description="Configuration for Metaxy integrations with third-party tools",
+        frozen=False,
     )
 
     hash_truncation_length: int | None = PydanticField(
         default=None,
-        description="Truncate hash values to this length (minimum 8 characters). None = no truncation.",
+        description="Truncate hash values to this length (minimum 8 characters).",
     )
 
     auto_create_tables: bool = PydanticField(
@@ -234,6 +214,22 @@ class MetaxyConfig(BaseSettings):
         default="default",
         description="Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)",
     )
+
+    @field_validator("ext", mode="after")
+    @classmethod
+    def register_plugins(cls, ext: dict[str, PluginConfig]) -> dict[str, PluginConfig]:
+        for name, module in BUILTIN_PLUGINS.items():
+            if (
+                name in ext and ext[name].enable
+            ):  # should only have enabled plugins by this point but whatever
+                try:
+                    __import__(module)
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to load Metaxy plugin '{name}' (defined in \"ext\" config field): {e}"
+                    ) from e
+
+        return ext
 
     @field_validator("project")
     @classmethod
@@ -262,12 +258,24 @@ class MetaxyConfig(BaseSettings):
     @property
     def plugins(self) -> list[str]:
         """Returns all enabled plugin names from ext configuration."""
-        plugins = []
-        for field_name in type(self.ext).model_fields:
-            field_value = getattr(self.ext, field_name)
-            if hasattr(field_value, "_plugin") and field_value.enable:
-                plugins.append(field_value._plugin)
-        return plugins
+        return [name for name, plugin in self.ext.items() if plugin.enable]
+
+    @classmethod
+    def get_plugin(cls, name: str, plugin_cls: type[PluginConfigT]) -> PluginConfigT:
+        """Get the plugin config from the global Metaxy config."""
+        ext = cls.get().ext
+        if name in ext:
+            existing = ext[name]
+            if isinstance(existing, plugin_cls):
+                # Already the correct type
+                plugin = existing
+            else:
+                # Convert from generic PluginConfig or dict to specific plugin class
+                plugin = plugin_cls.model_validate(existing.model_dump())
+        else:
+            # Return default config if plugin not configured
+            plugin = plugin_cls()
+        return plugin
 
     @field_validator("hash_truncation_length")
     @classmethod
@@ -326,6 +334,26 @@ class MetaxyConfig(BaseSettings):
     def reset(cls) -> None:
         """Reset the current Metaxy configuration to None."""
         _metaxy_config.set(None)
+
+    @contextmanager
+    def use(self) -> Iterator[Self]:
+        """Use this configuration temporarily, restoring previous config on exit.
+
+        Example:
+            ```py
+            config = MetaxyConfig(project="test")
+            with config.use():
+                # Code here uses test config
+                assert MetaxyConfig.get().project == "test"
+            # Previous config restored
+            ```
+        """
+        previous = _metaxy_config.get()
+        _metaxy_config.set(self)
+        try:
+            yield self
+        finally:
+            _metaxy_config.set(previous)
 
     @classmethod
     def load(
@@ -435,17 +463,31 @@ class MetaxyConfig(BaseSettings):
             # Move to parent
             parent = current.parent
             if parent == current:
-                # Reached root
+                # Reached roothash_tru
                 break
             current = parent
 
         return None
 
-    def get_store(self, name: str | None = None) -> "MetadataStore":
+    @overload
+    def get_store(
+        self, name: str | None = None, *, expected_type: Literal[None] = None
+    ) -> "MetadataStore": ...
+
+    @overload
+    def get_store(
+        self, name: str | None = None, *, expected_type: type[StoreTypeT]
+    ) -> StoreTypeT: ...
+
+    def get_store(
+        self, name: str | None = None, *, expected_type: type[StoreTypeT] | None = None
+    ) -> "MetadataStore | StoreTypeT":
         """Instantiate metadata store by name.
 
         Args:
             name: Store name (uses config.store if None)
+            expected_type: Expected type of the store.
+                If the actual store type does not match the expected type, a `TypeError` is raised.
 
         Returns:
             Instantiated metadata store
@@ -454,6 +496,7 @@ class MetaxyConfig(BaseSettings):
             ValueError: If store name not found in config, or if fallback stores
                 have different hash algorithms than the parent store
             ImportError: If store class cannot be imported
+            TypeError: If the actual store type does not match the expected type
 
         Example:
             ```py
@@ -481,8 +524,11 @@ class MetaxyConfig(BaseSettings):
 
         store_config = self.stores[name]
 
-        # Import store class
-        store_class = self._import_class(store_config.type)
+        # Get store class (already imported by Pydantic's ImportString)
+        store_class = store_config.type
+
+        if expected_type is not None and not issubclass(store_class, expected_type):
+            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
 
         # Extract configuration
         config_copy = store_config.config.copy()
@@ -541,21 +587,7 @@ class MetaxyConfig(BaseSettings):
                 f"the hash algorithm. All stores must use the same hash algorithm."
             )
 
+        if expected_type is not None and not isinstance(store, expected_type):
+            raise TypeError(f"Store '{name}' is not of type '{expected_type.__name__}'")
+
         return store
-
-    @staticmethod
-    def _import_class(class_path: str) -> type:
-        """Import class from module path.
-
-        Args:
-            class_path: Full import path like "metaxy.metadata_store.InMemoryMetadataStore"
-
-        Returns:
-            Imported class
-
-        Raises:
-            ImportError: If module or class not found
-        """
-        module_path, class_name = class_path.rsplit(".", 1)
-        module = __import__(module_path, fromlist=[class_name])
-        return getattr(module, class_name)

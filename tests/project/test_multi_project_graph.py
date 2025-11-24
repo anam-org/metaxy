@@ -8,14 +8,8 @@ from __future__ import annotations
 
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.models.feature import FeatureGraph
 
@@ -29,7 +23,7 @@ def test_graph_contains_features_from_multiple_projects(
     MetaxyConfig.set(config_a)
 
     class FeatureA1(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["project_a", "feature1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -38,7 +32,7 @@ def test_graph_contains_features_from_multiple_projects(
         pass
 
     class FeatureA2(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["project_a", "feature2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -51,7 +45,7 @@ def test_graph_contains_features_from_multiple_projects(
     MetaxyConfig.set(config_b)
 
     class FeatureB1(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["project_b", "feature1"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -60,7 +54,7 @@ def test_graph_contains_features_from_multiple_projects(
         pass
 
     class FeatureB2(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["project_b", "feature2"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -96,7 +90,7 @@ def test_graph_snapshot_includes_all_projects(
     MetaxyConfig.set(config_a)
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature_a"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -109,7 +103,7 @@ def test_graph_snapshot_includes_all_projects(
     MetaxyConfig.set(config_b)
 
     class FeatureB(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature_b"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -140,7 +134,7 @@ def test_graph_snapshot_version_includes_all_projects(
     MetaxyConfig.set(config_a)
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature_a"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -152,7 +146,7 @@ def test_graph_snapshot_version_includes_all_projects(
     MetaxyConfig.set(config_b)
 
     class FeatureB(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature_b"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -174,7 +168,7 @@ def test_graph_snapshot_version_includes_all_projects(
     with graph_single.use():
 
         class FeatureSingle(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -201,7 +195,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     with original_graph.use():
 
         class SnapshotFeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["restore", "feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -215,7 +209,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     with original_graph.use():
 
         class SnapshotFeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["restore", "feature_b"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -235,7 +229,7 @@ def test_graph_from_snapshot_preserves_projects(snapshot: SnapshotAssertion) -> 
     # Verify that snapshot contains project information for all features
     for feature_key_str, feature_data in snapshot_data.items():
         assert "project" in feature_data
-        assert "metaxy_feature_tracking_version" in feature_data
+        assert "metaxy_full_definition_version" in feature_data
         # Project should match what we expect
         if "feature_a" in feature_key_str:
             assert feature_data["project"] == "restore_a"
@@ -261,7 +255,7 @@ def test_multi_project_dependency_graph(
     MetaxyConfig.set(config_a)
 
     class UpstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -274,7 +268,7 @@ def test_multi_project_dependency_graph(
     MetaxyConfig.set(config_b)
 
     class DownstreamFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -315,7 +309,7 @@ def test_get_downstream_features_across_projects(
     MetaxyConfig.set(config_a)
 
     class RootFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["root"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -328,7 +322,7 @@ def test_get_downstream_features_across_projects(
     MetaxyConfig.set(config_b)
 
     class MidFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["mid"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
@@ -342,7 +336,7 @@ def test_get_downstream_features_across_projects(
     MetaxyConfig.set(config_c)
 
     class LeafFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(feature=FeatureKey(["mid"]))],
@@ -388,7 +382,7 @@ def test_graph_with_same_feature_key_different_projects() -> None:
     with graph_x.use():
 
         class FeatureInX(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["common", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -404,7 +398,7 @@ def test_graph_with_same_feature_key_different_projects() -> None:
     with graph_y.use():
 
         class FeatureInY(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["common", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

@@ -15,15 +15,14 @@ import narwhals as nw
 from narwhals.typing import Frame
 from typing_extensions import Self
 
-from metaxy.metadata_store.base import MetadataStore
+from metaxy.metadata_store.base import MetadataStore, VersioningEngineOptions
 from metaxy.metadata_store.exceptions import (
     HashAlgorithmNotSupportedError,
     TableNotFoundError,
 )
 from metaxy.metadata_store.types import AccessMode
-from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
-from metaxy.models.types import FeatureKey
+from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
 from metaxy.versioning.ibis import IbisVersioningEngine
 from metaxy.versioning.types import HashAlgorithm
 
@@ -68,6 +67,7 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def __init__(
         self,
+        versioning_engine: VersioningEngineOptions = "auto",
         connection_string: str | None = None,
         *,
         backend: str | None = None,
@@ -79,6 +79,11 @@ class IbisMetadataStore(MetadataStore, ABC):
         Initialize Ibis metadata store.
 
         Args:
+            versioning_engine: Which versioning engine to use.
+                - "auto": Prefer the store's native engine, fall back to Polars if needed
+                - "native": Always use the store's native engine, raise `VersioningEngineMismatchError`
+                    if provided dataframes are incompatible
+                - "polars": Always use the Polars engine
             connection_string: Ibis connection string (e.g., "clickhouse://host:9000/db")
                 If provided, backend and connection_params are ignored.
             backend: Ibis backend name (e.g., "clickhouse", "postgres", "duckdb")
@@ -106,23 +111,7 @@ class IbisMetadataStore(MetadataStore, ABC):
                 )
             ```
         """
-        try:
-            import ibis
-
-            self._ibis = ibis
-        except ImportError as e:
-            raise ImportError(
-                "Ibis is required for IbisMetadataStore. "
-                "Install with: pip install ibis-framework[BACKEND] "
-                "where BACKEND is one of: duckdb, postgres, clickhouse, mysql, etc."
-            ) from e
-
-        if connection_string is None and backend is None:
-            raise ValueError(
-                "Must provide either connection_string or backend. "
-                "Example: connection_string='clickhouse://host:9000/db' "
-                "or backend='clickhouse' with connection_params"
-            )
+        import ibis
 
         self.connection_string = connection_string
         self.backend = backend
@@ -130,7 +119,16 @@ class IbisMetadataStore(MetadataStore, ABC):
         self._conn: ibis.BaseBackend | None = None
         self._table_prefix = table_prefix or ""
 
-        super().__init__(**kwargs, versioning_engine_cls=IbisVersioningEngine)
+        super().__init__(
+            **kwargs,
+            versioning_engine=versioning_engine,
+            versioning_engine_cls=IbisVersioningEngine,
+        )
+
+    def _has_feature_impl(self, feature: CoercibleToFeatureKey) -> bool:
+        feature_key = self._resolve_feature_key(feature)
+        table_name = self.get_table_name(feature_key)
+        return table_name in self.conn.list_tables()
 
     def get_table_name(
         self,
@@ -255,7 +253,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         return self.ibis_conn
 
     @contextmanager
-    def open(self, mode: AccessMode = AccessMode.READ) -> Iterator[Self]:
+    def open(self, mode: AccessMode = "read") -> Iterator[Self]:
         """Open connection to database via Ibis.
 
         Subclasses should override this to add backend-specific initialization
@@ -268,6 +266,8 @@ class IbisMetadataStore(MetadataStore, ABC):
         Yields:
             Self: The store instance with connection open
         """
+        import ibis
+
         # Increment context depth to support nested contexts
         self._context_depth += 1
 
@@ -277,14 +277,14 @@ class IbisMetadataStore(MetadataStore, ABC):
                 # Setup: Connect to database
                 if self.connection_string:
                     # Use connection string
-                    self._conn = self._ibis.connect(self.connection_string)
+                    self._conn = ibis.connect(self.connection_string)
                 else:
                     # Use backend + params
                     # Get backend-specific connect function
                     assert self.backend is not None, (
                         "backend must be set if connection_string is None"
                     )
-                    backend_module = getattr(self._ibis, self.backend)
+                    backend_module = getattr(ibis, self.backend)
                     self._conn = backend_module.connect(**self.connection_params)
 
                 # Mark store as open and validate
@@ -335,14 +335,11 @@ class IbisMetadataStore(MetadataStore, ABC):
             f"IbisMetadataStore(backend='{self.backend}', connection_params={{...}})"
         )
 
-    def _table_name_to_feature_key(self, table_name: str) -> FeatureKey:
-        """Convert table name back to feature key."""
-        return FeatureKey(table_name.split("__"))
-
     def write_metadata_to_store(
         self,
         feature_key: FeatureKey,
         df: Frame,
+        **kwargs: Any,
     ) -> None:
         """
         Internal write implementation using Ibis.
@@ -350,6 +347,7 @@ class IbisMetadataStore(MetadataStore, ABC):
         Args:
             feature_key: Feature key to write to
             df: DataFrame with metadata (already validated)
+            **kwargs: Backend-specific parameters (currently unused)
 
         Raises:
             TableNotFoundError: If table doesn't exist and auto_create_tables is False
@@ -407,11 +405,12 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def read_metadata_in_store(
         self,
-        feature: FeatureKey | type[BaseFeature],
+        feature: CoercibleToFeatureKey,
         *,
         feature_version: str | None = None,
         filters: Sequence[nw.Expr] | None = None,
         columns: Sequence[str] | None = None,
+        **kwargs: Any,
     ) -> nw.LazyFrame[Any] | None:
         """
         Read metadata from this store only (no fallback).
@@ -421,6 +420,7 @@ class IbisMetadataStore(MetadataStore, ABC):
             feature_version: Filter by specific feature_version (applied as SQL WHERE clause)
             filters: List of Narwhals filter expressions (converted to SQL WHERE clauses)
             columns: Optional list of columns to select
+            **kwargs: Backend-specific parameters (currently unused)
 
         Returns:
             Narwhals LazyFrame with metadata, or None if not found
@@ -473,5 +473,4 @@ class IbisMetadataStore(MetadataStore, ABC):
     def display(self) -> str:
         """Display string for this store."""
         backend_info = self.connection_string or f"{self.backend}"
-        status = "open" if self._is_open else "closed"
-        return f"IbisMetadataStore(backend={backend_info}, status={status})"
+        return f"{self.__class__.__name__}(backend={backend_info})"

@@ -4,3 +4,9 @@ import pydantic
 class FrozenBaseModel(pydantic.BaseModel):
     # config class is deprecated
     model_config = pydantic.ConfigDict(frozen=True)
+
+
+class VersioningEngineMismatchError(Exception):
+    """Raised when versioning_engine='native' is requested but data has wrong implementation."""
+
+    pass

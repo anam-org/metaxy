@@ -26,56 +26,47 @@ def push(
             help="Metadata store to use (defaults to configured default store)",
         ),
     ] = None,
+    *,
+    tags: Annotated[
+        dict[str, str] | None,
+        cyclopts.Parameter(
+            name=["--tags", "-t"],
+            help="Arbitrary key-value pairs to attach to the pushed snapshot. Example: `--tags.git_commit abc123def`.",
+        ),
+    ] = None,
 ):
-    """Record all feature versions (push graph snapshot).
+    """Serialize all Metaxy features to the metadata store.
 
-    Records all features in the active graph to the metadata store
-    with a deterministic snapshot version. This should be run after deploying
-    new feature definitions.
-
-    Example:
-        $ metaxy graph push
-        ✓ Recorded feature graph
-        abc123def456...
-
-        # Or if already recorded:
-        $ metaxy graph push
-        ℹ Snapshot already recorded (no changes)
-        abc123def456...
-
-        # Or if metadata-only changes:
-        $ metaxy graph push
-        ℹ Updated feature graph metadata (no topological changes)
-          Features with metadata changes:
-            - video/processing
-            - user/profile
-        abc123def456...
+    This is intended to be invoked in a CD pipeline **before** running Metaxy code in production.
     """
     from metaxy.cli.context import AppContext
+    from metaxy.metadata_store.system.models import METAXY_TAG
     from metaxy.metadata_store.system.storage import SystemTableStorage
-    from metaxy.metadata_store.types import AccessMode
 
     context = AppContext.get()
     context.raise_command_cannot_override_project()
 
     metadata_store = context.get_store(store)
 
-    with metadata_store.open(AccessMode.WRITE):
-        result = SystemTableStorage(metadata_store).push_graph_snapshot()
+    tags = tags or {}
+
+    assert METAXY_TAG not in tags, "`metaxy` tag is reserved for internal use"
+
+    with metadata_store.open("write"):
+        result = SystemTableStorage(metadata_store).push_graph_snapshot(tags=tags)
 
         # Scenario 1: New snapshot (computational changes)
-        if not result.already_recorded:
+        if not result.already_pushed:
             console.print("[green]✓[/green] Recorded feature graph")
 
-        # Scenario 2: Metadata-only changes
-        elif result.metadata_changed:
+        # Scenario 2: Feature info updates to existing snapshot
+        elif result.updated_features:
             console.print(
-                "[blue]ℹ[/blue] [cyan]Updated feature graph metadata[/cyan] (no topological changes)"
+                "[blue]ℹ[/blue] [cyan]Updated feature information[/cyan] (no topological changes)"
             )
-            if result.features_with_spec_changes:
-                console.print("  [dim]Features with metadata changes:[/dim]")
-                for feature_key in result.features_with_spec_changes:
-                    console.print(f"    [yellow]- {feature_key}[/yellow]")
+            console.print("  [dim]Updated features:[/dim]")
+            for feature_key in result.updated_features:
+                console.print(f"    [yellow]- {feature_key}[/yellow]")
 
         # Scenario 3: No changes
         else:
@@ -126,9 +117,12 @@ def history(
     context = AppContext.get()
     metadata_store = context.get_store(store)
 
+    from metaxy.metadata_store.system.storage import SystemTableStorage
+
     with metadata_store:
         # Read snapshot history
-        snapshots_df = metadata_store.read_graph_snapshots(project=context.project)
+        storage = SystemTableStorage(metadata_store)
+        snapshots_df = storage.read_graph_snapshots(project=context.project)
 
         if snapshots_df.height == 0:
             console.print("[yellow]No graph snapshots recorded yet[/yellow]")
@@ -227,7 +221,10 @@ def describe(
             console.print(f"[cyan]Describing snapshot: {snapshot_version}[/cyan]")
 
             # Load graph from snapshot
-            features_df = metadata_store.read_features(
+            from metaxy.metadata_store.system.storage import SystemTableStorage
+
+            storage = SystemTableStorage(metadata_store)
+            features_df = storage.read_features(
                 current=False,
                 snapshot_version=snapshot_version,
                 project=context.project,
@@ -523,9 +520,12 @@ def render(
         # Load historical snapshot from store
         metadata_store = context.get_store(store)
 
+        from metaxy.metadata_store.system.storage import SystemTableStorage
+
         with metadata_store:
             # Read features for this snapshot
-            features_df = metadata_store.read_features(
+            storage = SystemTableStorage(metadata_store)
+            features_df = storage.read_features(
                 current=False, snapshot_version=snapshot
             )
 

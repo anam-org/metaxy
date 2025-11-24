@@ -1,13 +1,23 @@
 """Test metadata store provenance calculation against golden reference.
 
-Uses parametric metadata strategies to generate random upstream data, then compares
-the provenance calculation from resolve_update against the golden reference
-implementation used in the strategies.
+This file tests the CORRECTNESS of provenance calculations by comparing store
+implementations against a golden reference. It focuses on:
+- Verifying stores produce correct provenance (matches golden reference)
+- Testing deduplication logic (keep_latest_by_group)
+- Testing edge cases (duplicates, partial duplicates, etc.)
+
+Hash algorithm and truncation testing is handled in test_hash_algorithms.py.
+Store-specific behavior testing is handled in test_resolve_update.py.
+
+The goal here is to verify that the core provenance calculation is correct,
+not to test every possible combination of hash algorithm × store × truncation.
 """
+
+from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import polars as pl
 import polars.testing as pl_testing
@@ -18,25 +28,21 @@ from pytest_cases import parametrize_with_cases
 
 from metaxy import (
     BaseFeature,
-    Feature,
     FeatureDep,
     FeatureGraph,
     FeatureKey,
-    SampleFeatureSpec,
 )
-from metaxy._testing import HashAlgorithmCases
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy._testing.parametric import downstream_metadata_strategy
 from metaxy._utils import collect_to_polars
-from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
-    InMemoryMetadataStore,
     MetadataStore,
 )
-from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
-from metaxy.metadata_store.duckdb import DuckDBMetadataStore
 from metaxy.models.plan import FeaturePlan
-from metaxy.versioning.types import HashAlgorithm
+
+if TYPE_CHECKING:
+    pass
 
 FeaturePlanOutput: TypeAlias = tuple[
     FeatureGraph, Mapping[FeatureKey, type[BaseFeature]], FeaturePlan
@@ -47,23 +53,19 @@ class FeaturePlanCases:
     """Test cases for different feature plan configurations."""
 
     def case_single_upstream(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Simple parent->child feature plan with single upstream.
-
-        Returns:
-            Tuple of (graph, upstream_features_dict, child_plan)
-        """
+        """Simple parent->child feature plan with single upstream."""
 
         class ParentFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class ChildFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="child",
                 deps=[FeatureDep(feature=ParentFeature)],
@@ -82,32 +84,28 @@ class FeaturePlanCases:
         return graph, upstream_features, child_plan
 
     def case_two_upstreams(self, graph: FeatureGraph) -> FeaturePlanOutput:
-        """Feature plan with two upstream dependencies.
-
-        Returns:
-            Tuple of (graph, upstream_features_dict, child_plan)
-        """
+        """Feature plan with two upstream dependencies."""
 
         class Parent1Feature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent1",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class Parent2Feature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="parent2",
                 fields=["foo"],
             ),
         ):
-            pass
+            sample_uid: str
 
         class ChildFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key="child",
                 deps=[
@@ -130,34 +128,14 @@ class FeaturePlanCases:
         return graph, upstream_features, child_plan
 
 
-class TruncationCases:
-    def case_none(self):
-        return None
-
-    def case_8(self):
-        return 8
-
-
-@pytest_cases.fixture
-@parametrize_with_cases(
-    "hash_truncation_length",
-    cases=TruncationCases,
-)
-def metaxy_config(hash_truncation_length: int | None):
-    old = MetaxyConfig.get()
-    cfg_struct = old.model_dump()
-    cfg_struct["hash_truncation_length"] = hash_truncation_length
-    new = MetaxyConfig.model_validate(cfg_struct)
-    MetaxyConfig.set(new)
-    yield new
-    MetaxyConfig.set(old)
+# Removed: TruncationCases and metaxy_config fixture
+# Hash truncation is now tested in test_hash_algorithms.py
 
 
 def setup_store_with_data(
     empty_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ) -> tuple[MetadataStore, FeaturePlanOutput, pl.DataFrame]:
-    """Internal helper that does the actual setup work."""
     # Unpack feature plan configuration
     graph, upstream_features, child_feature_plan = feature_plan_config
 
@@ -204,73 +182,18 @@ def setup_store_with_data(
     return empty_store, feature_plan_config, golden_downstream
 
 
-class EmptyStoreCases:
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_duckdb(self, hash_algorithm: HashAlgorithm, tmp_path):
-        try:
-            return DuckDBMetadataStore(
-                tmp_path / "db.duckdb",
-                hash_algorithm=hash_algorithm,
-                extensions=["hashfuncs"],
-                prefer_native=True,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {DuckDBMetadataStore}"
-            )
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_clickhouse(self, hash_algorithm: HashAlgorithm, clickhouse_db: str):
-        try:
-            return ClickHouseMetadataStore(
-                connection_string=clickhouse_db,
-                hash_algorithm=hash_algorithm,
-                prefer_native=True,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {ClickHouseMetadataStore}"
-            )
-
-    @parametrize_with_cases("hash_algorithm", cases=HashAlgorithmCases)
-    def case_inmemory(
-        self,
-        hash_algorithm: HashAlgorithm,
-    ) -> InMemoryMetadataStore:
-        """InMemory store case."""
-        try:
-            return InMemoryMetadataStore(
-                hash_algorithm=hash_algorithm,
-            )
-        except HashAlgorithmNotSupportedError:
-            pytest.skip(
-                f"Hash algorithm {hash_algorithm} not supported by {InMemoryMetadataStore}"
-            )
+# Removed: EmptyStoreCases with hash algorithm parametrization
+# Now using simplified fixtures from conftest.py
+# Hash algorithm × store combinations are tested in test_hash_algorithms.py
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_store_resolve_update_matches_golden_provenance(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test metadata store provenance calculation matches golden reference.
-
-    This test verifies that resolve_update computes the same provenance hashes
-    as the reference Polars calculator implementation.
-
-    The test is parametrized over:
-    - Hash algorithms (xxhash64, xxhash32, wyhash, sha256, md5)
-    - Hash truncation lengths (None, 8)
-    - Feature plans (single_upstream, two_upstreams)
-
-    Args:
-        hash_algorithm: Hash algorithm to test
-        hash_truncation_length: Optional hash truncation length
-        feature_plan_config: Feature plan configuration from cases
-        tmp_path: Pytest fixture for temporary directory
-    """
+    """Test metadata store provenance calculation matches golden reference."""
+    empty_store = any_store
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -331,23 +254,13 @@ def test_store_resolve_update_matches_golden_provenance(
 # ============= TEST: DEDUPLICATION WITH DUPLICATES =============
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_golden_reference_with_duplicate_timestamps(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test golden reference comparison with upstream metadata containing duplicate timestamps.
-
-    This test verifies that:
-    1. When upstream metadata contains multiple versions of the same sample (duplicates)
-    2. The resolve_update correctly deduplicates using keep_latest_by_group
-    3. The computed provenance still matches the golden reference (which has no duplicates)
-
-    This proves that the deduplication logic correctly filters older versions before
-    computing provenance.
-    """
+    """Test deduplication logic correctly filters older versions before computing provenance."""
+    empty_store = any_store
     # Setup store with upstream data and get golden reference
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -447,21 +360,16 @@ def test_golden_reference_with_duplicate_timestamps(
         )
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 def test_golden_reference_with_all_duplicates_same_timestamp(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     graph: FeatureGraph,
 ):
-    """Test golden reference when all upstream samples have duplicate entries with same timestamp.
-
-    This is an edge case where every sample has multiple versions with identical timestamps.
-    The deduplication should still work deterministically.
-    """
+    """Test deduplication with all samples having duplicate entries at same timestamp."""
+    empty_store = any_store
 
     # Create simple feature graph
     class ParentFeature(
-        Feature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key="parent",
             fields=["value"],
@@ -470,7 +378,7 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         pass
 
     class ChildFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key="child",
             deps=[FeatureDep(feature=ParentFeature)],
@@ -556,20 +464,13 @@ def test_golden_reference_with_all_duplicates_same_timestamp(
         )
 
 
-@parametrize_with_cases("empty_store", cases=EmptyStoreCases)
 @parametrize_with_cases("feature_plan_config", cases=FeaturePlanCases)
 def test_golden_reference_partial_duplicates(
-    empty_store: MetadataStore,
-    metaxy_config: MetaxyConfig,
+    any_store: MetadataStore,
     feature_plan_config: FeaturePlanOutput,
 ):
-    """Test golden reference with only some upstream samples having duplicates.
-
-    This test ensures that:
-    - Samples with duplicates are correctly deduplicated
-    - Samples without duplicates pass through unchanged
-    - The final provenance matches golden reference
-    """
+    """Test golden reference with only some upstream samples having duplicates."""
+    empty_store = any_store
     # Setup store with upstream data
     store, (graph, upstream_features, child_feature_plan), golden_downstream = (
         setup_store_with_data(
@@ -657,16 +558,9 @@ def test_golden_reference_partial_duplicates(
 
 
 class KeepLatestTestDataCases:
-    """Test data cases for keep_latest_by_group tests.
-
-    Each case returns a tuple of:
-    - engine_class: The VersioningEngine class to use
-    - create_data_fn: A callable that takes Polars DataFrame and returns Narwhals DataFrame
-    - base_time: The base datetime used in test data generation
-    """
+    """Test data cases for keep_latest_by_group tests."""
 
     def case_polars(self):
-        """Test data using Polars implementation."""
         from datetime import datetime
 
         import narwhals as nw
@@ -676,13 +570,11 @@ class KeepLatestTestDataCases:
         base_time = datetime(2024, 1, 1, 12, 0, 0)
 
         def create_data_fn(pl_df):
-            """Convert Polars DataFrame to Narwhals (Polars-backed)."""
             return nw.from_native(pl_df)
 
         return (PolarsVersioningEngine, create_data_fn, base_time)
 
     def case_ibis(self, tmp_path):
-        """Test data using Ibis implementation (via DuckDB)."""
         from datetime import datetime
 
         import ibis
@@ -697,7 +589,6 @@ class KeepLatestTestDataCases:
         table_counter = [0]  # Mutable counter for unique table names
 
         def create_data_fn(pl_df):
-            """Convert Polars DataFrame to Narwhals (Ibis-backed)."""
             # Create a unique table name for this invocation
             table_counter[0] += 1
             table_name = f"test_data_{table_counter[0]}"
@@ -713,19 +604,10 @@ class KeepLatestTestDataCases:
 @pytest_cases.fixture
 @parametrize_with_cases("test_data", cases=KeepLatestTestDataCases)
 def keep_latest_test_data(test_data):
-    """Parametrized fixture providing test data for keep_latest_by_group tests."""
     return test_data
 
 
 def test_keep_latest_by_group(keep_latest_test_data):
-    """Unit test for keep_latest_by_group method.
-
-    Creates a simple dataframe with clear duplicates (same ID, different timestamps),
-    shuffles it to ensure ordering doesn't matter, and verifies only the latest row
-    is returned per group.
-
-    Tests both Polars and Ibis implementations.
-    """
     from datetime import timedelta
 
     import polars as pl
@@ -776,14 +658,7 @@ def test_keep_latest_by_group(keep_latest_test_data):
 
 
 def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
-    """Test keep_latest_by_group with N:1 aggregation (sensor readings → hourly stats).
-
-    Scenario: Multiple sensor readings per hour, with duplicate readings (old/new versions).
-    The deduplication should keep only the latest version of each reading before aggregation.
-
-    Group by: (sensor_id, hour, reading_id) - the granular reading ID
-    Expected: Only latest version of each reading kept
-    """
+    """Test keep_latest_by_group with N:1 aggregation (sensor readings to hourly stats)."""
     from datetime import timedelta
 
     import polars as pl
@@ -849,14 +724,7 @@ def test_keep_latest_by_group_aggregation_n_to_1(keep_latest_test_data):
 
 
 def test_keep_latest_by_group_expansion_1_to_n(keep_latest_test_data):
-    """Test keep_latest_by_group with 1:N expansion (video → video frames).
-
-    Scenario: One video expands to many frames. Video metadata has duplicate versions.
-    The deduplication should keep only the latest version of each video before expansion.
-
-    Group by: (video_id) - the parent video ID
-    Expected: Only latest version of each video kept, frames inherit latest parent metadata
-    """
+    """Test keep_latest_by_group with 1:N expansion (video to video frames)."""
     from datetime import timedelta
 
     import polars as pl

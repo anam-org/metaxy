@@ -6,11 +6,11 @@ from contextvars import copy_context
 import polars as pl
 import pytest
 
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store.memory import InMemoryMetadataStore
 from metaxy.metadata_store.system import SystemTableStorage
-from metaxy.models.feature import TestingFeature
-from metaxy.models.feature_spec import FieldSpec, SampleFeatureSpec
+from metaxy.models.feature_spec import FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.utils.hashing import (
     MIN_TRUNCATION_LENGTH,
@@ -31,19 +31,16 @@ class TestHashTruncationUtils:
 
         # Test with different config settings
         config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
-        assert truncate_hash(full_hash) == "a" * 16
+        with config.use():
+            assert truncate_hash(full_hash) == "a" * 16
 
         config = MetaxyConfig(hash_truncation_length=8)
-        MetaxyConfig.set(config)
-        assert truncate_hash(full_hash) == "a" * 8
+        with config.use():
+            assert truncate_hash(full_hash) == "a" * 8
 
         config = MetaxyConfig(hash_truncation_length=32)
-        MetaxyConfig.set(config)
-        assert truncate_hash(full_hash) == "a" * 32
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            assert truncate_hash(full_hash) == "a" * 32
 
     def test_truncate_hash_shorter_than_length(self):
         """Test truncation when hash is shorter than truncation length."""
@@ -51,21 +48,18 @@ class TestHashTruncationUtils:
 
         # No truncation (hash is shorter)
         config = MetaxyConfig(hash_truncation_length=20)
-        MetaxyConfig.set(config)
-        assert truncate_hash(short_hash) == "abc123def789"
+        with config.use():
+            assert truncate_hash(short_hash) == "abc123def789"
 
         # Exact length
         config = MetaxyConfig(hash_truncation_length=12)
-        MetaxyConfig.set(config)
-        assert truncate_hash(short_hash) == "abc123def789"
+        with config.use():
+            assert truncate_hash(short_hash) == "abc123def789"
 
         # Truncated to minimum
         config = MetaxyConfig(hash_truncation_length=8)
-        MetaxyConfig.set(config)
-        assert truncate_hash(short_hash) == "abc123de"
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            assert truncate_hash(short_hash) == "abc123de"
 
     def test_truncate_hash_minimum_length(self):
         """Test minimum truncation length validation in config."""
@@ -79,11 +73,8 @@ class TestHashTruncationUtils:
 
         # Minimum allowed should work
         config = MetaxyConfig(hash_truncation_length=MIN_TRUNCATION_LENGTH)
-        MetaxyConfig.set(config)
-        assert truncate_hash(full_hash) == "a" * MIN_TRUNCATION_LENGTH
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            assert truncate_hash(full_hash) == "a" * MIN_TRUNCATION_LENGTH
 
     def test_truncate_hash_none_length(self):
         """Test no truncation when length is None."""
@@ -91,11 +82,8 @@ class TestHashTruncationUtils:
 
         # With no truncation config
         config = MetaxyConfig(hash_truncation_length=None)
-        MetaxyConfig.set(config)
-        assert truncate_hash(full_hash) == full_hash
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_setting(self):
         """Test global hash truncation via MetaxyConfig."""
@@ -105,16 +93,17 @@ class TestHashTruncationUtils:
 
         # Set truncation length via config
         config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
-        assert get_hash_truncation_length() == 16
+        with config.use():
+            assert get_hash_truncation_length() == 16
 
-        # Truncate using global setting
-        full_hash = "a" * 64
-        assert truncate_hash(full_hash) == "a" * 16
+            # Truncate using global setting
+            full_hash = "a" * 64
+            assert truncate_hash(full_hash) == "a" * 16
 
         # Reset to None
         MetaxyConfig.reset()
         assert get_hash_truncation_length() == 64
+        full_hash = "a" * 64
         assert truncate_hash(full_hash) == full_hash
 
     def test_global_truncation_minimum_validation(self):
@@ -140,27 +129,24 @@ class TestHashTruncationUtils:
         """Test that hash truncation setting works with MetaxyConfig context."""
         # Set in main context
         original_config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(original_config)
-        assert get_hash_truncation_length() == 16
-
-        # Create new context - should inherit setting
-        ctx = copy_context()
-
-        def check_in_new_context():
-            # Should inherit from parent context
+        with original_config.use():
             assert get_hash_truncation_length() == 16
-            # Change in this context
-            new_config = MetaxyConfig(hash_truncation_length=12)
-            MetaxyConfig.set(new_config)
-            assert get_hash_truncation_length() == 12
 
-        ctx.run(check_in_new_context)
+            # Create new context - should inherit setting
+            ctx = copy_context()
 
-        # Main context should be unchanged
-        assert get_hash_truncation_length() == 16
+            def check_in_new_context():
+                # Should inherit from parent context
+                assert get_hash_truncation_length() == 16
+                # Change in this context
+                new_config = MetaxyConfig(hash_truncation_length=12)
+                with new_config.use():
+                    assert get_hash_truncation_length() == 12
 
-        # Clean up
-        MetaxyConfig.reset()
+            ctx.run(check_in_new_context)
+
+            # Main context should be unchanged
+            assert get_hash_truncation_length() == 16
 
 
 class TestNarwhalsFunctions:
@@ -181,19 +167,15 @@ class TestNarwhalsFunctions:
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=12)
-        MetaxyConfig.set(config)
+        with config.use():
+            result_pl = truncate_string_column(df, "hash_column")
 
-        result_pl = truncate_string_column(df, "hash_column")
+            assert result_pl["hash_column"][0] == "a" * 12
+            assert result_pl["hash_column"][1] == "b" * 12
+            assert result_pl["hash_column"][2] == "c" * 12
 
-        assert result_pl["hash_column"][0] == "a" * 12
-        assert result_pl["hash_column"][1] == "b" * 12
-        assert result_pl["hash_column"][2] == "c" * 12
-
-        # Other columns unchanged
-        assert result_pl["other_column"].to_list() == [1, 2, 3]
-
-        # Clean up
-        MetaxyConfig.reset()
+            # Other columns unchanged
+            assert result_pl["other_column"].to_list() == [1, 2, 3]
 
     def test_truncate_struct_column(self):
         """Test truncating hash values within a struct column."""
@@ -215,54 +197,40 @@ class TestNarwhalsFunctions:
 
         # With truncation
         config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
+        with config.use():
+            result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
 
-        result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
+            # Check struct values are truncated
+            assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 16
+            assert result_pl["metaxy_provenance_by_field"][0]["field2"] == "b" * 16
+            assert result_pl["metaxy_provenance_by_field"][1]["field1"] == "c" * 16
+            assert result_pl["metaxy_provenance_by_field"][1]["field2"] == "d" * 16
 
-        # Check struct values are truncated
-        assert result_pl["metaxy_provenance_by_field"][0]["field1"] == "a" * 16
-        assert result_pl["metaxy_provenance_by_field"][0]["field2"] == "b" * 16
-        assert result_pl["metaxy_provenance_by_field"][1]["field1"] == "c" * 16
-        assert result_pl["metaxy_provenance_by_field"][1]["field2"] == "d" * 16
-
-        # Other columns unchanged
-        assert result_pl["sample_uid"].to_list() == [1, 2]
-
-        # Clean up
-        MetaxyConfig.reset()
+            # Other columns unchanged
+            assert result_pl["sample_uid"].to_list() == [1, 2]
 
     def test_truncate_functions_with_empty_df(self):
         """Test truncate functions with empty DataFrames."""
         # Setup truncation
         config = MetaxyConfig(hash_truncation_length=10)
-        MetaxyConfig.set(config)
+        with config.use():
+            # Empty DataFrame with hash column
+            df = pl.DataFrame({"hash_column": pl.Series([], dtype=pl.Utf8)})
 
-        # Empty DataFrame with hash column
-        df = pl.DataFrame({"hash_column": pl.Series([], dtype=pl.Utf8)})
+            result_pl = truncate_string_column(df, "hash_column")
+            assert result_pl.height == 0
 
-        result_pl = truncate_string_column(df, "hash_column")
-        assert result_pl.height == 0
+            # Empty DataFrame with struct column
+            df = pl.DataFrame(
+                {
+                    "metaxy_provenance_by_field": pl.Series(
+                        [], dtype=pl.Struct({"field1": pl.Utf8})
+                    )
+                }
+            )
 
-        # Empty DataFrame with struct column
-        df = pl.DataFrame(
-            {
-                "metaxy_provenance_by_field": pl.Series(
-                    [], dtype=pl.Struct({"field1": pl.Utf8})
-                )
-            }
-        )
-
-        # This may fail if schema inference doesn't work on empty structs
-        # That's okay - it's an edge case
-        try:
             result_pl = truncate_struct_column(df, "metaxy_provenance_by_field")
             assert result_pl.height == 0
-        except Exception:
-            # Expected for empty struct handling
-            pass
-
-        # Clean up
-        MetaxyConfig.reset()
 
 
 class TestFeatureVersionTruncation:
@@ -273,7 +241,7 @@ class TestFeatureVersionTruncation:
 
         # Create feature without truncation
         class TestFeature1(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature1"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -287,29 +255,26 @@ class TestFeatureVersionTruncation:
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
+        with config.use():
 
-        class TestFeature2(
-            TestingFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "feature2"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
-                # Root feature has no dependencies
-            ),
-        ):
-            pass
+            class TestFeature2(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["test", "feature2"]),
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
+                    # Root feature has no dependencies
+                ),
+            ):
+                pass
 
-        version_truncated = TestFeature2.feature_version()
-        assert len(version_truncated) == 16
-
-        # Clean up
-        MetaxyConfig.reset()
+            version_truncated = TestFeature2.feature_version()
+            assert len(version_truncated) == 16
 
     def test_snapshot_version_truncation(self, graph):
         """Test that snapshot versions are truncated."""
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -323,20 +288,17 @@ class TestFeatureVersionTruncation:
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=12)
-        MetaxyConfig.set(config)
-        snapshot_truncated = graph.snapshot_version
-        assert len(snapshot_truncated) == 12
-        # Note: The truncated version is computed fresh with truncated dependencies,
-        # not just a truncation of the full version, so they may differ
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            snapshot_truncated = graph.snapshot_version
+            assert len(snapshot_truncated) == 12
+            # Note: The truncated version is computed fresh with truncated dependencies,
+            # not just a truncation of the full version, so they may differ
 
     def test_field_version_truncation(self, graph):
         """Test that field versions are truncated."""
 
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[
@@ -353,12 +315,9 @@ class TestFeatureVersionTruncation:
 
         # Enable truncation
         config = MetaxyConfig(hash_truncation_length=20)
-        MetaxyConfig.set(config)
-        provenance_truncated = TestFeature.provenance_by_field()
-        assert all(len(v) == 20 for v in provenance_truncated.values())
-
-        # Clean up
-        MetaxyConfig.reset()
+        with config.use():
+            provenance_truncated = TestFeature.provenance_by_field()
+            assert all(len(v) == 20 for v in provenance_truncated.values())
 
 
 class TestConfigIntegration:
@@ -415,49 +374,30 @@ class TestMetadataStoreTruncation:
     """Test hash truncation in metadata stores."""
 
     def test_store_truncation_property(self):
-        """Test that stores have hash_truncation_length property."""
+        """Test that stores have hash_truncation_length property that pulls from config."""
         # Default truncation (64)
+        MetaxyConfig.reset()
         with InMemoryMetadataStore() as store:
             assert store.hash_truncation_length == 64
 
         # With global truncation
         config = MetaxyConfig(hash_truncation_length=16)
-        MetaxyConfig.set(config)
-        with InMemoryMetadataStore() as store:
-            assert store.hash_truncation_length == 16
+        with config.use():
+            with InMemoryMetadataStore() as store:
+                assert store.hash_truncation_length == 16
 
-        # Explicit truncation overrides global
-        with InMemoryMetadataStore(hash_truncation_length=20) as store:
-            assert store.hash_truncation_length == 20
-
-        # Clean up
-        MetaxyConfig.reset()
-
-    def test_store_chain_validation(self):
-        """Test that fallback stores must have same truncation length."""
-        # Create stores with different truncation lengths
-        store2 = InMemoryMetadataStore(hash_truncation_length=20)
-
-        # Should fail when used as fallback chain
-        with pytest.raises(ValueError, match="same hash truncation length"):
-            with InMemoryMetadataStore(
-                hash_truncation_length=16, fallback_stores=[store2]
-            ) as store:
-                pass
-
-        # Same truncation should work
-        store3 = InMemoryMetadataStore(hash_truncation_length=16)
-        with InMemoryMetadataStore(
-            hash_truncation_length=16, fallback_stores=[store3]
-        ) as store:
-            assert store.hash_truncation_length == 16
+        # Different config value
+        config = MetaxyConfig(hash_truncation_length=20)
+        with config.use():
+            with InMemoryMetadataStore() as store:
+                assert store.hash_truncation_length == 20
 
     def test_provenance_truncation(self, graph):
         """Test that field provenances are truncated in stores."""
 
         # Create feature
         class TestFeature(
-            TestingFeature,
+            SampleFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
@@ -467,35 +407,31 @@ class TestMetadataStoreTruncation:
 
         # Enable truncation (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=16)
-        MetaxyConfig.set(config)
+        with config.use():
+            # Store should use truncated field provenances
+            with InMemoryMetadataStore() as store:
+                # Write some dummy metadata with provenance_by_field
+                metadata = pl.DataFrame(
+                    {
+                        "sample_uid": ["s1", "s2"],
+                        "metaxy_provenance_by_field": [
+                            {"field1": "a" * 16},  # Already truncated
+                            {"field1": "b" * 16},  # Already truncated
+                        ],
+                    }
+                )
+                store.write_metadata(TestFeature, metadata)
 
-        # Store should use truncated field provenances
-        with InMemoryMetadataStore() as store:
-            # Write some dummy metadata with provenance_by_field
-            metadata = pl.DataFrame(
-                {
-                    "sample_uid": ["s1", "s2"],
-                    "metaxy_provenance_by_field": [
-                        {"field1": "a" * 16},  # Already truncated
-                        {"field1": "b" * 16},  # Already truncated
-                    ],
-                }
-            )
-            store.write_metadata(TestFeature, metadata)
+                # Read back and verify
 
-            # Read back and verify
+                result = store.read_metadata(TestFeature).collect()
+                result_pl = result.to_polars()
+                assert result_pl.height == 2
 
-            result = store.read_metadata(TestFeature).collect()
-            result_pl = result.to_polars()
-            assert result_pl.height == 2
-
-            # Field provenance should be truncated
-            for row in result_pl.iter_rows(named=True):
-                provenance_by_field = row["metaxy_provenance_by_field"]
-                assert len(provenance_by_field["field1"]) == 16
-
-        # Clean up
-        MetaxyConfig.reset()
+                # Field provenance should be truncated
+                for row in result_pl.iter_rows(named=True):
+                    provenance_by_field = row["metaxy_provenance_by_field"]
+                    assert len(provenance_by_field["field1"]) == 16
 
 
 class TestMigrationCompatibility:
@@ -507,51 +443,48 @@ class TestMigrationCompatibility:
 
         # Enable truncation (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=12)
-        MetaxyConfig.set(config)
+        with config.use():
 
-        class TestFeature(
-            TestingFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["test", "feature"]),
-                fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
-            ),
-        ):
-            pass
-
-        # Record snapshot
-        with InMemoryMetadataStore() as store:
-            result = SystemTableStorage(store).push_graph_snapshot()
-
-            snapshot_v1 = result.snapshot_version
-
-            assert len(snapshot_v1) == 12  # Truncated
-
-            # Modify feature to trigger migration
-            graph.remove_feature(FeatureKey(["test", "feature"]))
-
-            class TestFeature(  # noqa: F811
-                TestingFeature,
+            class TestFeature(
+                SampleFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "feature"]),
-                    fields=[
-                        FieldSpec(key=FieldKey(["field1"]), code_version="2")
-                    ],  # Changed
+                    fields=[FieldSpec(key=FieldKey(["field1"]), code_version="1")],
                 ),
             ):
                 pass
 
-            # Detect migration - should work with truncated versions
-            migration = detect_diff_migration(
-                store,
-                project="test",  # Use the same project as in config
-                ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
-            )
-            assert migration is not None
-            assert len(migration.from_snapshot_version) == 12
-            assert len(migration.to_snapshot_version) == 12
+            # Record snapshot
+            with InMemoryMetadataStore() as store:
+                result = SystemTableStorage(store).push_graph_snapshot()
 
-        # Clean up
-        MetaxyConfig.reset()
+                snapshot_v1 = result.snapshot_version
+
+                assert len(snapshot_v1) == 12  # Truncated
+
+                # Modify feature to trigger migration
+                graph.remove_feature(FeatureKey(["test", "feature"]))
+
+                class TestFeature(  # noqa: F811
+                    SampleFeature,
+                    spec=SampleFeatureSpec(
+                        key=FeatureKey(["test", "feature"]),
+                        fields=[
+                            FieldSpec(key=FieldKey(["field1"]), code_version="2")
+                        ],  # Changed
+                    ),
+                ):
+                    pass
+
+                # Detect migration - should work with truncated versions
+                migration = detect_diff_migration(
+                    store,
+                    project="test",  # Use the same project as in config
+                    ops=[{"type": "metaxy.migrations.ops.DataVersionReconciliation"}],
+                )
+                assert migration is not None
+                assert len(migration.from_snapshot_version) == 12
+                assert len(migration.to_snapshot_version) == 12
 
     def test_hash_compatibility_in_migration(self):
         """Test hash compatibility checking in migrations."""
@@ -577,66 +510,61 @@ class TestEndToEnd:
         """Test complete workflow with hash truncation enabled."""
         # Enable truncation globally (preserve project from test setup)
         config = MetaxyConfig(project="test", hash_truncation_length=16)
-        MetaxyConfig.set(config)
+        with config.use():
+            # Create features
+            class ParentFeature(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["parent"]),
+                    fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
+                ),
+            ):
+                pass
 
-        # Create features
-        class ParentFeature(
-            TestingFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["parent"]),
-                fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
-            ),
-        ):
-            pass
+            from metaxy.models.feature_spec import FeatureDep
 
-        from metaxy.models.feature_spec import FeatureDep
+            class ChildFeature(
+                SampleFeature,
+                spec=SampleFeatureSpec(
+                    key=FeatureKey(["child"]),
+                    fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],
+                    deps=[FeatureDep(feature=FeatureKey(["parent"]))],
+                ),
+            ):
+                pass
 
-        class ChildFeature(
-            TestingFeature,
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["child"]),
-                fields=[FieldSpec(key=FieldKey(["derived"]), code_version="1")],
-                deps=[FeatureDep(feature=FeatureKey(["parent"]))],
-            ),
-        ):
-            pass
+            # Verify truncation
+            assert len(ParentFeature.feature_version()) == 16
+            assert len(ChildFeature.feature_version()) == 16
+            assert len(graph.snapshot_version) == 16
 
-        # Verify truncation
-        assert len(ParentFeature.feature_version()) == 16
-        assert len(ChildFeature.feature_version()) == 16
-        assert len(graph.snapshot_version) == 16
+            # Store metadata
+            with InMemoryMetadataStore() as store:
+                # Record snapshot
+                result = SystemTableStorage(store).push_graph_snapshot()
 
-        # Store metadata
-        with InMemoryMetadataStore() as store:
-            # Record snapshot
-            result = SystemTableStorage(store).push_graph_snapshot()
+                snapshot_version = result.snapshot_version
 
-            snapshot_version = result.snapshot_version
+                assert len(snapshot_version) == 16
 
-            _ = result.already_recorded
-            assert len(snapshot_version) == 16
+                # Write parent metadata
+                parent_data = pl.DataFrame(
+                    {
+                        "sample_uid": ["s1", "s2"],
+                        "metaxy_provenance_by_field": [
+                            {"value": "h" * 16},  # Truncated hash
+                            {"value": "i" * 16},  # Truncated hash
+                        ],
+                    }
+                )
+                store.write_metadata(ParentFeature, parent_data)
 
-            # Write parent metadata
-            parent_data = pl.DataFrame(
-                {
-                    "sample_uid": ["s1", "s2"],
-                    "metaxy_provenance_by_field": [
-                        {"value": "h" * 16},  # Truncated hash
-                        {"value": "i" * 16},  # Truncated hash
-                    ],
-                }
-            )
-            store.write_metadata(ParentFeature, parent_data)
+                # Verify stored versions are truncated
 
-            # Verify stored versions are truncated
+                result = store.read_metadata(ParentFeature).collect()
+                result_pl = result.to_polars()
 
-            result = store.read_metadata(ParentFeature).collect()
-            result_pl = result.to_polars()
-
-            for row in result_pl.iter_rows(named=True):
-                assert len(row["metaxy_feature_version"]) == 16
-                assert len(row["metaxy_snapshot_version"]) == 16
-                assert len(row["metaxy_provenance_by_field"]["value"]) == 16
-
-        # Clean up
-        MetaxyConfig.reset()
+                for row in result_pl.iter_rows(named=True):
+                    assert len(row["metaxy_feature_version"]) == 16
+                    assert len(row["metaxy_snapshot_version"]) == 16
+                    assert len(row["metaxy_provenance_by_field"]["value"]) == 16

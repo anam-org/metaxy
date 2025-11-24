@@ -60,10 +60,11 @@ def test_metadata_drop_requires_feature_or_all(metaxy_project: TempMetaxyProject
     """Test that drop requires either --feature or --all-features."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -86,10 +87,11 @@ def test_metadata_drop_requires_confirm(metaxy_project: TempMetaxyProject):
     """Test that drop requires --confirm flag."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -114,10 +116,11 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
     """Test dropping metadata for a single feature."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -126,7 +129,7 @@ def test_metadata_drop_single_feature(metaxy_project: TempMetaxyProject):
             pass
 
         class AudioFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -152,10 +155,11 @@ def test_metadata_copy_incremental_skips_duplicates(metaxy_project: TempMetaxyPr
     """Test that incremental copy skips existing sample_uids."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -224,10 +228,11 @@ def test_metadata_copy_non_incremental_creates_duplicates(
     """Test that non-incremental copy allows duplicate sample_uids."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -296,10 +301,11 @@ def test_metadata_copy_incremental_empty_destination(metaxy_project: TempMetaxyP
     """Test that incremental copy works correctly with empty destination."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -350,10 +356,11 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
     """Test dropping metadata for multiple features."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -362,7 +369,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             pass
 
         class AudioFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -371,7 +378,7 @@ def test_metadata_drop_multiple_features(metaxy_project: TempMetaxyProject):
             pass
 
         class TextFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["text", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -406,10 +413,11 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
     """Test dropping metadata for all features."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -418,7 +426,7 @@ def test_metadata_drop_all_features(metaxy_project: TempMetaxyProject):
             pass
 
         class AudioFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["audio", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -449,10 +457,11 @@ def test_metadata_drop_empty_store(metaxy_project: TempMetaxyProject):
     """Test dropping from an empty store succeeds (idempotent operation)."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -478,10 +487,11 @@ def test_metadata_drop_cannot_specify_both_flags(metaxy_project: TempMetaxyProje
     """Test that cannot specify both --feature and --all-features."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -509,10 +519,11 @@ def test_metadata_drop_with_store_flag(metaxy_project: TempMetaxyProject):
     """Test dropping metadata with explicit --store flag."""
 
     def features():
-        from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
 
         class VideoFiles(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["video", "files"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

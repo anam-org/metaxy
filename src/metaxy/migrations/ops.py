@@ -174,11 +174,9 @@ class DataVersionReconciliation(BaseOperation):
         to_snapshot_version = snapshot_version
         import narwhals as nw
 
-        from metaxy.metadata_store.base import (
-            FEATURE_VERSIONS_KEY,
-            allow_feature_version_override,
-        )
+        from metaxy.metadata_store.base import allow_feature_version_override
         from metaxy.metadata_store.exceptions import FeatureNotFoundError
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
         from metaxy.models.feature import FeatureGraph
         from metaxy.models.types import FeatureKey
 

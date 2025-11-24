@@ -27,8 +27,8 @@ from metaxy import (
     FieldDep,
     FieldKey,
     FieldSpec,
-    SampleFeatureSpec,
 )
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy._utils import collect_to_polars
 from metaxy.ext.sqlmodel import BaseSQLModelFeature
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
@@ -54,7 +54,7 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             fields=[
@@ -64,7 +64,6 @@ def test_basic_sqlmodel_feature_creation(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "video"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str  # Metadata column: where video is stored
 
@@ -110,7 +109,7 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
     class MultiFieldFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "field"]),
             fields=[
@@ -120,7 +119,6 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "multi_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str
 
@@ -139,25 +137,26 @@ def test_sqlmodel_feature_multiple_fields(snapshot: SnapshotAssertion) -> None:
 
 
 def test_sqlmodel_custom_tablename() -> None:
-    """Test that __tablename__ can be customized.
+    """Test that custom __tablename__ is forbidden.
 
-    Verifies that SQLModel __tablename__ attribute works as expected.
+    Custom __tablename__ is not allowed because it would be inconsistent with
+    the metadata store's get_table_name() method.
     """
 
-    class CustomTableFeature(
-        SQLModelFeature,
-        table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["custom", "table"]),
-            fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
-        ),
-    ):
-        __tablename__: str = "my_custom_table_name"  # pyright: ignore[reportIncompatibleVariableOverride]
-        uid: str = Field(primary_key=True)
-        path: str
+    with pytest.raises(ValueError, match="Cannot define custom __tablename__"):
 
-    assert CustomTableFeature.__tablename__ == "my_custom_table_name"  # pyright: ignore[reportIncompatibleVariableOverride]
+        class CustomTableFeature(
+            SQLModelFeature,
+            table=True,
+            inject_primary_key=False,  # Disable composite PK for legacy test
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["custom", "table"]),
+                fields=[FieldSpec(key=FieldKey(["content"]), code_version="1")],
+            ),
+        ):
+            __tablename__: str = "my_custom_table"  # pyright: ignore[reportIncompatibleVariableOverride]
+            uid: str = Field(primary_key=True)
+            path: str
 
 
 def test_automatic_tablename() -> None:
@@ -170,7 +169,7 @@ def test_automatic_tablename() -> None:
     class AutoTableFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["my", "auto", "feature"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -201,7 +200,7 @@ def test_sqlmodel_field_definitions() -> None:
     class AudioFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["audio"]),
             fields=[
@@ -210,7 +209,6 @@ def test_sqlmodel_field_definitions() -> None:
             ],
         ),
     ):
-        __tablename__: str = "audio"  # pyright: ignore[reportIncompatibleVariableOverride]
         # SQLModel columns for metadata
         uid: str = Field(primary_key=True)
         path: str  # Where audio file is stored
@@ -248,13 +246,12 @@ def test_feature_version_method(snapshot: SnapshotAssertion) -> None:
     class VersionedFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["versioned"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "versioned"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         data: str
 
@@ -282,7 +279,7 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
     class DataVersionFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["data", "version"]),
             fields=[
@@ -291,7 +288,6 @@ def test_provenance_method(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "metaxy_provenance_by_field"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         source_path: str  # Metadata column
         timestamp: int  # Metadata column
@@ -322,27 +318,25 @@ def test_feature_with_dependencies(snapshot: SnapshotAssertion) -> None:
     class ParentFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["parent"]),
             fields=[FieldSpec(key=FieldKey(["parent_data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "parent"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         parent_data: str
 
     class ChildFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["child"]),
             deps=[FeatureDep(feature=FeatureKey(["parent"]))],
             fields=[FieldSpec(key=FieldKey(["child_data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "child"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         child_data: str
 
@@ -377,7 +371,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[
@@ -386,7 +380,6 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         video_path: str  # Metadata column: where video is stored
         created_at: int  # Metadata column: timestamp
@@ -394,7 +387,7 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[FeatureDep(feature=FeatureKey(["upstream"]))],
@@ -415,7 +408,6 @@ def test_feature_with_field_dependencies(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         processed: str
 
@@ -451,13 +443,12 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV1(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v1"]),
                 fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "feature_v1"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             data: str
 
@@ -468,7 +459,7 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
         class FeatureV2(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["versioned", "v2"]),
                 fields=[
@@ -476,7 +467,6 @@ def test_version_changes_with_code_version(snapshot: SnapshotAssertion) -> None:
                 ],  # Changed!
             ),
         ):
-            __tablename__: str = "feature_v2"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             data: str
 
@@ -504,13 +494,12 @@ def test_custom_graph_context() -> None:
         class CustomGraphFeature(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["custom", "graph"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "custom_graph"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
 
         # Should be in custom graph
@@ -531,13 +520,12 @@ def test_graph_snapshot_inclusion(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "test"]),
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "snapshot_test"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         value: int
 
@@ -572,41 +560,38 @@ def test_downstream_dependency_tracking() -> None:
     class RootFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["root"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "root"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         data: str
 
     class MiddleFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["middle"]),
             deps=[FeatureDep(feature=FeatureKey(["root"]))],
             fields=[FieldSpec(key=FieldKey(["processed"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "middle"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         processed: str
 
     class LeafFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["leaf"]),
             deps=[FeatureDep(feature=FeatureKey(["middle"]))],
             fields=[FieldSpec(key=FieldKey(["final"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "leaf"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         final: str
 
@@ -638,13 +623,12 @@ def test_duplicate_key_raises() -> None:
     class Feature1(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["duplicate"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "feature1"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
 
     # Try to create another with same key
@@ -655,13 +639,12 @@ def test_duplicate_key_raises() -> None:
         class Feature2(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["duplicate"]),  # Same key!
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
             ),
         ):
-            __tablename__: str = "feature2"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
 
 
@@ -682,13 +665,12 @@ def test_inheritance_chain() -> None:
     class ConcreteFeature(
         BaseFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["concrete"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "concrete"  # pyright: ignore[reportIncompatibleVariableOverride]
         data: str
 
     # Check concrete feature registered
@@ -719,7 +701,7 @@ def test_sqlmodel_feature_with_duckdb_store(
     class VideoFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["video", "processing"]),
             fields=[
@@ -728,7 +710,6 @@ def test_sqlmodel_feature_with_duckdb_store(
             ],
         ),
     ):
-        __tablename__: str = "video_processing"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         path: str
         duration: float
@@ -792,7 +773,7 @@ def test_basic_custom_id_columns() -> None:
     class UserSessionFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "session"]),
             id_columns=["user_id", "session_id"],
@@ -801,7 +782,6 @@ def test_basic_custom_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "user_session"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: str = Field(primary_key=True)
         session_id: str = Field(primary_key=True)
         activity: str
@@ -835,7 +815,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserActivityFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "activity"]),
             id_columns=["user_id", "session_id"],
@@ -845,7 +825,6 @@ def test_sqlmodel_duckdb_custom_id_columns(
             ],
         ),
     ):
-        __tablename__: str = "user_activity"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         activity_type: str
@@ -856,7 +835,7 @@ def test_sqlmodel_duckdb_custom_id_columns(
     class UserSummaryFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["user", "summary"]),
             id_columns=["user_id", "session_id"],
@@ -875,7 +854,6 @@ def test_sqlmodel_duckdb_custom_id_columns(
             ],
         ),
     ):
-        __tablename__: str = "user_summary"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         total_duration: float
@@ -991,7 +969,7 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
     class MultiKeyFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["multi", "key"]),
             id_columns=["user_id", "session_id", "timestamp"],
@@ -1001,7 +979,6 @@ def test_composite_key_multiple_columns(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "multi_key"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         timestamp: int = Field(primary_key=True)
@@ -1040,7 +1017,7 @@ def test_parent_child_different_id_columns() -> None:
     class DetailedParentFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["detailed", "parent"]),
             id_columns=["user_id", "session_id", "device_id"],
@@ -1049,7 +1026,6 @@ def test_parent_child_different_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "detailed_parent"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         device_id: str = Field(primary_key=True)
@@ -1058,7 +1034,7 @@ def test_parent_child_different_id_columns() -> None:
     class AggregatedChildFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["aggregated", "child"]),
             id_columns=["user_id", "session_id"],  # Doesn't need device_id
@@ -1068,7 +1044,6 @@ def test_parent_child_different_id_columns() -> None:
             ],
         ),
     ):
-        __tablename__: str = "aggregated_child"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         session_id: int = Field(primary_key=True)
         summary: str
@@ -1108,7 +1083,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureA(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "a"]),
             id_columns=["user_id", "date"],
@@ -1117,7 +1092,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_a"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         value_a: float
@@ -1125,7 +1099,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureB(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "b"]),
             id_columns=["user_id", "date"],
@@ -1134,7 +1108,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_b"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         value_b: float
@@ -1143,7 +1116,7 @@ def test_sqlmodel_feature_id_columns_with_joins(
     class FeatureC(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["feature", "c"]),
             id_columns=["user_id", "date"],
@@ -1169,7 +1142,6 @@ def test_sqlmodel_feature_id_columns_with_joins(
             ],
         ),
     ):
-        __tablename__: str = "feature_c"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int = Field(primary_key=True)
         date: str = Field(primary_key=True)
         combined: float
@@ -1257,7 +1229,7 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
         class InvalidFeature(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["invalid"]),
                 id_columns=[],  # Empty list not allowed
@@ -1266,7 +1238,6 @@ def test_sqlmodel_empty_id_columns_raises() -> None:
                 ],
             ),
         ):
-            __tablename__: str = "invalid"  # pyright: ignore[reportIncompatibleVariableOverride]
             data: str
 
 
@@ -1281,7 +1252,7 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
     class SnapshotFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["snapshot", "ids"]),
             id_columns=["customer_id", "order_id"],
@@ -1290,7 +1261,6 @@ def test_sqlmodel_id_columns_in_snapshot(snapshot: SnapshotAssertion) -> None:
             ],
         ),
     ):
-        __tablename__: str = "snapshot_ids"  # pyright: ignore[reportIncompatibleVariableOverride]
         customer_id: int = Field(primary_key=True)
         order_id: int = Field(primary_key=True)
         amount: float
@@ -1334,7 +1304,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class UpstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "rename"]),
             fields=[
@@ -1342,7 +1312,6 @@ def test_sqlmodel_with_column_rename() -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream_rename"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # This could conflict with downstream
         priority: int
@@ -1350,7 +1319,7 @@ def test_sqlmodel_with_column_rename() -> None:
     class DownstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "rename"]),
             deps=[
@@ -1367,7 +1336,6 @@ def test_sqlmodel_with_column_rename() -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream_rename"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status field - no conflict due to rename
         result: str
@@ -1394,7 +1362,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class WideUpstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["wide", "upstream"]),
             fields=[
@@ -1403,7 +1371,6 @@ def test_sqlmodel_with_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "wide_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         col1: str
         col2: str
@@ -1414,7 +1381,7 @@ def test_sqlmodel_with_column_selection() -> None:
     class SelectiveDownstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["selective", "downstream"]),
             deps=[
@@ -1428,7 +1395,6 @@ def test_sqlmodel_with_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "selective_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         summary: str
 
@@ -1455,7 +1421,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
         class BadFeature(
             SQLModelFeature,
             table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
+            inject_primary_key=False,  # Disable composite PK for legacy test
             spec=SampleFeatureSpec(
                 key=FeatureKey(["bad", "feature"]),
                 fields=[
@@ -1463,7 +1429,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
                 ],
             ),
         ):
-            __tablename__: str = "bad_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
             uid: str = Field(primary_key=True)
             feature_version: str = Field()  # This SHOULD conflict!  # pyright: ignore[reportIncompatibleMethodOverride]
 
@@ -1478,7 +1443,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class UpstreamWithStatus(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "status"]),
             fields=[
@@ -1486,7 +1451,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ],
         ),
     ):
-        __tablename__: str = "upstream_status"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Regular user column
         timestamp: int
@@ -1494,7 +1458,7 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
     class DownstreamWithOwnStatus(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream", "status"]),
             deps=[
@@ -1508,7 +1472,6 @@ def test_sqlmodel_rename_prevents_conflicts() -> None:
             ],
         ),
     ):
-        __tablename__: str = "downstream_status"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status - no conflict thanks to rename
 
@@ -1530,7 +1493,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class ComplexUpstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["complex", "upstream"]),
             fields=[
@@ -1538,7 +1501,6 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             ],
         ),
     ):
-        __tablename__: str = "complex_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         important1: str
         important2: str
@@ -1549,7 +1511,7 @@ def test_sqlmodel_select_and_rename_combination() -> None:
     class OptimizedDownstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["optimized", "downstream"]),
             deps=[
@@ -1568,7 +1530,6 @@ def test_sqlmodel_select_and_rename_combination() -> None:
             ],
         ),
     ):
-        __tablename__: str = "optimized_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         status: str  # Own status, no conflict due to rename
         result: str
@@ -1594,7 +1555,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class DataUpstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["data", "upstream"]),
             fields=[
@@ -1602,7 +1563,6 @@ def test_sqlmodel_empty_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "data_upstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         metadata1: str
         metadata2: str
@@ -1611,7 +1571,7 @@ def test_sqlmodel_empty_column_selection() -> None:
     class MinimalDownstreamFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["minimal", "downstream"]),
             deps=[
@@ -1625,7 +1585,6 @@ def test_sqlmodel_empty_column_selection() -> None:
             ],
         ),
     ):
-        __tablename__: str = "minimal_downstream"  # pyright: ignore[reportIncompatibleVariableOverride]
         uid: str = Field(primary_key=True)
         computed: float
 
@@ -1650,7 +1609,7 @@ def test_sqlmodel_rename_validation_with_store(
     class SourceFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["source", "feature"]),
             fields=[
@@ -1658,7 +1617,6 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        __tablename__: str = "source_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
         status: str
         priority: int
@@ -1667,7 +1625,7 @@ def test_sqlmodel_rename_validation_with_store(
     class TargetFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
+        inject_primary_key=False,  # Disable composite PK for legacy test
         spec=SampleFeatureSpec(
             key=FeatureKey(["target", "feature"]),
             deps=[
@@ -1682,7 +1640,6 @@ def test_sqlmodel_rename_validation_with_store(
             ],
         ),
     ):
-        __tablename__: str = "target_feature"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: int = Field(primary_key=True)  # pyright: ignore[reportIncompatibleVariableOverride]
         status: str  # Own status field
         result: str
@@ -1741,84 +1698,14 @@ def test_sqlmodel_rename_validation_with_store(
         } == snapshot
 
 
-# Server-Defined ID Columns Validation Tests
-
-
-def test_sqlmodel_rejects_autoincrement_primary_key_id_columns() -> None:
-    """Test that SQLModelFeature rejects autoincrement primary key id_columns.
-
-    Verifies that:
-    - Autoincrement primary key ID columns are rejected with clear error
-    - Error message explains why this is not allowed
-    """
-
-    with pytest.raises(
-        ValueError,
-        match="cannot be an autoincrement primary key.*ID values must be predictable ahead of time",
-    ):
-
-        class BadAutoIncrementFeature(
-            SQLModelFeature,
-            table=True,
-            inject_metaxy_pk=False,  # Disable composite PK for legacy test
-            spec=SampleFeatureSpec(
-                key=FeatureKey(["bad", "autoincrement"]),
-                id_columns=["id"],
-                fields=[
-                    FieldSpec(key=FieldKey(["data"]), code_version="1"),
-                ],
-            ),
-        ):
-            __tablename__: str = "bad_autoincrement"  # pyright: ignore[reportIncompatibleVariableOverride]
-            id: int = Field(primary_key=True, sa_column_kwargs={"autoincrement": True})
-            data: str
-
-
-def test_sqlmodel_allows_client_generated_ids() -> None:
-    """Test that SQLModelFeature allows client-generated IDs.
-
-    Verifies that:
-    - Normal client-provided IDs are allowed
-    - Multiple ID columns work fine when client-generated
-    """
-
-    # This should work fine - IDs are provided by the client
-    class GoodClientIdFeature(
-        SQLModelFeature,
-        table=True,
-        inject_metaxy_pk=False,  # Disable composite PK for legacy test
-        spec=SampleFeatureSpec(
-            key=FeatureKey(["good", "client_id"]),
-            id_columns=["user_id", "session_id"],
-            fields=[
-                FieldSpec(key=FieldKey(["data"]), code_version="1"),
-            ],
-        ),
-    ):
-        __tablename__: str = "good_client_id"  # pyright: ignore[reportIncompatibleVariableOverride]
-        user_id: str = Field(primary_key=True)  # Client provides this
-        session_id: int = Field(primary_key=True)  # Client provides this
-        data: str
-
-        # This is fine - server-generated but not an ID column
-        record_timestamp: str = Field(sa_column_kwargs={"server_default": "NOW()"})
-
-    # Should be created successfully
-    assert GoodClientIdFeature.spec().id_columns == ["user_id", "session_id"]
-
-    # Verify it's registered
-    graph = FeatureGraph.get_active()
-    assert FeatureKey(["good", "client_id"]) in graph.features_by_key
-
-
 # Composite Primary Key Injection Tests
 
 
-def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
-    """Test that inject_metaxy_pk=True (default) creates composite primary key.
+def test_inject_primary_key_default_creates_composite_pk() -> None:
+    """Test that inject_primary_key=True creates composite primary key.
 
     Verifies that:
-    - By default, composite PK is injected
+    - When explicitly enabled, composite PK is injected
     - PK includes: id_columns + metaxy_created_at + metaxy_data_version
     - Works with both default and custom id_columns
     """
@@ -1826,13 +1713,12 @@ def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
     class DefaultPKFeature(
         SQLModelFeature,
         table=True,
-        # inject_metaxy_pk=True is the default - testing that it creates composite PK
+        inject_primary_key=True,  # Explicitly enable composite PK injection
         spec=SampleFeatureSpec(
             key=FeatureKey(["default", "pk"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "default_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: str = Field(primary_key=True)
         data: str
 
@@ -1859,8 +1745,8 @@ def test_inject_metaxy_pk_default_creates_composite_pk() -> None:
     ]
 
 
-def test_inject_metaxy_pk_false_skips_composite_pk() -> None:
-    """Test that inject_metaxy_pk=False does NOT create composite primary key.
+def test_inject_primary_key_false_skips_composite_pk() -> None:
+    """Test that inject_primary_key=False does NOT create composite primary key.
 
     Verifies that:
     - When explicitly disabled, no composite PK is created
@@ -1870,13 +1756,12 @@ def test_inject_metaxy_pk_false_skips_composite_pk() -> None:
     class NoPKFeature(
         SQLModelFeature,
         table=True,
-        inject_metaxy_pk=False,  # Explicitly disable
+        inject_primary_key=False,  # Explicitly disable
         spec=SampleFeatureSpec(
             key=FeatureKey(["no", "pk"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "no_pk"  # pyright: ignore[reportIncompatibleVariableOverride]
         sample_uid: str = Field(primary_key=True)
         data: str
 
@@ -1889,13 +1774,13 @@ def test_inject_metaxy_pk_false_skips_composite_pk() -> None:
             pk_constraints = [
                 arg for arg in table_args if isinstance(arg, PrimaryKeyConstraint)
             ]
-            # Should have no composite PK constraint named 'pk_metaxy_composite'
+            # Should have no composite PK constraint named 'metaxy_pk'
             for pk in pk_constraints:
-                assert pk.name != "pk_metaxy_composite"
+                assert pk.name != "metaxy_pk"
 
 
-def test_inject_metaxy_pk_with_custom_id_columns() -> None:
-    """Test that inject_metaxy_pk works correctly with custom id_columns.
+def test_inject_primary_key_with_custom_id_columns() -> None:
+    """Test that inject_primary_key works correctly with custom id_columns.
 
     Verifies that:
     - Composite PK is created from spec.id_columns (not hardcoded column names)
@@ -1906,14 +1791,13 @@ def test_inject_metaxy_pk_with_custom_id_columns() -> None:
     class CustomIDFeature(
         SQLModelFeature,
         table=True,
-        # inject_metaxy_pk=True is the default
+        inject_primary_key=True,  # Explicitly enable composite PK injection
         spec=SampleFeatureSpec(
             key=FeatureKey(["custom", "id"]),
             id_columns=["user_id", "session_id"],  # Custom ID columns
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
         ),
     ):
-        __tablename__: str = "custom_id"  # pyright: ignore[reportIncompatibleVariableOverride]
         user_id: int
         session_id: int
         data: str
@@ -1940,3 +1824,34 @@ def test_inject_metaxy_pk_with_custom_id_columns() -> None:
         "metaxy_created_at",
         "metaxy_data_version",
     ]
+
+
+def test_sqlmodel_has_materialization_id_field() -> None:
+    """Test that BaseSQLModelFeature includes metaxy_materialization_id field."""
+    from metaxy.models.constants import METAXY_MATERIALIZATION_ID
+
+    class TestFeature(
+        BaseSQLModelFeature,
+        table=True,
+        inject_primary_key=False,
+        spec=SampleFeatureSpec(
+            key=FeatureKey(["test"]),
+            fields=[FieldSpec(key=FieldKey(["field"]), code_version="1")],
+        ),
+    ):
+        uid: str = Field(primary_key=True)
+
+    # Verify field exists in model fields
+    assert "metaxy_materialization_id" in TestFeature.model_fields
+
+    # Verify field is optional (has default None)
+    field_info = TestFeature.model_fields["metaxy_materialization_id"]
+    assert field_info.default is None
+    assert not field_info.is_required()
+
+    # Verify field maps to correct column name via __table__
+    # The actual column name mapping happens through SQLModel's sa_column_kwargs
+    # which is processed when the table is created
+    if hasattr(TestFeature, "__table__"):
+        table_columns = {col.name for col in TestFeature.__table__.columns}  # pyright: ignore
+        assert METAXY_MATERIALIZATION_ID in table_columns

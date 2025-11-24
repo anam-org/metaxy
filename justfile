@@ -22,6 +22,9 @@ new-worktree branch:
     gt track {{branch}}
 
 
+claude:
+    claude --dangerously-skip-permissions --verbose
+
 # Resolve GitHub issue with Claude in an independent git worktree
 claude-resolve number prompt="":
     #!/usr/bin/env bash
@@ -54,7 +57,7 @@ docs-build:
     uv run --group docs mkdocs build --clean --strict
 
 docs-serve:
-    uv run --group docs mkdocs serve --livereload
+    uv run --group docs mkdocs serve --clean --livereload
 
 docs-publish version:
     git branch -D gh-pages

@@ -12,8 +12,9 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldDep, FieldSpec
 from metaxy.models.types import FeatureKey, FieldKey
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -24,7 +25,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
     """Test that FeatureDep renames are correctly applied."""
 
     class UpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[
@@ -35,7 +36,7 @@ def test_feature_dep_renames(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class DownstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
@@ -127,7 +128,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
     """Test that FeatureDep column selection works correctly."""
 
     class UpstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream"]),
             fields=[
@@ -140,7 +141,7 @@ def test_feature_dep_column_selection(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class DownstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
@@ -232,7 +233,7 @@ def test_multi_upstream_join_on_common_id_columns(
     """Test that multiple upstreams are joined on common ID columns."""
 
     class UpstreamA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_a"]),
             fields=[FieldSpec(key=FieldKey(["data_a"]), code_version="1")],
@@ -241,7 +242,7 @@ def test_multi_upstream_join_on_common_id_columns(
         pass
 
     class UpstreamB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_b"]),
             fields=[FieldSpec(key=FieldKey(["data_b"]), code_version="1")],
@@ -250,7 +251,7 @@ def test_multi_upstream_join_on_common_id_columns(
         pass
 
     class DownstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
@@ -355,7 +356,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
     """Test that filters are applied to upstream before joining."""
 
     class UpstreamA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_a"]),
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -364,7 +365,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class UpstreamB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_b"]),
             fields=[FieldSpec(key=FieldKey(["value"]), code_version="1")],
@@ -373,7 +374,7 @@ def test_filters_applied_before_join(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class DownstreamFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[
@@ -481,7 +482,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Level 0: Root features (separate features to avoid collisions)
     class RawA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["raw_a"]),
             fields=[
@@ -492,7 +493,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class RawB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["raw_b"]),
             fields=[
@@ -504,7 +505,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Level 1: Process raw data
     class ProcessedA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["processed_a"]),
             deps=[FeatureDep(feature=FeatureKey(["raw_a"]))],
@@ -525,7 +526,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
         pass
 
     class ProcessedB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["processed_b"]),
             deps=[FeatureDep(feature=FeatureKey(["raw_b"]))],
@@ -547,7 +548,7 @@ def test_complex_dependency_graph(graph: FeatureGraph, snapshot) -> None:
 
     # Level 2: Combine processed data
     class FinalAnalysis(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["analysis"]),
             deps=[
@@ -668,7 +669,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
     """Test that validation catches colliding column names after renames."""
 
     class UpstreamA(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_a"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -677,7 +678,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         pass
 
     class UpstreamB(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream_b"]),
             fields=[FieldSpec(key=FieldKey(["data"]), code_version="1")],
@@ -686,7 +687,7 @@ def test_validate_no_colliding_columns(graph: FeatureGraph) -> None:
         pass
 
     class BadDownstream(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["bad_downstream"]),
             deps=[
@@ -747,7 +748,7 @@ def test_feature_graph_integration_with_provenance_by_field(
     # class method that returns the expected field provenance structure
 
     class MyFeature(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["my_feature"]),
             fields=[

@@ -4,15 +4,9 @@
 
 import pytest
 
-from metaxy import (
-    FeatureDep,
-    FeatureKey,
-    FieldDep,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import FeatureDep, FeatureKey, FieldDep, FieldKey, FieldSpec
 from metaxy._testing import TempFeatureModule
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.models.feature import FeatureGraph
 
 

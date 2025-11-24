@@ -39,7 +39,7 @@
       }),
     }),
     'metaxy_feature_spec_version': 'ffac5337d8ef946b5ebc04f54629037e5c7fc1affa56b9de24be7861bb70aa4a',
-    'metaxy_feature_tracking_version': 'e94e07a211ecbb8852ad5b50eeff420370af84fc24ec39c511b2ca32ac9c6bb7',
+    'metaxy_full_definition_version': 'e94e07a211ecbb8852ad5b50eeff420370af84fc24ec39c511b2ca32ac9c6bb7',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
     'project': 'test',
   })

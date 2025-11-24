@@ -30,8 +30,15 @@ METAXY_SNAPSHOT_VERSION = f"{SYSTEM_COLUMN_PREFIX}snapshot_version"
 METAXY_FEATURE_SPEC_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_spec_version"
 """Hash of the complete feature specification (used for migration detection)."""
 
-METAXY_FEATURE_TRACKING_VERSION = f"{SYSTEM_COLUMN_PREFIX}feature_tracking_version"
-"""Hash of feature dependencies and ID columns (tracks structural changes)."""
+METAXY_FULL_DEFINITION_VERSION = f"{SYSTEM_COLUMN_PREFIX}full_definition_version"
+"""Hash of the complete feature definition including Pydantic schema, feature spec, and project.
+
+This comprehensive hash captures ALL aspects of a feature definition:
+- Pydantic model schema (field types, descriptions, validators, serializers, etc.)
+- Feature specification (dependencies, fields, code_versions, metadata)
+- Project name
+
+Used in system tables to detect when ANY part of a feature changes."""
 
 METAXY_DATA_VERSION_BY_FIELD = f"{SYSTEM_COLUMN_PREFIX}data_version_by_field"
 """Field-level data version hashes (struct column mapping field names to version hashes).
@@ -45,6 +52,9 @@ METAXY_DATA_VERSION = f"{SYSTEM_COLUMN_PREFIX}data_version"
 METAXY_CREATED_AT = f"{SYSTEM_COLUMN_PREFIX}created_at"
 """Timestamp when the metadata row was created."""
 
+METAXY_MATERIALIZATION_ID = f"{SYSTEM_COLUMN_PREFIX}materialization_id"
+"""External orchestration run ID (e.g., Dagster Run ID, Airflow Run ID) for tracking pipeline executions."""
+
 # --- System Column Sets ------------------------------------------------------------
 
 ALL_SYSTEM_COLUMNS = frozenset(
@@ -56,6 +66,7 @@ ALL_SYSTEM_COLUMNS = frozenset(
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
         METAXY_CREATED_AT,
+        METAXY_MATERIALIZATION_ID,
     }
 )
 """All Metaxy-managed column names that are injected into feature tables."""
@@ -68,6 +79,7 @@ _DROPPABLE_COLUMNS = frozenset(
         METAXY_CREATED_AT,
         METAXY_DATA_VERSION_BY_FIELD,
         METAXY_DATA_VERSION,
+        METAXY_MATERIALIZATION_ID,
     }
 )
 

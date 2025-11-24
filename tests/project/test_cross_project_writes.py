@@ -10,7 +10,8 @@ import polars as pl
 import pytest
 from syrupy.assertion import SnapshotAssertion
 
-from metaxy import Feature, FeatureKey, FieldKey, FieldSpec, SampleFeatureSpec
+from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import InMemoryMetadataStore
 from metaxy.models.feature import FeatureGraph
@@ -24,7 +25,7 @@ def test_write_to_same_project_succeeds(snapshot: SnapshotAssertion) -> None:
     try:
 
         class TestFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "feature"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -67,7 +68,7 @@ def test_write_to_different_project_fails() -> None:
     MetaxyConfig.set(config_a)
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -113,7 +114,7 @@ def test_allow_cross_project_writes_context_manager() -> None:
     MetaxyConfig.set(config_a)
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -191,7 +192,7 @@ def test_write_multiple_features_same_project() -> None:
     try:
 
         class Feature1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature1"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -200,7 +201,7 @@ def test_write_multiple_features_same_project() -> None:
             pass
 
         class Feature2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature2"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -265,7 +266,7 @@ def test_cross_project_write_during_migration() -> None:
         MetaxyConfig.set(config_a)
 
         class FeatureA(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_a"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -277,7 +278,7 @@ def test_cross_project_write_during_migration() -> None:
         MetaxyConfig.set(config_b)
 
         class FeatureB(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["feature_b"]),
                 fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -346,7 +347,7 @@ def test_project_validation_with_feature_key() -> None:
 
     # Use the active graph so the feature is registered globally
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
@@ -390,7 +391,7 @@ def test_nested_cross_project_writes_context_managers() -> None:
     MetaxyConfig.set(config_a)
 
     class FeatureA(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "feature"]),
             fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],

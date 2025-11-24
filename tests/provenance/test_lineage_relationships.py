@@ -12,8 +12,9 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy.models.feature import FeatureGraph, TestingFeature
-from metaxy.models.feature_spec import FeatureDep, SampleFeatureSpec
+from metaxy._testing.models import SampleFeature, SampleFeatureSpec
+from metaxy.models.feature import FeatureGraph
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.field import FieldSpec, SpecialFieldDep
 from metaxy.models.lineage import LineageRelationship
 from metaxy.models.types import FeatureKey, FieldKey
@@ -26,7 +27,7 @@ from metaxy.versioning.types import HashAlgorithm
 
 
 @pytest.fixture
-def aggregation_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
+def aggregation_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
     """Create features for testing N:1 aggregation relationships.
 
     Scenario: Sensor readings (many per hour) → hourly statistics (one per hour)
@@ -35,7 +36,7 @@ def aggregation_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]
     """
 
     class SensorReadings(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["sensor_readings"]),
             id_columns=("sensor_id", "timestamp", "reading_id"),
@@ -48,7 +49,7 @@ def aggregation_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]
         pass
 
     class HourlyStats(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["hourly_stats"]),
             id_columns=("sensor_id", "hour"),
@@ -133,7 +134,7 @@ def sensor_readings_metadata() -> nw.LazyFrame[pl.LazyFrame]:
 
 
 @pytest.fixture
-def expansion_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
+def expansion_features(graph: FeatureGraph) -> dict[str, type[SampleFeature]]:
     """Create features for testing 1:N expansion relationships.
 
     Scenario: Video → video frames (one video expands to many frames)
@@ -142,7 +143,7 @@ def expansion_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
     """
 
     class Video(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["video"]),
             id_columns=("video_id",),
@@ -155,7 +156,7 @@ def expansion_features(graph: FeatureGraph) -> dict[str, type[TestingFeature]]:
         pass
 
     class VideoFrames(
-        TestingFeature,
+        SampleFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["video_frames"]),
             id_columns=("video_id", "frame_id"),
@@ -239,7 +240,7 @@ def video_frames_current() -> nw.LazyFrame[pl.LazyFrame]:
 
 
 def test_identity_lineage_load_upstream(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -283,7 +284,7 @@ def test_identity_lineage_load_upstream(
 
 
 def test_identity_lineage_resolve_increment(
-    simple_features: dict[str, type[TestingFeature]],
+    simple_features: dict[str, type[SampleFeature]],
     upstream_video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -353,7 +354,7 @@ def test_identity_lineage_resolve_increment(
 
 
 def test_aggregation_lineage_load_upstream(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -406,7 +407,7 @@ def test_aggregation_lineage_load_upstream(
 
 
 def test_aggregation_lineage_resolve_increment_no_current(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -454,7 +455,7 @@ def test_aggregation_lineage_resolve_increment_no_current(
 
 
 def test_aggregation_lineage_resolve_increment_with_changes(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     sensor_readings_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -528,7 +529,7 @@ def test_aggregation_lineage_resolve_increment_with_changes(
 
 
 def test_aggregation_lineage_new_readings_trigger_change(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
     """Test that adding new readings to an hour marks that hourly stat as changed.
@@ -657,7 +658,7 @@ def test_aggregation_lineage_new_readings_trigger_change(
 
 
 def test_expansion_lineage_load_upstream(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -701,7 +702,7 @@ def test_expansion_lineage_load_upstream(
 
 
 def test_expansion_lineage_resolve_increment_no_current(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     video_metadata: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
     snapshot,
@@ -745,7 +746,7 @@ def test_expansion_lineage_resolve_increment_no_current(
 
 
 def test_expansion_lineage_resolve_increment_video_changed(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     video_metadata: nw.LazyFrame[pl.LazyFrame],
     video_frames_current: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
@@ -819,7 +820,7 @@ def test_expansion_lineage_resolve_increment_video_changed(
 
 
 def test_expansion_lineage_new_video_added(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     video_frames_current: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -879,7 +880,7 @@ def test_expansion_lineage_new_video_added(
 
 
 def test_expansion_lineage_video_removed(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     video_frames_current: nw.LazyFrame[pl.LazyFrame],
     graph: FeatureGraph,
 ) -> None:
@@ -935,7 +936,7 @@ def test_expansion_lineage_video_removed(
 
 
 def test_aggregation_lineage_upstream_data_version_change_triggers_update(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
     """Test N:1 aggregation detects upstream data_version changes.
@@ -1060,7 +1061,7 @@ def test_aggregation_lineage_upstream_data_version_change_triggers_update(
 
 
 def test_expansion_lineage_upstream_data_version_change_triggers_update(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
     """Test 1:N expansion detects upstream data_version changes.
@@ -1175,7 +1176,7 @@ def test_expansion_lineage_upstream_data_version_change_triggers_update(
 
 
 def test_aggregation_lineage_data_version_vs_provenance_independent(
-    aggregation_features: dict[str, type[TestingFeature]],
+    aggregation_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
     """Test N:1 aggregation: data_version and provenance can change independently.
@@ -1313,7 +1314,7 @@ def test_aggregation_lineage_data_version_vs_provenance_independent(
 
 
 def test_expansion_lineage_data_version_vs_provenance_independent(
-    expansion_features: dict[str, type[TestingFeature]],
+    expansion_features: dict[str, type[SampleFeature]],
     graph: FeatureGraph,
 ) -> None:
     """Test 1:N expansion: data_version and provenance can change independently.

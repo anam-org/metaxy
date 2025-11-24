@@ -6,13 +6,8 @@ import narwhals as nw
 import polars as pl
 import pytest
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureGraph,
-    FeatureKey,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureGraph, FeatureKey
+from metaxy._testing.models import SampleFeatureSpec
 from metaxy.metadata_store.system import SystemTableStorage
 from metaxy.models.plan import FeaturePlan
 from metaxy.versioning.polars import PolarsVersioningEngine
@@ -87,7 +82,7 @@ class TestColumnSelection:
 
         # Create upstream feature with custom columns
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -96,7 +91,7 @@ class TestColumnSelection:
 
         # Create downstream feature with default column handling
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[FeatureDep(feature=FeatureKey(["test", "upstream"]))],
@@ -144,7 +139,7 @@ class TestColumnSelection:
         """Test selecting specific columns from upstream."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -153,7 +148,7 @@ class TestColumnSelection:
 
         # Select only custom_col1
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -204,7 +199,7 @@ class TestColumnSelection:
         """Test that empty tuple keeps only system columns."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -213,7 +208,7 @@ class TestColumnSelection:
 
         # Empty tuple - keep only system columns
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -268,7 +263,7 @@ class TestColumnSelection:
         """Test renaming columns to avoid conflicts."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -277,7 +272,7 @@ class TestColumnSelection:
 
         # Rename columns
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -333,7 +328,7 @@ class TestColumnSelection:
         """Test combining column selection with renaming."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -342,7 +337,7 @@ class TestColumnSelection:
 
         # Select and rename
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -393,7 +388,7 @@ class TestColumnSelection:
         """Test that column conflicts are detected and raise errors."""
 
         class Upstream1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
@@ -401,7 +396,7 @@ class TestColumnSelection:
             pass
 
         class Upstream2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
@@ -410,7 +405,7 @@ class TestColumnSelection:
 
         # Both upstreams have 'conflict_col' without renaming
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -471,7 +466,7 @@ class TestColumnSelection:
         """Test that column conflicts can be resolved with renaming."""
 
         class Upstream1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
@@ -479,7 +474,7 @@ class TestColumnSelection:
             pass
 
         class Upstream2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
@@ -488,7 +483,7 @@ class TestColumnSelection:
 
         # Rename conflicting columns
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -558,7 +553,7 @@ class TestColumnSelection:
         """Test that essential system columns (sample_uid, provenance_by_field) are always preserved."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -567,7 +562,7 @@ class TestColumnSelection:
 
         # Select only a custom column, but system columns should be preserved
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -624,7 +619,7 @@ class TestColumnSelection:
 
         # Create upstream feature first
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -638,7 +633,7 @@ class TestColumnSelection:
         ):
 
             class BadFeature1(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad1"]),
                     deps=[
@@ -660,7 +655,7 @@ class TestColumnSelection:
         ):
 
             class BadFeature2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad2"]),
                     deps=[
@@ -680,7 +675,7 @@ class TestColumnSelection:
         ):
 
             class BadFeature3(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad3"]),
                     deps=[
@@ -700,7 +695,7 @@ class TestColumnSelection:
 
         # Create upstream with custom ID columns (not sample_uid)
         class UpstreamWithCustomIDs(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=[
@@ -713,7 +708,7 @@ class TestColumnSelection:
 
         # Renaming to sample_uid should be allowed now since it's not an ID column
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -742,7 +737,7 @@ class TestColumnSelection:
 
         # Create upstream with custom ID columns
         class UpstreamWithCustomIDs(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=["user_id", "session_id"],
@@ -752,7 +747,7 @@ class TestColumnSelection:
 
         # Renaming to a name that is NOT an ID column or system column is allowed
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -827,7 +822,7 @@ class TestColumnSelection:
         """Test complex scenario with multiple upstream features."""
 
         class Upstream1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
@@ -835,7 +830,7 @@ class TestColumnSelection:
             pass
 
         class Upstream2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
@@ -843,7 +838,7 @@ class TestColumnSelection:
             pass
 
         class Upstream3(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream3"]),
             ),
@@ -852,7 +847,7 @@ class TestColumnSelection:
 
         # Complex downstream with different operations for each upstream
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -965,7 +960,7 @@ class TestColumnSelection:
         """Test overriding load_input with custom filtering logic."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -974,7 +969,7 @@ class TestColumnSelection:
 
         # Override load_input to add custom filtering
         class CustomFilterFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "custom_filter"]),
                 deps=[
@@ -1063,11 +1058,11 @@ class TestColumnSelection:
         import json
 
         from metaxy.metadata_store import InMemoryMetadataStore
-        from metaxy.metadata_store.base import FEATURE_VERSIONS_KEY
+        from metaxy.metadata_store.system import FEATURE_VERSIONS_KEY
 
         # Create features with columns and rename specified
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -1075,7 +1070,7 @@ class TestColumnSelection:
             pass
 
         class DownstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "downstream"]),
                 deps=[
@@ -1092,9 +1087,7 @@ class TestColumnSelection:
         # Create store and push snapshot
         store = InMemoryMetadataStore()
         with store:
-            result = SystemTableStorage(store).push_graph_snapshot()
-
-            _ = result.already_recorded
+            _ = SystemTableStorage(store).push_graph_snapshot()
 
             # Read the snapshot from feature_versions table
             versions = (
@@ -1150,7 +1143,7 @@ class TestColumnSelection:
 
         # Create upstream feature first
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
             ),
@@ -1161,7 +1154,7 @@ class TestColumnSelection:
         with pytest.raises(ValueError, match="Duplicate column names after renaming"):
 
             class BadFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad"]),
                     deps=[
@@ -1182,7 +1175,7 @@ class TestColumnSelection:
 
         # Create two upstream features
         class Upstream1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
@@ -1190,7 +1183,7 @@ class TestColumnSelection:
             pass
 
         class Upstream2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
@@ -1202,7 +1195,7 @@ class TestColumnSelection:
         with pytest.raises(ValueError, match="would have duplicate column names"):
 
             class BadDownstreamFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad_downstream"]),
                     deps=[
@@ -1226,7 +1219,7 @@ class TestColumnSelection:
 
         # Create two upstream features
         class Upstream1(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream1"]),
             ),
@@ -1234,7 +1227,7 @@ class TestColumnSelection:
             pass
 
         class Upstream2(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream2"]),
             ),
@@ -1245,7 +1238,7 @@ class TestColumnSelection:
         with pytest.raises(ValueError, match="would have duplicate column names"):
 
             class BadDownstreamFeature(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad_downstream"]),
                     deps=[
@@ -1270,7 +1263,7 @@ class TestColumnSelection:
 
         # Create upstream with custom ID columns
         class UpstreamWithCustomIDs(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 id_columns=["user_id", "session_id"],
@@ -1284,7 +1277,7 @@ class TestColumnSelection:
         ):
 
             class BadFeature1(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad1"]),
                     deps=[
@@ -1306,7 +1299,7 @@ class TestColumnSelection:
         ):
 
             class BadFeature2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "bad2"]),
                     deps=[
@@ -1326,7 +1319,7 @@ class TestColumnSelection:
         """Test that renaming to system columns and ID columns is forbidden."""
 
         class UpstreamFeature(
-            Feature,
+            BaseFeature,
             spec=SampleFeatureSpec(
                 key=FeatureKey(["test", "upstream"]),
                 # Default ID columns: ["sample_uid"]
@@ -1341,7 +1334,7 @@ class TestColumnSelection:
         ):
 
             class DownstreamFeature1(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "downstream1"]),
                     deps=[
@@ -1362,7 +1355,7 @@ class TestColumnSelection:
         ):
 
             class DownstreamFeature2(
-                Feature,
+                BaseFeature,
                 spec=SampleFeatureSpec(
                     key=FeatureKey(["test", "downstream2"]),
                     deps=[

@@ -16,6 +16,12 @@
 # name: test_feature_spec_version_stored_in_snapshot
   dict({
     'feature_class_path': 'test_spec_version.SnapshotFeature',
+    'feature_schema': dict({
+      'properties': dict({
+      }),
+      'title': 'SnapshotFeature',
+      'type': 'object',
+    }),
     'feature_spec': dict({
       'deps': list([
       ]),
@@ -45,8 +51,8 @@
       }),
     }),
     'metaxy_feature_spec_version': 'cc4b71667ebc22d4c7c90991c87fc89547645468b911e85a0f818d634b5c5303',
-    'metaxy_feature_tracking_version': 'ee1b86858b228d4b2c24968d5be349eba7d4baaedcb9737bd15f1909f124089e',
     'metaxy_feature_version': '7cfde77960e3cf10327e9cb97f311418b101fc5ee2c146922a997306e318edaf',
+    'metaxy_full_definition_version': '8700f186256ee7981173b22c778e858487d775509b8cad74bb038e2fea858cfa',
     'project': 'test',
   })
 # ---

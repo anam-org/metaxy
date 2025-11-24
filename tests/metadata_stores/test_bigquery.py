@@ -15,7 +15,7 @@ try:
 except ImportError:
     pytest.skip("BigQueryMetadataStore not available", allow_module_level=True)
 
-from metaxy.models.feature import TestingFeature
+from metaxy._testing.models import SampleFeature
 from metaxy.versioning.types import HashAlgorithm
 
 
@@ -260,7 +260,7 @@ def test_bigquery_config_with_fallback_stores():
 
 @pytest.mark.integration
 def test_bigquery_table_operations(
-    mock_bigquery_connection, test_graph, test_features: dict[str, type[TestingFeature]]
+    mock_bigquery_connection, test_graph, test_features: dict[str, type[SampleFeature]]
 ):
     """Test BigQuery table operations with mocked connection.
 

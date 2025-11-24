@@ -1,13 +1,7 @@
 """Tests comparing feature_spec_version and feature_version behavior."""
 
-from metaxy import (
-    Feature,
-    FeatureDep,
-    FeatureKey,
-    FieldKey,
-    FieldSpec,
-    SampleFeatureSpec,
-)
+from metaxy import BaseFeature, FeatureDep, FeatureKey, FieldKey, FieldSpec
+from metaxy._testing.models import SampleFeatureSpec
 
 
 def test_feature_spec_version_vs_feature_version() -> None:
@@ -18,7 +12,7 @@ def test_feature_spec_version_vs_feature_version() -> None:
     """
 
     class TestFeature(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["test", "comparison"]),
             fields=[
@@ -86,7 +80,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     # Create upstream features
     class Upstream1(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "one"]),
             fields=[
@@ -97,7 +91,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
         pass
 
     class Upstream2(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["upstream", "two"]),
             fields=[
@@ -109,7 +103,7 @@ def test_feature_spec_version_with_complex_dependencies() -> None:
 
     # Create downstream with complex deps
     class Downstream(
-        Feature,
+        BaseFeature,
         spec=SampleFeatureSpec(
             key=FeatureKey(["downstream"]),
             deps=[

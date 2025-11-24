@@ -43,6 +43,10 @@ clickhouse = [
 ]
 duckdb = [
   "ibis-framework[duckdb]>=11.0.0",
+  "duckdb>=1.4.1",
+]
+delta = [
+  "deltalake>=1.2.1",
 ]
 
 [project.scripts]
@@ -57,6 +61,7 @@ build-backend = "uv_build"
 dev = [
   "examples",
   "ipython>=8.37.0",
+  "boto3>=1.35.0",
   "duckdb>=1.4.1",
   "pytest>=8.4.2",
   "pytest-cases>=3.9.1",
@@ -71,6 +76,9 @@ dev = [
   "pytest-cov>=7.0.0",
   "hypothesis>=6.142.4",
   "dprint-py>=0.50.2.0",
+  "moto[s3,server]>=5.1.16",
+  "deltalake>=1.2.1",
+  "mistune>=3.1.4",
 ]
 
 examples = [
@@ -178,4 +186,13 @@ env = [
 filterwarnings = [
   "ignore:AUTO_CREATE_TABLES is enabled:UserWarning",
   "ignore:Global Metaxy configuration not initialized:UserWarning",
+  "ignore::hypothesis.errors.NonInteractiveExampleWarning",
+]
+markers = [
+  "inmemory: InMemory store tests",
+  "duckdb: DuckDB store tests",
+  "clickhouse: ClickHouse store tests",
+  "ibis: Ibis-based store tests (DuckDB, ClickHouse)",
+  "native: Stores with native compute capabilities",
+  "polars: Stores using Polars for compute",
 ]
