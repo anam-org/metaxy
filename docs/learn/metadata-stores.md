@@ -24,6 +24,10 @@ All 3 cases cannot be accidental and require preconfigured settings or explicit 
 
 Metaxy provides ready `MetadataStore` [implementations](../integrations/metadata-stores] for popular databases and storage systems.
 
+!!! warning
+
+    Metaxy does not handle infrastructure setup. Make sure to have large tables partitioned as appropriate for your use case.
+
 ## Configuration
 
 Learn about configuring metadata stores [here](../reference/configuration.md/#stores)
