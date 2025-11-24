@@ -20,5 +20,10 @@ class SQLModelPluginConfig(PluginConfig):
 
     inject_primary_key: bool = PydanticField(
         default=False,
-        description="Automatically inject composite primary key constraints on SQLModel tables",
+        description="Automatically inject composite primary key constraints on SQLModel tables. The key is composed of ID columns, `metaxy_created_at`, and `metaxy_data_version`.",
+    )
+
+    inject_index: bool = PydanticField(
+        default=False,
+        description="Automatically inject composite index on SQLModel tables. The index covers ID columns, `metaxy_created_at`, and `metaxy_data_version`.",
     )

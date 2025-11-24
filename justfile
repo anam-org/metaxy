@@ -22,6 +22,9 @@ new-worktree branch:
     gt track {{branch}}
 
 
+claude:
+    claude --dangerously-skip-permissions --verbose
+
 # Resolve GitHub issue with Claude in an independent git worktree
 claude-resolve number prompt="":
     #!/usr/bin/env bash

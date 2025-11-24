@@ -192,8 +192,10 @@ def test_get_metaxy_system_metadata():
 
 def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
     """Test that user features are filtered by project."""
+    from sqlmodel import SQLModel
+
     store = config_project_a.get_store()
-    url, metadata = filter_feature_sqla_metadata(store)
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
 
     # Should only contain project_a features
     assert "project_a__feature" in metadata.tables
@@ -202,8 +204,10 @@ def test_get_features_sqlalchemy_metadata_filtered_by_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
     """Test filtering for a different project."""
+    from sqlmodel import SQLModel
+
     store = config_project_b.get_store()
-    url, metadata = filter_feature_sqla_metadata(store)
+    url, metadata = filter_feature_sqla_metadata(store, SQLModel.metadata)
 
     # Should only contain project_b features
     assert "project_b__feature" in metadata.tables
@@ -212,9 +216,13 @@ def test_get_features_sqlalchemy_metadata_different_project(config_project_b):
 
 def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
     """Test explicit project parameter."""
+    from sqlmodel import SQLModel
+
     # Get metadata for project_b even though current project is project_a
     store = config_project_a.get_store()
-    url, metadata = filter_feature_sqla_metadata(store, project="project_b")
+    url, metadata = filter_feature_sqla_metadata(
+        store, SQLModel.metadata, project="project_b"
+    )
 
     assert "project_b__feature" in metadata.tables
     assert "project_a__feature" not in metadata.tables
@@ -222,8 +230,12 @@ def test_get_features_sqlalchemy_metadata_explicit_project(config_project_a):
 
 def test_get_features_sqlalchemy_metadata_no_filter(config_no_filter):
     """Test that filtering can be disabled."""
+    from sqlmodel import SQLModel
+
     store = config_no_filter.get_store()
-    url, metadata = filter_feature_sqla_metadata(store, filter_by_project=False)
+    url, metadata = filter_feature_sqla_metadata(
+        store, SQLModel.metadata, filter_by_project=False
+    )
 
     # Should contain all features when filtering is disabled
     assert "project_a__feature" in metadata.tables

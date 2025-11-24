@@ -1,6 +1,28 @@
 # Metaxy Integrations
 
-## Databases & ORMs
+## Metadata Stores
+
+Learn more about metadata stores [here](../learn/metadata-stores.md).
+
+<div class="grid cards" markdown>
+
+<!-- dprint-ignore-start -->
+-   :custom-deltalake:{ .lg .middle } __Delta Lake__
+
+    ---
+
+    :material-tag-outline: Storage Only
+
+    Store metadata in Delta Lake format with support for local filesystem and remote object stores (S3, Azure, GCS).
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/storage/delta.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/delta.md)
+<!-- dprint-ignore-end -->
+
+</div>
+
+## Plugins
 
 <div class="grid cards" markdown>
 
@@ -8,6 +30,8 @@
 -   :custom-sqlalchemy:{ .lg .middle } __SQLAlchemy__
 
     ---
+
+    :material-tag-outline: ORM • Database
 
     Retrieve SQLAlchemy URLs and `MetaData` for the current Metaxy project from Metaxy `MetadataStore` objects.
 
@@ -18,6 +42,8 @@
 -   :custom-sqlmodel:{ .lg .middle } __SQLModel__
 
     ---
+
+    :material-tag-outline: ORM • Database
 
     Adds `SQLModel` capabilities to `metaxy.BaseFeature` class.
 
