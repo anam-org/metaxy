@@ -13,11 +13,15 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/integrations/sqlalchemy/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/integrations/sqlmodel/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlalchemy/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
@@ -57,7 +61,7 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
-         <loc>https://anam-org.github.io/metaxy/main/learn/metadata-stores/deltalake/</loc>
+         <loc>https://anam-org.github.io/metaxy/main/overview/quickstart/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
