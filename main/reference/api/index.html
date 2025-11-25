@@ -2970,7 +2970,12 @@
 )
           –
           <div class="doc-md-description">
-            <p>Path to the configuration file. Defaults to None.</p>
+            <p>Path to the configuration file.</p>
+<p>Will be auto-discovered in current or parent directories if not provided.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p><code>METAXY_CONFIG</code> environment variable can be used to set this parameter</p>
+</div>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -3008,18 +3013,24 @@
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><a href="#__codelineno-0-70"><span class="linenos" data-linenos="70 "></span></a><span class="sd">    Features are [discovered](../../learn/feature-discovery.md) from installed Python packages metadata.</span>
 </span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><a href="#__codelineno-0-71"><span class="linenos" data-linenos="71 "></span></a>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><a href="#__codelineno-0-72"><span class="linenos" data-linenos="72 "></span></a><span class="sd">    Args:</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><a href="#__codelineno-0-73"><span class="linenos" data-linenos="73 "></span></a><span class="sd">        config_file (Path | None, optional): Path to the configuration file. Defaults to None.</span>
-</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><a href="#__codelineno-0-74"><span class="linenos" data-linenos="74 "></span></a><span class="sd">        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><a href="#__codelineno-0-75"><span class="linenos" data-linenos="75 "></span></a>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><a href="#__codelineno-0-76"><span class="linenos" data-linenos="76 "></span></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><a href="#__codelineno-0-77"><span class="linenos" data-linenos="77 "></span></a><span class="sd">        MetaxyConfig: The initialized Metaxy configuration.</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><a href="#__codelineno-0-78"><span class="linenos" data-linenos="78 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><a href="#__codelineno-0-79"><span class="linenos" data-linenos="79 "></span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><a href="#__codelineno-0-80"><span class="linenos" data-linenos="80 "></span></a>        <span class="n">config_file</span><span class="o">=</span><span class="n">config_file</span><span class="p">,</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><a href="#__codelineno-0-81"><span class="linenos" data-linenos="81 "></span></a>        <span class="n">search_parents</span><span class="o">=</span><span class="n">search_parents</span><span class="p">,</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><a href="#__codelineno-0-82"><span class="linenos" data-linenos="82 "></span></a>    <span class="p">)</span>
-</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><a href="#__codelineno-0-83"><span class="linenos" data-linenos="83 "></span></a>    <span class="n">load_features</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">entrypoints</span><span class="p">)</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><a href="#__codelineno-0-84"><span class="linenos" data-linenos="84 "></span></a>    <span class="k">return</span> <span class="n">cfg</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><a href="#__codelineno-0-73"><span class="linenos" data-linenos="73 "></span></a><span class="sd">        config_file (Path | None, optional): Path to the configuration file.</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><a href="#__codelineno-0-74"><span class="linenos" data-linenos="74 "></span></a>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><a href="#__codelineno-0-75"><span class="linenos" data-linenos="75 "></span></a><span class="sd">            Will be auto-discovered in current or parent directories if not provided.</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><a href="#__codelineno-0-76"><span class="linenos" data-linenos="76 "></span></a>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><a href="#__codelineno-0-77"><span class="linenos" data-linenos="77 "></span></a><span class="sd">            !!! tip</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><a href="#__codelineno-0-78"><span class="linenos" data-linenos="78 "></span></a><span class="sd">                `METAXY_CONFIG` environment variable can be used to set this parameter</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><a href="#__codelineno-0-79"><span class="linenos" data-linenos="79 "></span></a>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><a href="#__codelineno-0-80"><span class="linenos" data-linenos="80 "></span></a><span class="sd">        search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><a href="#__codelineno-0-81"><span class="linenos" data-linenos="81 "></span></a>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><a href="#__codelineno-0-82"><span class="linenos" data-linenos="82 "></span></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><a href="#__codelineno-0-83"><span class="linenos" data-linenos="83 "></span></a><span class="sd">        MetaxyConfig: The initialized Metaxy configuration.</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><a href="#__codelineno-0-84"><span class="linenos" data-linenos="84 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><a href="#__codelineno-0-85"><span class="linenos" data-linenos="85 "></span></a>    <span class="n">cfg</span> <span class="o">=</span> <span class="n">MetaxyConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><a href="#__codelineno-0-86"><span class="linenos" data-linenos="86 "></span></a>        <span class="n">config_file</span><span class="o">=</span><span class="n">config_file</span><span class="p">,</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><a href="#__codelineno-0-87"><span class="linenos" data-linenos="87 "></span></a>        <span class="n">search_parents</span><span class="o">=</span><span class="n">search_parents</span><span class="p">,</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><a href="#__codelineno-0-88"><span class="linenos" data-linenos="88 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><a href="#__codelineno-0-89"><span class="linenos" data-linenos="89 "></span></a>    <span class="n">load_features</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">entrypoints</span><span class="p">)</span>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><a href="#__codelineno-0-90"><span class="linenos" data-linenos="90 "></span></a>    <span class="k">return</span> <span class="n">cfg</span>
 </span></code></pre></div>
             </details>
     </div>
