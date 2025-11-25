@@ -1,4 +1,15 @@
-# 🌌 Metaxy
+# Metaxy
+
+<p align="center">
+  <img src="assets/metaxy.svg" alt="Metaxy Logo" width="100"/>
+</p>
+
+---
+
+> [!WARNING]
+> This project is as raw as a steak still saying ‘moo.’
+
+---
 
 Metaxy is a metadata layer for **multi-modal Data and ML pipelines**. Metaxy tracks feature versions, (partial) data dependencies, and lineage across complex computation graphs.
 
