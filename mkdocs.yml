@@ -6,6 +6,8 @@ repo_name: anam-org/metaxy
 
 theme:
   name: material
+  logo: assets/metaxy.svg
+  favicon: assets/favicon.ico
   features:
     # Content features
     - content.code.copy

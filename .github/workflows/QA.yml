@@ -96,6 +96,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      checks: write
     runs-on: depot-ubuntu-latest
     env:
       UV_PYTHON_PREFERENCE: only-system
@@ -136,25 +137,15 @@ jobs:
         run: bash .github/scripts/restore-env.sh
 
 
-      # TODO: run this for the entire matrix. The current action doesn't support making a single comment for all matrix jobs
       - name: Test Execution Summary
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
         if: ${{ always() && matrix.python-version == '3.10' && github.event_name == 'pull_request' }}
-        uses: pmeier/pytest-results-action@main
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          # A list of JUnit XML files, directories containing the former, and wildcard
-          # patterns to process.
-          # See @actions/glob for supported patterns.
-          path: ./junit.xml
-          # (Optional) Add a summary of the results at the top of the report
-          summary: true
-          # (Optional) Select which results should be included in the report.
-          # Follows the same syntax as `pytest -r`
-          display-options: fEX
-          # (Optional) Fail the workflow if no JUnit XML was found.
-          fail-on-empty: true
-          # (Optional) Title of the test results section in the workflow summary
-          title: Test Results (Python ${{ matrix.python-version }})
+          files: ./junit.xml
+          check_name: Test Results (Python ${{ matrix.python-version }})
+          comment_title: Test Results (Python ${{ matrix.python-version }})
+          fail_on: nothing
 
       - name: Coverage Report
         # GitHub actions are horrible, always() here is used to ensure the step runs even if previous steps fail
@@ -193,7 +184,7 @@ jobs:
       - name: Setup bun (outside Nix environment)
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.3.1
+          bun-version: 1.3.3
       - name: Install Slidev dependencies
         run: cd docs/slides && bun install --frozen-lockfile
       - name: Pre-build Slidev bundle
