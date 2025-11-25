@@ -1019,15 +1019,21 @@ class MetadataStore(ABC):
                 f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
             )
 
+        plan = self._resolve_feature_plan(feature_key)
+
         if METAXY_PROVENANCE not in df.columns:
-            MetaxyColumnMissingWarning.warn_on_missing_column(
-                expected=METAXY_PROVENANCE,
-                df=df,
-                message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
-            )
+            # Only warn for non-root features (features with dependencies).
+            # Root features don't have upstream dependencies, so they don't go through
+            # resolve_update() - they just need metaxy_provenance_by_field to be set.
+            if plan.deps:
+                MetaxyColumnMissingWarning.warn_on_missing_column(
+                    expected=METAXY_PROVENANCE,
+                    df=df,
+                    message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
+                )
 
             df = self.hash_struct_version_column(
-                plan=self._resolve_feature_plan(feature_key),
+                plan=plan,
                 df=df,
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
                 hash_column=METAXY_PROVENANCE,
@@ -1233,6 +1239,13 @@ class MetadataStore(ABC):
             Display string (e.g., "DuckDBMetadataStore(database=/path/to/db.duckdb)")
         """
         pass
+
+    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+        """Arbitrary key-value pairs with useful metadata like path in storage.
+
+        Useful for logging purposes. This method should not expose sensitive information.
+        """
+        return {}
 
     def copy_metadata(
         self,
