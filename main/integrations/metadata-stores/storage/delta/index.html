@@ -16,7 +16,7 @@
         <link rel="prev" href="../../databases/duckdb/">
       
       
-        <link rel="next" href="../../../plugins/sqlmodel/">
+        <link rel="next" href="../../../orchestration/dagster/">
       
       
         
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#deltametadatastore" class="md-skip">
+        <a href="#metaxy-delta-lake" class="md-skip">
           Skip to content
         </a>
       
@@ -948,6 +948,8 @@
       
         
       
+        
+      
     
     
     
@@ -1413,8 +1415,6 @@
       
         
       
-        
-      
     
     
     
@@ -1443,7 +1443,7 @@
   <span class="md-ellipsis">
     
   
-    Plugins
+    Orchestration
   
 
     
@@ -1456,6 +1456,105 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Orchestration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../orchestration/dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2107,6 +2206,8 @@
       
         
       
+        
+      
     
     
     
@@ -2562,8 +2663,6 @@
       
         
       
-        
-      
     
     
     
@@ -2589,7 +2688,7 @@
   <span class="md-ellipsis">
     
   
-    Plugins
+    Orchestration
   
 
     
@@ -2602,6 +2701,102 @@
         
         <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_5_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Orchestration
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../reference/api/ext/dagster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dagster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_5_3" id="__nav_7_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_7_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_5_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2904,7 +3099,7 @@
   
 
 
-<h1 id="deltametadatastore">DeltaMetadataStore<a class="headerlink" href="#deltametadatastore" title="Permanent link">&para;</a></h1>
+<h1 id="metaxy-delta-lake">Metaxy + Delta Lake<a class="headerlink" href="#metaxy-delta-lake" title="Permanent link">&para;</a></h1>
 <p>Metaxy implements <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;DeltaMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/delta/#metaxy.metadata_store.delta.DeltaMetadataStore"><code>DeltaMetadataStore</code></a> that stores metadata in <a href="https://delta.io/">Delta Lake</a> (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.</p>
 <p>It supports the local filesystem and remote object stores.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
