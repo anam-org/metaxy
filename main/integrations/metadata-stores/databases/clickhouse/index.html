@@ -1235,6 +1235,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#struct-columns-and-json-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct Columns and JSON Storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Struct Columns and JSON Storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-clickhouse-handles-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How ClickHouse Handles Structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alembic-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alembic Migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2927,6 +2966,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#struct-columns-and-json-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Struct Columns and JSON Storage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Struct Columns and JSON Storage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-clickhouse-handles-structs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How ClickHouse Handles Structs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alembic-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alembic Migrations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3060,10 +3138,54 @@
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;metaxy[clickhouse]&#39;</span>
 </span></code></pre></div>
-<hr />
+<h2 id="struct-columns-and-json-storage">Struct Columns and JSON Storage<a class="headerlink" href="#struct-columns-and-json-storage" title="Permanent link">&para;</a></h2>
+<p>Metaxy uses struct columns (<code>metaxy_provenance_by_field</code>, <code>metaxy_data_version_by_field</code>) to track field-level versioning. In Python world this corresponds to <code>dict[str, str]</code>.</p>
+<h3 id="how-clickhouse-handles-structs">How ClickHouse Handles Structs<a class="headerlink" href="#how-clickhouse-handles-structs" title="Permanent link">&para;</a></h3>
+<p>ClickHouse offers multiple approaches for structured data:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://clickhouse.com/docs/sql-reference/data-types/newjson"><code>JSON</code></a></td>
+<td>Native JSON with typed subcolumns</td>
+<td>Improved query performance on JSON paths</td>
+</tr>
+<tr>
+<td><a href="https://clickhouse.com/docs/sql-reference/data-types/map"><code>Map(K, V)</code></a></td>
+<td>Native key-value map</td>
+<td>When schema is <code>dict[K, V]</code>, even better performance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="alembic-migrations">Alembic Migrations<a class="headerlink" href="#alembic-migrations" title="Permanent link">&para;</a></h3>
+<p>For Alembic migrations, use <a href="https://clickhouse.com/docs/integrations/python"><code>clickhouse-connect</code></a>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>clickhouse-connect
+</span></code></pre></div>
+<details class="note">
+<summary>Alternative Community Driver</summary>
+<p>Alternatively, use the community <a href="https://github.com/xzkostyan/clickhouse-sqlalchemy"><code>clickhouse-sqlalchemy</code></a> driver.</p>
+</details>
+<div class="admonition tip">
+<p class="admonition-title">Alembic Integration</p>
+<p>See <a href="../../../plugins/sqlalchemy/#alembic-integration">Alembic setup guide</a> for additional instructions on how to use Alembic with Metaxy.</p>
+</div>
 <h1 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h1>
 <ul>
-<li><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ClickHouseMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/ibis/clickhouse/#metaxy.metadata_store.clickhouse.ClickHouseMetadataStore">API docs</a>.</li>
+<li>
+<p>Integration <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;ClickHouseMetadataStore&lt;/span&gt;" href="../../../../reference/api/metadata-stores/ibis/clickhouse/#metaxy.metadata_store.clickhouse.ClickHouseMetadataStore">API docs</a></p>
+</li>
+<li>
+<p><a href="https://clickhouse.com/docs/intro">Introduction to ClickHouse</a></p>
+</li>
+<li>
+<p><a href="https://clickhouse.com/docs/integrations/python">ClickHouse Connect</a></p>
+</li>
 </ul>
 
 
