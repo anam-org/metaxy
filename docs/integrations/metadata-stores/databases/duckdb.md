@@ -1,4 +1,4 @@
-# DuckDBMetadataStore
+# Metaxy + DuckDB
 
 Metaxy implements [`DuckDBMetadataStore`][metaxy.metadata_store.duckdb.DuckDBMetadataStore]. It uses [DuckDB](https://duckdb.org/) as metadata storage and versioning engine.
 
@@ -26,6 +26,6 @@ store = DuckDBMetadataStore("metadata.db", extensions=["hashfuncs", "spatial"])
 
 `hashfuncs` is typically used by the versioning engine.
 
-## References
+# Reference
 
-Learn more in the [API docs][metaxy.metadata_store.duckdb.DuckDBMetadataStore].
+- [API docs][metaxy.metadata_store.duckdb.DuckDBMetadataStore].

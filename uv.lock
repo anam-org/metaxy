@@ -2279,7 +2279,7 @@ docs = [
     { name = "examples", editable = "examples" },
     { name = "griffe", specifier = ">=1.14.0" },
     { name = "griffe-inherited-docstrings", specifier = ">=1.1.2" },
-    { name = "griffe-pydantic", specifier = ">=1.1.7" },
+    { name = "griffe-pydantic", specifier = ">=1.1.8" },
     { name = "mike", specifier = ">=2.1.3" },
     { name = "mkdocs", specifier = ">=1.6.1" },
     { name = "mkdocs-api-autonav", specifier = ">=0.4.0" },
