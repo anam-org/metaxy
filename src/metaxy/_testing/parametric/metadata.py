@@ -341,7 +341,6 @@ def feature_metadata_strategy(
 
     df = df.with_columns(
         pl.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
-        pl.lit(None).cast(pl.Utf8).alias(METAXY_MATERIALIZATION_ID),
     )
 
     # If id_columns_df was provided, replace the generated ID columns with provided ones
