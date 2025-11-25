@@ -28,13 +28,16 @@ class DeltaMetadataStore(MetadataStore):
     """
     Delta Lake metadata store backed by [delta-rs](https://github.com/delta-io/delta-rs).
 
-    Stores each feature's metadata in a dedicated Delta table located under ``root_path``.
-    Uses Polars/Narwhals components for metadata operations and relies on delta-rs for persistence.
+    It stores feature metadata in Delta Lake tables located under ``root_path``.
+    It uses the Polars versioning engine for provenance calculations.
 
     Example:
+
         ```py
+        from metaxy.metadata_store.delta import DeltaMetadataStore
+
         store = DeltaMetadataStore(
-            "/data/metaxy/metadata",
+            root_path="s3://my-bucket/metaxy",
             storage_options={"AWS_REGION": "us-west-2"},
         )
         ```
@@ -57,16 +60,16 @@ class DeltaMetadataStore(MetadataStore):
 
         Args:
             root_path: Base directory or URI where feature tables are stored.
-                Supports local paths (/path/to/dir), s3:// URLs, and other object store URIs.
+                Supports local paths (`/path/to/dir`), `s3://` URLs, and other object store URIs.
             storage_options: Storage backend options passed to delta-rs.
-                Example: {"AWS_REGION": "us-west-2", "AWS_ACCESS_KEY_ID": "...", ...}
+                Example: `{"AWS_REGION": "us-west-2", "AWS_ACCESS_KEY_ID": "...", ...}`
                 See https://delta-io.github.io/delta-rs/ for details on supported options.
             fallback_stores: Ordered list of read-only fallback stores.
             layout: Directory layout for feature tables. Options:
 
-                - `"flat"` (default): Feature tables stored as "{part1}__{part2}__..." directories
+                - `"nested"`: Feature tables stored in nested directories `{part1}/{part2}.delta`
 
-                - `"nested"`: Feature tables stored in nested directories "{part1}/{part2}/..."
+                - `"flat"`: Feature tables stored as `{part1}__{part2}.delta`
 
             delta_write_options: Additional options passed to deltalake.write_deltalake() - see https://delta-io.github.io/delta-rs/upgrade-guides/guide-1.0.0/#write_deltalake-api.
                 Overrides default {"schema_mode": "merge"}. Example: {"max_workers": 4}
@@ -188,7 +191,7 @@ class DeltaMetadataStore(MetadataStore):
         else:
             # Flat layout (default): store in directories like "part1__part2__part3"
             table_path = feature_key.table_name
-        return os.path.join(self._root_uri, table_path)
+        return os.path.join(self._root_uri, table_path + ".delta")
 
     def _table_exists(self, table_uri: str) -> bool:
         """Check whether the provided URI already contains a Delta table.

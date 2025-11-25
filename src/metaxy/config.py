@@ -568,14 +568,6 @@ class MetaxyConfig(BaseSettings):
             # Don't set a default here - let the store choose its own default
             configured_hash_algorithm = None
 
-        # Get hash_truncation_length from global config (unless overridden in store config)
-        if (
-            "hash_truncation_length" not in config_copy
-            and self.hash_truncation_length is not None
-        ):
-            # Use global setting from MetaxyConfig if not specified per-store
-            config_copy["hash_truncation_length"] = self.hash_truncation_length
-
         # Get auto_create_tables from global config (unless overridden in store config)
         if (
             "auto_create_tables" not in config_copy

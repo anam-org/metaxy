@@ -1019,9 +1019,9 @@ class MetadataStore(ABC):
                 f"Metadata is missing a required column `{METAXY_PROVENANCE_BY_FIELD}`. It should have been created by a prior `MetadataStore.resolve_update` call. Did you drop it on the way?"
             )
 
-        plan = self._resolve_feature_plan(feature_key)
-
         if METAXY_PROVENANCE not in df.columns:
+            plan = self._resolve_feature_plan(feature_key)
+
             # Only warn for non-root features (features with dependencies).
             # Root features don't have upstream dependencies, so they don't go through
             # resolve_update() - they just need metaxy_provenance_by_field to be set.
