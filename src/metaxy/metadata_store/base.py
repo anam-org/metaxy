@@ -35,6 +35,8 @@ from metaxy.metadata_store.warnings import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -153,6 +155,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -165,6 +168,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -176,6 +180,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -203,7 +208,9 @@ class MetadataStore(ABC):
                 Example: `{"upstream/feature": [nw.col("x") > 10], ...}`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
-            **kwargs: Backend-specific parameters
+            skip_comparison: If True, skip the increment comparison logic and return all
+                upstream samples in `Increment.added`. The `changed` and `removed` frames will
+                be empty.
 
         Raises:
             ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.
@@ -263,6 +270,16 @@ class MetadataStore(ABC):
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
                 hash_column=METAXY_PROVENANCE,
             )
+
+            # For root features, add data_version columns if they don't exist
+            # (root features have no computation, so data_version equals provenance)
+            if METAXY_DATA_VERSION_BY_FIELD not in samples.columns:
+                samples = samples.with_columns(
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
+                        METAXY_DATA_VERSION_BY_FIELD
+                    ),
+                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+                )
         else:
             for upstream_spec in plan.deps or []:
                 upstream_feature_metadata = self.read_metadata(
@@ -346,13 +363,29 @@ class MetadataStore(ABC):
         with self.create_versioning_engine(
             plan=plan, implementation=implementation
         ) as engine:
-            added, changed, removed = engine.resolve_increment_with_provenance(
-                current=current_metadata,
-                upstream=upstream_by_key,
-                hash_algorithm=self.hash_algorithm,
-                filters=filters_by_key,
-                sample=samples.lazy() if samples is not None else None,
-            )
+            if skip_comparison:
+                # Skip comparison: return all upstream samples as added
+                if samples is not None:
+                    # Root features or user-provided samples: use samples directly
+                    # Note: samples already has metaxy_provenance computed
+                    added = samples.lazy()
+                else:
+                    # Non-root features: load all upstream with provenance
+                    added = engine.load_upstream_with_provenance(
+                        upstream=upstream_by_key,
+                        hash_algo=self.hash_algorithm,
+                        filters=filters_by_key,
+                    )
+                changed = None
+                removed = None
+            else:
+                added, changed, removed = engine.resolve_increment_with_provenance(
+                    current=current_metadata,
+                    upstream=upstream_by_key,
+                    hash_algorithm=self.hash_algorithm,
+                    filters=filters_by_key,
+                    sample=samples.lazy() if samples is not None else None,
+                )
 
         # Convert None to empty DataFrames
         if changed is None:
