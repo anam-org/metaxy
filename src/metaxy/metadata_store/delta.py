@@ -235,6 +235,8 @@ class DeltaMetadataStore(MetadataStore):
         else:
             df_native = df_polars.to_native()
 
+        assert isinstance(df_native, pl.DataFrame)
+
         # Prepare write parameters for Polars write_delta
         # Extract mode and storage_options as top-level parameters
         write_opts = self.default_delta_write_options.copy()
@@ -319,3 +321,6 @@ class DeltaMetadataStore(MetadataStore):
         details = [f"path={self._root_uri}"]
         details.append(f"layout={self.layout}")
         return f"DeltaMetadataStore({', '.join(details)})"
+
+    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+        return {"path": self._feature_uri(self._resolve_feature_key(feature_key))}
