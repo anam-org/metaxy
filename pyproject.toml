@@ -48,6 +48,9 @@ duckdb = [
 delta = [
   "deltalake>=1.2.1",
 ]
+dagster = [
+  "dagster>=1.12.3",
+]
 
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
@@ -79,6 +82,7 @@ dev = [
   "moto[s3,server]>=5.1.16",
   "deltalake>=1.2.1",
   "mistune>=3.1.4",
+  "dagster>=1.12.3",
 ]
 
 examples = [
