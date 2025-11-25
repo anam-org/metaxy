@@ -4,7 +4,7 @@ import metaxy as mx
 
 
 class MetaxyStoreFromConfigResource(dg.ConfigurableResource[mx.MetadataStore]):
-    """This resource creates a [`metaxy.MetadataStore`][metaxy.MetadataStore] based on Metaxy configuration (`metaxy.toml`)."""
+    """This resource creates a [`metaxy.MetadataStore`][metaxy.MetadataStore] based on the current Metaxy configuration (`metaxy.toml`)."""
 
     name: str
 

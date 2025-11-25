@@ -58,6 +58,26 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
 </div>
 
+## Orchestration
+
+<div class="grid cards" markdown>
+
+<!-- dprint-ignore-start -->
+-   :custom-dagster:{ .lg .middle } [**Dagster**](orchestration/dagster.md)
+
+    ---
+
+    :material-tag-outline: Orchestration • Data Platform
+
+    Integrate Metaxy with Dagster using ConfigurableResource to manage metadata stores in your data pipelines.
+
+    [:octicons-arrow-right-24: Integration docs](orchestration/dagster.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/ext/dagster.md)
+<!-- dprint-ignore-end -->
+
+</div>
+
 ## Plugins
 
 <div class="grid cards" markdown>

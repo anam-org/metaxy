@@ -72,6 +72,12 @@ plugins:
         python:
           paths: [src]
           options:
+            # preload_modules:
+              # these are required to identify e.g. dagster.Config as pydantic model in docs
+              # https://github.com/mkdocstrings/griffe-pydantic/issues/41#issuecomment-3311752656
+              # - sqlmodel
+              # - dagster
+
             filters: ["!^_[^_]"]
             heading_level: 2
             docstring_style: google
@@ -110,6 +116,7 @@ plugins:
             - https://docs.pydantic.dev/latest/objects.inv
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
+            - https://docs.dagster.io/objects.inv
 
 markdown_extensions:
   # Core extensions
@@ -195,6 +202,8 @@ nav:
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
       - Storage Only:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
+    - Orchestration:
+      - Dagster: integrations/orchestration/dagster.md
     - Plugins:
       - SQLModel: integrations/plugins/sqlmodel.md
       - SQLAlchemy: integrations/plugins/sqlalchemy.md
@@ -228,6 +237,8 @@ nav:
             - Delta Lake: reference/api/metadata-stores/delta.md
             - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
+      - Orchestration:
+        - Dagster: reference/api/ext/dagster.md
       - Plugins:
         - SQLModel: reference/api/ext/sqlmodel.md
         - SQLAlchemy: reference/api/ext/sqlalchemy.md
