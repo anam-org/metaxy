@@ -267,9 +267,6 @@ class StoreCases:
 class BasicStoreCases:
     """Minimal store cases for backend-agnostic API tests."""
 
-    def case_inmemory(self) -> tuple[type[MetadataStore], dict[str, Any]]:
-        return (InMemoryMetadataStore, {})
-
     def case_duckdb(self, tmp_path: Path) -> tuple[type[MetadataStore], dict[str, Any]]:
         db_path = tmp_path / "test.duckdb"
         return (DuckDBMetadataStore, {"database": db_path})
