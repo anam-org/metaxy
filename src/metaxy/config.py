@@ -1,6 +1,7 @@
 """Configuration system for Metaxy using pydantic-settings."""
 # pyright: reportImportCycles=false
 
+import os
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -366,9 +367,14 @@ class MetaxyConfig(BaseSettings):
         """Load config with auto-discovery and parent directory search.
 
         Args:
-            config_file: Optional config file path (overrides auto-discovery)
-            search_parents: Search parent directories for config file (default: True)
-            auto_discovery_start: Directory to start search from (defaults to cwd)
+            config_file: Optional config file path.
+
+                !!! tip
+                    `METAXY_CONFIG` environment variable can be used to set this parameter
+
+            search_parents: Search parent directories for config file
+            auto_discovery_start: Directory to start search from.
+                Defaults to current working directory.
 
         Returns:
             Loaded config (TOML + env vars merged)
@@ -389,6 +395,10 @@ class MetaxyConfig(BaseSettings):
             ```
         """
         # Search for config file if not explicitly provided
+
+        if config_from_env := os.getenv("METAXY_CONFIG"):
+            config_file = Path(config_from_env)
+
         if config_file is None and search_parents:
             config_file = cls._discover_config_with_parents(auto_discovery_start)
 
