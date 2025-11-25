@@ -471,16 +471,28 @@ class MetaxyConfig(BaseSettings):
 
     @overload
     def get_store(
-        self, name: str | None = None, *, expected_type: Literal[None] = None
+        self,
+        name: str | None = None,
+        *,
+        expected_type: Literal[None] = None,
+        **kwargs: Any,
     ) -> "MetadataStore": ...
 
     @overload
     def get_store(
-        self, name: str | None = None, *, expected_type: type[StoreTypeT]
+        self,
+        name: str | None = None,
+        *,
+        expected_type: type[StoreTypeT],
+        **kwargs: Any,
     ) -> StoreTypeT: ...
 
     def get_store(
-        self, name: str | None = None, *, expected_type: type[StoreTypeT] | None = None
+        self,
+        name: str | None = None,
+        *,
+        expected_type: type[StoreTypeT] | None = None,
+        **kwargs: Any,
     ) -> "MetadataStore | StoreTypeT":
         """Instantiate metadata store by name.
 
@@ -488,6 +500,7 @@ class MetaxyConfig(BaseSettings):
             name: Store name (uses config.store if None)
             expected_type: Expected type of the store.
                 If the actual store type does not match the expected type, a `TypeError` is raised.
+            **kwargs: Additional keyword arguments to pass to the store constructor.
 
         Returns:
             Instantiated metadata store
@@ -569,8 +582,7 @@ class MetaxyConfig(BaseSettings):
 
         # Instantiate store with config + fallback_stores
         store = store_class(
-            fallback_stores=fallback_stores,
-            **config_copy,
+            fallback_stores=fallback_stores, **{**config_copy, **kwargs}
         )
 
         # Verify the store actually uses the hash algorithm we configured
