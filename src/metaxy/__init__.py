@@ -62,6 +62,28 @@ from metaxy.models.types import (
 from metaxy.versioning.types import HashAlgorithm
 
 
+def coerce_to_feature_key(value: CoercibleToFeatureKey) -> FeatureKey:
+    """Coerce a value to a [`FeatureKey`][metaxy.FeatureKey].
+
+    Accepts:
+
+    - slashed `str`: `"a/b/c"`
+    - `Sequence[str]`: `["a", "b", "c"]`
+    - `FeatureKey`: pass through
+    - `type[BaseFeature]`: extracts `.spec().key`
+
+    Args:
+        value: Value to coerce to `FeatureKey`
+
+    Returns:
+        The coerced `FeatureKey`
+
+    Raises:
+        ValidationError: If the value cannot be coerced to a `FeatureKey`
+    """
+    return ValidatedFeatureKeyAdapter.validate_python(value)
+
+
 def init_metaxy(
     config_file: Path | None = None, search_parents: bool = True
 ) -> MetaxyConfig:
@@ -111,6 +133,7 @@ __all__ = [
     "FieldKey",
     "CoercibleToFeatureKey",
     "CoercibleToFieldKey",
+    "coerce_to_feature_key",
     "ValidatedFeatureKey",
     "ValidatedFieldKey",
     "ValidatedFeatureKeySequence",
