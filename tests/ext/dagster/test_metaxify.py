@@ -1268,3 +1268,117 @@ class TestMetaxifyMultiAsset:
         materialized_keys = {e.asset_key for e in events}
         assert dg.AssetKey("output_a") in materialized_keys
         assert dg.AssetKey("output_b") in materialized_keys
+
+
+class TestMetaxifyWithInputDefinitions:
+    """Test @metaxify with assets that have explicit input definitions (ins= parameter).
+
+    This tests the fix for the Dagster bug where map_asset_specs/with_attributes fail
+    on assets with InputDefinition objects because Dagster tries to call to_definition()
+    on InputDefinition which doesn't have that method.
+    """
+
+    def test_metaxify_with_asset_in_parameter(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that metaxify works on assets with ins= containing AssetIn objects."""
+        # Create an external asset that we'll reference
+        external_asset = dg.AssetSpec(key=["external", "data"])
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            ins={
+                "external_data": dg.AssetIn(key=external_asset.key),
+            },
+        )
+        def my_asset(external_data):
+            pass
+
+        # Should not raise AttributeError: 'InputDefinition' object has no attribute 'to_definition'
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_METAXY_KIND in asset_spec.kinds
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+
+    def test_metaxify_with_multiple_asset_ins(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test metaxify with multiple AssetIn inputs."""
+        external_a = dg.AssetSpec(key=["external", "a"])
+        external_b = dg.AssetSpec(key=["external", "b"])
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            ins={
+                "input_a": dg.AssetIn(key=external_a.key),
+                "input_b": dg.AssetIn(key=external_b.key),
+            },
+        )
+        def my_asset(input_a, input_b):
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_METAXY_KIND in asset_spec.kinds
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+
+    def test_metaxify_with_asset_in_and_key_replacement(
+        self,
+        feature_with_dagster_metadata: type[mx.BaseFeature],
+    ):
+        """Test metaxify with AssetIn when asset key needs to be replaced."""
+        external_asset = dg.AssetSpec(key=["external", "data"])
+
+        # This feature has dagster/attributes.asset_key set, so key will be replaced
+        @metaxify(feature=feature_with_dagster_metadata)
+        @dg.asset(
+            ins={
+                "external_data": dg.AssetIn(key=external_asset.key),
+            },
+        )
+        def original_key_asset(external_data):
+            pass
+
+        # Should work even with key replacement
+        assert dg.AssetKey(["custom", "asset", "key"]) in original_key_asset.keys
+
+    def test_metaxify_with_asset_in_materializes(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that metaxified asset with ins= can be materialized."""
+        captured_data = {}
+
+        @dg.asset(key=["source", "data"])
+        def source_data():
+            return {"value": 42}
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            io_manager_key="metaxy_io_manager",
+            ins={
+                "source": dg.AssetIn(key=["source", "data"]),
+            },
+        )
+        def my_asset(source):
+            captured_data["source_value"] = source["value"]
+            return pl.DataFrame(
+                {
+                    "id": ["1"],
+                    "metaxy_provenance_by_field": [{"value": "v1"}],
+                }
+            )
+
+        result = dg.materialize(
+            [source_data, my_asset],
+            resources=resources,
+            instance=instance,
+        )
+
+        assert result.success
+        assert captured_data["source_value"] == 42

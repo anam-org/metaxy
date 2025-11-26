@@ -192,7 +192,7 @@ class metaxify:
         return instance
 
     def __call__(self, asset: _T) -> _T:
-        """Transform the asset when used as @metaxify() with parentheses."""
+        """Transform the asset when used as `@metaxify()` with parentheses."""
         return self._transform(
             asset,
             feature=self.feature,
@@ -233,7 +233,7 @@ class metaxify:
             )
 
         keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
-        transformed_specs: dict[dg.AssetKey, dg.AssetSpec] = {}
+        transformed_specs: list[dg.AssetSpec] = []
 
         for key, asset_spec in asset.specs_by_key.items():
             new_spec = _metaxify_spec(
@@ -246,11 +246,58 @@ class metaxify:
             )
             if new_spec.key != key:
                 keys_to_replace[key] = new_spec.key
-            transformed_specs[new_spec.key] = new_spec
+            transformed_specs.append(new_spec)
 
-        return asset.with_attributes(
-            asset_key_replacements=keys_to_replace
-        ).map_asset_specs(lambda spec: transformed_specs.get(spec.key, spec))
+        return _replace_specs_on_assets_definition(
+            asset, transformed_specs, keys_to_replace
+        )
+
+
+def _replace_specs_on_assets_definition(
+    asset: dg.AssetsDefinition,
+    new_specs: list[dg.AssetSpec],
+    keys_to_replace: dict[dg.AssetKey, dg.AssetKey],
+) -> dg.AssetsDefinition:
+    """Replace specs on an AssetsDefinition without triggering Dagster's InputDefinition bug.
+
+    Dagster's `map_asset_specs` and `replace_specs_on_asset` have a bug where they fail
+    on assets with input definitions (from `ins=` parameter with `dg.AssetIn` objects).
+    The bug occurs because `OpDefinition.with_replaced_properties` creates an `ins` dict
+    mixing `InputDefinition` objects with `In` objects, and then `OpDefinition.__init__`
+    tries to call `to_definition()` on `InputDefinition` objects which don't have that method.
+
+    This function works around the bug by using `dagster_internal_init` directly,
+    which only updates the specs without modifying the underlying node_def.
+    This means new deps added to specs won't be reflected as actual inputs to the op,
+    but they will be tracked correctly by Dagster's asset graph for dependency purposes.
+
+    Args:
+        asset: The original AssetsDefinition to transform.
+        new_specs: The transformed specs to use.
+        keys_to_replace: A mapping of old keys to new keys for assets whose keys changed.
+
+    Returns:
+        A new AssetsDefinition with the transformed specs.
+    """
+    # Get the current attributes from the asset
+    attrs = asset.get_attributes_dict()
+
+    # Update the specs
+    attrs["specs"] = new_specs
+
+    # If there are key replacements, also update keys_by_output_name and selected_asset_keys
+    if keys_to_replace:
+        attrs["keys_by_output_name"] = {
+            output_name: keys_to_replace.get(key, key)
+            for output_name, key in attrs["keys_by_output_name"].items()
+        }
+        attrs["selected_asset_keys"] = {
+            keys_to_replace.get(key, key) for key in attrs["selected_asset_keys"]
+        }
+
+    # Create a new AssetsDefinition with the updated attributes
+    # This bypasses the buggy code path in Dagster's replace_specs_on_asset
+    return asset.__class__.dagster_internal_init(**attrs)
 
 
 def _metaxify_spec(
