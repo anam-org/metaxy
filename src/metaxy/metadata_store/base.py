@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
@@ -35,6 +34,8 @@ from metaxy.metadata_store.warnings import (
 )
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
+    METAXY_DATA_VERSION,
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -153,6 +154,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -165,6 +167,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -176,6 +179,7 @@ class MetadataStore(ABC):
         filters: Mapping[str, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
+        skip_comparison: bool = False,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -203,7 +207,9 @@ class MetadataStore(ABC):
                 Example: `{"upstream/feature": [nw.col("x") > 10], ...}`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
-            **kwargs: Backend-specific parameters
+            skip_comparison: If True, skip the increment comparison logic and return all
+                upstream samples in `Increment.added`. The `changed` and `removed` frames will
+                be empty.
 
         Raises:
             ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.
@@ -263,6 +269,16 @@ class MetadataStore(ABC):
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
                 hash_column=METAXY_PROVENANCE,
             )
+
+            # For root features, add data_version columns if they don't exist
+            # (root features have no computation, so data_version equals provenance)
+            if METAXY_DATA_VERSION_BY_FIELD not in samples.columns:
+                samples = samples.with_columns(
+                    nw.col(METAXY_PROVENANCE_BY_FIELD).alias(
+                        METAXY_DATA_VERSION_BY_FIELD
+                    ),
+                    nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
+                )
         else:
             for upstream_spec in plan.deps or []:
                 upstream_feature_metadata = self.read_metadata(
@@ -346,13 +362,29 @@ class MetadataStore(ABC):
         with self.create_versioning_engine(
             plan=plan, implementation=implementation
         ) as engine:
-            added, changed, removed = engine.resolve_increment_with_provenance(
-                current=current_metadata,
-                upstream=upstream_by_key,
-                hash_algorithm=self.hash_algorithm,
-                filters=filters_by_key,
-                sample=samples.lazy() if samples is not None else None,
-            )
+            if skip_comparison:
+                # Skip comparison: return all upstream samples as added
+                if samples is not None:
+                    # Root features or user-provided samples: use samples directly
+                    # Note: samples already has metaxy_provenance computed
+                    added = samples.lazy()
+                else:
+                    # Non-root features: load all upstream with provenance
+                    added = engine.load_upstream_with_provenance(
+                        upstream=upstream_by_key,
+                        hash_algo=self.hash_algorithm,
+                        filters=filters_by_key,
+                    )
+                changed = None
+                removed = None
+            else:
+                added, changed, removed = engine.resolve_increment_with_provenance(
+                    current=current_metadata,
+                    upstream=upstream_by_key,
+                    hash_algorithm=self.hash_algorithm,
+                    filters=filters_by_key,
+                    sample=samples.lazy() if samples is not None else None,
+                )
 
         # Convert None to empty DataFrames
         if changed is None:
@@ -935,31 +967,40 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
 
         # Check if feature_version and snapshot_version already exist in DataFrame
-        if (
-            METAXY_FEATURE_VERSION in df.columns
-            and METAXY_SNAPSHOT_VERSION in df.columns
-        ):
-            # DataFrame already has feature_version and snapshot_version - use as-is
-            # This is intended for migrations writing historical versions
-            # Issue a warning unless we're in a suppression context
-            if not _suppress_feature_version_warning.get():
-                warnings.warn(
-                    f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"{METAXY_FEATURE_VERSION} and {METAXY_SNAPSHOT_VERSION} columns. This is intended for migrations only. "
-                    "Normal code should let write_metadata() add the current versions automatically.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        else:
-            # Get current feature version and snapshot_version from code and add them
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
-            else:
-                from metaxy.models.feature import FeatureGraph
+        has_feature_version = METAXY_FEATURE_VERSION in df.columns
+        has_snapshot_version = METAXY_SNAPSHOT_VERSION in df.columns
 
-                graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+        # In suppression mode (migrations), use existing values as-is
+        if (
+            _suppress_feature_version_warning.get()
+            and has_feature_version
+            and has_snapshot_version
+        ):
+            pass  # Use existing values for migrations
+        else:
+            # Drop any existing version columns (e.g., from SQLModel with null values)
+            # and add current versions
+            columns_to_drop = []
+            if has_feature_version:
+                columns_to_drop.append(METAXY_FEATURE_VERSION)
+            if has_snapshot_version:
+                columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
+            if columns_to_drop:
+                df = df.drop(*columns_to_drop)
+
+            # Get current feature version and snapshot_version from code and add them
+            # Use duck typing to avoid Ray serialization issues with issubclass
+            if (
+                isinstance(feature, type)
+                and hasattr(feature, "feature_version")
+                and callable(feature.feature_version)
+            ):
+                current_feature_version = feature.feature_version()
+            else:
+                from metaxy import get_feature_by_key
+
+                feature_cls = get_feature_by_key(feature_key)
+                current_feature_version = feature_cls.feature_version()
 
             # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
@@ -987,14 +1028,20 @@ class MetadataStore(ABC):
             )
 
         if METAXY_PROVENANCE not in df.columns:
-            MetaxyColumnMissingWarning.warn_on_missing_column(
-                expected=METAXY_PROVENANCE,
-                df=df,
-                message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
-            )
+            plan = self._resolve_feature_plan(feature_key)
+
+            # Only warn for non-root features (features with dependencies).
+            # Root features don't have upstream dependencies, so they don't go through
+            # resolve_update() - they just need metaxy_provenance_by_field to be set.
+            if plan.deps:
+                MetaxyColumnMissingWarning.warn_on_missing_column(
+                    expected=METAXY_PROVENANCE,
+                    df=df,
+                    message=f"It should have been created by a prior `MetadataStore.resolve_update` call. Re-crearing it from `{METAXY_PROVENANCE_BY_FIELD}` Did you drop it on the way?",
+                )
 
             df = self.hash_struct_version_column(
-                plan=self._resolve_feature_plan(feature_key),
+                plan=plan,
                 df=df,
                 struct_column=METAXY_PROVENANCE_BY_FIELD,
                 hash_column=METAXY_PROVENANCE,
@@ -1010,17 +1057,11 @@ class MetadataStore(ABC):
         # Add materialization_id if not already present
         from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 
-        if METAXY_MATERIALIZATION_ID not in df.columns:
-            # Use provided materialization_id, fall back to store's default
-            mat_id = (
-                materialization_id
-                if materialization_id is not None
-                else self._materialization_id
-            )
-            # Cast to string to avoid NULL-typed columns (which some backends don't support)
-            df = df.with_columns(
-                nw.lit(mat_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
-            )
+        df = df.with_columns(
+            nw.lit(
+                materialization_id or self._materialization_id, dtype=nw.String
+            ).alias(METAXY_MATERIALIZATION_ID)
+        )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
 
@@ -1200,6 +1241,13 @@ class MetadataStore(ABC):
             Display string (e.g., "DuckDBMetadataStore(database=/path/to/db.duckdb)")
         """
         pass
+
+    def get_store_metadata(self, feature_key: CoercibleToFeatureKey) -> dict[str, Any]:
+        """Arbitrary key-value pairs with useful metadata like path in storage.
+
+        Useful for logging purposes. This method should not expose sensitive information.
+        """
+        return {}
 
     def copy_metadata(
         self,

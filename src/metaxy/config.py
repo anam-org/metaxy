@@ -1,6 +1,7 @@
 """Configuration system for Metaxy using pydantic-settings."""
 # pyright: reportImportCycles=false
 
+import os
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -212,7 +213,7 @@ class MetaxyConfig(BaseSettings):
 
     project: str = PydanticField(
         default="default",
-        description="Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)",
+        description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
     @field_validator("ext", mode="after")
@@ -366,9 +367,14 @@ class MetaxyConfig(BaseSettings):
         """Load config with auto-discovery and parent directory search.
 
         Args:
-            config_file: Optional config file path (overrides auto-discovery)
-            search_parents: Search parent directories for config file (default: True)
-            auto_discovery_start: Directory to start search from (defaults to cwd)
+            config_file: Optional config file path.
+
+                !!! tip
+                    `METAXY_CONFIG` environment variable can be used to set this parameter
+
+            search_parents: Search parent directories for config file
+            auto_discovery_start: Directory to start search from.
+                Defaults to current working directory.
 
         Returns:
             Loaded config (TOML + env vars merged)
@@ -389,6 +395,10 @@ class MetaxyConfig(BaseSettings):
             ```
         """
         # Search for config file if not explicitly provided
+
+        if config_from_env := os.getenv("METAXY_CONFIG"):
+            config_file = Path(config_from_env)
+
         if config_file is None and search_parents:
             config_file = cls._discover_config_with_parents(auto_discovery_start)
 
@@ -471,16 +481,28 @@ class MetaxyConfig(BaseSettings):
 
     @overload
     def get_store(
-        self, name: str | None = None, *, expected_type: Literal[None] = None
+        self,
+        name: str | None = None,
+        *,
+        expected_type: Literal[None] = None,
+        **kwargs: Any,
     ) -> "MetadataStore": ...
 
     @overload
     def get_store(
-        self, name: str | None = None, *, expected_type: type[StoreTypeT]
+        self,
+        name: str | None = None,
+        *,
+        expected_type: type[StoreTypeT],
+        **kwargs: Any,
     ) -> StoreTypeT: ...
 
     def get_store(
-        self, name: str | None = None, *, expected_type: type[StoreTypeT] | None = None
+        self,
+        name: str | None = None,
+        *,
+        expected_type: type[StoreTypeT] | None = None,
+        **kwargs: Any,
     ) -> "MetadataStore | StoreTypeT":
         """Instantiate metadata store by name.
 
@@ -488,6 +510,7 @@ class MetaxyConfig(BaseSettings):
             name: Store name (uses config.store if None)
             expected_type: Expected type of the store.
                 If the actual store type does not match the expected type, a `TypeError` is raised.
+            **kwargs: Additional keyword arguments to pass to the store constructor.
 
         Returns:
             Instantiated metadata store
@@ -545,14 +568,6 @@ class MetaxyConfig(BaseSettings):
             # Don't set a default here - let the store choose its own default
             configured_hash_algorithm = None
 
-        # Get hash_truncation_length from global config (unless overridden in store config)
-        if (
-            "hash_truncation_length" not in config_copy
-            and self.hash_truncation_length is not None
-        ):
-            # Use global setting from MetaxyConfig if not specified per-store
-            config_copy["hash_truncation_length"] = self.hash_truncation_length
-
         # Get auto_create_tables from global config (unless overridden in store config)
         if (
             "auto_create_tables" not in config_copy
@@ -569,8 +584,7 @@ class MetaxyConfig(BaseSettings):
 
         # Instantiate store with config + fallback_stores
         store = store_class(
-            fallback_stores=fallback_stores,
-            **config_copy,
+            fallback_stores=fallback_stores, **{**config_copy, **kwargs}
         )
 
         # Verify the store actually uses the hash algorithm we configured

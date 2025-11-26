@@ -1,4 +1,4 @@
-# BigQueryMetadataStore
+# Metaxy + BigQuery
 
 Metaxy implements [`BigQueryMetadataStore`][metaxy.metadata_store.bigquery.BigQueryMetadataStore]. It uses [BigQuery](https://cloud.google.com/bigquery) as metadata storage and versioning engine.
 
@@ -10,6 +10,6 @@ pip install 'metaxy[bigquery]'
 
 ---
 
-## References
+# References
 
-Learn more in the [API docs][metaxy.metadata_store.bigquery.BigQueryMetadataStore].
+- [API docs][metaxy.metadata_store.bigquery.BigQueryMetadataStore].

@@ -70,7 +70,13 @@ def init_metaxy(
     Features are [discovered](../../learn/feature-discovery.md) from installed Python packages metadata.
 
     Args:
-        config_file (Path | None, optional): Path to the configuration file. Defaults to None.
+        config_file (Path | None, optional): Path to the configuration file.
+
+            Will be auto-discovered in current or parent directories if not provided.
+
+            !!! tip
+                `METAXY_CONFIG` environment variable can be used to set this parameter
+
         search_parents (bool, optional): Whether to search parent directories for configuration files. Defaults to True.
 
     Returns:
