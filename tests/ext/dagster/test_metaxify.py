@@ -8,11 +8,12 @@ import pytest
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
+    DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
+    DAGSTER_METAXY_METADATA_METADATA_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.metaxify import metaxify
-from metaxy.ext.dagster.utils import build_asset_spec
 
 
 @pytest.fixture
@@ -167,7 +168,7 @@ class TestMetaxifyBasic:
     def test_metaxify_injects_feature_metadata(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that metaxify injects feature spec metadata."""
+        """Test that metaxify injects feature spec metadata under DAGSTER_METAXY_METADATA_METADATA_KEY."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
@@ -175,8 +176,28 @@ class TestMetaxifyBasic:
             pass
 
         asset_spec = list(my_asset.specs)[0]
-        # Feature spec metadata should be injected
-        assert asset_spec.metadata is not None
+        # Feature spec metadata should be injected under the namespaced key
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+        assert asset_spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY] == {}
+
+    def test_metaxify_injects_feature_metadata_with_content(
+        self, feature_with_group_name: type[mx.BaseFeature]
+    ):
+        """Test that metaxify injects non-empty feature spec metadata."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/grouped"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # Feature spec metadata should include the dagster/attributes
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in asset_spec.metadata
+        injected_metadata = asset_spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY]
+        assert METAXY_DAGSTER_METADATA_KEY in injected_metadata
+        assert injected_metadata[METAXY_DAGSTER_METADATA_KEY] == {
+            "group_name": "my_group"
+        }
 
 
 class TestMetaxifyAssetKeys:
@@ -735,20 +756,23 @@ class TestMetaxifyMaterialization:
         assert captured_data["rows"] == 3
         assert set(captured_data["ids"]) == {"x", "y", "z"}
 
-    def test_metaxify_loads_upstream_via_build_asset_spec(
+    def test_metaxify_loads_upstream_via_external_asset_spec(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that build_asset_spec can be used to reference external Metaxy features."""
+        """Test that metaxify(AssetSpec) can be used to reference external Metaxy features."""
         captured_data = {}
 
-        # Build asset spec - this represents an external feature not produced by a local asset
-        external_spec = build_asset_spec("test/upstream").with_io_manager_key(
-            "metaxy_io_manager"
-        )
+        # Build asset spec using metaxify - represents an external feature not produced locally
+        external_spec = metaxify(inherit_feature_key_as_asset_key=True)(
+            dg.AssetSpec(
+                key="external_upstream",
+                metadata={DAGSTER_METAXY_FEATURE_METADATA_KEY: "test/upstream"},
+            )
+        ).with_io_manager_key("metaxy_io_manager")
 
         # First, write data directly to the store (simulating external feature population)
         with mx.MetaxyConfig.get().get_store("dev") as store:
@@ -770,7 +794,7 @@ class TestMetaxifyMaterialization:
             metadata={"metaxy/feature": "test/downstream"},
             io_manager_key="metaxy_io_manager",
             ins={
-                # Reference the external feature using build_asset_spec key
+                # Reference the external feature using metaxify'd AssetSpec key
                 "upstream_data": dg.AssetIn(key=external_spec.key)
             },
         )

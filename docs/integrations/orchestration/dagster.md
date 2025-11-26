@@ -101,7 +101,7 @@ class AudioClusters(mx.BaseFeature, spec=downstream_spec):
     def audio_embeddings(
         store: dg.ResourceParam[mx.MetadataStore],
     ):
-        # somehow, aqckuier root source data
+        # somehow, acquire root source data
         samples = pl.DataFrame(
             {
                 "audio_id": ["a1", "a2", "a3"],

@@ -4,15 +4,11 @@ Integration with [Dagster](https://dagster.io/).
 
 Learn more about the integration and its configuration [here](../../../integrations/orchestration/dagster.md).
 
-## Utility Functions
+## Decorator
 
 ---
 
 ::: metaxy.ext.dagster.metaxify.metaxify
-
----
-
-::: metaxy.ext.dagster.build_asset_spec
 
 ---
 

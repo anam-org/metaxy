@@ -1,11 +1,7 @@
 import dagster as dg
 
 import metaxy as mx
-from metaxy.ext.dagster.constants import (
-    DAGSTER_METAXY_FEATURE_METADATA_KEY,
-    DAGSTER_METAXY_KIND,
-    METAXY_DAGSTER_METADATA_KEY,
-)
+from metaxy.ext.dagster.constants import METAXY_DAGSTER_METADATA_KEY
 
 
 def get_asset_key_for_metaxy_feature_spec(
@@ -49,74 +45,3 @@ def get_asset_key_for_metaxy_feature_spec(
         return dagster_key
 
     return dg.AssetKey(list(feature_spec.key.parts))
-
-
-def build_asset_spec(
-    feature: mx.CoercibleToFeatureKey,
-    *,
-    inherit_feature_key_as_asset_key: bool = True,
-    include_kind: bool = True,
-) -> dg.AssetSpec:
-    """Build a Dagster AssetSpec from a Metaxy feature.
-
-    This creates an AssetSpec with the correct asset key, metadata, dependencies,
-    and kinds based on the Metaxy feature definition.
-
-    Args:
-        feature: A Metaxy feature key (string, list, or feature class).
-        inherit_feature_key_as_asset_key: If True, use the feature key as the asset key
-            (unless `dagster/attributes.asset_key` is set on the feature spec).
-        include_kind: Whether to include the "metaxy" kind.
-
-    Returns:
-        A Dagster AssetSpec configured for the Metaxy feature.
-
-    Example:
-        ```python
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-
-        # Build specs for Metaxy features
-        embeddings_spec = mxd.build_asset_spec("audio/embeddings")
-
-        @dg.asset(
-            ins={"data": dg.AssetIn(key=embeddings_spec.key)}
-        )
-        def my_asset(data):
-            ...
-        ```
-    """
-    feature_cls = mx.get_feature_by_key(feature)
-    feature_spec = feature_cls.spec()
-
-    asset_key = get_asset_key_for_metaxy_feature_spec(
-        feature_spec, inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key
-    )
-
-    # Build deps from feature dependencies
-    deps: set[dg.AssetDep] = set()
-    for dep in feature_spec.deps:
-        upstream_spec = mx.get_feature_by_key(dep.feature).spec()
-        deps.add(
-            dg.AssetDep(
-                asset=get_asset_key_for_metaxy_feature_spec(
-                    upstream_spec,
-                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
-                )
-            )
-        )
-
-    # Build kinds
-    kinds: set[str] = set()
-    if include_kind:
-        kinds.add(DAGSTER_METAXY_KIND)
-
-    return dg.AssetSpec(
-        key=asset_key,
-        deps=deps,
-        metadata={
-            DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_spec.key.to_string(),
-            **feature_spec.metadata,
-        },
-        kinds=kinds,
-    )

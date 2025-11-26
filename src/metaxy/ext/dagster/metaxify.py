@@ -7,6 +7,7 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
+    DAGSTER_METAXY_METADATA_METADATA_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
@@ -48,13 +49,11 @@ class metaxify:
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
             if there are already 3 kinds on the asset.
 
-    Note:
+    !!! note
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
-        `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy operations are append-only.
+        `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
 
-    Example:
-        Apply to `AssetsDefinition`:
-
+    ??? example "Apply to `dagster.AssetsDefinition`"
         ```py
         import dagster as dg
         import metaxy as mx
@@ -69,8 +68,7 @@ class metaxify:
             ...
         ```
 
-        Apply to `AssetSpec`:
-
+    ??? example "Apply to `dagster.AssetSpec`"
         ```py
         import dagster as dg
         import metaxy.ext.dagster as mxd
@@ -230,7 +228,10 @@ def _metaxify_spec(
     replace_attrs: dict[str, Any] = {
         "key": final_key,
         "deps": {*spec.deps, *deps_to_add},
-        "metadata": {**spec.metadata, **feature_spec.metadata},
+        "metadata": {
+            **spec.metadata,
+            DAGSTER_METAXY_METADATA_METADATA_KEY: feature_spec.metadata,
+        },
         "kinds": {*spec.kinds, *kinds_to_add},
         **dagster_attrs,
     }
