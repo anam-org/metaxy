@@ -94,13 +94,13 @@ class TestBuildAssetSpec:
         assert spec.key == dg.AssetKey(["test", "upstream"])
         assert spec.metadata[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test/upstream"
 
-    def test_build_asset_spec_with_key_prefix(
+    def test_build_asset_spec_without_inherit_uses_feature_key(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that key_prefix is prepended to asset key."""
-        spec = build_asset_spec("test/upstream", key_prefix=["prefix", "path"])
+        """Test that feature key is used by default (inherit_feature_key_as_asset_key=True)."""
+        spec = build_asset_spec("test/upstream")
 
-        assert spec.key == dg.AssetKey(["prefix", "path", "test", "upstream"])
+        assert spec.key == dg.AssetKey(["test", "upstream"])
 
     def test_build_asset_spec_includes_deps(
         self,
@@ -113,16 +113,16 @@ class TestBuildAssetSpec:
         dep_keys = {dep.asset_key for dep in spec.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
-    def test_build_asset_spec_deps_use_key_prefix(
+    def test_build_asset_spec_deps_use_feature_keys(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
     ):
-        """Test that deps also use key_prefix."""
-        spec = build_asset_spec("test/downstream", key_prefix=["prefix"])
+        """Test that deps use feature keys."""
+        spec = build_asset_spec("test/downstream")
 
         dep_keys = {dep.asset_key for dep in spec.deps}
-        assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
+        assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
     def test_build_asset_spec_exclude_kind(
         self, upstream_feature: type[mx.BaseFeature]

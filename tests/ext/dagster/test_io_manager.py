@@ -527,16 +527,16 @@ class TestMultipleAssetsPerFeature:
             ids = set(all_data.to_native()["id"].to_list())
             assert ids == {"a1", "a2", "a3", "b1", "b2"}
 
-    def test_multiple_assets_with_key_prefix(
+    def test_multiple_assets_with_inherit_feature_key(
         self,
         shared_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test multiple assets using key_prefix while writing to the same feature."""
+        """Test multiple assets using inherit_feature_key_as_asset_key while writing to the same feature."""
         import metaxy.ext.dagster as mxd
 
-        @mxd.metaxify(key_prefix=["pipeline", "data"])
+        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",
@@ -552,7 +552,7 @@ class TestMultipleAssetsPerFeature:
                 }
             )
 
-        @mxd.metaxify(key_prefix=["pipeline", "data"])
+        @mxd.metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(
             metadata={"metaxy/feature": "features/shared"},
             io_manager_key="metaxy_io_manager",
@@ -569,9 +569,9 @@ class TestMultipleAssetsPerFeature:
                 }
             )
 
-        # Verify asset keys are prefixed (not replaced with feature key)
-        assert dg.AssetKey(["pipeline", "data", "producer_one"]) in producer_one.keys
-        assert dg.AssetKey(["pipeline", "data", "producer_two"]) in producer_two.keys
+        # Both assets use the same feature key as asset key
+        assert dg.AssetKey(["features", "shared"]) in producer_one.keys
+        assert dg.AssetKey(["features", "shared"]) in producer_two.keys
 
         # Materialize both assets
         result1 = dg.materialize(

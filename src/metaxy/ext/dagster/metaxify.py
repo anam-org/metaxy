@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any
 
 import dagster as dg
@@ -13,14 +13,15 @@ from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
 
 
 def metaxify(
-    key_prefix: Sequence[str] | None = None, inject_metaxy_kind: bool = True
+    inherit_feature_key_as_asset_key: bool = False, inject_metaxy_kind: bool = True
 ) -> Callable[[dg.AssetsDefinition], dg.AssetsDefinition]:
     """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition].
 
     Modifies assets that have `metaxy/feature` metadata set.
 
     Args:
-        key_prefix: Optional prefix to prepend to the asset key.
+        inherit_feature_key_as_asset_key: If True, use the Metaxy feature key as the
+            Dagster asset key (unless `metaxy/metadata` is set on the feature spec).
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
             if there are already 3 kinds on the asset.
@@ -30,15 +31,13 @@ def metaxify(
 
             - The asset key is determined as follows:
 
-                1. If the Metaxy feature spec has `"metaxy/metadata"` set, that value is used as-is (no prefix applied).
+                1. If the Metaxy feature spec has `"metaxy/metadata"` set, that value is used as-is.
 
-                2. Otherwise, the original Dagster asset key is used, with `key_prefix` prepended if provided.
+                2. Otherwise, if `inherit_feature_key_as_asset_key` is True, the Metaxy feature key is used.
 
-            - Asset keys for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic:
+                3. Otherwise, the original Dagster asset key is kept as-is.
 
-                - If the upstream feature spec has `"metaxy/metadata"` set, that value is used as-is.
-
-                - Otherwise, `key_prefix` (if provided) and the Metaxy feature key are used.
+            - Asset keys for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic.
 
             - Feature spec metadata is injected into the Dagster asset metadata.
 
@@ -85,20 +84,23 @@ def metaxify(
 
                 # Determine the final asset key using the utility function
                 final_key = get_asset_key_for_metaxy_feature_spec(
-                    feature_spec, key_prefix=key_prefix, dagster_key=key
+                    feature_spec,
+                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+                    dagster_key=key,
                 )
 
                 if final_key != key:
                     keys_to_replace[key] = final_key
 
-                # Inject deps using feature keys (with key_prefix for consistency)
+                # Inject deps using feature keys
                 for dep in feature_spec.deps:
                     upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
 
                     deps_to_inject[final_key].add(
                         dg.AssetDep(
                             asset=get_asset_key_for_metaxy_feature_spec(
-                                upstream_feature_spec, key_prefix=key_prefix
+                                upstream_feature_spec,
+                                inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                             )
                         )
                     )
