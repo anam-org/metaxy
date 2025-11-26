@@ -8,10 +8,8 @@ from metaxy.ext.dagster.constants import (
 from metaxy.ext.dagster.io_manager import MetaxyIOManager, MetaxyOutput
 from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
-from metaxy.ext.dagster.utils import build_asset_spec
 
 __all__ = [
-    "build_asset_spec",
     "metaxify",
     "MetaxyStoreFromConfigResource",
     "MetaxyIOManager",

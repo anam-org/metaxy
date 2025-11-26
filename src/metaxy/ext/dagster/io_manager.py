@@ -29,7 +29,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         This IOManager is using `"metaxy/feature"` Dagster metadata key to map Dagster assets into Metaxy features.
         It expects it to be set on the assets being loaded or materialized.
 
-        !!! example
+        ??? example
 
             ```py
             import dagster as dg
@@ -47,8 +47,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
 
         To tell Metaxy which column to use when filtering partitioned assets, set `"partition_by"` Dagster metadata key.
 
-        Example:
-
+        ??? example
             ```py
             import dagster as dg
 
