@@ -655,3 +655,122 @@ def test_resolve_update_idempotency(
         assert len(increment2.removed) == 0, (
             "Second resolve_update should have no removed samples"
         )
+
+
+# ============= TEST: FILTER KEY TYPES =============
+
+
+def test_resolve_update_filters_with_feature_class_key(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that resolve_update accepts feature classes as filter keys."""
+    import narwhals as nw
+    import polars as pl
+
+    store = default_store
+
+    class UpstreamFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="upstream",
+            fields=["value"],
+        ),
+    ):
+        pass
+
+    class DownstreamFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="downstream",
+            deps=[FeatureDep(feature=UpstreamFeature)],
+            fields=["result"],
+        ),
+    ):
+        pass
+
+    # Create upstream metadata with different values
+    upstream_df = pl.DataFrame(
+        {
+            "sample_uid": ["s1", "s2", "s3"],
+            "value": [10, 20, 30],
+            "metaxy_provenance_by_field": [
+                {"value": "h1"},
+                {"value": "h2"},
+                {"value": "h3"},
+            ],
+        }
+    )
+
+    with store, graph.use():
+        store.write_metadata(UpstreamFeature, upstream_df)
+
+        # Use feature class as filter key - should filter upstream to only value > 15
+        increment = store.resolve_update(
+            DownstreamFeature,
+            filters={UpstreamFeature: [nw.col("value") > 15]},
+        )
+
+        # Should only get 2 samples (s2 and s3 where value > 15)
+        assert len(increment.added) == 2
+        added_df = increment.added.lazy().collect().to_polars()
+        assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
+
+
+def test_resolve_update_filters_with_feature_key_object(
+    default_store: MetadataStore,
+    graph: FeatureGraph,
+):
+    """Test that resolve_update accepts FeatureKey objects as filter keys."""
+    import narwhals as nw
+    import polars as pl
+
+    store = default_store
+
+    class UpstreamFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="upstream_fk",
+            fields=["value"],
+        ),
+    ):
+        pass
+
+    class DownstreamFeature(
+        SampleFeature,
+        spec=SampleFeatureSpec(
+            key="downstream_fk",
+            deps=[FeatureDep(feature=UpstreamFeature)],
+            fields=["result"],
+        ),
+    ):
+        pass
+
+    # Create upstream metadata
+    upstream_df = pl.DataFrame(
+        {
+            "sample_uid": ["s1", "s2", "s3", "s4"],
+            "value": [5, 15, 25, 35],
+            "metaxy_provenance_by_field": [
+                {"value": "h1"},
+                {"value": "h2"},
+                {"value": "h3"},
+                {"value": "h4"},
+            ],
+        }
+    )
+
+    with store, graph.use():
+        store.write_metadata(UpstreamFeature, upstream_df)
+
+        # Use FeatureKey as filter key
+        upstream_key = FeatureKey(["upstream_fk"])
+        increment = store.resolve_update(
+            DownstreamFeature,
+            filters={upstream_key: [nw.col("value") >= 15, nw.col("value") < 30]},
+        )
+
+        # Should get 2 samples (s2 and s3 where 15 <= value < 30)
+        assert len(increment.added) == 2
+        added_df = increment.added.lazy().collect().to_polars()
+        assert set(added_df["sample_uid"].to_list()) == {"s2", "s3"}
