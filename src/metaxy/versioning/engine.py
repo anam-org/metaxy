@@ -223,12 +223,12 @@ class VersioningEngine(ABC):
 
     @staticmethod
     @abstractmethod
-    def build_struct_column(
+    def record_field_versions(
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Persist field-level versions using the backend's struct representation.
 
         Args:
             df: Input DataFrame.
@@ -239,6 +239,22 @@ class VersioningEngine(ABC):
             DataFrame with the new struct column added.
         """
         raise NotImplementedError()
+
+    def access_provenance_field(
+        self,
+        struct_column: str,
+        field_name: str,
+    ) -> nw.Expr:
+        """Access a field from a provenance struct column.
+
+        Args:
+            struct_column: Name of the struct column (e.g., "metaxy_provenance_by_field")
+            field_name: Name of the field to access (e.g., "field1")
+
+        Returns:
+            Narwhals expression to access the field value
+        """
+        return self._field_accessor.field_expr(struct_column, field_name)
 
     @abstractmethod
     def concat_strings_over_groups(
@@ -375,10 +391,10 @@ class VersioningEngine(ABC):
         )
 
         # Build new struct columns from hashed fields
-        df = self.build_struct_column(  # ty: ignore[invalid-assignment]
+        df = self.record_field_versions(  # ty: ignore[invalid-assignment]
             df, renamed_data_version_by_field_col, hashed_field_cols
         )
-        df = self.build_struct_column(  # ty: ignore[invalid-assignment]
+        df = self.record_field_versions(  # ty: ignore[invalid-assignment]
             df,  # ty: ignore[invalid-argument-type]
             renamed_prov_by_field_col,
             hashed_field_cols,
@@ -387,7 +403,7 @@ class VersioningEngine(ABC):
         # Compute sample-level data_version and provenance by hashing all fields together
         # Concatenate all field hashes with separator, then hash
         field_exprs = [
-            nw.col(renamed_data_version_by_field_col).struct.field(field_name)
+            self.access_provenance_field(renamed_data_version_by_field_col, field_name)
             for field_name in sorted(upstream_field_names)
         ]
         sample_concat = nw.concat_str(field_exprs, separator="|")
@@ -435,9 +451,10 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                base_expr = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                base_expr = self.access_provenance_field(
+                    self.get_renamed_data_version_by_field_col(fq_key.feature),
+                    parent_field_spec.key.to_struct_key(),
+                )
 
                 # Check if this is from an optional dependency
                 transformer = self.feature_transformers_by_key.get(fq_key.feature)
@@ -504,7 +521,7 @@ class VersioningEngine(ABC):
             )
 
         # Build provenance_by_field struct
-        df = self.build_struct_column(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
+        df = self.record_field_versions(df, METAXY_PROVENANCE_BY_FIELD, temp_hash_cols)  # ty: ignore[invalid-argument-type]
 
         # Compute sample-level provenance hash
         df = self.hash_struct_version_column(df, hash_algorithm=hash_algo)  # ty: ignore[invalid-assignment]
@@ -539,7 +556,6 @@ class VersioningEngine(ABC):
             df = df.drop(*columns_to_drop)  # ty: ignore[invalid-argument-type]
 
         # Add data_version columns (default to provenance values)
-
         df = df.with_columns(  # ty: ignore[invalid-argument-type]
             nw.col(METAXY_PROVENANCE).alias(METAXY_DATA_VERSION),
             nw.col(METAXY_PROVENANCE_BY_FIELD).alias(METAXY_DATA_VERSION_BY_FIELD),
@@ -639,10 +655,10 @@ class VersioningEngine(ABC):
             )
 
         # Concatenate all field hashes with separator
-        sample_components = [
-            nw.col(struct_column).struct.field(field_name)
-            for field_name in sorted(field_names)
-        ]
+        sample_components = []
+        for field_name in sorted(field_names):
+            expr = self.access_provenance_field(struct_column, field_name)
+            sample_components.append(expr.fill_null(""))
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))  # ty: ignore[invalid-argument-type]
 
