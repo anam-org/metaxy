@@ -9,6 +9,7 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
     DAGSTER_METAXY_METADATA_METADATA_KEY,
+    DAGSTER_METAXY_PROJECT_TAG_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
@@ -42,6 +43,8 @@ class metaxify:
     - **Description** from the feature class docstring is used if the asset spec doesn't have a description set.
 
     - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds.
+
+    - **Tags** `metaxy/feature` and `metaxy/project` are injected into the asset tags.
 
     - **Arbitrary asset attributes** from `"dagster/attributes"` in the feature spec metadata
       (such as `group_name`, `owners`, `tags`) are applied to the asset spec (with replacement).
@@ -389,15 +392,25 @@ def _metaxify_spec(
     if set_description and final_description is None and feature_cls.__doc__:
         final_description = inspect.cleandoc(feature_cls.__doc__)
 
+    # Build tags for project and feature
+    # Note: Dagster tag values only allow alpha-numeric, '_', '-', '.'
+    # so we use table_name which uses '__' separator
+    tags_to_add: dict[str, str] = {
+        DAGSTER_METAXY_PROJECT_TAG_KEY: mx.MetaxyConfig.get().project,
+        DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
+    }
+
     # Build the replacement attributes
     replace_attrs: dict[str, Any] = {
         "key": final_key,
         "deps": {*spec.deps, *deps_to_add},
         "metadata": {
             **spec.metadata,
+            DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),
             DAGSTER_METAXY_METADATA_METADATA_KEY: feature_spec.metadata,
         },
         "kinds": {*spec.kinds, *kinds_to_add},
+        "tags": {**spec.tags, **tags_to_add},
         **dagster_attrs,
     }
 
