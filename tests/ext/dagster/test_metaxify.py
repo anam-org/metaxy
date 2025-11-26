@@ -130,10 +130,10 @@ class TestMetaxifyBasic:
 class TestMetaxifyAssetKeys:
     """Test asset key handling in @metaxify."""
 
-    def test_metaxify_preserves_asset_key_without_prefix(
+    def test_metaxify_preserves_asset_key_by_default(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that asset key is preserved when no key_prefix is provided."""
+        """Test that asset key is preserved when inherit_feature_key_as_asset_key is False."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
@@ -143,18 +143,18 @@ class TestMetaxifyAssetKeys:
         # Asset key should remain unchanged (original dagster key)
         assert dg.AssetKey(["my_asset"]) in my_asset.keys
 
-    def test_metaxify_uses_key_prefix_on_dagster_key(
+    def test_metaxify_uses_feature_key_when_inherit_enabled(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that key_prefix is prepended to the existing dagster asset key."""
+        """Test that feature key is used as asset key when inherit_feature_key_as_asset_key is True."""
 
-        @metaxify(key_prefix=["prefix", "path"])
+        @metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def my_asset():
             pass
 
-        # Asset key should be prefix + original dagster key
-        assert dg.AssetKey(["prefix", "path", "my_asset"]) in my_asset.keys
+        # Asset key should be the feature key
+        assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
 
     def test_metaxify_uses_custom_key_from_feature_spec(
         self, feature_with_dagster_metadata: type[mx.BaseFeature]
@@ -169,36 +169,36 @@ class TestMetaxifyAssetKeys:
         # Asset key should use the custom key from feature spec's metaxy/metadata
         assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
 
-    def test_metaxify_custom_key_ignores_prefix(
+    def test_metaxify_custom_key_overrides_inherit(
         self, feature_with_dagster_metadata: type[mx.BaseFeature]
     ):
-        """Test that key_prefix is NOT applied when metaxy/metadata is set."""
+        """Test that metaxy/metadata takes precedence over inherit_feature_key_as_asset_key."""
 
-        @metaxify(key_prefix=["prefix"])
+        @metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(metadata={"metaxy/feature": "test/custom_key"})
         def my_asset():
             pass
 
-        # Asset key should be custom key only (prefix ignored)
+        # Asset key should be custom key (metaxy/metadata takes precedence)
         assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
 
 
 class TestMetaxifyDeps:
     """Test dependency injection in @metaxify."""
 
-    def test_metaxify_injects_upstream_deps(
+    def test_metaxify_injects_upstream_deps_with_feature_keys(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
     ):
-        """Test that upstream feature deps are injected into asset."""
+        """Test that upstream feature deps are injected using feature keys when inherit is enabled."""
 
-        @metaxify()
+        @metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def upstream_asset():
             pass
 
-        @metaxify()
+        @metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(metadata={"metaxy/feature": "test/downstream"})
         def downstream_asset():
             pass
@@ -208,22 +208,22 @@ class TestMetaxifyDeps:
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
-    def test_metaxify_deps_use_prefix(
+    def test_metaxify_deps_use_feature_keys_when_inherit_enabled(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
     ):
-        """Test that deps use key_prefix for consistency."""
+        """Test that deps use feature keys when inherit_feature_key_as_asset_key is True."""
 
-        @metaxify(key_prefix=["prefix"])
+        @metaxify(inherit_feature_key_as_asset_key=True)
         @dg.asset(metadata={"metaxy/feature": "test/downstream"})
         def downstream_asset():
             pass
 
         downstream_spec = list(downstream_asset.specs)[0]
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
-        # Dep key should use prefix + feature key
-        assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
+        # Dep key should use feature key
+        assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
 
 class TestMetaxifyMixedDeps:

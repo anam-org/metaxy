@@ -1,5 +1,3 @@
-from collections.abc import Sequence
-
 import dagster as dg
 
 import metaxy as mx
@@ -12,51 +10,50 @@ from metaxy.ext.dagster.constants import (
 
 def get_asset_key_for_metaxy_feature_spec(
     feature_spec: mx.FeatureSpec,
-    key_prefix: Sequence[str] | None = None,
+    inherit_feature_key_as_asset_key: bool = False,
     dagster_key: dg.AssetKey | None = None,
 ) -> dg.AssetKey:
     """Get the Dagster asset key for a Metaxy feature spec.
 
     Args:
         feature_spec: The Metaxy feature spec.
-        key_prefix: Optional prefix to prepend to the asset key (only applied when
-            `metaxy/metadata` is not set on the feature spec).
-        dagster_key: Optional existing Dagster asset key to use as the base key
-            (instead of the feature key). Used by `metaxify` to preserve original
-            asset keys.
+        inherit_feature_key_as_asset_key: If `True`, use the feature key as the asset key
+            when `metaxy/metadata` is not set on the feature spec.
+        dagster_key: Optional existing Dagster asset key. Used by `metaxify` to preserve
+            original asset keys when `inherit_feature_key_as_asset_key` is False.
 
     Returns:
         The Dagster asset key, determined as follows:
 
-        1. If feature spec has `metaxy/metadata` set, that value is used as-is
-           (no prefix applied).
-        2. Otherwise, if `dagster_key` is provided, it's used with `key_prefix`
-           prepended if provided.
-        3. Otherwise, the feature key is used with `key_prefix` prepended if provided.
+        1. If feature spec has `metaxy/metadata` set, that value is used as-is.
+
+        2. Otherwise, if `inherit_feature_key_as_asset_key` is True, the feature key is used.
+
+        3. Otherwise, if `dagster_key` is provided, it's returned as-is.
+
+        4. Otherwise, the feature key is used.
     """
-    # If metaxy/metadata is set, use it as-is (no prefix)
+    # If metaxy/metadata is set, use it as-is
     if metaxy_defined_dagster_asset_key := feature_spec.metadata.get(
         DAGSTER_METAXY_METADATA_METADATA_KEY
     ):
         return dg.AssetKey(metaxy_defined_dagster_asset_key)  # pyright: ignore[reportArgumentType]
 
-    # Determine base key
-    if dagster_key is not None:
-        base_key_parts = list(dagster_key.path)
-    else:
-        base_key_parts = list(feature_spec.key.parts)
+    # If inherit_feature_key_as_asset_key is set, use the feature key
+    if inherit_feature_key_as_asset_key:
+        return dg.AssetKey(list(feature_spec.key.parts))
 
-    # Apply prefix if provided
-    if key_prefix:
-        return dg.AssetKey([*key_prefix, *base_key_parts])
-    else:
-        return dg.AssetKey(base_key_parts)
+    # Otherwise, use dagster_key if provided, else fall back to feature key
+    if dagster_key is not None:
+        return dagster_key
+
+    return dg.AssetKey(list(feature_spec.key.parts))
 
 
 def build_asset_spec(
     feature: mx.CoercibleToFeatureKey,
     *,
-    key_prefix: Sequence[str] | None = None,
+    inherit_feature_key_as_asset_key: bool = True,
     include_kind: bool = True,
 ) -> dg.AssetSpec:
     """Build a Dagster AssetSpec from a Metaxy feature.
@@ -66,7 +63,8 @@ def build_asset_spec(
 
     Args:
         feature: A Metaxy feature key (string, list, or feature class).
-        key_prefix: Optional prefix to prepend to asset keys.
+        inherit_feature_key_as_asset_key: If True, use the feature key as the asset key
+            (unless `metaxy/metadata` is set on the feature spec).
         include_kind: Whether to include the "metaxy" kind.
 
     Returns:
@@ -91,7 +89,7 @@ def build_asset_spec(
     feature_spec = feature_cls.spec()
 
     asset_key = get_asset_key_for_metaxy_feature_spec(
-        feature_spec, key_prefix=key_prefix
+        feature_spec, inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key
     )
 
     # Build deps from feature dependencies
@@ -101,7 +99,8 @@ def build_asset_spec(
         deps.add(
             dg.AssetDep(
                 asset=get_asset_key_for_metaxy_feature_spec(
-                    upstream_spec, key_prefix=key_prefix
+                    upstream_spec,
+                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 )
             )
         )
