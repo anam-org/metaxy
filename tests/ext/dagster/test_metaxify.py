@@ -12,6 +12,7 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
     DAGSTER_METAXY_METADATA_METADATA_KEY,
+    DAGSTER_METAXY_PROJECT_TAG_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.metaxify import metaxify
@@ -199,6 +200,74 @@ class TestMetaxifyBasic:
         assert injected_metadata[METAXY_DAGSTER_METADATA_KEY] == {
             "group_name": "my_group"
         }
+
+
+class TestMetaxifyTags:
+    """Test tag injection in @metaxify."""
+
+    def test_metaxify_injects_feature_tag(self, upstream_feature: type[mx.BaseFeature]):
+        """Test that metaxify injects metaxy/feature tag with feature key table_name."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_METAXY_FEATURE_METADATA_KEY in asset_spec.tags
+        # Tag value uses table_name format (__ separator) for Dagster compatibility
+        assert asset_spec.tags[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test__upstream"
+
+    def test_metaxify_injects_project_tag(self, upstream_feature: type[mx.BaseFeature]):
+        """Test that metaxify injects metaxy/project tag with project name."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_METAXY_PROJECT_TAG_KEY in asset_spec.tags
+        assert (
+            asset_spec.tags[DAGSTER_METAXY_PROJECT_TAG_KEY]
+            == mx.MetaxyConfig.get().project
+        )
+
+    def test_metaxify_preserves_existing_tags(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that metaxify preserves existing asset tags."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            tags={"custom_tag": "custom_value"},
+        )
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # Original tag preserved
+        assert asset_spec.tags["custom_tag"] == "custom_value"
+        # Metaxy tags injected
+        assert DAGSTER_METAXY_FEATURE_METADATA_KEY in asset_spec.tags
+        assert DAGSTER_METAXY_PROJECT_TAG_KEY in asset_spec.tags
+
+    def test_metaxify_asset_spec_injects_tags(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that metaxify injects tags into AssetSpec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify()(spec)
+
+        assert DAGSTER_METAXY_FEATURE_METADATA_KEY in result.tags
+        # Tag value uses table_name format (__ separator) for Dagster compatibility
+        assert result.tags[DAGSTER_METAXY_FEATURE_METADATA_KEY] == "test__upstream"
+        assert DAGSTER_METAXY_PROJECT_TAG_KEY in result.tags
 
 
 class TestMetaxifyAssetKeys:
