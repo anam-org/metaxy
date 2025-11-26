@@ -1205,6 +1205,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#observable-source-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observable Source Assets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3061,6 +3072,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#observable-source-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observable Source Assets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3208,6 +3230,9 @@
 <ul>
 <li>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;metaxify&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.metaxify.metaxify"><code>metaxify</code></a> - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, and so on.</p>
+</li>
+<li>
+<p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;observable_metaxy_asset&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.observable.observable_metaxy_asset"><code>observable_metaxy_asset</code></a> - a decorator that creates observable source assets for monitoring external Metaxy features.</p>
 </li>
 <li>
 <p><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetaxyStoreFromConfigResource&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.MetaxyStoreFromConfigResource"><code>MetaxyStoreFromConfigResource</code></a> - a resource that provides access to <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-class&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-class-name&quot;&gt;MetadataStore&lt;/span&gt;" href="../../../reference/api/metadata-stores/#metaxy.MetadataStore"><code>MetadataStore</code></a></p>
@@ -3363,7 +3388,31 @@
 <h3 id="4-start-dagster">4. Start Dagster<a class="headerlink" href="#4-start-dagster" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>dg<span class="w"> </span>dev<span class="w"> </span>-f<span class="w"> </span>defs.py
 </span></code></pre></div>
-<p>Materialize your ultra-giga-multi-modal-big-data assets and let Metaxy take care of state and versioning!</p>
+<p>Materialize your assets and let Metaxy take care of state and versioning!</p>
+<h2 id="observable-source-assets">Observable Source Assets<a class="headerlink" href="#observable-source-assets" title="Permanent link">&para;</a></h2>
+<p>Use <a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-function&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-function-name&quot;&gt;observable_metaxy_asset&lt;/span&gt;" href="../../../reference/api/ext/dagster/#metaxy.ext.dagster.observable.observable_metaxy_asset"><code>observable_metaxy_asset</code></a> to create observable source assets that monitor external Metaxy features.
+This is useful when Metaxy features are populated outside of Dagster (e.g., by external pipelines) and you want Dagster to track their data versions.</p>
+<!-- dprint-ignore-start -->
+<div class="admonition example">
+<p class="admonition-title">Basic Observable Asset</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mx</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">observable_metaxy_asset</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;dagster/asset/key&quot;</span><span class="p">,</span> <span class="n">feature</span><span class="o">=</span><span class="s2">&quot;external/feature&quot;</span><span class="p">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">external_data</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">dg</span><span class="o">.</span><span class="n">ResourceParam</span><span class="p">[</span><span class="n">mx</span><span class="o">.</span><span class="n">MetadataStore</span><span class="p">],</span> <span class="n">lazy_df</span><span class="p">:</span> <span class="n">nw</span><span class="o">.</span><span class="n">LazyFrame</span><span class="p">):</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="c1"># build a custom metadata dict</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="n">metadata</span> <span class="o">=</span> <span class="o">...</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="k">return</span> <span class="n">metadata</span>
+</span></code></pre></div>
+</div>
+<!-- dprint-ignore-end -->
+
+<p>The observation automatically tracks:</p>
+<ul>
+<li><strong>Data version</strong>: Uses <code>mean(metaxy_created_at)</code> to detect both additions and deletions</li>
+<li><strong>Row count</strong>: Logged as <code>dagster/row_count</code> metadata</li>
+</ul>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Integration <a href="../../../reference/api/ext/dagster/">API docs</a></li>
