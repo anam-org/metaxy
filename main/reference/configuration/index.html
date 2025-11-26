@@ -3417,7 +3417,7 @@
 </div>
 <hr />
 <h3 id="project"><code>project</code><a class="headerlink" href="#project" title="Permanent link">&para;</a></h3>
-<p>Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)</p>
+<p>Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (<code>/</code>) or double underscores (<code>__</code>)</p>
 <p><strong>Type:</strong> <code>str</code> | <strong>Default:</strong> <code>"default"</code></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="8:3"><input checked="checked" id="project-metaxytoml" name="__tabbed_8" type="radio" /><input id="project-pyprojecttoml" name="__tabbed_8" type="radio" /><input id="project-environment-variable" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="project-metaxytoml">metaxy.toml</label><label for="project-pyprojecttoml">pyproject.toml</label><label for="project-environment-variable">Environment Variable</label></div>
 <div class="tabbed-content">
