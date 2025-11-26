@@ -425,6 +425,109 @@ class TestMetaxifyMixedDeps:
         assert dg.AssetKey(["metaxy_asset"]) in consumer_dep_keys
 
 
+class TestMetaxifyAssetSpec:
+    """Test @metaxify with raw AssetSpec objects."""
+
+    def test_metaxify_transforms_asset_spec(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that metaxify can transform a raw AssetSpec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify()(spec)
+
+        # Should return an AssetSpec
+        assert isinstance(result, dg.AssetSpec)
+        # Should have metaxy kind
+        assert DAGSTER_METAXY_KIND in result.kinds
+        # Key should be preserved (inherit_feature_key_as_asset_key=False by default)
+        assert result.key == dg.AssetKey(["my_spec"])
+
+    def test_metaxify_asset_spec_with_inherit_key(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that AssetSpec key is replaced when inherit_feature_key_as_asset_key=True."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify(inherit_feature_key_as_asset_key=True)(spec)
+
+        # Key should be the feature key
+        assert result.key == dg.AssetKey(["test", "upstream"])
+
+    def test_metaxify_asset_spec_with_custom_key(
+        self, feature_with_dagster_metadata: type[mx.BaseFeature]
+    ):
+        """Test that AssetSpec uses custom key from dagster/attributes."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/custom_key"},
+        )
+
+        result = metaxify()(spec)
+
+        # Should use custom key from feature spec metadata
+        assert result.key == dg.AssetKey(["custom", "asset", "key"])
+
+    def test_metaxify_asset_spec_injects_deps(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        downstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that AssetSpec gets deps injected from feature spec."""
+        spec = dg.AssetSpec(
+            key="my_downstream",
+            metadata={"metaxy/feature": "test/downstream"},
+        )
+
+        result = metaxify(inherit_feature_key_as_asset_key=True)(spec)
+
+        dep_keys = {dep.asset_key for dep in result.deps}
+        assert dg.AssetKey(["test", "upstream"]) in dep_keys
+
+    def test_metaxify_asset_spec_applies_dagster_attrs(
+        self, feature_with_group_name: type[mx.BaseFeature]
+    ):
+        """Test that AssetSpec gets dagster attributes from feature spec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/grouped"},
+        )
+
+        result = metaxify()(spec)
+
+        assert result.group_name == "my_group"
+
+    def test_metaxify_asset_spec_preserves_existing_deps(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that existing deps on AssetSpec are preserved."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+            deps=[dg.AssetDep("existing_dep")],
+        )
+
+        result = metaxify()(spec)
+
+        dep_keys = {dep.asset_key for dep in result.deps}
+        assert dg.AssetKey(["existing_dep"]) in dep_keys
+
+    def test_metaxify_asset_spec_no_op_without_feature(self):
+        """Test that AssetSpec without metaxy/feature is returned unchanged."""
+        spec = dg.AssetSpec(key="regular_spec")
+
+        result = metaxify()(spec)
+
+        assert result.key == dg.AssetKey(["regular_spec"])
+        assert DAGSTER_METAXY_KIND not in result.kinds
+
+
 class TestMetaxifyNoOp:
     """Test that @metaxify is a no-op for assets without metaxy metadata."""
 
