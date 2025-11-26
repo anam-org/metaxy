@@ -109,6 +109,18 @@ def feature_with_multiple_attrs() -> type[mx.BaseFeature]:
 class TestMetaxifyBasic:
     """Test basic @metaxify functionality."""
 
+    def test_metaxify_without_parentheses(self, upstream_feature: type[mx.BaseFeature]):
+        """Test that @metaxify works without parentheses."""
+
+        @metaxify
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        # Should have metaxy kind injected
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_METAXY_KIND in asset_spec.kinds
+
     def test_metaxify_injects_metaxy_kind(self, upstream_feature: type[mx.BaseFeature]):
         """Test that metaxify injects 'metaxy' kind into asset."""
 
