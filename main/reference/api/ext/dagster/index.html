@@ -3782,13 +3782,13 @@ Instead, set <code>"metaxy/feature"</code> metadata on the right output's <code>
 
     <div class="doc doc-contents ">
 
-        <p>Transform the asset when used as <a class="magiclink magiclink-github magiclink-mention" href="https://github.com/metaxify" title="GitHub User: metaxify">@metaxify</a>() with parentheses.</p>
+        <p>Transform the asset when used as <code>@metaxify()</code> with parentheses.</p>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/ext/dagster/metaxify.py</code></summary>
               <div class="language-python highlight"><pre><span></span><code><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a><a href="#__codelineno-0-194"><span class="linenos" data-linenos="194 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">asset</span><span class="p">:</span> <span class="n">_T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_T</span><span class="p">:</span>
-</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><a href="#__codelineno-0-195"><span class="linenos" data-linenos="195 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform the asset when used as @metaxify() with parentheses.&quot;&quot;&quot;</span>
+</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><a href="#__codelineno-0-195"><span class="linenos" data-linenos="195 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform the asset when used as `@metaxify()` with parentheses.&quot;&quot;&quot;</span>
 </span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a><a href="#__codelineno-0-196"><span class="linenos" data-linenos="196 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">(</span>
 </span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><a href="#__codelineno-0-197"><span class="linenos" data-linenos="197 "></span></a>        <span class="n">asset</span><span class="p">,</span>
 </span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><a href="#__codelineno-0-198"><span class="linenos" data-linenos="198 "></span></a>        <span class="n">feature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">,</span>
