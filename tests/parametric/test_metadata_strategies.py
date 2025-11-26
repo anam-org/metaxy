@@ -14,10 +14,15 @@ from metaxy._testing.parametric import (
 from metaxy.models.constants import (
     ALL_SYSTEM_COLUMNS,
     METAXY_FEATURE_VERSION,
+    METAXY_MATERIALIZATION_ID,
     METAXY_PROVENANCE_BY_FIELD,
     METAXY_SNAPSHOT_VERSION,
 )
 from metaxy.versioning.types import HashAlgorithm
+
+# System columns expected in test-generated metadata (excludes metaxy_materialization_id
+# which is only added when an external materialization ID is provided)
+EXPECTED_SYSTEM_COLUMNS = ALL_SYSTEM_COLUMNS - {METAXY_MATERIALIZATION_ID}
 
 
 def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
@@ -53,8 +58,8 @@ def test_feature_metadata_strategy_basic(graph: FeatureGraph) -> None:
         # Check ID columns exist
         assert "sample_uid" in df.columns
 
-        # Check all system columns exist
-        assert ALL_SYSTEM_COLUMNS.issubset(set(df.columns))
+        # Check all expected system columns exist
+        assert EXPECTED_SYSTEM_COLUMNS.issubset(set(df.columns))
 
         # Check provenance_by_field structure - extract field names from schema
         provenance_schema = df.schema[METAXY_PROVENANCE_BY_FIELD]
@@ -113,8 +118,8 @@ def test_feature_metadata_strategy_with_id_columns_df(graph: FeatureGraph) -> No
         assert df["sample_uid"].to_list() == [100, 200, 300]
         assert len(df) == 3
 
-        # All system columns should still be present
-        assert ALL_SYSTEM_COLUMNS.issubset(set(df.columns))
+        # All expected system columns should still be present
+        assert EXPECTED_SYSTEM_COLUMNS.issubset(set(df.columns))
 
     property_test()
 
@@ -170,7 +175,7 @@ def test_upstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> None
 
         # Check ID columns and all system columns exist
         assert "sample_uid" in parent_df.columns
-        assert ALL_SYSTEM_COLUMNS.issubset(set(parent_df.columns))
+        assert EXPECTED_SYSTEM_COLUMNS.issubset(set(parent_df.columns))
 
         # Check provenance structure
         assert parent_df.schema[METAXY_PROVENANCE_BY_FIELD] == pl.Struct(
@@ -429,7 +434,7 @@ def test_downstream_metadata_strategy_single_upstream(graph: FeatureGraph) -> No
 
         # Check downstream data structure
         assert len(downstream_df) == len(parent_df)  # Same number of rows after join
-        assert ALL_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
+        assert EXPECTED_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
 
         # Check downstream provenance structure
         provenance_schema = downstream_df.schema[METAXY_PROVENANCE_BY_FIELD]
@@ -525,7 +530,7 @@ def test_downstream_metadata_strategy_multiple_upstreams(graph: FeatureGraph) ->
         assert 5 <= len(downstream_df) <= 10
 
         # Check downstream has correct structure
-        assert ALL_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
+        assert EXPECTED_SYSTEM_COLUMNS.issubset(set(downstream_df.columns))
 
         provenance_dtype = downstream_df.schema[METAXY_PROVENANCE_BY_FIELD]
         assert isinstance(provenance_dtype, pl.Struct)

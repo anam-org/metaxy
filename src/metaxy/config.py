@@ -213,7 +213,7 @@ class MetaxyConfig(BaseSettings):
 
     project: str = PydanticField(
         default="default",
-        description="Project name for metadata isolation. Used to scope system tables and operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid identifiers (alphanumeric, underscores, hyphens) and cannot contain forward slashes (/) or double underscores (__)",
+        description="Project name for metadata isolation. Used to scope operations to enable multiple independent projects in a shared metadata store. Does not modify feature keys or table names. Project names must be valid alphanumeric strings with dashes, underscores, and cannot contain forward slashes (`/`) or double underscores (`__`)",
     )
 
     @field_validator("ext", mode="after")

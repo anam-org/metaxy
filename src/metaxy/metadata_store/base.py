@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
@@ -968,31 +967,40 @@ class MetadataStore(ABC):
         feature_key = self._resolve_feature_key(feature)
 
         # Check if feature_version and snapshot_version already exist in DataFrame
-        if (
-            METAXY_FEATURE_VERSION in df.columns
-            and METAXY_SNAPSHOT_VERSION in df.columns
-        ):
-            # DataFrame already has feature_version and snapshot_version - use as-is
-            # This is intended for migrations writing historical versions
-            # Issue a warning unless we're in a suppression context
-            if not _suppress_feature_version_warning.get():
-                warnings.warn(
-                    f"Writing metadata for {feature_key.to_string()} with existing "
-                    f"{METAXY_FEATURE_VERSION} and {METAXY_SNAPSHOT_VERSION} columns. This is intended for migrations only. "
-                    "Normal code should let write_metadata() add the current versions automatically.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        else:
-            # Get current feature version and snapshot_version from code and add them
-            if isinstance(feature, type) and issubclass(feature, BaseFeature):
-                current_feature_version = feature.feature_version()  # type: ignore[attr-defined]
-            else:
-                from metaxy.models.feature import FeatureGraph
+        has_feature_version = METAXY_FEATURE_VERSION in df.columns
+        has_snapshot_version = METAXY_SNAPSHOT_VERSION in df.columns
 
-                graph = FeatureGraph.get_active()
-                feature_cls = graph.features_by_key[feature_key]
-                current_feature_version = feature_cls.feature_version()  # type: ignore[attr-defined]
+        # In suppression mode (migrations), use existing values as-is
+        if (
+            _suppress_feature_version_warning.get()
+            and has_feature_version
+            and has_snapshot_version
+        ):
+            pass  # Use existing values for migrations
+        else:
+            # Drop any existing version columns (e.g., from SQLModel with null values)
+            # and add current versions
+            columns_to_drop = []
+            if has_feature_version:
+                columns_to_drop.append(METAXY_FEATURE_VERSION)
+            if has_snapshot_version:
+                columns_to_drop.append(METAXY_SNAPSHOT_VERSION)
+            if columns_to_drop:
+                df = df.drop(*columns_to_drop)
+
+            # Get current feature version and snapshot_version from code and add them
+            # Use duck typing to avoid Ray serialization issues with issubclass
+            if (
+                isinstance(feature, type)
+                and hasattr(feature, "feature_version")
+                and callable(feature.feature_version)
+            ):
+                current_feature_version = feature.feature_version()
+            else:
+                from metaxy import get_feature_by_key
+
+                feature_cls = get_feature_by_key(feature_key)
+                current_feature_version = feature_cls.feature_version()
 
             # Get snapshot_version from active graph
             from metaxy.models.feature import FeatureGraph
@@ -1049,17 +1057,11 @@ class MetadataStore(ABC):
         # Add materialization_id if not already present
         from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 
-        if METAXY_MATERIALIZATION_ID not in df.columns:
-            # Use provided materialization_id, fall back to store's default
-            mat_id = (
-                materialization_id
-                if materialization_id is not None
-                else self._materialization_id
-            )
-            # Cast to string to avoid NULL-typed columns (which some backends don't support)
-            df = df.with_columns(
-                nw.lit(mat_id, dtype=nw.String).alias(METAXY_MATERIALIZATION_ID)
-            )
+        df = df.with_columns(
+            nw.lit(
+                materialization_id or self._materialization_id, dtype=nw.String
+            ).alias(METAXY_MATERIALIZATION_ID)
+        )
 
         # Check for missing data_version columns (should come from resolve_update but it's acceptable to just use provenance columns if they are missing)
 
