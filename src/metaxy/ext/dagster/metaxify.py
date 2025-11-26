@@ -18,7 +18,8 @@ _T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
 class metaxify:
     """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition] or [`AssetSpec`][dg.AssetSpec].
 
-    Modifies assets that have `metaxy/feature` metadata set. Can be used with or without parentheses.
+    Modifies assets that have `metaxy/feature` metadata set or when `feature` argument is provided.
+    Can be used with or without parentheses.
 
     The decorated asset or spec is enriched with Metaxy:
 
@@ -43,6 +44,8 @@ class metaxify:
     In the future, `@metaxify` will also inject table schemas and column lineage Dagster metadata.
 
     Args:
+        feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
+            over `metaxy/feature` metadata. If both are set and don't match, an error is raised.
         inherit_feature_key_as_asset_key: If True, use the Metaxy feature key as the
             Dagster asset key (unless `dagster/attributes.asset_key` is set on the feature spec).
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
@@ -79,8 +82,21 @@ class metaxify:
         )
         asset_spec = mxd.metaxify(asset_spec)
         ```
+
+    ??? example "Specify feature via argument"
+        ```py
+        import dagster as dg
+        import metaxy.ext.dagster as mxd
+        from myproject.features import MyFeature
+
+        @mxd.metaxify(feature=MyFeature)
+        @dg.asset
+        def my_asset():
+            ...
+        ```
     """
 
+    feature: mx.FeatureKey | None
     inherit_feature_key_as_asset_key: bool
     inject_metaxy_kind: bool
 
@@ -88,10 +104,14 @@ class metaxify:
         self,
         _asset: "_T | None" = None,
         *,
+        feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
+        self.feature = (
+            mx.coerce_to_feature_key(feature) if feature is not None else None
+        )
         self.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         self.inject_metaxy_kind = inject_metaxy_kind
 
@@ -103,6 +123,7 @@ class metaxify:
         cls,
         _asset: None = None,
         *,
+        feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
     ) -> Self: ...
@@ -111,19 +132,25 @@ class metaxify:
         cls,
         _asset: _T | None = None,
         *,
+        feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
     ) -> "Self | _T":
+        coerced_feature = (
+            mx.coerce_to_feature_key(feature) if feature is not None else None
+        )
         if _asset is not None:
             # Called as @metaxify without parentheses
             return cls._transform(
                 _asset,
+                feature=coerced_feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
             )
 
         # Called as @metaxify() with parentheses - return instance for __call__
         instance = object.__new__(cls)
+        instance.feature = coerced_feature
         instance.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         instance.inject_metaxy_kind = inject_metaxy_kind
         return instance
@@ -132,6 +159,7 @@ class metaxify:
         """Transform the asset when used as @metaxify() with parentheses."""
         return self._transform(
             asset,
+            feature=self.feature,
             inherit_feature_key_as_asset_key=self.inherit_feature_key_as_asset_key,
             inject_metaxy_kind=self.inject_metaxy_kind,
         )
@@ -140,6 +168,7 @@ class metaxify:
     def _transform(
         asset: _T,
         *,
+        feature: mx.FeatureKey | None,
         inherit_feature_key_as_asset_key: bool,
         inject_metaxy_kind: bool,
     ) -> _T:
@@ -147,6 +176,7 @@ class metaxify:
         if isinstance(asset, dg.AssetSpec):
             return _metaxify_spec(
                 asset,
+                feature=feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
             )
@@ -158,6 +188,7 @@ class metaxify:
         for key, asset_spec in asset.specs_by_key.items():
             new_spec = _metaxify_spec(
                 asset_spec,
+                feature=feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
             )
@@ -173,15 +204,32 @@ class metaxify:
 def _metaxify_spec(
     spec: dg.AssetSpec,
     *,
+    feature: mx.FeatureKey | None,
     inherit_feature_key_as_asset_key: bool,
     inject_metaxy_kind: bool,
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
-    Returns the spec unchanged if it doesn't have metaxy/feature metadata.
+    Returns the spec unchanged if neither `feature` argument nor `metaxy/feature` metadata is set.
     """
-    feature_key = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
-    if not feature_key:
+    metadata_feature_key = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
+
+    # Determine which feature key to use
+    if feature is not None and metadata_feature_key is not None:
+        # Both are set - verify they match
+        metadata_coerced = mx.coerce_to_feature_key(metadata_feature_key)
+        if feature != metadata_coerced:
+            raise ValueError(
+                f"Feature key mismatch for asset `{spec.key}`: "
+                f"`feature` argument is `{feature}` but `metaxy/feature` metadata is `{metadata_coerced}`"
+            )
+        feature_key = feature
+    elif feature is not None:
+        feature_key = feature
+    elif metadata_feature_key is not None:
+        feature_key = mx.coerce_to_feature_key(metadata_feature_key)
+    else:
+        # Neither is set - return spec unchanged
         return spec
 
     feature_cls = mx.get_feature_by_key(feature_key)

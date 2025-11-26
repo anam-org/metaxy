@@ -2,50 +2,53 @@
 
 Metaxy's dependency system has been originally inspired by [Dagster](https://dagster.io/).
 
-Because of this, Metaxy's concepts naturally map into Dagster concepts, which makes wrapping Metaxy code with Dagster effortless.
+Because of this, Metaxy's concepts naturally map into Dagster concepts, and the provided [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify] decorator makes this process effortless.
 
-The only step that has to be taken in order to inject Metaxy into Dagster assets is to annotate Dagster assets with the well-known `"metaxy/feature"` key (1):
-{ .annotate }
+The only step that has to be taken in order to inject Metaxy into Dagster assets is to associate the Dagster asset with the Metaxy feature.
 
-1. :man_raising_hand: pointing to... the Metaxy feature key!
-
-<!-- dprint-ignore-start -->
-!!! example
-
-    ```python
-    import dagster as dg
-
-    @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
-    def my_asset():
-    ...
-    ```
-<!-- dprint-ignore-end -->
-
-Once this is done, it becomes possible unleash the full power of [`metaxy.ext.dagster.metaxify`][metaxy.ext.dagster.metaxify.metaxify] on Dagster!
+Unleash the full power of `@metaxify` on Dagster!
 
 <!-- dprint-ignore-start -->
 !!! example
-    ```python {hl_lines="3"}
+    ```python {hl_lines="4"}
     import metaxy.ext.dagster as mxd
+    from my_feature import MyFeature
 
-    @mxd.metaxify
-    @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
+    @mxd.metaxify(feature=MyFeature)
+    @dg.asset
     def my_asset():
       ...
     ```
+
+??? info "Using `"metaxy/feature"` Dagster metadata key"
+    Alternatively, set the well-known `"metaxy/feature"` key (1):
+    { .annotate }
+
+    1. :man_raising_hand: point it to... the Metaxy feature key!
+    !!! example
+
+        ```python
+        import dagster as dg
+        import metaxy as mx
+
+        @mx.metaxify
+        @dg.asset(metadata={"metaxy/feature": "my/metaxy/feature"})
+        def my_asset():
+        ...
+        ```
 <!-- dprint-ignore-end -->
 
 It will take care of bringing the right lineage, description, metadata, and other transferable properties from the Metaxy feature to the Dagster asset.
 
-## Features
+## What's in the box
 
 This integration provides:
+
+- [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, and so on.
 
 - [`MetaxyStoreFromConfigResource`][metaxy.ext.dagster.MetaxyStoreFromConfigResource] - a resource that provides access to [`MetadataStore`][metaxy.MetadataStore]
 
 - [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features
-
-- [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as correct upstream dependencies and metadata
 
 ## Quick Start
 
