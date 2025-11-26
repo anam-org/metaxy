@@ -4,7 +4,7 @@ This module provides a combined metaclass that allows Metaxy Feature classes
 to also be SQLModel table classes, enabling seamless integration with SQLAlchemy/SQLModel ORMs.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel
 from sqlalchemy.types import JSON
@@ -27,7 +27,7 @@ from metaxy.models.constants import (
     METAXY_SNAPSHOT_VERSION,
     SYSTEM_COLUMN_PREFIX,
 )
-from metaxy.models.feature import BaseFeature, MetaxyMeta
+from metaxy.models.feature import BaseFeature, FeatureGraph, MetaxyMeta
 from metaxy.models.feature_spec import FeatureSpecWithIDColumns
 from metaxy.models.types import ValidatedFeatureKey
 
@@ -282,6 +282,13 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
     # Override the frozen config from Feature's FrozenBaseModel
     # SQLModel instances need to be mutable for ORM operations
     model_config = {"frozen": False}  # pyright: ignore[reportAssignmentType]
+
+    # Re-declare ClassVar attributes from BaseFeature for type checker visibility.
+    # These are set by MetaxyMeta at class creation time but type checkers can't see them
+    # through the complex metaclass inheritance chain.
+    _spec: ClassVar[FeatureSpec]
+    graph: ClassVar[FeatureGraph]
+    project: ClassVar[str]
 
     # Using sa_column_kwargs to map to the actual column names used by Metaxy
     metaxy_provenance: str | None = Field(
