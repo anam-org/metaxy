@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from types import TracebackType
@@ -151,7 +150,7 @@ class MetadataStore(ABC):
         feature: type[BaseFeature],
         *,
         samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -164,7 +163,7 @@ class MetadataStore(ABC):
         feature: type[BaseFeature],
         *,
         samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -176,7 +175,7 @@ class MetadataStore(ABC):
         feature: type[BaseFeature],
         *,
         samples: Frame | None = None,
-        filters: Mapping[str, Sequence[nw.Expr]] | None = None,
+        filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -201,10 +200,11 @@ class MetadataStore(ABC):
 
                 Setting this parameter during normal operations is not required.
 
-            filters: A mapping from feature keys (as strings) to lists of Narwhals filter expressions.
+            filters: A mapping from feature keys to lists of Narwhals filter expressions.
+                Keys can be feature classes, FeatureKey objects, or string paths.
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
-                Example: `{"upstream/feature": [nw.col("x") > 10], ...}`
+                Example: `{UpstreamFeature: [nw.col("x") > 10], ...}`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
@@ -228,7 +228,12 @@ class MetadataStore(ABC):
         """
         import narwhals as nw
 
-        filters = filters or defaultdict(list)
+        # Normalize filter keys to FeatureKey
+        normalized_filters: dict[FeatureKey, list[nw.Expr]] = {}
+        if filters:
+            for key, exprs in filters.items():
+                feature_key = self._resolve_feature_key(key)
+                normalized_filters[feature_key] = list(exprs)
 
         graph = current_graph()
         plan = graph.get_feature_plan(feature.spec().key)
@@ -241,7 +246,7 @@ class MetadataStore(ABC):
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
-        current_feature_filters = [*filters.get(feature.spec().key.to_string(), [])]
+        current_feature_filters = [*normalized_filters.get(feature.spec().key, [])]
 
         current_metadata = self.read_metadata_in_store(
             feature,
@@ -283,7 +288,7 @@ class MetadataStore(ABC):
             for upstream_spec in plan.deps or []:
                 upstream_feature_metadata = self.read_metadata(
                     upstream_spec.key,
-                    filters=filters.get(upstream_spec.key.to_string(), []),
+                    filters=normalized_filters.get(upstream_spec.key, []),
                 )
                 if upstream_feature_metadata is not None:
                     upstream_by_key[upstream_spec.key] = upstream_feature_metadata
