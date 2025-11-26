@@ -803,20 +803,31 @@ class TestColumnSelection:
             feature=FeatureKey(["test", "upstream"]),
             columns=("col1", "col2"),
             rename={"col1": "new_col1"},
+            filters=["col1 = 'x'"],
         )
 
-        # Serialize to dict
-        dep_dict = dep.model_dump()
+        # Serialize to dict - custom serializer always uses "filters" key
+        # Test serialization with by_alias=True to use serialization_alias
+        dep_dict = dep.model_dump(by_alias=True)
         assert dep_dict["feature"] == ["test", "upstream"]
         assert dep_dict["columns"] == ("col1", "col2")
         assert dep_dict["rename"] == {"col1": "new_col1"}
+        assert dep_dict["filters"] == ("col1 = 'x'",)
+        assert "sql_filters" not in dep_dict
 
-        # Round-trip through JSON
-        dep_json = dep.model_dump_json()
+        # Verify filters property works (lazy evaluation)
+        assert dep.filters
+        assert len(dep.filters) == 1
+
+        # Round-trip through JSON (using by_alias=True to preserve "filters" key)
+        dep_json = dep.model_dump_json(by_alias=True)
         dep_restored = FeatureDep.model_validate_json(dep_json)
         assert dep_restored.feature == FeatureKey(["test", "upstream"])
         assert dep_restored.columns == ("col1", "col2")
         assert dep_restored.rename == {"col1": "new_col1"}
+        # Verify filters work after deserialization
+        assert dep_restored.filters
+        assert len(dep_restored.filters) == 1
 
     def test_multiple_upstream_features_complex_scenario(self):
         """Test complex scenario with multiple upstream features."""
