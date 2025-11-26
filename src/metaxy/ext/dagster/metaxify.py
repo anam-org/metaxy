@@ -1,3 +1,4 @@
+import inspect
 from typing import Any, TypeVar, overload
 
 import dagster as dg
@@ -34,14 +35,16 @@ class metaxify:
 
     - **Dependencies** for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic.
 
+    - **Code version** from the feature spec is appended to the asset's code version in the format `metaxy:<version>`.
+
     - **Metadata** from the feature spec is injected into the Dagster asset metadata.
 
-    - **Dagster attributes** from `"dagster/attributes"` in the feature spec metadata
-      (such as `group_name`, `owners`, `tags`) are applied to the asset spec (with replacement).
+    - **Description** from the feature class docstring is used if the asset spec doesn't have a description set.
 
     - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds.
 
-    - **Code version** from the feature spec is appended to the asset's code version in the format `metaxy:<version>`.
+    - **Arbitrary asset attributes** from `"dagster/attributes"` in the feature spec metadata
+      (such as `group_name`, `owners`, `tags`) are applied to the asset spec (with replacement).
 
     In the future, `@metaxify` will also inject table schemas and column lineage Dagster metadata.
 
@@ -55,6 +58,8 @@ class metaxify:
             if there are already 3 kinds on the asset.
         inject_code_version: Whether to inject the Metaxy feature code version into the asset's
             code version. The version is appended in the format `metaxy:<version>`.
+        set_description: Whether to set the asset description from the feature class docstring
+            if the asset doesn't already have a description.
 
     !!! note
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
@@ -101,6 +106,7 @@ class metaxify:
     inherit_feature_key_as_asset_key: bool
     inject_metaxy_kind: bool
     inject_code_version: bool
+    set_description: bool
 
     def __init__(
         self,
@@ -110,6 +116,7 @@ class metaxify:
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
+        set_description: bool = True,
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.feature = (
@@ -118,6 +125,7 @@ class metaxify:
         self.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         self.inject_metaxy_kind = inject_metaxy_kind
         self.inject_code_version = inject_code_version
+        self.set_description = set_description
 
     @overload
     def __new__(cls, _asset: _T) -> _T: ...
@@ -131,6 +139,7 @@ class metaxify:
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
+        set_description: bool = True,
     ) -> Self: ...
 
     def __new__(
@@ -141,6 +150,7 @@ class metaxify:
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
+        set_description: bool = True,
     ) -> "Self | _T":
         coerced_feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
@@ -153,6 +163,7 @@ class metaxify:
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
+                set_description=set_description,
             )
 
         # Called as @metaxify() with parentheses - return instance for __call__
@@ -161,6 +172,7 @@ class metaxify:
         instance.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         instance.inject_metaxy_kind = inject_metaxy_kind
         instance.inject_code_version = inject_code_version
+        instance.set_description = set_description
         return instance
 
     def __call__(self, asset: _T) -> _T:
@@ -171,6 +183,7 @@ class metaxify:
             inherit_feature_key_as_asset_key=self.inherit_feature_key_as_asset_key,
             inject_metaxy_kind=self.inject_metaxy_kind,
             inject_code_version=self.inject_code_version,
+            set_description=self.set_description,
         )
 
     @staticmethod
@@ -181,6 +194,7 @@ class metaxify:
         inherit_feature_key_as_asset_key: bool,
         inject_metaxy_kind: bool,
         inject_code_version: bool,
+        set_description: bool,
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
@@ -190,6 +204,7 @@ class metaxify:
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
+                set_description=set_description,
             )
 
         # Handle AssetsDefinition
@@ -203,6 +218,7 @@ class metaxify:
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
+                set_description=set_description,
             )
             if new_spec.key != key:
                 keys_to_replace[key] = new_spec.key
@@ -220,6 +236,7 @@ def _metaxify_spec(
     inherit_feature_key_as_asset_key: bool,
     inject_metaxy_kind: bool,
     inject_code_version: bool,
+    set_description: bool,
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
@@ -295,6 +312,11 @@ def _metaxify_spec(
     else:
         final_code_version = spec.code_version
 
+    # Use feature class docstring as description if not set on asset spec
+    final_description = spec.description
+    if set_description and final_description is None and feature_cls.__doc__:
+        final_description = inspect.cleandoc(feature_cls.__doc__)
+
     # Build the replacement attributes
     replace_attrs: dict[str, Any] = {
         "key": final_key,
@@ -309,5 +331,8 @@ def _metaxify_spec(
 
     if final_code_version is not None:
         replace_attrs["code_version"] = final_code_version
+
+    if final_description is not None:
+        replace_attrs["description"] = final_description
 
     return spec.replace_attributes(**replace_attrs)

@@ -990,3 +990,100 @@ class TestMetaxifyCodeVersion:
         assert result.code_version is not None
         assert result.code_version.startswith("metaxy:")
         assert result.code_version == snapshot
+
+
+class TestMetaxifyDescription:
+    """Test description injection in @metaxify."""
+
+    @pytest.fixture
+    def feature_with_docstring(self) -> type[mx.BaseFeature]:
+        """Create a feature with a docstring."""
+        spec = mx.FeatureSpec(
+            key=["test", "documented"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class DocumentedFeature(mx.BaseFeature, spec=spec):
+            """This is the feature documentation.
+
+            It describes what this feature does.
+            """
+
+            id: str
+
+        return DocumentedFeature
+
+    def test_metaxify_injects_description_from_docstring(
+        self,
+        feature_with_docstring: type[mx.BaseFeature],
+        snapshot: SnapshotAssertion,
+    ):
+        """Test that metaxify injects description from feature docstring."""
+
+        @metaxify(feature=feature_with_docstring)
+        @dg.asset
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.description is not None
+        assert "feature documentation" in asset_spec.description
+        assert asset_spec.description == snapshot
+
+    def test_metaxify_preserves_existing_description(
+        self,
+        feature_with_docstring: type[mx.BaseFeature],
+    ):
+        """Test that metaxify preserves existing asset description."""
+
+        @metaxify(feature=feature_with_docstring)
+        @dg.asset(description="My custom description")
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.description == "My custom description"
+
+    def test_metaxify_no_description_without_docstring(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that metaxify doesn't set description if feature has no docstring."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # upstream_feature fixture has no docstring
+        assert asset_spec.description is None
+
+    def test_metaxify_skips_description_when_disabled(
+        self,
+        feature_with_docstring: type[mx.BaseFeature],
+    ):
+        """Test that description injection can be disabled."""
+
+        @metaxify(feature=feature_with_docstring, set_description=False)
+        @dg.asset
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.description is None
+
+    def test_metaxify_asset_spec_injects_description(
+        self,
+        feature_with_docstring: type[mx.BaseFeature],
+        snapshot: SnapshotAssertion,
+    ):
+        """Test that metaxify injects description into AssetSpec."""
+        spec = dg.AssetSpec(key="my_spec")
+
+        result = metaxify(feature=feature_with_docstring)(spec)
+
+        assert result.description is not None
+        assert "feature documentation" in result.description
+        assert result.description == snapshot
