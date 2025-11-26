@@ -179,3 +179,177 @@ class TestResolveUpdateRootFeatures:
 
             assert len(result.removed) == 1
             assert result.removed["sample_uid"].to_list() == [3]
+
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    def test_resolve_update_root_feature_adds_data_version_columns(
+        self,
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
+    ):
+        """Test that resolve_update adds metaxy_data_version columns for root features.
+
+        For root features (no upstream computation), data_version columns should
+        equal provenance columns by default.
+        """
+        store_type, config = store_config
+        store = store_type(**config)  # type: ignore[abstract]
+
+        graph = FeatureGraph()
+        video_feature = create_video_embeddings_feature(graph)
+
+        with graph.use(), store:
+            import narwhals as nw
+
+            from metaxy.models.constants import (
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_PROVENANCE,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
+
+            # User provides samples with only provenance columns
+            user_samples = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2, 3],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"embedding": "hash1"},
+                        {"embedding": "hash2"},
+                        {"embedding": "hash3"},
+                    ],
+                }
+            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
+
+            result = store.resolve_update(
+                video_feature, samples=nw.from_native(user_samples)
+            )
+
+            # Verify data_version columns are present in added samples
+            assert METAXY_DATA_VERSION in result.added.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+
+            # Verify data_version values equal provenance values
+            added_df = result.added.to_polars()
+            for row in added_df.iter_rows(named=True):
+                assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
+                assert (
+                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
+                )
+
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    def test_resolve_update_root_feature_preserves_custom_data_version(
+        self,
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
+    ):
+        """Test that resolve_update preserves custom metaxy_data_version columns for root features.
+
+        When users provide custom data_version columns, they should be preserved.
+        """
+        store_type, config = store_config
+        store = store_type(**config)  # type: ignore[abstract]
+
+        graph = FeatureGraph()
+        video_feature = create_video_embeddings_feature(graph)
+
+        with graph.use(), store:
+            import narwhals as nw
+
+            from metaxy.models.constants import (
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_PROVENANCE,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
+
+            # User provides samples with both provenance and custom data_version columns
+            user_samples = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"embedding": "prov_hash1"},
+                        {"embedding": "prov_hash2"},
+                    ],
+                    # Custom data_version that differs from provenance
+                    METAXY_DATA_VERSION_BY_FIELD: [
+                        {"embedding": "custom_v1"},
+                        {"embedding": "custom_v1"},  # Same version for both
+                    ],
+                }
+            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
+            # Add data_version hash column
+            user_samples = user_samples.with_columns(
+                pl.concat_str([pl.lit("custom_v1")]).alias(METAXY_DATA_VERSION)
+            )
+
+            result = store.resolve_update(
+                video_feature, samples=nw.from_native(user_samples)
+            )
+
+            # Verify custom data_version columns are preserved
+            assert METAXY_DATA_VERSION in result.added.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+
+            # Verify custom data_version values are preserved (different from provenance)
+            added_df = result.added.to_polars()
+            for row in added_df.iter_rows(named=True):
+                # Data version should be the custom value, not provenance
+                assert row[METAXY_DATA_VERSION] == "custom_v1"
+                assert row[METAXY_DATA_VERSION_BY_FIELD] == {"embedding": "custom_v1"}
+                # Provenance should be the original hash values
+                assert row[METAXY_DATA_VERSION] != row[METAXY_PROVENANCE]
+
+    @parametrize_with_cases("store_config", cases=BasicStoreCases)
+    def test_resolve_update_root_feature_skip_comparison_adds_data_version(
+        self,
+        store_config: tuple[type[MetadataStore], dict[str, Any]],
+    ):
+        """Test that resolve_update with skip_comparison=True adds data_version columns for root features."""
+        store_type, config = store_config
+        store = store_type(**config)  # type: ignore[abstract]
+
+        graph = FeatureGraph()
+        video_feature = create_video_embeddings_feature(graph)
+
+        with graph.use(), store:
+            import narwhals as nw
+
+            from metaxy.models.constants import (
+                METAXY_DATA_VERSION,
+                METAXY_DATA_VERSION_BY_FIELD,
+                METAXY_PROVENANCE,
+                METAXY_PROVENANCE_BY_FIELD,
+            )
+
+            # User provides samples without data_version columns
+            user_samples = pl.DataFrame(
+                {
+                    "sample_uid": [1, 2],
+                    METAXY_PROVENANCE_BY_FIELD: [
+                        {"embedding": "hash1"},
+                        {"embedding": "hash2"},
+                    ],
+                }
+            )
+            user_samples = add_metaxy_provenance_column(user_samples, video_feature)
+
+            # Use skip_comparison=True for backfilling scenarios
+            result = store.resolve_update(
+                video_feature,
+                samples=nw.from_native(user_samples),
+                skip_comparison=True,
+            )
+
+            # All samples should be in added (skip_comparison returns all as added)
+            assert len(result.added) == 2
+
+            # Verify data_version columns are present
+            assert METAXY_DATA_VERSION in result.added.columns
+            assert METAXY_DATA_VERSION_BY_FIELD in result.added.columns
+
+            # Verify data_version values equal provenance values
+            added_df = result.added.to_polars()
+            for row in added_df.iter_rows(named=True):
+                assert row[METAXY_DATA_VERSION] == row[METAXY_PROVENANCE]
+                assert (
+                    row[METAXY_DATA_VERSION_BY_FIELD] == row[METAXY_PROVENANCE_BY_FIELD]
+                )

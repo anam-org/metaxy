@@ -1,4 +1,4 @@
-# DeltaMetadataStore
+# Metaxy + Delta Lake
 
 Metaxy implements [`DeltaMetadataStore`][metaxy.metadata_store.delta.DeltaMetadataStore] that stores metadata in [Delta Lake](https://delta.io/) (also known as a LakeHouse format) and uses an in-memory Polars versioning engine.
 

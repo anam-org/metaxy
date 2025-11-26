@@ -291,7 +291,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         },
     )
 
-    metaxy_provenance_by_field: str | None = Field(
+    metaxy_provenance_by_field: dict[str, str] = Field(
         default=None,
         sa_type=JSON,
         sa_column_kwargs={
@@ -327,7 +327,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
         },
     )
 
-    metaxy_data_version_by_field: str | None = Field(
+    metaxy_data_version_by_field: dict[str, str] | None = Field(
         default=None,
         sa_type=JSON,
         sa_column_kwargs={

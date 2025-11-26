@@ -5,6 +5,7 @@ import polars as pl
 import pytest
 import sqlglot
 
+from metaxy.models.feature_spec import FeatureDep
 from metaxy.models.filter_expression import (
     FilterParseError,
     NarwhalsFilter,
@@ -230,3 +231,19 @@ def test_parse_deeply_nested_expressions(
     """Ensure parsing handles nested parentheses and mixed operators."""
     expr = parse_filter_string(filter_string)
     assert repr(expr) == repr(expected_expr)
+
+
+def test_feature_dep_filters_parsing(sample_lazy_frame: nw.LazyFrame[Any]) -> None:
+    dep = FeatureDep(feature="upstream", filters=["age >= 25", "status = 'active'"])
+    assert dep.filters is not None  # Type guard for basedpyright
+    filtered_ids = (
+        sample_lazy_frame.filter(*dep.filters).collect().to_native().sort("id")["id"]
+    )
+    assert filtered_ids.to_list() == [2]
+
+
+def test_feature_dep_filters_invalid() -> None:
+    dep = FeatureDep(feature="upstream", filters=["age BETWEEN 20 AND 30"])
+    # Error is raised when accessing filters property (lazy evaluation via @cached_property)
+    with pytest.raises(FilterParseError):
+        _ = dep.filters
