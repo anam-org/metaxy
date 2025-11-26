@@ -28,7 +28,7 @@ Metaxy is highly pluggable and generally can be used with any kind of incrementa
 
 Metaxy provides integrations with popular tools such as [Dagster](https://anam-org.github.io/metaxy/main/integrations/orchestration/dagster), [ClickHouse](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/clickhouse), [DeltaLake](https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/), [SQLModel](https://anam-org.github.io/metaxy/main/integrations/plugins/sqlmodel/).
 
-The full list can be found [here].
+The full list can be found [here](https://anam-org.github.io/metaxy/main/integrations).
 
 ## Contributing
 

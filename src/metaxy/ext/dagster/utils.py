@@ -183,7 +183,7 @@ def generate_materialize_results(
         @dg.multi_asset(specs=specs)
         def my_multi_asset(context: dg.AssetExecutionContext, store: mx.MetadataStore):
             # ... compute and write data ...
-            yield from generate_materialize_results(context, store, specs)
+            yield from generate_materialize_results(context, store, context.asset_defs.specs)
         ```
     """
     # Build mapping from feature key to asset spec
@@ -260,7 +260,7 @@ def generate_observe_results(
         @metaxify
         @dg.multi_observable_source_asset(specs=specs)
         def my_observable_assets(context: dg.AssetExecutionContext, store: mx.MetadataStore):
-            yield from generate_observe_results(context, store, specs)
+            yield from generate_observe_results(context, store, context.asset_defs.specs)
         ```
     """
     # Build mapping from feature key to asset spec
