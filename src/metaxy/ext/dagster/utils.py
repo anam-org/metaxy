@@ -4,7 +4,7 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
+    METAXY_DAGSTER_METADATA_KEY,
 )
 
 
@@ -18,14 +18,14 @@ def get_asset_key_for_metaxy_feature_spec(
     Args:
         feature_spec: The Metaxy feature spec.
         inherit_feature_key_as_asset_key: If `True`, use the feature key as the asset key
-            when `metaxy/metadata` is not set on the feature spec.
+            when `dagster/attributes.asset_key` is not set on the feature spec.
         dagster_key: Optional existing Dagster asset key. Used by `metaxify` to preserve
             original asset keys when `inherit_feature_key_as_asset_key` is False.
 
     Returns:
         The Dagster asset key, determined as follows:
 
-        1. If feature spec has `metaxy/metadata` set, that value is used as-is.
+        1. If feature spec has `dagster/attributes.asset_key` set, that value is used as-is.
 
         2. Otherwise, if `inherit_feature_key_as_asset_key` is True, the feature key is used.
 
@@ -33,11 +33,12 @@ def get_asset_key_for_metaxy_feature_spec(
 
         4. Otherwise, the feature key is used.
     """
-    # If metaxy/metadata is set, use it as-is
-    if metaxy_defined_dagster_asset_key := feature_spec.metadata.get(
-        DAGSTER_METAXY_METADATA_METADATA_KEY
+    # If dagster/attributes.asset_key is set, use it as-is
+    dagster_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
+    if isinstance(dagster_attrs, dict) and (
+        custom_asset_key := dagster_attrs.get("asset_key")
     ):
-        return dg.AssetKey(metaxy_defined_dagster_asset_key)  # pyright: ignore[reportArgumentType]
+        return dg.AssetKey(custom_asset_key)  # pyright: ignore[reportArgumentType]
 
     # If inherit_feature_key_as_asset_key is set, use the feature key
     if inherit_feature_key_as_asset_key:
@@ -64,7 +65,7 @@ def build_asset_spec(
     Args:
         feature: A Metaxy feature key (string, list, or feature class).
         inherit_feature_key_as_asset_key: If True, use the feature key as the asset key
-            (unless `metaxy/metadata` is set on the feature spec).
+            (unless `dagster/attributes.asset_key` is set on the feature spec).
         include_kind: Whether to include the "metaxy" kind.
 
     Returns:

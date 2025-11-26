@@ -7,7 +7,7 @@ import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
+    METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.utils import build_asset_spec
 
@@ -53,7 +53,7 @@ def feature_with_custom_key() -> type[mx.BaseFeature]:
         id_columns=["id"],
         fields=["data"],
         metadata={
-            DAGSTER_METAXY_METADATA_METADATA_KEY: ["custom", "dagster", "key"],
+            METAXY_DAGSTER_METADATA_KEY: {"asset_key": ["custom", "dagster", "key"]},
         },
     )
 
@@ -156,10 +156,8 @@ class TestBuildAssetSpec:
         """Test that feature spec metadata is included in asset spec."""
         spec = build_asset_spec("test/custom")
 
-        # Should include the custom dagster key metadata from feature spec
-        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec.metadata
-        assert spec.metadata[DAGSTER_METAXY_METADATA_METADATA_KEY] == [
-            "custom",
-            "dagster",
-            "key",
-        ]
+        # Should include the dagster/attributes metadata from feature spec
+        assert METAXY_DAGSTER_METADATA_KEY in spec.metadata
+        assert spec.metadata[METAXY_DAGSTER_METADATA_KEY] == {
+            "asset_key": ["custom", "dagster", "key"]
+        }

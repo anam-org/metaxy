@@ -9,7 +9,7 @@ import pytest
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
+    METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.utils import build_asset_spec
@@ -56,7 +56,7 @@ def feature_with_dagster_metadata() -> type[mx.BaseFeature]:
         id_columns=["id"],
         fields=["data"],
         metadata={
-            DAGSTER_METAXY_METADATA_METADATA_KEY: ["custom", "asset", "key"],
+            METAXY_DAGSTER_METADATA_KEY: {"asset_key": ["custom", "asset", "key"]},
         },
     )
 
@@ -64,6 +64,46 @@ def feature_with_dagster_metadata() -> type[mx.BaseFeature]:
         id: str
 
     return CustomKeyFeature
+
+
+@pytest.fixture
+def feature_with_group_name() -> type[mx.BaseFeature]:
+    """Create a feature with group_name in dagster/attributes."""
+    spec = mx.FeatureSpec(
+        key=["test", "grouped"],
+        id_columns=["id"],
+        fields=["data"],
+        metadata={
+            METAXY_DAGSTER_METADATA_KEY: {"group_name": "my_group"},
+        },
+    )
+
+    class GroupedFeature(mx.BaseFeature, spec=spec):
+        id: str
+
+    return GroupedFeature
+
+
+@pytest.fixture
+def feature_with_multiple_attrs() -> type[mx.BaseFeature]:
+    """Create a feature with multiple dagster attributes."""
+    spec = mx.FeatureSpec(
+        key=["test", "multi_attrs"],
+        id_columns=["id"],
+        fields=["data"],
+        metadata={
+            METAXY_DAGSTER_METADATA_KEY: {
+                "asset_key": ["custom", "multi"],
+                "group_name": "features",
+                "owners": ["team:data", "user@example.com"],
+            },
+        },
+    )
+
+    class MultiAttrsFeature(mx.BaseFeature, spec=spec):
+        id: str
+
+    return MultiAttrsFeature
 
 
 class TestMetaxifyBasic:
@@ -181,6 +221,74 @@ class TestMetaxifyAssetKeys:
 
         # Asset key should be custom key (metaxy/metadata takes precedence)
         assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
+
+
+class TestMetaxifyDagsterAttributes:
+    """Test dagster/attributes injection from feature spec metadata."""
+
+    def test_metaxify_applies_group_name(
+        self, feature_with_group_name: type[mx.BaseFeature]
+    ):
+        """Test that group_name from dagster/attributes is applied to the asset."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/grouped"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.group_name == "my_group"
+
+    def test_metaxify_applies_multiple_attributes(
+        self, feature_with_multiple_attrs: type[mx.BaseFeature]
+    ):
+        """Test that multiple dagster attributes are applied."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/multi_attrs"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # asset_key is handled separately, so check the key
+        assert dg.AssetKey(["custom", "multi"]) in my_asset.keys
+        # Other attributes should be applied
+        assert asset_spec.group_name == "features"
+        assert asset_spec.owners == ["team:data", "user@example.com"]
+
+    def test_metaxify_attributes_override_asset_attributes(
+        self, feature_with_group_name: type[mx.BaseFeature]
+    ):
+        """Test that dagster/attributes override attributes set on the asset decorator."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/grouped"},
+            group_name="original_group",
+        )
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # Feature spec's group_name should override the decorator's group_name
+        assert asset_spec.group_name == "my_group"
+
+    def test_metaxify_no_attributes_preserves_original(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that assets without dagster/attributes keep their original attributes."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            group_name="my_original_group",
+        )
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # Original group_name should be preserved
+        assert asset_spec.group_name == "my_original_group"
 
 
 class TestMetaxifyDeps:
