@@ -5,6 +5,7 @@ from typing import Any
 import dagster as dg
 import polars as pl
 import pytest
+from syrupy.assertion import SnapshotAssertion
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
@@ -900,3 +901,92 @@ class TestMetaxifyMaterialization:
         # Check that the metaxy kind was applied
         asset_spec = list(my_asset.specs)[0]
         assert DAGSTER_METAXY_KIND in asset_spec.kinds
+
+
+class TestMetaxifyCodeVersion:
+    """Test code version injection in @metaxify."""
+
+    def test_metaxify_injects_code_version(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        snapshot: SnapshotAssertion,
+    ):
+        """Test that metaxify injects the feature code version."""
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.code_version is not None
+        assert asset_spec.code_version.startswith("metaxy:")
+        assert asset_spec.code_version == snapshot
+
+    def test_metaxify_appends_to_existing_code_version(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        snapshot: SnapshotAssertion,
+    ):
+        """Test that metaxify appends to existing code version."""
+
+        @metaxify()
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            code_version="v1.0.0",
+        )
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.code_version is not None
+        assert asset_spec.code_version.startswith("v1.0.0,metaxy:")
+        assert asset_spec.code_version == snapshot
+
+    def test_metaxify_skips_code_version_when_disabled(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that code version injection can be disabled."""
+
+        @metaxify(inject_code_version=False)
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.code_version is None
+
+    def test_metaxify_preserves_code_version_when_disabled(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that existing code version is preserved when injection is disabled."""
+
+        @metaxify(inject_code_version=False)
+        @dg.asset(
+            metadata={"metaxy/feature": "test/upstream"},
+            code_version="original_version",
+        )
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert asset_spec.code_version == "original_version"
+
+    def test_metaxify_asset_spec_injects_code_version(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        snapshot: SnapshotAssertion,
+    ):
+        """Test that metaxify injects code version into AssetSpec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify()(spec)
+
+        assert result.code_version is not None
+        assert result.code_version.startswith("metaxy:")
+        assert result.code_version == snapshot

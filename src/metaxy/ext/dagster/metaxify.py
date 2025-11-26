@@ -41,6 +41,8 @@ class metaxify:
 
     - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds.
 
+    - **Code version** from the feature spec is appended to the asset's code version in the format `metaxy:<version>`.
+
     In the future, `@metaxify` will also inject table schemas and column lineage Dagster metadata.
 
     Args:
@@ -51,12 +53,35 @@ class metaxify:
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
             if there are already 3 kinds on the asset.
+        inject_code_version: Whether to inject the Metaxy feature code version into the asset's
+            code version. The version is appended in the format `metaxy:<version>`.
 
     !!! note
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
         `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
 
-    ??? example "Apply to `dagster.AssetsDefinition`"
+    !!! example "Apply to `dagster.AssetDefinition`"
+        ```py
+        import dagster as dg
+        import metaxy.ext.dagster as mxd
+        from myproject.features import MyFeature
+
+        @mxd.metaxify(feature=MyFeature)
+        @dg.asset
+        def my_asset():
+            ...
+        ```
+
+    ??? example "Apply to `dagster.AssetSpec`"
+        ```py
+        import dagster as dg
+        import metaxy.ext.dagster as mxd
+
+        asset_spec = dg.AssetSpec(key="my_asset")
+        asset_spec = mxd.metaxify(feature=MyFeature)(asset_spec)
+        ```
+
+    ??? example "Use `"metaxy/feature"` asset metadata key"
         ```py
         import dagster as dg
         import metaxy as mx
@@ -70,35 +95,12 @@ class metaxify:
 
             ...
         ```
-
-    ??? example "Apply to `dagster.AssetSpec`"
-        ```py
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-
-        asset_spec = dg.AssetSpec(
-            key="my_asset",
-            metadata={"metaxy/feature": "my/feature/key"},
-        )
-        asset_spec = mxd.metaxify(asset_spec)
-        ```
-
-    ??? example "Specify feature via argument"
-        ```py
-        import dagster as dg
-        import metaxy.ext.dagster as mxd
-        from myproject.features import MyFeature
-
-        @mxd.metaxify(feature=MyFeature)
-        @dg.asset
-        def my_asset():
-            ...
-        ```
     """
 
     feature: mx.FeatureKey | None
     inherit_feature_key_as_asset_key: bool
     inject_metaxy_kind: bool
+    inject_code_version: bool
 
     def __init__(
         self,
@@ -107,6 +109,7 @@ class metaxify:
         feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
+        inject_code_version: bool = True,
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.feature = (
@@ -114,6 +117,7 @@ class metaxify:
         )
         self.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         self.inject_metaxy_kind = inject_metaxy_kind
+        self.inject_code_version = inject_code_version
 
     @overload
     def __new__(cls, _asset: _T) -> _T: ...
@@ -126,6 +130,7 @@ class metaxify:
         feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
+        inject_code_version: bool = True,
     ) -> Self: ...
 
     def __new__(
@@ -135,6 +140,7 @@ class metaxify:
         feature: mx.CoercibleToFeatureKey | None = None,
         inherit_feature_key_as_asset_key: bool = False,
         inject_metaxy_kind: bool = True,
+        inject_code_version: bool = True,
     ) -> "Self | _T":
         coerced_feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
@@ -146,6 +152,7 @@ class metaxify:
                 feature=coerced_feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
+                inject_code_version=inject_code_version,
             )
 
         # Called as @metaxify() with parentheses - return instance for __call__
@@ -153,6 +160,7 @@ class metaxify:
         instance.feature = coerced_feature
         instance.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         instance.inject_metaxy_kind = inject_metaxy_kind
+        instance.inject_code_version = inject_code_version
         return instance
 
     def __call__(self, asset: _T) -> _T:
@@ -162,6 +170,7 @@ class metaxify:
             feature=self.feature,
             inherit_feature_key_as_asset_key=self.inherit_feature_key_as_asset_key,
             inject_metaxy_kind=self.inject_metaxy_kind,
+            inject_code_version=self.inject_code_version,
         )
 
     @staticmethod
@@ -171,6 +180,7 @@ class metaxify:
         feature: mx.FeatureKey | None,
         inherit_feature_key_as_asset_key: bool,
         inject_metaxy_kind: bool,
+        inject_code_version: bool,
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
@@ -179,6 +189,7 @@ class metaxify:
                 feature=feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
+                inject_code_version=inject_code_version,
             )
 
         # Handle AssetsDefinition
@@ -191,6 +202,7 @@ class metaxify:
                 feature=feature,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
+                inject_code_version=inject_code_version,
             )
             if new_spec.key != key:
                 keys_to_replace[key] = new_spec.key
@@ -207,6 +219,7 @@ def _metaxify_spec(
     feature: mx.FeatureKey | None,
     inherit_feature_key_as_asset_key: bool,
     inject_metaxy_kind: bool,
+    inject_code_version: bool,
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
@@ -272,6 +285,16 @@ def _metaxify_spec(
             )
         dagster_attrs = {k: v for k, v in raw_dagster_attrs.items() if k != "asset_key"}
 
+    # Build code version: append metaxy version to existing code version if present
+    if inject_code_version:
+        metaxy_code_version = f"metaxy:{feature_spec.code_version}"
+        if spec.code_version:
+            final_code_version = f"{spec.code_version},{metaxy_code_version}"
+        else:
+            final_code_version = metaxy_code_version
+    else:
+        final_code_version = spec.code_version
+
     # Build the replacement attributes
     replace_attrs: dict[str, Any] = {
         "key": final_key,
@@ -283,5 +306,8 @@ def _metaxify_spec(
         "kinds": {*spec.kinds, *kinds_to_add},
         **dagster_attrs,
     }
+
+    if final_code_version is not None:
+        replace_attrs["code_version"] = final_code_version
 
     return spec.replace_attributes(**replace_attrs)
