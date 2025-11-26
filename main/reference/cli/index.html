@@ -1937,10 +1937,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy-metadata-copy" class="md-nav__link">
+  <a href="#metaxy-metadata-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        metaxy metadata copy
+        metaxy metadata status
       
     </span>
   </a>
@@ -3389,10 +3389,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#metaxy-metadata-copy" class="md-nav__link">
+  <a href="#metaxy-metadata-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        metaxy metadata copy
+        metaxy metadata status
       
     </span>
   </a>
@@ -3476,7 +3476,7 @@ Feature definitions are collected via <a href="https://anam-org.github.io/metaxy
 </ul>
 </li>
 <li><a href="#metaxy-metadata"><code>metadata</code></a><ul>
-<li><a href="#metaxy-metadata-copy"><code>copy</code></a></li>
+<li><a href="#metaxy-metadata-status"><code>status</code></a></li>
 <li><a href="#metaxy-metadata-drop"><code>drop</code></a></li>
 </ul>
 </li>
@@ -3684,30 +3684,18 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 </span></code></pre></div>
 <h2 id="metaxy-metadata">metaxy metadata<a class="headerlink" href="#metaxy-metadata" title="Permanent link">&para;</a></h2>
 <p>Manage Metaxy metadata</p>
-<h3 id="metaxy-metadata-copy">metaxy metadata copy<a class="headerlink" href="#metaxy-metadata-copy" title="Permanent link">&para;</a></h3>
-<p>Copy metadata between stores.</p>
-<p>Copies metadata for specified features from one store to another,
-optionally using a historical version. Useful for:
-- Migrating data between environments
-- Backfilling metadata
-- Copying specific feature versions</p>
-<p>Incremental Mode (default):
-    By default, performs an anti-join on sample_uid to skip rows that already exist
-    in the destination for the same snapshot_version. This prevents duplicate writes.</p>
-<div class="language-python highlight"><pre><span></span><code><span class="n">Disabling</span> <span class="n">incremental</span> <span class="p">(</span><span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">incremental</span><span class="p">)</span> <span class="n">may</span> <span class="n">improve</span> <span class="n">performance</span> <span class="n">when</span><span class="p">:</span>
-<span class="o">-</span> <span class="n">The</span> <span class="n">destination</span> <span class="n">store</span> <span class="ow">is</span> <span class="n">empty</span> <span class="ow">or</span> <span class="n">has</span> <span class="n">no</span> <span class="n">overlap</span> <span class="k">with</span> <span class="n">source</span>
-<span class="o">-</span> <span class="n">The</span> <span class="n">destination</span> <span class="n">store</span> <span class="n">has</span> <span class="n">eventual</span> <span class="n">deduplication</span>
-</code></pre></div>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata copy FROM TO [ARGS]</span>
+<h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
+<p>Check metadata completeness and freshness for specified features.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status FEATURE-KEYS [ARGS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FROM</code>: Source store name (must be configured in metaxy.toml)  <strong>[required]</strong></li>
-<li><code>TO</code>: Destination store name (must be configured in metaxy.toml)  <strong>[required]</strong></li>
-<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to copy (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.</li>
-<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Copy all features from source store  <em>[default: --no-all-features]</em></li>
-<li><code>SNAPSHOT, --snapshot</code>: Snapshot version to copy (defaults to latest in source store). The snapshot_version is preserved in the destination.</li>
-<li><code>INCREMENTAL, --incremental, --no-incremental</code>: Use incremental copy (compare provenance_by_field to skip existing rows). Disable for better performance if destination is empty or uses deduplication.  <em>[default: --incremental]</em></li>
+<li><code>FEATURE-KEYS</code>: Feature keys to inspect (e.g., namespace/feature). Provide at least one.  <strong>[required]</strong></li>
+<li><code>STORE, --store</code>: Metadata store name (defaults to configured default store).</li>
+<li><code>SNAPSHOT-ID, --snapshot-id</code>: Check metadata against a specific snapshot version.</li>
+<li><code>ASSERT-IN-SYNC, --assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: --no-assert-in-sync]</em></li>
+<li><code>VERBOSE, --verbose, --no-verbose</code>: Show additional details about samples needing updates.  <em>[default: --no-verbose]</em></li>
+<li><code>FORMAT, --format</code>: Output format: 'plain' (default, human-readable) or 'json' (machine-parseable).  <em>[choices: plain, json]</em>  <em>[default: plain]</em></li>
 </ul>
 <h3 id="metaxy-metadata-drop">metaxy metadata drop<a class="headerlink" href="#metaxy-metadata-drop" title="Permanent link">&para;</a></h3>
 <p>Drop metadata from a store.</p>
@@ -3727,6 +3715,7 @@ current project's feature graph.</p>
 <li><code>FEATURE, --feature, --empty-feature</code>: Feature key to drop (e.g., 'my_feature' or 'group/my_feature'). Can be repeated multiple times. If not specified, uses --all-features.</li>
 <li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Drop metadata for all features defined in the current project's feature graph  <em>[default: --no-all-features]</em></li>
 <li><code>CONFIRM, --confirm, --no-confirm</code>: Confirm the drop operation (required to prevent accidental deletion)  <em>[default: --no-confirm]</em></li>
+<li><code>FORMAT, --format</code>: Output format: 'text' (default, human-readable) or 'json' (machine-parseable).  <em>[default: text]</em></li>
 </ul>
 
 
