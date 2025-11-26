@@ -12,6 +12,7 @@ from narwhals.typing import FrameT
 
 from metaxy.config import MetaxyConfig
 from metaxy.models.constants import (
+    METAXY_DATA_VERSION_BY_FIELD,
     METAXY_FEATURE_VERSION,
     METAXY_PROVENANCE,
     METAXY_PROVENANCE_BY_FIELD,
@@ -235,8 +236,38 @@ class VersioningEngine(ABC):
         Returns:
             Narwhals DataFrame with new struct column added.
             The source columns remain unchanged.
+
+        !!! note "Dict-based engines"
+
+            For dict-based engines, this returns a DataFrame with renamed columns
+            following the naming convention "{struct_name}__{field_name}" instead
+            of creating an actual struct column.
         """
         raise NotImplementedError()
+
+    def access_provenance_field(
+        self,
+        struct_column: str,
+        field_name: str,
+    ) -> nw.Expr:
+        """Access a field from a provenance struct column.
+
+        This method provides backend-specific field access:
+        - For struct-based engines (Ibis, Polars): uses struct.field()
+        - For dict-based engines: uses direct column reference to flattened name
+
+        Args:
+            struct_column: Name of the struct column (e.g., "metaxy_provenance_by_field")
+            field_name: Name of the field to access (e.g., "field1")
+
+        Returns:
+            Narwhals expression to access the field value
+
+        Note:
+            Default implementation uses struct.field() for backward compatibility.
+            Dict-based engines override this to return flattened column references.
+        """
+        return nw.col(struct_column).struct.field(field_name)
 
     @staticmethod
     @abstractmethod
@@ -324,9 +355,10 @@ class VersioningEngine(ABC):
             ).items():
                 # Read from data_version_by_field instead of provenance_by_field
                 # This enables user-defined versioning control
-                field_provenance[fq_key] = nw.col(
-                    self.get_renamed_data_version_by_field_col(fq_key.feature)
-                ).struct.field(parent_field_spec.key.to_struct_key())
+                field_provenance[fq_key] = self.access_provenance_field(
+                    self.get_renamed_data_version_by_field_col(fq_key.feature),
+                    parent_field_spec.key.to_struct_key(),
+                )
             res[field_spec.key] = field_provenance
         return res
 
@@ -461,9 +493,20 @@ class VersioningEngine(ABC):
         field_names = sorted([f.key.to_struct_key() for f in self.plan.feature.fields])
 
         # Concatenate all field hashes with separator
-        sample_components = [
-            nw.col(struct_column).struct.field(field_name) for field_name in field_names
-        ]
+        sample_components = []
+        for field_name in field_names:
+            expr = self.access_provenance_field(struct_column, field_name)
+            # If data_version is missing, fall back to provenance-by-field (useful for dict-based stores)
+            if struct_column == METAXY_DATA_VERSION_BY_FIELD:
+                expr = nw.coalesce(
+                    [
+                        expr,
+                        self.access_provenance_field(
+                            METAXY_PROVENANCE_BY_FIELD, field_name
+                        ),
+                    ]
+                )
+            sample_components.append(expr.fill_null(""))
         sample_concat = nw.concat_str(sample_components, separator="|")
         df = df.with_columns(sample_concat.alias("__sample_concat"))
 
