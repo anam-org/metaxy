@@ -1,6 +1,5 @@
-from collections import defaultdict
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 import dagster as dg
 
@@ -12,12 +11,80 @@ from metaxy.ext.dagster.constants import (
 )
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
 
+_T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
+
+
+def _metaxify_spec(
+    spec: dg.AssetSpec,
+    *,
+    inherit_feature_key_as_asset_key: bool,
+    inject_metaxy_kind: bool,
+) -> dg.AssetSpec:
+    """Transform a single AssetSpec with Metaxy metadata.
+
+    Returns the spec unchanged if it doesn't have metaxy/feature metadata.
+    """
+    feature_key = spec.metadata.get(DAGSTER_METAXY_FEATURE_METADATA_KEY)
+    if not feature_key:
+        return spec
+
+    feature_cls = mx.get_feature_by_key(feature_key)
+    feature_spec = feature_cls.spec()
+
+    # Determine the final asset key
+    final_key = get_asset_key_for_metaxy_feature_spec(
+        feature_spec,
+        inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+        dagster_key=spec.key,
+    )
+
+    # Build deps from feature dependencies
+    deps_to_add: set[dg.AssetDep] = set()
+    for dep in feature_spec.deps:
+        upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
+        deps_to_add.add(
+            dg.AssetDep(
+                asset=get_asset_key_for_metaxy_feature_spec(
+                    upstream_feature_spec,
+                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+                )
+            )
+        )
+
+    # Build kinds
+    kinds_to_add: set[str] = set()
+    if inject_metaxy_kind and len(spec.kinds) < 3:
+        kinds_to_add.add(DAGSTER_METAXY_KIND)
+
+    # Extract dagster attributes (excluding asset_key which is handled separately)
+    dagster_attrs: dict[str, Any] = {}
+    raw_dagster_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
+    if raw_dagster_attrs is not None:
+        if not isinstance(raw_dagster_attrs, dict):
+            raise ValueError(
+                f"Invalid metadata format for `{feature_spec.key}` "
+                f"Metaxy feature metadata key {METAXY_DAGSTER_METADATA_KEY}: "
+                f"expected dict, got {type(raw_dagster_attrs).__name__}"
+            )
+        dagster_attrs = {k: v for k, v in raw_dagster_attrs.items() if k != "asset_key"}
+
+    # Build the replacement attributes
+    replace_attrs: dict[str, Any] = {
+        "key": final_key,
+        "deps": {*spec.deps, *deps_to_add},
+        "metadata": {**spec.metadata, **feature_spec.metadata},
+        "kinds": {*spec.kinds, *kinds_to_add},
+        **dagster_attrs,
+    }
+
+    return spec.replace_attributes(**replace_attrs)
+
 
 def metaxify(
     inherit_feature_key_as_asset_key: bool = False,
     inject_metaxy_kind: bool = True,
-) -> Callable[[dg.AssetsDefinition], dg.AssetsDefinition]:
-    """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition].
+) -> Callable[[_T], _T]:
+    """Inject Metaxy metadata into a Dagster [`AssetsDefinition`][dg.AssetsDefinition] or [`AssetSpec`][dg.AssetSpec].
 
     Modifies assets that have `metaxy/feature` metadata set.
 
@@ -29,7 +96,7 @@ def metaxify(
             if there are already 3 kinds on the asset.
 
     Returns:
-        The original Dagster asset, enriched with Metaxy:
+        The original Dagster asset or spec, enriched with Metaxy:
 
             - The asset key is determined as follows:
 
@@ -56,7 +123,7 @@ def metaxify(
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
         `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy operations are append-only.
 
-    !!! example
+    !!! example "Apply to `AssetsDefinition`"
 
         ```py
         import dagster as dg
@@ -71,78 +138,44 @@ def metaxify(
 
             ...
         ```
+
+    !!! example "Apply to `AssetSpec`"
+        ```py
+        import dagster as dg
+        import metaxy.ext.dagster as mxd
+
+        asset_spec = dg.AssetSpec(
+            key="my_asset",
+            metadata={"metaxy/feature": "my/feature/key"},
+        )
+        spec = mxd.metaxify()(asset_spec)
+        ```
     """
 
-    def inner(asset: dg.AssetsDefinition) -> dg.AssetsDefinition:
+    def inner(asset: _T) -> _T:
+        if isinstance(asset, dg.AssetSpec):
+            return _metaxify_spec(
+                asset,
+                inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+                inject_metaxy_kind=inject_metaxy_kind,
+            )
+
+        # Handle AssetsDefinition
         keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
-        deps_to_inject: defaultdict[dg.AssetKey, set[dg.AssetDep]] = defaultdict(set)
-        metadata_to_inject: dict[dg.AssetKey, dict[str, Any]] = {}
-        kinds_to_inject: defaultdict[dg.AssetKey, set[str]] = defaultdict(set)
-        dagster_attrs_to_inject: dict[dg.AssetKey, dict[str, Any]] = {}
+        transformed_specs: dict[dg.AssetKey, dg.AssetSpec] = {}
 
         for key, asset_spec in asset.specs_by_key.items():
-            if feature_key := asset.metadata_by_key[key].get(
-                DAGSTER_METAXY_FEATURE_METADATA_KEY
-            ):
-                feature_cls = mx.get_feature_by_key(feature_key)
-                feature_spec = feature_cls.spec()
-
-                # Determine the final asset key using the utility function
-                final_key = get_asset_key_for_metaxy_feature_spec(
-                    feature_spec,
-                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
-                    dagster_key=key,
-                )
-
-                if final_key != key:
-                    keys_to_replace[key] = final_key
-
-                # Inject deps using feature keys
-                for dep in feature_spec.deps:
-                    upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
-
-                    deps_to_inject[final_key].add(
-                        dg.AssetDep(
-                            asset=get_asset_key_for_metaxy_feature_spec(
-                                upstream_feature_spec,
-                                inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
-                            )
-                        )
-                    )
-
-                metadata_to_inject[final_key] = feature_spec.metadata
-
-                # Extract dagster attributes (excluding asset_key which is handled separately)
-                dagster_attrs = feature_spec.metadata.get(METAXY_DAGSTER_METADATA_KEY)
-                if dagster_attrs is not None:
-                    if not isinstance(dagster_attrs, dict):
-                        raise ValueError(
-                            f"Invalid metadata format for `{feature_spec.key}` "
-                            f"Metaxy feature metadata key {METAXY_DAGSTER_METADATA_KEY}: "
-                            f"expected dict, got {type(dagster_attrs).__name__}"
-                        )
-                    attrs_to_apply = {
-                        k: v for k, v in dagster_attrs.items() if k != "asset_key"
-                    }
-                    if attrs_to_apply:
-                        dagster_attrs_to_inject[final_key] = attrs_to_apply
-
-                if inject_metaxy_kind and len(asset_spec.kinds) < 3:
-                    kinds_to_inject[final_key].add(DAGSTER_METAXY_KIND)
-
-        def apply_attributes(spec: dg.AssetSpec) -> dg.AssetSpec:
-            base_attrs: dict[str, Any] = {
-                "deps": {*spec.deps, *deps_to_inject[spec.key]},
-                "metadata": {**spec.metadata, **metadata_to_inject.get(spec.key, {})},
-                "kinds": {*spec.kinds, *kinds_to_inject[spec.key]},
-            }
-            # Apply dagster attributes from feature spec metadata
-            if spec.key in dagster_attrs_to_inject:
-                base_attrs.update(dagster_attrs_to_inject[spec.key])
-            return spec.replace_attributes(**base_attrs)
+            new_spec = _metaxify_spec(
+                asset_spec,
+                inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+                inject_metaxy_kind=inject_metaxy_kind,
+            )
+            if new_spec.key != key:
+                keys_to_replace[key] = new_spec.key
+            transformed_specs[new_spec.key] = new_spec
 
         return asset.with_attributes(
             asset_key_replacements=keys_to_replace
-        ).map_asset_specs(apply_attributes)
+        ).map_asset_specs(lambda spec: transformed_specs.get(spec.key, spec))
 
     return inner
