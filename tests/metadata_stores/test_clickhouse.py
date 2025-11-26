@@ -668,12 +668,12 @@ def test_clickhouse_map_column_write_from_ibis_struct(
         # This is exactly how resolve_update builds metaxy_provenance_by_field
         with store.create_versioning_engine(plan, implementation=nw.Implementation.IBIS) as engine:
             # Build struct using the engine's method (same as production code)
-            nw_df = engine.build_struct_column(
+            nw_df = engine.record_field_versions(
                 nw_df,
                 METAXY_PROVENANCE_BY_FIELD,
                 {"frames": "_hash_frames", "audio": "_hash_audio"},
             )
-            nw_df = engine.build_struct_column(
+            nw_df = engine.record_field_versions(
                 nw_df,
                 METAXY_DATA_VERSION_BY_FIELD,
                 {"frames": "_hash_frames", "audio": "_hash_audio"},

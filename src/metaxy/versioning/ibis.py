@@ -23,7 +23,7 @@ class IbisHashFn(Protocol):
 class IbisVersioningEngine(VersioningEngine):
     """Provenance engine using Ibis for SQL databases.
 
-    !!!info
+    !!! info
         This implementation never leaves the lazy world.
         All operations stay as Ibis expressions and eventually get compiled to SQL.
     """
@@ -100,12 +100,12 @@ class IbisVersioningEngine(VersioningEngine):
         return cast(FrameT, nw.from_native(result_table))
 
     @staticmethod
-    def build_struct_column(
+    def record_field_versions(
         df: FrameT,
         struct_name: str,
         field_columns: dict[str, str],
     ) -> FrameT:
-        """Build a struct column from existing columns.
+        """Persist field-level versions using a struct column.
 
         Args:
             df: Narwhals DataFrame backed by Ibis
@@ -113,8 +113,7 @@ class IbisVersioningEngine(VersioningEngine):
             field_columns: Mapping from struct field names to column names
 
         Returns:
-            Narwhals DataFrame with new struct column added, backed by Ibis.
-            The source columns remain unchanged.
+            Narwhals DataFrame with the struct column added.
         """
         # Import ibis lazily
         import ibis.expr.types
