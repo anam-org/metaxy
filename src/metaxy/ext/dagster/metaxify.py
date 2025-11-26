@@ -51,8 +51,9 @@ class metaxify:
     Args:
         feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
             over `metaxy/feature` metadata. If both are set and don't match, an error is raised.
-        inherit_feature_key_as_asset_key: If True, use the Metaxy feature key as the
+        inherit_feature_key_as_asset_key: If True (default), use the Metaxy feature key as the
             Dagster asset key (unless `dagster/attributes.asset_key` is set on the feature spec).
+            This ensures consistent key resolution between assets and their upstream dependencies.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
             if there are already 3 kinds on the asset.
@@ -129,7 +130,7 @@ class metaxify:
         _asset: "_T | None" = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
-        inherit_feature_key_as_asset_key: bool = False,
+        inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
@@ -152,7 +153,7 @@ class metaxify:
         _asset: None = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
-        inherit_feature_key_as_asset_key: bool = False,
+        inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
@@ -163,7 +164,7 @@ class metaxify:
         _asset: _T | None = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
-        inherit_feature_key_as_asset_key: bool = False,
+        inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
