@@ -532,6 +532,9 @@ class FeatureGraph:
 
         source_set = set(validated_sources)
         visited = set()
+        post_order = []
+        source_set = set(sources)
+        visited = set()
         post_order = []  # Reverse topological order
 
         def visit(key: FeatureKey):
