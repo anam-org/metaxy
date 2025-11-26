@@ -204,31 +204,31 @@ class TestMetaxifyBasic:
 class TestMetaxifyAssetKeys:
     """Test asset key handling in @metaxify."""
 
-    def test_metaxify_preserves_asset_key_by_default(
+    def test_metaxify_uses_feature_key_by_default(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that asset key is preserved when inherit_feature_key_as_asset_key is False."""
+        """Test that feature key is used as asset key by default."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def my_asset():
             pass
 
-        # Asset key should remain unchanged (original dagster key)
-        assert dg.AssetKey(["my_asset"]) in my_asset.keys
+        # Asset key should be the feature key (default behavior)
+        assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
 
-    def test_metaxify_uses_feature_key_when_inherit_enabled(
+    def test_metaxify_preserves_asset_key_when_inherit_disabled(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that feature key is used as asset key when inherit_feature_key_as_asset_key is True."""
+        """Test that asset key is preserved when inherit_feature_key_as_asset_key is False."""
 
-        @metaxify(inherit_feature_key_as_asset_key=True)
+        @metaxify(inherit_feature_key_as_asset_key=False)
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def my_asset():
             pass
 
-        # Asset key should be the feature key
-        assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
+        # Asset key should remain unchanged (original dagster key)
+        assert dg.AssetKey(["my_asset"]) in my_asset.keys
 
     def test_metaxify_uses_custom_key_from_feature_spec(
         self, feature_with_dagster_metadata: type[mx.BaseFeature]
@@ -453,10 +453,13 @@ class TestMetaxifyMixedDeps:
         assert dg.AssetKey(["raw_data"]) in metaxy_dep_keys
         assert DAGSTER_METAXY_KIND in metaxy_spec.kinds
 
-        # consumer_asset should depend on the original metaxy_asset key (not renamed)
+        # metaxy_asset key should be the feature key
+        assert dg.AssetKey(["test", "upstream"]) in metaxy_asset.keys
+
+        # consumer_asset should depend on the feature key (metaxy_asset's transformed key)
         consumer_spec = list(consumer_asset.specs)[0]
         consumer_dep_keys = {dep.asset_key for dep in consumer_spec.deps}
-        assert dg.AssetKey(["metaxy_asset"]) in consumer_dep_keys
+        assert dg.AssetKey(["test", "upstream"]) in consumer_dep_keys
 
 
 class TestMetaxifyAssetSpec:
@@ -477,8 +480,8 @@ class TestMetaxifyAssetSpec:
         assert isinstance(result, dg.AssetSpec)
         # Should have metaxy kind
         assert DAGSTER_METAXY_KIND in result.kinds
-        # Key should be preserved (inherit_feature_key_as_asset_key=False by default)
-        assert result.key == dg.AssetKey(["my_spec"])
+        # Key should be feature key (inherit_feature_key_as_asset_key=True by default)
+        assert result.key == dg.AssetKey(["test", "upstream"])
 
     def test_metaxify_asset_spec_with_inherit_key(
         self, upstream_feature: type[mx.BaseFeature]
@@ -861,13 +864,13 @@ class TestMetaxifyMaterialization:
         assert result.success
         assert captured_data.get("executed") is True
 
-        # Verify the metaxy asset was materialized with correct key
+        # Verify the metaxy asset was materialized with feature key
         events = result.get_asset_materialization_events()
         asset_keys = {
             e.step_materialization_data.materialization.asset_key for e in events
         }
-        # metaxy_asset key should be preserved (not replaced with feature key)
-        assert dg.AssetKey(["metaxy_asset"]) in asset_keys
+        # metaxy_asset key should be the feature key (default behavior)
+        assert dg.AssetKey(["test", "upstream"]) in asset_keys
 
     def test_metaxify_preserves_asset_metadata_after_materialization(
         self,
@@ -1162,8 +1165,9 @@ class TestMetaxifyMultiAsset:
         specs_by_key = my_multi_asset.specs_by_key
         assert len(specs_by_key) == 2
 
-        spec_a = specs_by_key[dg.AssetKey("output_a")]
-        spec_b = specs_by_key[dg.AssetKey("output_b")]
+        # Keys should be feature keys (default behavior)
+        spec_a = specs_by_key[dg.AssetKey(["test", "multi", "a"])]
+        spec_b = specs_by_key[dg.AssetKey(["test", "multi", "b"])]
 
         # Both should have metaxy kind injected
         assert DAGSTER_METAXY_KIND in spec_a.kinds
@@ -1191,7 +1195,9 @@ class TestMetaxifyMultiAsset:
 
         specs_by_key = my_multi_asset.specs_by_key
 
-        spec_a = specs_by_key[dg.AssetKey("output_a")]
+        # spec_a should have its key changed to feature key
+        spec_a = specs_by_key[dg.AssetKey(["test", "multi", "a"])]
+        # spec_b should keep its original key (no metaxy metadata)
         spec_b = specs_by_key[dg.AssetKey("output_b")]
 
         # Only spec_a should have metaxy enrichment
@@ -1241,12 +1247,13 @@ class TestMetaxifyMultiAsset:
             ]
         )
         def my_multi_asset(context: dg.AssetExecutionContext):
+            # Use feature keys since inherit_feature_key_as_asset_key=True by default
             yield dg.MaterializeResult(
-                asset_key="output_a",
+                asset_key=["test", "multi", "a"],
                 metadata={"rows": 2},
             )
             yield dg.MaterializeResult(
-                asset_key="output_b",
+                asset_key=["test", "multi", "b"],
                 metadata={"rows": 3},
             )
 
@@ -1257,7 +1264,7 @@ class TestMetaxifyMultiAsset:
         )
         assert result.success
 
-        # Check both outputs were materialized
+        # Check both outputs were materialized with feature keys
         events = [
             e
             for e in result.all_events
@@ -1266,8 +1273,8 @@ class TestMetaxifyMultiAsset:
         assert len(events) == 2
 
         materialized_keys = {e.asset_key for e in events}
-        assert dg.AssetKey("output_a") in materialized_keys
-        assert dg.AssetKey("output_b") in materialized_keys
+        assert dg.AssetKey(["test", "multi", "a"]) in materialized_keys
+        assert dg.AssetKey(["test", "multi", "b"]) in materialized_keys
 
 
 class TestMetaxifyWithInputDefinitions:
