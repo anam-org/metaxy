@@ -195,6 +195,8 @@ nav:
     - System Columns: learn/system-columns.md
   - Integrations:
     - integrations/index.md
+    - Orchestration:
+      - Dagster: integrations/orchestration/dagster.md
     - Metadata Stores:
       - Databases:
         - BigQuery: integrations/metadata-stores/databases/bigquery.md
@@ -202,8 +204,6 @@ nav:
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
       - Storage Only:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
-    - Orchestration:
-      - Dagster: integrations/orchestration/dagster.md
     - Plugins:
       - SQLModel: integrations/plugins/sqlmodel.md
       - SQLAlchemy: integrations/plugins/sqlalchemy.md
@@ -226,6 +226,8 @@ nav:
     - Constants: reference/api/constants.md
     - Integrations:
       - reference/api/ext/index.md
+      - Orchestration:
+        - Dagster: reference/api/ext/dagster.md
       - Metadata Stores:
         - reference/api/metadata-stores/index.md
         - Databases:
@@ -237,8 +239,6 @@ nav:
             - Delta Lake: reference/api/metadata-stores/delta.md
             - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
-      - Orchestration:
-        - Dagster: reference/api/ext/dagster.md
       - Plugins:
         - SQLModel: reference/api/ext/sqlmodel.md
         - SQLAlchemy: reference/api/ext/sqlalchemy.md
