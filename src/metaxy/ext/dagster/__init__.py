@@ -7,10 +7,12 @@ from metaxy.ext.dagster.constants import (
 )
 from metaxy.ext.dagster.io_manager import MetaxyIOManager, MetaxyOutput
 from metaxy.ext.dagster.metaxify import metaxify
+from metaxy.ext.dagster.observable import observable_metaxy_asset
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 
 __all__ = [
     "metaxify",
+    "observable_metaxy_asset",
     "MetaxyStoreFromConfigResource",
     "MetaxyIOManager",
     "MetaxyOutput",

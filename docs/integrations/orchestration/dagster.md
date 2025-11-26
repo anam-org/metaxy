@@ -46,6 +46,8 @@ This integration provides:
 
 - [`metaxify`][metaxy.ext.dagster.metaxify.metaxify] - a decorator that enriches Dagster asset definitions with Metaxy information such as upstream dependencies, description, metadata, code version, and so on.
 
+- [`observable_metaxy_asset`][metaxy.ext.dagster.observable.observable_metaxy_asset] - a decorator that creates observable source assets for monitoring external Metaxy features.
+
 - [`MetaxyStoreFromConfigResource`][metaxy.ext.dagster.MetaxyStoreFromConfigResource] - a resource that provides access to [`MetadataStore`][metaxy.MetadataStore]
 
 - [`MetaxyIOManager`][metaxy.ext.dagster.io_manager.MetaxyIOManager] - an IO manager that reads and writes Dagster assets that are Metaxy features
@@ -208,7 +210,32 @@ def definitions():
 dg dev -f defs.py
 ```
 
-Materialize your ultra-giga-multi-modal-big-data assets and let Metaxy take care of state and versioning!
+Materialize your assets and let Metaxy take care of state and versioning!
+
+## Observable Source Assets
+
+Use [`observable_metaxy_asset`][metaxy.ext.dagster.observable.observable_metaxy_asset] to create observable source assets that monitor external Metaxy features.
+This is useful when Metaxy features are populated outside of Dagster (e.g., by external pipelines) and you want Dagster to track their data versions.
+
+<!-- dprint-ignore-start -->
+!!! example "Basic Observable Asset"
+    ```python
+    import dagster as dg
+    import metaxy as mx
+    import metaxy.ext.dagster as mxd
+
+    @mxd.observable_metaxy_asset(key="dagster/asset/key", feature="external/feature")
+    def external_data(context, store: dg.ResourceParam[mx.MetadataStore], lazy_df: nw.LazyFrame):
+        # build a custom metadata dict
+        metadata = ...
+        return metadata
+    ```
+<!-- dprint-ignore-end -->
+
+The observation automatically tracks:
+
+- **Data version**: Uses `mean(metaxy_created_at)` to detect both additions and deletions
+- **Row count**: Logged as `dagster/row_count` metadata
 
 ## Reference
 

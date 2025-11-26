@@ -444,8 +444,15 @@ class MetadataStore(ABC):
 
         Raises:
             FeatureNotFoundError: If feature not found in any store
-            SystemDataNotFoundError: When attempting to read non-existant Metaxy system data
+            SystemDataNotFoundError: When attempting to read non-existent Metaxy system data
             ValueError: If both feature_version and current_only=True are provided
+
+        !!! info
+            When this method is called with default arguments, it will return the latest (by `metaxy_created_at`)
+            metadata for the current feature version. Therefore, it's perfectly suitable for most use cases.
+
+        !!! warning
+            The order of rows is not guaranteed.
         """
         filters = filters or []
         columns = columns or []
