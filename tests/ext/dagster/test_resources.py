@@ -15,6 +15,6 @@ def test_metaxy_store_from_config(
         context: dg.AssetExecutionContext,
         store: dg.ResourceParam[mx.MetadataStore],
     ):
-        assert store._materialization_id == context.run_id
+        assert store._materialization_id == context.run.run_id
 
     dg.materialize_to_memory([my_asset], resources=resources)

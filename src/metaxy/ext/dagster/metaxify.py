@@ -20,7 +20,7 @@ def metaxify(
     Modifies assets that have `metaxy/feature` metadata set.
 
     Args:
-        key_prefix: Optional prefix to prepend to Metaxy feature keys when converting them into Dagster asset keys.
+        key_prefix: Optional prefix to prepend to the asset key.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
             if there are already 3 kinds on the asset.
@@ -28,15 +28,28 @@ def metaxify(
     Returns:
         The original Dagster asset, enriched with Metaxy:
 
-            - asset keys for upstream Metaxy features are injected into `deps`. The asset keys are determined the following way:
+            - The asset key is determined as follows:
 
-                - If the Metaxy feature spec has a `"metaxy/dagster"` key set on its spec, then `asset_key` from this dictionary is used.
+                1. If the Metaxy feature spec has `"metaxy/metadata"` set, that value is used as-is (no prefix applied).
 
-                - Otherwise, the Metaxy feature key is used, optionally prepended with `key_prefix`
+                2. Otherwise, the original Dagster asset key is used, with `key_prefix` prepended if provided.
 
-            - feature spec metadata is injected into the Dagster asset metadata under `metaxy/metadata`
+            - Asset keys for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic:
+
+                - If the upstream feature spec has `"metaxy/metadata"` set, that value is used as-is.
+
+                - Otherwise, `key_prefix` (if provided) and the Metaxy feature key are used.
+
+            - Feature spec metadata is injected into the Dagster asset metadata.
 
             - `"metaxy"` kind is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds on the asset.
+
+            In the future, `@metaxify` will also inject table schemas and column lineage Dagster metadata.
+
+    !!! note "Multiple assets per feature"
+
+        Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
+        `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy operations are append-only.
 
     !!! example
 
@@ -45,7 +58,7 @@ def metaxify(
         import metaxy as mx
         import metaxy.ext.dagster as mxd
 
-        @mxd.metaxify
+        @mxd.metaxify()
         @dg.asset(metadata={"metaxy/feature": "my/feature/key"})
         def my_asset(store: mx.MetadataStore):
             with store:
@@ -70,15 +83,19 @@ def metaxify(
                 feature_cls = mx.get_feature_by_key(feature_key)
                 feature_spec = feature_cls.spec()
 
-                new_key = get_asset_key_for_metaxy_feature_spec(
-                    feature_spec, key_prefix=key_prefix
+                # Determine the final asset key using the utility function
+                final_key = get_asset_key_for_metaxy_feature_spec(
+                    feature_spec, key_prefix=key_prefix, dagster_key=key
                 )
-                keys_to_replace[key] = new_key
 
+                if final_key != key:
+                    keys_to_replace[key] = final_key
+
+                # Inject deps using feature keys (with key_prefix for consistency)
                 for dep in feature_spec.deps:
                     upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
 
-                    deps_to_inject[new_key].add(
+                    deps_to_inject[final_key].add(
                         dg.AssetDep(
                             asset=get_asset_key_for_metaxy_feature_spec(
                                 upstream_feature_spec, key_prefix=key_prefix
@@ -86,10 +103,10 @@ def metaxify(
                         )
                     )
 
-                metadata_to_inject[new_key] = feature_cls.spec().metadata
+                metadata_to_inject[final_key] = feature_cls.spec().metadata
 
                 if inject_metaxy_kind and len(asset_spec.kinds) < 3:
-                    kinds_to_inject[new_key].add(DAGSTER_METAXY_KIND)
+                    kinds_to_inject[final_key].add(DAGSTER_METAXY_KIND)
 
         return asset.with_attributes(
             asset_key_replacements=keys_to_replace

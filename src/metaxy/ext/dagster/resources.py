@@ -17,6 +17,7 @@ class MetaxyStoreFromConfigResource(dg.ConfigurableResource[mx.MetadataStore]):
         Returns:
             A MetadataStore configured with the Dagster run ID as the materialization ID.
         """
+        assert context.run is not None
         return mx.MetaxyConfig.get().get_store(
-            self.name, materialization_id=context.run_id
+            self.name, materialization_id=context.run.run_id
         )

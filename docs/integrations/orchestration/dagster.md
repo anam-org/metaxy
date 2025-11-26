@@ -56,7 +56,7 @@ import metaxy as mx
 
 # Upstream feature
 upstream_spec = mx.FeatureSpec(
-    key=["audio", "embeddings"],
+    key="audio/embeddings",
     id_columns=["audio_id"],
     fields=["embedding"],
 )
@@ -68,7 +68,7 @@ class AudioEmbeddings(mx.BaseFeature, spec=upstream_spec):
 
 # Downstream feature that depends on upstream
 downstream_spec = mx.FeatureSpec(
-    key=["audio", "clusters"],
+    key="audio/clusters",
     id_columns=["audio_id"],
     fields=["cluster_id"],
     deps=[AudioEmbeddings],

@@ -130,41 +130,56 @@ class TestMetaxifyBasic:
 class TestMetaxifyAssetKeys:
     """Test asset key handling in @metaxify."""
 
-    def test_metaxify_replaces_asset_key_with_feature_key(
+    def test_metaxify_preserves_asset_key_without_prefix(
         self, upstream_feature: type[mx.BaseFeature]
     ):
-        """Test that asset key is replaced with feature key."""
+        """Test that asset key is preserved when no key_prefix is provided."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def my_asset():
             pass
 
-        # Asset key should be replaced with feature key
-        assert dg.AssetKey(["test", "upstream"]) in my_asset.keys
+        # Asset key should remain unchanged (original dagster key)
+        assert dg.AssetKey(["my_asset"]) in my_asset.keys
 
-    def test_metaxify_uses_key_prefix(self, upstream_feature: type[mx.BaseFeature]):
-        """Test that key_prefix is prepended to feature key."""
+    def test_metaxify_uses_key_prefix_on_dagster_key(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that key_prefix is prepended to the existing dagster asset key."""
 
         @metaxify(key_prefix=["prefix", "path"])
         @dg.asset(metadata={"metaxy/feature": "test/upstream"})
         def my_asset():
             pass
 
-        # Asset key should include prefix
-        assert dg.AssetKey(["prefix", "path", "test", "upstream"]) in my_asset.keys
+        # Asset key should be prefix + original dagster key
+        assert dg.AssetKey(["prefix", "path", "my_asset"]) in my_asset.keys
 
-    def test_metaxify_uses_dagster_metadata_for_asset_key(
+    def test_metaxify_uses_custom_key_from_feature_spec(
         self, feature_with_dagster_metadata: type[mx.BaseFeature]
     ):
-        """Test that metaxy/metadata in feature spec overrides asset key."""
+        """Test that metaxy/metadata in feature spec overrides the asset key."""
 
         @metaxify()
         @dg.asset(metadata={"metaxy/feature": "test/custom_key"})
         def my_asset():
             pass
 
-        # Asset key should use the custom key from metadata
+        # Asset key should use the custom key from feature spec's metaxy/metadata
+        assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
+
+    def test_metaxify_custom_key_ignores_prefix(
+        self, feature_with_dagster_metadata: type[mx.BaseFeature]
+    ):
+        """Test that key_prefix is NOT applied when metaxy/metadata is set."""
+
+        @metaxify(key_prefix=["prefix"])
+        @dg.asset(metadata={"metaxy/feature": "test/custom_key"})
+        def my_asset():
+            pass
+
+        # Asset key should be custom key only (prefix ignored)
         assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
 
 
@@ -188,17 +203,17 @@ class TestMetaxifyDeps:
         def downstream_asset():
             pass
 
-        # Downstream asset should have upstream as a dependency
+        # Downstream asset should have upstream feature key as a dependency
         downstream_spec = list(downstream_asset.specs)[0]
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
-    def test_metaxify_injects_deps_with_key_prefix(
+    def test_metaxify_deps_use_prefix(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
     ):
-        """Test that deps use key_prefix when injected."""
+        """Test that deps use key_prefix for consistency."""
 
         @metaxify(key_prefix=["prefix"])
         @dg.asset(metadata={"metaxy/feature": "test/downstream"})
@@ -207,7 +222,7 @@ class TestMetaxifyDeps:
 
         downstream_spec = list(downstream_asset.specs)[0]
         dep_keys = {dep.asset_key for dep in downstream_spec.deps}
-        # Dep key should include prefix
+        # Dep key should use prefix + feature key
         assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
 
 
@@ -266,7 +281,7 @@ class TestMetaxifyMixedDeps:
         # Should have both regular Dagster deps
         assert dg.AssetKey(["data_source"]) in dep_keys
         assert dg.AssetKey(["another_source"]) in dep_keys
-        # And the Metaxy upstream dep (from feature spec)
+        # And the Metaxy upstream dep (from feature spec, using feature key)
         assert dg.AssetKey(["test", "upstream"]) in dep_keys
 
     def test_metaxify_with_mixed_metaxy_and_regular_assets_in_graph(
@@ -296,10 +311,10 @@ class TestMetaxifyMixedDeps:
         assert dg.AssetKey(["raw_data"]) in metaxy_dep_keys
         assert DAGSTER_METAXY_KIND in metaxy_spec.kinds
 
-        # consumer_asset should depend on the renamed metaxy asset key
+        # consumer_asset should depend on the original metaxy_asset key (not renamed)
         consumer_spec = list(consumer_asset.specs)[0]
         consumer_dep_keys = {dep.asset_key for dep in consumer_spec.deps}
-        assert dg.AssetKey(["test", "upstream"]) in consumer_dep_keys
+        assert dg.AssetKey(["metaxy_asset"]) in consumer_dep_keys
 
 
 class TestMetaxifyNoOp:
@@ -430,14 +445,14 @@ class TestMetaxifyMaterialization:
         metadata = event.step_materialization_data.materialization.metadata
         assert metadata["metaxy/materialized_in_run"].value == 2
 
-    def test_metaxify_loads_upstream_via_io_manager(
+    def test_metaxify_loads_upstream_via_store_resource(
         self,
         upstream_feature: type[mx.BaseFeature],
         downstream_feature: type[mx.BaseFeature],
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that downstream asset loads upstream data via IO Manager's load_input."""
+        """Test that downstream asset can read upstream data via the store resource."""
         captured_data = {}
 
         @metaxify()
@@ -461,19 +476,14 @@ class TestMetaxifyMaterialization:
         @dg.asset(
             metadata={"metaxy/feature": "test/downstream"},
             io_manager_key="metaxy_io_manager",
-            ins={
-                "upstream_data": dg.AssetIn(
-                    key=["test", "upstream"],  # Use feature key directly
-                    metadata={"metaxy/feature": "test/upstream"},
-                )
-            },
+            deps=[upstream_asset],
         )
-        def downstream_asset(upstream_data):
-            # upstream_data is loaded via IO Manager's load_input
-            # It should be a narwhals LazyFrame
-            collected = upstream_data.collect()
-            captured_data["rows"] = len(collected)
-            captured_data["ids"] = collected.to_native()["id"].to_list()
+        def downstream_asset(store: dg.ResourceParam[mx.MetadataStore]):
+            # Read upstream data via the store resource
+            with store:
+                upstream_data = store.read_metadata(upstream_feature).collect()
+                captured_data["rows"] = len(upstream_data)
+                captured_data["ids"] = upstream_data.to_native()["id"].to_list()
             return pl.DataFrame(
                 {
                     "id": ["result"],
@@ -489,7 +499,7 @@ class TestMetaxifyMaterialization:
         )
         assert result1.success
 
-        # Materialize downstream - include upstream in job so Dagster knows about it
+        # Materialize downstream
         result2 = dg.materialize(
             [upstream_asset, downstream_asset],
             resources=resources,
@@ -498,7 +508,7 @@ class TestMetaxifyMaterialization:
         )
         assert result2.success
 
-        # Verify upstream data was loaded via IO Manager
+        # Verify upstream data was read
         assert captured_data["rows"] == 3
         assert set(captured_data["ids"]) == {"x", "y", "z"}
 
@@ -509,28 +519,27 @@ class TestMetaxifyMaterialization:
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that AssetSpec passed to materialize provides metadata for AssetIn."""
+        """Test that build_asset_spec can be used to reference external Metaxy features."""
         captured_data = {}
 
-        # Build asset spec - this contains the metadata the IO Manager needs
-        upstream_spec = build_asset_spec("test/upstream").with_io_manager_key(
+        # Build asset spec - this represents an external feature not produced by a local asset
+        external_spec = build_asset_spec("test/upstream").with_io_manager_key(
             "metaxy_io_manager"
         )
 
-        @metaxify()
-        @dg.asset(
-            metadata={"metaxy/feature": "test/upstream"},
-            io_manager_key="metaxy_io_manager",
-        )
-        def upstream_asset():
-            return pl.DataFrame(
-                {
-                    "id": ["a", "b"],
-                    "metaxy_provenance_by_field": [
-                        {"value": "v1"},
-                        {"value": "v2"},
-                    ],
-                }
+        # First, write data directly to the store (simulating external feature population)
+        with mx.MetaxyConfig.get().get_store("dev") as store:
+            store.write_metadata(
+                feature=upstream_feature,
+                df=pl.DataFrame(
+                    {
+                        "id": ["a", "b"],
+                        "metaxy_provenance_by_field": [
+                            {"value": "v1"},
+                            {"value": "v2"},
+                        ],
+                    }
+                ),
             )
 
         @metaxify()
@@ -538,9 +547,8 @@ class TestMetaxifyMaterialization:
             metadata={"metaxy/feature": "test/downstream"},
             io_manager_key="metaxy_io_manager",
             ins={
-                # Only key - NO metadata here!
-                # Metadata comes from upstream_spec passed to materialize
-                "upstream_data": dg.AssetIn(key=upstream_spec.key)
+                # Reference the external feature using build_asset_spec key
+                "upstream_data": dg.AssetIn(key=external_spec.key)
             },
         )
         def downstream_asset(upstream_data):
@@ -554,29 +562,14 @@ class TestMetaxifyMaterialization:
                 }
             )
 
-        # Materialize upstream first
-        result1 = dg.materialize(
-            [upstream_asset],
-            resources=resources,
-            instance=instance,
-        )
-        assert result1.success
-
-        assert (
-            upstream_spec.metadata["metaxy/feature"]
-            == upstream_asset.metadata_by_key[dg.AssetKey(["test", "upstream"])][
-                "metaxy/feature"
-            ]
-        )
-
-        # Materialize downstream - pass upstream_spec so Dagster picks up its metadata
-        result2 = dg.materialize(
-            [upstream_spec, downstream_asset],
+        # Materialize downstream - pass external_spec so Dagster picks up its metadata
+        result = dg.materialize(
+            [external_spec, downstream_asset],
             resources=resources,
             instance=instance,
             selection=[downstream_asset],
         )
-        assert result2.success
+        assert result.success
 
         # Verify upstream data was loaded via IO Manager
         assert captured_data["rows"] == 2
@@ -625,8 +618,8 @@ class TestMetaxifyMaterialization:
         asset_keys = {
             e.step_materialization_data.materialization.asset_key for e in events
         }
-        # metaxy_asset key should be replaced with feature key
-        assert dg.AssetKey(["test", "upstream"]) in asset_keys
+        # metaxy_asset key should be preserved (not replaced with feature key)
+        assert dg.AssetKey(["metaxy_asset"]) in asset_keys
 
     def test_metaxify_preserves_asset_metadata_after_materialization(
         self,
