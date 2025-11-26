@@ -65,6 +65,22 @@ class metaxify:
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
         `"metaxy/feature"` metadata. This is a perfectly valid setup since Metaxy writes are append-only.
 
+    !!! warning "Using `@metaxify` with multi assets"
+        The `feature` argument cannot be used with `@dg.multi_asset` that produces multiple outputs.
+        Instead, set `"metaxy/feature"` metadata on the right output's `AssetSpec`:
+
+        ```python
+        @mxd.metaxify()
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "feature/a"}),
+                dg.AssetSpec("output_b", metadata={"metaxy/feature": "feature/b"}),
+            ]
+        )
+        def my_multi_asset():
+            ...
+        ```
+
     !!! example "Apply to `dagster.AssetDefinition`"
         ```py
         import dagster as dg
@@ -208,6 +224,14 @@ class metaxify:
             )
 
         # Handle AssetsDefinition
+        # Validate that feature argument is not used with multi-asset
+        if feature is not None and len(asset.keys) > 1:
+            raise ValueError(
+                f"Cannot use `feature` argument with multi-asset `{asset.node_def.name}` "
+                f"that produces {len(asset.keys)} outputs. "
+                f"Instead, set `metaxy/feature` metadata on each output's AssetSpec."
+            )
+
         keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
         transformed_specs: dict[dg.AssetKey, dg.AssetSpec] = {}
 

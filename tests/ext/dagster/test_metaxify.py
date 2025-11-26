@@ -1087,3 +1087,184 @@ class TestMetaxifyDescription:
         assert result.description is not None
         assert "feature documentation" in result.description
         assert result.description == snapshot
+
+
+class TestMetaxifyMultiAsset:
+    """Test @metaxify with multi-asset definitions."""
+
+    @pytest.fixture
+    def feature_a(self) -> type[mx.BaseFeature]:
+        """Create feature A for multi-asset tests."""
+        spec = mx.FeatureSpec(
+            key=["test", "multi", "a"],
+            id_columns=["id"],
+            fields=["value_a"],
+        )
+
+        class FeatureA(mx.BaseFeature, spec=spec):
+            id: str
+
+        return FeatureA
+
+    @pytest.fixture
+    def feature_b(self) -> type[mx.BaseFeature]:
+        """Create feature B for multi-asset tests."""
+        spec = mx.FeatureSpec(
+            key=["test", "multi", "b"],
+            id_columns=["id"],
+            fields=["value_b"],
+        )
+
+        class FeatureB(mx.BaseFeature, spec=spec):
+            id: str
+
+        return FeatureB
+
+    def test_metaxify_raises_error_with_feature_arg_on_multi_asset(
+        self,
+        feature_a: type[mx.BaseFeature],
+    ):
+        """Test that metaxify raises error when feature arg is used with multi-asset."""
+
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a"),
+                dg.AssetSpec("output_b"),
+            ]
+        )
+        def my_multi_asset():
+            pass
+
+        with pytest.raises(ValueError) as exc_info:
+            metaxify(feature=feature_a)(my_multi_asset)
+
+        assert "Cannot use `feature` argument with multi-asset" in str(exc_info.value)
+        assert "my_multi_asset" in str(exc_info.value)
+        assert "2 outputs" in str(exc_info.value)
+
+    def test_metaxify_multi_asset_with_metadata_on_specs(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+    ):
+        """Test that metaxify works with multi-asset when metadata is on specs."""
+
+        @metaxify()
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/multi/a"}),
+                dg.AssetSpec("output_b", metadata={"metaxy/feature": "test/multi/b"}),
+            ]
+        )
+        def my_multi_asset():
+            pass
+
+        specs_by_key = my_multi_asset.specs_by_key
+        assert len(specs_by_key) == 2
+
+        spec_a = specs_by_key[dg.AssetKey("output_a")]
+        spec_b = specs_by_key[dg.AssetKey("output_b")]
+
+        # Both should have metaxy kind injected
+        assert DAGSTER_METAXY_KIND in spec_a.kinds
+        assert DAGSTER_METAXY_KIND in spec_b.kinds
+
+        # Both should have metaxy metadata
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_a.metadata
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_b.metadata
+
+    def test_metaxify_multi_asset_partial_metadata(
+        self,
+        feature_a: type[mx.BaseFeature],
+    ):
+        """Test that metaxify handles multi-asset where only some specs have metaxy metadata."""
+
+        @metaxify()
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/multi/a"}),
+                dg.AssetSpec("output_b"),  # No metaxy metadata
+            ]
+        )
+        def my_multi_asset():
+            pass
+
+        specs_by_key = my_multi_asset.specs_by_key
+
+        spec_a = specs_by_key[dg.AssetKey("output_a")]
+        spec_b = specs_by_key[dg.AssetKey("output_b")]
+
+        # Only spec_a should have metaxy enrichment
+        assert DAGSTER_METAXY_KIND in spec_a.kinds
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY in spec_a.metadata
+
+        # spec_b should be unchanged
+        assert DAGSTER_METAXY_KIND not in spec_b.kinds
+        assert DAGSTER_METAXY_METADATA_METADATA_KEY not in spec_b.metadata
+
+    def test_metaxify_allows_feature_arg_on_single_output_multi_asset(
+        self,
+        feature_a: type[mx.BaseFeature],
+    ):
+        """Test that feature arg is allowed with multi_asset that has single output."""
+
+        @dg.multi_asset(specs=[dg.AssetSpec("single_output")])
+        def single_output_multi_asset():
+            pass
+
+        # Should not raise - single output is allowed
+        result = metaxify(feature=feature_a)(single_output_multi_asset)
+
+        spec = list(result.specs)[0]
+        assert DAGSTER_METAXY_KIND in spec.kinds
+
+    def test_metaxify_multi_asset_materializes_multiple_features(
+        self,
+        feature_a: type[mx.BaseFeature],
+        feature_b: type[mx.BaseFeature],
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that multi-asset with multiple metaxy features materializes correctly."""
+
+        @metaxify()
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec(
+                    "output_a",
+                    metadata={"metaxy/feature": "test/multi/a"},
+                ),
+                dg.AssetSpec(
+                    "output_b",
+                    metadata={"metaxy/feature": "test/multi/b"},
+                ),
+            ]
+        )
+        def my_multi_asset(context: dg.AssetExecutionContext):
+            yield dg.MaterializeResult(
+                asset_key="output_a",
+                metadata={"rows": 2},
+            )
+            yield dg.MaterializeResult(
+                asset_key="output_b",
+                metadata={"rows": 3},
+            )
+
+        result = dg.materialize(
+            [my_multi_asset],
+            resources=resources,
+            instance=instance,
+        )
+        assert result.success
+
+        # Check both outputs were materialized
+        events = [
+            e
+            for e in result.all_events
+            if e.event_type_value == "ASSET_MATERIALIZATION"
+        ]
+        assert len(events) == 2
+
+        materialized_keys = {e.asset_key for e in events}
+        assert dg.AssetKey("output_a") in materialized_keys
+        assert dg.AssetKey("output_b") in materialized_keys
