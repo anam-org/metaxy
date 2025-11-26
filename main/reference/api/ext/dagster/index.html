@@ -3528,7 +3528,12 @@
 
 
 <a href="#metaxy.ext.dagster.metaxify.metaxify" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">metaxify</span><span class="p">(</span><span class="n">_asset</span><span class="p">:</span> <span class="n"><span title="metaxy.ext.dagster.metaxify._T">_T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">metaxify</span><span class="p">(</span><span class="n">_asset</span><span class="p">:</span> <span class="n"><span title="metaxy.ext.dagster.metaxify._T">_T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">feature</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -3536,7 +3541,8 @@
 
 
         <p>Inject Metaxy metadata into a Dagster <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetsDefinition"><code>AssetsDefinition</code></a> or <a class="autorefs autorefs-external" href="https://docs.dagster.io/api/dagster/assets/#dagster.AssetSpec"><code>AssetSpec</code></a>.</p>
-<p>Modifies assets that have <code>metaxy/feature</code> metadata set. Can be used with or without parentheses.</p>
+<p>Modifies assets that have <code>metaxy/feature</code> metadata set or when <code>feature</code> argument is provided.
+Can be used with or without parentheses.</p>
 <p>The decorated asset or spec is enriched with Metaxy:</p>
 <ul>
 <li>
@@ -3573,6 +3579,22 @@
 
 <p><span class="doc-section-title">Parameters:</span></p>
     <ul>
+        <li class="doc-section-item field-body">
+            <b><code>feature</code></b>
+              (<code><a class="autorefs autorefs-internal" title="&lt;code class=&quot;doc-symbol doc-symbol-heading doc-symbol-attribute&quot;&gt;&lt;/code&gt;            &lt;span class=&quot;doc doc-object-name doc-attribute-name&quot;&gt;CoercibleToFeatureKey&lt;/span&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-module-attribute&quot;&gt;&lt;code&gt;module-attribute&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;metaxy.CoercibleToFeatureKey&lt;/code&gt;)" href="../../types/#metaxy.CoercibleToFeatureKey">CoercibleToFeatureKey</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>The Metaxy feature to associate with the asset. If provided, this takes precedence
+over <code>metaxy/feature</code> metadata. If both are set and don't match, an error is raised.</p>
+          </div>
+        </li>
         <li class="doc-section-item field-body">
             <b><code>inherit_feature_key_as_asset_key</code></b>
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
@@ -3629,6 +3651,18 @@ if there are already 3 kinds on the asset.</p>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">asset_spec</span> <span class="o">=</span> <span class="n">mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">(</span><span class="n">asset_spec</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
+<details class="example">
+<summary>Specify feature via argument</summary>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dg</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">metaxy.ext.dagster</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mxd</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">myproject.features</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyFeature</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nd">@mxd</span><span class="o">.</span><span class="n">metaxify</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">MyFeature</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nd">@dg</span><span class="o">.</span><span class="n">asset</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_asset</span><span class="p">():</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="o">...</span>
+</span></code></pre></div>
+</details>
 
 
 
@@ -3639,16 +3673,20 @@ if there are already 3 kinds on the asset.</p>
 
                   <details class="mkdocstrings-source">
                     <summary>Source code in <code>src/metaxy/ext/dagster/metaxify.py</code></summary>
-                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><a href="#__codelineno-0-87"><span class="linenos" data-linenos="87 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><a href="#__codelineno-0-88"><span class="linenos" data-linenos="88 "></span></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><a href="#__codelineno-0-89"><span class="linenos" data-linenos="89 "></span></a>    <span class="n">_asset</span><span class="p">:</span> <span class="s2">&quot;_T | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><a href="#__codelineno-0-90"><span class="linenos" data-linenos="90 "></span></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><a href="#__codelineno-0-91"><span class="linenos" data-linenos="91 "></span></a>    <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><a href="#__codelineno-0-92"><span class="linenos" data-linenos="92 "></span></a>    <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><a href="#__codelineno-0-93"><span class="linenos" data-linenos="93 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><a href="#__codelineno-0-94"><span class="linenos" data-linenos="94 "></span></a>    <span class="c1"># Actual initialization happens in __new__, but we set defaults here for type checkers</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><a href="#__codelineno-0-95"><span class="linenos" data-linenos="95 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span> <span class="o">=</span> <span class="n">inherit_feature_key_as_asset_key</span>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><a href="#__codelineno-0-96"><span class="linenos" data-linenos="96 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span> <span class="o">=</span> <span class="n">inject_metaxy_kind</span>
+                    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><a href="#__codelineno-0-103"><span class="linenos" data-linenos="103 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><a href="#__codelineno-0-104"><span class="linenos" data-linenos="104 "></span></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><a href="#__codelineno-0-105"><span class="linenos" data-linenos="105 "></span></a>    <span class="n">_asset</span><span class="p">:</span> <span class="s2">&quot;_T | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><a href="#__codelineno-0-106"><span class="linenos" data-linenos="106 "></span></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><a href="#__codelineno-0-107"><span class="linenos" data-linenos="107 "></span></a>    <span class="n">feature</span><span class="p">:</span> <span class="n">mx</span><span class="o">.</span><span class="n">CoercibleToFeatureKey</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><a href="#__codelineno-0-108"><span class="linenos" data-linenos="108 "></span></a>    <span class="n">inherit_feature_key_as_asset_key</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><a href="#__codelineno-0-109"><span class="linenos" data-linenos="109 "></span></a>    <span class="n">inject_metaxy_kind</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><a href="#__codelineno-0-110"><span class="linenos" data-linenos="110 "></span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><a href="#__codelineno-0-111"><span class="linenos" data-linenos="111 "></span></a>    <span class="c1"># Actual initialization happens in __new__, but we set defaults here for type checkers</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><a href="#__codelineno-0-112"><span class="linenos" data-linenos="112 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">feature</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><a href="#__codelineno-0-113"><span class="linenos" data-linenos="113 "></span></a>        <span class="n">mx</span><span class="o">.</span><span class="n">coerce_to_feature_key</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="k">if</span> <span class="n">feature</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><a href="#__codelineno-0-114"><span class="linenos" data-linenos="114 "></span></a>    <span class="p">)</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><a href="#__codelineno-0-115"><span class="linenos" data-linenos="115 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span> <span class="o">=</span> <span class="n">inherit_feature_key_as_asset_key</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><a href="#__codelineno-0-116"><span class="linenos" data-linenos="116 "></span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span> <span class="o">=</span> <span class="n">inject_metaxy_kind</span>
 </span></code></pre></div>
                   </details>
 
@@ -3683,13 +3721,14 @@ if there are already 3 kinds on the asset.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>src/metaxy/ext/dagster/metaxify.py</code></summary>
-              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><a href="#__codelineno-0-131"><span class="linenos" data-linenos="131 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">asset</span><span class="p">:</span> <span class="n">_T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_T</span><span class="p">:</span>
-</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><a href="#__codelineno-0-132"><span class="linenos" data-linenos="132 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform the asset when used as @metaxify() with parentheses.&quot;&quot;&quot;</span>
-</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><a href="#__codelineno-0-133"><span class="linenos" data-linenos="133 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">(</span>
-</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a><a href="#__codelineno-0-134"><span class="linenos" data-linenos="134 "></span></a>        <span class="n">asset</span><span class="p">,</span>
-</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a><a href="#__codelineno-0-135"><span class="linenos" data-linenos="135 "></span></a>        <span class="n">inherit_feature_key_as_asset_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span><span class="p">,</span>
-</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><a href="#__codelineno-0-136"><span class="linenos" data-linenos="136 "></span></a>        <span class="n">inject_metaxy_kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span><span class="p">,</span>
-</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><a href="#__codelineno-0-137"><span class="linenos" data-linenos="137 "></span></a>    <span class="p">)</span>
+              <div class="language-python highlight"><pre><span></span><code><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a><a href="#__codelineno-0-158"><span class="linenos" data-linenos="158 "></span></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">asset</span><span class="p">:</span> <span class="n">_T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_T</span><span class="p">:</span>
+</span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a><a href="#__codelineno-0-159"><span class="linenos" data-linenos="159 "></span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform the asset when used as @metaxify() with parentheses.&quot;&quot;&quot;</span>
+</span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a><a href="#__codelineno-0-160"><span class="linenos" data-linenos="160 "></span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">(</span>
+</span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><a href="#__codelineno-0-161"><span class="linenos" data-linenos="161 "></span></a>        <span class="n">asset</span><span class="p">,</span>
+</span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><a href="#__codelineno-0-162"><span class="linenos" data-linenos="162 "></span></a>        <span class="n">feature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feature</span><span class="p">,</span>
+</span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><a href="#__codelineno-0-163"><span class="linenos" data-linenos="163 "></span></a>        <span class="n">inherit_feature_key_as_asset_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inherit_feature_key_as_asset_key</span><span class="p">,</span>
+</span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a><a href="#__codelineno-0-164"><span class="linenos" data-linenos="164 "></span></a>        <span class="n">inject_metaxy_kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inject_metaxy_kind</span><span class="p">,</span>
+</span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><a href="#__codelineno-0-165"><span class="linenos" data-linenos="165 "></span></a>    <span class="p">)</span>
 </span></code></pre></div>
             </details>
     </div>
