@@ -3746,11 +3746,12 @@ Uses the unified rendering system - same renderers as 'metaxy graph render'.</p>
 <p>Manage Metaxy metadata</p>
 <h3 id="metaxy-metadata-status">metaxy metadata status<a class="headerlink" href="#metaxy-metadata-status" title="Permanent link">&para;</a></h3>
 <p>Check metadata completeness and freshness for specified features.</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status FEATURE-KEYS [ARGS]</span>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="go">metaxy metadata status [ARGS]</span>
 </span></code></pre></div>
 <p><strong>Parameters</strong>:</p>
 <ul>
-<li><code>FEATURE-KEYS</code>: Feature keys to inspect (e.g., namespace/feature). Provide at least one.  <strong>[required]</strong></li>
+<li><code>FEATURE, --feature, --empty-feature</code>: Feature key to check (e.g., 'my_feature' or 'namespace/feature'). Can be repeated multiple times.</li>
+<li><code>ALL-FEATURES, --all-features, --no-all-features</code>: Check metadata status for all features defined in the current project's feature graph.  <em>[default: --no-all-features]</em></li>
 <li><code>STORE, --store</code>: Metadata store name (defaults to configured default store).</li>
 <li><code>SNAPSHOT-ID, --snapshot-id</code>: Check metadata against a specific snapshot version.</li>
 <li><code>ASSERT-IN-SYNC, --assert-in-sync, --no-assert-in-sync</code>: Exit with error if any feature needs updates or metadata is missing.  <em>[default: --no-assert-in-sync]</em></li>
