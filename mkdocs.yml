@@ -60,12 +60,9 @@ plugins:
   - autorefs
   - section-index
   - gh-admonitions
-  # - social
-
   # in the futurem, we could move navigation to a separate file
   # - literate-nav:
   #     nav_file: nagiration.md
-
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -117,6 +114,9 @@ plugins:
             - https://narwhals-dev.github.io/narwhals/objects.inv
             - https://docs.pola.rs/api/python/stable/objects.inv
             - https://docs.dagster.io/objects.inv
+
+hooks:
+  - docs/hooks.py
 
 markdown_extensions:
   # Core extensions
@@ -180,9 +180,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Overview:
-    - Quickstart: overview/quickstart.md
-    - Feature Dependencies: overview/feature-dependencies.md
+  - Slides: slides/intro.md
   - Learn:
     - Metadata Stores: learn/metadata-stores.md
     - Feature Definitions: learn/feature-definitions.md
