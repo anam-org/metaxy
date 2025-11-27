@@ -71,7 +71,7 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
                 f"Supported: {list(self.hash_functions.keys())}"
             )
 
-        # Import ibis lazily (module-level import restriction)
+        import ibis
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, (
@@ -140,7 +140,6 @@ class BaseIbisVersioningEngine(VersioningEngine, ABC):
         timestamp_column: str,
     ) -> FrameT:
         """Keep only the latest row per group based on a timestamp column."""
-        # Import ibis lazily
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, (
@@ -180,7 +179,7 @@ class IbisVersioningEngine(BaseIbisVersioningEngine):
         field_columns: dict[str, str],
     ) -> FrameT:
         """Persist field-level versions using a struct column."""
-        # Import ibis lazily
+        import ibis
         import ibis.expr.types
 
         assert df.implementation == nw.Implementation.IBIS, (

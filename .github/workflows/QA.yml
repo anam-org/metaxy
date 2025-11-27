@@ -116,13 +116,12 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
         with:
-          # use devshell for specific Python version
+           # use devshell for Python 3.10
           arguments: "'.#\"python${{ matrix.python-version }}\"'"
       - name: Install Dependencies
         run: uv python pin ${{ matrix.python-version }} && uv sync --all-extras --all-groups
       - name: Run Tests
         id: pytest
-        # uv run pytest -s --log-cli-level=INFO tests/metadata_stores/test_provenance_golden_reference.py
         run: >
           uv run pytest
           --cov=src/metaxy
@@ -178,9 +177,6 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: nicknovitski/nix-develop@v1
-        with:
-          # use devshell for Python 3.10 (docs)
-          arguments: "'.#\"python3.10\"'"
       - name: Sync dependencies
         run: uv python pin 3.10 && uv sync --all-extras --all-groups
       - name: Build Docs
