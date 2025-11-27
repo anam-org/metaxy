@@ -9,6 +9,7 @@ This is a private module (_testing) containing testing utilities organized into:
 
 # Runbook system
 # Metaxy project helpers
+from metaxy._testing.duckdb_json_compat_store import DuckDBJsonCompatStore
 from metaxy._testing.metaxy_project import (
     ExternalMetaxyProject,
     HashAlgorithmCases,
@@ -61,6 +62,7 @@ __all__ = [
     "ExternalMetaxyProject",
     "TempMetaxyProject",
     "assert_all_results_equal",
+    "DuckDBJsonCompatStore",
     # Pytest helpers
     "add_metaxy_provenance_column",
     "add_metaxy_system_columns",

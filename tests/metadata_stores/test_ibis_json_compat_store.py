@@ -124,9 +124,9 @@ def sample_feature_plan():
 
 def test_store_uses_dict_based_engine(mock_store):
     """Test that IbisJsonCompatStore uses IbisDictBasedVersioningEngine."""
-    from metaxy.versioning.dict_based import IbisDictBasedVersioningEngine
+    from metaxy.versioning.flat_engine import IbisFlatVersioningEngine
 
-    assert mock_store.versioning_engine_cls == IbisDictBasedVersioningEngine
+    assert mock_store.versioning_engine_cls == IbisFlatVersioningEngine
 
 
 def test_pack_json_columns_creates_json_from_flattened(mock_store, sample_feature_plan):
