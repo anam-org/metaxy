@@ -7,6 +7,7 @@ import narwhals as nw
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_PARTITION_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.models.constants import METAXY_CREATED_AT
@@ -17,6 +18,47 @@ class FeatureStats(NamedTuple):
 
     row_count: int
     data_version: dg.DataVersion
+
+
+def build_partition_filter(
+    partition_col: str | None,
+    partition_key: str | None,
+) -> list[nw.Expr]:
+    """Build partition filter expressions from column name and partition key.
+
+    Args:
+        partition_col: The column to filter by (from `partition_by` metadata).
+        partition_key: The partition key value to filter for.
+
+    Returns:
+        List with a single filter expression, or empty list if either arg is None.
+    """
+    if partition_col is None or partition_key is None:
+        return []
+    return [nw.col(partition_col) == partition_key]
+
+
+def get_partition_filter(
+    context: dg.AssetExecutionContext,
+    spec: dg.AssetSpec,
+) -> list[nw.Expr]:
+    """Get partition filter expressions for a partitioned asset.
+
+    Args:
+        context: The Dagster asset execution context.
+        spec: The AssetSpec containing `partition_by` metadata.
+
+    Returns:
+        List of filter expressions. Empty if not partitioned or no partition_by metadata.
+    """
+    if not context.has_partition_key:
+        return []
+
+    partition_col = spec.metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+    if not isinstance(partition_col, str):
+        return []
+
+    return build_partition_filter(partition_col, context.partition_key)
 
 
 def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyright: ignore[reportMissingTypeArgument]
@@ -160,7 +202,11 @@ def generate_materialization_events(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        stats = compute_feature_stats(store, key)
+        filters = get_partition_filter(context, asset_spec)
+
+        with store:
+            lazy_df = store.read_metadata(key, filters=filters)
+            stats = compute_stats_from_lazy_frame(lazy_df)
 
         yield dg.MaterializeResult(
             value=None,
@@ -219,7 +265,11 @@ def generate_observation_events(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        stats = compute_feature_stats(store, key)
+        filters = get_partition_filter(context, asset_spec)
+
+        with store:
+            lazy_df = store.read_metadata(key, filters=filters)
+            stats = compute_stats_from_lazy_frame(lazy_df)
 
         yield dg.ObserveResult(
             asset_key=asset_spec.key,

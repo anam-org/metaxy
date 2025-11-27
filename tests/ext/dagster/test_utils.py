@@ -289,3 +289,220 @@ class TestGenerateObservationEvents:
         context = dg.build_asset_context()
         with pytest.raises(ValueError, match="missing 'metaxy/feature' metadata"):
             list(mxd.generate_observation_events(context, metadata_store, specs))
+
+
+class TestPartitionedAssets:
+    """Tests for partitioned assets."""
+
+    @pytest.fixture
+    def partitions_def(self) -> dg.StaticPartitionsDefinition:
+        """Create a static partitions definition."""
+        return dg.StaticPartitionsDefinition(["2024-01-01", "2024-01-02"])
+
+    @pytest.fixture
+    def partitioned_feature(self) -> type[mx.BaseFeature]:
+        """Create a feature with a partition column."""
+        spec = mx.FeatureSpec(
+            key=["test", "utils", "partitioned"],
+            id_columns=["id"],
+            fields=["value", "partition_date"],
+        )
+
+        class PartitionedFeature(mx.BaseFeature, spec=spec):
+            id: str
+
+        return PartitionedFeature
+
+    def _write_partitioned_data(
+        self,
+        feature: type[mx.BaseFeature],
+        partition_date: str,
+        rows: list[str],
+        partitions_def: dg.StaticPartitionsDefinition,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ) -> None:
+        """Helper to write data with a partition value."""
+
+        @mxd.metaxify()
+        @dg.asset(
+            metadata={
+                "metaxy/feature": feature.spec().key.to_string(),
+                "partition_by": "partition_date",
+            },
+            io_manager_key="metaxy_io_manager",
+            partitions_def=partitions_def,
+        )
+        def write_data(context: dg.AssetExecutionContext):
+            return pl.DataFrame(
+                {
+                    "id": rows,
+                    "partition_date": [context.partition_key] * len(rows),
+                    "metaxy_provenance_by_field": [
+                        {"value": f"v{i}", "partition_date": context.partition_key}
+                        for i in range(len(rows))
+                    ],
+                }
+            )
+
+        dg.materialize(
+            [write_data],
+            resources=resources,
+            instance=instance,
+            partition_key=partition_date,
+        )
+
+    def test_materialization_filters_by_partition(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that materialization events filter by partition key."""
+        # Write data for two partitions
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b", "c"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["d", "e"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned",
+                    "partition_by": "partition_date",
+                },
+            )
+        ]
+
+        # Test with partition "2024-01-01" (3 rows)
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(
+            mxd.generate_materialization_events(context, metadata_store, specs)
+        )
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 3
+
+        # Test with partition "2024-01-02" (2 rows)
+        context = dg.build_asset_context(partition_key="2024-01-02")
+        events = list(
+            mxd.generate_materialization_events(context, metadata_store, specs)
+        )
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 2
+
+    def test_observation_filters_by_partition(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that observation events filter by partition key."""
+        # Write data for two partitions
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["c", "d", "e", "f"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={
+                    "metaxy/feature": "test/utils/partitioned",
+                    "partition_by": "partition_date",
+                },
+            )
+        ]
+
+        # Test with partition "2024-01-01" (2 rows)
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 2
+
+        # Test with partition "2024-01-02" (4 rows)
+        context = dg.build_asset_context(partition_key="2024-01-02")
+        events = list(mxd.generate_observation_events(context, metadata_store, specs))
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        assert events[0].metadata["dagster/row_count"] == 4
+
+    def test_no_partition_by_metadata_returns_all_rows(
+        self,
+        partitioned_feature: type[mx.BaseFeature],
+        partitions_def: dg.StaticPartitionsDefinition,
+        metadata_store: mx.MetadataStore,
+        resources: dict[str, Any],
+        instance: dg.DagsterInstance,
+    ):
+        """Test that without partition_by metadata, all rows are counted."""
+        # Write data for two partitions (total 5 rows)
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-01",
+            ["a", "b", "c"],
+            partitions_def,
+            resources,
+            instance,
+        )
+        self._write_partitioned_data(
+            partitioned_feature,
+            "2024-01-02",
+            ["d", "e"],
+            partitions_def,
+            resources,
+            instance,
+        )
+
+        # No partition_by metadata - should return all rows
+        specs = [
+            dg.AssetSpec(
+                "partitioned_asset",
+                metadata={"metaxy/feature": "test/utils/partitioned"},
+            )
+        ]
+
+        context = dg.build_asset_context(partition_key="2024-01-01")
+        events = list(
+            mxd.generate_materialization_events(context, metadata_store, specs)
+        )
+
+        assert len(events) == 1
+        assert events[0].metadata is not None
+        # Without partition_by, should return all 5 rows
+        assert events[0].metadata["dagster/row_count"] == 5

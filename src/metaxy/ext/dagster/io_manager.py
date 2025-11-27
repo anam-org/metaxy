@@ -11,6 +11,7 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_PARTITION_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
+from metaxy.ext.dagster.utils import build_partition_filter
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.models.types import ValidatedFeatureKey
@@ -108,16 +109,25 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             context.log.debug(
                 f"Reading metadata for Metaxy feature {self._feature_key_from_context(context).to_string()} from {self.metadata_store.display()}"
             )
-            df = self.metadata_store.read_metadata(
-                feature=self._feature_key_from_context(context)
+
+            # Build partition filter if applicable
+            partition_col = (
+                context.definition_metadata.get(DAGSTER_METAXY_PARTITION_KEY)
+                if context.has_asset_partitions
+                else None
+            )
+            partition_key = (
+                context.asset_partition_key if context.has_asset_partitions else None
+            )
+            filters = build_partition_filter(
+                partition_col,  # pyright: ignore[reportArgumentType]
+                partition_key,
             )
 
-            if context.has_asset_partitions:
-                col = context.definition_metadata[DAGSTER_METAXY_PARTITION_KEY]
-                assert isinstance(col, str)
-                df = df.filter(nw.col(col) == context.asset_partition_key)
-
-            return df
+            return self.metadata_store.read_metadata(
+                feature=self._feature_key_from_context(context),
+                filters=filters,
+            )
 
     def handle_output(self, context: "dg.OutputContext", obj: MetaxyOutput) -> None:
         """Write feature metadata to [`MetadataStore`][metaxy.MetadataStore].
