@@ -11,11 +11,17 @@ from metaxy.ext.dagster.metaxify import metaxify
 from metaxy.ext.dagster.observable import observable_metaxy_asset
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
 from metaxy.ext.dagster.selection import select_metaxy_assets
+from metaxy.ext.dagster.utils import (
+    generate_materialization_events,
+    generate_observation_events,
+)
 
 __all__ = [
     "metaxify",
     "observable_metaxy_asset",
     "select_metaxy_assets",
+    "generate_materialization_events",
+    "generate_observation_events",
     "MetaxyStoreFromConfigResource",
     "MetaxyIOManager",
     "MetaxyOutput",
