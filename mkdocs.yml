@@ -193,6 +193,7 @@ nav:
     - Filters: learn/filters.md
     - Testing: learn/testing.md
     - System Columns: learn/system-columns.md
+    - Error Tracking: learn/error-tracking.md
   - Integrations:
     - integrations/index.md
     - Orchestration:

@@ -345,8 +345,9 @@ class IbisMetadataStore(MetadataStore, ABC):
             if self._context_depth == 0:
                 # Teardown: Close connection
                 if self._conn is not None:
-                    # Ibis connections may not have explicit close method
-                    # but setting to None releases resources
+                    # Call disconnect if available to properly close connection
+                    if hasattr(self._conn, "disconnect"):
+                        self._conn.disconnect()
                     self._conn = None
                 self._is_open = False
 
@@ -514,6 +515,196 @@ class IbisMetadataStore(MetadataStore, ABC):
         with Ibis-backed tables.
         """
         return True
+
+    # ========== Error Tracking Implementation ==========
+
+    def write_errors_to_store(
+        self,
+        feature_key: FeatureKey,
+        errors_df: Frame,
+    ) -> None:
+        """Write error records to SQL error table using Ibis.
+
+        Args:
+            feature_key: Feature key to write errors for
+            errors_df: Narwhals DataFrame with error records
+        """
+        # Convert to appropriate format for Ibis
+        if errors_df.implementation == nw.Implementation.IBIS:
+            df_to_insert = errors_df.to_native()
+        else:
+            from metaxy._utils import collect_to_polars
+
+            df_to_insert = collect_to_polars(errors_df)
+
+        # Get error table name using base class helper
+        error_table_name = self._get_error_table_name(feature_key)
+        # Apply table prefix if configured
+        if self._table_prefix:
+            error_table_name = f"{self._table_prefix}{error_table_name}"
+
+        # Try to insert, create table if needed
+        try:
+            self.conn.insert(error_table_name, obj=df_to_insert)  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue]
+        except Exception as e:
+            import ibis.common.exceptions
+
+            if not isinstance(e, ibis.common.exceptions.TableNotFound):
+                raise
+
+            # Auto-create error table
+            if self.auto_create_tables:
+                self.conn.create_table(error_table_name, obj=df_to_insert)
+            else:
+                raise TableNotFoundError(
+                    f"Error table '{error_table_name}' does not exist. "
+                    f"Set auto_create_tables=True to create automatically, "
+                    f"or create the table manually with appropriate schema."
+                ) from e
+
+    def read_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read error records from SQL error table using Ibis.
+
+        Args:
+            feature_key: Feature key to read errors for
+            filters: Optional Narwhals filter expressions to apply
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if error table doesn't exist
+        """
+        # Get error table name
+        error_table_name = self._get_error_table_name(feature_key)
+        if self._table_prefix:
+            error_table_name = f"{self._table_prefix}{error_table_name}"
+
+        # Check if error table exists
+        existing_tables = self.conn.list_tables()
+        if error_table_name not in existing_tables:
+            return None
+
+        # Get Ibis table reference
+        table = self.conn.table(error_table_name)
+
+        # Wrap with Narwhals (stays lazy in SQL)
+        nw_lazy: nw.LazyFrame[Any] = nw.from_native(table, eager_only=False)
+
+        # Apply filters if provided
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        return nw_lazy
+
+    def clear_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Clear error records from SQL error table using Ibis.
+
+        Args:
+            feature_key: Feature key to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear
+            feature_version: Optional feature version to clear
+        """
+        # Get error table name
+        error_table_name = self._get_error_table_name(feature_key)
+        if self._table_prefix:
+            error_table_name = f"{self._table_prefix}{error_table_name}"
+
+        # Check if error table exists
+        if error_table_name not in self.conn.list_tables():
+            return  # No-op if table doesn't exist
+
+        # If no filters, drop entire error table
+        if sample_uids is None and feature_version is None:
+            self.conn.drop_table(error_table_name)
+            return
+
+        # Otherwise, use SQL DELETE with WHERE clause
+        # Get table reference
+        table = self.conn.table(error_table_name)
+
+        # Build WHERE conditions
+        conditions = []
+
+        # Filter by feature_version if provided
+        if feature_version is not None:
+            conditions.append(
+                table.metaxy_feature_version == feature_version  # type: ignore[attr-defined]
+            )
+
+        # Filter by sample_uids if provided
+        if sample_uids is not None and len(sample_uids) > 0:
+            # Get id_columns from feature spec
+            feature_spec = self._resolve_feature_plan(feature_key).feature
+            id_cols = list(feature_spec.id_columns)
+
+            # Build OR condition for all samples
+            sample_conditions = []
+            for uid_dict in sample_uids:
+                # Build AND condition for this sample
+                and_conditions = []
+                for col_name in id_cols:
+                    col_value = uid_dict[col_name]
+                    and_conditions.append(
+                        table[col_name] == col_value  # type: ignore[index]
+                    )
+
+                # Combine with AND using reduce
+                if len(and_conditions) == 1:
+                    sample_cond = and_conditions[0]
+                else:
+                    import functools
+                    import operator
+
+                    sample_cond = functools.reduce(operator.and_, and_conditions)
+
+                sample_conditions.append(sample_cond)
+
+            # Combine all sample conditions with OR
+            if len(sample_conditions) == 1:
+                sample_filter = sample_conditions[0]
+            else:
+                import functools
+                import operator
+
+                sample_filter = functools.reduce(operator.or_, sample_conditions)
+
+            conditions.append(sample_filter)
+
+        # Execute selective delete
+        # Note: Ibis doesn't have a direct DELETE API
+        # Workaround: read non-matching rows, drop table, recreate with filtered data
+        if conditions:
+            # Combine all conditions with AND
+            import functools
+            import operator
+
+            if len(conditions) == 1:
+                where_clause = conditions[0]
+            else:
+                where_clause = functools.reduce(operator.and_, conditions)
+
+            # Build keep clause (inverse of delete clause)
+            keep_clause = ~where_clause
+
+            # Read rows we want to KEEP
+            rows_to_keep = table.filter(keep_clause).to_pandas()
+
+            # Drop table
+            self.conn.drop_table(error_table_name)
+
+            # Recreate with remaining rows (if any)
+            if len(rows_to_keep) > 0:
+                self.conn.create_table(error_table_name, obj=rows_to_keep)
 
     def display(self) -> str:
         """Display string for this store."""

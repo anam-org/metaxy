@@ -353,6 +353,197 @@ class DeltaMetadataStore(MetadataStore):
 
         return nw_lazy
 
+    # ========== Error Tracking Implementation ==========
+
+    def _error_table_uri(self, feature_key: FeatureKey) -> str:
+        """Return the URI/path for error table for this feature.
+
+        Args:
+            feature_key: Feature key to get error table URI for
+
+        Returns:
+            URI string for the error table
+        """
+        # Get base error table name from base class helper
+        error_table_name = self._get_error_table_name(feature_key)
+
+        # Apply same layout logic as regular tables
+        if self.layout == "nested":
+            # For nested layout, use the feature's path structure
+            # but replace the last part with error table name
+            parts = list(feature_key.parts[:-1]) if len(feature_key.parts) > 1 else []
+            parts.append(error_table_name)
+            table_path = "/".join(part for part in parts if part)
+        else:
+            # For flat layout, error table name already has proper format
+            table_path = error_table_name
+
+        return f"{self._root_uri}/{table_path}.delta"
+
+    def write_errors_to_store(
+        self,
+        feature_key: FeatureKey,
+        errors_df: Frame,
+    ) -> None:
+        """Write error records to Delta error table.
+
+        Args:
+            feature_key: Feature key to write errors for
+            errors_df: Narwhals DataFrame with error records
+        """
+        error_table_uri = self._error_table_uri(feature_key)
+
+        # Convert to Polars
+        df_polars = switch_implementation_to_polars(errors_df)
+
+        # Collect if lazy
+        if isinstance(df_polars, nw.LazyFrame):
+            df_native = df_polars.collect().to_native()
+        else:
+            df_native = df_polars.to_native()
+
+        assert isinstance(df_native, pl.DataFrame)
+
+        # Prepare write parameters
+        write_opts = self.default_delta_write_options.copy()
+        mode = write_opts.pop("mode", "append")
+        storage_options = write_opts.pop("storage_options", None)
+
+        # Write using Polars (Delta auto-creates table on first write)
+        df_native.write_delta(
+            error_table_uri,
+            mode=mode,
+            storage_options=storage_options,
+            delta_write_options=write_opts or None,
+        )
+
+    def read_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read error records from Delta error table.
+
+        Args:
+            feature_key: Feature key to read errors for
+            filters: Optional Narwhals filter expressions to apply
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if error table doesn't exist
+        """
+        error_table_uri = self._error_table_uri(feature_key)
+
+        # Check if error table exists
+        if not self._table_exists(error_table_uri):
+            return None
+
+        # Use scan_delta for lazy evaluation
+        lf = pl.scan_delta(
+            error_table_uri,
+            storage_options=self.storage_options or None,
+        )
+
+        # Convert to Narwhals
+        nw_lazy = nw.from_native(lf)
+
+        # Apply filters
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        return nw_lazy
+
+    def clear_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Clear error records from Delta error table.
+
+        Args:
+            feature_key: Feature key to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear
+            feature_version: Optional feature version to clear
+        """
+        error_table_uri = self._error_table_uri(feature_key)
+
+        # Check if error table exists
+        if not self._table_exists(error_table_uri):
+            return  # No-op if table doesn't exist
+
+        # Load Delta table
+        delta_table = deltalake.DeltaTable(
+            error_table_uri,
+            storage_options=self.storage_options or None,
+            without_files=True,
+        )
+
+        # If no filters, delete all errors (soft delete)
+        if sample_uids is None and feature_version is None:
+            delta_table.delete()
+            return
+
+        # Build predicate for selective deletion
+        predicates = []
+
+        # Filter by feature_version if provided
+        if feature_version is not None:
+            from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+            predicates.append(f"{METAXY_FEATURE_VERSION} = '{feature_version}'")
+
+        # Filter by sample_uids if provided
+        if sample_uids is not None and len(sample_uids) > 0:
+            # Get id_columns from feature spec
+            feature_spec = self._resolve_feature_plan(feature_key).feature
+            id_cols = list(feature_spec.id_columns)
+
+            # Build SQL-like predicate for sample_uids
+            # For each sample, create an AND condition, then OR them together
+            sample_predicates = []
+            for uid_dict in sample_uids:
+                and_conditions = []
+                for col_name in id_cols:
+                    col_value = uid_dict[col_name]
+                    # Handle different types appropriately for SQL predicate
+                    if isinstance(col_value, str):
+                        and_conditions.append(f"{col_name} = '{col_value}'")
+                    elif isinstance(col_value, (int, float)):
+                        and_conditions.append(f"{col_name} = {col_value}")
+                    else:
+                        # For other types, convert to string
+                        and_conditions.append(f"{col_name} = '{col_value}'")
+
+                # Combine with AND
+                if len(and_conditions) == 1:
+                    sample_pred = and_conditions[0]
+                else:
+                    sample_pred = " AND ".join(f"({cond})" for cond in and_conditions)
+
+                sample_predicates.append(f"({sample_pred})")
+
+            # Combine all sample predicates with OR
+            if len(sample_predicates) == 1:
+                samples_pred = sample_predicates[0]
+            else:
+                samples_pred = " OR ".join(sample_predicates)
+
+            predicates.append(f"({samples_pred})")
+
+        # Execute delete with predicate
+        if predicates:
+            # Combine all predicates with AND
+            if len(predicates) == 1:
+                final_predicate = predicates[0]
+            else:
+                final_predicate = " AND ".join(f"({pred})" for pred in predicates)
+
+            # Delete matching rows
+            delta_table.delete(predicate=final_predicate)
+
     def display(self) -> str:
         """Return human-readable representation of the store."""
         details = [f"path={self._root_uri}"]

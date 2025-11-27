@@ -144,6 +144,116 @@ def _cast_present_system_columns(
     return df
 
 
+class ErrorContext:
+    """Context object for manual error logging within catch_errors().
+
+    This class is returned by the catch_errors() context manager and provides
+    a log_error() method for manually recording errors during data processing.
+
+    Attributes:
+        feature_key: The feature key associated with this error context
+        id_columns: Tuple of id column names from the feature spec
+        errors: List accumulating error records
+
+    Example:
+        ```py
+        with store.catch_errors(MyFeature, autoflush=False) as ctx:
+            for sample in samples:
+                try:
+                    process(sample)
+                except ValueError as e:
+                    ctx.log_error(
+                        message=str(e),
+                        error_type="ValueError",
+                        sample_uid=sample['id']
+                    )
+        ```
+    """
+
+    def __init__(
+        self,
+        feature_key: FeatureKey,
+        id_columns: tuple[str, ...],
+        errors: list[dict[str, Any]],
+    ):
+        """Initialize ErrorContext.
+
+        Args:
+            feature_key: Feature key for this context
+            id_columns: ID column names from feature spec
+            errors: Shared list to accumulate errors (mutated in place)
+        """
+        self.feature_key = feature_key
+        self.id_columns = id_columns
+        self.errors = errors  # Shared reference - mutations visible to caller
+
+    def log_error(
+        self,
+        message: str,
+        error_type: str,
+        **id_column_values: Any,
+    ) -> None:
+        """Log an error for a specific sample.
+
+        Args:
+            message: Error message describing what went wrong
+            error_type: Type/category of error (e.g., exception class name)
+            **id_column_values: Values for each id_column to identify the sample.
+                Must provide values for ALL id_columns from the feature spec.
+
+        Raises:
+            ValueError: If provided id_column_values don't match feature's id_columns
+
+        Example:
+            ```py
+            # Single id_column
+            ctx.log_error(
+                message="Invalid value",
+                error_type="ValueError",
+                sample_uid="123"
+            )
+
+            # Multiple id_columns
+            ctx.log_error(
+                message="Processing failed",
+                error_type="RuntimeError",
+                sample_uid="123",
+                timestamp="2024-01-01"
+            )
+            ```
+        """
+        # Validate that all id_columns are provided
+        provided_keys = set(id_column_values.keys())
+        expected_keys = set(self.id_columns)
+
+        if provided_keys != expected_keys:
+            missing = expected_keys - provided_keys
+            extra = provided_keys - expected_keys
+
+            error_parts = []
+            if missing:
+                error_parts.append(f"missing: {sorted(missing)}")
+            if extra:
+                error_parts.append(f"unexpected: {sorted(extra)}")
+
+            raise ValueError(
+                f"ID column mismatch for feature {self.feature_key.to_string()}. "
+                f"Expected columns: {sorted(expected_keys)}, "
+                f"got: {sorted(provided_keys)}. "
+                f"{', '.join(error_parts)}"
+            )
+
+        # Construct error record
+        error_record = {
+            **id_column_values,  # Spread id columns
+            "error_message": message,
+            "error_type": error_type,
+        }
+
+        # Append to shared errors list
+        self.errors.append(error_record)
+
+
 class MetadataStore(ABC):
     """
     Abstract base class for metadata storage backends.
@@ -224,6 +334,7 @@ class MetadataStore(ABC):
         self.hash_algorithm = hash_algorithm
 
         self.fallback_stores = fallback_stores or []
+        self._collected_errors: dict[FeatureKey, list[dict[str, Any]]] = {}
 
     @classmethod
     @abstractmethod
@@ -310,6 +421,7 @@ class MetadataStore(ABC):
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
+        exclude_errors: bool = True,
         **kwargs: Any,
     ) -> Increment: ...
 
@@ -324,6 +436,7 @@ class MetadataStore(ABC):
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
+        exclude_errors: bool = True,
         **kwargs: Any,
     ) -> LazyIncrement: ...
 
@@ -337,6 +450,7 @@ class MetadataStore(ABC):
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
+        exclude_errors: bool = True,
         **kwargs: Any,
     ) -> Increment | LazyIncrement:
         """Calculate an incremental update for a feature.
@@ -372,6 +486,9 @@ class MetadataStore(ABC):
             skip_comparison: If True, skip the increment comparison logic and return all
                 upstream samples in `Increment.added`. The `changed` and `removed` frames will
                 be empty.
+            exclude_errors: If True (default), exclude samples that have recorded errors
+                for the current feature_version from the `added` frame. Changed and removed
+                frames are not affected. Has no effect when skip_comparison=True.
 
         Raises:
             ValueError: If no `samples` dataframe has been provided when resolving an update for a root feature.
@@ -571,17 +688,78 @@ class MetadataStore(ABC):
         if removed is None:
             removed = empty_frame_like(added)
 
+        # Exclude samples with known errors (if enabled)
+        if exclude_errors and not skip_comparison:
+            import logging
+
+            logger = logging.getLogger(__name__)
+
+            try:
+                # Read errors for current feature version
+                current_feature_version = graph.get_feature_version(feature.spec().key)
+                feature_errors = self.read_errors(
+                    feature,
+                    feature_version=current_feature_version,
+                    latest_only=True,
+                )
+
+                if feature_errors is not None:
+                    # Count errors before exclusion
+                    try:
+                        error_count = len(feature_errors.collect())
+                    except Exception:
+                        error_count = None
+
+                    if error_count and error_count > 0:
+                        # Get id_columns for anti-join
+                        id_cols = list(feature.spec().id_columns)
+
+                        # Get unique sample IDs with errors and collect to Polars
+                        # We need both frames to be the same implementation for anti-join
+                        from metaxy._utils import collect_to_polars
+
+                        error_sample_ids_lazy = feature_errors.select(id_cols).unique()
+                        error_sample_ids_polars = collect_to_polars(
+                            error_sample_ids_lazy
+                        )
+
+                        # Convert added to Polars if it isn't already
+                        was_lazy = isinstance(added, nw.LazyFrame)
+                        added_polars = collect_to_polars(added)
+
+                        # Do anti-join in Polars
+                        added_polars = added_polars.join(
+                            error_sample_ids_polars, on=id_cols, how="anti"
+                        )
+
+                        # Convert back to appropriate form
+                        if was_lazy:
+                            added = nw.from_native(added_polars, eager_only=True).lazy()
+                        else:
+                            added = nw.from_native(added_polars, eager_only=True)
+
+                        logger.info(
+                            f"Excluded {error_count} sample(s) with known errors "
+                            f"from {feature.spec().key.to_string()}"
+                        )
+            except Exception as e:
+                # If error exclusion fails, log warning but don't fail the operation
+                logger.warning(
+                    f"Failed to exclude errors for {feature.spec().key.to_string()}: {e}. "
+                    f"Proceeding without error exclusion."
+                )
+
         if lazy:
             return LazyIncrement(
                 added=added
                 if isinstance(added, nw.LazyFrame)
-                else nw.from_native(added),
+                else nw.from_native(nw.to_native(added), eager_only=True).lazy(),
                 changed=changed
                 if isinstance(changed, nw.LazyFrame)
-                else nw.from_native(changed),
+                else nw.from_native(nw.to_native(changed), eager_only=True).lazy(),
                 removed=removed
                 if isinstance(removed, nw.LazyFrame)
-                else nw.from_native(removed),
+                else nw.from_native(nw.to_native(removed), eager_only=True).lazy(),
             )
         else:
             return Increment(
@@ -799,6 +977,49 @@ class MetadataStore(ABC):
 
         self._validate_schema(df_nw)
         self.write_metadata_to_store(feature_key, df_nw)
+
+        # Auto-clear errors for successfully written samples
+        # This implements the "automatic on success" invalidation strategy
+        try:
+            # Get feature spec to know which columns are id_columns
+            feature_spec = self._resolve_feature_plan(feature_key).feature
+            id_cols = list(feature_spec.id_columns)
+
+            # Extract sample IDs from written DataFrame
+            # Convert to list of dicts (one dict per sample)
+            sample_ids_df = df_nw.select(id_cols).unique()
+
+            # Convert to list of dicts for clear_errors API
+            # Narwhals doesn't have to_dicts, so convert to native Polars first
+            import polars as pl
+
+            sample_ids_native = sample_ids_df.to_native()
+            if isinstance(sample_ids_native, pl.DataFrame):
+                sample_uids = sample_ids_native.to_dicts()
+            elif isinstance(sample_ids_native, pl.LazyFrame):
+                sample_uids = sample_ids_native.collect().to_dicts()
+            else:
+                # Fallback for other implementations - try to convert to Polars
+                try:
+                    sample_uids = pl.from_arrow(sample_ids_native.to_arrow()).to_dicts()  # pyright: ignore[reportAttributeAccessIssue]
+                except Exception:
+                    # If conversion fails, skip error clearing for this write
+                    sample_uids = []
+
+            if sample_uids:
+                # Clear errors for these successfully written samples
+                # This is safe even if no errors exist (clear_errors is a no-op then)
+                self.clear_errors(feature_key, sample_uids=sample_uids)
+        except Exception as e:
+            # If error clearing fails, log warning but don't fail the write
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Failed to auto-clear errors after successful write for "
+                f"{feature_key.to_string()}: {e}. "
+                f"Error records may still exist for successfully processed samples."
+            )
 
     def write_metadata_multi(
         self,
@@ -1109,6 +1330,48 @@ class MetadataStore(ABC):
         # Then get the plan
         graph = current_graph()
         return graph.get_feature_plan(feature_key)
+
+    # ========== Error Table Helpers ==========
+
+    def _get_error_table_name(self, feature_key: FeatureKey) -> str:
+        """Get error table name for a feature.
+
+        Error tables use the naming convention: {feature_table}__errors
+
+        Args:
+            feature_key: Feature key to get error table name for
+
+        Returns:
+            Error table name string
+
+        Example:
+            ```py
+            feature_key = FeatureKey(["video", "processing"])
+            error_table = store._get_error_table_name(feature_key)
+            # Returns: "video__processing__errors"
+            ```
+        """
+        base_table_name = feature_key.table_name
+        return f"{base_table_name}__errors"
+
+    def _is_error_table(self, table_name: str) -> bool:
+        """Check if a table name represents an error table.
+
+        Error tables are identified by the __errors suffix.
+
+        Args:
+            table_name: Table name to check
+
+        Returns:
+            True if table is an error table, False otherwise
+
+        Example:
+            ```py
+            store._is_error_table("video__processing__errors")  # True
+            store._is_error_table("video__processing")          # False
+            ```
+        """
+        return table_name.endswith("__errors")
 
     # ========== Core CRUD Operations ==========
 
@@ -1782,3 +2045,579 @@ class MetadataStore(ABC):
         )
 
         return {"features_copied": features_copied, "rows_copied": total_rows}
+
+    # ========== Error Tracking (Abstract Methods) ==========
+
+    @abstractmethod
+    def write_errors_to_store(
+        self,
+        feature_key: FeatureKey,
+        errors_df: Frame,
+    ) -> None:
+        """Backend-specific implementation for writing errors.
+
+        Subclasses must implement this to write error records to their storage backend.
+        Error tables use the naming convention: {feature_table}__errors
+
+        Args:
+            feature_key: Feature key to write errors for
+            errors_df: Narwhals DataFrame with error records containing:
+                - Feature's id_columns (e.g., sample_uid, timestamp)
+                - error_message: str
+                - error_type: str
+                - metaxy_feature_version: str
+                - metaxy_snapshot_version: str
+                - metaxy_created_at: datetime
+
+        Note:
+            - Errors are append-only (like regular metadata)
+            - Subclasses handle table creation if needed
+            - Should support schema evolution (new columns added gracefully)
+        """
+        pass
+
+    @abstractmethod
+    def read_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Backend-specific implementation for reading errors.
+
+        Args:
+            feature_key: Feature key to read errors for
+            filters: Optional Narwhals filter expressions to apply
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if error table doesn't exist
+
+        Note:
+            - Returns None if error table doesn't exist (not an error condition)
+            - Filters are applied at read time for efficiency
+        """
+        pass
+
+    @abstractmethod
+    def clear_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Backend-specific implementation for clearing errors.
+
+        Args:
+            feature_key: Feature key to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear errors for.
+                Each dict should contain values for all id_columns.
+                If None, clears based on feature_version or all errors.
+            feature_version: Optional specific feature version to clear errors for.
+                If None and sample_uids is None, clears all errors for feature.
+
+        Examples:
+            ```py
+            # Clear all errors
+            store.clear_errors_from_store(feature_key)
+
+            # Clear specific samples (single id_column)
+            store.clear_errors_from_store(
+                feature_key,
+                sample_uids=[{"sample_uid": "s1"}, {"sample_uid": "s2"}]
+            )
+
+            # Clear specific samples (multi id_columns)
+            store.clear_errors_from_store(
+                feature_key,
+                sample_uids=[
+                    {"sample_uid": "s1", "timestamp": "2024-01-01"},
+                    {"sample_uid": "s2", "timestamp": "2024-01-02"}
+                ]
+            )
+
+            # Clear errors for specific feature version
+            store.clear_errors_from_store(feature_key, feature_version="abc123")
+            ```
+
+        Note:
+            - If error table doesn't exist, should be a no-op (no error raised)
+            - For SQL backends, use DELETE with WHERE clause
+            - For file-based backends, filter and overwrite
+        """
+        pass
+
+    # ========== Error Tracking (Public API) ==========
+
+    @property
+    def collected_errors(self) -> dict[str, Frame]:
+        """Access collected errors as DataFrames by feature key string.
+
+        Returns errors collected by catch_errors() with autoflush=False.
+        Each feature's errors are returned as a Narwhals DataFrame.
+
+        Returns:
+            Dict mapping feature key strings to DataFrames with error records
+
+        Example:
+            ```py
+            with store.catch_errors(MyFeature, autoflush=False):
+                # ... processing that logs errors ...
+                pass
+
+            # Access collected errors
+            errors_by_feature = store.collected_errors
+            my_errors_df = errors_by_feature["my/feature"]
+            ```
+        """
+        import polars as pl
+
+        return {
+            key.to_string(): nw.from_native(pl.DataFrame(errors))
+            for key, errors in self._collected_errors.items()
+        }
+
+    def write_errors(
+        self,
+        feature: CoercibleToFeatureKey,
+        errors_df: IntoFrame,
+    ) -> None:
+        """Write error records for a feature.
+
+        Args:
+            feature: Feature to write errors for
+            errors_df: DataFrame with error records containing:
+                - All id_columns from feature spec (to identify samples)
+                - error_message: str (required)
+                - error_type: str (required)
+                Additional columns will be preserved but not validated.
+
+        Raises:
+            ValueError: If required columns are missing or invalid
+            StoreNotOpenError: If store is not open
+
+        Note:
+            - Automatically adds system columns (metaxy_feature_version, etc.)
+            - Errors are append-only (never updated or deleted by this method)
+            - Use clear_errors() to remove error records
+
+        Example:
+            ```py
+            import polars as pl
+
+            errors = pl.DataFrame({
+                "sample_uid": ["s1", "s2"],
+                "error_message": ["Division by zero", "Invalid input"],
+                "error_type": ["ZeroDivisionError", "ValueError"],
+            })
+
+            with store.open(mode="write"):
+                store.write_errors(MyFeature, errors)
+            ```
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+        feature_spec = self._resolve_feature_plan(feature_key).feature
+
+        # Convert to Narwhals
+        df_nw = nw.from_native(errors_df)
+
+        # Validate schema
+        required_cols = set(feature_spec.id_columns) | {"error_message", "error_type"}
+        actual_cols = set(df_nw.columns)
+        missing_cols = required_cols - actual_cols
+
+        if missing_cols:
+            raise ValueError(
+                f"Error DataFrame missing required columns: {sorted(missing_cols)}. "
+                f"Required: {sorted(required_cols)}, got: {sorted(actual_cols)}"
+            )
+
+        # Add system columns
+        from datetime import datetime, timezone
+
+        from metaxy.models.constants import (
+            METAXY_CREATED_AT,
+            METAXY_FEATURE_VERSION,
+            METAXY_SNAPSHOT_VERSION,
+        )
+
+        current_feature_version = current_graph().get_feature_version(feature_key)
+        current_snapshot_version = current_graph().snapshot_version
+
+        df_nw = df_nw.with_columns(
+            [
+                nw.lit(current_feature_version).alias(METAXY_FEATURE_VERSION),
+                nw.lit(current_snapshot_version).alias(METAXY_SNAPSHOT_VERSION),
+                nw.lit(datetime.now(timezone.utc)).alias(METAXY_CREATED_AT),
+            ]
+        )
+
+        # Write to backend
+        self.write_errors_to_store(feature_key, df_nw)
+
+    def read_errors(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+        latest_only: bool = True,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read error records for a feature.
+
+        Args:
+            feature: Feature to read errors for
+            sample_uids: Optional list of sample ID dicts to filter errors.
+                Each dict should contain values for all id_columns.
+            feature_version: Optional feature version to filter by.
+                If None, uses current feature version.
+            latest_only: If True, keeps only the most recent error per sample
+                (by id_columns, ordered by metaxy_created_at DESC)
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if no errors exist
+
+        Example:
+            ```py
+            # Read all errors for current feature version
+            errors = store.read_errors(MyFeature)
+
+            # Read errors for specific samples
+            errors = store.read_errors(
+                MyFeature,
+                sample_uids=[{"sample_uid": "s1"}, {"sample_uid": "s2"}]
+            )
+
+            # Read errors for specific feature version
+            errors = store.read_errors(MyFeature, feature_version="abc123")
+            ```
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+        feature_spec = self._resolve_feature_plan(feature_key).feature
+
+        # Build filters
+        filters = []
+
+        # Filter by feature_version (default to current)
+        if feature_version is None:
+            feature_version = current_graph().get_feature_version(feature_key)
+
+        from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+        filters.append(nw.col(METAXY_FEATURE_VERSION) == feature_version)
+
+        # Filter by sample_uids if provided
+        if sample_uids is not None:
+            # Build filter for each sample_uid
+            # For single id_column: sample_uid.is_in([...])
+            # For multi id_columns: (col1 == v1 & col2 == v2) | (col1 == v3 & col2 == v4) | ...
+
+            id_cols = list(feature_spec.id_columns)
+
+            if len(id_cols) == 1:
+                # Simple case: single id_column
+                col_name = id_cols[0]
+                values = [uid_dict[col_name] for uid_dict in sample_uids]
+                filters.append(nw.col(col_name).is_in(values))
+            else:
+                # Complex case: multiple id_columns
+                # Build OR of AND conditions
+                sample_filters = []
+                for uid_dict in sample_uids:
+                    # Build AND condition for this sample
+                    and_conditions = [
+                        nw.col(col_name) == uid_dict[col_name] for col_name in id_cols
+                    ]
+                    # Combine with &
+                    sample_filter = and_conditions[0]
+                    for cond in and_conditions[1:]:
+                        sample_filter = sample_filter & cond
+                    sample_filters.append(sample_filter)
+
+                # Combine with |
+                if sample_filters:
+                    combined_filter = sample_filters[0]
+                    for f in sample_filters[1:]:
+                        combined_filter = combined_filter | f
+                    filters.append(combined_filter)
+
+        # Read from backend
+        lazy_frame = self.read_errors_from_store(feature_key, filters=filters)
+
+        if lazy_frame is None:
+            return None
+
+        # Apply deduplication if requested
+        if latest_only:
+            from metaxy.models.constants import METAXY_CREATED_AT
+
+            lazy_frame = self.versioning_engine_cls.keep_latest_by_group(
+                df=lazy_frame,
+                group_columns=list(feature_spec.id_columns),
+                timestamp_column=METAXY_CREATED_AT,
+            )
+
+        return lazy_frame
+
+    def clear_errors(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Clear error records for a feature.
+
+        Args:
+            feature: Feature to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear errors for.
+                If provided, only clears errors for these specific samples.
+            feature_version: Optional feature version to clear errors for.
+                If provided, only clears errors for this version.
+                If None and sample_uids is None, clears ALL errors.
+
+        Note:
+            - If error table doesn't exist, this is a no-op (no error raised)
+            - Use carefully when clearing all errors (no filtering)
+
+        Example:
+            ```py
+            # Clear all errors
+            store.clear_errors(MyFeature)
+
+            # Clear specific samples
+            store.clear_errors(
+                MyFeature,
+                sample_uids=[{"sample_uid": "s1"}, {"sample_uid": "s2"}]
+            )
+
+            # Clear errors for old version
+            store.clear_errors(MyFeature, feature_version="old_version")
+            ```
+        """
+        self._check_open()
+
+        feature_key = self._resolve_feature_key(feature)
+
+        # Delegate to backend
+        self.clear_errors_from_store(
+            feature_key,
+            sample_uids=sample_uids,
+            feature_version=feature_version,
+        )
+
+    def has_errors(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        sample_uid: dict[str, Any] | None = None,
+    ) -> bool:
+        """Check if feature has any error records.
+
+        Args:
+            feature: Feature to check for errors
+            sample_uid: Optional sample ID dict to check for specific sample.
+                If None, checks if ANY errors exist for the feature.
+
+        Returns:
+            True if errors exist, False otherwise
+
+        Example:
+            ```py
+            # Check if any errors exist
+            if store.has_errors(MyFeature):
+                print("Feature has errors")
+
+            # Check specific sample
+            if store.has_errors(MyFeature, sample_uid={"sample_uid": "s1"}):
+                print("Sample s1 has errors")
+            ```
+        """
+        self._check_open()
+
+        # Try to read errors
+        if sample_uid is None:
+            errors = self.read_errors(feature, latest_only=False)
+        else:
+            errors = self.read_errors(
+                feature, sample_uids=[sample_uid], latest_only=False
+            )
+
+        if errors is None:
+            return False
+
+        # Check if any rows exist
+        # We need to collect to check length
+        try:
+            return len(errors.head(1).collect()) > 0
+        except Exception:
+            # If collection fails (e.g., empty frame), assume no errors
+            return False
+
+    @contextmanager
+    def catch_errors(
+        self,
+        feature: CoercibleToFeatureKey,
+        *,
+        autoflush: bool = True,
+        exception_types: tuple[type[Exception], ...] | None = None,
+    ) -> Iterator[ErrorContext]:
+        """Context manager to catch and record errors during data processing.
+
+        Supports both automatic exception catching and manual error logging.
+        Errors can be automatically written (autoflush=True) or collected
+        for later processing (autoflush=False).
+
+        Args:
+            feature: Feature to associate errors with
+            autoflush: If True, automatically write errors on context exit.
+                If False, collect errors in collected_errors for manual writing.
+            exception_types: Tuple of exception types to catch automatically.
+                If None, catches all exceptions.
+                Only applies to exceptions raised within the context.
+
+        Yields:
+            ErrorContext: Object with log_error() method for manual error logging
+
+        Example - Automatic exception catching:
+            ```py
+            with store.catch_errors(MyFeature, autoflush=True):
+                result = compute_feature(data)  # Exceptions caught and written
+            ```
+
+        Example - Manual error logging:
+            ```py
+            with store.catch_errors(MyFeature, autoflush=False) as ctx:
+                for sample in samples:
+                    try:
+                        process(sample)
+                    except ValueError as e:
+                        ctx.log_error(
+                            message=str(e),
+                            error_type="ValueError",
+                            sample_uid=sample['id']
+                        )
+
+            # Errors collected but not written yet
+            errors_df = store.collected_errors["my/feature"]
+            store.write_errors(MyFeature, errors_df)
+            ```
+
+        Example - Both approaches:
+            ```py
+            with store.catch_errors(MyFeature) as ctx:
+                for sample in samples:
+                    try:
+                        result = risky_operation(sample)
+                    except ValueError as e:
+                        # Log specific error
+                        ctx.log_error(
+                            message=f"Validation failed: {e}",
+                            error_type="ValueError",
+                            sample_uid=sample['id']
+                        )
+                    except Exception:
+                        # Let context manager catch unexpected errors
+                        raise
+            ```
+
+        Note:
+            - When autoflush=True, requires store to be open in write mode
+            - When autoflush=False, errors accumulate in collected_errors
+            - Exception catching only applies to exceptions that propagate out
+              of the context (not caught exceptions)
+            - For per-sample error logging, use ctx.log_error() explicitly
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        feature_key = self._resolve_feature_key(feature)
+        feature_spec = self._resolve_feature_plan(feature_key).feature
+
+        # Initialize error collection for this feature
+        errors: list[dict[str, Any]] = []
+        error_ctx = ErrorContext(
+            feature_key=feature_key,
+            id_columns=feature_spec.id_columns,
+            errors=errors,
+        )
+
+        try:
+            yield error_ctx
+        except Exception as e:
+            # Check if we should catch this exception type
+            should_catch = exception_types is None or isinstance(e, exception_types)
+
+            if should_catch:
+                # Log a warning about the caught exception
+                logger.warning(
+                    f"Caught exception in catch_errors() for {feature_key.to_string()}: "
+                    f"{type(e).__name__}: {e}"
+                )
+
+                # Record the exception as an error
+                # Since we don't have sample context, id_columns will be None
+                error_record = {
+                    # Set all id_columns to None (we don't know which sample failed)
+                    **{col: None for col in feature_spec.id_columns},
+                    "error_message": str(e),
+                    "error_type": type(e).__name__,
+                }
+                errors.append(error_record)
+
+                logger.info(
+                    "Exception caught and recorded without sample ID context. "
+                    "Use ctx.log_error() for sample-specific error tracking."
+                )
+
+                # Don't re-raise - error is recorded
+            else:
+                # Not in our exception_types filter, re-raise
+                raise
+        finally:
+            # Process collected errors
+            if errors:
+                if autoflush:
+                    # Convert to DataFrame and write immediately
+                    try:
+                        import polars as pl
+
+                        errors_df = pl.DataFrame(errors)
+
+                        # Validate that all required columns are present
+                        id_cols_set = set(feature_spec.id_columns)
+                        errors_cols_set = set(errors_df.columns)
+
+                        if not id_cols_set.issubset(errors_cols_set):
+                            missing = id_cols_set - errors_cols_set
+                            logger.error(
+                                f"Cannot flush errors: missing id_columns {missing}. "
+                                f"Errors will be available in collected_errors instead."
+                            )
+                            # Store for manual retrieval
+                            self._collected_errors[feature_key] = errors
+                        else:
+                            # Write errors
+                            self.write_errors(feature_key, errors_df)
+                            logger.info(
+                                f"Flushed {len(errors)} error(s) for {feature_key.to_string()}"
+                            )
+                    except Exception as write_err:
+                        logger.error(
+                            f"Failed to write errors for {feature_key.to_string()}: {write_err}. "
+                            f"Errors will be available in collected_errors instead."
+                        )
+                        # Store for manual retrieval even if autoflush failed
+                        self._collected_errors[feature_key] = errors
+                else:
+                    # Store for later retrieval
+                    self._collected_errors[feature_key] = errors
+                    logger.debug(
+                        f"Collected {len(errors)} error(s) for {feature_key.to_string()}. "
+                        f"Access via collected_errors property or write manually."
+                    )

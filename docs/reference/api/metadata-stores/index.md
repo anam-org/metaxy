@@ -43,6 +43,10 @@ The following base configuration class is typically used by child metadata store
 
 ::: metaxy.metadata_store.base.MetadataStoreConfig
 
+Logging and handling of errors in metaxy is done with:
+
+::: metaxy.metadata_store.base.ErrorContext
+
 ---
 
 ## Configuration

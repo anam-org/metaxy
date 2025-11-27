@@ -379,6 +379,181 @@ class LanceDBMetadataStore(MetadataStore):
         polars_markers = ("polars", "dataframe", "lazyframe", "data frame")
         return any(marker in message for marker in polars_markers)
 
+    # ========== Error Tracking Implementation ==========
+
+    def write_errors_to_store(
+        self,
+        feature_key: FeatureKey,
+        errors_df: Frame,
+    ) -> None:
+        """Write error records to LanceDB error table.
+
+        Args:
+            feature_key: Feature key to write errors for
+            errors_df: Narwhals DataFrame with error records
+        """
+        # Convert to Polars
+        df_polars = collect_to_polars(errors_df)
+
+        # Get error table name
+        error_table_name = self._get_error_table_name(feature_key)
+
+        # Write to LanceDB (with same fallback logic as regular metadata)
+        try:
+            if self._table_exists(error_table_name):
+                table = self._get_table(error_table_name)
+                table.add(df_polars)  # type: ignore[attr-defined]
+            else:
+                self.conn.create_table(error_table_name, data=df_polars)  # type: ignore[attr-defined]
+        except TypeError as exc:
+            if not self._should_fallback_to_arrow(exc):
+                raise
+            # Fallback to Arrow format
+            logger.debug(
+                "Falling back to Arrow format for LanceDB error write: %s", exc
+            )
+            arrow_table = df_polars.to_arrow()
+            if self._table_exists(error_table_name):
+                table = self._get_table(error_table_name)
+                table.add(arrow_table)  # type: ignore[attr-defined]
+            else:
+                self.conn.create_table(error_table_name, data=arrow_table)  # type: ignore[attr-defined]
+
+    def read_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read error records from LanceDB error table.
+
+        Args:
+            feature_key: Feature key to read errors for
+            filters: Optional Narwhals filter expressions to apply
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if error table doesn't exist
+        """
+        # Get error table name
+        error_table_name = self._get_error_table_name(feature_key)
+
+        # Check if error table exists
+        if not self._table_exists(error_table_name):
+            return None
+
+        # Read from LanceDB
+        table = self._get_table(error_table_name)
+        arrow_table = table.to_arrow()
+        pl_lazy = pl.DataFrame(arrow_table).lazy()
+        nw_lazy = nw.from_native(pl_lazy)
+
+        # Apply filters
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        return nw_lazy
+
+    def clear_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Clear error records from LanceDB error table.
+
+        Args:
+            feature_key: Feature key to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear
+            feature_version: Optional feature version to clear
+        """
+        # Get error table name
+        error_table_name = self._get_error_table_name(feature_key)
+
+        # Check if error table exists
+        if not self._table_exists(error_table_name):
+            return  # No-op if table doesn't exist
+
+        # If no filters, drop entire error table
+        if sample_uids is None and feature_version is None:
+            self.conn.drop_table(error_table_name)  # type: ignore[attr-defined]
+            return
+
+        # Otherwise, read-filter-rewrite strategy
+        # (LanceDB doesn't have native DELETE with WHERE, like Delta does)
+        table = self._get_table(error_table_name)
+        arrow_table = table.to_arrow()
+        errors_df = pl.DataFrame(arrow_table)
+
+        # Build filter conditions for what to KEEP (inverse of what to clear)
+        keep_conditions = []
+
+        # Filter by feature_version: keep errors from OTHER versions
+        if feature_version is not None:
+            from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+            keep_conditions.append(pl.col(METAXY_FEATURE_VERSION) != feature_version)
+
+        # Filter by sample_uids: keep errors from OTHER samples
+        if sample_uids is not None and len(sample_uids) > 0:
+            # Get id_columns from feature spec
+            feature_spec = self._resolve_feature_plan(feature_key).feature
+            id_cols = list(feature_spec.id_columns)
+
+            # Build condition to exclude specified samples
+            sample_match_conditions = []
+            for uid_dict in sample_uids:
+                # Build AND condition for this sample
+                and_conditions = [
+                    pl.col(col_name) == uid_dict[col_name] for col_name in id_cols
+                ]
+                # Combine with &
+                if len(and_conditions) == 1:
+                    sample_condition = and_conditions[0]
+                else:
+                    sample_condition = and_conditions[0]
+                    for cond in and_conditions[1:]:
+                        sample_condition = sample_condition & cond
+                sample_match_conditions.append(sample_condition)
+
+            # Combine all sample conditions with OR (matches any of the samples)
+            if len(sample_match_conditions) == 1:
+                matches_any_sample = sample_match_conditions[0]
+            else:
+                matches_any_sample = sample_match_conditions[0]
+                for cond in sample_match_conditions[1:]:
+                    matches_any_sample = matches_any_sample | cond
+
+            # Keep rows that DON'T match any sample
+            keep_conditions.append(~matches_any_sample)
+
+        # Apply keep conditions
+        if keep_conditions:
+            # Combine all keep conditions with AND
+            if len(keep_conditions) == 1:
+                final_condition = keep_conditions[0]
+            else:
+                final_condition = keep_conditions[0]
+                for cond in keep_conditions[1:]:
+                    final_condition = final_condition & cond
+
+            filtered_df = errors_df.filter(final_condition)
+
+            # Drop table and recreate with filtered data
+            self.conn.drop_table(error_table_name)  # type: ignore[attr-defined]
+
+            # Only recreate if there are rows to keep
+            if len(filtered_df) > 0:
+                try:
+                    self.conn.create_table(error_table_name, data=filtered_df)  # type: ignore[attr-defined]
+                except TypeError as exc:
+                    if not self._should_fallback_to_arrow(exc):
+                        raise
+                    # Fallback to Arrow
+                    arrow_table = filtered_df.to_arrow()
+                    self.conn.create_table(error_table_name, data=arrow_table)  # type: ignore[attr-defined]
+
     # Display ------------------------------------------------------------------
 
     def display(self) -> str:

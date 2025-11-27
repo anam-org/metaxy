@@ -72,6 +72,7 @@ class InMemoryMetadataStore(MetadataStore):
         """
         # Use tuple as key (hashable) instead of string to avoid parsing issues
         self._storage: dict[tuple[str, ...], pl.DataFrame] = {}
+        self._error_storage: dict[tuple[str, ...], pl.DataFrame] = {}
         super().__init__(**kwargs, versioning_engine_cls=PolarsVersioningEngine)
 
     def _get_default_hash_algorithm(self) -> HashAlgorithm:
@@ -273,6 +274,181 @@ class InMemoryMetadataStore(MetadataStore):
             if self._context_depth == 0:
                 # Nothing to clean up
                 self._is_open = False
+
+    # ========== Error Tracking Implementation ==========
+
+    def write_errors_to_store(
+        self,
+        feature_key: FeatureKey,
+        errors_df: Frame,
+    ) -> None:
+        """Write error records to in-memory error storage.
+
+        Args:
+            feature_key: Feature key to write errors for
+            errors_df: Narwhals DataFrame with error records
+        """
+        # Convert to Polars
+        df_polars: pl.DataFrame = collect_to_polars(errors_df)
+
+        # Use same storage key strategy as regular metadata, but for errors
+        storage_key = self._get_storage_key(feature_key)
+
+        # Append or create (errors are append-only like metadata)
+        if storage_key in self._error_storage:
+            existing_df = self._error_storage[storage_key]
+
+            # Handle schema evolution: ensure both DataFrames have matching columns
+            for col_name in df_polars.columns:
+                if col_name not in existing_df.columns:
+                    col_dtype = df_polars.schema[col_name]
+                    existing_df = existing_df.with_columns(
+                        pl.lit(None).cast(col_dtype).alias(col_name)
+                    )
+
+            for col_name in existing_df.columns:
+                if col_name not in df_polars.columns:
+                    col_dtype = existing_df.schema[col_name]
+                    df_polars = df_polars.with_columns(
+                        pl.lit(None).cast(col_dtype).alias(col_name)
+                    )
+
+            # Ensure column order matches
+            all_columns = sorted(set(existing_df.columns) | set(df_polars.columns))
+            existing_df = existing_df.select(all_columns)
+            df_polars = df_polars.select(all_columns)
+
+            # Concatenate
+            self._error_storage[storage_key] = pl.concat(
+                [existing_df, df_polars],
+                how="vertical",
+            )
+        else:
+            # Create new error table
+            self._error_storage[storage_key] = df_polars
+
+    def read_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        filters: Sequence[nw.Expr] | None = None,
+    ) -> nw.LazyFrame[Any] | None:
+        """Read error records from in-memory storage.
+
+        Args:
+            feature_key: Feature key to read errors for
+            filters: Optional Narwhals filter expressions to apply
+
+        Returns:
+            Narwhals LazyFrame with error records, or None if no errors exist
+        """
+        storage_key = self._get_storage_key(feature_key)
+
+        # Check if error table exists
+        if storage_key not in self._error_storage:
+            return None
+
+        # Get DataFrame as lazy
+        df_lazy = self._error_storage[storage_key].lazy()
+        nw_lazy = nw.from_native(df_lazy)
+
+        # Apply filters if provided
+        if filters is not None:
+            for filter_expr in filters:
+                nw_lazy = nw_lazy.filter(filter_expr)
+
+        return nw_lazy
+
+    def clear_errors_from_store(
+        self,
+        feature_key: FeatureKey,
+        *,
+        sample_uids: Sequence[dict[str, Any]] | None = None,
+        feature_version: str | None = None,
+    ) -> None:
+        """Clear error records from in-memory storage.
+
+        Args:
+            feature_key: Feature key to clear errors for
+            sample_uids: Optional list of sample ID dicts to clear
+            feature_version: Optional feature version to clear
+        """
+        storage_key = self._get_storage_key(feature_key)
+
+        # If error table doesn't exist, this is a no-op
+        if storage_key not in self._error_storage:
+            return
+
+        # If no filters provided, drop entire error table
+        if sample_uids is None and feature_version is None:
+            del self._error_storage[storage_key]
+            return
+
+        # Otherwise, filter and keep only errors we want to preserve
+        errors_df = self._error_storage[storage_key]
+
+        # Build filter conditions for what to KEEP (inverse of what to clear)
+        keep_conditions = []
+
+        # If filtering by feature_version, keep errors from OTHER versions
+        if feature_version is not None:
+            from metaxy.models.constants import METAXY_FEATURE_VERSION
+
+            keep_conditions.append(pl.col(METAXY_FEATURE_VERSION) != feature_version)
+
+        # If filtering by sample_uids, keep errors from OTHER samples
+        if sample_uids is not None and len(sample_uids) > 0:
+            # Get id_columns from feature spec
+            feature_spec = self._resolve_feature_plan(feature_key).feature
+            id_cols = list(feature_spec.id_columns)
+
+            # Build condition to exclude specified samples
+            # For each sample_uid dict, create a condition that matches it
+            # Then keep rows that DON'T match any of these conditions
+
+            sample_match_conditions = []
+            for uid_dict in sample_uids:
+                # Build AND condition for this sample
+                and_conditions = [
+                    pl.col(col_name) == uid_dict[col_name] for col_name in id_cols
+                ]
+                # Combine with &
+                if len(and_conditions) == 1:
+                    sample_condition = and_conditions[0]
+                else:
+                    sample_condition = and_conditions[0]
+                    for cond in and_conditions[1:]:
+                        sample_condition = sample_condition & cond
+                sample_match_conditions.append(sample_condition)
+
+            # Combine all sample conditions with OR (matches any of the samples)
+            if len(sample_match_conditions) == 1:
+                matches_any_sample = sample_match_conditions[0]
+            else:
+                matches_any_sample = sample_match_conditions[0]
+                for cond in sample_match_conditions[1:]:
+                    matches_any_sample = matches_any_sample | cond
+
+            # Keep rows that DON'T match any sample
+            keep_conditions.append(~matches_any_sample)
+
+        # Apply keep conditions
+        if keep_conditions:
+            # Combine all keep conditions with AND
+            if len(keep_conditions) == 1:
+                final_condition = keep_conditions[0]
+            else:
+                final_condition = keep_conditions[0]
+                for cond in keep_conditions[1:]:
+                    final_condition = final_condition & cond
+
+            filtered_df = errors_df.filter(final_condition)
+
+            # If no errors remain, delete the table
+            if len(filtered_df) == 0:
+                del self._error_storage[storage_key]
+            else:
+                self._error_storage[storage_key] = filtered_df
 
     def __repr__(self) -> str:
         """String representation."""

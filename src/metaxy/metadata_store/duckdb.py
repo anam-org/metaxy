@@ -17,7 +17,6 @@ from metaxy.metadata_store._ducklake_support import (
     DuckLakeAttachmentManager,
     DuckLakeConfigInput,
     build_ducklake_attachment,
-    ensure_extensions_with_plugins,
 )
 from metaxy.metadata_store.ibis import IbisMetadataStore, IbisMetadataStoreConfig
 from metaxy.metadata_store.types import AccessMode
@@ -188,7 +187,6 @@ class DuckDBMetadataStore(IbisMetadataStore):
         self._ducklake_attachment: DuckLakeAttachmentManager | None = None
         if ducklake is not None:
             attachment_config, manager = build_ducklake_attachment(ducklake)
-            ensure_extensions_with_plugins(base_extensions, attachment_config.plugins)
             self._ducklake_config = attachment_config
             self._ducklake_attachment = manager
 

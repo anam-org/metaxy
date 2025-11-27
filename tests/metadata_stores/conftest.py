@@ -219,7 +219,10 @@ class StoreCases:
         self, tmp_path: Path, test_graph: FeatureGraph
     ) -> tuple[type[MetadataStore], dict[str, Any]]:
         db_path = tmp_path / "test.duckdb"
-        return (DuckDBMetadataStore, {"database": db_path})
+        return (
+            DuckDBMetadataStore,
+            {"database": db_path},
+        )
 
     def case_duckdb_ducklake(
         self, tmp_path: Path, test_graph: FeatureGraph
@@ -237,7 +240,6 @@ class StoreCases:
         config = {
             "database": db_path,
             "ducklake": ducklake_config,
-            "extensions": ["json"],
         }
         return (DuckDBMetadataStore, config)
 
@@ -252,7 +254,10 @@ class BasicStoreCases:
 
     def case_duckdb(self, tmp_path: Path) -> tuple[type[MetadataStore], dict[str, Any]]:
         db_path = tmp_path / "test.duckdb"
-        return (DuckDBMetadataStore, {"database": db_path})
+        return (
+            DuckDBMetadataStore,
+            {"database": db_path},
+        )
 
 
 @fixture
@@ -306,7 +311,7 @@ class AnyStoreCases:
 
 
 class AllStoresCases:
-    """All store types (InMemory, DuckDB, ClickHouse)."""
+    """All store types (InMemory, DuckDB, DuckDB+DuckLake, ClickHouse, Delta, LanceDB)."""
 
     @pytest.mark.inmemory
     @pytest.mark.polars
@@ -350,11 +355,32 @@ class AllStoresCases:
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
+    @pytest.mark.ibis
+    @pytest.mark.native
+    @pytest.mark.duckdb
+    @pytest.mark.ducklake
+    def case_duckdb_ducklake(self, tmp_path: Path) -> MetadataStore:
+        db_path = tmp_path / "test_ducklake.duckdb"
+        metadata_path = tmp_path / "ducklake_catalog.duckdb"
+        storage_dir = tmp_path / "ducklake_storage"
+
+        ducklake_config = {
+            "alias": "integration_lake",
+            "metadata_backend": {"type": "duckdb", "path": str(metadata_path)},
+            "storage_backend": {"type": "local", "path": str(storage_dir)},
+        }
+
+        return DuckDBMetadataStore(
+            database=db_path,
+            ducklake=ducklake_config,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
 
 @fixture
 @parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (InMemory + DuckDB + ClickHouse)."""
+    """Parametrized store (InMemory + DuckDB + DuckDB+DuckLake + ClickHouse + Delta + LanceDB)."""
     return store
 
 

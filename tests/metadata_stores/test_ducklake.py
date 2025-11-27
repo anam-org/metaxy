@@ -146,11 +146,9 @@ def test_duckdb_store_accepts_ducklake_config() -> None:
     """DuckDBMetadataStore should accept ducklake configuration inline."""
     store = DuckDBMetadataStore(
         database=":memory:",
-        extensions=["json"],
         ducklake=_ducklake_config_payload(),
     )
 
-    assert "ducklake" in store.extensions
     commands = store.preview_ducklake_sql()
     assert commands[0] == "INSTALL ducklake;"
     assert commands[1] == "LOAD ducklake;"
@@ -232,7 +230,6 @@ def test_ducklake_store_read_write_roundtrip(test_features, monkeypatch, size) -
 
         store = DuckDBMetadataStore(
             database=db_path,
-            extensions=["json"],
             ducklake=ducklake_config,
         )
 
@@ -297,7 +294,6 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             # Create store - this will actually attach DuckLake (no mocking)
             store = DuckDBMetadataStore(
                 database=db_path,
-                extensions=["json"],
                 ducklake=ducklake_config,
             )
 
@@ -407,7 +403,6 @@ def test_ducklake_e2e_with_dependencies(test_graph, test_features, num_samples) 
             # Reopen store and verify data persisted through DuckLake
             store2 = DuckDBMetadataStore(
                 database=db_path,
-                extensions=["json"],
                 ducklake=ducklake_config,
             )
 
