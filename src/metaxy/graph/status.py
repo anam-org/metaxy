@@ -28,13 +28,14 @@ class FullFeatureMetadataRepresentation(BaseModel):
     """Full JSON-safe representation of feature metadata status."""
 
     feature_key: str
-    status: Literal["missing", "needs_update", "up_to_date"]
+    status: Literal["missing", "needs_update", "up_to_date", "root_feature"]
     needs_update: bool
     metadata_exists: bool
     rows: int
-    added: int
-    changed: int
+    added: int | None
+    changed: int | None
     target_version: str
+    is_root_feature: bool = False
     sample_details: list[str] | None = None
 
 
@@ -55,6 +56,10 @@ class FeatureMetadataStatus(BaseModel):
     added_count: int = Field(description="Number of samples that would be added")
     changed_count: int = Field(description="Number of samples that would be changed")
     needs_update: bool = Field(description="Whether updates are needed")
+    is_root_feature: bool = Field(
+        default=False,
+        description="Whether this is a root feature (no upstream dependencies)",
+    )
 
     def format_status_line(
         self,
@@ -76,12 +81,23 @@ class FeatureMetadataStatus(BaseModel):
             if not self.metadata_exists:
                 status_icon = "[red]✗[/red]"
                 status_text = "missing metadata"
+            elif self.is_root_feature:
+                # Root features: can't determine update status without samples
+                status_icon = "[blue]○[/blue]"
+                status_text = "root feature"
             elif self.needs_update:
                 status_icon = "[yellow]⚠[/yellow]"
                 status_text = "needs update"
             else:
                 status_icon = "[green]✓[/green]"
                 status_text = "up-to-date"
+
+        # For root features, don't show added/changed counts (they're not meaningful)
+        if self.is_root_feature:
+            return (
+                f"{status_icon} {self.feature_key.to_string()} "
+                f"(rows: {self.row_count}) — {status_text}"
+            )
 
         return (
             f"{status_icon} {self.feature_key.to_string()} "
@@ -100,9 +116,13 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
     status: FeatureMetadataStatus
     lazy_increment: LazyIncrement | None
 
-    def _status_category(self) -> Literal["missing", "needs_update", "up_to_date"]:
+    def _status_category(
+        self,
+    ) -> Literal["missing", "needs_update", "up_to_date", "root_feature"]:
         if not self.status.metadata_exists:
             return "missing"
+        if self.status.is_root_feature:
+            return "root_feature"
         if self.status.needs_update:
             return "needs_update"
         return "up_to_date"
@@ -143,15 +163,20 @@ class FeatureMetadataStatusWithIncrement(NamedTuple):
             if verbose and self.lazy_increment
             else None
         )
+        # For root features, added/changed are not meaningful
+        added = None if self.status.is_root_feature else self.status.added_count
+        changed = None if self.status.is_root_feature else self.status.changed_count
+
         return FullFeatureMetadataRepresentation(
             feature_key=self.status.feature_key.to_string(),
             status=self._status_category(),
             needs_update=self.status.needs_update,
             metadata_exists=self.status.metadata_exists,
             rows=self.status.row_count,
-            added=self.status.added_count,
-            changed=self.status.changed_count,
+            added=added,
+            changed=changed,
             target_version=self.status.target_version,
+            is_root_feature=self.status.is_root_feature,
             sample_details=sample_details,
         )
 
@@ -250,14 +275,9 @@ def get_feature_metadata_status(
 
     target_version = feature_cls.feature_version()
 
-    lazy_increment = metadata_store.resolve_update(
-        feature_cls,
-        lazy=True,
-    )
-
-    # Count changes
-    added_count = count_lazy_rows(lazy_increment.added)
-    changed_count = count_lazy_rows(lazy_increment.changed)
+    # Check if this is a root feature (no upstream dependencies)
+    plan = graph.get_feature_plan(key)
+    is_root_feature = not plan.deps
 
     # Get row count for this feature version
     id_columns = feature_cls.spec().id_columns  # type: ignore[attr-defined]
@@ -274,6 +294,30 @@ def get_feature_metadata_status(
     except FeatureNotFoundError:
         row_count = 0
         metadata_exists = False
+
+    # For root features, we can't determine added/changed without samples
+    if is_root_feature:
+        status = FeatureMetadataStatus(
+            feature_key=key,
+            target_version=target_version,
+            metadata_exists=metadata_exists,
+            row_count=row_count,
+            added_count=0,
+            changed_count=0,
+            needs_update=False,
+            is_root_feature=True,
+        )
+        return FeatureMetadataStatusWithIncrement(status=status, lazy_increment=None)
+
+    # For non-root features, resolve the update to get added/changed counts
+    lazy_increment = metadata_store.resolve_update(
+        feature_cls,
+        lazy=True,
+    )
+
+    # Count changes
+    added_count = count_lazy_rows(lazy_increment.added)
+    changed_count = count_lazy_rows(lazy_increment.changed)
 
     status = FeatureMetadataStatus(
         feature_key=key,

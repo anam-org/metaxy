@@ -447,6 +447,7 @@ def test_metadata_status_up_to_date(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "video/files",
             "--format",
             output_format,
@@ -504,6 +505,7 @@ def test_metadata_status_missing_metadata(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "video/files",
             "--format",
             output_format,
@@ -556,7 +558,12 @@ def test_metadata_status_assert_in_sync_fails(metaxy_project: TempMetaxyProject)
 
         # Check status with --assert-in-sync
         result = metaxy_project.run_cli(
-            "metadata", "status", "video/files", "--assert-in-sync", check=False
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--assert-in-sync",
+            check=False,
         )
 
         assert result.returncode == 1
@@ -610,7 +617,9 @@ def test_metadata_status_multiple_features(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "video/files",
+            "--feature",
             "audio/files",
             "--format",
             output_format,
@@ -660,6 +669,7 @@ def test_metadata_status_invalid_feature_key(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "nonexistent/feature",
             "--format",
             output_format,
@@ -712,6 +722,7 @@ def test_metadata_status_with_verbose(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "video/files",
             "--format",
             output_format,
@@ -781,6 +792,7 @@ def test_metadata_status_with_explicit_store(
         result = metaxy_project.run_cli(
             "metadata",
             "status",
+            "--feature",
             "video/files",
             "--store",
             "dev",
@@ -798,3 +810,233 @@ def test_metadata_status_with_explicit_store(
         else:
             assert "video/files" in result.stdout
             assert "up-to-date" in result.stdout
+
+
+def test_metadata_status_requires_feature_or_all(metaxy_project: TempMetaxyProject):
+    """Test that status requires either --feature or --all-features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Try to check status without specifying features
+        result = metaxy_project.run_cli(
+            "metadata", "status", "--format", "json", check=False
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error"] == "MISSING_REQUIRED_FLAG"
+        assert "--all-features" in str(error["required_flags"])
+        assert "--feature" in str(error["required_flags"])
+
+
+def test_metadata_status_cannot_specify_both_flags(metaxy_project: TempMetaxyProject):
+    """Test that cannot specify both --feature and --all-features."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Try to specify both flags
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "video/files",
+            "--all-features",
+            "--format",
+            "json",
+            check=False,
+        )
+
+        assert result.returncode == 1
+        error = json.loads(result.stdout)
+        assert error["error"] == "CONFLICTING_FLAGS"
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_all_features(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command with --all-features flag."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class FilesRoot(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["files_root"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+        class VideoFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["video", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[FilesRoot],
+            ),
+        ):
+            pass
+
+        class AudioFiles(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["audio", "files"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+                deps=[FilesRoot],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata for root only
+        _write_sample_metadata(metaxy_project, "files_root")
+
+        # Check status for all features
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--all-features",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            # Should include all 3 features
+            assert len(data["features"]) == 3
+            assert "files_root" in data["features"]
+            assert "video/files" in data["features"]
+            assert "audio/files" in data["features"]
+            # Root feature should have root_feature status
+            assert data["features"]["files_root"]["is_root_feature"] is True
+            assert data["features"]["files_root"]["status"] == "root_feature"
+        else:
+            assert "files_root" in result.stdout
+            assert "video/files" in result.stdout
+            assert "audio/files" in result.stdout
+            assert "root feature" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_root_feature(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command for a root feature (no upstream dependencies)."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class RootFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["root_feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Write metadata for the root feature
+        _write_sample_metadata(metaxy_project, "root_feature")
+
+        # Check status for the root feature
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "root_feature",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["root_feature"]
+            assert feature["feature_key"] == "root_feature"
+            assert feature["is_root_feature"] is True
+            assert feature["status"] == "root_feature"
+            assert feature["rows"] == 3
+            # Root features don't have meaningful added/changed counts (excluded from JSON)
+            assert "added" not in feature
+            assert "changed" not in feature
+        else:
+            assert "root_feature" in result.stdout
+            assert "root feature" in result.stdout
+            assert "rows: 3" in result.stdout
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_metadata_status_root_feature_missing_metadata(
+    metaxy_project: TempMetaxyProject, output_format: str
+):
+    """Test status command for a root feature with no metadata."""
+
+    def features():
+        from metaxy import BaseFeature, FeatureKey, FieldKey, FieldSpec
+        from metaxy._testing.models import SampleFeatureSpec
+
+        class RootFeature(
+            BaseFeature,
+            spec=SampleFeatureSpec(
+                key=FeatureKey(["root_feature"]),
+                fields=[FieldSpec(key=FieldKey(["default"]), code_version="1")],
+            ),
+        ):
+            pass
+
+    with metaxy_project.with_features(features):
+        # Don't write any metadata
+
+        # Check status for the root feature
+        result = metaxy_project.run_cli(
+            "metadata",
+            "status",
+            "--feature",
+            "root_feature",
+            "--format",
+            output_format,
+        )
+
+        assert result.returncode == 0
+        if output_format == "json":
+            data = json.loads(result.stdout)
+            feature = data["features"]["root_feature"]
+            assert feature["feature_key"] == "root_feature"
+            # Missing metadata takes precedence over root feature status
+            assert feature["status"] == "missing"
+            assert feature["metadata_exists"] is False
+            assert feature["rows"] == 0
+        else:
+            assert "root_feature" in result.stdout
+            assert "missing metadata" in result.stdout
+            assert "rows: 0" in result.stdout

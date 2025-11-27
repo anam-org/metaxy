@@ -25,12 +25,20 @@ app = cyclopts.App(
 
 @app.command()
 def status(
-    feature_keys: Annotated[
-        list[str],
+    features: Annotated[
+        list[str] | None,
         cyclopts.Parameter(
-            help="Feature keys to inspect (e.g., namespace/feature). Provide at least one.",
+            name=["--feature"],
+            help="Feature key to check (e.g., 'my_feature' or 'namespace/feature'). Can be repeated multiple times.",
         ),
-    ],
+    ] = None,
+    all_features: Annotated[
+        bool,
+        cyclopts.Parameter(
+            name=["--all-features"],
+            help="Check metadata status for all features defined in the current project's feature graph.",
+        ),
+    ] = False,
     store: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -67,7 +75,21 @@ def status(
         ),
     ] = "plain",
 ) -> None:
-    """Check metadata completeness and freshness for specified features."""
+    """Check metadata completeness and freshness for specified features.
+
+    Examples:
+        # Check specific feature
+        $ metaxy metadata status --feature user_features
+
+        # Check multiple features
+        $ metaxy metadata status --feature user_features --feature customer_features
+
+        # Check all features in the project
+        $ metaxy metadata status --all-features
+
+        # Check with specific store
+        $ metaxy metadata status --store dev --all-features
+    """
     import json
 
     from metaxy.cli.context import AppContext
@@ -75,28 +97,65 @@ def status(
 
     # Write human-readable output to stdout so tests can capture it
     text_console = data_console
+    as_json = format == "json"
 
-    parsed_keys: list[FeatureKey] = []
-    for raw_key in feature_keys:
-        try:
-            parsed_keys.append(FeatureKey(raw_key))
-        except ValueError as exc:
-            if format == "json":
-                error_data = {
-                    "error": "Invalid feature key",
-                    "key": raw_key,
-                    "message": str(exc),
-                }
-                print(json.dumps(error_data))
-            else:
-                text_console.print(
-                    f"[red]✗[/red] Invalid feature key '{raw_key}': {exc}"
+    # Validate arguments
+    if not all_features and not features:
+        if as_json:
+            print(
+                json.dumps(
+                    {
+                        "error": "MISSING_REQUIRED_FLAG",
+                        "message": "Must specify either --all-features or --feature",
+                        "required_flags": ["--all-features", "--feature"],
+                    }
                 )
-            raise SystemExit(1)
+            )
+        else:
+            text_console.print(
+                "[red]Error:[/red] Must specify either --all-features or --feature"
+            )
+        raise SystemExit(1)
+
+    if all_features and features:
+        if as_json:
+            print(
+                json.dumps(
+                    {
+                        "error": "CONFLICTING_FLAGS",
+                        "message": "Cannot specify both --all-features and --feature",
+                        "conflicting_flags": ["--all-features", "--feature"],
+                    }
+                )
+            )
+        else:
+            text_console.print(
+                "[red]Error:[/red] Cannot specify both --all-features and --feature"
+            )
+        raise SystemExit(1)
 
     context = AppContext.get()
     metadata_store = context.get_store(store)
-    as_json = format == "json"
+
+    # Parse feature keys from --feature arguments
+    parsed_keys: list[FeatureKey] = []
+    if features:
+        for raw_key in features:
+            try:
+                parsed_keys.append(FeatureKey(raw_key))
+            except ValueError as exc:
+                if as_json:
+                    error_data = {
+                        "error": "Invalid feature key",
+                        "key": raw_key,
+                        "message": str(exc),
+                    }
+                    print(json.dumps(error_data))
+                else:
+                    text_console.print(
+                        f"[red]✗[/red] Invalid feature key '{raw_key}': {exc}"
+                    )
+                raise SystemExit(1)
 
     with metadata_store:
         # If snapshot_version provided, reconstruct graph from storage
@@ -129,6 +188,30 @@ def status(
         else:
             # Use current graph from context
             graph = context.graph
+
+        # If --all-features, get all feature keys from the graph
+        if all_features:
+            parsed_keys = graph.list_features(only_current_project=True)
+            if not parsed_keys:
+                if as_json:
+                    print(
+                        json.dumps(
+                            {
+                                "warning": "NO_FEATURES_FOUND",
+                                "message": "No features found in active graph. Make sure your features are imported.",
+                                "features": {},
+                                "snapshot_version": snapshot_version,
+                                "needs_update": False,
+                            },
+                            indent=2,
+                        )
+                    )
+                else:
+                    text_console.print(
+                        "[yellow]Warning:[/yellow] No features found in active graph. "
+                        "Make sure your features are imported."
+                    )
+                return
 
         # Verify all requested features exist in the graph
         missing_in_graph = [
