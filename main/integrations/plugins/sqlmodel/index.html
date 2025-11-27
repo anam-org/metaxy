@@ -3323,6 +3323,10 @@
 <li>Optionally injects primary key and index constraints</li>
 </ul>
 <p>See the <a href="../sqlalchemy/#alembic-integration">SQLAlchemy integration guide</a> for complete Alembic setup examples.</p>
+<div class="admonition tip">
+<p class="admonition-title">Separate Alembic Version Tables</p>
+<p>When managing both system tables and feature tables with Alembic, use separate version tables to avoid conflicts. See the <a href="../sqlalchemy/#multi-store-setup">Multi-Store Setup</a> section for configuration details.</p>
+</div>
 <h2 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h2>
 <!-- dprint-ignore-start -->
 <h3 id="extsqlmodelenable"><code>ext.sqlmodel.enable</code><a class="headerlink" href="#extsqlmodelenable" title="Permanent link">&para;</a></h3>

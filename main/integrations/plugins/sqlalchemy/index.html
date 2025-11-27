@@ -3363,27 +3363,61 @@ These helpers allow to construct <code>sqlalchemy.MetaData</code> objects for us
 </span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">[prod]</span>
 </span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">alembic/prod</span>
 </span></code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Separate Alembic Version Tables</p>
+<p>When using multiple Alembic environments (e.g., system tables vs feature tables), configure separate version tables to avoid conflicts. Set up separate script locations in <code>alembic.ini</code>:</p>
+<div class="language-ini highlight"><span class="filename">alembic.ini</span><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">[dev:metaxy_system]</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">alembic/dev/system</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">[dev:metaxy_features]</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="na">script_location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">alembic/dev/features</span>
+</span></code></pre></div>
+<p>Then pass <code>version_table</code> to <code>context.configure()</code> in each env.py:</p>
+<div class="language-python highlight"><span class="filename">alembic/dev/system/env.py</span><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">context</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">target_metadata</span><span class="o">=</span><span class="n">target_metadata</span><span class="p">,</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">version_table</span><span class="o">=</span><span class="s2">&quot;alembic_version_metaxy_system&quot;</span><span class="p">,</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<div class="language-python highlight"><span class="filename">alembic/dev/features/env.py</span><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">context</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">target_metadata</span><span class="o">=</span><span class="n">target_metadata</span><span class="p">,</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">version_table</span><span class="o">=</span><span class="s2">&quot;alembic_version_metaxy_features&quot;</span><span class="p">,</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Each environment now tracks migrations independently:</p>
+<ul>
+<li><code>alembic_version_metaxy_system</code> for system tables</li>
+<li><code>alembic_version_metaxy_features</code> for feature tables</li>
+</ul>
+<p>Create and run migrations separately:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev:metaxy_system<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;initialize&quot;</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev:metaxy_features<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;initialize&quot;</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev:metaxy_system<span class="w"> </span>upgrade<span class="w"> </span>head
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev:metaxy_features<span class="w"> </span>upgrade<span class="w"> </span>head
+</span></code></pre></div>
+</div>
 <p>The two environments now can be managed independently:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="multi-store-setup-dev" name="__tabbed_4" type="radio" /><input id="multi-store-setup-prod" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="multi-store-setup-dev">dev</label><label for="multi-store-setup-prod">prod</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/dev/env.py</span><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
-</span></span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+<div class="language-python highlight"><span class="filename">alembic/dev/env.py</span><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;dev&quot;</span><span class="p">)</span>
+</span></span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The <code>-n</code> argument can be used to specify the target Alembic directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev<span class="w"> </span>upgrade<span class="w"> </span>head
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>dev<span class="w"> </span>upgrade<span class="w"> </span>head
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-python highlight"><span class="filename">alembic/prod/env.py</span><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
-</span></span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
+<div class="language-python highlight"><span class="filename">alembic/prod/env.py</span><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">metaxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_metaxy</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">init_metaxy</span><span class="p">()</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="hll"><span class="n">store</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;prod&quot;</span><span class="p">)</span>
+</span></span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">url</span><span class="p">,</span> <span class="n">target_metadata</span> <span class="o">=</span> <span class="n">filter_feature_sqla_metadata</span><span class="p">(</span><span class="n">my_metadata</span><span class="p">,</span> <span class="n">store</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The <code>-n</code> argument can be used to specify the target Alembic directory:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>prod<span class="w"> </span>upgrade<span class="w"> </span>head
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>alembic<span class="w"> </span>-n<span class="w"> </span>prod<span class="w"> </span>upgrade<span class="w"> </span>head
 </span></code></pre></div>
 </div>
 </div>
