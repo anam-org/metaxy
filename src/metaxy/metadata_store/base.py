@@ -160,6 +160,7 @@ class MetadataStore(ABC):
         *,
         samples: Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[False] = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -173,6 +174,7 @@ class MetadataStore(ABC):
         *,
         samples: Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: Literal[True],
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -185,6 +187,7 @@ class MetadataStore(ABC):
         *,
         samples: Frame | None = None,
         filters: Mapping[CoercibleToFeatureKey, Sequence[nw.Expr]] | None = None,
+        global_filters: Sequence[nw.Expr] | None = None,
         lazy: bool = False,
         versioning_engine: Literal["auto", "native", "polars"] | None = None,
         skip_comparison: bool = False,
@@ -214,6 +217,10 @@ class MetadataStore(ABC):
                 Applied at read-time. May filter the current feature,
                 in this case it will also be applied to `samples` (if provided).
                 Example: `{UpstreamFeature: [nw.col("x") > 10], ...}`
+            global_filters: A list of Narwhals filter expressions applied to all features.
+                These filters are combined with any feature-specific filters from `filters`.
+                Useful for filtering by common columns like `sample_uid` across all features.
+                Example: `[nw.col("sample_uid").is_in(["s1", "s2"])]`
             lazy: Whether to return a [metaxy.versioning.types.LazyIncrement][] or a [metaxy.versioning.types.Increment][].
             versioning_engine: Override the store's versioning engine for this operation.
             skip_comparison: If True, skip the increment comparison logic and return all
@@ -244,6 +251,9 @@ class MetadataStore(ABC):
                 feature_key = self._resolve_feature_key(key)
                 normalized_filters[feature_key] = list(exprs)
 
+        # Convert global_filters to a list for easy concatenation
+        global_filter_list = list(global_filters) if global_filters else []
+
         graph = current_graph()
         plan = graph.get_feature_plan(feature.spec().key)
 
@@ -255,7 +265,11 @@ class MetadataStore(ABC):
                 f"Root features require manual {METAXY_PROVENANCE_BY_FIELD} computation."
             )
 
-        current_feature_filters = [*normalized_filters.get(feature.spec().key, [])]
+        # Combine feature-specific filters with global filters
+        current_feature_filters = [
+            *normalized_filters.get(feature.spec().key, []),
+            *global_filter_list,
+        ]
 
         current_metadata = self.read_metadata_in_store(
             feature,
@@ -295,9 +309,14 @@ class MetadataStore(ABC):
                 )
         else:
             for upstream_spec in plan.deps or []:
+                # Combine feature-specific filters with global filters for upstream
+                upstream_filters = [
+                    *normalized_filters.get(upstream_spec.key, []),
+                    *global_filter_list,
+                ]
                 upstream_feature_metadata = self.read_metadata(
                     upstream_spec.key,
-                    filters=normalized_filters.get(upstream_spec.key, []),
+                    filters=upstream_filters,
                 )
                 if upstream_feature_metadata is not None:
                     upstream_by_key[upstream_spec.key] = upstream_feature_metadata
