@@ -25,6 +25,10 @@
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>
+         <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/databases/lancedb/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
          <loc>https://anam-org.github.io/metaxy/main/integrations/metadata-stores/storage/delta/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
@@ -166,6 +170,10 @@
     </url>
     <url>
          <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/exceptions/</loc>
+         <lastmod>1980-01-01</lastmod>
+    </url>
+    <url>
+         <loc>https://anam-org.github.io/metaxy/main/reference/api/metadata-stores/lancedb/</loc>
          <lastmod>1980-01-01</lastmod>
     </url>
     <url>

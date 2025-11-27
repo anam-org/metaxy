@@ -1171,6 +1171,8 @@
       
         
       
+        
+      
     
     
     
@@ -1302,6 +1304,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../integrations/metadata-stores/databases/lancedb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LanceDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1346,7 +1376,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Only
+    Storage only
   
 
     
@@ -1362,7 +1392,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Storage Only
+    Storage only
   
 
           </label>
@@ -2357,6 +2387,8 @@
       
         
       
+        
+      
     
     
     
@@ -2495,6 +2527,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lancedb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LanceDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2541,7 +2601,7 @@
   <span class="md-ellipsis">
     
   
-    Storage Only
+    Storage only
   
 
     
@@ -2557,7 +2617,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Storage Only
+    Storage only
   
 
           </label>
@@ -3546,7 +3606,7 @@
         <a href="../delta/" class="md-path__link">
           
   <span class="md-ellipsis">
-    Storage Only
+    Storage only
   </span>
 
         </a>
@@ -5436,7 +5496,7 @@ configure deduplication at the storage layer.</p>
               (<code><a class="autorefs autorefs-external" title="&lt;code&gt;narwhals.typing.Frame&lt;/code&gt;" href="https://narwhals-dev.github.io/narwhals/api-reference/typing/#narwhals.typing.Frame">Frame</a></code>)
           –
           <div class="doc-md-description">
-            <p>DataFrame with metadata (already validated)</p>
+            <p>Narwhals Frame (eager or lazy) with metadata (already validated)</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -5465,7 +5525,7 @@ configure deduplication at the storage layer.</p>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><a href="#__codelineno-0-103"><span class="linenos" data-linenos="103 "></span></a>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><a href="#__codelineno-0-104"><span class="linenos" data-linenos="104 "></span></a><span class="sd">    Args:</span>
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><a href="#__codelineno-0-105"><span class="linenos" data-linenos="105 "></span></a><span class="sd">        feature_key: Feature key to write to</span>
-</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><a href="#__codelineno-0-106"><span class="linenos" data-linenos="106 "></span></a><span class="sd">        df: DataFrame with metadata (already validated)</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><a href="#__codelineno-0-106"><span class="linenos" data-linenos="106 "></span></a><span class="sd">        df: Narwhals Frame (eager or lazy) with metadata (already validated)</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><a href="#__codelineno-0-107"><span class="linenos" data-linenos="107 "></span></a><span class="sd">        **kwargs: Backend-specific parameters (currently unused)</span>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><a href="#__codelineno-0-108"><span class="linenos" data-linenos="108 "></span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><a href="#__codelineno-0-109"><span class="linenos" data-linenos="109 "></span></a>    <span class="n">df_polars</span><span class="p">:</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">collect_to_polars</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
