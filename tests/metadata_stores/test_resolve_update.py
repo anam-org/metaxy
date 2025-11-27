@@ -18,12 +18,14 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import polars as pl
+import narwhals as nw
 import polars.testing as pl_testing
 import pytest
 from hypothesis.errors import NonInteractiveExampleWarning
+from narwhals.typing import IntoFrame
 from pytest_cases import parametrize_with_cases
 
 from metaxy import (

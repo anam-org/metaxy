@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+from collections.abc import Sequence
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
@@ -64,7 +65,7 @@ __all__ = [
     "HashAlgorithmCases",
     "MetaxyProject",
     "ExternalMetaxyProject",
-    "TempMetaxyProject",  # Backward compatibility alias
+    "TempMetaxyProject",
     "DEFAULT_ID_COLUMNS",
     "env_override",
 ]
@@ -407,12 +408,18 @@ class ExternalMetaxyProject(MetaxyProject):
         self._venv_path: Path | None = None
         self._venv_python: Path | None = None
 
-    def setup_venv(self, venv_path: Path, install_metaxy_from: Path | None = None):
+    def setup_venv(
+        self,
+        venv_path: Path,
+        install_metaxy_from: Path | None = None,
+        extras: Sequence[str] | None = None,
+    ):
         """Create a virtual environment and install the project.
 
         Args:
             venv_path: Path where the venv should be created
             install_metaxy_from: Optional path to metaxy source to install (defaults to current)
+            extras: Optional extras to install for metaxy (e.g., ["duckdb"])
 
         Returns:
             Path to the Python interpreter in the venv
@@ -450,6 +457,10 @@ class ExternalMetaxyProject(MetaxyProject):
         # Remove PYTHONHOME if set (can interfere with venv)
         venv_env.pop("PYTHONHOME", None)
 
+        extras_suffix = ""
+        if extras:
+            extras_suffix = f"[{','.join(extras)}]"
+
         # Use uv pip to install packages into the venv
         result = subprocess.run(
             [
@@ -457,7 +468,7 @@ class ExternalMetaxyProject(MetaxyProject):
                 "pip",
                 "install",
                 "-e",
-                str(install_metaxy_from),
+                f"{install_metaxy_from}{extras_suffix}",
             ],
             env=venv_env,
             capture_output=True,

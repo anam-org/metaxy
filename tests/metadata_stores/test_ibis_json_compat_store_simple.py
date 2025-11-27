@@ -3,7 +3,7 @@
 import pytest
 
 from metaxy.metadata_store.ibis_json_compat import IbisJsonCompatStore
-from metaxy.versioning.dict_based import IbisDictBasedVersioningEngine
+from metaxy.versioning.flat_engine import IbisFlatVersioningEngine
 
 
 def test_ibis_json_compat_store_is_abstract():
@@ -46,7 +46,7 @@ def test_ibis_json_compat_store_forces_dict_based_engine():
     )
 
     # Verify it uses dict-based engine
-    assert store.versioning_engine_cls == IbisDictBasedVersioningEngine
+    assert store.versioning_engine_cls == IbisFlatVersioningEngine
 
 
 def test_abstract_methods_are_defined():

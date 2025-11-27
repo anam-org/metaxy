@@ -26,6 +26,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import narwhals as nw
 
+from metaxy._utils import collect_to_polars
+from metaxy.metadata_store.base import VersioningEngineOptions
 from metaxy.metadata_store.ibis import IbisMetadataStore
 from metaxy.metadata_store.json_struct_serializer import JsonStructSerializerMixin
 from metaxy.models.constants import (
@@ -35,9 +37,8 @@ from metaxy.models.constants import (
 from metaxy.models.feature import BaseFeature
 from metaxy.models.plan import FeaturePlan
 from metaxy.models.types import CoercibleToFeatureKey, FeatureKey
-from metaxy.versioning.dict_based import (
-    DictBasedVersioningEngine,
-    IbisDictBasedVersioningEngine,
+from metaxy.versioning.flat_engine import (
+    IbisFlatVersioningEngine,
 )
 from metaxy.versioning.types import Increment, LazyIncrement
 
@@ -112,7 +113,16 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         ```
     """
 
-    def __init__(self, **kwargs: Any):
+    def __init__(
+        self,
+        versioning_engine: VersioningEngineOptions = "auto",
+        connection_string: str | None = None,
+        *,
+        backend: str | None = None,
+        connection_params: dict[str, Any] | None = None,
+        table_prefix: str | None = None,
+        **kwargs: Any,
+    ):
         """Initialize JSON-compatible Ibis store.
 
         Forces dict-based versioning engine for struct-free operations.
@@ -120,11 +130,18 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         Args:
             **kwargs: Passed to IbisMetadataStore.__init__
         """
-        super().__init__(**kwargs)
+        super().__init__(
+            versioning_engine=versioning_engine,
+            connection_string=connection_string,
+            backend=backend,
+            connection_params=connection_params,
+            table_prefix=table_prefix,
+            **kwargs,
+        )
 
         # Override versioning engine to use dict-based implementation
         # This is required because we need struct-free field access
-        self.versioning_engine_cls = IbisDictBasedVersioningEngine
+        self.versioning_engine_cls = IbisFlatVersioningEngine
 
     @contextmanager
     def _create_versioning_engine(
@@ -191,29 +208,21 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         for name in ["added", "changed", "removed"]:
             frame = getattr(result, name)
             if frame.implementation != nw.Implementation.POLARS:
-                native = frame.to_native()
-                import polars as pl
-
-                polars_df: pl.DataFrame = cast(
-                    pl.DataFrame,
-                    native.to_polars()
-                    if hasattr(native, "to_polars")
-                    else pl.from_arrow(native)
-                    if not isinstance(native, pl.Series)
-                    else native.to_frame(),
-                )
+                polars_df = collect_to_polars(frame)
                 frame = nw.from_native(polars_df)
             if isinstance(frame, nw.LazyFrame):
                 frame = frame.collect()
             frame = self._post_process_polars_frame(frame, field_names=field_names)
             frames[name] = frame
 
-        return Increment(**frames)
+        return Increment(
+            added=frames["added"],
+            changed=frames["changed"],
+            removed=frames["removed"],
+        )
 
     def _post_process_polars_frame(self, frame: Frame) -> Frame:
         """Rebuild struct columns from flattened provenance fields in Polars."""
-        frame = super()._post_process_polars_frame(frame)
-
         import polars as pl
 
         native = frame.to_native()
@@ -299,9 +308,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
 
         import polars as pl
 
-        samples_native = (
-            samples.to_native() if hasattr(samples, "to_native") else samples
-        )
+        if samples.implementation == nw.Implementation.POLARS:
+            samples_native = samples.to_native()
+        else:
+            samples_native = collect_to_polars(samples)
+
+        polars_df: pl.DataFrame | pl.LazyFrame
         field_names = self._get_field_names(plan, include_dependencies=False)
         flattened_columns = self._get_flattened_field_columns(
             METAXY_PROVENANCE_BY_FIELD, field_names
@@ -315,8 +327,6 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
                 if isinstance(native, pl.LazyFrame)
                 else list(native.schema.keys())
             )
-        elif hasattr(samples_native, "to_polars"):
-            polars_df = cast(Any, samples_native).to_polars()
         else:
             columns = df.collect_schema().names()
         has_flattened = any(
@@ -328,7 +338,7 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         field_names = self._get_field_names(plan, include_dependencies=False)
         exprs = []
         for field_name in field_names:
-            flattened = DictBasedVersioningEngine._get_flattened_column_name(
+            flattened = FlatVersioningMixin._get_flattened_column_name(
                 METAXY_PROVENANCE_BY_FIELD, field_name
             )
             if (
@@ -343,7 +353,12 @@ class IbisJsonCompatStore(JsonStructSerializerMixin, IbisMetadataStore, ABC):
         if exprs:
             polars_df = polars_df.with_columns(exprs)
 
-        polars_frame = nw.from_native(polars_df.lazy(), eager_only=False)
+        polars_frame = (
+            samples_native
+            if isinstance(samples_native, pl.LazyFrame)
+            else samples_native.lazy()
+        )
+        polars_frame = nw.from_native(polars_frame, eager_only=False)
         return self._ensure_ibis_lazy_frame(polars_frame)
 
     @abstractmethod
