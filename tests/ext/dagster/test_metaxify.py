@@ -326,6 +326,174 @@ class TestMetaxifyAssetKeys:
         assert dg.AssetKey(["custom", "asset", "key"]) in my_asset.keys
 
 
+class TestMetaxifyKeyOverride:
+    """Test explicit key and key_prefix parameters in @metaxify."""
+
+    def test_metaxify_key_overrides_everything(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that explicit key parameter overrides all other key resolution."""
+
+        @metaxify(key=["custom", "explicit", "key"])
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        # Explicit key should override feature key
+        assert dg.AssetKey(["custom", "explicit", "key"]) in my_asset.keys
+
+    def test_metaxify_key_overrides_feature_spec_custom_key(
+        self, feature_with_dagster_metadata: type[mx.BaseFeature]
+    ):
+        """Test that explicit key overrides even dagster/attributes.asset_key from feature spec."""
+
+        @metaxify(key=["override", "key"])
+        @dg.asset(metadata={"metaxy/feature": "test/custom_key"})
+        def my_asset():
+            pass
+
+        # Explicit key should override feature spec's custom key
+        assert dg.AssetKey(["override", "key"]) in my_asset.keys
+
+    def test_metaxify_key_prefix_prepends_to_feature_key(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that key_prefix is prepended to the resolved feature key."""
+
+        @metaxify(key_prefix=["prefix", "namespace"])
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        # Key should be prefix + feature key
+        assert dg.AssetKey(["prefix", "namespace", "test", "upstream"]) in my_asset.keys
+
+    def test_metaxify_key_prefix_applies_to_deps(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+        downstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that key_prefix is also applied to upstream dependency keys."""
+
+        @metaxify(key_prefix=["prefix"])
+        @dg.asset(metadata={"metaxy/feature": "test/downstream"})
+        def downstream_asset():
+            pass
+
+        downstream_spec = list(downstream_asset.specs)[0]
+        dep_keys = {dep.asset_key for dep in downstream_spec.deps}
+
+        # Upstream dep should also have the prefix
+        assert dg.AssetKey(["prefix", "test", "upstream"]) in dep_keys
+
+    def test_metaxify_key_and_key_prefix_mutually_exclusive(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that key and key_prefix cannot be used together."""
+        with pytest.raises(ValueError) as exc_info:
+            metaxify(key=["explicit"], key_prefix=["prefix"])
+
+        assert "Cannot specify both `key` and `key_prefix`" in str(exc_info.value)
+
+    def test_metaxify_key_with_multi_asset_raises_error(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that explicit key cannot be used with multi-asset producing multiple outputs."""
+
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/upstream"}),
+                dg.AssetSpec("output_b"),
+            ]
+        )
+        def my_multi_asset():
+            pass
+
+        with pytest.raises(ValueError) as exc_info:
+            metaxify(key=["explicit", "key"])(my_multi_asset)
+
+        assert "Cannot use `key` argument with multi-asset" in str(exc_info.value)
+
+    def test_metaxify_key_prefix_works_with_multi_asset(
+        self,
+        upstream_feature: type[mx.BaseFeature],
+    ):
+        """Test that key_prefix works with multi-asset definitions."""
+
+        @pytest.fixture
+        def feature_b() -> type[mx.BaseFeature]:
+            spec = mx.FeatureSpec(
+                key=["test", "multi_b"],
+                id_columns=["id"],
+                fields=["value"],
+            )
+
+            class FeatureB(mx.BaseFeature, spec=spec):
+                id: str
+
+            return FeatureB
+
+        # Create another feature for multi-asset
+        spec_b = mx.FeatureSpec(
+            key=["test", "multi_b"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class FeatureB(mx.BaseFeature, spec=spec_b):
+            id: str
+
+        @metaxify(key_prefix=["prefix"])
+        @dg.multi_asset(
+            specs=[
+                dg.AssetSpec("output_a", metadata={"metaxy/feature": "test/upstream"}),
+                dg.AssetSpec("output_b", metadata={"metaxy/feature": "test/multi_b"}),
+            ]
+        )
+        def my_multi_asset():
+            pass
+
+        # Both outputs should have the prefix
+        assert dg.AssetKey(["prefix", "test", "upstream"]) in my_multi_asset.keys
+        assert dg.AssetKey(["prefix", "test", "multi_b"]) in my_multi_asset.keys
+
+    def test_metaxify_asset_spec_with_key(self, upstream_feature: type[mx.BaseFeature]):
+        """Test that explicit key works with AssetSpec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify(key=["explicit", "key"])(spec)
+
+        assert result.key == dg.AssetKey(["explicit", "key"])
+
+    def test_metaxify_asset_spec_with_key_prefix(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that key_prefix works with AssetSpec."""
+        spec = dg.AssetSpec(
+            key="my_spec",
+            metadata={"metaxy/feature": "test/upstream"},
+        )
+
+        result = metaxify(key_prefix=["prefix"])(spec)
+
+        assert result.key == dg.AssetKey(["prefix", "test", "upstream"])
+
+    def test_metaxify_key_with_string_coercion(
+        self, upstream_feature: type[mx.BaseFeature]
+    ):
+        """Test that key accepts string and coerces to AssetKey."""
+
+        @metaxify(key="single_key")
+        @dg.asset(metadata={"metaxy/feature": "test/upstream"})
+        def my_asset():
+            pass
+
+        assert dg.AssetKey(["single_key"]) in my_asset.keys
+
+
 class TestMetaxifyDagsterAttributes:
     """Test dagster/attributes injection from feature spec metadata."""
 

@@ -2,6 +2,10 @@ import inspect
 from typing import Any, TypeVar, overload
 
 import dagster as dg
+from dagster._core.definitions.events import (
+    CoercibleToAssetKey,
+    CoercibleToAssetKeyPrefix,
+)
 from typing_extensions import Self
 
 import metaxy as mx
@@ -33,12 +37,14 @@ class metaxify:
 
     - **Asset key** is determined as follows:
 
-        1. If the Metaxy feature spec has `"dagster/attributes": {"asset_key": ...}` set,
-           that value is used as-is.
+        1. If `key` argument is provided, it overrides everything.
 
-        2. Otherwise, if `inherit_feature_key_as_asset_key` is True, the Metaxy feature key is used.
+        2. Otherwise, the key is resolved using existing logic:
+            - If `"dagster/attributes": {"asset_key": ...}` is set on the feature spec, that's used.
+            - Else if `inherit_feature_key_as_asset_key` is True, the Metaxy feature key is used.
+            - Else the original Dagster asset key is kept.
 
-        3. Otherwise, the original Dagster asset key is kept as-is.
+        3. If `key_prefix` is provided, it's prepended to the resolved key.
 
     - **Dependencies** for upstream Metaxy features are injected into `deps`. The dep keys follow the same logic.
 
@@ -77,10 +83,14 @@ class metaxify:
       lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).
 
     Args:
-        feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
-            over `metaxy/feature` metadata. If both are set and don't match, an error is raised.
+        feature: The Metaxy feature to associate with the asset. If both `feature`
+            and `metaxy/feature` metadata are set and don't match, an error is raised.
+        key: Explicit asset key that overrides all other key resolution logic. Cannot be used
+            with `key_prefix` or with multi-asset definitions that produce multiple outputs.
+        key_prefix: Prefix to prepend to the resolved asset key. Also applied to upstream
+            dependency keys. Cannot be used with `key`.
         inherit_feature_key_as_asset_key: If True (default), use the Metaxy feature key as the
-            Dagster asset key (unless `dagster/attributes.asset_key` is set on the feature spec).
+            Dagster asset key (unless `key` is provided or `dagster/attributes.asset_key` is set).
             This ensures consistent key resolution between assets and their upstream dependencies.
         inject_metaxy_kind: Whether to inject `"metaxy"` kind into asset kinds.
             Currently, kinds count is limited by 3, and `metaxify` will skip kind injection
@@ -153,6 +163,8 @@ class metaxify:
     """
 
     feature: mx.FeatureKey | None
+    key: dg.AssetKey | None
+    key_prefix: dg.AssetKey | None
     inherit_feature_key_as_asset_key: bool
     inject_metaxy_kind: bool
     inject_code_version: bool
@@ -165,6 +177,8 @@ class metaxify:
         _asset: "_T | None" = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
+        key: CoercibleToAssetKey | None = None,
+        key_prefix: CoercibleToAssetKeyPrefix | None = None,
         inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
@@ -175,6 +189,10 @@ class metaxify:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
+        )
+        self.key = dg.AssetKey.from_coercible(key) if key is not None else None
+        self.key_prefix = (
+            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
         )
         self.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         self.inject_metaxy_kind = inject_metaxy_kind
@@ -192,6 +210,8 @@ class metaxify:
         _asset: None = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
+        key: CoercibleToAssetKey | None = None,
+        key_prefix: CoercibleToAssetKeyPrefix | None = None,
         inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
@@ -205,6 +225,8 @@ class metaxify:
         _asset: _T | None = None,
         *,
         feature: mx.CoercibleToFeatureKey | None = None,
+        key: CoercibleToAssetKey | None = None,
+        key_prefix: CoercibleToAssetKeyPrefix | None = None,
         inherit_feature_key_as_asset_key: bool = True,
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
@@ -212,14 +234,24 @@ class metaxify:
         inject_column_schema: bool = True,
         inject_column_lineage: bool = True,
     ) -> "Self | _T":
+        if key is not None and key_prefix is not None:
+            raise ValueError("Cannot specify both `key` and `key_prefix`")
+
         coerced_feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
         )
+        coerced_key = dg.AssetKey.from_coercible(key) if key is not None else None
+        coerced_key_prefix = (
+            dg.AssetKey.from_coercible(key_prefix) if key_prefix is not None else None
+        )
+
         if _asset is not None:
             # Called as @metaxify without parentheses
             return cls._transform(
                 _asset,
                 feature=coerced_feature,
+                key=coerced_key,
+                key_prefix=coerced_key_prefix,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
@@ -231,6 +263,8 @@ class metaxify:
         # Called as @metaxify() with parentheses - return instance for __call__
         instance = object.__new__(cls)
         instance.feature = coerced_feature
+        instance.key = coerced_key
+        instance.key_prefix = coerced_key_prefix
         instance.inherit_feature_key_as_asset_key = inherit_feature_key_as_asset_key
         instance.inject_metaxy_kind = inject_metaxy_kind
         instance.inject_code_version = inject_code_version
@@ -243,6 +277,8 @@ class metaxify:
         return self._transform(
             asset,
             feature=self.feature,
+            key=self.key,
+            key_prefix=self.key_prefix,
             inherit_feature_key_as_asset_key=self.inherit_feature_key_as_asset_key,
             inject_metaxy_kind=self.inject_metaxy_kind,
             inject_code_version=self.inject_code_version,
@@ -256,6 +292,8 @@ class metaxify:
         asset: _T,
         *,
         feature: mx.FeatureKey | None,
+        key: dg.AssetKey | None,
+        key_prefix: dg.AssetKey | None,
         inherit_feature_key_as_asset_key: bool,
         inject_metaxy_kind: bool,
         inject_code_version: bool,
@@ -268,6 +306,8 @@ class metaxify:
             return _metaxify_spec(
                 asset,
                 feature=feature,
+                key=key,
+                key_prefix=key_prefix,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
@@ -285,13 +325,23 @@ class metaxify:
                 f"Instead, set `metaxy/feature` metadata on each output's AssetSpec."
             )
 
+        # Validate that key argument is not used with multi-asset
+        if key is not None and len(asset.keys) > 1:
+            raise ValueError(
+                f"Cannot use `key` argument with multi-asset `{asset.node_def.name}` "
+                f"that produces {len(asset.keys)} outputs. "
+                f"Use `key_prefix` instead to apply a common prefix to all outputs."
+            )
+
         keys_to_replace: dict[dg.AssetKey, dg.AssetKey] = {}
         transformed_specs: list[dg.AssetSpec] = []
 
-        for key, asset_spec in asset.specs_by_key.items():
+        for orig_key, asset_spec in asset.specs_by_key.items():
             new_spec = _metaxify_spec(
                 asset_spec,
                 feature=feature,
+                key=key,
+                key_prefix=key_prefix,
                 inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
@@ -299,8 +349,8 @@ class metaxify:
                 inject_column_schema=inject_column_schema,
                 inject_column_lineage=inject_column_lineage,
             )
-            if new_spec.key != key:
-                keys_to_replace[key] = new_spec.key
+            if new_spec.key != orig_key:
+                keys_to_replace[orig_key] = new_spec.key
             transformed_specs.append(new_spec)
 
         return _replace_specs_on_assets_definition(
@@ -359,6 +409,8 @@ def _metaxify_spec(
     spec: dg.AssetSpec,
     *,
     feature: mx.FeatureKey | None,
+    key: dg.AssetKey | None,
+    key_prefix: dg.AssetKey | None,
     inherit_feature_key_as_asset_key: bool,
     inject_metaxy_kind: bool,
     inject_code_version: bool,
@@ -394,24 +446,35 @@ def _metaxify_spec(
     feature_spec = feature_cls.spec()
 
     # Determine the final asset key
-    final_key = get_asset_key_for_metaxy_feature_spec(
-        feature_spec,
-        inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
-        dagster_key=spec.key,
-    )
+    # Priority: key > key_prefix + resolved_key > resolved_key
+    if key is not None:
+        # Explicit key overrides everything
+        final_key = key
+    else:
+        # Resolve key using existing logic
+        resolved_key = get_asset_key_for_metaxy_feature_spec(
+            feature_spec,
+            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
+            dagster_key=spec.key,
+        )
+        if key_prefix is not None:
+            # Prepend prefix to resolved key
+            final_key = dg.AssetKey([*key_prefix.path, *resolved_key.path])
+        else:
+            final_key = resolved_key
 
     # Build deps from feature dependencies
     deps_to_add: set[dg.AssetDep] = set()
     for dep in feature_spec.deps:
         upstream_feature_spec = mx.get_feature_by_key(dep.feature).spec()
-        deps_to_add.add(
-            dg.AssetDep(
-                asset=get_asset_key_for_metaxy_feature_spec(
-                    upstream_feature_spec,
-                    inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
-                )
-            )
+        upstream_key = get_asset_key_for_metaxy_feature_spec(
+            upstream_feature_spec,
+            inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
         )
+        # Apply key_prefix to upstream deps as well
+        if key_prefix is not None:
+            upstream_key = dg.AssetKey([*key_prefix.path, *upstream_key.path])
+        deps_to_add.add(dg.AssetDep(asset=upstream_key))
 
     # Build kinds
     kinds_to_add: set[str] = set()
