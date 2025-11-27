@@ -7,7 +7,7 @@ example: one-to-many
 This example demonstrates how to implement `1:N` transformations with Metaxy.
 In such relationships a single parent sample can map into multiple child samples.
 
-In Metaxy they can be modeled with [LineageRelationship.expansion][metaxy.LineageRelationship.expansion] lineage type.
+In Metaxy they can be modeled with [LineageRelationship.expansion][metaxy.models.lineage.LineageRelationship.expansion] lineage type.
 
 We will use a hypothetical video chunking pipeline as an example. We are also going to demonstrate that other Metaxy features such as fields mapping work with non-standard lineage types.
 
@@ -55,7 +55,7 @@ We do not specify custom versions on its fields. Metaxy will automatically assig
 
 ### Defining features: `FaceRecognition`
 
-`FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`SpecificFieldsMapping`][metaxy.FieldsMapping.specific].
+`FaceRecognition` processes video chunks and **only depends on the `frames` field**. This can be expressed with a [`SpecificFieldsMapping`][metaxy.models.fields_mapping.FieldsMapping.specific].
 
 <!-- dprint-ignore-start -->
 ```python title="src/example_one_to_many/features.py" hl_lines="9-11"
@@ -156,7 +156,7 @@ Found 0 video chunks and 0 video chunks that need face recognition
 
 ## Conclusion
 
-Metaxy provides a convenient API for modeling `1:N` relationships: [LineageRelationship.expansion][metaxy.LineageRelationship.expansion]. Other Metaxy features such as field-level versioning continue to work seamlessly when declaring `1:N` relationships.
+Metaxy provides a convenient API for modeling `1:N` relationships: [LineageRelationship.expansion][metaxy.models.lineage.LineageRelationship.expansion]. Other Metaxy features such as field-level versioning continue to work seamlessly when declaring `1:N` relationships.
 
 ## Related materials
 
