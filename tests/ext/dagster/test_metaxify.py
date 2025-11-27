@@ -1458,3 +1458,152 @@ class TestMetaxifyWithInputDefinitions:
 
         assert result.success
         assert captured_data["source_value"] == 42
+
+
+class TestMetaxifyColumnSchema:
+    """Test column schema injection in @metaxify."""
+
+    def test_metaxify_injects_column_schema(self):
+        """Test that metaxify injects column schema from Pydantic fields."""
+        from pydantic import Field
+
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "with_schema"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class FeatureWithSchema(mx.BaseFeature, spec=spec):
+            id: str = Field(description="Unique identifier")
+            value: int = Field(description="Some integer value")
+            name: str
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/with_schema"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY in asset_spec.metadata
+
+        column_schema = asset_spec.metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY]
+        assert isinstance(column_schema, dg.TableSchema)
+
+        columns_by_name = {col.name: col for col in column_schema.columns}
+
+        assert "id" in columns_by_name
+        assert columns_by_name["id"].description == "Unique identifier"
+        assert columns_by_name["id"].type == "str"
+
+        assert "value" in columns_by_name
+        assert columns_by_name["value"].description == "Some integer value"
+        assert columns_by_name["value"].type == "int"
+
+        assert "name" in columns_by_name
+        assert columns_by_name["name"].description is None
+        assert columns_by_name["name"].type == "str"
+
+    def test_metaxify_skips_column_schema_when_disabled(self):
+        """Test that column schema injection can be disabled."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "no_schema"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class FeatureNoSchema(mx.BaseFeature, spec=spec):
+            id: str
+            value: int
+
+        @metaxify(inject_column_schema=False)
+        @dg.asset(metadata={"metaxy/feature": "test/no_schema"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in asset_spec.metadata
+
+    def test_metaxify_asset_spec_injects_column_schema(self):
+        """Test that metaxify injects column schema on AssetSpec."""
+        from pydantic import Field
+
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "spec_schema"],
+            id_columns=["id"],
+            fields=["data"],
+        )
+
+        class FeatureSpecSchema(mx.BaseFeature, spec=spec):
+            id: str = Field(description="Record ID")
+            data: float = Field(description="Data value")
+
+        asset_spec = dg.AssetSpec(
+            key="original_key",
+            metadata={"metaxy/feature": "test/spec_schema"},
+        )
+
+        transformed_spec = metaxify()(asset_spec)
+
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY in transformed_spec.metadata
+
+        column_schema = transformed_spec.metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY]
+        columns_by_name = {col.name: col for col in column_schema.columns}
+
+        assert "id" in columns_by_name
+        assert columns_by_name["id"].description == "Record ID"
+        assert columns_by_name["id"].type == "str"
+
+        assert "data" in columns_by_name
+        assert columns_by_name["data"].description == "Data value"
+        assert columns_by_name["data"].type == "float"
+
+    def test_metaxify_column_schema_with_complex_types(self):
+        """Test column schema handles complex Pydantic types."""
+        from pydantic import Field
+
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "complex_types"],
+            id_columns=["id"],
+            fields=["default"],
+        )
+
+        class FeatureComplexTypes(mx.BaseFeature, spec=spec):
+            id: str
+            tags: list[str] = Field(description="List of tags")
+            metadata: dict[str, Any] = Field(description="Arbitrary metadata")
+            optional_value: int | None = Field(
+                default=None, description="Optional integer"
+            )
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/complex_types"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_schema = asset_spec.metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY]
+        columns_by_name = {col.name: col for col in column_schema.columns}
+
+        # Check that complex types are stringified correctly
+        assert "id" in columns_by_name
+        assert columns_by_name["id"].type == "str"
+
+        assert "tags" in columns_by_name
+        assert columns_by_name["tags"].description == "List of tags"
+        assert columns_by_name["tags"].type == "list[str]"
+
+        assert "metadata" in columns_by_name
+        assert columns_by_name["metadata"].description == "Arbitrary metadata"
+        assert columns_by_name["metadata"].type == "dict[str, typing.Any]"
+
+        assert "optional_value" in columns_by_name
+        assert columns_by_name["optional_value"].description == "Optional integer"
+        assert columns_by_name["optional_value"].type == "int | None"

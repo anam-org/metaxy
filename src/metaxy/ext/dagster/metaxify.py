@@ -1,11 +1,12 @@
 import inspect
-from typing import Any, TypeVar, overload
+from typing import Any, TypeVar, get_origin, overload
 
 import dagster as dg
 from typing_extensions import Self
 
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
+    DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     DAGSTER_METAXY_KIND,
     DAGSTER_METAXY_METADATA_METADATA_KEY,
@@ -49,7 +50,11 @@ class metaxify:
     - **Arbitrary asset attributes** from `"dagster/attributes"` in the feature spec metadata
       (such as `group_name`, `owners`, `tags`) are applied to the asset spec (with replacement).
 
-    In the future, `@metaxify` will also inject table schemas and column lineage Dagster metadata.
+    - **Column schema** from Pydantic fields is injected into the asset metadata under `dagster/column_schema`.
+      Field types are converted to strings, and field descriptions are used as column descriptions.
+
+      !!! warning
+          Pydantic feature schema may not match the corresponding schema in the metadata store.
 
     Args:
         feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
@@ -64,6 +69,8 @@ class metaxify:
             code version. The version is appended in the format `metaxy:<version>`.
         set_description: Whether to set the asset description from the feature class docstring
             if the asset doesn't already have a description.
+        inject_column_schema: Whether to inject Pydantic field definitions as Dagster column schema.
+            Field types are converted to strings, and field descriptions are used as column descriptions.
 
     !!! note
         Multiple Dagster assets can contribute to the same Metaxy feature by setting the same
@@ -127,6 +134,7 @@ class metaxify:
     inject_metaxy_kind: bool
     inject_code_version: bool
     set_description: bool
+    inject_column_schema: bool
 
     def __init__(
         self,
@@ -137,6 +145,7 @@ class metaxify:
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
+        inject_column_schema: bool = True,
     ) -> None:
         # Actual initialization happens in __new__, but we set defaults here for type checkers
         self.feature = (
@@ -146,6 +155,7 @@ class metaxify:
         self.inject_metaxy_kind = inject_metaxy_kind
         self.inject_code_version = inject_code_version
         self.set_description = set_description
+        self.inject_column_schema = inject_column_schema
 
     @overload
     def __new__(cls, _asset: _T) -> _T: ...
@@ -160,6 +170,7 @@ class metaxify:
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
+        inject_column_schema: bool = True,
     ) -> Self: ...
 
     def __new__(
@@ -171,6 +182,7 @@ class metaxify:
         inject_metaxy_kind: bool = True,
         inject_code_version: bool = True,
         set_description: bool = True,
+        inject_column_schema: bool = True,
     ) -> "Self | _T":
         coerced_feature = (
             mx.coerce_to_feature_key(feature) if feature is not None else None
@@ -184,6 +196,7 @@ class metaxify:
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
                 set_description=set_description,
+                inject_column_schema=inject_column_schema,
             )
 
         # Called as @metaxify() with parentheses - return instance for __call__
@@ -193,6 +206,7 @@ class metaxify:
         instance.inject_metaxy_kind = inject_metaxy_kind
         instance.inject_code_version = inject_code_version
         instance.set_description = set_description
+        instance.inject_column_schema = inject_column_schema
         return instance
 
     def __call__(self, asset: _T) -> _T:
@@ -204,6 +218,7 @@ class metaxify:
             inject_metaxy_kind=self.inject_metaxy_kind,
             inject_code_version=self.inject_code_version,
             set_description=self.set_description,
+            inject_column_schema=self.inject_column_schema,
         )
 
     @staticmethod
@@ -215,6 +230,7 @@ class metaxify:
         inject_metaxy_kind: bool,
         inject_code_version: bool,
         set_description: bool,
+        inject_column_schema: bool,
     ) -> _T:
         """Transform an AssetsDefinition or AssetSpec with Metaxy metadata."""
         if isinstance(asset, dg.AssetSpec):
@@ -225,6 +241,7 @@ class metaxify:
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
                 set_description=set_description,
+                inject_column_schema=inject_column_schema,
             )
 
         # Handle AssetsDefinition
@@ -247,6 +264,7 @@ class metaxify:
                 inject_metaxy_kind=inject_metaxy_kind,
                 inject_code_version=inject_code_version,
                 set_description=set_description,
+                inject_column_schema=inject_column_schema,
             )
             if new_spec.key != key:
                 keys_to_replace[key] = new_spec.key
@@ -312,6 +330,7 @@ def _metaxify_spec(
     inject_metaxy_kind: bool,
     inject_code_version: bool,
     set_description: bool,
+    inject_column_schema: bool,
 ) -> dg.AssetSpec:
     """Transform a single AssetSpec with Metaxy metadata.
 
@@ -400,15 +419,34 @@ def _metaxify_spec(
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
     }
 
+    # Build column schema from Pydantic fields
+    column_schema: dg.TableSchema | None = None
+    if inject_column_schema:
+        columns: list[dg.TableColumn] = []
+        for field_name, field_info in feature_cls.model_fields.items():
+            columns.append(
+                dg.TableColumn(
+                    name=field_name,
+                    type=_get_type_string(field_info.annotation),
+                    description=field_info.description,
+                )
+            )
+        if columns:
+            column_schema = dg.TableSchema(columns=columns)
+
     # Build the replacement attributes
+    metadata_to_add: dict[str, Any] = {
+        **spec.metadata,
+        DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),
+        DAGSTER_METAXY_METADATA_METADATA_KEY: feature_spec.metadata,
+    }
+    if column_schema is not None:
+        metadata_to_add[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema
+
     replace_attrs: dict[str, Any] = {
         "key": final_key,
         "deps": {*spec.deps, *deps_to_add},
-        "metadata": {
-            **spec.metadata,
-            DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),
-            DAGSTER_METAXY_METADATA_METADATA_KEY: feature_spec.metadata,
-        },
+        "metadata": metadata_to_add,
         "kinds": {*spec.kinds, *kinds_to_add},
         "tags": {**spec.tags, **tags_to_add},
         **dagster_attrs,
@@ -421,3 +459,19 @@ def _metaxify_spec(
         replace_attrs["description"] = final_description
 
     return spec.replace_attributes(**replace_attrs)
+
+
+def _get_type_string(annotation: Any) -> str:
+    """Get a clean string representation of a type annotation.
+
+    For generic types (list[str], dict[str, int], etc.), str() works well.
+    For simple types (str, int, etc.), use __name__ to avoid "<class 'str'>" output.
+    """
+    # For generic types (list[str], dict[str, int], Union, etc.), str() works well
+    if get_origin(annotation) is not None:
+        return str(annotation)
+    # For simple types, use __name__ if available
+    if hasattr(annotation, "__name__"):
+        return annotation.__name__
+    # Fallback to str()
+    return str(annotation)
