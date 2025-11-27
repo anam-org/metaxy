@@ -31,13 +31,13 @@ from metaxy.models.constants import (
     METAXY_PROVENANCE_BY_FIELD,
 )
 
-from .conftest import AnyStoreCases
+from .conftest import AllStoresCases
 
 
 @fixture
-@parametrize_with_cases("store", cases=AnyStoreCases)
+@parametrize_with_cases("store", cases=AllStoresCases)
 def any_store(store: MetadataStore) -> MetadataStore:
-    """Parametrized store (InMemory + DuckDB)."""
+    """Parametrized store (all store types)."""
     return store
 
 
