@@ -202,7 +202,8 @@ nav:
         - BigQuery: integrations/metadata-stores/databases/bigquery.md
         - ClickHouse: integrations/metadata-stores/databases/clickhouse.md
         - DuckDB: integrations/metadata-stores/databases/duckdb.md
-      - Storage Only:
+        - LanceDB: integrations/metadata-stores/databases/lancedb.md
+      - Storage only:
         - Delta Lake: integrations/metadata-stores/storage/delta.md
     - Plugins:
       - SQLModel: integrations/plugins/sqlmodel.md
@@ -235,9 +236,10 @@ nav:
           - BigQuery: reference/api/metadata-stores/ibis/bigquery.md
           - DuckDB: reference/api/metadata-stores/ibis/duckdb.md
           - ClickHouse: reference/api/metadata-stores/ibis/clickhouse.md
-        - Storage Only:
-            - Delta Lake: reference/api/metadata-stores/delta.md
-            - Memory: reference/api/metadata-stores/memory.md
+          - LanceDB: reference/api/metadata-stores/lancedb.md
+        - Storage only:
+          - Delta Lake: reference/api/metadata-stores/delta.md
+          - Memory: reference/api/metadata-stores/memory.md
         - Exceptions: reference/api/metadata-stores/exceptions.md
       - Plugins:
         - SQLModel: reference/api/ext/sqlmodel.md

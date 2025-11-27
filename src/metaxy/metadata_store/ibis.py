@@ -472,5 +472,9 @@ class IbisMetadataStore(MetadataStore, ABC):
 
     def display(self) -> str:
         """Display string for this store."""
+        from metaxy.metadata_store.utils import sanitize_uri
+
         backend_info = self.connection_string or f"{self.backend}"
-        return f"{self.__class__.__name__}(backend={backend_info})"
+        # Sanitize connection strings that may contain credentials
+        sanitized_info = sanitize_uri(backend_info)
+        return f"{self.__class__.__name__}(backend={sanitized_info})"

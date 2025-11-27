@@ -1,6 +1,8 @@
 """Common fixtures for metadata store tests."""
 
+import shutil
 import socket
+import subprocess
 import time
 import uuid
 from collections.abc import Generator
@@ -8,12 +10,14 @@ from pathlib import Path
 from typing import Any
 
 import boto3
+import ibis
 import pytest
 from moto.server import ThreadedMotoServer
 from pytest_cases import fixture, parametrize_with_cases
 
 from metaxy import HashAlgorithm
 from metaxy._testing import HashAlgorithmCases
+from metaxy.config import MetaxyConfig
 from metaxy.metadata_store import (
     HashAlgorithmNotSupportedError,
     InMemoryMetadataStore,
@@ -22,9 +26,8 @@ from metaxy.metadata_store import (
 from metaxy.metadata_store.clickhouse import ClickHouseMetadataStore
 from metaxy.metadata_store.delta import DeltaMetadataStore
 from metaxy.metadata_store.duckdb import DuckDBMetadataStore
+from metaxy.metadata_store.lancedb import LanceDBMetadataStore
 from metaxy.models.feature import FeatureGraph
-
-assert HashAlgorithmCases is not None  # ensure the import is not removed
 
 
 def find_free_port() -> int:
@@ -45,9 +48,6 @@ def clickhouse_server(tmp_path_factory):
 
     Yields connection params (host, port) if ClickHouse is available, otherwise skips tests.
     """
-    import shutil
-    import socket
-    import subprocess
 
     # Check if clickhouse binary is available
     clickhouse_bin = shutil.which("clickhouse") or shutil.which("clickhouse-server")
@@ -60,11 +60,9 @@ def clickhouse_server(tmp_path_factory):
     except ImportError:
         pytest.skip("ibis-clickhouse not installed")
 
-    # Find free ports
     port = find_free_port()
     http_port = find_free_port()
 
-    # Create temporary directories for ClickHouse
     base_dir = tmp_path_factory.mktemp("clickhouse")
     data_dir = base_dir / "data"
     data_dir.mkdir()
@@ -77,7 +75,6 @@ def clickhouse_server(tmp_path_factory):
     format_schemas_dir = base_dir / "format_schemas"
     format_schemas_dir.mkdir()
 
-    # Start ClickHouse server with all paths configured
     process: subprocess.Popen[bytes] | None = None
     try:
         process = subprocess.Popen(  # type: ignore[call-overload]
@@ -139,9 +136,6 @@ def clickhouse_server(tmp_path_factory):
             f"ClickHouse server port not ready. Last error: {last_error}. Stderr: {error_msg}"
         )
 
-    # Now try to connect with Ibis (using HTTP port)
-    import ibis
-
     connection_string = f"clickhouse://localhost:{http_port}/default"
     try:
         conn: Any = ibis.connect(connection_string)  # type: ignore[assignment]
@@ -157,7 +151,6 @@ def clickhouse_server(tmp_path_factory):
 
     yield {"host": "localhost", "port": http_port}
 
-    # Cleanup: terminate server
     process.terminate()
     try:
         process.wait(timeout=5)
@@ -172,10 +165,6 @@ def clickhouse_db(clickhouse_server):
 
     Creates a unique database, yields connection string, then drops the database.
     """
-    import uuid
-
-    import ibis
-
     host = clickhouse_server["host"]
     port = clickhouse_server["port"]
 
@@ -186,10 +175,7 @@ def clickhouse_db(clickhouse_server):
     default_conn_string = f"clickhouse://{host}:{port}/default"
     conn: Any = ibis.connect(default_conn_string)  # type: ignore[assignment]
 
-    # Create test database
     conn.raw_sql(f"CREATE DATABASE {db_name}")  # type: ignore[attr-defined]
-
-    # Return connection string for test database
     test_conn_string = f"clickhouse://{host}:{port}/{db_name}"
 
     yield test_conn_string
@@ -219,9 +205,6 @@ def store_params(tmp_path: Path, clickhouse_db: str) -> dict[str, Any]:
         "tmp_path": tmp_path,
         "clickhouse_db": clickhouse_db,
     }
-
-
-# Store case functions for pytest-cases
 
 
 class StoreCases:
@@ -282,14 +265,12 @@ def persistent_store(
     return store_type(**config)  # type: ignore[abstract]
 
 
-# ============= SIMPLIFIED FIXTURES FOR NON-HASH TESTS =============
+# ============= FIXTURES FOR NON-HASH TESTS =============
 
 
 @pytest.fixture
 def default_store() -> InMemoryMetadataStore:
     """Default store (InMemory, xxhash64)."""
-    from metaxy.versioning.types import HashAlgorithm
-
     return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
 
 
@@ -311,16 +292,12 @@ class AnyStoreCases:
     @pytest.mark.inmemory
     @pytest.mark.polars
     def case_inmemory(self) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
 
     @pytest.mark.ibis
     @pytest.mark.native
     @pytest.mark.duckdb
     def case_duckdb(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
@@ -334,16 +311,12 @@ class AllStoresCases:
     @pytest.mark.inmemory
     @pytest.mark.polars
     def case_inmemory(self) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         return InMemoryMetadataStore(hash_algorithm=HashAlgorithm.XXHASH64)
 
     @pytest.mark.ibis
     @pytest.mark.native
     @pytest.mark.duckdb
     def case_duckdb(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         return DuckDBMetadataStore(
             database=tmp_path / "test.duckdb",
             hash_algorithm=HashAlgorithm.XXHASH64,
@@ -354,8 +327,6 @@ class AllStoresCases:
     @pytest.mark.native
     @pytest.mark.clickhouse
     def case_clickhouse(self, clickhouse_db: str) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         return ClickHouseMetadataStore(
             connection_string=clickhouse_db,
             hash_algorithm=HashAlgorithm.XXHASH64,
@@ -364,11 +335,18 @@ class AllStoresCases:
     @pytest.mark.delta
     @pytest.mark.polars
     def case_delta(self, tmp_path: Path) -> MetadataStore:
-        from metaxy.versioning.types import HashAlgorithm
-
         delta_path = tmp_path / "delta_store"
         return DeltaMetadataStore(
             root_path=delta_path,
+            hash_algorithm=HashAlgorithm.XXHASH64,
+        )
+
+    @pytest.mark.lancedb
+    @pytest.mark.polars
+    def case_lancedb(self, tmp_path: Path) -> MetadataStore:
+        lancedb_path = tmp_path / "lancedb_store"
+        return LanceDBMetadataStore(
+            uri=lancedb_path,
             hash_algorithm=HashAlgorithm.XXHASH64,
         )
 
@@ -387,8 +365,6 @@ def default_hash_algorithm():
     Use this fixture when you need a hash algorithm but aren't testing
     hash algorithm behavior specifically.
     """
-    from metaxy.versioning.types import HashAlgorithm
-
     return HashAlgorithm.XXHASH64
 
 
@@ -434,14 +410,10 @@ def config_with_truncation(truncation_length):
             # Config is already set with the truncation length from the parameter
             pass
     """
-    from metaxy.config import MetaxyConfig
-
-    # Create config with truncation
     config = MetaxyConfig.get().model_copy(
         update={"hash_truncation_length": truncation_length}
     )
 
-    # Set and restore config
     with config.use():
         yield config
 

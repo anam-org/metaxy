@@ -39,6 +39,18 @@ Learn more about metadata stores [here](../learn/metadata-stores.md).
 
     [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/delta.md)
 
+-   :custom-lancedb:{ .lg .middle } [**LanceDB**](metadata-stores/databases/lancedb.md)
+
+    ---
+
+    :material-tag-outline: Database
+
+    Columnar database optimized for vector search and multimodal data with embedded (local) and external (object store or LanceDB Cloud) deployments.
+
+    [:octicons-arrow-right-24: Integration docs](metadata-stores/databases/lancedb.md)
+
+    [:octicons-arrow-right-24: API docs](../reference/api/metadata-stores/lancedb.md)
+
 -   :custom-duckdb:{ .lg .middle } [**DuckDB**](metadata-stores/databases/duckdb.md)
 
     ---

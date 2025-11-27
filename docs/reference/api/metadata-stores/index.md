@@ -7,7 +7,8 @@ Metaxy has built-in support for the following metadata store types:
 
 ## Databases
 
-[IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
+- [IbisMetadataStore][metaxy.metadata_store.ibis.IbisMetadataStore].
+- [LanceDBMetadataStore](./lancedb.md).
 
 ## Storage Only
 

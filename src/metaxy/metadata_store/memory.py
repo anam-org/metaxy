@@ -103,7 +103,7 @@ class InMemoryMetadataStore(MetadataStore):
 
         Args:
             feature_key: Feature key to write to
-            df: DataFrame with metadata (already validated)
+            df: Narwhals Frame (eager or lazy) with metadata (already validated)
             **kwargs: Backend-specific parameters (currently unused)
         """
         df_polars: pl.DataFrame = collect_to_polars(df)

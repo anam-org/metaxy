@@ -52,6 +52,10 @@ dagster = [
   "dagster>=1.12.3",
 ]
 
+lancedb = [
+  "lancedb>=0.15.0",
+]
+
 [project.scripts]
 metaxy = "metaxy.cli.app:main"
 mx = "metaxy.cli.app:main"
@@ -72,6 +76,7 @@ dev = [
   "ruff>=0.13.1",
   "syrupy>=5.0.0",
   "ibis-framework[duckdb,clickhouse]>=11.0.0",
+  "lancedb>=0.15.0",
   "basedpyright>=1.32.1",
   "vulture>=2.14",
   "prek>=0.2.11",
