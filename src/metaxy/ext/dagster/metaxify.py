@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, TypeVar, get_origin, overload
+from typing import Any, TypeVar, Union, get_args, get_origin, overload
 
 import dagster as dg
 from typing_extensions import Self
@@ -15,6 +15,7 @@ from metaxy.ext.dagster.constants import (
     METAXY_DAGSTER_METADATA_KEY,
 )
 from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
+from metaxy.models.constants import ALL_SYSTEM_COLUMNS, SYSTEM_COLUMNS_WITH_LINEAGE
 
 _T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
 
@@ -53,6 +54,8 @@ class metaxify:
 
     - **Column schema** from Pydantic fields is injected into the asset metadata under `dagster/column_schema`.
       Field types are converted to strings, and field descriptions are used as column descriptions.
+      If the asset already has a column schema defined, Metaxy columns are appended (user-defined
+      columns take precedence for columns with the same name).
 
     !!! warning
         Pydantic feature schema may not match the corresponding table schema in the metadata store.
@@ -67,6 +70,8 @@ class metaxify:
         - **`FeatureSpec.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
 
       Column lineage is derived from Pydantic model fields on the feature class.
+      If the asset already has column lineage defined, Metaxy lineage is merged with user-defined
+      lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).
 
     Args:
         feature: The Metaxy feature to associate with the asset. If provided, this takes precedence
@@ -446,29 +451,75 @@ def _metaxify_spec(
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.table_name,
     }
 
-    # Build column schema from Pydantic fields
+    # Build column schema from Pydantic fields (includes inherited system columns)
+    # Respects existing user-defined column schema and appends Metaxy columns
     column_schema: dg.TableSchema | None = None
     if inject_column_schema:
-        columns: list[dg.TableColumn] = []
+        # Start with user-defined columns if present
+        existing_schema = spec.metadata.get(DAGSTER_COLUMN_SCHEMA_METADATA_KEY)
+        existing_columns: list[dg.TableColumn] = []
+        existing_column_names: set[str] = set()
+        if existing_schema is not None:
+            existing_columns = list(existing_schema.columns)
+            existing_column_names = {col.name for col in existing_columns}
+
+        # Add Metaxy columns that aren't already defined by user
+        # (user-defined columns take precedence)
+        metaxy_columns: list[dg.TableColumn] = []
         for field_name, field_info in feature_cls.model_fields.items():
-            columns.append(
-                dg.TableColumn(
-                    name=field_name,
-                    type=_get_type_string(field_info.annotation),
-                    description=field_info.description,
+            if field_name not in existing_column_names:
+                metaxy_columns.append(
+                    dg.TableColumn(
+                        name=field_name,
+                        type=_get_type_string(field_info.annotation),
+                        description=field_info.description,
+                    )
                 )
-            )
-        if columns:
-            column_schema = dg.TableSchema(columns=columns)
+
+        all_columns = existing_columns + metaxy_columns
+        if all_columns:
+            # Sort columns alphabetically by name
+            all_columns.sort(key=lambda col: col.name)
+            column_schema = dg.TableSchema(columns=all_columns)
 
     # Build column lineage from upstream dependencies
+    # Respects existing user-defined column lineage and merges with Metaxy lineage
     column_lineage: dg.TableColumnLineage | None = None
     if inject_column_lineage and feature_spec.deps:
-        column_lineage = _build_column_lineage(
+        # Start with user-defined lineage if present
+        existing_lineage = spec.metadata.get(DAGSTER_COLUMN_LINEAGE_METADATA_KEY)
+        existing_deps_by_column: dict[str, list[dg.TableColumnDep]] = {}
+        if existing_lineage is not None:
+            existing_deps_by_column = dict(existing_lineage.deps_by_column)
+
+        metaxy_lineage = _build_column_lineage(
             feature_cls=feature_cls,
             feature_spec=feature_spec,
             inherit_feature_key_as_asset_key=inherit_feature_key_as_asset_key,
         )
+
+        if metaxy_lineage is not None:
+            # Merge: user-defined lineage takes precedence for same columns
+            merged_deps_by_column: dict[str, list[dg.TableColumnDep]] = {
+                col: list(deps) for col, deps in metaxy_lineage.deps_by_column.items()
+            }
+            for col, deps in existing_deps_by_column.items():
+                if col in merged_deps_by_column:
+                    # Append user deps to metaxy deps (user can add extra lineage)
+                    merged_deps_by_column[col] = merged_deps_by_column[col] + deps
+                else:
+                    merged_deps_by_column[col] = deps
+            # Sort columns alphabetically
+            sorted_deps = {
+                k: merged_deps_by_column[k] for k in sorted(merged_deps_by_column)
+            }
+            column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
+        elif existing_deps_by_column:
+            # Sort columns alphabetically
+            sorted_deps = {
+                k: existing_deps_by_column[k] for k in sorted(existing_deps_by_column)
+            }
+            column_lineage = dg.TableColumnLineage(deps_by_column=sorted_deps)
 
     # Build the replacement attributes
     metadata_to_add: dict[str, Any] = {
@@ -510,6 +561,8 @@ def _build_column_lineage(
     - `FeatureDep.rename` mappings: renamed columns trace back to their upstream source
     - `FeatureSpec.lineage`: ID column relationships between features
     - Direct pass-through: columns with same name in both upstream and downstream
+    - System columns: `metaxy_provenance_by_field` and `metaxy_provenance` have lineage
+      from corresponding upstream columns
 
     Args:
         feature_cls: The downstream feature class.
@@ -577,8 +630,13 @@ def _build_column_lineage(
                         )
                     )
 
-        # Process direct pass-through columns (same name in both, not renamed or ID)
-        handled_columns = set(id_column_mapping.keys()) | set(reverse_rename.keys())
+        # Process direct pass-through columns (same name in both, not renamed, ID, or system)
+        # System columns are handled separately below since only some have lineage
+        handled_columns = (
+            set(id_column_mapping.keys())
+            | set(reverse_rename.keys())
+            | ALL_SYSTEM_COLUMNS
+        )
         for col in downstream_columns - handled_columns:
             if col in upstream_columns:
                 if col not in deps_by_column:
@@ -589,6 +647,19 @@ def _build_column_lineage(
                         column_name=col,
                     )
                 )
+
+        # Process system columns with lineage (metaxy_provenance_by_field, metaxy_provenance)
+        # These columns are always present in both upstream and downstream features
+        # and have a direct lineage relationship (downstream values are computed from upstream)
+        for sys_col in SYSTEM_COLUMNS_WITH_LINEAGE:
+            if sys_col not in deps_by_column:
+                deps_by_column[sys_col] = []
+            deps_by_column[sys_col].append(
+                dg.TableColumnDep(
+                    asset_key=upstream_asset_key,
+                    column_name=sys_col,
+                )
+            )
 
     if not deps_by_column:
         return None
@@ -657,12 +728,49 @@ def _get_type_string(annotation: Any) -> str:
 
     For generic types (list[str], dict[str, int], etc.), str() works well.
     For simple types (str, int, etc.), use __name__ to avoid "<class 'str'>" output.
+
+    Special handling:
+    - Pydantic datetime types show cleaner representations
+    - None is stripped from union types (nullability is handled separately via DB constraints)
     """
-    # For generic types (list[str], dict[str, int], Union, etc.), str() works well
-    if get_origin(annotation) is not None:
+    import types
+
+    from pydantic import AwareDatetime, NaiveDatetime
+
+    # Map Pydantic datetime types to cleaner representations
+    pydantic_type_names = {
+        AwareDatetime: "datetime (UTC)",
+        NaiveDatetime: "datetime (naive)",
+    }
+
+    # For generic types (list[str], dict[str, int], Union, etc.), handle args recursively
+    origin = get_origin(annotation)
+    if origin is not None:
+        args = get_args(annotation)
+        if args:
+            # Handle Union types (X | Y syntax uses types.UnionType, typing.Union is different)
+            if origin is Union or isinstance(annotation, types.UnionType):
+                # Filter out None - nullability is handled via DB constraints, not Pydantic types
+                non_none_args = [arg for arg in args if arg is not type(None)]
+                if len(non_none_args) == 1:
+                    # Simple optional type like `str | None` -> just return the base type
+                    return _get_type_string(non_none_args[0])
+                # Multiple non-None types in union
+                clean_args = [_get_type_string(arg) for arg in non_none_args]
+                return " | ".join(clean_args)
+            # Handle other generic types
+            clean_args = [_get_type_string(arg) for arg in args]
+            origin_name = getattr(origin, "__name__", str(origin))
+            return f"{origin_name}[{', '.join(clean_args)}]"
         return str(annotation)
+
+    # Check for Pydantic special types
+    if annotation in pydantic_type_names:
+        return pydantic_type_names[annotation]
+
     # For simple types, use __name__ if available
     if hasattr(annotation, "__name__"):
         return annotation.__name__
+
     # Fallback to str()
     return str(annotation)

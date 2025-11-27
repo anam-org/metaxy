@@ -1602,11 +1602,11 @@ class TestMetaxifyColumnSchema:
 
         assert "metadata" in columns_by_name
         assert columns_by_name["metadata"].description == "Arbitrary metadata"
-        assert columns_by_name["metadata"].type == "dict[str, typing.Any]"
+        assert columns_by_name["metadata"].type == "dict[str, Any]"
 
         assert "optional_value" in columns_by_name
         assert columns_by_name["optional_value"].description == "Optional integer"
-        assert columns_by_name["optional_value"].type == "int | None"
+        assert columns_by_name["optional_value"].type == "int"
 
 
 class TestMetaxifyColumnLineage:
@@ -1968,3 +1968,210 @@ class TestMetaxifyColumnLineage:
 
         assert "id" in column_lineage.deps_by_column
         assert "value" in column_lineage.deps_by_column
+
+
+class TestMetaxifySystemColumns:
+    """Test system column injection in @metaxify for column schema and lineage."""
+
+    def test_metaxify_injects_system_columns_in_schema(self):
+        """Test that system columns are included in the column schema."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_SCHEMA_METADATA_KEY
+        from metaxy.models.constants import (
+            METAXY_CREATED_AT,
+            METAXY_DATA_VERSION,
+            METAXY_DATA_VERSION_BY_FIELD,
+            METAXY_FEATURE_VERSION,
+            METAXY_MATERIALIZATION_ID,
+            METAXY_PROVENANCE,
+            METAXY_PROVENANCE_BY_FIELD,
+            METAXY_SNAPSHOT_VERSION,
+        )
+
+        spec = mx.FeatureSpec(
+            key=["test", "system_schema"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class FeatureWithSystemCols(mx.BaseFeature, spec=spec):
+            id: str
+            value: int
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/system_schema"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY in asset_spec.metadata
+
+        column_schema = asset_spec.metadata[DAGSTER_COLUMN_SCHEMA_METADATA_KEY]
+        columns_by_name = {col.name: col for col in column_schema.columns}
+
+        # User columns should be present
+        assert "id" in columns_by_name
+        assert "value" in columns_by_name
+
+        # All system columns should be present (inherited from BaseFeature)
+        # metaxy_provenance_by_field is required, others are optional
+        assert METAXY_PROVENANCE_BY_FIELD in columns_by_name
+        assert columns_by_name[METAXY_PROVENANCE_BY_FIELD].type == "dict[str, str]"
+        assert (
+            "provenance"
+            in columns_by_name[METAXY_PROVENANCE_BY_FIELD].description.lower()
+        )
+
+        assert METAXY_PROVENANCE in columns_by_name
+        assert columns_by_name[METAXY_PROVENANCE].type == "str"
+
+        assert METAXY_FEATURE_VERSION in columns_by_name
+        assert columns_by_name[METAXY_FEATURE_VERSION].type == "str"
+
+        assert METAXY_SNAPSHOT_VERSION in columns_by_name
+        assert columns_by_name[METAXY_SNAPSHOT_VERSION].type == "str"
+
+        assert METAXY_DATA_VERSION_BY_FIELD in columns_by_name
+        assert columns_by_name[METAXY_DATA_VERSION_BY_FIELD].type == "dict[str, str]"
+
+        assert METAXY_DATA_VERSION in columns_by_name
+        assert columns_by_name[METAXY_DATA_VERSION].type == "str"
+
+        assert METAXY_CREATED_AT in columns_by_name
+        assert columns_by_name[METAXY_CREATED_AT].type == "datetime (UTC)"
+
+        assert METAXY_MATERIALIZATION_ID in columns_by_name
+        assert columns_by_name[METAXY_MATERIALIZATION_ID].type == "str"
+
+    def test_metaxify_injects_system_column_lineage(self):
+        """Test that system columns with lineage are tracked from upstream."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+        from metaxy.models.constants import (
+            METAXY_PROVENANCE,
+            METAXY_PROVENANCE_BY_FIELD,
+        )
+
+        upstream_spec = mx.FeatureSpec(
+            key=["test", "syscol_lineage_upstream"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class UpstreamFeature(mx.BaseFeature, spec=upstream_spec):
+            id: str
+            value: int
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "syscol_lineage_downstream"],
+            id_columns=["id"],
+            fields=["result"],
+            deps=[mx.FeatureDep(feature=UpstreamFeature)],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/syscol_lineage_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # System columns with lineage should be present
+        assert METAXY_PROVENANCE_BY_FIELD in column_lineage.deps_by_column
+        prov_by_field_deps = column_lineage.deps_by_column[METAXY_PROVENANCE_BY_FIELD]
+        assert len(prov_by_field_deps) == 1
+        assert prov_by_field_deps[0].column_name == METAXY_PROVENANCE_BY_FIELD
+        assert prov_by_field_deps[0].asset_key == dg.AssetKey(
+            ["test", "syscol_lineage_upstream"]
+        )
+
+        assert METAXY_PROVENANCE in column_lineage.deps_by_column
+        prov_deps = column_lineage.deps_by_column[METAXY_PROVENANCE]
+        assert len(prov_deps) == 1
+        assert prov_deps[0].column_name == METAXY_PROVENANCE
+        assert prov_deps[0].asset_key == dg.AssetKey(
+            ["test", "syscol_lineage_upstream"]
+        )
+
+    def test_metaxify_system_column_lineage_multiple_upstreams(self):
+        """Test that system columns have lineage from all upstream dependencies."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+        from metaxy.models.constants import (
+            METAXY_PROVENANCE,
+            METAXY_PROVENANCE_BY_FIELD,
+        )
+
+        upstream_a_spec = mx.FeatureSpec(
+            key=["test", "syscol_multi_upstream_a"],
+            id_columns=["id"],
+            fields=["value_a"],
+        )
+
+        class UpstreamA(mx.BaseFeature, spec=upstream_a_spec):
+            id: str
+
+        upstream_b_spec = mx.FeatureSpec(
+            key=["test", "syscol_multi_upstream_b"],
+            id_columns=["id"],
+            fields=["value_b"],
+        )
+
+        class UpstreamB(mx.BaseFeature, spec=upstream_b_spec):
+            id: str
+
+        downstream_spec = mx.FeatureSpec(
+            key=["test", "syscol_multi_downstream"],
+            id_columns=["id"],
+            fields=["combined"],
+            deps=[
+                mx.FeatureDep(feature=UpstreamA),
+                mx.FeatureDep(feature=UpstreamB),
+            ],
+        )
+
+        class DownstreamFeature(mx.BaseFeature, spec=downstream_spec):
+            id: str
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/syscol_multi_downstream"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        column_lineage = asset_spec.metadata[DAGSTER_COLUMN_LINEAGE_METADATA_KEY]
+
+        # System columns should have lineage from both upstreams
+        assert METAXY_PROVENANCE_BY_FIELD in column_lineage.deps_by_column
+        prov_by_field_deps = column_lineage.deps_by_column[METAXY_PROVENANCE_BY_FIELD]
+        assert len(prov_by_field_deps) == 2
+        asset_keys = {dep.asset_key for dep in prov_by_field_deps}
+        assert dg.AssetKey(["test", "syscol_multi_upstream_a"]) in asset_keys
+        assert dg.AssetKey(["test", "syscol_multi_upstream_b"]) in asset_keys
+
+        assert METAXY_PROVENANCE in column_lineage.deps_by_column
+        prov_deps = column_lineage.deps_by_column[METAXY_PROVENANCE]
+        assert len(prov_deps) == 2
+
+    def test_metaxify_no_system_column_lineage_without_deps(self):
+        """Test that system columns don't have lineage when there are no upstream deps."""
+        from metaxy.ext.dagster.constants import DAGSTER_COLUMN_LINEAGE_METADATA_KEY
+
+        spec = mx.FeatureSpec(
+            key=["test", "syscol_no_deps"],
+            id_columns=["id"],
+            fields=["value"],
+        )
+
+        class NoDepsFeature(mx.BaseFeature, spec=spec):
+            id: str
+
+        @metaxify()
+        @dg.asset(metadata={"metaxy/feature": "test/syscol_no_deps"})
+        def my_asset():
+            pass
+
+        asset_spec = list(my_asset.specs)[0]
+        # No column lineage at all when there are no dependencies
+        assert DAGSTER_COLUMN_LINEAGE_METADATA_KEY not in asset_spec.metadata
