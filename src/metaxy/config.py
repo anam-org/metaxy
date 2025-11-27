@@ -87,7 +87,7 @@ class StoreConfig(BaseSettings):
         config = StoreConfig(
             type="metaxy_delta.DeltaMetadataStore",
             config={
-                "table_uri": "s3://bucket/metadata",
+                "root_path": "s3://bucket/metadata",
                 "region": "us-west-2",
                 "fallback_stores": ["prod"],
             }

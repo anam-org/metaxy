@@ -13,8 +13,8 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_COLUMN_LINEAGE_METADATA_KEY,
     DAGSTER_COLUMN_SCHEMA_METADATA_KEY,
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_INFO_METADATA_KEY,
     DAGSTER_METAXY_KIND,
-    DAGSTER_METAXY_METADATA_METADATA_KEY,
     DAGSTER_METAXY_PROJECT_TAG_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
@@ -22,7 +22,10 @@ from metaxy.ext.dagster.table_metadata import (
     _get_type_string,
     build_column_lineage,
 )
-from metaxy.ext.dagster.utils import get_asset_key_for_metaxy_feature_spec
+from metaxy.ext.dagster.utils import (
+    build_feature_info_metadata,
+    get_asset_key_for_metaxy_feature_spec,
+)
 
 _T = TypeVar("_T", dg.AssetsDefinition, dg.AssetSpec)
 
@@ -54,7 +57,7 @@ class metaxify:
 
     - **Description** from the feature class docstring is used if the asset spec doesn't have a description set.
 
-    - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds.
+    - **Kind** `"metaxy"` is injected into asset kinds if `inject_metaxy_kind` is `True` and there are less than 3 kinds currently.
 
     - **Tags** `metaxy/feature` and `metaxy/project` are injected into the asset tags.
 
@@ -78,9 +81,9 @@ class metaxify:
 
         - **`FeatureSpec.lineage`**: ID column relationships based on lineage type (identity, aggregation, expansion).
 
-      Column lineage is derived from Pydantic model fields on the feature class.
-      If the asset already has column lineage defined, Metaxy lineage is merged with user-defined
-      lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).
+        Column lineage is derived from Pydantic model fields on the feature class.
+        If the asset already has column lineage defined, Metaxy lineage is merged with user-defined
+        lineage (user-defined dependencies are appended to Metaxy-detected dependencies for each column).
 
     Args:
         feature: The Metaxy feature to associate with the asset. If both `feature`
@@ -590,7 +593,7 @@ def _metaxify_spec(
     metadata_to_add: dict[str, Any] = {
         **spec.metadata,
         DAGSTER_METAXY_FEATURE_METADATA_KEY: feature_key.to_string(),
-        DAGSTER_METAXY_METADATA_METADATA_KEY: feature_spec.metadata,
+        DAGSTER_METAXY_INFO_METADATA_KEY: build_feature_info_metadata(feature_key),
     }
     if column_schema is not None:
         metadata_to_add[DAGSTER_COLUMN_SCHEMA_METADATA_KEY] = column_schema

@@ -8,10 +8,11 @@ from narwhals.typing import IntoFrame
 import metaxy as mx
 from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
+    DAGSTER_METAXY_INFO_METADATA_KEY,
     DAGSTER_METAXY_PARTITION_KEY,
 )
 from metaxy.ext.dagster.resources import MetaxyStoreFromConfigResource
-from metaxy.ext.dagster.utils import build_partition_filter
+from metaxy.ext.dagster.utils import build_feature_info_metadata, build_partition_filter
 from metaxy.metadata_store.exceptions import FeatureNotFoundError
 from metaxy.models.constants import METAXY_MATERIALIZATION_ID
 from metaxy.models.types import ValidatedFeatureKey
@@ -168,18 +169,12 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
         with self.metadata_store:
             key = self._feature_key_from_context(context)
 
-            feature = mx.get_feature_by_key(key)
-
             context.add_output_metadata(
                 {
                     "metaxy/feature": key.to_string(),
-                    "metaxy/info": {
-                        "project": feature.project,
-                        "feature_code_version": feature.spec().code_version,
-                        "feature_version": feature.feature_version(),
-                    },
+                    DAGSTER_METAXY_INFO_METADATA_KEY: build_feature_info_metadata(key),
                     "metaxy/store": {
-                        "type": self.metadata_store.__class__.__name__,
+                        "type": self.metadata_store.__class__.__module__,
                         "versioning_engine": self.metadata_store._versioning_engine,
                         **self.metadata_store.get_store_metadata(key),
                     },
@@ -187,6 +182,7 @@ class MetaxyIOManager(dg.ConfigurableIOManager):
             )
 
             try:
+                feature = mx.get_feature_by_key(key)
                 materialized_in_run = (
                     self.metadata_store.read_metadata(
                         feature,

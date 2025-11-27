@@ -1,5 +1,5 @@
 from collections.abc import Iterator, Sequence
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import dagster as dg
 import narwhals as nw
@@ -229,6 +229,66 @@ def generate_materialize_results(
             metadata=metadata,
             data_version=stats.data_version,
         )
+
+
+def build_feature_info_metadata(
+    feature: mx.CoercibleToFeatureKey,
+) -> dict[str, Any]:
+    """Build feature info metadata dict for Dagster assets.
+
+    Creates a dictionary with information about the Metaxy feature that can be
+    used as Dagster asset metadata under the `"metaxy/feature_info"` key.
+
+    Args:
+        feature: The Metaxy feature (class, key, or string).
+
+    Returns:
+        A nested dictionary containing:
+
+        - `feature`: Feature information
+            - `project`: The project name
+            - `spec`: The full feature spec as a dict (via `model_dump()`)
+            - `version`: The feature version string
+            - `type`: The feature class module path
+        - `metaxy`: Metaxy library information
+            - `version`: The metaxy library version
+
+    !!! tip
+        This is automatically injected by [`@metaxify`][metaxy.ext.dagster.metaxify.metaxify]
+
+    Example:
+        ```python
+        from metaxy.ext.dagster.utils import build_feature_info_metadata
+
+        info = build_feature_info_metadata(MyFeature)
+        # {
+        #     "feature": {
+        #         "project": "my_project",
+        #         "spec": {...},  # Full FeatureSpec model_dump()
+        #         "version": "my__feature@abc123",
+        #         "type": "myproject.features",
+        #     },
+        #     "metaxy": {
+        #         "version": "0.1.0",
+        #     },
+        # }
+        ```
+    """
+    feature_key = mx.coerce_to_feature_key(feature)
+    feature_cls = mx.get_feature_by_key(feature_key)
+
+    return {
+        "feature": {
+            "project": feature_cls.project,
+            "spec": feature_cls.spec().model_dump(mode="json"),
+            "version": feature_cls.feature_version(),
+            "type": feature_cls.__module__,
+        },
+        "metaxy": {
+            "version": mx.__version__,
+            "plugins": mx.MetaxyConfig.get().plugins,
+        },
+    }
 
 
 def generate_observe_results(

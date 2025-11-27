@@ -155,9 +155,9 @@ class TestFeatureToDagsterType:
         dagster_type = feature_to_dagster_type(
             simple_feature, inject_column_schema=False
         )
-        # Metadata is empty dict when no column schema is injected
-        assert dagster_type.metadata is None or dagster_type.metadata == {}
-        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in (dagster_type.metadata or {})
+        # metaxy/info is always present, but column schema should not be
+        assert dagster_type.metadata is not None
+        assert DAGSTER_COLUMN_SCHEMA_METADATA_KEY not in dagster_type.metadata
 
     def test_type_check_valid_polars_dataframe(
         self, simple_feature: type[mx.BaseFeature]

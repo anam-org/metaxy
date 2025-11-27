@@ -319,7 +319,7 @@ class BaseSQLModelFeature(  # pyright: ignore[reportIncompatibleMethodOverride, 
 
     metaxy_feature_spec_version: str | None = Field(
         default=None,
-        description="Hash of the complete feature specification (used for migration detection)",
+        description="Hash of the complete feature specification.",
         sa_column_kwargs={
             "name": METAXY_FEATURE_SPEC_VERSION,
         },

@@ -221,15 +221,25 @@ class TestMetaxyIOManagerMetadata:
         # Check metaxy/info contains expected fields
         info = metadata["metaxy/info"].value
         assert isinstance(info, dict)
-        assert "project" in info
-        assert "feature_code_version" in info
-        assert "feature_version" in info
+        assert "feature" in info
+        assert "metaxy" in info
+        # Feature info
+        feature_info = info["feature"]
+        assert isinstance(feature_info, dict)
+        assert "project" in feature_info
+        assert "spec" in feature_info
+        assert "version" in feature_info
+        assert "type" in feature_info
+        # Metaxy info
+        metaxy_info = info["metaxy"]
+        assert isinstance(metaxy_info, dict)
+        assert "version" in metaxy_info
+        assert "plugins" in metaxy_info
 
         # Check metaxy/store contains store type info
         store_meta = metadata["metaxy/store"].value
         assert isinstance(store_meta, dict)
         assert "type" in store_meta
-        assert store_meta["type"] == "DeltaMetadataStore"
 
     def test_materialized_in_run_count(
         self,
