@@ -1,4 +1,5 @@
 from collections.abc import Iterator, Sequence
+from typing import NamedTuple
 
 import dagster as dg
 import narwhals as nw
@@ -8,6 +9,62 @@ from metaxy.ext.dagster.constants import (
     DAGSTER_METAXY_FEATURE_METADATA_KEY,
     METAXY_DAGSTER_METADATA_KEY,
 )
+from metaxy.models.constants import METAXY_CREATED_AT
+
+
+class FeatureStats(NamedTuple):
+    """Statistics about a feature's metadata for Dagster events."""
+
+    row_count: int
+    data_version: dg.DataVersion
+
+
+def compute_stats_from_lazy_frame(lazy_df: nw.LazyFrame) -> FeatureStats:  # pyright: ignore[reportMissingTypeArgument]
+    """Compute statistics from a narwhals LazyFrame.
+
+    Computes row count and data version from the frame.
+    The data version is based on mean(metaxy_created_at) to detect both
+    additions and deletions.
+
+    Args:
+        lazy_df: A narwhals LazyFrame with metaxy metadata.
+
+    Returns:
+        FeatureStats with row_count and data_version.
+    """
+    stats = lazy_df.select(
+        nw.len().alias("__count"),
+        nw.col(METAXY_CREATED_AT).mean().alias("__mean_ts"),
+    ).collect()
+
+    row_count: int = stats.item(0, "__count")
+    if row_count == 0:
+        return FeatureStats(row_count=0, data_version=dg.DataVersion("empty"))
+
+    mean_ts = stats.item(0, "__mean_ts")
+    return FeatureStats(row_count=row_count, data_version=dg.DataVersion(str(mean_ts)))
+
+
+def compute_feature_stats(
+    store: mx.MetadataStore,
+    feature: mx.CoercibleToFeatureKey,
+) -> FeatureStats:
+    """Compute statistics for a feature's metadata.
+
+    Reads the feature metadata and computes row count and data version.
+    The data version is based on mean(metaxy_created_at) to detect both
+    additions and deletions.
+
+    Args:
+        store: The Metaxy metadata store to read from.
+        feature: The feature to compute stats for.
+
+    Returns:
+        FeatureStats with row_count and data_version.
+    """
+    with store:
+        lazy_df = store.read_metadata(feature)
+        return compute_stats_from_lazy_frame(lazy_df)
 
 
 def get_asset_key_for_metaxy_feature_spec(
@@ -57,7 +114,7 @@ def generate_materialization_events(
     context: dg.AssetExecutionContext,
     store: mx.MetadataStore,
     specs: Sequence[dg.AssetSpec],
-) -> Iterator[dg.MaterializeResult[None]]:  # pyright: ignore[reportMissingTypeArgument]
+) -> Iterator[dg.MaterializeResult[None]]:
     """Generate [dagster.MaterializeResult][] events for assets in topological order.
 
     Yields a `MaterializeResult` for each asset spec, sorted by their associated
@@ -103,13 +160,13 @@ def generate_materialization_events(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        with store:
-            row_count = store.read_metadata(key).select(nw.len()).collect().item(0, 0)
+        stats = compute_feature_stats(store, key)
 
         yield dg.MaterializeResult(
             value=None,
             asset_key=asset_spec.key,
-            metadata={"dagster/row_count": row_count},
+            metadata={"dagster/row_count": stats.row_count},
+            data_version=stats.data_version,
         )
 
 
@@ -162,10 +219,10 @@ def generate_observation_events(
 
     for key in sorted_keys:
         asset_spec = spec_by_feature_key[key]
-        with store:
-            row_count = store.read_metadata(key).select(nw.len()).collect().item(0, 0)
+        stats = compute_feature_stats(store, key)
 
         yield dg.ObserveResult(
             asset_key=asset_spec.key,
-            metadata={"dagster/row_count": row_count},
+            metadata={"dagster/row_count": stats.row_count},
+            data_version=stats.data_version,
         )

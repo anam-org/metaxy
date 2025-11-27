@@ -129,14 +129,14 @@ class TestGenerateMaterializationEvents:
             dg.AssetKey("asset_c"),
         ]
 
-    def test_includes_row_count_metadata(
+    def test_includes_row_count_and_data_version(
         self,
         feature_a: type[mx.BaseFeature],
         metadata_store: mx.MetadataStore,
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that each event includes dagster/row_count metadata."""
+        """Test that each event includes dagster/row_count metadata and data_version."""
         # Write 3 rows
         _write_feature_data(feature_a, ["1", "2", "3"], resources, instance)
 
@@ -151,6 +151,9 @@ class TestGenerateMaterializationEvents:
         assert events[0].metadata is not None
         assert events[0].metadata["dagster/row_count"] == 3
         assert events[0].asset_key == dg.AssetKey("my_asset")
+        # data_version should be set (based on mean of metaxy_created_at)
+        assert events[0].data_version is not None
+        assert events[0].data_version.value != "empty"
 
     def test_uses_asset_spec_key(
         self,
@@ -229,14 +232,14 @@ class TestGenerateObservationEvents:
             dg.AssetKey("asset_c"),
         ]
 
-    def test_includes_row_count_metadata(
+    def test_includes_row_count_and_data_version(
         self,
         feature_a: type[mx.BaseFeature],
         metadata_store: mx.MetadataStore,
         resources: dict[str, Any],
         instance: dg.DagsterInstance,
     ):
-        """Test that each event includes dagster/row_count metadata."""
+        """Test that each event includes dagster/row_count metadata and data_version."""
         # Write 5 rows
         _write_feature_data(feature_a, ["1", "2", "3", "4", "5"], resources, instance)
 
@@ -248,6 +251,9 @@ class TestGenerateObservationEvents:
         assert len(events) == 1
         assert events[0].metadata is not None
         assert events[0].metadata["dagster/row_count"] == 5
+        # data_version should be set (based on mean of metaxy_created_at)
+        assert events[0].data_version is not None
+        assert events[0].data_version.value != "empty"
 
     def test_uses_asset_spec_key(
         self,

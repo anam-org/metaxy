@@ -4,11 +4,10 @@ from collections.abc import Callable
 from typing import Any
 
 import dagster as dg
-import narwhals as nw
 
 import metaxy as mx
 from metaxy.ext.dagster.metaxify import metaxify
-from metaxy.models.constants import METAXY_CREATED_AT
+from metaxy.ext.dagster.utils import compute_stats_from_lazy_frame
 
 
 def observable_metaxy_asset(
@@ -88,30 +87,16 @@ def observable_metaxy_asset(
 
             with store:
                 lazy_df = store.read_metadata(feature_key)
-
-                # Run aggregations in the database, only collect the small result
-                stats = lazy_df.select(
-                    nw.len().alias("__count"),
-                    nw.col(METAXY_CREATED_AT).mean().alias("__mean_ts"),
-                ).collect()
+                stats = compute_stats_from_lazy_frame(lazy_df)
 
                 # Call the user's function - it can return additional metadata
                 extra_metadata = fn(context, store, lazy_df) or {}
 
-            row_count: int = stats.item(0, "__count")
-            if row_count == 0:
-                return dg.ObserveResult(
-                    data_version=dg.DataVersion("empty"),
-                    metadata={"dagster/row_count": 0},
-                )
-
-            mean_ts = stats.item(0, "__mean_ts")
-
-            metadata: dict[str, Any] = {"dagster/row_count": row_count}
+            metadata: dict[str, Any] = {"dagster/row_count": stats.row_count}
             metadata.update(extra_metadata)
 
             return dg.ObserveResult(
-                data_version=dg.DataVersion(str(mean_ts)),
+                data_version=stats.data_version,
                 metadata=metadata,
             )
 
